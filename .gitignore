@@ -1,0 +1,18 @@
+# Frontend Logs
+frontend/logs
+frontend/*.log
+
+# Frontend build
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+
+# VS Code files
+.vscode/*
+
+# Mac files
+*.DS_Store
+
+# Local files 
+local/*
