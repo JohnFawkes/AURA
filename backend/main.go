@@ -65,8 +65,10 @@ func main() {
 	c := cron.New()
 
 	c.AddFunc(config.Global.AutoDownload.Cron, func() {
-		// Call the auto download function
-		download.CheckForUpdatesToPosters()
+		// Call the auto download function if enabled
+		if config.Global.AutoDownload.Enabled {
+			download.CheckForUpdatesToPosters()
+		}
 	})
 
 	// Start the cron tasks
