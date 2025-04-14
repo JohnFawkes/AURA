@@ -31,7 +31,7 @@ Poster-Setter is designed to run in Docker for easy setup and deployment.
     docker-compose up --build
     ```
 
-Before running the application in Docker, you need to set up a config.yaml file. You can use the config.yaml.sample file as a template.
+Before running the application in Docker, you need to set up a config.yaml file. You can use the config.yaml.sample file as a template. Be sure to place this file in the Docker's /config directory.
 
 ## Usage
 
