@@ -75,8 +75,6 @@ func main() {
 	logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", config.Global.AutoDownload.Cron))
 	c.Start()
 
-	download.CheckForUpdatesToPosters()
-
 	go func() {
 		// Start the API server
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT_INT), r); err != nil {
