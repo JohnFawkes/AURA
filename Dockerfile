@@ -13,8 +13,8 @@ RUN go mod download
 # Copy the source code
 COPY backend/ ./
 
-# Build the application for aarch64
-RUN GOARCH=arm64 go build -o main .
+# Build the application for amd64
+RUN GOARCH=amd64 go build -o main .
 
 ##### Stage 2: Build the frontend application
 FROM node:latest AS frontend-builder
