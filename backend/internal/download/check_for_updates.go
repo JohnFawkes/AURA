@@ -22,7 +22,7 @@ func CheckForUpdatesToPosters() {
 			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s'", item.Plex.Title))
 			var updatedSet modals.PosterSet
 			var logErr logging.ErrorLog
-			if item.Set.Type == "movieset" || item.Set.Type == "collection" || item.Set.Type == "showset" {
+			if item.Set.Type == "movie" || item.Set.Type == "collection" || item.Set.Type == "show" {
 				updatedSet, logErr = mediux.FetchSetByID(item.Set.Type, item.Set.ID)
 			} else {
 				logging.LOG.Error(fmt.Sprintf("Set for '%s' is not a valid type: %s", item.Plex.Title, item.Set.Type))
