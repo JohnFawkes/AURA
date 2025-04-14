@@ -1,0 +1,60 @@
+# This file should be located in /config on the docker container
+
+# Port - The port on which the application will run
+Port: 8888
+
+# CacheImages - Whether to cache images or not. Caching images can improve performance but will use more disk space.
+# If set to true, images will be cached in the /config/temp-images directory.
+CacheImages: true
+
+# SaveImageNextToContent - Whether to save images next to the Plex content or not.
+# If set to true, images will be saved in the same directory as the Plex content.
+# If set to false, images will still be updated in Plex
+# The benefit of this is that you have local images that are not dependent on the Plex database in case of migration.
+SaveImageNextToContent: false
+
+# Logging - Configuration for logging
+#   Level - The level of logging. Can be one of: TRACE, DEBUG, INFO, WARNING, ERROR
+Logging:
+    Level: TRACE
+
+# AutoDownload - Configuration for auto-downloading images
+#   Enabled - Whether to enable auto-downloading of images or not.
+#     You have the option when selecting a set to save it to the database.
+#     This will look for updates to the set and download them automatically.
+#   Cron - The cron schedule for auto-downloading images. This is a standard cron expression.
+#     For example, "0 0 * * *" means every day at midnight
+AutoDownload:
+    Enabled: true
+    Cron: "0 0 * * *"
+
+# Plex - Configuration for Plex
+#   URL - The URL of the Plex server. This should be the IP:Port of the Plex server or your Plex reverse proxy domain.
+#   Token - The token for the Plex server. This can be found in the Plex web interface.
+#   Libraries - A list of libraries to scan for images. Each library should have the following fields:
+#     - Name: The name of the library. This is for display purposes only.
+#     - SectionID: The ID of the library. This can be found in the Plex web interface.
+#     - Type: The type of library. This can be one of: movie or show.
+Plex:
+    URL: http://<PLEX_IP>:<PLEX_PORT> # Replace with your Plex server IP and port
+    Token: <PLEX_TOKEN> # Replace with your Plex token
+    Libraries:
+        - Name: "Movies"
+          SectionID: 1
+          Type: "movie"
+        - Name: "Series"
+          SectionID: 2
+          Type: "show"
+        - Name: "4K Movies"
+          SectionID: 3
+          Type: "movie"
+
+# TMDB - Configuration for TMDB (The Movie Database)
+#   ApiKey - The API key for TMDB. This can be obtained by creating an account on TMDB and generating an API key.
+TMDB:
+    ApiKey: <YOUR_TMDB_API_KEY> # Replace with your TMDB API key
+
+# Mediux - Configuration for Mediux
+#   Token - The token for Mediux. This can be obtained by creating an account on Mediux and generating a static token.
+Mediux:
+    Token: <YOUR_MEDIUX_TOKEN> # Replace with your Mediux token
