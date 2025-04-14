@@ -14,3 +14,4 @@ frontend/*.local
 local/*
 backend/run_backend
 backend/.air.toml
+*.graphql
