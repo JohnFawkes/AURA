@@ -33,21 +33,13 @@ AutoDownload:
 #   Token - The token for the Plex server. This can be found in the Plex web interface.
 #   Libraries - A list of libraries to scan for images. Each library should have the following fields:
 #     - Name: The name of the library. This is for display purposes only.
-#     - SectionID: The ID of the library. This can be found in the Plex web interface.
-#     - Type: The type of library. This can be one of: movie or show.
 Plex:
     URL: http://<PLEX_IP>:<PLEX_PORT> # Replace with your Plex server IP and port
     Token: <PLEX_TOKEN> # Replace with your Plex token
     Libraries:
         - Name: "Movies"
-          SectionID: 1
-          Type: "movie"
         - Name: "Series"
-          SectionID: 2
-          Type: "show"
         - Name: "4K Movies"
-          SectionID: 3
-          Type: "movie"
 
 # TMDB - Configuration for TMDB (The Movie Database)
 #   ApiKey - The API key for TMDB. This can be obtained by creating an account on TMDB and generating an API key.
