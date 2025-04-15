@@ -44,7 +44,7 @@ func CheckForUpdatesToPosters() {
 						logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' has not been updated. Skipping...", file.Type, item.Plex.Title))
 						continue
 					}
-					logging.LOG.Info(fmt.Sprintf("Downloading new poster for '%s'...", file.Type))
+					logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s'", file.Type, item.Plex.Title))
 					logErr := plex.DownloadAndUpdateSet(item.Plex, file)
 					if logErr.Err != nil {
 						logging.LOG.ErrorWithLog(logErr)
