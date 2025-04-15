@@ -31,6 +31,7 @@ export interface PosterSet {
 export interface File {
 	ID: string;
 	Type: string;
+	Modified: string;
 	Movie?: Movie;
 	Season?: Season;
 	Episode?: Episode;
