@@ -17,6 +17,7 @@
 
 Poster-Setter is designed to run in Docker for easy setup and deployment.
 
+### Using docker-compose
 1. Clone the repository:
     ```sh
     git clone https://github.com/xmoosex/poster-setter.git
@@ -26,10 +27,30 @@ Poster-Setter is designed to run in Docker for easy setup and deployment.
     cd poster-setter
     ```
 3. Tweak the docker-compose file to match your settings
-4. Run the application with:
+4. Run the following to login to ghcr.io
+   ```sh
+   docker login ghrcr.io
+   ```
+5. Run the application with:
     ```sh
     docker-compose up --build
     ```
+### Using Dockerfile
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/xmoosex/poster-setter.git
+    ```
+2. Navigate to the project directory:
+    ```sh
+    cd poster-setter
+    ```
+3. Build the Docker image:
+   ```sh
+   docker build -t poster-setter .
+4. Run the Docker Container (make sure to change the port and path to what you want)
+   ```sh
+   docker run -d -p 8888:8888 -v '/mnt/user/appdata/poster-setter/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' poster-setter
+   ```
 
 Before running the application in Docker, you need to set up a config.yaml file. You can use the config.yaml.sample file as a template. Be sure to place this file in the Docker's /config directory.
 
