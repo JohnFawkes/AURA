@@ -499,7 +499,7 @@ const PosterSetCarousel: React.FC<{
 };
 
 interface LazyCarouselProps {
-	files: { ID: string; Type: string }[];
+	files: { ID: string; Type: string; Modified: string }[];
 	types: string[]; // Types to filter (e.g., "poster", "backdrop", etc.)
 	settings: Settings; // Slider settings
 }
@@ -527,7 +527,8 @@ const LazyCarousel: React.FC<LazyCarouselProps> = ({
 						if (!imageCache.has(file.ID)) {
 							try {
 								const imageUrl = await fetchMediuxImageData(
-									file.ID
+									file.ID,
+									file.Modified
 								);
 								imageCache.set(file.ID, imageUrl);
 								newImageSources.set(file.ID, imageUrl);
