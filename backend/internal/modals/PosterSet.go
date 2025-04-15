@@ -10,11 +10,12 @@ type MediuxResponse struct {
 }
 
 type MediuxFileItem struct {
-	ID       string             `json:"id"`
-	FileType string             `json:"file_type"`
-	Movie    *MediuxFileMovie   `json:"movie,omitempty"`
-	Season   *MediuxFileSeason  `json:"season,omitempty"`
-	Episode  *MediuxFileEpisode `json:"episode,omitempty"`
+	ID        string             `json:"id"`
+	FileType  string             `json:"file_type"`
+	ModifedOn time.Time          `json:"modified_on"`
+	Movie     *MediuxFileMovie   `json:"movie,omitempty"`
+	Season    *MediuxFileSeason  `json:"season,omitempty"`
+	Episode   *MediuxFileEpisode `json:"episode,omitempty"`
 }
 
 type MediuxFileMovie struct {
@@ -107,11 +108,12 @@ type PosterSet struct {
 }
 
 type PosterFile struct {
-	ID      string             `json:"ID"`
-	Type    string             `json:"Type"`
-	Movie   *PosterFileMovie   `json:"Movie,omitempty"`
-	Season  *PosterFileSeason  `json:"Season,omitempty"`
-	Episode *PosterFileEpisode `json:"Episode,omitempty"`
+	ID       string             `json:"ID"`
+	Type     string             `json:"Type"`
+	Modified time.Time          `json:"Modified"`
+	Movie    *PosterFileMovie   `json:"Movie,omitempty"`
+	Season   *PosterFileSeason  `json:"Season,omitempty"`
+	Episode  *PosterFileEpisode `json:"Episode,omitempty"`
 }
 
 type PosterFileMovie struct {
@@ -127,93 +129,3 @@ type PosterFileEpisode struct {
 	EpisodeNumber int    `json:"EpisodeNumber,omitempty"`
 	SeasonNumber  int    `json:"SeasonNumber,omitempty"`
 }
-
-// type MediuxMovieSetsResponse struct {
-// 	Data struct {
-// 		Movies []struct {
-// 			ID           string    `json:"id"`
-// 			DateUpdated  time.Time `json:"date_updated"`
-// 			Status       string    `json:"status"`
-// 			Title        string    `json:"title"`
-// 			ReleaseDate  string    `json:"release_date"`
-// 			Tagline      string    `json:"tagline"`
-// 			TvdbID       string    `json:"tvdb_id"`
-// 			ImdbID       string    `json:"imdb_id"`
-// 			TraktID      string    `json:"trakt_id"`
-// 			Slug         string    `json:"slug"`
-// 			CollectionID struct {
-// 				ID             string `json:"id"`
-// 				CollectionName string `json:"collection_name"`
-// 				CollectionSets []struct {
-// 					ID          string `json:"id"`
-// 					UserCreated struct {
-// 						Username string `json:"username"`
-// 					} `json:"user_created"`
-// 					DateCreated time.Time `json:"date_created"`
-// 					DateUpdated time.Time `json:"date_updated"`
-// 					Files       []struct {
-// 						ID       string `json:"id"`
-// 						FileType string `json:"file_type"`
-// 						Movie    struct {
-// 							ID string `json:"id"`
-// 						} `json:"movie"`
-// 					} `json:"files"`
-// 				} `json:"collection_sets"`
-// 			} `json:"collection_id"`
-// 			MovieSets []struct {
-// 				ID          string `json:"id"`
-// 				UserCreated struct {
-// 					Username string `json:"username"`
-// 				} `json:"user_created"`
-// 				DateCreated time.Time `json:"date_created"`
-// 				DateUpdated time.Time `json:"date_updated"`
-// 				Files       []struct {
-// 					ID       string `json:"id"`
-// 					FileType string `json:"file_type"`
-// 					Movie    struct {
-// 						ID string `json:"id"`
-// 					} `json:"movie"`
-// 				} `json:"files"`
-// 			} `json:"movie_sets"`
-// 		} `json:"movies"`
-// 	} `json:"data"`
-// }
-
-// type MediuxShowSetsResponse struct {
-// 	Data struct {
-// 		Shows []struct {
-// 			ID           string    `json:"id"`
-// 			DateUpdated  time.Time `json:"date_updated"`
-// 			Status       string    `json:"status"`
-// 			Title        string    `json:"title"`
-// 			Tagline      string    `json:"tagline"`
-// 			FirstAirDate string    `json:"first_air_date"`
-// 			TvdbID       string    `json:"tvdb_id"`
-// 			ImdbID       string    `json:"imdb_id"`
-// 			TraktID      string    `json:"trakt_id"`
-// 			Slug         string    `json:"slug"`
-// 			ShowSets     []struct {
-// 				ID          string `json:"id"`
-// 				UserCreated struct {
-// 					Username string `json:"username"`
-// 				} `json:"user_created"`
-// 				DateCreated time.Time `json:"date_created"`
-// 				DateUpdated time.Time `json:"date_updated"`
-// 				Files       []struct {
-// 					ID       string `json:"id"`
-// 					FileType string `json:"file_type"`
-// 					Season   *struct {
-// 						SeasonNumber int `json:"season_number,omitempty"`
-// 					} `json:"season,omitempty"`
-// 					Episode *struct {
-// 						EpisodeTitle  string `json:"episode_title,omitempty"`
-// 						EpisodeNumber int    `json:"episode_number,omitempty"`
-// 						SeasonID      *struct {
-// 							SeasonNumber int `json:"season_number,omitempty"`
-// 						} `json:"season_id,omitempty"`
-// 					} `json:"episode,omitempty"`
-// 				} `json:"files"`
-// 			} `json:"show_sets"`
-// 		} `json:"shows"`
-// 	} `json:"data"`
-// }
