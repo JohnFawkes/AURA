@@ -20,6 +20,21 @@ func GetSectionsContent(w http.ResponseWriter, r *http.Request) {
 	var allSections []modals.LibrarySection
 
 	for _, library := range config.Global.Plex.Libraries {
+		// Fetch the library section from Plex
+		found, logErr := fetchLibrarySection(&library)
+		if logErr.Err != nil {
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+			return
+		}
+		if !found {
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+				Log: logging.Log{
+					Message: fmt.Sprintf("Library section '%s' not found", library.Name),
+					Elapsed: utils.ElapsedTime(time.Now()),
+				},
+			})
+			return
+		}
 		mediaItems, logErr := fetchSectionsContent(library.SectionID)
 		if logErr.Err != nil {
 			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
@@ -137,4 +152,48 @@ func fetchSectionsContent(sectionID string) ([]modals.MediaItem, logging.ErrorLo
 	}
 
 	return items, logging.ErrorLog{}
+}
+
+func fetchLibrarySection(library *modals.Config_PlexLibrary) (bool, logging.ErrorLog) {
+
+	// Construct the URL for the Plex server API request
+	url := fmt.Sprintf("%s/library/sections", config.Global.Plex.URL)
+
+	// Make a GET request to the Plex server
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	if logErr.Err != nil {
+		logging.LOG.Error(logErr.Log.Message)
+		return false, logErr
+	}
+	defer response.Body.Close()
+
+	// Check if the response status is OK
+	if response.StatusCode != http.StatusOK {
+		logging.LOG.Error(fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode))
+		return false, logging.ErrorLog{Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)}}
+	}
+
+	var responseSection modals.PlexResponse
+	err := xml.Unmarshal(body, &responseSection)
+	if err != nil {
+		logging.LOG.Error("Failed to parse XML response")
+		return false, logging.ErrorLog{Err: err,
+			Log: logging.Log{Message: "Failed to parse XML response"},
+		}
+	}
+
+	// Find the library section with the matching Name
+	for _, section := range responseSection.Directory {
+		if section.Title == library.Name {
+			library.Type = section.Type
+			library.SectionID = section.Key
+			break
+		}
+	}
+	if library.SectionID == "" {
+		logging.LOG.Error(fmt.Sprintf("Library section '%s' not found", library.Name))
+		return false, logging.ErrorLog{Log: logging.Log{Message: fmt.Sprintf("Library section '%s' not found", library.Name)}}
+	}
+
+	return true, logging.ErrorLog{}
 }
