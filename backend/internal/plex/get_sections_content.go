@@ -23,22 +23,23 @@ func GetSectionsContent(w http.ResponseWriter, r *http.Request) {
 		// Fetch the library section from Plex
 		found, logErr := fetchLibrarySection(&library)
 		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-			return
+			logging.LOG.Warn(logErr.Log.Message)
+			continue
 		}
 		if !found {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-				Log: logging.Log{
-					Message: fmt.Sprintf("Library section '%s' not found", library.Name),
-					Elapsed: utils.ElapsedTime(time.Now()),
-				},
-			})
-			return
+			logging.LOG.Warn(fmt.Sprintf("Library section '%s' not found in Plex", library.Name))
+			continue
 		}
+		// If the section tpye is not movie/show, skip it
+		if library.Type != "movie" && library.Type != "show" {
+			logging.LOG.Warn(fmt.Sprintf("Library section '%s' is not a movie/show section", library.Name))
+			continue
+		}
+
 		mediaItems, logErr := fetchSectionsContent(library.SectionID)
 		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-			return
+			logging.LOG.Warn(logErr.Log.Message)
+			continue
 		}
 		// Skip sections that are empty or not of type movie/show
 		if len(mediaItems) == 0 {
