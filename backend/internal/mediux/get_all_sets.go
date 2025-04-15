@@ -252,8 +252,9 @@ func processFiles(files []modals.MediuxFileItem) []modals.PosterFile {
 		}
 
 		posterFile := modals.PosterFile{
-			ID:   file.ID,
-			Type: file.FileType,
+			ID:       file.ID,
+			Type:     file.FileType,
+			Modified: file.ModifedOn,
 		}
 
 		// Safely assign Movie if it is not nil

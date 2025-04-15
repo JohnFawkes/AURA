@@ -29,6 +29,7 @@ query show($tmdbID: String!) {
 			files {
 				id
 				file_type
+				modified_on
 				season {
 					season_number
 				}
@@ -78,6 +79,7 @@ query movie($tmdbID: String!) {
 				files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
 					id
 					file_type
+					modified_on
 					movie {
 						id
 					}
@@ -94,6 +96,7 @@ query movie($tmdbID: String!) {
 			files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
 				id
 				file_type
+				modified_on
 				movie {
 					id
 				}
@@ -140,6 +143,7 @@ query collectionSet($collectionID: GraphQLStringOrFloat!) {
 				files(filter: { file_type: { _neq: "album" } }) {
 					id
 					file_type
+					modified_on
 					movie {
 						id
 					}
@@ -183,6 +187,7 @@ query movie($movieSetID: GraphQLStringOrFloat!) {
 			files(filter: { file_type: { _neq: "album" } }) {
 				id
 				file_type
+				modified_on
 				movie {
 					id
 				}
@@ -211,6 +216,7 @@ query showSet($showSetID: GraphQLStringOrFloat!) {
 		files {
 			id
 			file_type
+			modified_on
 			season {
 				season_number
 			}
