@@ -52,7 +52,7 @@ Poster-Setter is designed to run in Docker for easy setup and deployment.
    docker run -d -p 8888:8888 -v '/mnt/user/appdata/poster-setter/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' poster-setter
    ```
 
-Before running the application in Docker, you need to set up a config.yaml file. You can use the config.yaml.sample file as a template. Be sure to place this file in the Docker's /config directory.
+Before running the application in Docker, you need to set up a config.yml file. You can use the config.yml.sample file as a template. Be sure to place this file in the Docker's /config directory.
 
 ## Usage
 
