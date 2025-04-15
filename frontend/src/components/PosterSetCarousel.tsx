@@ -315,7 +315,14 @@ const PosterSetCarousel: React.FC<{
 							<strong>Name:</strong> {posterSets.Item?.Title}
 						</Typography>
 						<Typography variant="body1" gutterBottom>
-							<strong>Set ID:</strong> {selectedSet?.ID}
+							<strong>Set ID:</strong>{" "}
+							<a
+								href={`https://mediux.pro/sets/${selectedSet?.ID}`}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{selectedSet?.ID}
+							</a>{" "}
 						</Typography>
 						<Typography variant="body1" gutterBottom>
 							<strong>Author:</strong> {selectedSet?.User.Name}
