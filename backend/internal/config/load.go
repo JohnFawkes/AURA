@@ -16,7 +16,7 @@ var Global *modals.Config
 // LoadYamlConfig loads the application configuration from a YAML file.
 //
 // Steps:
-// 1. Retrieve the configuration file path from the `/config/config.yaml`
+// 1. Retrieve the configuration file path from the `/config/config.yml`
 // 2. Check if the YAML file exists at the specified path.
 // 3. Read and parse the YAML file into a `Config` struct.
 // 4. Set the global `Global` variable to the loaded configuration.
@@ -35,24 +35,25 @@ func LoadYamlConfig() (*modals.Config, error) {
 		configPath = "/config"
 	}
 
-	// Load the YAML file (configPath/config.yaml)
-	yamlFile := path.Join(configPath, "config.yaml")
-
-	// Check if the YAML file exists
+	// Check for a config.yml or config.yaml file
+	yamlFile := path.Join(configPath, "config.yml")
 	if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("config.yaml file not found")
+		yamlFile = path.Join(configPath, "config.yaml")
+		if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
+			return nil, fmt.Errorf("config.yml file not found in %s", configPath)
+		}
 	}
 
 	// Read the YAML file
 	data, err := os.ReadFile(yamlFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config.yaml file")
+		return nil, fmt.Errorf("failed to read config.yml file")
 	}
 
 	// Parse the YAML file into a Config struct
 	var config modals.Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse config.yaml file")
+		return nil, fmt.Errorf("failed to parse config.yml file")
 	}
 
 	Global = &config
