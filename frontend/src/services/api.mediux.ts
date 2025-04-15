@@ -20,10 +20,11 @@ export const fetchMediuxSets = async (
 };
 
 export const fetchMediuxImageData = async (
-	assetID: string
+	assetID: string,
+	modifiedDate: string
 ): Promise<string> => {
 	try {
-		const API_URL = `/mediux/image/${assetID}`;
+		const API_URL = `/mediux/image/${assetID}?modifiedDate=${modifiedDate}`;
 		const response = await apiClient.get(API_URL);
 		if (response.status !== 200) {
 			throw new Error("Failed to fetch image data");
