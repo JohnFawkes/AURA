@@ -40,6 +40,28 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the modified date from the URL query parameters
+	modifiedDate := r.URL.Query().Get("modifiedDate")
+	var modifiedDateTime time.Time
+	var err error
+	if modifiedDate == "" || modifiedDate == "0" || modifiedDate == "undefined" {
+		// Use today's date if the modified date is not provided
+		modifiedDateTime = time.Now()
+	} else {
+		// Try to parse the modified date as an ISO 8601 timestamp
+		modifiedDateTime, err = time.Parse(time.RFC3339, modifiedDate)
+		if err != nil {
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+				Log: logging.Log{
+					Message: "Invalid modified date format. Expected ISO 8601.",
+					Elapsed: utils.ElapsedTime(startTime),
+				},
+				Err: err,
+			})
+			return
+		}
+	}
+
 	// Check if the temporary folder has the image
 	fileName := fmt.Sprintf("%s.jpg", assetID)
 	filePath := path.Join(MediuxTempImageFolder, fileName)
@@ -53,7 +75,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from Mediux
-	imageData, imageType, logErr := FetchImage(assetID)
+	imageData, imageType, logErr := FetchImage(assetID, modifiedDateTime)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -84,11 +106,12 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func FetchImage(assetID string) ([]byte, string, logging.ErrorLog) {
+func FetchImage(assetID string, modifiedDate time.Time) ([]byte, string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting image for asset ID: %s", assetID))
 
 	// Construct the URL for the Mediux API request
-	url := fmt.Sprintf("%s/%s", "https://staged.mediux.io/assets", assetID)
+	formatDate := modifiedDate.Format("20060102")
+	url := fmt.Sprintf("%s/%s?%s", "https://staged.mediux.io/assets", assetID, formatDate)
 
 	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 30, nil, "Mediux")
 	if logErr.Err != nil {
