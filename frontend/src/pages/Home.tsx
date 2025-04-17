@@ -261,7 +261,12 @@ const Home: React.FC = () => {
 										}}
 									>
 										<Typography variant="h6">
-											{item.Title}
+											{item.Title.length > 45
+												? `${item.Title.slice(
+														0,
+														45
+												  )}...`
+												: item.Title}
 										</Typography>
 										<Typography
 											variant="body2"
