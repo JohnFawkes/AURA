@@ -295,8 +295,7 @@ const PosterSetCarousel: React.FC<{
 				))
 			) : (
 				<Typography variant="h6" color="white" textAlign="center">
-					No poster sets or collections found for{" "}
-					{posterSets.Item?.Title}
+					No poster sets or collections found for {mediaItem.Title}
 				</Typography>
 			)}
 
