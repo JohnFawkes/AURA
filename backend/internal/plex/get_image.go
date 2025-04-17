@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"poster-setter/internal/config"
@@ -104,9 +105,13 @@ func fetchImage(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting %s for rating key: %s", imageType, ratingKey))
 
 	// Construct the URL for the Plex server API request
-	url := fmt.Sprintf("%s/library/metadata/%s/%s/", config.Global.Plex.URL, ratingKey, imageType)
+	//plexURL := fmt.Sprintf("%s/library/metadata/%s/%s/", config.Global.Plex.URL, ratingKey, imageType)
+	photoUrl := fmt.Sprintf("/library/metadata/%s/%s/", ratingKey, imageType)
+	// Encode the URL for the request
+	encodedPhotoUrl := url.QueryEscape(photoUrl)
+	plexURL := fmt.Sprintf("%s/photo/:/transcode?url=%s&width=300&height=450", config.Global.Plex.URL, encodedPhotoUrl)
 
-	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 30, nil, "Plex")
 	if logErr.Err != nil {
 		return nil, logErr
 	}
