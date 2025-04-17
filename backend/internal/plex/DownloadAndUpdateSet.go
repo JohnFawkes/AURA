@@ -16,9 +16,9 @@ func DownloadAndUpdateSet(plex modals.MediaItem, file modals.PosterFile) logging
 	if !config.Global.SaveImageNextToContent {
 		logErr := UpdateSetOnly(plex, file)
 		if logErr.Err != nil {
-			logging.LOG.ErrorWithLog(logErr)
-			return logging.ErrorLog{}
+			return logErr
 		}
+		return logging.ErrorLog{}
 	}
 
 	// Check if the temporary folder has the image
