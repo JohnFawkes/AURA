@@ -42,9 +42,9 @@ const PlexPosterImage: React.FC<{ ratingKey: string; alt: string }> = ({
 			ref={ref}
 			sx={{
 				width: 100,
-				height: 140,
+				height: 160,
 				flexShrink: 0,
-				borderRadius: 2,
+				borderRadius: 1,
 				overflow: "hidden",
 			}}
 		>
