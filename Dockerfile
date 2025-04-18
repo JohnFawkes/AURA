@@ -1,6 +1,9 @@
 ##### Stage 1: Build the backend application
 FROM golang:1.24 AS backend-builder
 
+# Install required dependencies for cgo
+RUN apt-get update && apt-get install -y gcc libc6-dev && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory
 WORKDIR /backend
 
@@ -13,8 +16,10 @@ RUN go mod download
 # Copy the source code
 COPY backend/ ./
 
-# Build the application for amd64
-RUN GOARCH=amd64 go build -o main .
+# Enable CGO and build the application 
+ENV CGO_ENABLED=1
+ARG VERSION=dev
+RUN go build -ldflags "-X main.Version=$VERSION" -o main .
 
 ##### Stage 2: Build the frontend application
 FROM node:latest AS frontend-builder
