@@ -143,38 +143,23 @@ query collection_sets_by_id($collectionID: ID!, $tmdbID: String!) {
 	}
 }
 
-func generateMovieSetByIDRequestBody(movieSetID string) map[string]any {
+func generateMovieSetByIDRequestBody(movieSetID, tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query movie($movieSetID: GraphQLStringOrFloat!) {
-	movies(filter: { movie_sets: { id: { _eq: $movieSetID } } }) {
+query movie_sets_by_id($movieSetID: ID!, $tmdbID: String!) {
+	movie_sets_by_id(id: $movieSetID) {
 		id
+		user_created {
+			username
+		}
+		date_created
 		date_updated
-		status
-		title
-		release_date
-		tagline
-		tvdb_id
-		imdb_id
-		trakt_id
-		slug
-		movie_sets(
-			filter: { id: { _eq: $movieSetID } }
-			sort: "-user_created.username"
-		) {
+		files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
 			id
-			user_created {
-				username
-			}
-			date_created
-			date_updated
-			files(filter: { file_type: { _neq: "album" } }) {
+			file_type
+			modified_on
+			movie {
 				id
-				file_type
-				modified_on
-				movie {
-					id
-				}
 			}
 		}
 	}
@@ -182,6 +167,7 @@ query movie($movieSetID: GraphQLStringOrFloat!) {
 `,
 		"variables": map[string]string{
 			"movieSetID": movieSetID,
+			"tmdbID":     tmdbID,
 		},
 	}
 }
