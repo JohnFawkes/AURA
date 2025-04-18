@@ -55,8 +55,8 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 func generateMovieRequestBody(tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query movie($tmdbID: String!) {
-	movies(filter: { id: { _eq: $tmdbID } }) {
+query movies_by_id($tmdbID: ID!, $tmdbIDString: String!) {
+	movies_by_id(id: $tmdbID) {
 		id
 		date_updated
 		status
@@ -77,7 +77,7 @@ query movie($tmdbID: String!) {
 				}
 				date_created
 				date_updated
-				files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
+				files(filter: { movie: { id: { _eq: $tmdbIDString } }, file_type: { _neq: "album" } }) {
 					id
 					file_type
 					modified_on
@@ -94,7 +94,7 @@ query movie($tmdbID: String!) {
 			}
 			date_created
 			date_updated
-			files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
+			files(filter: { movie: { id: { _eq: $tmdbIDString } }, file_type: { _neq: "album" } }) {
 				id
 				file_type
 				modified_on
@@ -107,7 +107,8 @@ query movie($tmdbID: String!) {
 }
 `,
 		"variables": map[string]string{
-			"tmdbID": tmdbID,
+			"tmdbID":       tmdbID,
+			"tmdbIDString": tmdbID,
 		},
 	}
 }
