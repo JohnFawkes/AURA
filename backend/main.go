@@ -18,7 +18,7 @@ import (
 var (
 	Author  = "xmoosex"
 	License = "MIT"
-	Version = "v0.1.0"
+	Version = "dev"
 )
 
 func main() {
