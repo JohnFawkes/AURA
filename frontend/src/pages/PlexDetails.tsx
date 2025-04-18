@@ -23,28 +23,23 @@ const PlexDetails: React.FC = () => {
 
 	const { item }: { item: MediaItem } = location.state || { item: null };
 
+	// Hooks must be called unconditionally
+	const [mediaItem, setMediaItem] = React.useState<MediaItem | typeof item>(
+		item
+	);
+	const [posterSrc, setPosterSrc] = React.useState<string | null>(null);
+	const [backdropSrc, setBackdropSrc] = React.useState<string | null>(null);
+	const [imdbLink, setImdbLink] = React.useState<string>("");
+	const [posterSets, setPosterSets] = React.useState<PosterSets>({
+		Sets: [],
+	});
+
 	// Check if the item is null and navigate to the home page
 	React.useEffect(() => {
 		if (!item) {
 			navigate("/");
 		}
 	}, [item, navigate]);
-
-	const [mediaItem, setMediaItem] = React.useState<MediaItem | typeof item>(
-		item
-	);
-
-	if (!item) {
-		return null; // Render nothing while navigating
-	}
-
-	const [posterSrc, setPosterSrc] = React.useState<string | null>(null);
-	const [backdropSrc, setBackdropSrc] = React.useState<string | null>(null);
-
-	const [imdbLink, setImdbLink] = React.useState<string>("");
-	const [posterSets, setPosterSets] = React.useState<PosterSets>({
-		Sets: [],
-	});
 
 	useEffect(() => {
 		const fetchIMDBLink = (guids: Guid[]) => {
