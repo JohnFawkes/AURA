@@ -99,7 +99,7 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 	}
 
 	// Print the response body for debugging
-	logging.LOG.Debug(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
+	logging.LOG.Trace(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
 
 	// Parse the response body into the appropriate struct based on itemType
 	var responseBody modals.MediuxResponse
@@ -316,7 +316,7 @@ func FetchSetByID(setType, setID string) (modals.PosterSet, logging.ErrorLog) {
 		}
 	}
 
-	logging.LOG.Debug(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
+	logging.LOG.Trace(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
 
 	if response.StatusCode() != http.StatusOK {
 		return modals.PosterSet{}, logging.ErrorLog{
