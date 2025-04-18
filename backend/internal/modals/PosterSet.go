@@ -96,15 +96,17 @@ type PosterItem struct {
 }
 
 type PosterSet struct {
-	ID    string `json:"ID"`
-	Title string `json:"Title"`
-	Type  string `json:"Type"`
-	User  struct {
-		Name string `json:"Name"`
-	} `json:"User"`
+	ID          string       `json:"ID"`
+	Title       string       `json:"Title"`
+	Type        string       `json:"Type"`
+	User        SetUser      `json:"User"`
 	DateCreated time.Time    `json:"DateCreated"`
 	DateUpdated time.Time    `json:"DateUpdated"`
 	Files       []PosterFile `json:"Files"`
+}
+
+type SetUser struct {
+	Name string `json:"Name"`
 }
 
 type PosterFile struct {
