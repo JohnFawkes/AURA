@@ -113,50 +113,32 @@ query movies_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 	}
 }
 
-func generateCollectionSetByIDRequestBody(collectionID string) map[string]any {
+func generateCollectionSetByIDRequestBody(collectionID, tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query collectionSet($collectionID: GraphQLStringOrFloat!) {
-	movies(
-		filter: {
-			collection_id: { collection_sets: { id: { _eq: $collectionID } } }
-		}
-	) {
+query collection_sets_by_id($collectionID: ID!, $tmdbID: String!) {
+	collection_sets_by_id(id: $collectionID) {
 		id
+		user_created {
+			username
+		}
+		date_created
 		date_updated
-		status
-		title
-		release_date
-		tagline
-		tvdb_id
-		imdb_id
-		trakt_id
-		slug
-		collection_id {
+		files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
 			id
-			collection_name
-			collection_sets(filter: { id: { _eq: $collectionID } }) {
+			file_type
+			modified_on
+			movie {
 				id
-				user_created {
-					username
-				}
-				date_created
-				date_updated
-				files(filter: { file_type: { _neq: "album" } }) {
-					id
-					file_type
-					modified_on
-					movie {
-						id
-					}
-				}
 			}
 		}
 	}
 }
+
 `,
 		"variables": map[string]string{
 			"collectionID": collectionID,
+			"tmdbID":       tmdbID,
 		},
 	}
 }
