@@ -63,21 +63,22 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	formatDate := modifiedDateTime.Format("20060102")
 
 	// Check if the temporary folder has the image
-	fileName := fmt.Sprintf("%s.jpg", assetID)
-	filePath := path.Join(MediuxTempImageFolder, fileName)
+	fileName := fmt.Sprintf("%s_%s.jpg", assetID, formatDate)
+	filePath := path.Join(MediuxThumbsTempImageFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
 	if exists {
 		logging.LOG.Trace(fmt.Sprintf("Image %s already exists in temporary folder", fileName))
 		// Serve the image from the temporary folder
-		imagePath := path.Join(MediuxTempImageFolder, fileName)
+		imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
 		http.ServeFile(w, r, imagePath)
 		return
 	}
 
 	// If the image does not exist, then get it from Mediux
-	imageData, imageType, logErr := FetchImage(assetID, modifiedDateTime)
+	imageData, imageType, logErr := FetchImage(assetID, formatDate, false)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -85,8 +86,8 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 
 	if config.Global.CacheImages {
 		// Add the image to the temporary folder
-		imagePath := path.Join(MediuxTempImageFolder, fileName)
-		logErr = utils.CheckFolderExists(MediuxTempImageFolder)
+		imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
+		logErr = utils.CheckFolderExists(MediuxThumbsTempImageFolder)
 		if logErr.Err != nil {
 			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 			return
@@ -108,12 +109,16 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func FetchImage(assetID string, modifiedDate time.Time) ([]byte, string, logging.ErrorLog) {
+func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting image for asset ID: %s", assetID))
 
 	// Construct the URL for the Mediux API request
-	formatDate := modifiedDate.Format("20060102")
-	url := fmt.Sprintf("%s/%s?%s", "https://staged.mediux.io/assets", assetID, formatDate)
+	getThumb := ""
+	//Add this in the future if needed to reduce load times
+	if !full {
+		getThumb = "&key=thumb"
+	}
+	url := fmt.Sprintf("%s/%s?%s%s", "https://staged.mediux.io/assets", assetID, formatDate, getThumb)
 
 	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 30, nil, "Mediux")
 	if logErr.Err != nil {
