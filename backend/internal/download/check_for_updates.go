@@ -62,6 +62,8 @@ func CheckForUpdatesToPosters() {
 					logging.LOG.ErrorWithLog(logErr)
 					continue
 				}
+			} else {
+				logging.LOG.Debug(fmt.Sprintf("Posters for '%s' have not been updated. Skipping...", item.Plex.Title))
 			}
 		}
 	}
