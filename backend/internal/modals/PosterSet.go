@@ -4,18 +4,26 @@ import "time"
 
 type MediuxResponse struct {
 	Data struct {
-		Movies *[]MediuxItem `json:"movies,omitempty"`
-		Shows  *[]MediuxItem `json:"shows,omitempty"`
+		Movie *MediuxItem `json:"movies_by_id,omitempty"`
+		Show  *MediuxItem `json:"shows_by_id,omitempty"`
+	} `json:"data"`
+}
+
+type MediuxSetResponse struct {
+	Data struct {
+		MovieSet      *MediuxPosterSet `json:"movie_sets_by_id,omitempty"`
+		CollectionSet *MediuxPosterSet `json:"collection_sets_by_id,omitempty"`
+		ShowSet       *MediuxPosterSet `json:"show_sets_by_id,omitempty"`
 	} `json:"data"`
 }
 
 type MediuxFileItem struct {
-	ID        string             `json:"id"`
-	FileType  string             `json:"file_type"`
-	ModifedOn time.Time          `json:"modified_on"`
-	Movie     *MediuxFileMovie   `json:"movie,omitempty"`
-	Season    *MediuxFileSeason  `json:"season,omitempty"`
-	Episode   *MediuxFileEpisode `json:"episode,omitempty"`
+	ID         string             `json:"id"`
+	FileType   string             `json:"file_type"`
+	ModifiedOn time.Time          `json:"modified_on"`
+	Movie      *MediuxFileMovie   `json:"movie,omitempty"`
+	Season     *MediuxFileSeason  `json:"season,omitempty"`
+	Episode    *MediuxFileEpisode `json:"episode,omitempty"`
 }
 
 type MediuxFileMovie struct {
@@ -54,17 +62,9 @@ type MediuxItem struct {
 }
 
 type MediuxCollectionID struct {
-	ID             string                `json:"id"`
-	CollectionName string                `json:"collection_name"`
-	CollectionSets []MediuxCollectionSet `json:"collection_sets,omitempty"`
-}
-
-type MediuxCollectionSet struct {
-	ID          string            `json:"id"`
-	UserCreated MediuxUserCreated `json:"user_created"`
-	DateCreated time.Time         `json:"date_created"`
-	DateUpdated time.Time         `json:"date_updated"`
-	Files       []MediuxFileItem  `json:"files"`
+	ID             string            `json:"id"`
+	CollectionName string            `json:"collection_name"`
+	CollectionSets []MediuxPosterSet `json:"collection_sets,omitempty"`
 }
 
 type MediuxPosterSet struct {
