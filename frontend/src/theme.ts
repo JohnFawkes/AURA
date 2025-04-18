@@ -2,7 +2,7 @@
 import { createTheme } from "@mui/material/styles";
 
 const orange = {
-	main: "#ff6f00", // deep orange
+	main: "#d16141", // deep orange
 	contrastText: "#fff",
 };
 
