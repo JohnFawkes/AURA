@@ -189,8 +189,8 @@ query movie($movieSetID: GraphQLStringOrFloat!) {
 func generateShowSetByIDRequestBody(showSetID string) map[string]any {
 	return map[string]any{
 		"query": `
-query showSet($showSetID: GraphQLStringOrFloat!) {
-	show_sets(filter: { id: { _eq: $showSetID } }) {
+query show_sets_by_id($showSetID: ID!) {
+	show_sets_by_id(id: $showSetID) {
 		id
 		user_created {
 			username
