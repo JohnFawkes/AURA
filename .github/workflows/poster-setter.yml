@@ -1,20 +1,40 @@
 # .github/workflows/poster-setter.yml
-name: Docker Image CI for Poster Setter
+name: Docker Image CI and Release for Poster Setter
+
 on:
     push:
         branches: ["master"]
         paths:
             - "backend/**"
             - "frontend/**"
+
 jobs:
-    build:
+    release:
         runs-on: ubuntu-latest
+
         steps:
-            # Step 1: Checkout the code
             - name: Checkout code
               uses: actions/checkout@v3
 
-            # Step 2: Log in to GitHub Container Registry (ghcr.io)
+            - name: Set up Git
+              run: |
+                  git config --global user.name "GitHub Actions"
+                  git config --global user.email "actions@github.com"
+
+            - name: Extract and bump version
+              id: version
+              run: |
+                  latest=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || echo "v0.0.0")
+                  echo "Latest tag: $latest"
+                  IFS='.' read -r major minor patch <<< "${latest#v}"
+                  new_version="v$major.$minor.$((patch+1))"
+                  echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+            - name: Create Git tag
+              run: |
+                  git tag ${{ steps.version.outputs.new_version }}
+                  git push origin ${{ steps.version.outputs.new_version }}
+
             - name: Log in to GitHub Container Registry
               uses: docker/login-action@v2
               with:
@@ -22,10 +42,36 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.PAT }}
 
-            # Step 3: Build the Docker image
-            - name: Build Docker image
-              run: docker build ./ --tag ghcr.io/xmoosex/poster-setter:latest
+            - name: Log in to Docker Hub
+              uses: docker/login-action@v2
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            # Step 4: Push the Docker image
-            - name: Push Docker image
-              run: docker push ghcr.io/xmoosex/poster-setter:latest
+            - name: Build Docker image
+              run: |
+                  docker build . \
+                    --build-arg VERSION=${{ steps.version.outputs.new_version }} \
+                    --tag ghcr.io/xmoosex/poster-setter:latest \
+                    --tag ghcr.io/xmoosex/poster-setter:${{ steps.version.outputs.new_version }} \
+                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest \
+                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:${{ steps.version.outputs.new_version }}
+
+            - name: Push Docker images to GHCR
+              run: |
+                  docker push ghcr.io/xmoosex/poster-setter:latest
+                  docker push ghcr.io/xmoosex/poster-setter:${{ steps.version.outputs.new_version }}
+
+            - name: Push Docker images to Docker Hub
+              run: |
+                  docker push docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest
+                  docker push docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:${{ steps.version.outputs.new_version }}
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.version.outputs.new_version }}
+                  name: Release ${{ steps.version.outputs.new_version }}
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
