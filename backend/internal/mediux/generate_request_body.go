@@ -4,8 +4,8 @@ package mediux
 func generateShowRequestBody(tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query show($tmdbID: String!) {
-	shows(filter: { id: { _eq: $tmdbID } }) {
+query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
+    shows_by_id(id: $tmdbID) {
 		id
 		date_updated
 		status
@@ -17,7 +17,7 @@ query show($tmdbID: String!) {
 		trakt_id
 		slug
 		show_sets(
-			filter: { show_id: { id: { _eq: $tmdbID } }, files: { file_type: { _neq: "album" } } }
+			filter: { show_id: { id: { _eq: $tmdbIDString } }, files: { file_type: { _neq: "album" } } }
 			sort: "-user_created.username"
 		) {
 			id
@@ -46,7 +46,8 @@ query show($tmdbID: String!) {
 }
 	`,
 		"variables": map[string]string{
-			"tmdbID": tmdbID,
+			"tmdbID":       tmdbID,
+			"tmdbIDString": tmdbID,
 		},
 	}
 }
