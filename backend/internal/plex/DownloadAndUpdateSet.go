@@ -24,18 +24,20 @@ func DownloadAndUpdateSet(plex modals.MediaItem, file modals.PosterFile) logging
 	// Check if the temporary folder has the image
 	// If it does, we don't need to download it again
 	// If it doesn't, we need to download it
-	// The image is saved in the temp-images/mediux folder with the file ID as the name
-	filePath := path.Join(mediux.MediuxTempImageFolder, file.ID+".jpg")
+	// The image is saved in the temp-images/mediux/full folder with the file ID as the name
+	formatDate := file.Modified.Format("20060102")
+	fileName := fmt.Sprintf("%s_%s.jpg", file.ID, formatDate)
+	filePath := path.Join(mediux.MediuxFullTempImageFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
 	var imageData []byte
 	if !exists {
 		// Check if the temporary folder exists
-		logErr := utils.CheckFolderExists(mediux.MediuxTempImageFolder)
+		logErr := utils.CheckFolderExists(mediux.MediuxFullTempImageFolder)
 		if logErr.Err != nil {
 			return logErr
 		}
 		// Download the image from Mediux
-		imageData, _, logErr = mediux.FetchImage(file.ID, file.Modified)
+		imageData, _, logErr = mediux.FetchImage(file.ID, formatDate, true)
 		if logErr.Err != nil {
 			return logErr
 		}
