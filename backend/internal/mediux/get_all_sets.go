@@ -121,31 +121,29 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 	}
 
 	if itemType == "movie" {
-		if responseBody.Data.Movies == nil || len(*responseBody.Data.Movies) == 0 {
+		if responseBody.Data.Movie == nil {
 			return modals.PosterSets{}, logging.ErrorLog{
 				Err: errors.New("no movies found in the response"),
 				Log: logging.Log{Message: "No movies found in the response"},
 			}
 		}
 
-		movie := (*responseBody.Data.Movies)[0]
-		if (movie.MovieSets == nil || len(*movie.MovieSets) == 0) &&
-			(movie.CollectionID == nil || len(movie.CollectionID.CollectionSets) == 0) {
+		if (responseBody.Data.Movie.MovieSets == nil || len(*responseBody.Data.Movie.MovieSets) == 0) &&
+			(responseBody.Data.Movie.CollectionID == nil || len(responseBody.Data.Movie.CollectionID.CollectionSets) == 0) {
 			return modals.PosterSets{}, logging.ErrorLog{
 				Err: errors.New("no movie sets found in the response"),
 				Log: logging.Log{Message: "No movie sets found in the response"},
 			}
 		}
 	} else if itemType == "show" {
-		if responseBody.Data.Shows == nil || len(*responseBody.Data.Shows) == 0 {
+		if responseBody.Data.Show == nil {
 			return modals.PosterSets{}, logging.ErrorLog{
 				Err: errors.New("no shows found in the response"),
 				Log: logging.Log{Message: "No shows found in the response"},
 			}
 		}
 
-		show := (*responseBody.Data.Shows)[0]
-		if show.ShowSets == nil || len(*show.ShowSets) == 0 {
+		if responseBody.Data.Show.ShowSets == nil || len(*responseBody.Data.Show.ShowSets) == 0 {
 			return modals.PosterSets{}, logging.ErrorLog{
 				Err: errors.New("no show sets found in the response"),
 				Log: logging.Log{Message: "No show sets found in the response"},
@@ -156,9 +154,9 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 	var posterSets modals.PosterSets
 	if itemType == "movie" {
 		logging.LOG.Info(fmt.Sprintf("Start response for item type: %s", itemType))
-		posterSets = processResponse(itemType, (*responseBody.Data.Movies)[0])
+		posterSets = processResponse(itemType, (*responseBody.Data.Movie))
 	} else if itemType == "show" {
-		posterSets = processResponse(itemType, (*responseBody.Data.Shows)[0])
+		posterSets = processResponse(itemType, (*responseBody.Data.Show))
 	}
 
 	return posterSets, logging.ErrorLog{}
@@ -289,14 +287,17 @@ func processFiles(files []modals.MediuxFileItem) []modals.PosterFile {
 	return posterFiles
 }
 
-func FetchSetByID(setType, setID string) (modals.PosterSet, logging.ErrorLog) {
+func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, logging.ErrorLog) {
+
+	setType := set.Type
+	setID := set.ID
 
 	var requestBody map[string]any
 	if setType == "collection" {
-		requestBody = generateCollectionSetByIDRequestBody(setID)
-	} else if setType == "movieset" {
-		requestBody = generateMovieSetByIDRequestBody(setID)
-	} else if setType == "showset" {
+		requestBody = generateCollectionSetByIDRequestBody(setID, tmdbID)
+	} else if setType == "movie" {
+		requestBody = generateMovieSetByIDRequestBody(setID, tmdbID)
+	} else if setType == "show" {
 		requestBody = generateShowSetByIDRequestBody(setID)
 	}
 
@@ -325,7 +326,7 @@ func FetchSetByID(setType, setID string) (modals.PosterSet, logging.ErrorLog) {
 		}
 	}
 
-	var responseBody modals.MediuxResponse
+	var responseBody modals.MediuxSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
 		return modals.PosterSet{}, logging.ErrorLog{
@@ -334,20 +335,49 @@ func FetchSetByID(setType, setID string) (modals.PosterSet, logging.ErrorLog) {
 		}
 	}
 
-	if responseBody.Data.Movies == nil || len(*responseBody.Data.Movies) == 0 {
-		return modals.PosterSet{}, logging.ErrorLog{
-			Err: errors.New("no movies found in the response"),
-			Log: logging.Log{Message: "No movie found in the response"},
+	if setType == "movie" {
+		if responseBody.Data.MovieSet == nil {
+			return modals.PosterSet{}, logging.ErrorLog{
+				Err: errors.New("no movies found in the response"),
+				Log: logging.Log{Message: "No movie found in the response"},
+			}
+		}
+	} else if setType == "show" {
+		if responseBody.Data.ShowSet == nil {
+			return modals.PosterSet{}, logging.ErrorLog{
+				Err: errors.New("no shows found in the response"),
+				Log: logging.Log{Message: "No show found in the response"},
+			}
+		}
+	} else if setType == "collection" {
+		if responseBody.Data.CollectionSet == nil {
+			return modals.PosterSet{}, logging.ErrorLog{
+				Err: errors.New("no collection found in the response"),
+				Log: logging.Log{Message: "No collection found in the response"},
+			}
 		}
 	}
 
-	var posterSets modals.PosterSets
-	if setType == "collection" || setType == "movieset" {
-		posterSets = processResponse("movie", (*responseBody.Data.Movies)[0])
-	} else if setType == "showset" {
-		posterSets = processResponse("show", (*responseBody.Data.Shows)[0])
+	var posterSet modals.PosterSet
+	if setType == "show" {
+		posterSet = modals.PosterSet{
+			ID:          responseBody.Data.ShowSet.ID,
+			Type:        "show",
+			User:        modals.SetUser{Name: responseBody.Data.ShowSet.UserCreated.Username},
+			DateCreated: responseBody.Data.ShowSet.DateCreated,
+			DateUpdated: responseBody.Data.ShowSet.DateUpdated,
+			Files:       processFiles(responseBody.Data.ShowSet.Files),
+		}
+	} else if setType == "movie" {
+		posterSet = modals.PosterSet{
+			ID:          responseBody.Data.MovieSet.ID,
+			Type:        "movie",
+			User:        modals.SetUser{Name: responseBody.Data.MovieSet.UserCreated.Username},
+			DateCreated: responseBody.Data.MovieSet.DateCreated,
+			DateUpdated: responseBody.Data.MovieSet.DateUpdated,
+			Files:       processFiles(responseBody.Data.MovieSet.Files),
+		}
 	}
 
-	posterSet := posterSets.Sets[0]
 	return posterSet, logging.ErrorLog{}
 }
