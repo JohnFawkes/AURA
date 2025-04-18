@@ -183,7 +183,7 @@ const PosterSetCarousel: React.FC<{
 					eventSource.close();
 				};
 			});
-		} catch (error) {
+		} catch {
 			setProgressColor("error");
 			setProgressText("Failed to start the task. Please try again.");
 		}
