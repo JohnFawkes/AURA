@@ -23,7 +23,19 @@ func CheckForUpdatesToPosters() {
 			var updatedSet modals.PosterSet
 			var logErr logging.ErrorLog
 			if item.Set.Type == "movie" || item.Set.Type == "collection" || item.Set.Type == "show" {
-				updatedSet, logErr = mediux.FetchSetByID(item.Set.Type, item.Set.ID)
+				// Get the TMDB ID from the Plex.Guids
+				tmdbID := ""
+				for _, guid := range item.Plex.Guids {
+					if guid.Provider == "tmdb" {
+						tmdbID = guid.ID
+						break
+					}
+				}
+				if tmdbID == "" {
+					logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", item.Plex.Title))
+					continue
+				}
+				updatedSet, logErr = mediux.FetchSetByID(item.Set, tmdbID)
 			} else {
 				logging.LOG.Error(fmt.Sprintf("Set for '%s' is not a valid type: %s", item.Plex.Title, item.Set.Type))
 			}
