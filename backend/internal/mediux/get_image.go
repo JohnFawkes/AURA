@@ -14,14 +14,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var MediuxTempImageFolder string
+var MediuxThumbsTempImageFolder string
+var MediuxFullTempImageFolder string
 
 func init() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "/config"
 	}
-	MediuxTempImageFolder = path.Join(configPath, "temp-images", "mediux")
+	MediuxThumbsTempImageFolder = path.Join(configPath, "temp-images", "mediux", "thumbs")
+	MediuxFullTempImageFolder = path.Join(configPath, "temp-images", "mediux", "full")
 }
 
 func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
