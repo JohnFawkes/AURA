@@ -4,10 +4,10 @@
 # If set to true, images will be cached in the /config/temp-images directory.
 CacheImages: true
 
-# SaveImageNextToContent - Whether to save images next to the Plex content or not.
-# If set to true, images will be saved in the same directory as the Plex content.
-# If set to false, images will still be updated in Plex
-# The benefit of this is that you have local images that are not dependent on the Plex database in case of migration.
+# SaveImageNextToContent - Whether to save images next to the Media Server content or not.
+# If set to true, images will be saved in the same directory as the Media Server content.
+# If set to false, images will still be updated on the Media Server but will not be saved next to the content.
+# The benefit of this is that you have local images that are not dependent on the Media Server database in case of migration.
 SaveImageNextToContent: false
 
 # Logging - Configuration for logging
@@ -25,18 +25,21 @@ AutoDownload:
     Enabled: true
     Cron: "0 0 * * *"
 
-# Plex - Configuration for Plex
-#   URL - The URL of the Plex server. This should be the IP:Port of the Plex server or your Plex reverse proxy domain.
-#   Token - The token for the Plex server. This can be found in the Plex web interface.
+# MediaServer - Configuration for your Media Server
+#   Type - The type of Media Server. This can be one of: Plex, Jellyfin, Emby
+#   URL - The URL of the Media Server. This should be the IP:Port of the Media Server or your Media Server reverse proxy domain.
+#   Token - The token for the Media Server. This can be found in the Media Server web interface.
 #   Libraries - A list of libraries to scan for images. Each library should have the following fields:
-#     - Name: The name of the library. This is for display purposes only.
-Plex:
-    URL: http://<PLEX_IP>:<PLEX_PORT> # Replace with your Plex server IP and port
-    Token: <PLEX_TOKEN> # Replace with your Plex token
+#     - Name: The name of the library to scan for content. Please note that this application will only work on Movies and Series libraries.
+MediaServer:
+    Type: "Plex" # The type of Media Server. This can be one of: Plex, Jellyfin, Emby
+    URL: http://<MEDIA_SERVER_IP>:<MEDIA_SERVER_PORT> # Replace with your Media Server server IP and port
+    Token: <MEDIA_SERVER_TOKEN> # Replace with your Media Server token
     Libraries:
         - Name: "Movies"
         - Name: "Series"
         - Name: "4K Movies"
+        - Name: "4K Series"
 
 # TMDB - Configuration for TMDB (The Movie Database)
 #   ApiKey - The API key for TMDB. This can be obtained by creating an account on TMDB and generating an API key.
