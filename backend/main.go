@@ -64,11 +64,6 @@ func main() {
 	// Create a new cron instance
 	c := cron.New()
 
-	// If Cron is not defined in the config file, set it to "0 0 * * *"
-	if config.Global.AutoDownload.Cron == "" {
-		config.Global.AutoDownload.Cron = "0 0 * * *"
-	}
-
 	c.AddFunc(config.Global.AutoDownload.Cron, func() {
 		// Call the auto download function if enabled
 		if config.Global.AutoDownload.Enabled {

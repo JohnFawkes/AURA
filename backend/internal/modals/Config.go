@@ -48,3 +48,17 @@ type Config_AutoDownload struct {
 	Enabled bool   `yaml:"Enabled"` // Whether auto-download is enabled.
 	Cron    string `yaml:"Cron"`    // Cron expression for scheduling auto-downloads.
 }
+
+// SetDefaults sets default values for the Config struct.
+func (c *Config) SetDefaults() {
+
+	// Default logging level
+	if c.Logging.Level == "" {
+		c.Logging.Level = "INFO"
+	}
+
+	// Default auto-download settings
+	if c.AutoDownload.Cron == "" {
+		c.AutoDownload.Cron = "0 0 * * *" // Default to daily at midnight
+	}
+}

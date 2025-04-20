@@ -56,6 +56,31 @@ func LoadYamlConfig() (*modals.Config, error) {
 		return nil, fmt.Errorf("failed to parse config.yml file")
 	}
 
+	config.SetDefaults()
+
+	// If MediaServer is not set, return an error
+	if config.MediaServer.Type == "" ||
+		config.MediaServer.URL == "" ||
+		config.MediaServer.Token == "" ||
+		config.MediaServer.Libraries == nil {
+		return nil, fmt.Errorf("MediaServer is not set properly in config.yml file, please refer to the documentation for more details")
+	}
+
+	// Set the config.MediaServer.Type to Title Case
+	config.MediaServer.Type = cases.Title(language.English).String(config.MediaServer.Type)
+
+	// Add http:// to the URL if it doesn't already have it
+	if !strings.HasPrefix(config.MediaServer.URL, "http") {
+		config.MediaServer.URL = "http://" + config.MediaServer.URL
+	}
+	// Trim the trailing slash from the URL
+	config.MediaServer.URL = strings.TrimSuffix(config.MediaServer.URL, "/")
+
+	// If the MediaServer type is not Plex, Emby, or Jellyfin, return an error
+	if config.MediaServer.Type != "Plex" && config.MediaServer.Type != "Emby" && config.MediaServer.Type != "Jellyfin" {
+		return nil, fmt.Errorf("MediaServer type '%s' is not supported, please refer to the documentation for more details", config.MediaServer.Type)
+	}
+
 	Global = &config
 	return &config, nil
 }
