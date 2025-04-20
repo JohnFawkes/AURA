@@ -26,7 +26,9 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 			}
 			date_created
 			date_updated
-			files {
+			files (
+			sort: ["-season.season_number", "-episode.season_id.season_number", "-episode.episode_number"]
+			){
 				id
 				file_type
 				modified_on
@@ -183,7 +185,9 @@ query show_sets_by_id($showSetID: ID!) {
 		}
 		date_created
 		date_updated
-		files {
+		files  (
+			sort: ["-season.season_number", "-episode.season_id.season_number", "-episode.episode_number"]
+			){
 			id
 			file_type
 			modified_on
