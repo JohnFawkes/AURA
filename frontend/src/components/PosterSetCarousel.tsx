@@ -136,7 +136,7 @@ const PosterSetCarousel: React.FC<{
 		}
 
 		try {
-			var clientMessage: ClientMessage = {
+			const clientMessage: ClientMessage = {
 				Set: set,
 				SelectedTypes: selectedCheckboxes,
 				MediaItem: mediaItem,
