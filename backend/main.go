@@ -9,7 +9,7 @@ import (
 	"poster-setter/internal/download"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/routes"
-	"poster-setter/internal/server"
+	mediaserver_shared "poster-setter/internal/server/shared"
 	"poster-setter/internal/utils"
 	"strconv"
 
@@ -59,7 +59,7 @@ func main() {
 		return
 	}
 
-	logErr := server.InitUserID()
+	logErr := mediaserver_shared.InitUserID()
 	if logErr.Err != nil {
 		fmt.Printf("Emby/Jellyfin user ID fetch error: %s\n", logErr.Log.Message)
 		return
