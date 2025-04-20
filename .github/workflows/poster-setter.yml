@@ -15,11 +15,6 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v3
 
-            - name: Set up Git
-              run: |
-                  git config --global user.name "GitHub Actions"
-                  git config --global user.email "actions@github.com"
-
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v2
 
@@ -43,11 +38,3 @@ jobs:
                     --tag ghcr.io/xmoosex/poster-setter:latest \
                     --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest \
                     --push
-
-            - name: Push Docker images to GHCR
-              run: |
-                  docker push ghcr.io/xmoosex/poster-setter:latest
-
-            - name: Push Docker images to Docker Hub
-              run: |
-                  docker push docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest
