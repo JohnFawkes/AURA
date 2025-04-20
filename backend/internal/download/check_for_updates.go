@@ -7,6 +7,7 @@ import (
 	"poster-setter/internal/mediux"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/server/plex"
+	mediaserver_shared "poster-setter/internal/server/shared"
 )
 
 func CheckForUpdatesToPosters() {
@@ -48,7 +49,7 @@ func CheckForUpdatesToPosters() {
 			if updated {
 				logging.LOG.Info(fmt.Sprintf("Posters for '%s' have been updated. Downloading new posters...", item.MediaItem.Title))
 				// Download the new posters and update Media Server
-				item.Set.Files = plex.FilterAndSortFiles(updatedSet.Files, item.SelectedTypes)
+				item.Set.Files = mediaserver_shared.FilterAndSortFiles(updatedSet.Files, item.SelectedTypes)
 				for _, file := range item.Set.Files {
 					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(item.LastUpdate, file.Modified)
 					if !fileUpdated {
@@ -56,7 +57,7 @@ func CheckForUpdatesToPosters() {
 						continue
 					}
 					logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s'", file.Type, item.MediaItem.Title))
-					logErr := plex.DownloadAndUpdateSet(item.MediaItem, file)
+					logErr := plex.DownloadAndUpdatePosters(item.MediaItem, file)
 					if logErr.Err != nil {
 						logging.LOG.ErrorWithLog(logErr)
 						continue
