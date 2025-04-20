@@ -9,7 +9,7 @@ import (
 )
 
 func UpdateAutoDownloadItem(clientMessage modals.ClientMessage) logging.ErrorLog {
-	plexJSON, err := json.Marshal(clientMessage.Plex)
+	plexJSON, err := json.Marshal(clientMessage.MediaItem)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to marshal Plex data",
@@ -33,7 +33,7 @@ func UpdateAutoDownloadItem(clientMessage modals.ClientMessage) logging.ErrorLog
 UPDATE auto_downloader
 SET plex = ?, poster_set = ?, selected_types = ?, auto_download = ?, last_update = ?
 WHERE id = ?`
-	_, err = db.Exec(query, plexJSON, setJSON, selectedTypes, clientMessage.AutoDownload, now.UTC().Format(time.RFC3339), clientMessage.Plex.RatingKey)
+	_, err = db.Exec(query, plexJSON, setJSON, selectedTypes, clientMessage.AutoDownload, now.UTC().Format(time.RFC3339), clientMessage.MediaItem.RatingKey)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to update data in database",

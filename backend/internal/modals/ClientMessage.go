@@ -1,7 +1,7 @@
 package modals
 
 type ClientMessage struct {
-	Plex          MediaItem `json:"Plex"`
+	MediaItem     MediaItem `json:"MediaItem"`
 	Set           PosterSet `json:"Set"`
 	SelectedTypes []string  `json:"SelectedTypes"`
 	AutoDownload  bool      `json:"AutoDownload"`

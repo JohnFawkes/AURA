@@ -6,7 +6,7 @@ import (
 	"poster-setter/internal/logging"
 	"poster-setter/internal/mediux"
 	"poster-setter/internal/modals"
-	"poster-setter/internal/plex"
+	"poster-setter/internal/server/plex"
 )
 
 func CheckForUpdatesToPosters() {
@@ -19,25 +19,25 @@ func CheckForUpdatesToPosters() {
 
 	for _, item := range items {
 		if item.AutoDownload {
-			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s'", item.Plex.Title))
+			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s'", item.MediaItem.Title))
 			var updatedSet modals.PosterSet
 			var logErr logging.ErrorLog
 			if item.Set.Type == "movie" || item.Set.Type == "collection" || item.Set.Type == "show" {
-				// Get the TMDB ID from the Plex.Guids
+				// Get the TMDB ID from the MediaItem.Guids
 				tmdbID := ""
-				for _, guid := range item.Plex.Guids {
+				for _, guid := range item.MediaItem.Guids {
 					if guid.Provider == "tmdb" {
 						tmdbID = guid.ID
 						break
 					}
 				}
 				if tmdbID == "" {
-					logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", item.Plex.Title))
+					logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", item.MediaItem.Title))
 					continue
 				}
 				updatedSet, logErr = mediux.FetchSetByID(item.Set, tmdbID)
 			} else {
-				logging.LOG.Error(fmt.Sprintf("Set for '%s' is not a valid type: %s", item.Plex.Title, item.Set.Type))
+				logging.LOG.Error(fmt.Sprintf("Set for '%s' is not a valid type: %s", item.MediaItem.Title, item.Set.Type))
 			}
 			if logErr.Err != nil {
 				logging.LOG.ErrorWithLog(logErr)
@@ -46,18 +46,17 @@ func CheckForUpdatesToPosters() {
 
 			updated := compareLastUpdateToUpdateSetDateUpdated(item.LastUpdate, updatedSet.DateUpdated)
 			if updated {
-				logging.LOG.Info(fmt.Sprintf("Posters for '%s' have been updated. Downloading new posters...", item.Plex.Title))
-				// Download the new posters and update Plex
-
+				logging.LOG.Info(fmt.Sprintf("Posters for '%s' have been updated. Downloading new posters...", item.MediaItem.Title))
+				// Download the new posters and update Media Server
 				item.Set.Files = plex.FilterAndSortFiles(updatedSet.Files, item.SelectedTypes)
 				for _, file := range item.Set.Files {
 					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(item.LastUpdate, file.Modified)
 					if !fileUpdated {
-						logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' has not been updated. Skipping...", file.Type, item.Plex.Title))
+						logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' has not been updated. Skipping...", file.Type, item.MediaItem.Title))
 						continue
 					}
-					logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s'", file.Type, item.Plex.Title))
-					logErr := plex.DownloadAndUpdateSet(item.Plex, file)
+					logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s'", file.Type, item.MediaItem.Title))
+					logErr := plex.DownloadAndUpdateSet(item.MediaItem, file)
 					if logErr.Err != nil {
 						logging.LOG.ErrorWithLog(logErr)
 						continue
@@ -65,7 +64,7 @@ func CheckForUpdatesToPosters() {
 				}
 				// Update the item in the database with the new info
 				logErr = database.UpdateAutoDownloadItem(modals.ClientMessage{
-					Plex:          item.Plex,
+					MediaItem:     item.MediaItem,
 					Set:           updatedSet,
 					AutoDownload:  item.AutoDownload,
 					SelectedTypes: item.SelectedTypes,
@@ -75,7 +74,7 @@ func CheckForUpdatesToPosters() {
 					continue
 				}
 			} else {
-				logging.LOG.Debug(fmt.Sprintf("Posters for '%s' have not been updated. Skipping...", item.Plex.Title))
+				logging.LOG.Debug(fmt.Sprintf("Posters for '%s' have not been updated. Skipping...", item.MediaItem.Title))
 			}
 		}
 	}

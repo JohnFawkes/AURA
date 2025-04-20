@@ -40,7 +40,7 @@ SELECT plex, poster_set, selected_types, auto_download FROM auto_downloader WHER
 	selectedTypesSlice := strings.Split(selectedTypes, ",")
 
 	clientMessage := modals.ClientMessage{
-		Plex:          plex,
+		MediaItem:     plex,
 		Set:           set,
 		SelectedTypes: selectedTypesSlice,
 		AutoDownload:  autoDownload,

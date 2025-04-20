@@ -49,7 +49,7 @@ SELECT plex, poster_set, selected_types, auto_download, last_update FROM auto_do
 		selectedTypesSlice := strings.Split(selectedTypes, ",")
 
 		clientMessage := modals.ClientMessage{
-			Plex:          plex,
+			MediaItem:     plex,
 			Set:           set,
 			LastUpdate:    lastUpdate,
 			SelectedTypes: selectedTypesSlice,

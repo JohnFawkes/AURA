@@ -3,34 +3,34 @@ import { APIResponse } from "../types/apiResponse";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
 import { PosterSet } from "../types/posterSets";
 
-export const fetchPlexSections = async (): Promise<
+export const fetchMediaServerLibraryItems = async (): Promise<
 	APIResponse<LibrarySection[]>
 > => {
 	try {
 		const response = await apiClient.get<APIResponse<LibrarySection[]>>(
-			`/plex/sections/all/`
+			`/mediaserver/sections/all/`
 		);
 		return response.data;
 	} catch {
 		return {
 			status: "error",
-			message: "Failed to fetch data from Plex API",
+			message: "Failed to fetch data from Media Server API",
 		};
 	}
 };
 
-export const fetchPlexItem = async (
+export const fetchMediaServerItemContent = async (
 	ratingKey: string
 ): Promise<APIResponse<MediaItem>> => {
 	try {
 		const response = await apiClient.get<APIResponse<MediaItem>>(
-			`/plex/item/${ratingKey}`
+			`/mediaserver/item/${ratingKey}`
 		);
 		return response.data;
 	} catch {
 		return {
 			status: "error",
-			message: "Failed to fetch data from Plex API",
+			message: "Failed to fetch data from Media Server API",
 		};
 	}
 };
@@ -50,17 +50,17 @@ export const postSendSetToAPI = async (sendData: {
 	} catch {
 		return {
 			status: "error",
-			message: "Failed to send set to Plex API",
+			message: "Failed to send set to Media Server API",
 		};
 	}
 };
 
-export const fetchPlexImageData = async (
+export const fetchMediaServerImageData = async (
 	ratingKey: string,
 	type: string
 ): Promise<string> => {
 	try {
-		const API_URL = `/plex/image/${ratingKey}/${type}`;
+		const API_URL = `/mediaserver/image/${ratingKey}/${type}`;
 		const response = await apiClient.get<APIResponse<null>>(API_URL);
 		if (response.status !== 200) {
 			throw new Error("Failed to fetch image data");

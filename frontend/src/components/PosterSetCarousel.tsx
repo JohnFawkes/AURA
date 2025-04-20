@@ -26,7 +26,7 @@ import Slider, { Settings } from "react-slick"; // Import the Settings type
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import { fetchMediuxImageData } from "../services/api.mediux";
-import { postSendSetToAPI } from "../services/api.plex";
+import { postSendSetToAPI } from "../services/api.mediaserver";
 import { MediaItem } from "../types/mediaItem";
 import { PosterSet, PosterSets } from "../types/posterSets";
 

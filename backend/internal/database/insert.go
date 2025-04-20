@@ -11,7 +11,7 @@ import (
 func SaveClientMessage(clientMessage modals.ClientMessage) logging.ErrorLog {
 
 	// Check if the item is already in the database
-	exists, errLog := CheckIfAlreadyInDatabase(clientMessage.Plex.RatingKey)
+	exists, errLog := CheckIfAlreadyInDatabase(clientMessage.MediaItem.RatingKey)
 	if errLog.Err != nil {
 		return errLog
 	}
@@ -24,7 +24,7 @@ func SaveClientMessage(clientMessage modals.ClientMessage) logging.ErrorLog {
 
 	logging.LOG.Trace("Item does not exist in the database, inserting it")
 	// If it doesn't exist, insert it
-	plexJSON, err := json.Marshal(clientMessage.Plex)
+	plexJSON, err := json.Marshal(clientMessage.MediaItem)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to marshal Plex data",
@@ -48,7 +48,7 @@ func SaveClientMessage(clientMessage modals.ClientMessage) logging.ErrorLog {
 INSERT INTO auto_downloader (id, plex, poster_set, selected_types, auto_download, last_update)
 VALUES (?, ?, ?, ?, ?, ?)
 `
-	_, err = db.Exec(query, clientMessage.Plex.RatingKey, string(plexJSON), string(setJSON), selectedTypes, clientMessage.AutoDownload, now.UTC().Format(time.RFC3339))
+	_, err = db.Exec(query, clientMessage.MediaItem.RatingKey, string(plexJSON), string(setJSON), selectedTypes, clientMessage.AutoDownload, now.UTC().Format(time.RFC3339))
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to insert data into database",

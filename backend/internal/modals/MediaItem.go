@@ -20,8 +20,8 @@ type MediaItem struct {
 	UpdatedAt      int64   `json:"UpdatedAt"`
 	Guids          []Guid  `json:"Guids"`
 
-	Movie  *PlexMovie  `json:"Movie,omitempty"`
-	Series *PlexSeries `json:"Series,omitempty"`
+	Movie  *MediaItemMovie  `json:"Movie,omitempty"`
+	Series *MediaItemSeries `json:"Series,omitempty"`
 }
 
 type Guid struct {
@@ -29,33 +29,33 @@ type Guid struct {
 	ID       string `json:"ID"`
 }
 
-type PlexMovie struct {
-	File PlexFile `json:"File"`
+type MediaItemMovie struct {
+	File MediaItemFile `json:"File"`
 }
 
-type PlexSeries struct {
-	Seasons      []PlexSeason `json:"Seasons"`
-	SeasonCount  int          `json:"SeasonCount"`
-	EpisodeCount int          `json:"EpisodeCount"`
-	Location     string       `json:"Location"`
+type MediaItemSeries struct {
+	Seasons      []MediaItemSeason `json:"Seasons"`
+	SeasonCount  int               `json:"SeasonCount"`
+	EpisodeCount int               `json:"EpisodeCount"`
+	Location     string            `json:"Location"`
 }
 
-type PlexSeason struct {
-	RatingKey    string        `json:"RatingKey"`
-	SeasonNumber int           `json:"SeasonNumber"`
-	Title        string        `json:"Title"`
-	Episodes     []PlexEpisode `json:"Episodes"`
+type MediaItemSeason struct {
+	RatingKey    string             `json:"RatingKey"`
+	SeasonNumber int                `json:"SeasonNumber"`
+	Title        string             `json:"Title"`
+	Episodes     []MediaItemEpisode `json:"Episodes"`
 }
 
-type PlexEpisode struct {
-	RatingKey     string   `json:"RatingKey"`
-	Title         string   `json:"Title"`
-	SeasonNumber  int      `json:"SeasonNumber"`
-	EpisodeNumber int      `json:"EpisodeNumber"`
-	File          PlexFile `json:"File"`
+type MediaItemEpisode struct {
+	RatingKey     string        `json:"RatingKey"`
+	Title         string        `json:"Title"`
+	SeasonNumber  int           `json:"SeasonNumber"`
+	EpisodeNumber int           `json:"EpisodeNumber"`
+	File          MediaItemFile `json:"File"`
 }
 
-type PlexFile struct {
+type MediaItemFile struct {
 	Path     string `json:"Path"`
 	Size     int64  `json:"Size"`
 	Duration int64  `json:"Duration"`
