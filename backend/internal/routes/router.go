@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"poster-setter/internal/mediux"
-	"poster-setter/internal/plex"
 	"poster-setter/internal/routes/health"
 	"poster-setter/internal/routes/middleware"
 	tempimages "poster-setter/internal/routes/temp-images"
+	mediaserver "poster-setter/internal/server"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -40,13 +40,12 @@ func AddRoutes(r *chi.Mux) {
 		// Clear Temporary Images Route
 		r.Post("/temp-images/clear", tempimages.ClearTempImages)
 
-		// Plex Routes
-		r.Get("/plex/sections/all", plex.GetSectionsContent)
-		r.Get("/plex/item/{ratingKey}", plex.GetItemContent)
-		r.Get("/plex/image/{ratingKey}/{imageType}", plex.GetPlexImage)
-
-		r.Post("/plex/update/send", plex.GetUpdateSetFromClient)
-		r.Get("/plex/update/set/{ratingKey}", plex.UpdateSet)
+		// Media Server Routes
+		r.Get("/mediaserver/sections/all", mediaserver.GetAllSections)
+		r.Get("/mediaserver/item/{ratingKey}", mediaserver.GetItemContent)
+		r.Get("/mediaserver/image/{ratingKey}/{imageType}", mediaserver.GetImageFromMediaServer)
+		r.Post("/mediaserver/update/send", mediaserver.GetUpdateSetFromClient)
+		r.Get("/mediaserver/update/set/{ratingKey}", mediaserver.UpdateItemPosters)
 
 		// Mediux Routes
 		r.Get("/mediux/sets/get/{itemType}/{tmdbID}", mediux.GetAllSets)

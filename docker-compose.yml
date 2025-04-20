@@ -7,4 +7,4 @@ services:
             - 8888:8888
         volumes:
             - /mnt/user/appdata/poster-setter:/config # Config directory
-            - /mnt/user/data/media/:/data/media # This should be the same as your Plex Docker
+            - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container

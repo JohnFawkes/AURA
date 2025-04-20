@@ -9,6 +9,7 @@ import (
 	"poster-setter/internal/download"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/routes"
+	mediaserver_shared "poster-setter/internal/server/shared"
 	"poster-setter/internal/utils"
 	"strconv"
 
@@ -58,16 +59,21 @@ func main() {
 		return
 	}
 
+	logErr := mediaserver_shared.InitUserID()
+	if logErr.Err != nil {
+		fmt.Printf("Emby/Jellyfin user ID fetch error: %s\n", logErr.Log.Message)
+		return
+	}
+
+	// Set the VITE environment variables for the frontend
+	os.Setenv("VITE_APP_PORT", APP_PORT)
+	os.Setenv("VITE_MEDIA_SERVER_TYPE", config.Global.MediaServer.Type)
+
 	// Create a new router
 	r := routes.NewRouter()
 
 	// Create a new cron instance
 	c := cron.New()
-
-	// If Cron is not defined in the config file, set it to "0 0 * * *"
-	if config.Global.AutoDownload.Cron == "" {
-		config.Global.AutoDownload.Cron = "0 0 * * *"
-	}
 
 	c.AddFunc(config.Global.AutoDownload.Cron, func() {
 		// Call the auto download function if enabled

@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"poster-setter/internal/config"
 	"poster-setter/internal/logging"
+	"strings"
 	"time"
 )
 
@@ -34,11 +35,17 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	req.Header.Set("User-Agent", "PosterSetter/1.0")
 
 	// Add headers to the request
-	if tokenType == "Plex" {
-		req.Header.Set("X-Plex-Token", config.Global.Plex.Token)
-	} else if tokenType == "TMDB" {
+	if tokenType == "MediaServer" {
+		if strings.ToLower(config.Global.MediaServer.Type) == "plex" {
+			req.Header.Set("X-Plex-Token", config.Global.MediaServer.Token)
+		} else if strings.ToLower(config.Global.MediaServer.Type) == "emby" {
+			req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
+		} else if strings.ToLower(config.Global.MediaServer.Type) == "jellyfin" {
+			req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
+		}
+	} else if strings.ToLower(tokenType) == "tmdb" {
 		req.Header.Set("Authorization", "Bearer "+config.Global.TMDB.ApiKey)
-	} else if tokenType == "Mediux" {
+	} else if strings.ToLower(tokenType) == "mediux" {
 		req.Header.Set("Authorization", "Bearer "+config.Global.Mediux.Token)
 	}
 

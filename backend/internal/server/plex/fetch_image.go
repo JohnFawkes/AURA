@@ -32,7 +32,7 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
 	if ratingKey == "" || imageType == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing rating key or image type"),
 			Log: logging.Log{
 				Message: "Missing rating key or image type in URL",
 				Elapsed: utils.ElapsedTime(startTime),
@@ -40,19 +40,13 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("invalid image type"),
 			Log: logging.Log{
 				Message: "Invalid image type in URL",
 				Elapsed: utils.ElapsedTime(startTime),
 			},
 		})
 		return
-	}
-
-	if imageType == "poster" {
-		imageType = "thumb"
-	} else if imageType == "backdrop" {
-		imageType = "art"
 	}
 
 	// Check if the temporary folder has the image
@@ -69,7 +63,7 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 
 	logging.LOG.Trace(fmt.Sprintf("Image %s does not exist in temporary folder", fileName))
 	// If the image does not exist, then get it from Plex
-	imageData, logErr := fetchImage(ratingKey, imageType)
+	imageData, logErr := FetchImageFromMediaServer(ratingKey, imageType)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -85,7 +79,7 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 		imagePath := fmt.Sprintf("%s/%s", PlexTempImageFolder, fileName)
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
 				Log: logging.Log{
 					Message: "Failed to write image to temporary folder",
 					Elapsed: utils.ElapsedTime(startTime),
@@ -101,17 +95,17 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func fetchImage(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
+func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting %s for rating key: %s", imageType, ratingKey))
 
 	// Construct the URL for the Plex server API request
-	//plexURL := fmt.Sprintf("%s/library/metadata/%s/%s/", config.Global.Plex.URL, ratingKey, imageType)
+	//plexURL := fmt.Sprintf("%s/library/metadata/%s/%s/", config.Global.MediaServer.URL, ratingKey, imageType)
 	photoUrl := fmt.Sprintf("/library/metadata/%s/%s/", ratingKey, imageType)
 	// Encode the URL for the request
 	encodedPhotoUrl := url.QueryEscape(photoUrl)
-	plexURL := fmt.Sprintf("%s/photo/:/transcode?url=%s&width=300&height=450", config.Global.Plex.URL, encodedPhotoUrl)
+	plexURL := fmt.Sprintf("%s/photo/:/transcode?url=%s&width=300&height=450", config.Global.MediaServer.URL, encodedPhotoUrl)
 
-	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return nil, logErr
 	}
@@ -119,7 +113,7 @@ func fetchImage(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
 
 	// Check if the response status is OK
 	if response.StatusCode != http.StatusOK {
-		return nil, logging.ErrorLog{Err: errors.New("Plex server error"),
+		return nil, logging.ErrorLog{Err: errors.New("plex server error"),
 			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
 		}
 	}

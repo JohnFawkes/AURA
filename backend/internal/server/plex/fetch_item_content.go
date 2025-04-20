@@ -10,60 +10,18 @@ import (
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
 	"regexp"
-	"time"
-
-	"github.com/go-chi/chi/v5"
 )
 
-func GetItemContent(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
-	logging.LOG.Trace(r.URL.Path)
+func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 
-	// Get the SKU from the URL
-	ratingKey := chi.URLParam(r, "ratingKey")
-	if ratingKey == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Log: logging.Log{
-				Message: "Missing rating key in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
-		return
-	}
-
-	itemInfo, logErr := fetchItemContent(ratingKey)
+	url, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", ratingKey), config.Global.MediaServer.URL)
 	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-		return
+		return modals.MediaItem{}, logErr
 	}
-
-	if itemInfo.RatingKey == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Log: logging.Log{
-				Message: "No item found with the given rating key",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
-		return
-	}
-
-	// Respond with a success message
-	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
-		Status:  "success",
-		Message: "Retrieved item content from Plex",
-		Elapsed: utils.ElapsedTime(startTime),
-		Data:    itemInfo,
-	})
-}
-
-func fetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
-	url := fmt.Sprintf("%s/library/metadata/%s",
-		config.Global.Plex.URL, ratingKey)
-
 	var itemInfo modals.MediaItem
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return itemInfo, logErr
 	}
@@ -92,7 +50,7 @@ func fetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 	}
 
 	// If the item is a movie
-	if responseSection.Videos != nil && len(responseSection.Videos) > 0 && responseSection.Directory == nil {
+	if len(responseSection.Videos) > 0 && responseSection.Directory == nil {
 		itemInfo.RatingKey = responseSection.Videos[0].RatingKey
 		itemInfo.Type = responseSection.Videos[0].Type
 		itemInfo.Title = responseSection.Videos[0].Title
@@ -103,8 +61,8 @@ func fetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.ContentRating = responseSection.Videos[0].ContentRating
 		itemInfo.Summary = responseSection.Videos[0].Summary
 		itemInfo.UpdatedAt = responseSection.Videos[0].UpdatedAt
-		itemInfo.Movie = &modals.PlexMovie{
-			File: modals.PlexFile{
+		itemInfo.Movie = &modals.MediaItemMovie{
+			File: modals.MediaItemFile{
 				Path:     responseSection.Videos[0].Media[0].Part[0].File,
 				Size:     responseSection.Videos[0].Media[0].Part[0].Size,
 				Duration: responseSection.Videos[0].Media[0].Part[0].Duration,
@@ -114,7 +72,7 @@ func fetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 	}
 
 	// If the item is a series
-	if responseSection.Directory != nil && len(responseSection.Directory) > 0 && responseSection.Videos == nil {
+	if len(responseSection.Directory) > 0 && responseSection.Videos == nil {
 		itemInfo.RatingKey = responseSection.Directory[0].RatingKey
 		itemInfo.Type = responseSection.Directory[0].Type
 		itemInfo.Title = responseSection.Directory[0].Title
@@ -141,10 +99,10 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 	logging.LOG.Trace(fmt.Sprintf("Fetching seasons for show: %s", itemInfo.Title))
 
 	url := fmt.Sprintf("%s/library/metadata/%s/children",
-		config.Global.Plex.URL, itemInfo.RatingKey)
+		config.Global.MediaServer.URL, itemInfo.RatingKey)
 
 	// Make a GET request to fetch children content
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return *itemInfo, logErr
 	}
@@ -169,16 +127,16 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 	}
 
 	if responseSection.ViewGroup == "season" {
-		var seasons []modals.PlexSeason
+		var seasons []modals.MediaItemSeason
 		for _, directory := range responseSection.Directory {
 			if directory.Title == "All episodes" && directory.Index == 0 {
 				continue
 			}
-			season := modals.PlexSeason{
+			season := modals.MediaItemSeason{
 				RatingKey:    directory.RatingKey,
 				SeasonNumber: directory.Index,
 				Title:        directory.Title,
-				Episodes:     []modals.PlexEpisode{},
+				Episodes:     []modals.MediaItemEpisode{},
 			}
 
 			// Fetch episodes for the season
@@ -189,20 +147,20 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 
 			seasons = append(seasons, season)
 		}
-		itemInfo.Series = &modals.PlexSeries{Seasons: seasons}
+		itemInfo.Series = &modals.MediaItemSeries{Seasons: seasons}
 	}
 
 	return *itemInfo, logging.ErrorLog{}
 }
 
-func fetchEpisodesForSeason(season modals.PlexSeason) (modals.PlexSeason, logging.ErrorLog) {
+func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeason, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching episodes for season: %s", season.Title))
 
 	url := fmt.Sprintf("%s/library/metadata/%s/children",
-		config.Global.Plex.URL, season.RatingKey)
+		config.Global.MediaServer.URL, season.RatingKey)
 
 	// Make a GET request to fetch episodes
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return season, logErr
 	}
@@ -211,7 +169,7 @@ func fetchEpisodesForSeason(season modals.PlexSeason) (modals.PlexSeason, loggin
 	// Check if the response status is OK
 	if response.StatusCode != http.StatusOK {
 		return season, logging.ErrorLog{
-			Err: errors.New(fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)),
+			Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
 			Log: logging.Log{Message: "Received non-200 response from Plex server"},
 		}
 	}
@@ -228,12 +186,12 @@ func fetchEpisodesForSeason(season modals.PlexSeason) (modals.PlexSeason, loggin
 
 	// Populate episodes for the season
 	for _, video := range responseSection.Videos {
-		episode := modals.PlexEpisode{
+		episode := modals.MediaItemEpisode{
 			RatingKey:     video.RatingKey,
 			Title:         video.Title,
 			SeasonNumber:  video.ParentIndex,
 			EpisodeNumber: video.Index,
-			File: modals.PlexFile{
+			File: modals.MediaItemFile{
 				Path:     video.Media[0].Part[0].File,
 				Size:     video.Media[0].Part[0].Size,
 				Duration: video.Media[0].Part[0].Duration,

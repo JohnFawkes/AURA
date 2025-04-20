@@ -18,8 +18,8 @@ export interface MediaItem {
 	Summary: string;
 	UpdatedAt: number;
 	Guids: Guid[];
-	Movie?: Movie;
-	Series?: Series;
+	Movie?: MediaItemMovie;
+	Series?: MediaItemSeries;
 }
 
 export interface Guid {
@@ -27,24 +27,24 @@ export interface Guid {
 	ID: string;
 }
 
-export interface Movie {
-	File: File;
+export interface MediaItemMovie {
+	File: MediaItemFile;
 }
 
-export interface Series {
-	Seasons: Season[];
+export interface MediaItemSeries {
+	Seasons: MediaItemSeason[];
 	SeasonCount: number;
 	EpisodeCount: number;
 }
 
-export interface Season {
+export interface MediaItemSeason {
 	RatingKey: string;
 	SeasonNumber: number;
 	Title: string;
-	Episodes: Episode[];
+	Episodes: MediaItemEpisode[];
 }
 
-export interface Episode {
+export interface MediaItemEpisode {
 	RatingKey: string;
 	Title: string;
 	SeasonNumber: number;
@@ -52,7 +52,7 @@ export interface Episode {
 	File: File;
 }
 
-export interface File {
+export interface MediaItemFile {
 	Path: string;
 	Size: number;
 	Duration: number;

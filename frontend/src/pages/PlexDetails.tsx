@@ -13,7 +13,7 @@ import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import CarouselWithCards from "../components/PosterSetCarousel";
 import { fetchMediuxSets } from "../services/api.mediux";
-import { fetchPlexItem } from "../services/api.plex";
+import { fetchMediaServerItemContent } from "../services/api.mediaserver";
 import { Guid, MediaItem } from "../types/mediaItem";
 import { PosterSets } from "../types/posterSets";
 
@@ -53,11 +53,11 @@ const PlexDetails: React.FC = () => {
 			}
 		};
 		const fetchPosterImage = async (ratingKey: string) => {
-			const posterUrl = `/api/plex/image/${ratingKey}/poster`;
+			const posterUrl = `/api/mediaserver/image/${ratingKey}/poster`;
 			setPosterSrc(posterUrl); // Directly set the URL
 		};
 		const fetchBackdropImage = async (ratingKey: string) => {
-			const backdropUrl = `/api/plex/image/${ratingKey}/backdrop`;
+			const backdropUrl = `/api/mediaserver/image/${ratingKey}/backdrop`;
 			setBackdropSrc(backdropUrl); // Directly set the URL
 		};
 		const fetchPosterSets = async (responseItem: MediaItem) => {
@@ -95,7 +95,7 @@ const PlexDetails: React.FC = () => {
 
 		const fetchAllInfo = async () => {
 			try {
-				const resp = await fetchPlexItem(item.RatingKey);
+				const resp = await fetchMediaServerItemContent(item.RatingKey);
 				if (!resp) {
 					throw new Error("No response from Plex API");
 				}

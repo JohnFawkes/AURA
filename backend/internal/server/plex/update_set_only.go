@@ -11,7 +11,8 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.ErrorL
 	// Determine the itemRatingKey
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
-		return logging.ErrorLog{Log: logging.Log{Message: "Item rating key is empty"}}
+		return logging.ErrorLog{Err: fmt.Errorf("item rating key is empty"),
+			Log: logging.Log{Message: "Item rating key is empty"}}
 	}
 	mediuxURL := fmt.Sprintf("%s/%s", "https://staged.mediux.io/assets", file.ID)
 	refreshPlexItem(itemRatingKey)

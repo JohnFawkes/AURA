@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { fetchPlexImageData } from "../services/api.plex";
+import { fetchMediaServerImageData } from "../services/api.mediaserver";
 
 const imageCache = new Map<string, string>(); // Cache to store loaded image URLs
 
@@ -20,7 +20,7 @@ const PlexPosterImage: React.FC<{ ratingKey: string; alt: string }> = ({
 		if (inView && !imageCache.has(ratingKey)) {
 			const loadImage = async () => {
 				try {
-					const posterURL = await fetchPlexImageData(
+					const posterURL = await fetchMediaServerImageData(
 						ratingKey,
 						"poster"
 					);

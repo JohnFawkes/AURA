@@ -9,7 +9,7 @@ import (
 
 func GetAllItemsFromDatabase() ([]modals.ClientMessage, logging.ErrorLog) {
 	query := `
-SELECT plex, poster_set, selected_types, auto_download, last_update FROM auto_downloader`
+SELECT media_item, poster_set, selected_types, auto_download, last_update FROM auto_downloader`
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, logging.ErrorLog{Err: err, Log: logging.Log{
@@ -19,10 +19,10 @@ SELECT plex, poster_set, selected_types, auto_download, last_update FROM auto_do
 	defer rows.Close()
 	var items []modals.ClientMessage
 	for rows.Next() {
-		var plexJSON, setJSON, selectedTypes string
+		var mediaItemJSON, setJSON, selectedTypes string
 		var autoDownload bool
 		var lastUpdate string
-		err := rows.Scan(&plexJSON, &setJSON, &selectedTypes, &autoDownload, &lastUpdate)
+		err := rows.Scan(&mediaItemJSON, &setJSON, &selectedTypes, &autoDownload, &lastUpdate)
 		if err != nil {
 			return nil, logging.ErrorLog{Err: err, Log: logging.Log{
 				Message: "Failed to scan row",
@@ -30,11 +30,11 @@ SELECT plex, poster_set, selected_types, auto_download, last_update FROM auto_do
 		}
 
 		// Unmarshal the JSON data
-		var plex modals.MediaItem
-		err = json.Unmarshal([]byte(plexJSON), &plex)
+		var mediaItem modals.MediaItem
+		err = json.Unmarshal([]byte(mediaItemJSON), &mediaItem)
 		if err != nil {
 			return nil, logging.ErrorLog{Err: err, Log: logging.Log{
-				Message: "Failed to unmarshal Plex data",
+				Message: "Failed to unmarshal MediaItem data",
 			}}
 		}
 
@@ -49,7 +49,7 @@ SELECT plex, poster_set, selected_types, auto_download, last_update FROM auto_do
 		selectedTypesSlice := strings.Split(selectedTypes, ",")
 
 		clientMessage := modals.ClientMessage{
-			Plex:          plex,
+			MediaItem:     mediaItem,
 			Set:           set,
 			LastUpdate:    lastUpdate,
 			SelectedTypes: selectedTypesSlice,

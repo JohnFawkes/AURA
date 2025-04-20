@@ -25,28 +25,28 @@ export interface PosterSet {
 	};
 	DateCreated: string;
 	DateUpdated: string;
-	Files: File[];
+	Files: PosterFile[];
 }
 
-export interface File {
+export interface PosterFile {
 	ID: string;
 	Type: string;
 	Modified: string;
-	Movie?: Movie;
-	Season?: Season;
-	Episode?: Episode;
+	Movie?: PosterFileMovie;
+	Season?: PosterFileSeason;
+	Episode?: PosterFileEpisode;
 }
 
-export interface Movie {
+export interface PosterFileMovie {
 	ID: string;
 }
 
-export interface Season {
+export interface PosterFileSeason {
 	Number?: number;
 }
 
-export interface Episode {
+export interface PosterFileEpisode {
 	Title?: string;
 	Number?: number;
-	Season?: Season;
+	Season?: PosterFileSeason;
 }

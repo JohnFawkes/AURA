@@ -11,7 +11,7 @@ import (
 	"poster-setter/internal/utils"
 )
 
-func DownloadAndUpdateSet(plex modals.MediaItem, file modals.PosterFile) logging.ErrorLog {
+func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) logging.ErrorLog {
 
 	if !config.Global.SaveImageNextToContent {
 		logErr := UpdateSetOnly(plex, file)

@@ -1,22 +1,18 @@
 package plex
 
-import (
-	"fmt"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
-)
+import "poster-setter/internal/modals"
 
-func getFileDownloadName(file modals.PosterFile) string {
-	if file.Type == "poster" {
-		return "Poster"
-	} else if file.Type == "backdrop" {
-		return "Backdrop"
-	} else if file.Type == "seasonPoster" {
-		return fmt.Sprintf("Season %s Poster", utils.Get2DigitNumber(int64(file.Season.Number)))
-	} else if file.Type == "titlecard" {
-		return fmt.Sprintf("S%sE%s - %s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)), file.Episode.Title)
+func getItemRatingKey(plexItem modals.MediaItem, file modals.PosterFile) string {
+	if plexItem.Type == "movie" || file.Type == "poster" || file.Type == "backdrop" {
+		return plexItem.RatingKey
 	}
-	return file.Type
+	if file.Type == "seasonPoster" {
+		return getSeasonRatingKey(plexItem, file)
+	}
+	if file.Type == "titlecard" {
+		return getEpisodeRatingKey(plexItem, file)
+	}
+	return ""
 }
 
 func getSeasonRatingKey(plexItem modals.MediaItem, file modals.PosterFile) string {

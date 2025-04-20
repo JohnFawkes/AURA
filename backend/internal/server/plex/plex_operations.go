@@ -14,15 +14,15 @@ import (
 func refreshPlexItem(ratingKey string) logging.ErrorLog {
 	logging.LOG.Trace(fmt.Sprintf("Refreshing Plex item with rating key: %s", ratingKey))
 
-	url := fmt.Sprintf("%s/library/metadata/%s/refresh", config.Global.Plex.URL, ratingKey)
-	response, _, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 60, nil, "Plex")
+	url := fmt.Sprintf("%s/library/metadata/%s/refresh", config.Global.MediaServer.URL, ratingKey)
+	response, _, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return logErr
 	}
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
-		return logging.ErrorLog{
+		return logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
 			Log: logging.Log{Message: fmt.Sprintf("Failed to refresh Plex item with rating key: %s", ratingKey)},
 		}
 	}
@@ -32,7 +32,7 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 
 func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting posters for rating key: %s", ratingKey))
-	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", config.Global.Plex.URL, ratingKey)
+	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", config.Global.MediaServer.URL, ratingKey)
 	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return "", logErr
@@ -40,7 +40,7 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
-		return "", logging.ErrorLog{
+		return "", logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
 			Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
 		}
 	}
@@ -49,14 +49,14 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	var plexPosters modals.PlexPhotosResponse
 	err := xml.Unmarshal(body, &plexPosters)
 	if err != nil {
-		return "", logging.ErrorLog{
+		return "", logging.ErrorLog{Err: err,
 			Log: logging.Log{Message: "Failed to parse XML response"},
 		}
 	}
 
 	// Check if the response contains any posters
 	if len(plexPosters.Photos) == 0 {
-		return "", logging.ErrorLog{
+		return "", logging.ErrorLog{Err: fmt.Errorf("no posters found for rating key: %s", ratingKey),
 			Log: logging.Log{Message: "No posters found for the item"},
 		}
 	}
@@ -72,8 +72,8 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 
 	// Make sure that poster.RatingKey is not empty
 	if selectedPoster.RatingKey == "" {
-		return "", logging.ErrorLog{
-			Log: logging.Log{Message: fmt.Sprintf("Selected poster with rating key: %s", selectedPoster.RatingKey)},
+		return "", logging.ErrorLog{Err: fmt.Errorf("no local poster found for rating key: %s", ratingKey),
+			Log: logging.Log{Message: fmt.Sprintf("no local poster found for rating key: %s", ratingKey)},
 		}
 	}
 
@@ -96,16 +96,16 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	escapedPosterKey := url.QueryEscape(posterKey)
 
 	// Construct the URL for setting the poster
-	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.Plex.URL, ratingKey, posterType, escapedPosterKey)
+	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.MediaServer.URL, ratingKey, posterType, escapedPosterKey)
 
-	response, _, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "Plex")
+	response, _, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return logErr
 	}
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
-		return logging.ErrorLog{
+		return logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
 			Log: logging.Log{Message: fmt.Sprintf("Failed to set poster for rating key: %s", ratingKey)},
 		}
 	}

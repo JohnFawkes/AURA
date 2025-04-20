@@ -27,7 +27,7 @@ func shouldSkipLogging(request *http.Request) bool {
 		`logo.*$`,
 		`^/assets/.*$`,
 		`^/favicon.ico$`,
-		`^/api/plex/image/.*$`,
+		`^/api/mediaserver/image/.*$`,
 	}
 
 	// Check if the path matches any skip pattern

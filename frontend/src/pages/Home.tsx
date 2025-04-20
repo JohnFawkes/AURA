@@ -9,7 +9,7 @@ import {
 	CircularProgress,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { fetchPlexSections } from "../services/api.plex";
+import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
 import InputAdornment from "@mui/material/InputAdornment";
 import { MovieRounded } from "@mui/icons-material";
@@ -35,7 +35,7 @@ const Home: React.FC = () => {
 
 		const getPlexItems = async () => {
 			try {
-				const resp = await fetchPlexSections();
+				const resp = await fetchMediaServerLibraryItems();
 				if (resp.status !== "success") {
 					throw new Error(resp.message);
 				}
@@ -121,7 +121,10 @@ const Home: React.FC = () => {
 						fontWeight: 500,
 					}}
 				>
-					Loading all content from Plex...
+					Loading all content from{" "}
+					{import.meta.env.VITE_MEDIA_SERVER_TYPE ||
+						"your media server"}
+					...
 				</Typography>
 				<CircularProgress size={50} thickness={4} />
 			</Box>

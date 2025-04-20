@@ -33,7 +33,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	// Get the asset ID from the URL
 	assetID := chi.URLParam(r, "assetID")
 	if assetID == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing asset ID"),
 			Log: logging.Log{
 				Message: "Missing asset ID in URL",
 				Elapsed: utils.ElapsedTime(startTime),
@@ -53,12 +53,11 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		// Try to parse the modified date as an ISO 8601 timestamp
 		modifiedDateTime, err = time.Parse(time.RFC3339, modifiedDate)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
 				Log: logging.Log{
 					Message: "Invalid modified date format. Expected ISO 8601.",
 					Elapsed: utils.ElapsedTime(startTime),
 				},
-				Err: err,
 			})
 			return
 		}
@@ -94,7 +93,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		}
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
 				Log: logging.Log{
 					Message: "Failed to write image to temporary folder",
 					Elapsed: utils.ElapsedTime(startTime),

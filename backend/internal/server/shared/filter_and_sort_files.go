@@ -1,4 +1,4 @@
-package plex
+package mediaserver_shared
 
 import (
 	"poster-setter/internal/modals"
