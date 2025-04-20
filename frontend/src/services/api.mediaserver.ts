@@ -2,6 +2,7 @@ import apiClient from "./apiClient";
 import { APIResponse } from "../types/apiResponse";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
 import { PosterSet } from "../types/posterSets";
+import { ClientMessage } from "../types/clientMessage";
 
 export const fetchMediaServerLibraryItems = async (): Promise<
 	APIResponse<LibrarySection[]>
@@ -35,15 +36,12 @@ export const fetchMediaServerItemContent = async (
 	}
 };
 
-export const postSendSetToAPI = async (sendData: {
-	Set: PosterSet;
-	SelectedTypes: string[];
-	Plex: MediaItem;
-	AutoDownload: boolean;
-}): Promise<APIResponse<null>> => {
+export const postSendSetToAPI = async (
+	sendData: ClientMessage
+): Promise<APIResponse<null>> => {
 	try {
 		const response = await apiClient.post<APIResponse<null>>(
-			`/plex/update/send`,
+			`/mediaserver/update/send`,
 			sendData
 		);
 		return response.data;

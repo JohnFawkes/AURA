@@ -29,6 +29,7 @@ import { fetchMediuxImageData } from "../services/api.mediux";
 import { postSendSetToAPI } from "../services/api.mediaserver";
 import { MediaItem } from "../types/mediaItem";
 import { PosterSet, PosterSets } from "../types/posterSets";
+import { ClientMessage } from "../types/clientMessage";
 
 const imageCache = new Map<string, string>(); // Cache to store loaded image URLs
 
@@ -135,12 +136,13 @@ const PosterSetCarousel: React.FC<{
 		}
 
 		try {
-			await postSendSetToAPI({
+			var clientMessage: ClientMessage = {
 				Set: set,
 				SelectedTypes: selectedCheckboxes,
-				Plex: mediaItem,
+				MediaItem: mediaItem,
 				AutoDownload: autoDownload,
-			}).then((response) => {
+			};
+			await postSendSetToAPI(clientMessage).then((response) => {
 				// If the response was not successful, show an error message
 				if (!response || response.status !== "success") {
 					setProgressColor("error");
@@ -152,7 +154,7 @@ const PosterSetCarousel: React.FC<{
 
 				// Create a new SSE connection to the backend server
 				const eventSource = new EventSource(
-					`/api/plex/update/set/${mediaItem.RatingKey}`
+					`/api/mediaserver/update/set/${mediaItem.RatingKey}`
 				);
 
 				eventSource.onmessage = (event) => {
