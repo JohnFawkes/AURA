@@ -9,10 +9,10 @@ import (
 
 func GetItemFromDatabase(ratingKey string) (modals.ClientMessage, logging.ErrorLog) {
 	query := `
-SELECT plex, poster_set, selected_types, auto_download FROM auto_downloader WHERE id = ?`
-	var plexJSON, setJSON, selectedTypes string
+SELECT media_item, poster_set, selected_types, auto_download FROM auto_downloader WHERE id = ?`
+	var mediaItemJSON, setJSON, selectedTypes string
 	var autoDownload bool
-	err := db.QueryRow(query, ratingKey).Scan(&plexJSON, &setJSON, &selectedTypes, &autoDownload)
+	err := db.QueryRow(query, ratingKey).Scan(&mediaItemJSON, &setJSON, &selectedTypes, &autoDownload)
 	if err != nil {
 		return modals.ClientMessage{}, logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to query database",
@@ -20,11 +20,11 @@ SELECT plex, poster_set, selected_types, auto_download FROM auto_downloader WHER
 	}
 
 	// Unmarshal the JSON data
-	var plex modals.MediaItem
-	err = json.Unmarshal([]byte(plexJSON), &plex)
+	var mediaItem modals.MediaItem
+	err = json.Unmarshal([]byte(mediaItemJSON), &mediaItem)
 	if err != nil {
 		return modals.ClientMessage{}, logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to unmarshal Plex data",
+			Message: "Failed to unmarshal MediaItem data",
 		}}
 	}
 
@@ -40,7 +40,7 @@ SELECT plex, poster_set, selected_types, auto_download FROM auto_downloader WHER
 	selectedTypesSlice := strings.Split(selectedTypes, ",")
 
 	clientMessage := modals.ClientMessage{
-		MediaItem:     plex,
+		MediaItem:     mediaItem,
 		Set:           set,
 		SelectedTypes: selectedTypesSlice,
 		AutoDownload:  autoDownload,

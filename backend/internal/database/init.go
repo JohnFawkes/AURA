@@ -44,7 +44,7 @@ func InitDB() bool {
 	createTableQuery := `
 CREATE TABLE IF NOT EXISTS auto_downloader (
 id INTEGER PRIMARY KEY UNIQUE NOT NULL,
-plex JSON NOT NULL,
+media_item JSON NOT NULL,
 poster_set JSON NOT NULL,
 selected_types TEXT NOT NULL,
 auto_download BOOLEAN NOT NULL,
