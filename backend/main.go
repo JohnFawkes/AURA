@@ -9,6 +9,7 @@ import (
 	"poster-setter/internal/download"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/routes"
+	"poster-setter/internal/server"
 	"poster-setter/internal/utils"
 	"strconv"
 
@@ -57,6 +58,16 @@ func main() {
 		fmt.Println("Database initialization failed. Exiting...")
 		return
 	}
+
+	logErr := server.InitUserID()
+	if logErr.Err != nil {
+		fmt.Printf("Emby/Jellyfin user ID fetch error: %s\n", logErr.Log.Message)
+		return
+	}
+
+	// Set the VITE environment variables for the frontend
+	os.Setenv("VITE_APP_PORT", APP_PORT)
+	os.Setenv("VITE_MEDIA_SERVER_TYPE", config.Global.MediaServer.Type)
 
 	// Create a new router
 	r := routes.NewRouter()
