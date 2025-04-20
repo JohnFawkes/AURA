@@ -42,7 +42,7 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	tmdbID := chi.URLParam(r, "tmdbID")
 	itemType := chi.URLParam(r, "itemType")
 	if tmdbID == "" || itemType == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing tmdbID or itemType in URL"),
 			Log: logging.Log{
 				Message: "Missing TMDB ID or item type in URL",
 				Elapsed: utils.ElapsedTime(startTime),
