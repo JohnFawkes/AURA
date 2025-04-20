@@ -89,7 +89,7 @@ func fetchSectionsContent(sectionID string) ([]modals.MediaItem, logging.ErrorLo
 
 	// Check if the response status is OK
 	if response.StatusCode != http.StatusOK {
-		return nil, logging.ErrorLog{Err: errors.New("Plex server error"),
+		return nil, logging.ErrorLog{Err: errors.New("plex server error"),
 			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
 		}
 	}
@@ -105,7 +105,7 @@ func fetchSectionsContent(sectionID string) ([]modals.MediaItem, logging.ErrorLo
 
 	// If the item is a movie section/library
 	var items []modals.MediaItem
-	if responseSection.Videos != nil && len(responseSection.Videos) > 0 && responseSection.Directory == nil {
+	if len(responseSection.Videos) > 0 && responseSection.Directory == nil {
 		for _, item := range responseSection.Videos {
 			var itemInfo modals.MediaItem
 			itemInfo.RatingKey = item.RatingKey
@@ -131,7 +131,7 @@ func fetchSectionsContent(sectionID string) ([]modals.MediaItem, logging.ErrorLo
 	}
 
 	// If the item is a show section/library
-	if responseSection.Directory != nil && len(responseSection.Directory) > 0 && responseSection.Videos == nil {
+	if len(responseSection.Directory) > 0 && responseSection.Videos == nil {
 		for _, item := range responseSection.Directory {
 			var itemInfo modals.MediaItem
 			itemInfo.RatingKey = item.RatingKey
