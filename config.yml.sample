@@ -1,8 +1,5 @@
 # This file should be located in /config on the docker container
 
-# Port - The port on which the application will run
-Port: 8888
-
 # CacheImages - Whether to cache images or not. Caching images can improve performance but will use more disk space.
 # If set to true, images will be cached in the /config/temp-images directory.
 CacheImages: true
