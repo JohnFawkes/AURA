@@ -15,7 +15,7 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 	logging.LOG.Trace(fmt.Sprintf("Refreshing Plex item with rating key: %s", ratingKey))
 
 	url := fmt.Sprintf("%s/library/metadata/%s/refresh", config.Global.Plex.URL, ratingKey)
-	response, _, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 30, nil, "Plex")
+	response, _, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return logErr
 	}
@@ -33,7 +33,7 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting posters for rating key: %s", ratingKey))
 	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", config.Global.Plex.URL, ratingKey)
-	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return "", logErr
 	}
@@ -98,7 +98,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// Construct the URL for setting the poster
 	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.Plex.URL, ratingKey, posterType, escapedPosterKey)
 
-	response, _, logErr := utils.MakeHTTPRequest(url, "POST", nil, 30, nil, "Plex")
+	response, _, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return logErr
 	}

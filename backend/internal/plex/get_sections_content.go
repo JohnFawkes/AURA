@@ -81,7 +81,7 @@ func fetchSectionsContent(sectionID string) ([]modals.MediaItem, logging.ErrorLo
 	url := fmt.Sprintf("%s/library/sections/%s/all", config.Global.Plex.URL, sectionID)
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 180, nil, "Plex")
 	if logErr.Err != nil {
 		return nil, logErr
 	}
@@ -161,7 +161,7 @@ func fetchLibrarySection(library *modals.Config_PlexLibrary) (bool, logging.Erro
 	url := fmt.Sprintf("%s/library/sections", config.Global.Plex.URL)
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		logging.LOG.Error(logErr.Log.Message)
 		return false, logErr

@@ -111,7 +111,7 @@ func fetchImage(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
 	encodedPhotoUrl := url.QueryEscape(photoUrl)
 	plexURL := fmt.Sprintf("%s/photo/:/transcode?url=%s&width=300&height=450", config.Global.Plex.URL, encodedPhotoUrl)
 
-	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return nil, logErr
 	}

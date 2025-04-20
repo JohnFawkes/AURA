@@ -63,7 +63,7 @@ func fetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 	var itemInfo modals.MediaItem
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return itemInfo, logErr
 	}
@@ -144,7 +144,7 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 		config.Global.Plex.URL, itemInfo.RatingKey)
 
 	// Make a GET request to fetch children content
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return *itemInfo, logErr
 	}
@@ -202,7 +202,7 @@ func fetchEpisodesForSeason(season modals.PlexSeason) (modals.PlexSeason, loggin
 		config.Global.Plex.URL, season.RatingKey)
 
 	// Make a GET request to fetch episodes
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 30, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "Plex")
 	if logErr.Err != nil {
 		return season, logErr
 	}

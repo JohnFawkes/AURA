@@ -120,7 +120,7 @@ func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, l
 	}
 	url := fmt.Sprintf("%s/%s?%s%s", "https://staged.mediux.io/assets", assetID, formatDate, getThumb)
 
-	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 30, nil, "Mediux")
+	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 60, nil, "Mediux")
 	if logErr.Err != nil {
 		return nil, "", logErr
 	}
