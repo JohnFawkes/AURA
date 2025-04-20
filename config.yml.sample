@@ -8,6 +8,8 @@ CacheImages: true
 # If set to true, images will be saved in the same directory as the Media Server content.
 # If set to false, images will still be updated on the Media Server but will not be saved next to the content.
 # The benefit of this is that you have local images that are not dependent on the Media Server database in case of migration.
+# If you are using Emby or Jellyfin, this option being set does not matter. This is determined by Emby or Jellyfin.
+# If you are using Plex, this option will determine if the images are saved next to the content or not.
 SaveImageNextToContent: false
 
 # Logging - Configuration for logging
