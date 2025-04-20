@@ -14,8 +14,10 @@ require (
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-resty/resty/v2 v2.16.5
+	github.com/goccy/go-json v0.10.5
 	github.com/mattn/go-sqlite3 v1.14.27
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
+	golang.org/x/text v0.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )
