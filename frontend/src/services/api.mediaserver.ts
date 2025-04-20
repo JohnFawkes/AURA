@@ -1,7 +1,6 @@
 import apiClient from "./apiClient";
 import { APIResponse } from "../types/apiResponse";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
-import { PosterSet } from "../types/posterSets";
 import { ClientMessage } from "../types/clientMessage";
 
 export const fetchMediaServerLibraryItems = async (): Promise<
