@@ -5,7 +5,10 @@ import (
 	"os"
 	"path"
 	"poster-setter/internal/modals"
+	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
 
