@@ -9,8 +9,9 @@ import {
 	Card,
 	CardContent,
 	Skeleton,
+	Fab,
 } from "@mui/material";
-import { MovieRounded } from "@mui/icons-material";
+import { MovieRounded, Refresh } from "@mui/icons-material";
 import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
 import LibrarySelect from "../components/LibrarySelect";
 import { useNavigate } from "react-router-dom";
@@ -39,9 +40,11 @@ const Home: React.FC = () => {
 	};
 
 	// Fetch data from cache or API
-	useEffect(() => {
-		const getPlexItems = async () => {
-			try {
+	const getPlexItems = async (useCache: boolean) => {
+		setLoading(true);
+		setErrorLoading(false);
+		try {
+			if (useCache) {
 				const cachedData = localStorage.getItem(CACHE_KEY);
 				if (cachedData) {
 					const parsedData = JSON.parse(cachedData);
@@ -52,39 +55,40 @@ const Home: React.FC = () => {
 						return;
 					}
 				}
-
-				const resp = await fetchMediaServerLibraryItems();
-				if (resp.status !== "success") {
-					throw new Error(resp.message);
-				}
-				const sections = resp.data;
-				if (!sections || sections.length === 0) {
-					throw new Error(
-						"No sections found, please check the logs."
-					);
-				}
-
-				localStorage.setItem(
-					CACHE_KEY,
-					JSON.stringify({
-						data: sections,
-						timestamp: new Date().getTime(),
-					})
-				);
-
-				setLibrarySections(sections);
-			} catch (error) {
-				setErrorLoading(true);
-				setErrorMessage(
-					error instanceof Error
-						? error.message
-						: "An unknown error occurred"
-				);
-			} finally {
-				setLoading(false);
 			}
-		};
-		getPlexItems();
+
+			const resp = await fetchMediaServerLibraryItems();
+			if (resp.status !== "success") {
+				throw new Error(resp.message);
+			}
+			const sections = resp.data;
+			if (!sections || sections.length === 0) {
+				throw new Error("No sections found, please check the logs.");
+			}
+
+			localStorage.setItem(
+				CACHE_KEY,
+				JSON.stringify({
+					data: sections,
+					timestamp: new Date().getTime(),
+				})
+			);
+
+			setLibrarySections(sections);
+		} catch (error) {
+			setErrorLoading(true);
+			setErrorMessage(
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred"
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		getPlexItems(true);
 	}, []);
 
 	// Update filteredItems whenever librarySections, filteredLibraries, or searchQuery changes
@@ -312,6 +316,20 @@ const Home: React.FC = () => {
 							</Grid>
 						))}
 					</Grid>
+
+					{/* Floating Action Button */}
+					<Fab
+						color="primary"
+						aria-label="refresh"
+						sx={{
+							position: "fixed",
+							bottom: 16,
+							right: 16,
+						}}
+						onClick={() => getPlexItems(false)}
+					>
+						<Refresh />
+					</Fab>
 				</>
 			)}
 		</Box>
