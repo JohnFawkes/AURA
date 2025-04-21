@@ -1,7 +1,7 @@
 import apiClient from "./apiClient";
-import { APIResponse } from "../types/apiResponse";
 import { ClientMessage } from "../types/clientMessage";
-import { AxiosError } from "axios";
+import { APIResponse } from "../types/apiResponse";
+import { ReturnErrorMessage } from "./api.shared";
 
 export const fetchAllItemsFromDB = async (): Promise<
 	APIResponse<ClientMessage[]>
@@ -12,24 +12,6 @@ export const fetchAllItemsFromDB = async (): Promise<
 		);
 		return response.data;
 	} catch (error) {
-		console.log("Error fetching data from DB:", error);
-
-		if (error instanceof AxiosError) {
-			return {
-				status: "error",
-				message:
-					error.response?.data.message || "An unknown error occurred",
-			};
-		} else if (error instanceof Error) {
-			return {
-				status: "error",
-				message: error.message,
-			};
-		} else {
-			return {
-				status: "error",
-				message: "An unknown error occurred",
-			};
-		}
+		return ReturnErrorMessage<ClientMessage[]>(error);
 	}
 };

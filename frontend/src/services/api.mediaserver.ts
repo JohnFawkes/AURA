@@ -2,6 +2,7 @@ import apiClient from "./apiClient";
 import { APIResponse } from "../types/apiResponse";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
 import { ClientMessage } from "../types/clientMessage";
+import { ReturnErrorMessage } from "./api.shared";
 
 export const fetchMediaServerLibraryItems = async (): Promise<
 	APIResponse<LibrarySection[]>
@@ -11,11 +12,8 @@ export const fetchMediaServerLibraryItems = async (): Promise<
 			`/mediaserver/sections/all/`
 		);
 		return response.data;
-	} catch {
-		return {
-			status: "error",
-			message: "Failed to fetch data from Media Server API",
-		};
+	} catch (error) {
+		return ReturnErrorMessage<LibrarySection[]>(error);
 	}
 };
 
@@ -27,11 +25,8 @@ export const fetchMediaServerItemContent = async (
 			`/mediaserver/item/${ratingKey}`
 		);
 		return response.data;
-	} catch {
-		return {
-			status: "error",
-			message: "Failed to fetch data from Media Server API",
-		};
+	} catch (error) {
+		return ReturnErrorMessage<MediaItem>(error);
 	}
 };
 
@@ -44,11 +39,8 @@ export const postSendSetToAPI = async (
 			sendData
 		);
 		return response.data;
-	} catch {
-		return {
-			status: "error",
-			message: "Failed to send set to Media Server API",
-		};
+	} catch (error) {
+		return ReturnErrorMessage<null>(error);
 	}
 };
 
