@@ -15,7 +15,8 @@ type Config struct {
 
 // Config_Logging represents the logging configuration settings.
 type Config_Logging struct {
-	Level string `yaml:"Level"` // Logging level (e.g., DEBUG, INFO, WARN, ERROR).
+	Level string `yaml:"Level"` // Logging level (e.g., TRACE, DEBUG, INFO, WARN, ERROR).
+	File  string `yaml:"File"`  // File path for logging output.
 }
 
 // Config_MediaServerLibrary represents a single media server library configuration.
