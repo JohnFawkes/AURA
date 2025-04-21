@@ -44,7 +44,8 @@ const formatDate = (dateString: string) => {
 const SavedSetsCard: React.FC<{
 	id: string;
 	savedSet: ClientMessage;
-}> = ({ id, savedSet }) => {
+	onUpdate: () => void;
+}> = ({ id, savedSet, onUpdate }) => {
 	const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [editSelectedTypes, setEditSelectedTypes] = useState<string[]>(
@@ -98,8 +99,8 @@ const SavedSetsCard: React.FC<{
 			setUpdateError(resp.message);
 		} else {
 			setUpdateError("");
-			window.location.reload();
 			setIsEditModalOpen(false);
+			onUpdate();
 		}
 	};
 
@@ -121,7 +122,7 @@ const SavedSetsCard: React.FC<{
 		} else {
 			setIsDeleteModalOpen(false);
 			setUpdateError("");
-			window.location.reload();
+			onUpdate();
 		}
 	};
 

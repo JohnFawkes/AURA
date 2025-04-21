@@ -13,29 +13,30 @@ const SavedSetsPage: React.FC = () => {
 	const [error, setError] = useState<boolean>(false);
 	const [errorMessage, setErrorMessage] = useState<string | "">("");
 
-	useEffect(() => {
-		const fetchSavedSets = async () => {
-			try {
-				const resp = await fetchAllItemsFromDB();
-				if (resp.status !== "success") {
-					throw new Error(resp.message);
-				}
-				const sets = resp.data;
-				if (!sets) {
-					throw new Error("No sets found");
-				}
-				setSavedSets(sets);
-			} catch (error) {
-				setError(true);
-				setErrorMessage(
-					error instanceof Error
-						? error.message
-						: "An unknown error occurred"
-				);
-			} finally {
-				setLoading(false);
+	const fetchSavedSets = async () => {
+		try {
+			const resp = await fetchAllItemsFromDB();
+			if (resp.status !== "success") {
+				throw new Error(resp.message);
 			}
-		};
+			const sets = resp.data;
+			if (!sets) {
+				throw new Error("No sets found");
+			}
+			setSavedSets(sets);
+		} catch (error) {
+			setError(true);
+			setErrorMessage(
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred"
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchSavedSets();
 	}, []);
 
@@ -85,6 +86,7 @@ const SavedSetsPage: React.FC = () => {
 							<SavedSetsCard
 								id={savedSet.MediaItem.RatingKey}
 								savedSet={savedSet}
+								onUpdate={fetchSavedSets}
 							/>
 						</Grid>
 					))
