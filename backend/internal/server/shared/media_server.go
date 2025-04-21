@@ -125,6 +125,11 @@ func (e *EmbyJellyServer) DownloadAndUpdatePosters(mediaItem modals.MediaItem, f
 }
 
 func InitUserID() logging.ErrorLog {
+
+	if config.Global.MediaServer.Type == "Plex" {
+		return logging.ErrorLog{}
+	}
+
 	logging.LOG.Trace("Initializing User ID for Emby/Jellyfin")
 	// Parse the base URL
 	baseURL, err := url.Parse(config.Global.MediaServer.URL)
