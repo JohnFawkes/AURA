@@ -30,6 +30,8 @@ import { postSendSetToAPI } from "../services/api.mediaserver";
 import { MediaItem } from "../types/mediaItem";
 import { PosterSet, PosterSets } from "../types/posterSets";
 import { ClientMessage } from "../types/clientMessage";
+import { Theme } from "@mui/material/styles";
+import Link from "@mui/material/Link"; // Import the Link component
 
 const imageCache = new Map<string, string>(); // Cache to store loaded image URLs
 
@@ -103,7 +105,6 @@ const PosterSetCarousel: React.FC<{
 
 	const handleSaveIconClick = (set: PosterSet) => {
 		// Open the modal and set the selected set
-		console.log("Save clicked for set:", set);
 		setSelectedSet(set);
 		setOpenModal(true);
 		setModalErrorMessage("");
@@ -124,7 +125,6 @@ const PosterSetCarousel: React.FC<{
 		setProgressColor("primary");
 		setProgressText("");
 		setProgressNextStep("");
-		console.log("Modal closed");
 	};
 
 	const handleDownloadButtonClick = async (set: PosterSet) => {
@@ -317,13 +317,17 @@ const PosterSetCarousel: React.FC<{
 						</Typography>
 						<Typography variant="body1" gutterBottom>
 							<strong>Set ID:</strong>{" "}
-							<a
+							<Link
 								href={`https://mediux.pro/sets/${selectedSet?.ID}`}
 								target="_blank"
 								rel="noopener noreferrer"
+								sx={{
+									color: (theme: Theme) =>
+										theme.palette.primary.main,
+								}}
 							>
 								{selectedSet?.ID}
-							</a>{" "}
+							</Link>
 						</Typography>
 						<Typography variant="body1" gutterBottom>
 							<strong>Author:</strong> {selectedSet?.User.Name}
