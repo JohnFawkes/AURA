@@ -11,12 +11,14 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import LibrarySelect from "../components/LibrarySelect";
 import PlexPosterImage from "../components/PlexPosterImage";
 import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
+import Pagination from "@mui/material/Pagination";
+import debounce from "lodash.debounce"; // Install lodash if not already installed
 
 const CACHE_KEY = "librarySectionsCache";
 const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour in milliseconds
@@ -114,7 +116,21 @@ const Home: React.FC = () => {
 		getPlexItems(true);
 	}, []);
 
-	// Update filteredItems whenever librarySections, filteredLibraries, or searchQuery changes
+	// Debounce the search input
+	const debounceSearch = useCallback(
+		debounce((query: string) => {
+			setDebouncedQuery(query); // Update the debounced query
+			setCurrentPage(1); // Reset to the first page on new search
+		}, 300), // Adjust the delay (300ms is common)
+		[]
+	);
+
+	const handleSearch = (searchValue: string) => {
+		setSearchQuery(searchValue); // Update the immediate search query
+		debounceSearch(searchValue); // Trigger the debounced function
+	};
+
+	// Update filteredItems whenever librarySections, filteredLibraries, or debouncedQuery changes
 	useEffect(() => {
 		let items = librarySections.flatMap((section) =>
 			(section.MediaItems || []).map((item) => ({
@@ -130,21 +146,16 @@ const Home: React.FC = () => {
 			);
 		}
 
-		// Filter by search query
-		if (searchQuery.trim() !== "") {
-			const query = searchQuery.trim().toLowerCase();
+		// Filter by debounced search query
+		if (debouncedQuery.trim() !== "") {
+			const query = debouncedQuery.trim().toLowerCase();
 			items = items.filter((item) =>
 				item.Title.toLowerCase().includes(query)
 			);
 		}
 
 		setFilteredItems(items);
-	}, [librarySections, filteredLibraries, searchQuery]);
-
-	// Handle search input
-	const handleSearch = (searchValue: string) => {
-		setSearchQuery(searchValue);
-	};
+	}, [librarySections, filteredLibraries, debouncedQuery]);
 
 	if (loading) {
 		return (
