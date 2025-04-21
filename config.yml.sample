@@ -43,7 +43,7 @@ MediaServer:
         - Name: "4K Movies"
         - Name: "4K Series"
 
-# TMDB - Configuration for TMDB (The Movie Database)
+# TMDB - Configuration for TMDB (The Movie Database) This is not used yet.
 #   ApiKey - The API key for TMDB. This can be obtained by creating an account on TMDB and generating an API key.
 TMDB:
     ApiKey: <YOUR_TMDB_API_KEY> # Replace with your TMDB API key
