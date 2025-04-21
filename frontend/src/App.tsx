@@ -8,12 +8,13 @@ import MenuItem from "@mui/material/MenuItem";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import SettingsIcon from "@mui/icons-material/Settings";
-import Home from "./pages/Home";
-import PlexDetails from "./pages/PlexDetails";
-import PageNotFound from "./pages/PageNotFound";
-import Settings from "./pages/Settings";
-import { SettingsApplications } from "@mui/icons-material";
-import Logs from "./pages/Logs";
+import Home from "./pages/HomePage";
+import MediaItemPage from "./pages/MediaItemPage";
+import PageNotFound from "./pages/NotFoundPage";
+import SettingsPage from "./pages/SettingsPage";
+import { Save, SettingsApplications } from "@mui/icons-material";
+import LogsPage from "./pages/LogsPage";
+import SavedSetsPage from "./pages/SavedSetsPage";
 
 type AppProps = {
 	darkMode: boolean;
@@ -73,12 +74,6 @@ function App({ darkMode, setDarkMode }: AppProps) {
 							},
 						}}
 					>
-						<MenuItem onClick={() => navigate("/settings")}>
-							<>
-								<SettingsApplications sx={{ marginRight: 1 }} />{" "}
-								Settings Page
-							</>
-						</MenuItem>
 						<MenuItem onClick={toggleDarkMode}>
 							{darkMode ? (
 								<>
@@ -92,6 +87,27 @@ function App({ darkMode, setDarkMode }: AppProps) {
 								</>
 							)}
 						</MenuItem>
+						<MenuItem
+							onClick={() => {
+								handleMenuClose();
+								navigate("/settings");
+							}}
+						>
+							<>
+								<SettingsApplications sx={{ marginRight: 1 }} />{" "}
+								Settings Page
+							</>
+						</MenuItem>
+						<MenuItem
+							onClick={() => {
+								handleMenuClose();
+								navigate("/saved_sets");
+							}}
+						>
+							<>
+								<Save sx={{ marginRight: 1 }} /> Saved Sets
+							</>
+						</MenuItem>
 					</Menu>
 				</Toolbar>
 			</AppBar>
@@ -100,9 +116,13 @@ function App({ darkMode, setDarkMode }: AppProps) {
 			<div style={{ paddingTop: 64 }}>
 				<Routes>
 					<Route path="/" element={<Home />} />
-					<Route path="/plex" element={<PlexDetails />} />
-					<Route path="/settings" element={<Settings />} />
-					<Route path="/logs" element={<Logs />} />
+					<Route
+						path="/media/:ratingKey/:title"
+						element={<MediaItemPage />}
+					/>
+					<Route path="/settings" element={<SettingsPage />} />
+					<Route path="/logs" element={<LogsPage />} />
+					<Route path="/saved_sets" element={<SavedSetsPage />} />
 
 					{/* 404 Page Not Found */}
 					<Route path="*" element={<PageNotFound />} />
