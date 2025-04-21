@@ -75,6 +75,8 @@ const PosterSetCarousel: React.FC<{
 	const [selectedSet, setSelectedSet] = useState<PosterSet | null>(null);
 	const [modalErrorMessage, setModalErrorMessage] = useState("");
 
+	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
+
 	// Tracking selected checkboxes for what to download
 	const [selectedCheckboxes, setSelectedCheckboxes] = useState<string[]>([]);
 	const handleCheckboxChange = (type: string) => {
@@ -125,6 +127,7 @@ const PosterSetCarousel: React.FC<{
 		setProgressColor("primary");
 		setProgressText("");
 		setProgressNextStep("");
+		setCancelButtonText("Cancel");
 	};
 
 	const handleDownloadButtonClick = async (set: PosterSet) => {
@@ -173,6 +176,7 @@ const PosterSetCarousel: React.FC<{
 						setProgressValue(100);
 						setProgressText("Task complete");
 						setProgressNextStep("");
+						setCancelButtonText("Close");
 						eventSource.close();
 					}
 				};
@@ -485,7 +489,7 @@ const PosterSetCarousel: React.FC<{
 						color="secondary"
 						variant="outlined"
 					>
-						Cancel
+						{cancelButtonText}
 					</Button>
 					<Button
 						onClick={() =>
