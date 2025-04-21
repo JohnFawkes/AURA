@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"poster-setter/internal/database"
 	"poster-setter/internal/mediux"
 	"poster-setter/internal/routes/health"
 	"poster-setter/internal/routes/middleware"
@@ -52,6 +53,9 @@ func AddRoutes(r *chi.Mux) {
 		r.Get("/mediaserver/image/{ratingKey}/{imageType}", mediaserver.GetImageFromMediaServer)
 		r.Post("/mediaserver/update/send", mediaserver.GetUpdateSetFromClient)
 		r.Get("/mediaserver/update/set/{ratingKey}", mediaserver.UpdateItemPosters)
+
+		// Database Routes
+		r.Get("/db/get/all", database.GetAllItems)
 
 		// Mediux Routes
 		r.Get("/mediux/sets/get/{itemType}/{tmdbID}", mediux.GetAllSets)
