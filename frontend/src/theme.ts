@@ -1,18 +1,25 @@
 // src/theme.ts
 import { createTheme } from "@mui/material/styles";
 
-const orange = {
-	main: "#d16141", // deep orange
-	contrastText: "#fff",
-};
-
 export const lightTheme = createTheme({
 	palette: {
 		mode: "light",
-		primary: orange,
+		primary: {
+			main: "#e86143",
+		},
+		secondary: {
+			main: "#ff9800",
+		},
+		error: {
+			main: "#f44336",
+		},
 		background: {
-			default: "#f9f9f9",
-			paper: "#ffffff",
+			default: "#f3eeec", // Main background color
+			paper: "#ece6e3", // Paper background color
+		},
+		text: {
+			primary: "#000000",
+			secondary: "#555555",
 		},
 	},
 });
@@ -20,10 +27,22 @@ export const lightTheme = createTheme({
 export const darkTheme = createTheme({
 	palette: {
 		mode: "dark",
-		primary: orange,
+		primary: {
+			main: "#e86143",
+		},
+		secondary: {
+			main: "#8c1c04",
+		},
+		error: {
+			main: "#870e04",
+		},
 		background: {
-			default: "#121212",
-			paper: "#1e1e1e",
+			default: "#080401",
+			paper: "#312c29",
+		},
+		text: {
+			primary: "#ffffff",
+			secondary: "#bbbbbb",
 		},
 	},
 });
