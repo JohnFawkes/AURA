@@ -37,6 +37,12 @@ func AddRoutes(r *chi.Mux) {
 		// Base API Route: Check if the API is up and running
 		r.Get("/", health.HealthCheck)
 
+		// Config Routes
+		r.Get("/config", health.GetConfig)
+
+		// Log Routes
+		r.Get("/logs", health.GetCurrentLogFile)
+
 		// Clear Temporary Images Route
 		r.Post("/temp-images/clear", tempimages.ClearTempImages)
 
