@@ -29,7 +29,7 @@ type SSEProgress struct {
 func SendErrorJSONResponse(w http.ResponseWriter, statusCode int, err logging.ErrorLog) {
 	SendJsonResponse(w, statusCode, JSONResponse{
 		Status:  "error",
-		Message: err.Log.Message,
+		Message: fmt.Sprintf("%s - %s", err.Log.Message, err.Err.Error()),
 		Elapsed: err.Log.Elapsed,
 		Data:    nil,
 	})
