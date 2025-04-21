@@ -15,7 +15,7 @@ import { fetchConfig } from "../services/api.settings";
 import { AppConfig } from "../types/config";
 import { useNavigate } from "react-router-dom";
 
-const Settings: React.FC = () => {
+const SettingsPage: React.FC = () => {
 	const navigate = useNavigate();
 	const [config, setConfig] = useState<AppConfig | null>(null);
 
@@ -418,4 +418,4 @@ const Settings: React.FC = () => {
 	);
 };
 
-export default Settings;
+export default SettingsPage;
