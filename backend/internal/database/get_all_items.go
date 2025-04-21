@@ -2,16 +2,38 @@ package database
 
 import (
 	"encoding/json"
+	"net/http"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
+	"poster-setter/internal/utils"
 	"strings"
+	"time"
 )
+
+func GetAllItems(w http.ResponseWriter, r *http.Request) {
+	logging.LOG.Debug(r.URL.Path)
+	startTime := time.Now()
+
+	items, logErr := GetAllItemsFromDatabase()
+	if logErr.Err != nil {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		return
+	}
+
+	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+		Status:  "success",
+		Message: "Fetched all items",
+		Elapsed: utils.ElapsedTime(startTime),
+		Data:    items,
+	})
+}
 
 func GetAllItemsFromDatabase() ([]modals.ClientMessage, logging.ErrorLog) {
 	query := `
 SELECT media_item, poster_set, selected_types, auto_download, last_update FROM auto_downloader`
 	rows, err := db.Query(query)
 	if err != nil {
+		logging.LOG.Error(err.Error())
 		return nil, logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to query database",
 		}}
