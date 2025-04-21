@@ -93,8 +93,6 @@ const SavedSetsCard: React.FC<{
 	};
 
 	const confirmEdit = async () => {
-		console.log("Edit confirmed:", id);
-		console.log("Selected types updated:", editSelectedTypes);
 		const resp = await patchSelectedTypesInDB(id, editSelectedTypes);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
@@ -107,6 +105,8 @@ const SavedSetsCard: React.FC<{
 
 	const cancelEdit = () => {
 		setIsEditModalOpen(false);
+		setEditSelectedTypes(savedSet.SelectedTypes);
+		setUpdateError("");
 	};
 
 	const handleDelete = () => {
@@ -115,7 +115,6 @@ const SavedSetsCard: React.FC<{
 	};
 
 	const confirmDelete = async () => {
-		console.log("Item deleted:", id);
 		const resp = await deleteItemFromDB(id);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
@@ -127,7 +126,8 @@ const SavedSetsCard: React.FC<{
 	};
 
 	const cancelDelete = () => {
-		setIsDeleteModalOpen(false); // Close the modal without deleting
+		setIsDeleteModalOpen(false);
+		setUpdateError("");
 	};
 
 	return (
@@ -345,6 +345,9 @@ const SavedSetsCard: React.FC<{
 						Are you sure you want to delete this saved set? This
 						action cannot be undone.
 					</DialogContentText>
+					{updateError && (
+						<Typography color="error">{updateError}</Typography>
+					)}
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={cancelDelete} color="primary">
