@@ -11,12 +11,12 @@ export interface MediaItem {
 	Type: string; // "movie" or "show"
 	Title: string;
 	Year: number;
-	Thumb: string;
-	AudienceRating: number;
-	UserRating: number;
-	ContentRating: string;
-	Summary: string;
-	UpdatedAt: number;
+	Thumb?: string;
+	AudienceRating?: number;
+	UserRating?: number;
+	ContentRating?: string;
+	Summary?: string;
+	UpdatedAt?: number;
 	Guids: Guid[];
 	Movie?: MediaItemMovie;
 	Series?: MediaItemSeries;
