@@ -16,7 +16,14 @@ import (
 
 // MakeHTTPRequest function to handle HTTP requests
 func MakeHTTPRequest(url, method string, headers map[string]string, timeout int, body []byte, tokenType string) (*http.Response, []byte, logging.ErrorLog) {
-	urlTitle := getURLTitle(url)
+
+	var urlTitle string
+	if tokenType == "MediaServer" {
+		urlTitle = config.Global.MediaServer.Type
+	} else {
+		urlTitle = getURLTitle(url)
+	}
+
 	logging.LOG.Trace(fmt.Sprintf("Making HTTP request (%s)", urlTitle))
 
 	// Create a context with a timeout
