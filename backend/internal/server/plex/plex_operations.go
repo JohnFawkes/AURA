@@ -9,6 +9,7 @@ import (
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
+	"strings"
 )
 
 func refreshPlexItem(ratingKey string) logging.ErrorLog {
@@ -39,7 +40,12 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	}
 	defer response.Body.Close()
 
-	logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
+	if !strings.HasPrefix(string(body), "<?xml version=\"1.0\"") {
+		logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
+		return "", logging.ErrorLog{Err: fmt.Errorf("failed to get posters for rating key: %s", ratingKey),
+			Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
+		}
+	}
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
@@ -107,11 +113,15 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	}
 	defer response.Body.Close()
 
-	logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
-
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
 		return logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
+			Log: logging.Log{Message: fmt.Sprintf("Failed to set poster for rating key: %s", ratingKey)},
+		}
+	}
+	if !strings.HasPrefix(string(body), "/library/metadata/") {
+		logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
+		return logging.ErrorLog{Err: fmt.Errorf("failed to set poster for rating key: %s", ratingKey),
 			Log: logging.Log{Message: fmt.Sprintf("Failed to set poster for rating key: %s", ratingKey)},
 		}
 	}
