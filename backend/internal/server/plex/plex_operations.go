@@ -89,9 +89,9 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// Else set it to posters
 
 	if posterType == "backdrop" {
-		posterType = "arts"
+		posterType = "art"
 	} else {
-		posterType = "posters"
+		posterType = "poster"
 	}
 	logging.LOG.Trace(fmt.Sprintf("Setting %s for rating key: %s", posterType, ratingKey))
 
