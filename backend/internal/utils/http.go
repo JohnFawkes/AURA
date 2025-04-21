@@ -54,6 +54,12 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 		req.Header.Set("Authorization", "Bearer "+config.Global.TMDB.ApiKey)
 	} else if strings.ToLower(tokenType) == "mediux" {
 		req.Header.Set("Authorization", "Bearer "+config.Global.Mediux.Token)
+	} else if strings.ToLower(tokenType) == "plex" {
+		req.Header.Set("X-Plex-Token", config.Global.MediaServer.Token)
+	} else if strings.ToLower(tokenType) == "emby" {
+		req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
+	} else if strings.ToLower(tokenType) == "jellyfin" {
+		req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
 	}
 
 	if headers != nil {
