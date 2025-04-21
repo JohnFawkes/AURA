@@ -25,7 +25,6 @@ const SavedSetsPage: React.FC = () => {
 					throw new Error("No sets found");
 				}
 				setSavedSets(sets);
-				console.log("Saved Sets:", sets);
 			} catch (error) {
 				setError(true);
 				setErrorMessage(
