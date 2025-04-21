@@ -16,5 +16,4 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 		Message: "Route not found",
 		Elapsed: utils.ElapsedTime(startTime),
 	})
-	return
 }
