@@ -4,8 +4,7 @@ import Fab from "@mui/material/Fab";
 import Grid from "@mui/material/Grid";
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
-import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
 import { LibrarySection, MediaItem } from "../types/mediaItem";
 import Pagination from "@mui/material/Pagination";
@@ -19,7 +18,6 @@ const CACHE_KEY = "librarySectionsCache";
 const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour in milliseconds
 
 const Home: React.FC = () => {
-	const navigate = useNavigate();
 	const [loading, setLoading] = useState<boolean>(true);
 	const [errorLoading, setErrorLoading] = useState<boolean>(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
@@ -119,18 +117,12 @@ const Home: React.FC = () => {
 		getPlexItems(true);
 	}, []);
 
-	// Debounce the search input
-	const debounceSearch = useCallback(
+	const handleSearch = (searchValue: string) => {
+		setSearchQuery(searchValue); // Update the immediate search query
 		debounce((query: string) => {
 			setDebouncedQuery(query); // Update the debounced query
 			setCurrentPage(1); // Reset to the first page on new search
-		}, 300), // Adjust the delay (300ms is common)
-		[]
-	);
-
-	const handleSearch = (searchValue: string) => {
-		setSearchQuery(searchValue); // Update the immediate search query
-		debounceSearch(searchValue); // Trigger the debounced function
+		}, 300)(searchValue); // Trigger the debounced function
 	};
 
 	// Update filteredItems whenever librarySections, filteredLibraries, or debouncedQuery changes
