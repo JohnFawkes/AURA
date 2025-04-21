@@ -157,7 +157,7 @@ func (cle *LogEntry) Log(log Log, level string, params ...any) {
 		// Check to see if a log exists for today's date
 		// If not, create a new log file for today's date
 		// Otherwise, append to the existing log file
-		logFile := getTodayLogFile()
+		logFile := GetTodayLogFile()
 		f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return
@@ -219,7 +219,7 @@ func (cle *LogEntry) Write(status, bytes int, header http.Header, elapsed time.D
 	// Check to see if a log exists for today's date
 	// If not, create a new log file for today's date
 	// Otherwise, append to the existing log file
-	logFile := getTodayLogFile()
+	logFile := GetTodayLogFile()
 	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		// Check to see if the logs directory exists

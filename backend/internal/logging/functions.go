@@ -52,7 +52,7 @@ func shouldSkipLogging(request *http.Request) bool {
 //
 // Returns:
 // - A string representing the full path to today's log file.
-func getTodayLogFile() string {
+func GetTodayLogFile() string {
 	// Get the current time in the format "2006/01/02 15:04:05"
 	dt := time.Now().Format("2006/01/02 15:04:05")
 
