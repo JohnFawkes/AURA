@@ -107,7 +107,6 @@ const PlexDetails: React.FC = () => {
 					throw new Error("No item found in response");
 				}
 				setMediaItem(responseItem);
-				console.log("Fetched item:", responseItem);
 				fetchIMDBLink(responseItem.Guids);
 				fetchPosterImage(responseItem.RatingKey);
 				fetchBackdropImage(responseItem.RatingKey);
