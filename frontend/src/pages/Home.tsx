@@ -35,6 +35,19 @@ const Home: React.FC = () => {
 	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const [searchQuery, setSearchQuery] = useState<string>("");
+	const [debouncedQuery, setDebouncedQuery] = useState<string>("");
+
+	// state for pagination
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const itemsPerPage = 20; // Number of items per page
+
+	// Calculate paginated items
+	const paginatedItems = filteredItems.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage
+	);
+
+	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
 	// Function to handle card click and navigate to the details page
 	const handleCardClick = (item: MediaItem) => {
@@ -174,7 +187,7 @@ const Home: React.FC = () => {
 					variant="h6"
 					sx={{
 						marginBottom: 2, // Add spacing between text and spinner
-						fontWeight: 500,
+						fontWeight: 400,
 					}}
 				>
 					Loading all content from{" "}
@@ -186,6 +199,10 @@ const Home: React.FC = () => {
 			</Box>
 		);
 	}
+
+	const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+		setCurrentPage(value);
+	};
 
 	return (
 		<Box
@@ -242,6 +259,11 @@ const Home: React.FC = () => {
 							handleSearch(e.target.value);
 						}}
 					/>
+					<LibrarySelect
+						filteredListOptions={librarySections}
+						selectedLibrary={filteredLibraries}
+						onLibraryChange={setFilteredLibraries}
+					/>
 					<Grid
 						container
 						spacing={2}
@@ -250,7 +272,8 @@ const Home: React.FC = () => {
 						}}
 					>
 						<Typography variant="h6" color="error">
-							No items found matching '{searchQuery}'
+							No items found matching '{searchQuery}' in{" "}
+							{filteredLibraries.join(", ")}
 						</Typography>
 						{[...Array(1)].map((_, index) => (
 							<Grid size={{ xs: 12, sm: 12, md: 12 }} key={index}>
@@ -297,7 +320,7 @@ const Home: React.FC = () => {
 						}}
 						paddingTop={2}
 					>
-						{filteredItems.map((item) => (
+						{paginatedItems.map((item) => (
 							<Grid
 								key={item.RatingKey}
 								sx={{
@@ -354,14 +377,51 @@ const Home: React.FC = () => {
 						))}
 					</Grid>
 
+					<Box
+						sx={{
+							marginTop: 2,
+							display: "flex",
+							justifyContent: "center", // Center the pagination
+						}}
+					>
+						<Pagination
+							count={totalPages}
+							page={currentPage}
+							onChange={handlePageChange}
+							variant="outlined"
+							color="primary"
+							sx={{
+								"& .MuiPagination-ul": {
+									flexWrap: "nowrap", // Prevent wrapping
+								},
+								"& .MuiPaginationItem-root": {
+									minWidth: "28px", // Reduce button width
+									height: "28px", // Reduce button height
+									fontSize: "12px", // Reduce font size
+									"@media (max-width: 600px)": {
+										minWidth: "24px", // Further reduce for very small screens
+										height: "24px",
+										fontSize: "10px",
+									},
+								},
+							}}
+						/>
+					</Box>
+
 					{/* Floating Action Button */}
 					<Fab
 						color="primary"
 						aria-label="refresh"
 						sx={{
 							position: "fixed",
-							bottom: 16,
-							right: 16,
+							bottom: 8,
+							right: 8,
+							width: 56, // Default size
+							height: 56, // Default size
+							"@media (max-width: 600px)": {
+								width: 40, // Smaller size for mobile
+								height: 40, // Smaller size for mobile
+							},
 						}}
 						onClick={() => getPlexItems(false)}
 					>
