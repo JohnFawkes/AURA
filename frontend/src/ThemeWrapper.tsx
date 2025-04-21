@@ -1,11 +1,25 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import App from "./App";
 import { lightTheme, darkTheme } from "./theme";
 
 const ThemeWrapper: React.FC = () => {
-	const [darkMode, setDarkMode] = useState(false);
+	// Initialize darkMode based on the user's device settings
+	const [darkMode, setDarkMode] = useState(() => {
+		return window.matchMedia("(prefers-color-scheme: dark)").matches;
+	});
+
+	// Listen for changes in the user's preferred color scheme
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		const handleChange = (event: MediaQueryListEvent) => {
+			setDarkMode(event.matches);
+		};
+
+		mediaQuery.addEventListener("change", handleChange);
+		return () => mediaQuery.removeEventListener("change", handleChange);
+	}, []);
 
 	const theme = useMemo(
 		() => (darkMode ? darkTheme : lightTheme),
