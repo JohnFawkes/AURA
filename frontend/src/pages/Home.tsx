@@ -1,66 +1,85 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	Box,
 	TextField,
 	Typography,
+	CircularProgress,
+	InputAdornment,
+	Grid,
 	Card,
 	CardContent,
-	Grid,
-	CircularProgress,
+	Skeleton,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
-import { LibrarySection, MediaItem } from "../types/mediaItem";
-import InputAdornment from "@mui/material/InputAdornment";
 import { MovieRounded } from "@mui/icons-material";
-
-import { Skeleton } from "@mui/material";
+import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
+import LibrarySelect from "../components/LibrarySelect";
+import { useNavigate } from "react-router-dom";
+import { LibrarySection, MediaItem } from "../types/mediaItem";
 import PlexPosterImage from "../components/PlexPosterImage";
 
+const CACHE_KEY = "librarySectionsCache";
+const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour in milliseconds
+
 const Home: React.FC = () => {
-	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
-		[]
-	);
-	const [filteredSections, setFilteredSections] = useState<MediaItem[]>([]);
-	const [loading, setLoading] = useState<boolean>(true);
-	const [searchTerm, setSearchTerm] = useState<string>("");
-	const hasFetched = useRef(false);
 	const navigate = useNavigate();
+	const [loading, setLoading] = useState<boolean>(true);
 	const [errorLoading, setErrorLoading] = useState<boolean>(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 
-	useEffect(() => {
-		if (hasFetched.current) return;
-		hasFetched.current = true;
+	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
+		[]
+	);
+	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
+	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
+	const [searchQuery, setSearchQuery] = useState<string>("");
 
+	// Function to handle card click and navigate to the details page
+	const handleCardClick = (item: MediaItem) => {
+		navigate("/plex", { state: { item } });
+	};
+
+	// Fetch data from cache or API
+	useEffect(() => {
 		const getPlexItems = async () => {
 			try {
+				const cachedData = localStorage.getItem(CACHE_KEY);
+				if (cachedData) {
+					const parsedData = JSON.parse(cachedData);
+					const now = new Date().getTime();
+					if (now - parsedData.timestamp < CACHE_EXPIRY) {
+						setLibrarySections(parsedData.data);
+						setLoading(false);
+						return;
+					}
+				}
+
 				const resp = await fetchMediaServerLibraryItems();
 				if (resp.status !== "success") {
 					throw new Error(resp.message);
 				}
 				const sections = resp.data;
-				if (!sections || sections === null || sections.length === 0) {
+				if (!sections || sections.length === 0) {
 					throw new Error(
 						"No sections found, please check the logs."
 					);
 				}
-				setLibrarySections(sections);
-				setFilteredSections(
-					sections.flatMap((section) =>
-						(section.MediaItems || []).map((item) => ({
-							...item,
-							LibraryTitle: section.Title, // Add library name to each item
-						}))
-					)
+
+				localStorage.setItem(
+					CACHE_KEY,
+					JSON.stringify({
+						data: sections,
+						timestamp: new Date().getTime(),
+					})
 				);
+
+				setLibrarySections(sections);
 			} catch (error) {
 				setErrorLoading(true);
-				if (error instanceof Error) {
-					setErrorMessage(error.message);
-				} else {
-					setErrorMessage("An unknown error occurred");
-				}
+				setErrorMessage(
+					error instanceof Error
+						? error.message
+						: "An unknown error occurred"
+				);
 			} finally {
 				setLoading(false);
 			}
@@ -68,37 +87,38 @@ const Home: React.FC = () => {
 		getPlexItems();
 	}, []);
 
-	const handleSearch = (searchValue: string) => {
-		const searchValueTrimmed = searchValue.trim().toLowerCase();
-		if (searchValueTrimmed === "") {
-			setFilteredSections(
-				librarySections.flatMap((section) =>
-					(section.MediaItems || []).map((item) => ({
-						...item,
-						LibraryTitle: section.Title,
-					}))
-				)
-			);
-		} else {
-			const searchWords = searchValueTrimmed.split(" ");
-			const filtered = librarySections.flatMap((section) =>
-				(section.MediaItems || [])
-					.filter((item) =>
-						searchWords.every((word) =>
-							item.Title.toLowerCase().includes(word)
-						)
-					)
-					.map((item) => ({
-						...item,
-						LibraryTitle: section.Title,
-					}))
-			);
-			setFilteredSections(filtered);
-		}
-	};
+	// Update filteredItems whenever librarySections, filteredLibraries, or searchQuery changes
+	useEffect(() => {
+		if (loading) return;
 
-	const handleCardClick = (item: MediaItem) => {
-		navigate("/plex", { state: { item } });
+		let items = librarySections.flatMap((section) =>
+			(section.MediaItems || []).map((item) => ({
+				...item,
+				LibraryTitle: section.Title, // Add library name to each item
+			}))
+		);
+
+		// Filter by selected libraries
+		if (filteredLibraries.length > 0) {
+			items = items.filter((item) =>
+				filteredLibraries.includes(item.LibraryTitle)
+			);
+		}
+
+		// Filter by search query
+		if (searchQuery.trim() !== "") {
+			const query = searchQuery.trim().toLowerCase();
+			items = items.filter((item) =>
+				item.Title.toLowerCase().includes(query)
+			);
+		}
+
+		setFilteredItems(items);
+	}, [librarySections, filteredLibraries, searchQuery, loading]);
+
+	// Handle search input
+	const handleSearch = (searchValue: string) => {
+		setSearchQuery(searchValue);
 	};
 
 	if (loading) {
@@ -106,12 +126,12 @@ const Home: React.FC = () => {
 			<Box
 				sx={{
 					display: "flex",
-					flexDirection: "column", // Stack the text and spinner vertically
+					flexDirection: "column",
 					justifyContent: "center",
 					alignItems: "center",
 					height: "100vh",
-					backgroundColor: "background.default", // Use theme background color
-					color: "text.primary", // Use theme text color
+					backgroundColor: "background.default",
+					color: "text.primary",
 				}}
 			>
 				<Typography
@@ -147,7 +167,7 @@ const Home: React.FC = () => {
 				<Typography variant="h6" color="error">
 					{errorMessage}
 				</Typography>
-			) : filteredSections.length === 0 && searchTerm === "" ? (
+			) : filteredItems.length === 0 && searchQuery === "" ? (
 				<Grid
 					container
 					spacing={2}
@@ -159,7 +179,7 @@ const Home: React.FC = () => {
 						No items found in your Plex library sections
 					</Typography>
 				</Grid>
-			) : filteredSections.length === 0 && searchTerm !== "" ? (
+			) : filteredItems.length === 0 && searchQuery !== "" ? (
 				<>
 					<TextField
 						id="input-with-icon-textfield"
@@ -177,7 +197,7 @@ const Home: React.FC = () => {
 						}}
 						variant="outlined"
 						onChange={(e) => {
-							setSearchTerm(e.target.value);
+							setSearchQuery(e.target.value);
 							handleSearch(e.target.value);
 						}}
 					/>
@@ -189,7 +209,7 @@ const Home: React.FC = () => {
 						}}
 					>
 						<Typography variant="h6" color="error">
-							No items found matching '{searchTerm}'
+							No items found matching '{searchQuery}'
 						</Typography>
 						{[...Array(1)].map((_, index) => (
 							<Grid size={{ xs: 12, sm: 12, md: 12 }} key={index}>
@@ -209,6 +229,8 @@ const Home: React.FC = () => {
 						label="Search Media Items"
 						placeholder="Media Title"
 						fullWidth
+						value={searchQuery}
+						onChange={(e) => handleSearch(e.target.value)}
 						slotProps={{
 							input: {
 								startAdornment: (
@@ -219,11 +241,13 @@ const Home: React.FC = () => {
 							},
 						}}
 						variant="outlined"
-						onChange={(e) => {
-							setSearchTerm(e.target.value);
-							handleSearch(e.target.value);
-						}}
 					/>
+					<LibrarySelect
+						filteredListOptions={librarySections}
+						selectedLibrary={filteredLibraries}
+						onLibraryChange={setFilteredLibraries}
+					/>
+
 					<Grid
 						container
 						spacing={2}
@@ -232,7 +256,7 @@ const Home: React.FC = () => {
 						}}
 						paddingTop={2}
 					>
-						{filteredSections.map((item) => (
+						{filteredItems.map((item) => (
 							<Grid
 								key={item.RatingKey}
 								sx={{
