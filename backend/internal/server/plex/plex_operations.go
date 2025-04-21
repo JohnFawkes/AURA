@@ -37,6 +37,9 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	if logErr.Err != nil {
 		return "", logErr
 	}
+	defer response.Body.Close()
+
+	logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
@@ -98,10 +101,13 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// Construct the URL for setting the poster
 	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.MediaServer.URL, ratingKey, posterType, escapedPosterKey)
 
-	response, _, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "MediaServer")
+	response, body, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return logErr
 	}
+	defer response.Body.Close()
+
+	logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
 
 	// Check if the response is successful
 	if response.StatusCode != http.StatusOK {
