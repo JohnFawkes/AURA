@@ -101,7 +101,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// Construct the URL for setting the poster
 	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.MediaServer.URL, ratingKey, posterType, escapedPosterKey)
 
-	response, body, logErr := utils.MakeHTTPRequest(url, "POST", nil, 60, nil, "MediaServer")
+	response, body, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return logErr
 	}
