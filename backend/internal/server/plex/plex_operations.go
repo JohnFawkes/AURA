@@ -33,7 +33,7 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting posters for rating key: %s", ratingKey))
 	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", config.Global.MediaServer.URL, ratingKey)
-	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "Plex")
+	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return "", logErr
 	}
