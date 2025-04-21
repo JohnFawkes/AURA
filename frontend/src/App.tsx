@@ -11,6 +11,9 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import Home from "./pages/Home";
 import PlexDetails from "./pages/PlexDetails";
 import PageNotFound from "./pages/PageNotFound";
+import Settings from "./pages/Settings";
+import { SettingsApplications } from "@mui/icons-material";
+import Logs from "./pages/Logs";
 
 type AppProps = {
 	darkMode: boolean;
@@ -71,7 +74,10 @@ function App({ darkMode, setDarkMode }: AppProps) {
 						}}
 					>
 						<MenuItem onClick={() => navigate("/settings")}>
-							Settings Page
+							<>
+								<SettingsApplications sx={{ marginRight: 1 }} />{" "}
+								Settings Page
+							</>
 						</MenuItem>
 						<MenuItem onClick={toggleDarkMode}>
 							{darkMode ? (
@@ -95,10 +101,10 @@ function App({ darkMode, setDarkMode }: AppProps) {
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/plex" element={<PlexDetails />} />
-					<Route
-						path="/settings"
-						element={<div>Settings Page</div>}
-					/>
+					<Route path="/settings" element={<Settings />} />
+					<Route path="/logs" element={<Logs />} />
+
+					{/* 404 Page Not Found */}
 					<Route path="*" element={<PageNotFound />} />
 				</Routes>
 			</div>
