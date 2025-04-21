@@ -2,11 +2,87 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
+	"poster-setter/internal/utils"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
+
+func UpdateSelectedTypesForItem(w http.ResponseWriter, r *http.Request) {
+	logging.LOG.Debug(r.URL.Path)
+	startTime := time.Now()
+
+	// Get the ratingKey from the URL
+	ratingKey := chi.URLParam(r, "ratingKey")
+	if ratingKey == "" {
+		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
+			Err: fmt.Errorf("missing ratingKey in request"),
+			Log: logging.Log{
+				Message: "Missing ratingKey in request",
+			},
+		})
+		return
+	}
+
+	// Get the request body
+	// Define a struct to match the expected JSON object
+	var requestBody struct {
+		SelectedTypes []string `json:"selectedTypes"`
+	}
+	// Decode the request body into the struct
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
+			Err: err,
+			Log: logging.Log{
+				Message: "Failed to decode request body",
+			},
+		})
+		return
+	}
+
+	selectedTypes := requestBody.SelectedTypes
+	fmt.Println("Selected types:", selectedTypes)
+
+	// Update the selected types in the database
+	logErr := UpdateSelectedTypesForItemInDB(ratingKey, selectedTypes)
+	if logErr.Err != nil {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		return
+	}
+
+	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+		Status:  "success",
+		Message: "Item updated successfully",
+		Elapsed: utils.ElapsedTime(startTime),
+		Data:    nil})
+}
+
+func UpdateSelectedTypesForItemInDB(ratingKey string, selectedTypes []string) logging.ErrorLog {
+	// Convert SelectedTypes (slice of strings) to a comma-separated string
+	selectedTypesStr := strings.Join(selectedTypes, ",")
+
+	// Get the current time in the local timezone
+	now := time.Now().In(time.Local)
+
+	query := `
+UPDATE auto_downloader
+SET selected_types = ?, last_update = ?
+WHERE id = ?`
+	_, err := db.Exec(query, selectedTypesStr, now.UTC().Format(time.RFC3339), ratingKey)
+	if err != nil {
+		return logging.ErrorLog{Err: err, Log: logging.Log{
+			Message: "Failed to update selected types in database",
+		}}
+	}
+	logging.LOG.Debug(fmt.Sprintf("Selected types updated successfully for item with ratingKey: %s", ratingKey))
+	return logging.ErrorLog{}
+}
 
 func UpdateAutoDownloadItem(clientMessage modals.ClientMessage) logging.ErrorLog {
 	mediaItemJSON, err := json.Marshal(clientMessage.MediaItem)

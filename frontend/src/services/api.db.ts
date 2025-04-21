@@ -15,3 +15,31 @@ export const fetchAllItemsFromDB = async (): Promise<
 		return ReturnErrorMessage<ClientMessage[]>(error);
 	}
 };
+
+export const deleteItemFromDB = async (
+	id: string
+): Promise<APIResponse<ClientMessage>> => {
+	try {
+		const response = await apiClient.delete<APIResponse<ClientMessage>>(
+			`/db/delete/${id}`
+		);
+		return response.data;
+	} catch (error) {
+		return ReturnErrorMessage<ClientMessage>(error);
+	}
+};
+
+export const patchSelectedTypesInDB = async (
+	id: string,
+	selectedTypes: string[]
+): Promise<APIResponse<ClientMessage>> => {
+	try {
+		const response = await apiClient.patch<APIResponse<ClientMessage>>(
+			`/db/update/${id}`,
+			{ selectedTypes }
+		);
+		return response.data;
+	} catch (error) {
+		return ReturnErrorMessage<ClientMessage>(error);
+	}
+};
