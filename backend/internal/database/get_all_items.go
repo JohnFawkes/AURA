@@ -33,7 +33,6 @@ func GetAllItemsFromDatabase() ([]modals.ClientMessage, logging.ErrorLog) {
 SELECT media_item, poster_set, selected_types, auto_download, last_update FROM auto_downloader`
 	rows, err := db.Query(query)
 	if err != nil {
-		logging.LOG.Error(err.Error())
 		return nil, logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to query database",
 		}}
