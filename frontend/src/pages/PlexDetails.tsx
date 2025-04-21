@@ -23,7 +23,6 @@ const PlexDetails: React.FC = () => {
 
 	const { item }: { item: MediaItem } = location.state || { item: null };
 
-	// Hooks must be called unconditionally
 	const [mediaItem, setMediaItem] = React.useState<MediaItem | typeof item>(
 		item
 	);
