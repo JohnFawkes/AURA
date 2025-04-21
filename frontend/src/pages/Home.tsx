@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
+import { MovieRounded, Refresh } from "@mui/icons-material";
 import {
 	Box,
-	TextField,
-	Typography,
-	CircularProgress,
-	InputAdornment,
-	Grid,
 	Card,
 	CardContent,
-	Skeleton,
+	CircularProgress,
 	Fab,
+	Grid,
+	InputAdornment,
+	Skeleton,
+	TextField,
+	Typography,
 } from "@mui/material";
-import { MovieRounded, Refresh } from "@mui/icons-material";
-import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
-import LibrarySelect from "../components/LibrarySelect";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LibrarySection, MediaItem } from "../types/mediaItem";
+import LibrarySelect from "../components/LibrarySelect";
 import PlexPosterImage from "../components/PlexPosterImage";
+import { fetchMediaServerLibraryItems } from "../services/api.mediaserver";
+import { LibrarySection, MediaItem } from "../types/mediaItem";
 
 const CACHE_KEY = "librarySectionsCache";
 const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour in milliseconds
@@ -50,6 +50,9 @@ const Home: React.FC = () => {
 					const parsedData = JSON.parse(cachedData);
 					const now = new Date().getTime();
 					if (now - parsedData.timestamp < CACHE_EXPIRY) {
+						console.log(
+							`Cache Size: ${new Blob([cachedData]).size} bytes`
+						);
 						setLibrarySections(parsedData.data);
 						setLoading(false);
 						return;
@@ -66,17 +69,37 @@ const Home: React.FC = () => {
 				throw new Error("No sections found, please check the logs.");
 			}
 
-			localStorage.setItem(
-				CACHE_KEY,
-				JSON.stringify({
-					data: sections,
-					timestamp: new Date().getTime(),
-				})
+			console.log("Sections:", sections);
+			console.log(
+				`Sections Size: ${
+					new Blob([JSON.stringify(sections)]).size
+				} bytes`
 			);
 
-			setLibrarySections(sections);
+			// Extract only essential fields (Title and RatingKey) for each media item
+			const minimalSections = sections.map((section: LibrarySection) => ({
+				...section,
+				MediaItems: section.MediaItems?.map((item: MediaItem) => ({
+					Title: item.Title,
+					RatingKey: item.RatingKey,
+					Year: item.Year,
+					LibraryTitle: section.Title,
+					Type: item.Type,
+					Guids: item.Guids,
+				})),
+			}));
+
+			const dataToStore = JSON.stringify({
+				data: minimalSections,
+				timestamp: new Date().getTime(),
+			});
+			console.log(`Saved Size: ${new Blob([dataToStore]).size} bytes`);
+			localStorage.setItem(CACHE_KEY, dataToStore);
+
+			setLibrarySections(minimalSections);
 		} catch (error) {
 			setErrorLoading(true);
+			console.log("Error fetching data:", error);
 			setErrorMessage(
 				error instanceof Error
 					? error.message
@@ -93,8 +116,6 @@ const Home: React.FC = () => {
 
 	// Update filteredItems whenever librarySections, filteredLibraries, or searchQuery changes
 	useEffect(() => {
-		if (loading) return;
-
 		let items = librarySections.flatMap((section) =>
 			(section.MediaItems || []).map((item) => ({
 				...item,
@@ -118,7 +139,7 @@ const Home: React.FC = () => {
 		}
 
 		setFilteredItems(items);
-	}, [librarySections, filteredLibraries, searchQuery, loading]);
+	}, [librarySections, filteredLibraries, searchQuery]);
 
 	// Handle search input
 	const handleSearch = (searchValue: string) => {
@@ -171,7 +192,9 @@ const Home: React.FC = () => {
 				<Typography variant="h6" color="error">
 					{errorMessage}
 				</Typography>
-			) : filteredItems.length === 0 && searchQuery === "" ? (
+			) : !loading &&
+			  librarySections.length === 0 &&
+			  searchQuery === "" ? (
 				<Grid
 					container
 					spacing={2}
@@ -180,7 +203,10 @@ const Home: React.FC = () => {
 					}}
 				>
 					<Typography variant="h6" color="error">
-						No items found in your Plex library sections
+						No items found in{" "}
+						{import.meta.env.VITE_MEDIA_SERVER_TYPE ||
+							"Media Server"}
+						!
 					</Typography>
 				</Grid>
 			) : filteredItems.length === 0 && searchQuery !== "" ? (
