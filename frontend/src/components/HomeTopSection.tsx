@@ -3,10 +3,11 @@ import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import React from "react";
 import HomeLibrarySelect from "./HomeLibrarySelect";
+import { LibrarySection } from "../types/mediaItem";
 
 const HomeTopSection: React.FC<{
 	searchQuery: string;
-	librarySections: any[];
+	librarySections: LibrarySection[];
 	filteredLibraries: string[];
 	onSearchChange: (value: string) => void;
 	onLibraryChange: (libraries: string[]) => void;
