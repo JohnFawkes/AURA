@@ -56,8 +56,13 @@ COPY --from=frontend-builder /frontend/dist /frontend/dist
 
 # Get the port number from the environment variable
 ARG APP_PORT=8888
+ARG VERSION=dev
+
+# Set environment variables
 ENV APP_PORT=${APP_PORT}
 ENV VITE_APP_PORT=${APP_PORT}
+ENV VITE_APP_VERSION=${VERSION}
+
 # Expose the port
 EXPOSE ${APP_PORT}
 
