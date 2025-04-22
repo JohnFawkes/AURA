@@ -414,6 +414,20 @@ const SettingsPage: React.FC = () => {
 					</Grid>
 				</CardContent>
 			</Card>
+
+			<Box
+				sx={{
+					marginTop: "auto",
+					padding: 2,
+					textAlign: "center",
+					width: "100%",
+					borderTop: "1px solid #ccc",
+				}}
+			>
+				<Typography variant="body2" color="textSecondary">
+					App Version: {import.meta.env.VITE_APP_VERSION || "dev"}
+				</Typography>
+			</Box>
 		</Box>
 	);
 };
