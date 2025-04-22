@@ -228,7 +228,9 @@ const Home: React.FC = () => {
 					>
 						<Typography variant="h6" color="error">
 							No items found matching '{searchQuery}' in{" "}
-							{filteredLibraries.join(", ")}
+							{filteredLibraries.length > 0
+								? filteredLibraries.join(", ")
+								: "any library"}
 						</Typography>
 						{[...Array(1)].map((_, index) => (
 							<Grid size={{ xs: 12, sm: 12, md: 12 }} key={index}>
