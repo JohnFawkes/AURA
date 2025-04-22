@@ -104,6 +104,9 @@ const PosterSetCarousel: React.FC<{
 	>("primary");
 	const [progressText, setProgressText] = useState("");
 	const [progressNextStep, setProgressNextStep] = useState("");
+	const [progressWarningMessages, setProgressWarningMessages] = useState<
+		{ fileName: string; message: string }[]
+	>([]);
 
 	const handleSaveIconClick = (set: PosterSet) => {
 		// Open the modal and set the selected set
@@ -127,6 +130,7 @@ const PosterSetCarousel: React.FC<{
 		setProgressColor("primary");
 		setProgressText("");
 		setProgressNextStep("");
+		setProgressWarningMessages([]);
 		setCancelButtonText("Cancel");
 	};
 
@@ -137,6 +141,13 @@ const PosterSetCarousel: React.FC<{
 		} else {
 			setModalErrorMessage("");
 		}
+
+		setProgressValue(0);
+		setProgressColor("primary");
+		setProgressText("");
+		setProgressNextStep("");
+		setProgressWarningMessages([]);
+		setCancelButtonText("Cancel");
 
 		try {
 			const clientMessage: ClientMessage = {
@@ -150,7 +161,7 @@ const PosterSetCarousel: React.FC<{
 				if (!response || response.status !== "success") {
 					setProgressColor("error");
 					setProgressText(
-						"Failed to start the task. Please try again."
+						"Failed to start the task. Please check the logs and try again."
 					);
 					return;
 				}
@@ -163,18 +174,36 @@ const PosterSetCarousel: React.FC<{
 				eventSource.onmessage = (event) => {
 					// Parse the incoming data
 					const data = JSON.parse(event.data);
+					console.log("Received data:", data);
 
 					// Update progress bar and text
 					if (data.response.status === "success") {
 						setProgressValue(data.progress.value || 0);
 						setProgressText(data.progress.text || "");
 						setProgressNextStep(data.progress.nextStep || "");
-					}
-
-					// Close the connection when the task is complete
-					if (data.response.status === "complete") {
+					} else if (data.response.status === "warning") {
+						setProgressWarningMessages((prev) => [
+							...prev,
+							{
+								fileName: data.progress.text,
+								message: data.progress.nextStep,
+							},
+						]);
+					} else if (data.response.status === "error") {
+						setProgressColor("error");
+						setProgressText(
+							"An error occurred while processing the task. Check the logs for more details."
+						);
+						setProgressNextStep(data.response.message);
+					} else if (data.response.status === "complete") {
 						setProgressValue(100);
-						setProgressText("Task complete");
+						if (progressWarningMessages.length > 0) {
+							setProgressText(
+								"Task completed with warnings. Check the logs for more details."
+							);
+						} else {
+							setProgressText(data.response.message);
+						}
 						setProgressNextStep("");
 						setCancelButtonText("Close");
 						eventSource.close();
@@ -184,7 +213,7 @@ const PosterSetCarousel: React.FC<{
 				eventSource.onerror = () => {
 					setProgressColor("error");
 					setProgressText(
-						"An error occurred while processing the task."
+						"An error occurred while processing the task. Check the logs for more details."
 					);
 					eventSource.close();
 				};
@@ -480,6 +509,68 @@ const PosterSetCarousel: React.FC<{
 							<Typography variant="body2" color="text.secondary">
 								{progressNextStep}
 							</Typography>
+							{progressWarningMessages.length > 0 && (
+								<Box mt={2}>
+									<Typography
+										variant="body2"
+										color="error"
+										gutterBottom
+									>
+										Warnings:
+									</Typography>
+									{Object.entries(
+										progressWarningMessages.reduce(
+											(acc, warning) => {
+												if (!acc[warning.message]) {
+													acc[warning.message] = [];
+												}
+												acc[warning.message].push(
+													warning.fileName
+												);
+												return acc;
+											},
+											{} as Record<string, string[]>
+										)
+									).map(([message, files], index) => (
+										<Card
+											key={index}
+											sx={{
+												marginBottom: 2,
+												backgroundColor:
+													"rgba(255, 0, 0, 0.1)", // Light red background for warnings
+											}}
+										>
+											<CardContent>
+												<Typography
+													variant="subtitle1"
+													color="error"
+													gutterBottom
+												>
+													{message}
+												</Typography>
+												<Box
+													component="ul"
+													sx={{
+														margin: 0,
+														paddingLeft: 2,
+													}}
+												>
+													{files.map(
+														(file, fileIndex) => (
+															<Box
+																component="li"
+																key={fileIndex}
+															>
+																{file}
+															</Box>
+														)
+													)}
+												</Box>
+											</CardContent>
+										</Card>
+									))}
+								</Box>
+							)}
 						</Box>
 					)}
 				</DialogContent>

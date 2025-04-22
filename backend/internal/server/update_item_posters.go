@@ -123,6 +123,7 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 
 	for _, file := range clientMessage.Set.Files {
 		progressValue += progressStep
+		downloadFileName := getFileDownloadName(file)
 		utils.SendSSEResponse(w, flusher, utils.SSEMessage{
 			Response: utils.JSONResponse{
 				Status:  "success",
@@ -132,18 +133,29 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 			Progress: utils.SSEProgress{
 				Value:    progressValue,
 				Text:     "Downloading images",
-				NextStep: fmt.Sprintf("Downloading %s", getFileDownloadName(file)),
+				NextStep: fmt.Sprintf("Downloading %s", downloadFileName),
 			},
 		})
-		logging.LOG.Debug(fmt.Sprintf("Downloading %s", getFileDownloadName(file)))
-
+		logging.LOG.Debug(fmt.Sprintf("Downloading %s", downloadFileName))
 		// Download the image from the media server
 		logErr := mediaServer.DownloadAndUpdatePosters(clientMessage.MediaItem, file)
 		if logErr.Err != nil {
-			fmt.Printf("Error downloading %s: %v\n", getFileDownloadName(file), logErr.Log.Message)
+			utils.SendSSEResponse(w, flusher, utils.SSEMessage{
+				Response: utils.JSONResponse{
+					Status:  "warning",
+					Message: "Downloading images",
+					Elapsed: utils.ElapsedTime(startTime),
+				},
+				Progress: utils.SSEProgress{
+					Value:    progressValue,
+					Text:     downloadFileName,
+					NextStep: logErr.Log.Message,
+				},
+			})
 			logging.LOG.ErrorWithLog(logErr)
 			continue
 		}
+
 	}
 
 	if clientMessage.AutoDownload {
