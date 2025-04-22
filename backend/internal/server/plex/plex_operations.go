@@ -42,6 +42,7 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 
 	// Retry logic for the HTTP request and validation
 	for attempt := 1; attempt <= 3; attempt++ {
+		refreshPlexItem(ratingKey)
 		response, body, logErr = utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "MediaServer")
 		if logErr.Err != nil {
 			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, logErr.Err))
@@ -60,6 +61,7 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 				Err: fmt.Errorf("invalid XML response from Plex server"),
 				Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
 			}
+			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, logErr.Err))
 			if attempt < 3 {
 				time.Sleep(2 * time.Second) // Wait before retrying
 				continue
@@ -73,6 +75,7 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 				Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
 				Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
 			}
+			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, logErr.Err))
 			if attempt < 3 {
 				time.Sleep(2 * time.Second) // Wait before retrying
 				continue
