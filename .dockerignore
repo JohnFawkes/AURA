@@ -22,3 +22,4 @@ backend/.air.toml
 
 # Ignore Docker-related files that shouldn't be copied
 docker-compose.yml
+docker_local_build.sh

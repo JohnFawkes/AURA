@@ -16,3 +16,4 @@ backend/run_backend
 backend/.air.toml
 *.graphql
 .secrets
+docker_local_build.sh
