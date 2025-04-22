@@ -109,7 +109,7 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 			Elapsed: utils.ElapsedTime(startTime),
 		},
 		Progress: utils.SSEProgress{
-			Value:    1,
+			Value:    2,
 			Text:     "Starting update process",
 			NextStep: "Downloading files",
 		},
@@ -118,8 +118,8 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 	clientMessage.Set.Files = mediaserver_shared.FilterAndSortFiles(clientMessage.Set.Files, clientMessage.SelectedTypes)
 
 	// Download the selected types from the Set.Files
-	progressValue := 1
-	progressStep := 80 / len(clientMessage.Set.Files)
+	progressValue := 2
+	progressStep := 95 / len(clientMessage.Set.Files)
 
 	for _, file := range clientMessage.Set.Files {
 		progressValue += progressStep

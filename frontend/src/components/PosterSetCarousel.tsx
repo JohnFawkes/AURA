@@ -164,6 +164,11 @@ const PosterSetCarousel: React.FC<{
 						"Failed to start the task. Please check the logs and try again."
 					);
 					return;
+				} else {
+					setProgressColor("primary");
+					setProgressValue(1);
+					setProgressText("Task started successfully.");
+					setProgressNextStep("Waiting for updates...");
 				}
 
 				// Create a new SSE connection to the backend server
@@ -178,9 +183,9 @@ const PosterSetCarousel: React.FC<{
 
 					// Update progress bar and text
 					if (data.response.status === "success") {
-						setProgressValue(data.progress.value || 0);
-						setProgressText(data.progress.text || "");
-						setProgressNextStep(data.progress.nextStep || "");
+						setProgressValue(data.progress.value);
+						setProgressText(data.progress.text);
+						setProgressNextStep(data.progress.nextStep);
 					} else if (data.response.status === "warning") {
 						setProgressWarningMessages((prev) => [
 							...prev,
