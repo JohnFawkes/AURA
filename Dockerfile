@@ -36,6 +36,14 @@ RUN npm ci
 # Copy the source code
 COPY frontend/ ./
 
+# Get the port number and version from build arguments/environment variables
+ARG VERSION=dev
+ARG APP_PORT=8888
+
+# Set environment variables
+ENV VITE_APP_PORT=${APP_PORT}
+ENV VITE_APP_VERSION=${VERSION}
+
 # Build the application
 RUN npm run build
 
@@ -54,14 +62,12 @@ COPY --from=backend-builder /backend/main .
 # Copy the frontend build from the builder stage
 COPY --from=frontend-builder /frontend/dist /frontend/dist
 
-# Get the port number from the environment variable
+# Get the port number and version from build arguments/environment variables
 ARG APP_PORT=8888
 ARG VERSION=dev
 
 # Set environment variables
 ENV APP_PORT=${APP_PORT}
-ENV VITE_APP_PORT=${APP_PORT}
-ENV VITE_APP_VERSION=${VERSION}
 
 # Expose the port
 EXPOSE ${APP_PORT}
