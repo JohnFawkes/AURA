@@ -10,6 +10,7 @@ import (
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
 	"strings"
+	"time"
 )
 
 func refreshPlexItem(ratingKey string) logging.ErrorLog {
@@ -34,24 +35,53 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 func getPosters(ratingKey string) (string, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting posters for rating key: %s", ratingKey))
 	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", config.Global.MediaServer.URL, ratingKey)
-	response, body, logErr := utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return "", logErr
-	}
-	defer response.Body.Close()
 
-	if !strings.HasPrefix(string(body), "<?xml version=\"1.0\"") {
-		logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
-		return "", logging.ErrorLog{Err: fmt.Errorf("failed to get posters for rating key: %s", ratingKey),
-			Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
-		}
-	}
+	var response *http.Response
+	var body []byte
+	var logErr logging.ErrorLog
 
-	// Check if the response is successful
-	if response.StatusCode != http.StatusOK {
-		return "", logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
-			Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
+	// Retry logic for the HTTP request and validation
+	for attempt := 1; attempt <= 3; attempt++ {
+		response, body, logErr = utils.MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "MediaServer")
+		if logErr.Err != nil {
+			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, logErr.Err))
+			if attempt < 3 {
+				time.Sleep(2 * time.Second) // Wait before retrying
+				continue
+			}
+			return "", logErr
 		}
+		defer response.Body.Close()
+
+		// Check if the response body starts with valid XML
+		if !strings.HasPrefix(string(body), "<?xml version=\"1.0\"") {
+			logging.LOG.Trace(fmt.Sprintf("Response from Plex server: %s", string(body)))
+			logErr = logging.ErrorLog{
+				Err: fmt.Errorf("invalid XML response from Plex server"),
+				Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
+			}
+			if attempt < 3 {
+				time.Sleep(2 * time.Second) // Wait before retrying
+				continue
+			}
+			return "", logErr
+		}
+
+		// Check if the response status code is OK
+		if response.StatusCode != http.StatusOK {
+			logErr = logging.ErrorLog{
+				Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
+				Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", ratingKey)},
+			}
+			if attempt < 3 {
+				time.Sleep(2 * time.Second) // Wait before retrying
+				continue
+			}
+			return "", logErr
+		}
+
+		// If no errors, break out of the retry loop
+		break
 	}
 
 	// Parse the response body into a PlexPhotosResponse struct

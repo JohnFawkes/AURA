@@ -129,7 +129,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	refreshPlexItem(itemRatingKey)
 	posterKey, logErr := getPosters(itemRatingKey)
 	if logErr.Err != nil {
-		return logging.ErrorLog{Err: fmt.Errorf("failed to get posters for rating key: %s", itemRatingKey), Log: logging.Log{Message: fmt.Sprintf("Failed to get posters for rating key: %s", itemRatingKey)}}
+		return logErr
 	}
 	setPoster(itemRatingKey, posterKey, file.Type)
 
