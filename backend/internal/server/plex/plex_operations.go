@@ -94,10 +94,20 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// If the posterType is "backdrop", set the URL to art
 	// Else set it to posters
 
-	if posterType == "backdrop" {
-		posterType = "art"
+	requestMethod := "PUT"
+	if !config.Global.SaveImageNextToContent {
+		requestMethod = "POST"
+		if posterType == "backdrop" {
+			posterType = "arts"
+		} else {
+			posterType = "posters"
+		}
 	} else {
-		posterType = "poster"
+		if posterType == "backdrop" {
+			posterType = "art"
+		} else {
+			posterType = "poster"
+		}
 	}
 	logging.LOG.Trace(fmt.Sprintf("Setting %s for rating key: %s", posterType, ratingKey))
 
@@ -107,7 +117,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 	// Construct the URL for setting the poster
 	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", config.Global.MediaServer.URL, ratingKey, posterType, escapedPosterKey)
 
-	response, body, logErr := utils.MakeHTTPRequest(url, "PUT", nil, 60, nil, "MediaServer")
+	response, body, logErr := utils.MakeHTTPRequest(url, requestMethod, nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
 		return logErr
 	}
