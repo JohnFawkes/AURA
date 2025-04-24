@@ -50,19 +50,20 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 			itemInfo.Type = item.Type
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
-			itemInfo.Thumb = item.Thumb
-			itemInfo.AudienceRating = item.AudienceRating
-			itemInfo.UserRating = item.UserRating
-			itemInfo.ContentRating = item.ContentRating
-			itemInfo.Summary = item.Summary
-			itemInfo.UpdatedAt = item.UpdatedAt
-			itemInfo.Movie = &modals.MediaItemMovie{
-				File: modals.MediaItemFile{
-					Path:     item.Media[0].Part[0].File,
-					Size:     item.Media[0].Part[0].Size,
-					Duration: item.Media[0].Part[0].Duration,
-				},
-			}
+			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
+			// itemInfo.Thumb = item.Thumb
+			// itemInfo.AudienceRating = item.AudienceRating
+			// itemInfo.UserRating = item.UserRating
+			// itemInfo.ContentRating = item.ContentRating
+			// itemInfo.Summary = item.Summary
+			// itemInfo.UpdatedAt = item.UpdatedAt
+			// itemInfo.Movie = &modals.MediaItemMovie{
+			// 	File: modals.MediaItemFile{
+			// 		Path:     item.Media[0].Part[0].File,
+			// 		Size:     item.Media[0].Part[0].Size,
+			// 		Duration: item.Media[0].Part[0].Duration,
+			// 	},
+			// }
 
 			items = append(items, itemInfo)
 		}
@@ -76,16 +77,17 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 			itemInfo.Type = item.Type
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
-			itemInfo.Thumb = item.Thumb
-			itemInfo.AudienceRating = item.AudienceRating
-			itemInfo.UserRating = item.UserRating
-			itemInfo.ContentRating = item.ContentRating
-			itemInfo.Summary = item.Summary
-			itemInfo.UpdatedAt = item.UpdatedAt
-			itemInfo.Series = &modals.MediaItemSeries{
-				SeasonCount:  item.ChildCount,
-				EpisodeCount: item.LeafCount,
-			}
+			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
+			// itemInfo.Thumb = item.Thumb
+			// itemInfo.AudienceRating = item.AudienceRating
+			// itemInfo.UserRating = item.UserRating
+			// itemInfo.ContentRating = item.ContentRating
+			// itemInfo.Summary = item.Summary
+			// itemInfo.UpdatedAt = item.UpdatedAt
+			// itemInfo.Series = &modals.MediaItemSeries{
+			// 	SeasonCount:  item.ChildCount,
+			// 	EpisodeCount: item.LeafCount,
+			// }
 			items = append(items, itemInfo)
 		}
 	}
