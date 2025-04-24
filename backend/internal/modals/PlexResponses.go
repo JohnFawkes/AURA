@@ -6,6 +6,7 @@ import "encoding/xml"
 type PlexResponse struct {
 	XMLName             xml.Name            `xml:"MediaContainer"`
 	Size                int                 `xml:"size,attr"`
+	TotalSize           int                 `xml:"totalSize,attr,omitempty"`
 	LibrarySectionID    string              `xml:"librarySectionID,attr"`
 	LibrarySectionTitle string              `xml:"librarySectionTitle,attr"`
 	ViewGroup           string              `xml:"viewGroup,attr"`      // Shows whether it is a movie, show
