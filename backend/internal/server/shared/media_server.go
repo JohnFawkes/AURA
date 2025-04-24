@@ -52,7 +52,7 @@ func (e *EmbyJellyServer) FetchLibrarySectionInfo(library *modals.Config_MediaSe
 	return found, logging.ErrorLog{}
 }
 
-func (p *PlexServer) FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.ErrorLog) {
+func (p *PlexServer) FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog) {
 	// Fetch the section content from Plex
 	mediaItems, logErr := plex.FetchLibrarySectionItems(sectionID)
 	if logErr.Err != nil {
