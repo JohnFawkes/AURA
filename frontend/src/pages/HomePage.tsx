@@ -13,9 +13,12 @@ import HomeMediaItemCard from "../components/HomeMediaItemCard";
 import HomeTopSection from "../components/HomeTopSection";
 import Loader from "../components/Loader";
 import ErrorMessage from "../components/ErrorMessage";
+import { openDB } from "idb";
 
 const CACHE_KEY = "librarySectionsCache";
 const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour in milliseconds
+const CACHE_DB_NAME = "LibraryCacheDB";
+const CACHE_STORE_NAME = "LibrarySections";
 
 const Home: React.FC = () => {
 	const [loading, setLoading] = useState<boolean>(true);
@@ -47,16 +50,25 @@ const Home: React.FC = () => {
 		setLoading(true);
 		setErrorLoading(false);
 		try {
+			const db = await openDB(CACHE_DB_NAME, 1, {
+				upgrade(db) {
+					if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+						db.createObjectStore(CACHE_STORE_NAME);
+					}
+				},
+			});
+
 			if (useCache) {
-				const cachedData = localStorage.getItem(CACHE_KEY);
+				const cachedData = await db.get(CACHE_STORE_NAME, CACHE_KEY);
 				if (cachedData) {
-					const parsedData = JSON.parse(cachedData);
 					const now = new Date().getTime();
-					if (now - parsedData.timestamp < CACHE_EXPIRY) {
+					if (now - cachedData.timestamp < CACHE_EXPIRY) {
 						console.log(
-							`Cache Size: ${new Blob([cachedData]).size} bytes`
+							`Cache Size: ${
+								new Blob([JSON.stringify(cachedData)]).size
+							} bytes`
 						);
-						setLibrarySections(parsedData.data);
+						setLibrarySections(cachedData.data);
 						setLoading(false);
 						return;
 					}
@@ -72,34 +84,19 @@ const Home: React.FC = () => {
 				throw new Error("No sections found, please check the logs.");
 			}
 
-			console.log("Sections:", sections);
+			const dataToStore = {
+				data: sections,
+				timestamp: new Date().getTime(),
+			};
+
 			console.log(
-				`Sections Size: ${
-					new Blob([JSON.stringify(sections)]).size
+				`Saved Size: ${
+					new Blob([JSON.stringify(dataToStore)]).size
 				} bytes`
 			);
+			await db.put(CACHE_STORE_NAME, dataToStore, CACHE_KEY);
 
-			// Extract only essential fields (Title and RatingKey) for each media item
-			const minimalSections = sections.map((section: LibrarySection) => ({
-				...section,
-				MediaItems: section.MediaItems?.map((item: MediaItem) => ({
-					Title: item.Title,
-					RatingKey: item.RatingKey,
-					Year: item.Year,
-					LibraryTitle: section.Title,
-					Type: item.Type,
-					Guids: item.Guids,
-				})),
-			}));
-
-			const dataToStore = JSON.stringify({
-				data: minimalSections,
-				timestamp: new Date().getTime(),
-			});
-			console.log(`Saved Size: ${new Blob([dataToStore]).size} bytes`);
-			localStorage.setItem(CACHE_KEY, dataToStore);
-
-			setLibrarySections(minimalSections);
+			setLibrarySections(sections);
 		} catch (error) {
 			setErrorLoading(true);
 			console.log("Error fetching data:", error);
