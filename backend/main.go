@@ -83,8 +83,10 @@ func main() {
 	})
 
 	// Start the cron tasks
-	logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", config.Global.AutoDownload.Cron))
-	c.Start()
+	if config.Global.AutoDownload.Enabled {
+		logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", config.Global.AutoDownload.Cron))
+		c.Start()
+	}
 
 	go func() {
 		// Start the API server
