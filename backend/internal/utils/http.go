@@ -16,7 +16,7 @@ import (
 
 // MakeHTTPRequest function to handle HTTP requests
 func MakeHTTPRequest(url, method string, headers map[string]string, timeout int, body []byte, tokenType string) (*http.Response, []byte, logging.ErrorLog) {
-
+	startTime := time.Now()
 	var urlTitle string
 	if tokenType == "MediaServer" {
 		urlTitle = config.Global.MediaServer.Type
@@ -93,7 +93,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 
 	// Defer closing the response body
 	defer resp.Body.Close()
-
+	logging.LOG.Trace(fmt.Sprintf("Time taken for HTTP request (%s): %s", urlTitle, ElapsedTime(startTime)))
 	// Return the response
 	return resp, respBody, logging.ErrorLog{}
 }
