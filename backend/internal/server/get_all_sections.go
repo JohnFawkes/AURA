@@ -47,7 +47,7 @@ func GetAllSections(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		mediaItems, logErr := mediaServer.FetchLibrarySectionItems(library.SectionID)
+		mediaItems, logErr := mediaServer.FetchLibrarySectionItems(library.SectionID, library.Name)
 		if logErr.Err != nil {
 			logging.LOG.Warn(logErr.Log.Message)
 			continue

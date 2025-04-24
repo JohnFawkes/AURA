@@ -11,7 +11,7 @@ import (
 	"poster-setter/internal/utils"
 )
 
-func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.ErrorLog) {
+func FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s", sectionID))
 
 	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("Users/%s/Items", config.Global.MediaServer.UserID), config.Global.MediaServer.URL)
@@ -66,6 +66,7 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 		itemInfo.Title = item.Name
 		itemInfo.Year = item.ProductionYear
 		itemInfo.Thumb = item.ImageTags.Thumb
+		itemInfo.LibraryTitle = sectionTitle
 
 		items = append(items, itemInfo)
 	}

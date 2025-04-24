@@ -19,7 +19,7 @@ type MediaServer interface {
 	FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.ErrorLog)
 
 	// Get the library section items
-	FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.ErrorLog)
+	FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog)
 
 	// Get an item's content by Rating Key/ID
 	FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog)
@@ -61,9 +61,9 @@ func (p *PlexServer) FetchLibrarySectionItems(sectionID string) ([]modals.MediaI
 	return mediaItems, logging.ErrorLog{}
 }
 
-func (e *EmbyJellyServer) FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.ErrorLog) {
+func (e *EmbyJellyServer) FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog) {
 	// Fetch the section content from Emby/Jellyfin
-	mediaItems, logErr := emby_jellyfin.FetchLibrarySectionItems(sectionID)
+	mediaItems, logErr := emby_jellyfin.FetchLibrarySectionItems(sectionID, sectionTitle)
 	if logErr.Err != nil {
 		return nil, logErr
 	}
