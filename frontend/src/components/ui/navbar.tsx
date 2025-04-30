@@ -77,7 +77,9 @@ export default function Navbar() {
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent className="w-56">
-					<DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => router.push("/saved-sets")}
+					>
 						<BookmarkIcon className="w-4 h-4 mr-2" />
 						Saved Sets
 					</DropdownMenuItem>
