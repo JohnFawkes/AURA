@@ -27,13 +27,19 @@ import { PosterSets } from "@/types/posterSets";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { usePosterMediaStore } from "@/lib/setStore";
 
 const MediaItemPage = () => {
 	const router = useRouter();
-	const { ratingKey } = useParams();
+	const partialMediaItem = usePosterMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
+
+	// const { ratingKey } = useParams();
+	// const { sectionTitle } = useParams();
 	const [isBlurred, setIsBlurred] = useState(false);
 
-	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(null);
+	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(
+		partialMediaItem
+	);
 	const [imdbLink, setImdbLink] = React.useState<string>("");
 	const [tmdbLink, setTmdbLink] = React.useState<string>("");
 	const [tvdbLink, setTvdbLink] = React.useState<string>("");
@@ -130,10 +136,13 @@ const MediaItemPage = () => {
 
 		const fetchAllInfo = async () => {
 			try {
-				if (typeof ratingKey !== "string") {
-					throw new Error("Invalid ratingKey: must be a string");
+				if (!partialMediaItem) {
+					throw new Error("No media item found");
 				}
-				const resp = await fetchMediaServerItemContent(ratingKey);
+				const resp = await fetchMediaServerItemContent(
+					partialMediaItem.RatingKey,
+					partialMediaItem.LibraryTitle
+				);
 				if (!resp) {
 					throw new Error("No response from Plex API");
 				}
@@ -160,7 +169,7 @@ const MediaItemPage = () => {
 		};
 
 		fetchAllInfo();
-	}, [ratingKey]);
+	}, [partialMediaItem]);
 
 	if (isLoading) {
 		return <Loader message="Loading media item..." />;
@@ -250,7 +259,7 @@ const MediaItemPage = () => {
 				<div className="absolute top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
 					<div className="relative w-full h-full">
 						<Image
-							src={`/api/mediaserver/image/${ratingKey}/backdrop`}
+							src={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
 							alt={"Backdrop"}
 							fill
 							priority
