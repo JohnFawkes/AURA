@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 import { ClientMessage } from "../types/clientMessage";
 import { APIResponse } from "../types/apiResponse";
 import { ReturnErrorMessage } from "./api.shared";
-import { log } from "../lib/logger"; // Assuming you have a logger utility
+import { log } from "@/lib/logger";
 
 export const fetchAllItemsFromDB = async (): Promise<
 	APIResponse<ClientMessage[]>
