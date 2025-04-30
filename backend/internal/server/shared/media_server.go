@@ -22,7 +22,7 @@ type MediaServer interface {
 	FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog)
 
 	// Get an item's content by Rating Key/ID
-	FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog)
+	FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog)
 
 	// Get an image from the media server
 	FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.ErrorLog)
@@ -70,7 +70,7 @@ func (e *EmbyJellyServer) FetchLibrarySectionItems(sectionID, sectionTitle strin
 	return mediaItems, logging.ErrorLog{}
 }
 
-func (p *PlexServer) FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
+func (p *PlexServer) FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog) {
 	// Fetch the item content from Plex
 	itemInfo, logErr := plex.FetchItemContent(ratingKey)
 	if logErr.Err != nil {
@@ -79,9 +79,9 @@ func (p *PlexServer) FetchItemContent(ratingKey string) (modals.MediaItem, loggi
 	return itemInfo, logging.ErrorLog{}
 }
 
-func (e *EmbyJellyServer) FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
+func (e *EmbyJellyServer) FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog) {
 	// Fetch the item content from Emby/Jellyfin
-	itemInfo, logErr := emby_jellyfin.FetchItemContent(ratingKey)
+	itemInfo, logErr := emby_jellyfin.FetchItemContent(ratingKey, sectionTitle)
 	if logErr.Err != nil {
 		return itemInfo, logErr
 	}
