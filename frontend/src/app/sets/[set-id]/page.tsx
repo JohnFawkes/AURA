@@ -5,11 +5,10 @@ import { usePosterMediaStore } from "@/lib/setStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { H1, Lead } from "@/components/ui/typography";
+import { H1 } from "@/components/ui/typography";
 import { Badge } from "@/components/ui/badge";
 import { AssetImage } from "@/components/ui/asset-image";
 import { PosterFile } from "@/types/posterSets";
-import Link from "next/link";
 import {
 	Accordion,
 	AccordionContent,
@@ -23,10 +22,25 @@ const SetPage = () => {
 	const [isBlurred, setIsBlurred] = useState(false);
 	const [backdropURL, setBackdropURL] = useState("");
 
-	// Check if posterSet and mediaItem are defined
-	if (!posterSet || !mediaItem) {
-		return <ErrorMessage message="Poster set or media item not found." />;
-	}
+	// Construct the backdrop URL
+	// If the posterSet.Files contains a backdrop, use that
+	// Otherwise, use the mediaItem's backdrop
+	useEffect(() => {
+		if (posterSet && posterSet.Files && posterSet.Files.length > 0) {
+			const backdropFile = posterSet.Files.find(
+				(file) => file.Type === "backdrop"
+			);
+			if (backdropFile) {
+				setBackdropURL(
+					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
+				);
+			} else {
+				setBackdropURL(
+					`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
+				);
+			}
+		}
+	}, [mediaItem?.RatingKey, posterSet]);
 
 	// Handle scroll event to blur the background
 	useEffect(() => {
@@ -48,31 +62,10 @@ const SetPage = () => {
 		};
 	}, []);
 
-	// Construct the backdrop URL
-	// If the posterSet.Files contains a backdrop, use that
-	// Otherwise, use the mediaItem's backdrop
-	useEffect(() => {
-		if (posterSet.Files && posterSet.Files.length > 0) {
-			const backdropFile = posterSet.Files.find(
-				(file) => file.Type === "backdrop"
-			);
-			if (backdropFile) {
-				setBackdropURL(
-					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
-				);
-			} else {
-				setBackdropURL(
-					`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`
-				);
-			}
-		}
-	}, [mediaItem.RatingKey, posterSet.Files]);
-
 	// Helper function to get the count and label for each type
 	const getFileTypeCount = (type: string, label: string) => {
-		const count = posterSet.Files.filter(
-			(file) => file.Type === type
-		).length;
+		const count =
+			posterSet?.Files?.filter((file) => file.Type === type).length || 0;
 		return count > 0 ? `${count} ${label}${count > 1 ? "s" : ""}` : null;
 	};
 
@@ -92,6 +85,11 @@ const SetPage = () => {
 		.filter(Boolean) // Remove null values
 		.join(" • ");
 
+	// Check if posterSet and mediaItem are defined
+	if (!posterSet || !mediaItem) {
+		return <ErrorMessage message="Poster set or media item not found." />;
+	}
+
 	return (
 		<div>
 			<div
@@ -104,7 +102,7 @@ const SetPage = () => {
 				<div className="absolute inset-0 bg-background">
 					{/* Subtle Noise Texture */}
 					<div className="absolute inset-0 opacity-[0.015] mix-blend-overlay">
-						<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5org/2000/svgIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjc1IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNhKSIvPjwvc3ZnPg==')]" />
+						<div className="absolute inset-0 bg-[url(/gradient.svg)]"></div>{" "}
 					</div>
 
 					{/* Dynamic Overlay */}
@@ -127,24 +125,28 @@ const SetPage = () => {
 				{/* Image Container - Positioned Top Right, width driven, height by aspect ratio */}
 				<div className="absolute top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
 					<div className="relative w-full h-full">
-						<Image
-							src={backdropURL}
-							alt={"Backdrop"}
-							fill
-							priority
-							unoptimized
-							className="object-cover object-right-top"
-							style={{
-								maskImage: `url(/gradient.svg)`,
-								WebkitMaskImage: `url(/gradient.svg)`,
-								maskSize: "100% 100%",
-								WebkitMaskSize: "100% 100%",
-								maskRepeat: "no-repeat",
-								WebkitMaskRepeat: "no-repeat",
-								maskPosition: "center",
-								WebkitMaskPosition: "center",
-							}}
-						/>
+						{backdropURL ? (
+							<Image
+								src={backdropURL}
+								alt="Backdrop"
+								fill
+								priority
+								unoptimized
+								className="object-cover object-right-top"
+								style={{
+									maskImage: `url(/gradient.svg)`,
+									WebkitMaskImage: `url(/gradient.svg)`,
+									maskSize: "100% 100%",
+									WebkitMaskSize: "100% 100%",
+									maskRepeat: "no-repeat",
+									WebkitMaskRepeat: "no-repeat",
+									maskPosition: "center",
+									WebkitMaskPosition: "center",
+								}}
+							/>
+						) : (
+							<div className="w-full h-full bg-gray-200 animate-pulse" />
+						)}
 					</div>
 				</div>
 			</div>
