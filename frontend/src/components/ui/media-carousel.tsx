@@ -13,6 +13,7 @@ import { MediaItem } from "@/types/mediaItem";
 import { Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePosterMediaStore } from "@/lib/setStore";
+import { Lead, P } from "./typography";
 
 type MediaCarouselProps = {
 	set: PosterSet;
@@ -75,15 +76,11 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 			}}
 			className="w-full"
 		>
-			<div className="flex flex-col ">
-				<div className="text-xs flex flex-row items-center gap-1">
-					<span className="text-muted-foreground">Set by:</span>
-					<span className="text-primary-dynamic flex items-center gap-1">
-						{set.User.Name}{" "}
-						<span className="text-xs text-muted-foreground">
-							Last Update: {formatDate(set.DateUpdated || "")}
-						</span>
-					</span>
+			<div className="flex flex-col">
+				<div className="flex flex-row items-center">
+					<P className="text-primary-dynamic">
+						Set by: {set.User.Name}
+					</P>
 					<div className="ml-auto">
 						<button
 							className="btn"
@@ -91,18 +88,21 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 								goToSetPage();
 							}}
 						>
-							<Download className="mr-2 h-4 w-4" />
+							<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
 						</button>
 					</div>
 				</div>
-				<span
-					className="text-xs text-muted-foreground"
+				<P className="text-sm text-muted-foreground flex items-center mb-1">
+					Last Update: {formatDate(set.DateUpdated || "")}
+				</P>
+				<Lead
+					className="text-sm text-muted-foreground"
 					onClick={() => {
 						goToSetPage();
 					}}
 				>
 					{fileCounts}
-				</span>
+				</Lead>
 			</div>
 
 			<CarouselContent>

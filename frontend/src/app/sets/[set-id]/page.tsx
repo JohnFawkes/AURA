@@ -5,7 +5,7 @@ import { usePosterMediaStore } from "@/lib/setStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { H1 } from "@/components/ui/typography";
+import { H1, Lead } from "@/components/ui/typography";
 import { Badge } from "@/components/ui/badge";
 import { AssetImage } from "@/components/ui/asset-image";
 import { PosterFile } from "@/types/posterSets";
@@ -189,13 +189,13 @@ const SetPage = () => {
 					{/* Display all posters (if any) */}
 					{posterSet.Files.some((file) => file.Type === "poster") && (
 						<div className="flex flex-col gap-2 mt-4">
-							<span className="text-muted-foreground text-sm">
+							<Lead className="text-muted-foreground text-md">
 								{posterSet.Files.filter(
 									(file) => file.Type === "poster"
 								).length > 1
 									? "Posters"
 									: "Poster"}
-							</span>
+							</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								{posterSet.Files.map((file) => {
 									if (file.Type === "poster") {
@@ -223,13 +223,13 @@ const SetPage = () => {
 						(file) => file.Type === "backdrop"
 					) && (
 						<div className="flex flex-col gap-2 mt-4">
-							<span className="text-muted-foreground text-sm">
+							<Lead className="text-muted-foreground text-md">
 								{posterSet.Files.filter(
 									(file) => file.Type === "backdrop"
 								).length > 1
 									? "Backdrops"
 									: "Backdrop"}
-							</span>
+							</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								{posterSet.Files.map((file) => {
 									if (file.Type === "backdrop") {
@@ -257,13 +257,13 @@ const SetPage = () => {
 						(file) => file.Type === "seasonPoster"
 					) && (
 						<div className="flex flex-col gap-2 mt-4">
-							<span className="text-muted-foreground text-sm">
+							<Lead className="text-muted-foreground text-md">
 								{posterSet.Files.filter(
 									(file) => file.Type === "seasonPoster"
 								).length > 1
 									? "Season Posters"
 									: "Season Poster"}
-							</span>
+							</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								{posterSet.Files.map((file) => {
 									if (file.Type === "seasonPoster") {
@@ -291,9 +291,9 @@ const SetPage = () => {
 						(file) => file.Type === "titlecard"
 					) && (
 						<div className="flex flex-col gap-2 mt-4">
-							<span className="text-muted-foreground text-sm">
+							<Lead className="text-muted-foreground text-md">
 								Titlecards
-							</span>
+							</Lead>
 							<Accordion
 								type="single"
 								collapsible
@@ -319,7 +319,9 @@ const SetPage = () => {
 										value={`season-${season}`}
 									>
 										<AccordionTrigger>
-											Season {season}
+											<Lead className="text-muted-foreground text-md">
+												Season {season}
+											</Lead>
 										</AccordionTrigger>
 										<AccordionContent>
 											<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">

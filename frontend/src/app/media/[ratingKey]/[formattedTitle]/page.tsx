@@ -290,7 +290,7 @@ const MediaItemPage = () => {
 					</div>
 
 					{/* Year, Content Rating, IMDb Rating, and TV Show Information */}
-					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
+					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 						{/* Year */}
 						{mediaItem?.Year && (
 							<Badge className="flex items-center text-sm">
@@ -325,7 +325,9 @@ const MediaItemPage = () => {
 										className="object-contain"
 									/>
 								</div>
-								{mediaItem?.AudienceRating}
+								<Lead className="text-primary-dynamic">
+									{mediaItem?.AudienceRating}
+								</Lead>
 							</div>
 						)}
 
@@ -333,7 +335,7 @@ const MediaItemPage = () => {
 						{mediaItem?.Type === "show" &&
 							mediaItem.Series?.SeasonCount &&
 							mediaItem.Series.EpisodeCount > 0 && (
-								<div className="flex items-center text-sm">
+								<Lead className="flex items-center text-md text-primary-dynamic">
 									{mediaItem.Series?.SeasonCount}{" "}
 									{mediaItem.Series?.SeasonCount > 1
 										? "Seasons"
@@ -342,7 +344,7 @@ const MediaItemPage = () => {
 									{mediaItem.Series?.EpisodeCount > 1
 										? "Episodes"
 										: "Episode"}
-								</div>
+								</Lead>
 							)}
 					</div>
 
