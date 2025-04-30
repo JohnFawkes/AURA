@@ -21,6 +21,7 @@ type MediuxFileItem struct {
 	ID         string             `json:"id"`
 	FileType   string             `json:"file_type"`
 	ModifiedOn time.Time          `json:"modified_on"`
+	FileSize   string             `json:"filesize"`
 	Movie      *MediuxFileMovie   `json:"movie,omitempty"`
 	Season     *MediuxFileSeason  `json:"season,omitempty"`
 	Episode    *MediuxFileEpisode `json:"episode,omitempty"`
@@ -113,6 +114,7 @@ type PosterFile struct {
 	ID       string             `json:"ID"`
 	Type     string             `json:"Type"`
 	Modified time.Time          `json:"Modified"`
+	FileSize int64              `json:"FileSize"`
 	Movie    *PosterFileMovie   `json:"Movie,omitempty"`
 	Season   *PosterFileSeason  `json:"Season,omitempty"`
 	Episode  *PosterFileEpisode `json:"Episode,omitempty"`
