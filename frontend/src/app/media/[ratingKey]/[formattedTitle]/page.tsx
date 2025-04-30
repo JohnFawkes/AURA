@@ -33,8 +33,6 @@ const MediaItemPage = () => {
 	const router = useRouter();
 	const partialMediaItem = usePosterMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
-	// const { ratingKey } = useParams();
-	// const { sectionTitle } = useParams();
 	const [isBlurred, setIsBlurred] = useState(false);
 
 	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(
