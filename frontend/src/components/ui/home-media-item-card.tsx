@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { usePosterMediaStore } from "@/lib/setStore";
 import { MediaItem } from "@/types/mediaItem";
+import { H3, H4 } from "./typography";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
@@ -44,12 +45,11 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 				/>
 			</div>
 
-			<CardHeader className="text-center text-xl font-semibold flex justify-center ">
+			<H4 className="text-center font-semibold mb-2 px-2">
 				{mediaItem.Title.length > 45
 					? `${mediaItem.Title.slice(0, 45)}...`
 					: mediaItem.Title}
-			</CardHeader>
-
+			</H4>
 			{/* Badges */}
 			<CardContent className="flex justify-center gap-2">
 				<Badge variant="default" className=" text-xs">
