@@ -258,7 +258,10 @@ export default function Home() {
 					</div>
 				) : (
 					paginatedItems.map((item) => (
-						<HomeMediaItemCard mediaItem={item} />
+						<HomeMediaItemCard
+							key={item.RatingKey}
+							mediaItem={item}
+						/>
 					))
 				)}
 			</div>
