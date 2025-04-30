@@ -57,3 +57,4 @@ backend/.air.toml
 .secrets
 docker_local_build.sh
 docker_local_beta_build.sh
+docker-compose.beta.yml
