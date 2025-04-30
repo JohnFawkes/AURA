@@ -49,9 +49,10 @@ ARG APP_VERSION=dev
 # ENV NEXT_PUBLIC_BACKEND_PORT=${BACKEND_PORT}
 # ENV NEXT_PUBLIC_FRONTEND_PORT=${FRONTEND_PORT}
 ENV NEXT_PUBLIC_APP_VERSION=${APP_VERSION}
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-RUN npm run build
+RUN npm run build || (echo "Build failed" && cat /frontend/.next/build-diagnostics.json && exit 1)
 
 ############################################################################
 ##### Stage 3: Build the final image
