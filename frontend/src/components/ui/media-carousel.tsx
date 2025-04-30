@@ -19,6 +19,21 @@ type MediaCarouselProps = {
 	mediaItem: MediaItem;
 };
 
+const formatDate = (dateString: string) => {
+	try {
+		const date = new Date(dateString);
+		return new Intl.DateTimeFormat("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		}).format(date);
+	} catch {
+		return "Invalid Date";
+	}
+};
+
 export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 	const router = useRouter();
 
@@ -65,6 +80,9 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 					<span className="text-muted-foreground">Set by:</span>
 					<span className="text-primary-dynamic flex items-center gap-1">
 						{set.User.Name}{" "}
+						<span className="text-xs text-muted-foreground">
+							Last Update: {formatDate(set.DateUpdated || "")}
+						</span>
 					</span>
 					<div className="ml-auto">
 						<button
