@@ -3,26 +3,24 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { usePosterMediaStore } from "@/lib/setStore";
+import { MediaItem } from "@/types/mediaItem";
 
 interface HomeMediaItemCardProps {
-	ratingKey: string;
-	title: string;
-	year: number;
-	libraryTitle: string;
+	mediaItem: MediaItem;
 }
 
-const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({
-	ratingKey,
-	title,
-	year,
-	libraryTitle,
-}) => {
+const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	const router = useRouter();
+	const setMediaItem = usePosterMediaStore((state) => state.setMediaItem);
 
-	const handleCardClick = (ratingKey: string, title: string) => {
+	const handleCardClick = (mediaItem: MediaItem) => {
+		// Store the mediaItem in Zustand
+		setMediaItem(mediaItem);
+
 		// Replace space with underscore for URL compatibility
-		const formattedTitle = title.replace(/\s+/g, "_");
-		router.push(`/media/${ratingKey}/${formattedTitle}`);
+		const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");
+		router.push(`/media/${mediaItem.RatingKey}/${formattedTitle}`);
 	};
 
 	return (
@@ -31,13 +29,13 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({
 			style={{
 				backgroundColor: "var(--card)",
 			}}
-			onClick={() => handleCardClick(ratingKey, title)}
+			onClick={() => handleCardClick(mediaItem)}
 		>
 			{/* Poster Image */}
 			<div className="relative w-[150px] h-[220px] rounded-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
 				<Image
-					src={`/api/mediaserver/image/${ratingKey}/poster`}
-					alt={title}
+					src={`/api/mediaserver/image/${mediaItem.RatingKey}/poster`}
+					alt={mediaItem.Title}
 					fill
 					className="object-cover"
 					loading="lazy"
@@ -46,16 +44,18 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({
 			</div>
 
 			<CardHeader className="text-center text-xl font-semibold flex justify-center ">
-				{title.length > 45 ? `${title.slice(0, 45)}...` : title}
+				{mediaItem.Title.length > 45
+					? `${mediaItem.Title.slice(0, 45)}...`
+					: mediaItem.Title}
 			</CardHeader>
 
 			{/* Badges */}
 			<CardContent className="flex justify-center gap-2">
 				<Badge variant="default" className=" text-xs">
-					{year}
+					{mediaItem.Year}
 				</Badge>
 				<Badge variant="default" className="text-xs">
-					{libraryTitle}
+					{mediaItem.LibraryTitle}
 				</Badge>
 			</CardContent>
 		</Card>
