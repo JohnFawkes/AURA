@@ -228,7 +228,7 @@ const MediaItemPage = () => {
 			>
 				<div className="absolute inset-0 bg-background">
 					<div className="absolute inset-0 opacity-[0.015] mix-blend-overlay">
-						<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5org/2000/svgIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjc1IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNhKSIvPjwvc3ZnPg==')]" />
+						<div className="absolute inset-0 bg-[url(/gradient.svg)]"></div>{" "}
 					</div>
 
 					<div
@@ -314,6 +314,7 @@ const MediaItemPage = () => {
 										src={"/imdb_logo.png"}
 										alt="Rating"
 										fill
+										sizes="30px"
 										className="object-contain"
 									/>
 								</div>
