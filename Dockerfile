@@ -66,6 +66,7 @@ COPY --from=backend-builder /backend/main .
 
 # Copy the frontend build from the builder stage
 COPY --from=frontend-builder /frontend/.next /frontend/.next
+COPY --from=frontend-builder /frontend/public /frontend/public
 COPY --from=frontend-builder /frontend/package.json /frontend/package.json
 COPY --from=frontend-builder /frontend/node_modules /frontend/node_modules
 
