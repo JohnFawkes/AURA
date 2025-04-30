@@ -200,7 +200,7 @@ func processResponse(itemType string, response modals.MediuxItem) modals.PosterS
 func processPosterSets(setType string, mediuxPosterSets []modals.MediuxPosterSet) []modals.PosterSet {
 	var posterSets []modals.PosterSet
 	for _, set := range mediuxPosterSets {
-		if set.Files == nil || len(set.Files) == 0 {
+		if len(set.Files) == 0 {
 			continue
 		}
 		var posterSet modals.PosterSet
@@ -220,7 +220,7 @@ func processPosterSets(setType string, mediuxPosterSets []modals.MediuxPosterSet
 func processCollectionSets(collection modals.MediuxCollectionID) []modals.PosterSet {
 	var posterSets []modals.PosterSet
 	for _, set := range collection.CollectionSets {
-		if set.Files == nil || len(set.Files) == 0 {
+		if len(set.Files) == 0 {
 			continue
 		}
 		var posterSet modals.PosterSet
