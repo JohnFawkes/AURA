@@ -1,8 +1,8 @@
+import { APIResponse } from "@/types/apiResponse";
+import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import apiClient from "./apiClient";
-import { APIResponse } from "../types/apiResponse";
-import { LibrarySection, MediaItem } from "../types/mediaItem";
-import { ClientMessage } from "../types/clientMessage";
 import { ReturnErrorMessage } from "./api.shared";
+import { ClientMessage } from "@/types/clientMessage";
 
 export const fetchMediaServerLibraryItems = async (): Promise<
 	APIResponse<LibrarySection[]>
@@ -21,6 +21,7 @@ export const fetchMediaServerItemContent = async (
 	ratingKey: string
 ): Promise<APIResponse<MediaItem>> => {
 	try {
+		console.log("Fetching Media Item Content:", ratingKey);
 		const response = await apiClient.get<APIResponse<MediaItem>>(
 			`/mediaserver/item/${ratingKey}`
 		);
@@ -41,21 +42,5 @@ export const postSendSetToAPI = async (
 		return response.data;
 	} catch (error) {
 		return ReturnErrorMessage<null>(error);
-	}
-};
-
-export const fetchMediaServerImageData = async (
-	ratingKey: string,
-	type: string
-): Promise<string> => {
-	try {
-		const API_URL = `/mediaserver/image/${ratingKey}/${type}`;
-		const response = await apiClient.get<APIResponse<null>>(API_URL);
-		if (response.status !== 200) {
-			throw new Error("Failed to fetch image data");
-		}
-		return "/api" + API_URL;
-	} catch {
-		return "/logo.png"; // Fallback image
 	}
 };

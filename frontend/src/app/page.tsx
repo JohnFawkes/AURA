@@ -1,0 +1,342 @@
+"use client";
+import { LibrarySection, MediaItem } from "@/types/mediaItem";
+import { openDB } from "idb";
+import { useEffect, useState, useContext } from "react";
+import { SearchContext } from "@/app/layout";
+import Loader from "@/components/ui/loader";
+import ErrorMessage from "@/components/ui/error-message";
+import HomeMediaItemCard from "@/components/ui/home-media-item-card";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import { RefreshCcw as RefreshIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ToggleGroup } from "@/components/ui/toggle-group";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+	CACHE_DB_NAME,
+	CACHE_STORE_NAME,
+	CACHE_KEY,
+	CACHE_EXPIRY,
+} from "@/constants/cache";
+import { fetchMediaServerLibraryItems } from "@/services/api.mediaserver";
+
+export default function Home() {
+	// Context to manage search query
+	const { searchQuery } = useContext(SearchContext); // Access the search query from context
+	const [debouncedQuery, setDebouncedQuery] = useState<string>("");
+
+	// State for loading, error, and library sections
+	const [loading, setLoading] = useState<boolean>(true);
+	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
+		[]
+	);
+
+	// State for filtered libraries and items
+	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
+	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
+
+	// State for pagination
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const itemsPerPage = 20; // Number of items per page
+
+	// Calculate paginated items
+	const paginatedItems = filteredItems.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage
+	);
+
+	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+	// Fetch data from cache or API
+	const getMediaItems = async (useCache: boolean) => {
+		setLoading(true);
+		try {
+			const db = await openDB(CACHE_DB_NAME, 1, {
+				upgrade(db) {
+					if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+						db.createObjectStore(CACHE_STORE_NAME);
+					}
+				},
+			});
+
+			if (useCache) {
+				const cachedData = await db.get(CACHE_STORE_NAME, CACHE_KEY);
+				if (cachedData) {
+					const now = new Date().getTime();
+					if (now - cachedData.timestamp < CACHE_EXPIRY) {
+						setLibrarySections(cachedData.data);
+						setLoading(false);
+						return;
+					}
+				}
+			}
+
+			const resp = await fetchMediaServerLibraryItems();
+			if (resp.status !== "success") {
+				throw new Error(resp.message);
+			}
+			const sections = resp.data;
+			if (!sections || sections.length === 0) {
+				throw new Error("No sections found, please check the logs.");
+			}
+
+			const dataToStore = {
+				data: sections,
+				timestamp: new Date().getTime(),
+			};
+			await db.put(CACHE_STORE_NAME, dataToStore, CACHE_KEY);
+
+			setLibrarySections(sections);
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred"
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		getMediaItems(true);
+	}, []);
+
+	// Debounce the search query
+	useEffect(() => {
+		const handler = setTimeout(() => {
+			setDebouncedQuery(searchQuery);
+		}, 300);
+
+		return () => clearTimeout(handler);
+	}, [searchQuery]);
+
+	// Filter items based on the search query
+	useEffect(() => {
+		let items = librarySections.flatMap(
+			(section) => section.MediaItems || []
+		);
+
+		// Filter by selected libraries
+		if (filteredLibraries.length > 0) {
+			items = items.filter((item) =>
+				filteredLibraries.includes(item.LibraryTitle)
+			);
+		}
+
+		// Handle search query
+		if (debouncedQuery.trim() !== "") {
+			const query = debouncedQuery.trim();
+			let exactQuery = "";
+			let yearFilter = null;
+
+			// Check if the query contains a year filter (e.g., y:2012)
+			const yearMatch = query.match(/y:(\d{4})/);
+			if (yearMatch) {
+				yearFilter = parseInt(yearMatch[1], 10);
+			}
+
+			// Check if the query is wrapped in quotes for exact match
+			if (
+				(query.startsWith('"') && query.endsWith('"')) ||
+				(query.startsWith("'") && query.endsWith("'")) ||
+				(query.startsWith("‘") && query.endsWith("’")) ||
+				(query.startsWith("'“") && query.endsWith("”'"))
+			) {
+				// Normalize quotes
+				const normalizedQuery = query
+					.replace(/‘|’/g, "'")
+					.replace(/“|”/g, '"')
+					.replace(/'/g, '"');
+
+				exactQuery = normalizedQuery
+					.slice(1, normalizedQuery.length - 1) // Remove surrounding quotes
+					.toLowerCase();
+				items = items.filter(
+					(item) => item.Title.toLowerCase() === exactQuery
+				);
+			} else {
+				// Partial match (search for the query in the title)
+				const partialQuery = query
+					.replace(/y:\d{4}/, "")
+					.trim()
+					.toLowerCase();
+				items = items.filter((item) =>
+					item.Title.toLowerCase().includes(partialQuery)
+				);
+			}
+
+			// Apply year filter if present
+			if (yearFilter) {
+				items = items.filter((item) => item.Year === yearFilter);
+			}
+		}
+
+		setFilteredItems(items);
+		setCurrentPage(1); // Reset to the first page on new search
+	}, [librarySections, filteredLibraries, debouncedQuery]);
+
+	if (loading) {
+		return (
+			<Loader message="Loading all content from your media server..." />
+		);
+	}
+
+	if (errorMessage) {
+		return <ErrorMessage message={errorMessage} />;
+	}
+
+	return (
+		<div className="min-h-screen px-8 pb-20 sm:px-20">
+			{/* Filter and Sort Section */}
+			<div className="flex flex-col sm:flex-row mb-4 mt-4">
+				{/* Label */}
+				<Label
+					htmlFor="library-filter"
+					className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+				>
+					Filter by Library Name:
+				</Label>
+
+				{/* ToggleGroup */}
+				<ToggleGroup
+					type="multiple"
+					className="flex flex-wrap sm:flex-nowrap gap-2"
+					value={filteredLibraries}
+					onValueChange={setFilteredLibraries}
+				>
+					{librarySections.map((section) => (
+						<Badge
+							key={section.ID}
+							className="cursor-pointer"
+							variant={
+								filteredLibraries.includes(section.Title)
+									? "default"
+									: "outline"
+							}
+							onClick={() => {
+								if (filteredLibraries.includes(section.Title)) {
+									setFilteredLibraries((prev) =>
+										prev.filter(
+											(lib) => lib !== section.Title
+										)
+									);
+								} else {
+									setFilteredLibraries((prev) => [
+										...prev,
+										section.Title,
+									]);
+								}
+							}}
+						>
+							{section.Title}
+						</Badge>
+					))}
+				</ToggleGroup>
+			</div>
+
+			{/* Grid of Cards */}
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+				{paginatedItems.length === 0 ? (
+					<div className="col-span-full text-center text-red-500">
+						No items found matching '{searchQuery}' in{" "}
+						{filteredLibraries.length > 0
+							? filteredLibraries.join(", ")
+							: "any library"}
+					</div>
+				) : (
+					paginatedItems.map((item) => (
+						<HomeMediaItemCard
+							key={item.RatingKey}
+							ratingKey={item.RatingKey}
+							title={item.Title}
+							year={item.Year}
+							libraryTitle={item.LibraryTitle}
+						/>
+					))
+				)}
+			</div>
+
+			{/* Pagination */}
+			<div className="flex justify-center mt-8">
+				<Pagination>
+					<PaginationContent>
+						{/* Previous Page Button */}
+						{totalPages > 1 && (
+							<PaginationItem>
+								<PaginationPrevious
+									onClick={() =>
+										setCurrentPage((prev) =>
+											Math.max(prev - 1, 1)
+										)
+									}
+								/>
+							</PaginationItem>
+						)}
+
+						{/* Current Page */}
+						<PaginationItem>
+							<PaginationLink isActive>
+								{currentPage}
+							</PaginationLink>
+						</PaginationItem>
+
+						{/* Next Page Button */}
+						{totalPages > 1 && currentPage < totalPages && (
+							<PaginationItem>
+								<PaginationNext
+									onClick={() =>
+										setCurrentPage((prev) =>
+											Math.min(prev + 1, totalPages)
+										)
+									}
+								/>
+							</PaginationItem>
+						)}
+
+						{/* Ellipsis and End Page */}
+						{totalPages > 3 && currentPage < totalPages - 1 && (
+							<>
+								<PaginationItem>
+									<PaginationEllipsis />
+								</PaginationItem>
+								<PaginationItem>
+									<PaginationLink
+										onClick={() =>
+											setCurrentPage(totalPages)
+										}
+									>
+										{totalPages}
+									</PaginationLink>
+								</PaginationItem>
+							</>
+						)}
+					</PaginationContent>
+				</Pagination>
+			</div>
+
+			<Button
+				variant="outline"
+				size="sm"
+				className={cn(
+					"fixed z-100 bottom-5 right-3 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-background cursor-pointer"
+				)}
+				onClick={() => getMediaItems(false)}
+				aria-label="refresh"
+			>
+				<RefreshIcon className="h-3 w-3 mr-1" />
+				<span className="text-xs hidden sm:inline">Refresh</span>
+			</Button>
+		</div>
+	);
+}

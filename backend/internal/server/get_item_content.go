@@ -54,7 +54,7 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 
 	if itemInfo.RatingKey == "" {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("no item found with the given rating key"),
+			Err: fmt.Errorf("bad rating key"),
 			Log: logging.Log{
 				Message: "No item found with the given rating key",
 				Elapsed: utils.ElapsedTime(startTime),

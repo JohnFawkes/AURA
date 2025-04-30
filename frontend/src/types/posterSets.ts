@@ -47,6 +47,6 @@ export interface PosterFileSeason {
 
 export interface PosterFileEpisode {
 	Title?: string;
-	Number?: number;
-	Season?: PosterFileSeason;
+	EpisodeNumber?: number;
+	SeasonNumber?: number;
 }

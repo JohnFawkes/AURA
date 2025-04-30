@@ -22,9 +22,9 @@ jobs:
               id: extract_version
               run: |
                   if [[ -f VERSION.txt ]]; then
-                    echo "VERSION=$(cat VERSION.txt)" >> $GITHUB_ENV
+                    echo "APP_VERSION=$(cat VERSION.txt)" >> $GITHUB_ENV
                   else
-                    echo "VERSION=dev" >> $GITHUB_ENV
+                    echo "APP_VERSION=dev" >> $GITHUB_ENV
                   fi
 
             - name: Log in to GitHub Container Registry
@@ -44,9 +44,9 @@ jobs:
               run: |
                   docker buildx build . \
                     --platform linux/amd64,linux/arm64 \
-                    --build-arg VERSION=${{ env.VERSION }} \
+                    --build-arg APP_VERSION=${{ env.APP_VERSION }} \
                     --tag ghcr.io/xmoosex/poster-setter:latest \
                     --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest \
-                    --tag ghcr.io/xmoosex/poster-setter:${{ env.VERSION }} \
-                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:${{ env.VERSION }} \
+                    --tag ghcr.io/xmoosex/poster-setter:${{ env.APP_VERSION }} \
+                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:${{ env.APP_VERSION }} \
                     --push

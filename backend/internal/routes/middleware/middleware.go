@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"poster-setter/internal/logging"
 	"strings"
 
@@ -17,12 +15,7 @@ func Configure_Middlewares(r *chi.Mux) {
 	// Custom Logging Middleware: Log requests using a custom log formatter
 	r.Use(middleware.RequestLogger(&logging.LogFormatter{}))
 
-	APP_PORT := os.Getenv("APP_PORT")
-	if APP_PORT == "" {
-		APP_PORT = "8888"
-	}
-
-	AllowedOrigins := []string{fmt.Sprintf("http://localhost:%s", APP_PORT)}
+	AllowedOrigins := []string{"http://localhost:3000"}
 
 	// CORS Middleware: Allow CORS for all origins (replace this with specific origins)
 	cors := cors.New(cors.Options{
