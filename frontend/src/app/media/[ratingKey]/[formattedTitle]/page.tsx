@@ -432,51 +432,66 @@ const MediaItemPage = () => {
 						)}
 					</div>
 
-					<div className="flex justify-end mb-6 pr-4">
-						<Select
-							onValueChange={(value) => {
-								setSortOption(value);
-							}}
-							defaultValue=""
-						>
-							<SelectTrigger className="w-[180px]">
-								<SelectValue placeholder="Sort By" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="date">Date</SelectItem>
-								<SelectItem value="name">User Name</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					<div className="divide-y divide-primary-dynamic/20 space-y-6">
-						{mediaItem &&
-							posterSets.Sets &&
-							posterSets.Sets.length > 0 &&
-							[...posterSets.Sets]
-								.sort((a, b) => {
-									// Inline sorting logic based on the selected sort option
-									if (sortOption === "date") {
-										return (
-											new Date(b.DateUpdated).getTime() -
-											new Date(a.DateUpdated).getTime()
-										);
-									} else if (sortOption === "name") {
-										return a.User.Name.localeCompare(
-											b.User.Name
-										);
-									}
-									return 0; // Default case (no sorting)
-								})
-								.map((set) => (
-									<div key={set.ID} className="pb-6">
-										<MediaCarousel
-											set={set}
-											mediaItem={mediaItem}
-										/>
-									</div>
-								))}
-					</div>
+					{posterSets.Sets && posterSets.Sets.length > 0 ? (
+						<>
+							<div className="flex justify-end mb-6 pr-4">
+								<Select
+									onValueChange={(value) => {
+										setSortOption(value);
+									}}
+									defaultValue=""
+								>
+									<SelectTrigger className="w-[180px]">
+										<SelectValue placeholder="Sort By" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="date">
+											Date
+										</SelectItem>
+										<SelectItem value="name">
+											User Name
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="divide-y divide-primary-dynamic/20 space-y-6">
+								{mediaItem &&
+									posterSets.Sets &&
+									posterSets.Sets.length > 0 &&
+									[...posterSets.Sets]
+										.sort((a, b) => {
+											// Inline sorting logic based on the selected sort option
+											if (sortOption === "date") {
+												return (
+													new Date(
+														b.DateUpdated
+													).getTime() -
+													new Date(
+														a.DateUpdated
+													).getTime()
+												);
+											} else if (sortOption === "name") {
+												return a.User.Name.localeCompare(
+													b.User.Name
+												);
+											}
+											return 0; // Default case (no sorting)
+										})
+										.map((set) => (
+											<div key={set.ID} className="pb-6">
+												<MediaCarousel
+													set={set}
+													mediaItem={mediaItem}
+												/>
+											</div>
+										))}
+							</div>
+						</>
+					) : (
+						<ErrorMessage
+							message={`No poster sets found for ${mediaItem.Title}`}
+						/>
+					)}
 				</div>
 			</div>
 		</>
