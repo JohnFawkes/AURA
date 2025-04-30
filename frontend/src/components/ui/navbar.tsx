@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
 	Bookmark as BookmarkIcon,
 	Settings as SettingsIcon,
-	Moon as MoonIcon,
-	Sun as SunIcon,
+	//Moon as MoonIcon,
+	//Sun as SunIcon,
 	FileCog as FileCogIcon,
 	Search as SearchIcon,
 } from "lucide-react";
@@ -19,14 +19,14 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useTheme } from "next-themes";
+//import { useTheme } from "next-themes";
 import { useContext } from "react";
 import { SearchContext } from "@/app/layout";
 import Link from "next/link";
 
 export default function Navbar() {
 	const { setSearchQuery } = useContext(SearchContext);
-	const { theme, setTheme } = useTheme();
+	//const { theme, setTheme } = useTheme();
 	const router = useRouter();
 	const pathName = usePathname();
 
@@ -88,6 +88,9 @@ export default function Navbar() {
 						<FileCogIcon className="w-4 h-4 mr-2" />
 						Settings
 					</DropdownMenuItem>
+
+					{/* 
+					
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
 						onClick={() =>
@@ -100,7 +103,7 @@ export default function Navbar() {
 							<MoonIcon className="w-4 h-4 mr-2" />
 						)}
 						{theme === "dark" ? "Light Mode" : "Dark Mode"}
-					</DropdownMenuItem>
+					</DropdownMenuItem> */}
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</nav>
