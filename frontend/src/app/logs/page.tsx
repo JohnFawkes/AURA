@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
 import { Download, ArrowLeft } from "lucide-react";
+import { log } from "@/lib/logger";
 
 export default function LogsPage() {
 	const router = useRouter();
@@ -23,23 +24,41 @@ export default function LogsPage() {
 
 	useEffect(() => {
 		const fetchLogs = async () => {
+			log("LogsPage - Fetching logs started");
 			try {
 				const resp = await fetchLogContents();
-				if (!resp) throw new Error("Failed to fetch logs");
-				if (resp.status !== "success") throw new Error(resp.message);
+				log("LogsPage - Fetch response received");
+
+				if (!resp) {
+					log("LogsPage - Fetch failed: No response");
+					throw new Error("Failed to fetch logs");
+				}
+				if (resp.status !== "success") {
+					log(`LogsPage - Fetch failed: ${resp.message}`);
+					throw new Error(resp.message);
+				}
 
 				const logContents = resp.data;
 				if (!logContents) {
+					log("LogsPage - Fetch failed: No log contents found");
 					throw new Error("No log contents found");
 				}
+
+				log("LogsPage - Logs fetched successfully");
 				setLogs(logContents);
 			} catch (error) {
+				log(
+					`LogsPage - Error while fetching logs: ${
+						error instanceof Error ? error.message : "Unknown error"
+					}`
+				);
 				setError(
 					error instanceof Error
 						? error.message
 						: "An unknown error occurred"
 				);
 			} finally {
+				log("LogsPage - Fetching logs completed");
 				setLoading(false);
 			}
 		};
