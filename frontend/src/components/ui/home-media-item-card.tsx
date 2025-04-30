@@ -25,6 +25,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 
 	return (
 		<Card
+			key={mediaItem.RatingKey}
 			className="items-center cursor-pointer hover:shadow-xl transition-shadow"
 			style={{
 				backgroundColor: "var(--card)",
