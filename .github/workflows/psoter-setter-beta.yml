@@ -1,8 +1,10 @@
-name: Docker Image CI and Release for Poster Setter
+name: Docker Image CI and Release for Poster Setter Beta
 
 on:
     push:
-        branches: ["master"]
+        branches:
+            - "master"
+            - "beta*"
         paths:
             - "backend/**"
             - "frontend/**"
@@ -23,7 +25,11 @@ jobs:
               id: extract_version
               run: |
                   if [[ -f VERSION.txt ]]; then
-                    echo "APP_VERSION=$(cat VERSION.txt)" >> $GITHUB_ENV
+                    APP_VERSION=$(cat VERSION.txt)
+                    if [[ "${{ github.ref_name }}" == beta* ]]; then
+                      APP_VERSION="${APP_VERSION}-beta"
+                    fi
+                    echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
                   else
                     echo "APP_VERSION=dev" >> $GITHUB_ENV
                   fi
@@ -46,8 +52,8 @@ jobs:
                   docker buildx build . \
                     --platform linux/amd64,linux/arm64 \
                     --build-arg APP_VERSION=${{ env.APP_VERSION }} \
-                    --tag ghcr.io/mediux-team/poster-setter:latest \
-                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:latest \
+                    --tag ghcr.io/mediux-team/poster-setter:beta \
+                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:beta \
                     --tag ghcr.io/mediux-team/poster-setter:${{ env.APP_VERSION }} \
                     --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/poster-setter:${{ env.APP_VERSION }} \
                     --push
