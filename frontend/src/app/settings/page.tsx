@@ -40,8 +40,6 @@ const SettingsPage: React.FC = () => {
 				setConfig(appConfig);
 				setError(null);
 				setLoading(false);
-				console.log("Fetched config:", appConfig);
-				console.log("Loading state:", loading);
 			} catch (error) {
 				setConfig(null);
 				setError(
