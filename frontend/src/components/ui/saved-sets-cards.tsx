@@ -14,7 +14,7 @@ import {
 	DialogFooter,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Small } from "@/components/ui/typography";
+import { H4, P, Small } from "@/components/ui/typography";
 import { deleteItemFromDB, patchSelectedTypesInDB } from "@/services/api.db";
 import { ClientMessage } from "@/types/clientMessage";
 import {
@@ -31,6 +31,8 @@ import Image from "next/image";
 import { MoreHorizontal } from "lucide-react";
 import { log } from "@/lib/logger";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const formatDate = (dateString: string) => {
 	try {
@@ -149,46 +151,56 @@ const SavedSetsCard: React.FC<{
 			</CardHeader>
 
 			{/* Content */}
-			<CardContent className="mt-4">
+			<CardContent>
 				{/* Title */}
-				<h4 className="text-lg font-semibold">
+				<H4 className="text-lg font-semibold">
 					{savedSet.MediaItem.Title}
-				</h4>
+				</H4>
 
 				{/* Year */}
-				<p className="text-sm text-muted-foreground">
+				<P
+					className={cn(
+						"text-sm text-muted-foreground",
+						savedSet.MediaItem.Year
+					)}
+				>
 					Year: {savedSet.MediaItem.Year}
-				</p>
+				</P>
 
 				{/* Library Title */}
-				<p className="text-sm text-muted-foreground">
+				<P
+					className={cn(
+						"text-sm text-muted-foreground",
+						savedSet.MediaItem.Year
+					)}
+				>
 					Library: {savedSet.MediaItem.LibraryTitle}
-				</p>
+				</P>
 
 				{/* Last Updated */}
-				<p className="text-sm text-muted-foreground">
+				<P
+					className={cn(
+						"text-sm text-muted-foreground",
+						savedSet.MediaItem.Year
+					)}
+				>
 					Last Updated: {formatDate(savedSet.LastUpdate || "")}
-				</p>
+				</P>
+
+				<Link
+					href={`https://mediux.pro/sets/${savedSet.Set.ID}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-primary font-medium hover:underline"
+				>
+					View Set: {savedSet.Set.ID}
+				</Link>
 
 				{/* Separator */}
 				<Separator className="my-4" />
 
 				{/* Badges */}
 				<div className="flex flex-wrap gap-2">{renderBadges()}</div>
-
-				<CardFooter>
-					{/* View Set Link */}
-					<p className="mt-4">
-						<a
-							href={`https://mediux.pro/sets/${savedSet.Set.ID}`}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-primary font-medium hover:underline"
-						>
-							View Set: {savedSet.Set.ID}
-						</a>
-					</p>
-				</CardFooter>
 			</CardContent>
 
 			{/* Edit Modal */}
