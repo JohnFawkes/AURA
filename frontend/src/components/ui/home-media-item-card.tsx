@@ -1,11 +1,11 @@
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { usePosterMediaStore } from "@/lib/setStore";
 import { MediaItem } from "@/types/mediaItem";
-import { H3, H4 } from "./typography";
+import { H4 } from "./typography";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
