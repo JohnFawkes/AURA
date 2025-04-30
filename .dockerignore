@@ -1,25 +1,32 @@
 # Frontend build
+
 frontend/node_modules
 frontend/dist
 frontend/dist-ssr
 frontend/\*.local
 
 # VS Code files
+
 .vscode/
 
 # Mac files
+
 \*.DS_Store
 
 # Local files
+
 local/\*
 backend/run_backend
 backend/.air.toml
 .secrets
 
 # Ignore Git-related files
+
 .git
 .gitignore
 
 # Ignore Docker-related files that shouldn't be copied
+
 docker-compose.yml
 docker_local_build.sh
+docker_local_beta_build.sh
