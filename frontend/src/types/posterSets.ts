@@ -32,6 +32,7 @@ export interface PosterFile {
 	ID: string;
 	Type: string;
 	Modified: string;
+	FileSize: string;
 	Movie?: PosterFileMovie;
 	Season?: PosterFileSeason;
 	Episode?: PosterFileEpisode;
