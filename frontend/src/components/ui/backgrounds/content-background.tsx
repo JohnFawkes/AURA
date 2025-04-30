@@ -102,11 +102,6 @@ export function ContentBackground({
 		dynamicPalette?.vibrant.DarkMuted,
 	]);
 
-	if (!imageUrl) return null;
-
-	// Define the URL for the external mask
-	const maskUrl = "/gradient.svg";
-
 	// Handle scroll event to blur the background
 	useEffect(() => {
 		const handleScroll = () => {
@@ -126,6 +121,11 @@ export function ContentBackground({
 			window.removeEventListener("scroll", handleScroll);
 		};
 	}, []);
+
+	if (!imageUrl) return null;
+
+	// Define the URL for the external mask
+	const maskUrl = "/gradient.svg";
 
 	return (
 		<div
