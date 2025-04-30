@@ -26,14 +26,18 @@ export const fetchMediaServerLibraryItems = async (): Promise<
 };
 
 export const fetchMediaServerItemContent = async (
-	ratingKey: string
+	ratingKey: string,
+	sectionTitle: string
 ): Promise<APIResponse<MediaItem>> => {
 	log(
 		`api.mediaserver - Fetching item content for ratingKey ${ratingKey} started`
 	);
 	try {
+		// Encode sectionTitle to handle spaces and special characters
+		const encodedSectionTitle = encodeURIComponent(sectionTitle);
+
 		const response = await apiClient.get<APIResponse<MediaItem>>(
-			`/mediaserver/item/${ratingKey}`
+			`/mediaserver/item/${ratingKey}?sectionTitle=${encodedSectionTitle}`
 		);
 		log(
 			`api.mediaserver - Fetching item content for ratingKey ${ratingKey} succeeded`
