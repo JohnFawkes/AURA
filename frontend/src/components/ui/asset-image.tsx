@@ -5,6 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { FILE_TYPES } from "@/types";
 import { PosterFile } from "@/types/posterSets";
+import { Skeleton } from "./skeleton";
 
 interface AssetImageProps {
 	image: PosterFile;
@@ -52,22 +53,36 @@ export function AssetImage({
 			: "300px";
 
 	const imageContent = (
-		<Image
-			src={`/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`}
-			alt={image.ID}
-			fill
-			sizes={sizes}
-			className={cn(
-				"transition-opacity duration-500",
-				aspect === "logo" ? "object-contain" : "object-cover",
-				imageLoaded ? "opacity-100" : "opacity-0",
-				imageClassName
+		<>
+			{/* Skeleton Loader */}
+			{!imageLoaded && (
+				<>
+					<Skeleton
+						className={cn(
+							"absolute inset-0 rounded-md animate-pulse",
+							getAspectRatioClass()
+						)}
+					/>
+				</>
 			)}
-			priority={priority}
-			onLoad={() => setImageLoaded(true)}
-			unoptimized
-			loading="lazy"
-		/>
+
+			<Image
+				src={`/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`}
+				alt={image.ID}
+				fill
+				sizes={sizes}
+				className={cn(
+					"transition-opacity duration-500",
+					aspect === "logo" ? "object-contain" : "object-cover",
+					imageLoaded ? "opacity-100" : "opacity-0",
+					imageClassName
+				)}
+				priority={priority}
+				onLoad={() => setImageLoaded(true)}
+				unoptimized
+				loading="lazy"
+			/>
+		</>
 	);
 
 	return (
