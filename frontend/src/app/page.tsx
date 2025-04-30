@@ -28,6 +28,7 @@ import {
 	CACHE_EXPIRY,
 } from "@/constants/cache";
 import { fetchMediaServerLibraryItems } from "@/services/api.mediaserver";
+import { log } from "@/lib/logger";
 
 export default function Home() {
 	// Context to manage search query
@@ -97,6 +98,7 @@ export default function Home() {
 			await db.put(CACHE_STORE_NAME, dataToStore, CACHE_KEY);
 
 			setLibrarySections(sections);
+			log("Home Page - Sections fetched successfully", sections);
 		} catch (error) {
 			setErrorMessage(
 				error instanceof Error
@@ -256,13 +258,7 @@ export default function Home() {
 					</div>
 				) : (
 					paginatedItems.map((item) => (
-						<HomeMediaItemCard
-							key={item.RatingKey}
-							ratingKey={item.RatingKey}
-							title={item.Title}
-							year={item.Year}
-							libraryTitle={item.LibraryTitle}
-						/>
+						<HomeMediaItemCard mediaItem={item} />
 					))
 				)}
 			</div>
