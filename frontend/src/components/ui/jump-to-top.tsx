@@ -38,7 +38,7 @@ export function JumpToTop() {
 			variant="outline"
 			size="sm"
 			className={cn(
-				"fixed z-100 bottom-15 right-3 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-background cursor-pointer",
+				"fixed z-100 bottom-24 right-3 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-background cursor-pointer",
 				isVisible
 					? "opacity-100 translate-y-0"
 					: "opacity-0 translate-y-4 pointer-events-none"
