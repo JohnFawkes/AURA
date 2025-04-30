@@ -18,6 +18,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { H1, Lead } from "@/components/ui/typography";
+import { log } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
 import { fetchMediuxSets } from "@/services/api.mediux";
@@ -74,7 +75,7 @@ const MediaItemPage = () => {
 	useEffect(() => {
 		const fetchIMDBLink = (guids: Guid[]) => {
 			if (!guids || guids.length === 0) {
-				console.error("No GUIDs found");
+				log("Media Item Page - No GUIDs found");
 				return;
 			}
 			const imdbGuid = guids.find((guid) => guid.Provider === "imdb");
@@ -117,13 +118,13 @@ const MediaItemPage = () => {
 						setPosterSets({ Sets: [] });
 					}
 				} else {
-					console.log(
-						"No TMDB ID found in GUIDs, searching by external IDs"
+					log(
+						"Media Item Page - No TMDB ID found in GUIDs, searching by external IDs (not implemented yet)"
 					);
 					// TODO: ADD THIS
 				}
 			} catch (error) {
-				console.error("Error fetching poster sets:", error);
+				log("Media Item Page - Error fetching poster sets:", error);
 			}
 		};
 
@@ -132,7 +133,6 @@ const MediaItemPage = () => {
 				if (typeof ratingKey !== "string") {
 					throw new Error("Invalid ratingKey: must be a string");
 				}
-				console.log("INSIDE PAGE", ratingKey);
 				const resp = await fetchMediaServerItemContent(ratingKey);
 				if (!resp) {
 					throw new Error("No response from Plex API");
@@ -150,10 +150,8 @@ const MediaItemPage = () => {
 			} catch (error) {
 				setHasError(true);
 				if (error instanceof Error) {
-					console.error("Error fetching Plex item:", error.message);
 					setErrorMessage(error.message);
 				} else {
-					console.error("Error fetching Plex item:", error);
 					setErrorMessage("An unknown error occurred, check logs.");
 				}
 			} finally {
@@ -194,11 +192,13 @@ const MediaItemPage = () => {
 		);
 	} else {
 		document.title = `Poster-Setter - ${mediaItem?.Title}`;
-		console.log("Media Item:", mediaItem);
-		console.log("Poster Sets:", posterSets);
-		console.log("IMDB Link:", imdbLink);
-		console.log("TMDB Link:", tmdbLink);
-		console.log("TVDB Link:", tvdbLink);
+		log("Media Item Page - Fetched media item:", mediaItem);
+		log("Media Item Page - Fetched poster sets:", posterSets);
+		log("Media Item Page - Fetched links:", {
+			imdbLink,
+			tmdbLink,
+			tvdbLink,
+		});
 	}
 
 	if (!mediaItem) {
