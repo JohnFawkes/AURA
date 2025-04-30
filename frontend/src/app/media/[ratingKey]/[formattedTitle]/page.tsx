@@ -25,7 +25,7 @@ import { fetchMediuxSets } from "@/services/api.mediux";
 import { Guid, MediaItem } from "@/types/mediaItem";
 import { PosterSets } from "@/types/posterSets";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { usePosterMediaStore } from "@/lib/setStore";
 
