@@ -257,11 +257,11 @@ const MediaItemPage = () => {
 				<div className="absolute top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
 					<div className="relative w-full h-full">
 						<Image
-							src={`http://localhost:8888/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
+							src={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
 							alt={"Backdrop"}
 							fill
 							priority
-							//unoptimized
+							unoptimized
 							className="object-cover object-right-top"
 							style={{
 								maskImage: `url(/gradient.svg)`,

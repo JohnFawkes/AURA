@@ -134,12 +134,12 @@ const SavedSetsCard: React.FC<{
 				{/* Middle: Image */}
 				<div className="flex justify-center mt-6">
 					<Image
-						src={`http://localhost:8888/api/mediaserver/image/${savedSet.MediaItem.RatingKey}/poster`}
+						src={`/api/mediaserver/image/${savedSet.MediaItem.RatingKey}/poster`}
 						alt={savedSet.MediaItem.Title}
 						width={150}
 						height={225}
 						className="rounded-md"
-						//unoptimized
+						unoptimized
 						loading="lazy"
 					/>
 				</div>

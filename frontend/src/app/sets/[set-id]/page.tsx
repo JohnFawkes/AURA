@@ -32,11 +32,11 @@ const SetPage = () => {
 			);
 			if (backdropFile) {
 				setBackdropURL(
-					`http://localhost:8888/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
+					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
 				);
 			} else {
 				setBackdropURL(
-					`http://localhost:8888/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
+					`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
 				);
 			}
 		}
@@ -131,7 +131,7 @@ const SetPage = () => {
 								alt="Backdrop"
 								fill
 								priority
-								//unoptimized
+								unoptimized
 								className="object-cover object-right-top"
 								style={{
 									maskImage: `url(/gradient.svg)`,
