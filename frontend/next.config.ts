@@ -8,19 +8,19 @@ const nextConfig: NextConfig = {
 		remotePatterns: [
 			{
 				protocol: "http",
-				hostname: "10.1.1.30",
+				hostname: "localhost",
 				port: "8888",
 				pathname: "/**",
 			},
 			{
 				protocol: "http",
-				hostname: "localhost",
+				hostname: "10.1.1.30",
 				port: "8888",
 				pathname: "/**",
 			},
 		],
 	},
-	allowedDevOrigins: ["10.1.1.30", "localhost"],
+	allowedDevOrigins: ["localhost", "10.1.1.30"],
 	reactStrictMode: true,
 	env: {
 		NEXT_PUBLIC_APP_VERSION: APP_VERSION,
