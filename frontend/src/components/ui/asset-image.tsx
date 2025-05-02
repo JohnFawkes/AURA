@@ -67,7 +67,7 @@ export function AssetImage({
 			)}
 
 			<Image
-				src={`/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`}
+				src={`http://localhost:8888/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`}
 				alt={image.ID}
 				fill
 				sizes={sizes}
@@ -79,7 +79,7 @@ export function AssetImage({
 				)}
 				priority={priority}
 				onLoad={() => setImageLoaded(true)}
-				unoptimized
+				//unoptimized
 				loading="lazy"
 			/>
 		</>

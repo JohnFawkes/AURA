@@ -36,12 +36,12 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 			{/* Poster Image */}
 			<div className="relative w-[150px] h-[220px] rounded-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
 				<Image
-					src={`/api/mediaserver/image/${mediaItem.RatingKey}/poster`}
+					src={`http://localhost:8888/api/mediaserver/image/${mediaItem.RatingKey}/poster`}
 					alt={mediaItem.Title}
 					fill
 					className="object-cover"
 					loading="lazy"
-					unoptimized
+					//unoptimized
 				/>
 			</div>
 

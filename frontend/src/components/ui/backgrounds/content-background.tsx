@@ -48,7 +48,7 @@ export function ContentBackground({
 				posterSet.Files.filter((file) => file.Type === "backdrop")
 					.length > 0
 			) {
-				return `/api/mediaserver/image/${
+				return `http://localhost:8888/api/mediaserver/image/${
 					posterSet.Files.find((file) => file.Type === "backdrop")?.ID
 				}?modifiedDate=${
 					posterSet.Files.find((file) => file.Type === "backdrop")
@@ -57,7 +57,7 @@ export function ContentBackground({
 			}
 			// Fallback to show backdrop
 			if (mediaItem.RatingKey) {
-				return `/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`;
+				return `http://localhost:8888/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`;
 			}
 		}
 
@@ -150,12 +150,12 @@ export function ContentBackground({
 			<div className="absolute top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
 				<div className="relative w-full h-full">
 					<Image
-						src={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop}`}
+						src={`http://localhost:8888/api/mediaserver/image/${mediaItem.RatingKey}/backdrop}`}
 						alt={alt}
 						quality={quality}
 						priority={priority}
 						fill
-						unoptimized
+						//unoptimized
 						loading="lazy"
 						className="object-cover object-right-top"
 						style={{
