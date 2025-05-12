@@ -29,8 +29,7 @@ export default function RootLayout({
 			<body className={`${gabarito.className}`}>
 				<ThemeProvider
 					attribute="class"
-					defaultTheme="system"
-					enableSystem
+					defaultTheme="dark"
 					disableTransitionOnChange
 				>
 					<SearchContext.Provider
