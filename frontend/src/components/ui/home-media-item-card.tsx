@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePosterMediaStore } from "@/lib/setStore";
 import { MediaItem } from "@/types/mediaItem";
 import { H4 } from "./typography";
+import { SearchContext } from "@/app/layout";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
@@ -13,15 +14,22 @@ interface HomeMediaItemCardProps {
 
 const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	const router = useRouter();
+	const { setSearchQuery } = useContext(SearchContext);
+
 	const setMediaItem = usePosterMediaStore((state) => state.setMediaItem);
 
 	const handleCardClick = (mediaItem: MediaItem) => {
 		// Store the mediaItem in Zustand
 		setMediaItem(mediaItem);
 
+		// Clear the search query
+		setSearchQuery("");
+
 		// Replace space with underscore for URL compatibility
 		const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");
-		router.push(`/media/${mediaItem.RatingKey}/${formattedTitle}`);
+		// Replace special characters with empty string
+		const sanitizedTitle = formattedTitle.replace(/[^a-zA-Z0-9_]/g, "");
+		router.push(`/media/${mediaItem.RatingKey}/${sanitizedTitle}`);
 	};
 
 	return (
