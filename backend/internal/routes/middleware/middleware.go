@@ -15,8 +15,7 @@ func Configure_Middlewares(r *chi.Mux) {
 	// Custom Logging Middleware: Log requests using a custom log formatter
 	r.Use(middleware.RequestLogger(&logging.LogFormatter{}))
 
-	AllowedOrigins := []string{"http://localhost:3000"}
-	AllowedOrigins = append(AllowedOrigins, "http://10.1.1.30:3000")
+	AllowedOrigins := []string{"*"}
 
 	// CORS Middleware: Allow CORS for all origins (replace this with specific origins)
 	cors := cors.New(cors.Options{
