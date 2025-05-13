@@ -133,9 +133,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		return logging.ErrorLog{Err: fmt.Errorf("'%s' not found", plex.Title), Log: logging.Log{Message: fmt.Sprintf("'%s' not found", plex.Title)}}
 	}
 
-	if file.Type != "poster" && file.Type != "backdrop" {
-		refreshPlexItem(itemRatingKey)
-	}
+	refreshPlexItem(itemRatingKey)
 	posterKey, logErr := getPosters(itemRatingKey)
 	if logErr.Err != nil {
 		return logErr
