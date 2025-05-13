@@ -7,12 +7,15 @@ import ErrorMessage from "@/components/ui/error-message";
 import SavedSetsCard from "@/components/ui/saved-sets-cards";
 
 const SavedSetsPage: React.FC = () => {
+	const [isMounted, setIsMounted] = useState(false);
 	const [savedSets, setSavedSets] = useState<ClientMessage[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 
 	const fetchSavedSets = async () => {
+		if (isMounted) return;
+		setIsMounted(true);
 		try {
 			const resp = await fetchAllItemsFromDB();
 			if (resp.status !== "success") {
@@ -32,6 +35,7 @@ const SavedSetsPage: React.FC = () => {
 			);
 		} finally {
 			setLoading(false);
+			setIsMounted(false);
 		}
 	};
 

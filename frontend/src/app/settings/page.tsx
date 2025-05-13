@@ -18,12 +18,15 @@ import React, { useEffect, useState } from "react";
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
+	const [isMounted, setIsMounted] = useState(false);
 	const [config, setConfig] = useState<AppConfig | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	// Fetch configuration data
 	useEffect(() => {
+		if (isMounted) return;
+		setIsMounted(true);
 		const fetchConfigFromAPI = async () => {
 			try {
 				const resp = await fetchConfig();
@@ -47,6 +50,7 @@ const SettingsPage: React.FC = () => {
 				);
 			} finally {
 				setLoading(false);
+				setIsMounted(true);
 			}
 		};
 		fetchConfigFromAPI();

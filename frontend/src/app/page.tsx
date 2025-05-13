@@ -33,6 +33,8 @@ import { log } from "@/lib/logger";
 import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
+	const [isMounted, setIsMounted] = useState(false);
+
 	// -------------------------------
 	// Contexts
 	// -------------------------------
@@ -73,6 +75,8 @@ export default function Home() {
 
 	// Fetch data from cache or API
 	const getMediaItems = async (useCache: boolean) => {
+		if (isMounted) return;
+		setIsMounted(true);
 		try {
 			const db = await openDB(CACHE_DB_NAME, 1, {
 				upgrade(db) {
@@ -186,6 +190,8 @@ export default function Home() {
 					? error.message
 					: "An unknown error occurred"
 			);
+		} finally {
+			setIsMounted(false);
 		}
 	};
 

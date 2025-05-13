@@ -55,8 +55,11 @@ const SavedSetsCard: React.FC<{
 	);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [updateError, setUpdateError] = useState("");
+	const [isMounted, setIsMounted] = useState(false);
 
 	const confirmEdit = async () => {
+		if (isMounted) return;
+		setIsMounted(true);
 		const resp = await patchSelectedTypesInDB(id, editSelectedTypes);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
@@ -65,9 +68,12 @@ const SavedSetsCard: React.FC<{
 			setIsEditModalOpen(false);
 			onUpdate();
 		}
+		setIsMounted(false);
 	};
 
 	const confirmDelete = async () => {
+		if (isMounted) return;
+		setIsMounted(true);
 		const resp = await deleteItemFromDB(id);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
@@ -76,6 +82,7 @@ const SavedSetsCard: React.FC<{
 			setUpdateError("");
 			onUpdate();
 		}
+		setIsMounted(false);
 	};
 
 	const renderBadges = () =>

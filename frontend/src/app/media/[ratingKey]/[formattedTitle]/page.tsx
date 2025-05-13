@@ -31,6 +31,9 @@ import { usePosterMediaStore } from "@/lib/setStore";
 
 const MediaItemPage = () => {
 	const router = useRouter();
+
+	const [isMounted, setIsMounted] = useState(false);
+
 	const partialMediaItem = usePosterMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
 	const [isBlurred, setIsBlurred] = useState(false);
@@ -75,6 +78,9 @@ const MediaItemPage = () => {
 	}, []);
 
 	useEffect(() => {
+		if (isMounted) return;
+		setIsMounted(true);
+
 		const fetchIMDBLink = (guids: Guid[]) => {
 			if (!guids || guids.length === 0) {
 				log("Media Item Page - No GUIDs found");
@@ -174,6 +180,7 @@ const MediaItemPage = () => {
 				}
 			} finally {
 				setIsLoading(false);
+				setIsMounted(false);
 			}
 		};
 

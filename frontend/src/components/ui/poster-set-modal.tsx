@@ -45,6 +45,8 @@ const PosterSetModal: React.FC<{
 	posterSet: PosterSet;
 	mediaItem: MediaItem;
 }> = ({ posterSet, mediaItem }) => {
+	const [isMounted, setIsMounted] = useState(false);
+
 	// State for modal
 	const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(
 		null
@@ -137,6 +139,8 @@ const PosterSetModal: React.FC<{
 
 	// Function to handle form submission
 	const onSubmit = async (data: z.infer<typeof formSchema>) => {
+		if (isMounted) return;
+		setIsMounted(true);
 		log("Poster Set Modal - Form Submitted:", data);
 
 		setModalErrorMessage(null);
@@ -235,6 +239,8 @@ const PosterSetModal: React.FC<{
 					? error.message
 					: "An unknown error occurred."
 			);
+		} finally {
+			setIsMounted(false);
 		}
 	};
 
