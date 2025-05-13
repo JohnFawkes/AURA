@@ -42,9 +42,7 @@ const MediaItemPage = () => {
 	const [tmdbLink, setTmdbLink] = React.useState<string>("");
 	const [tvdbLink, setTvdbLink] = React.useState<string>("");
 
-	const [posterSets, setPosterSets] = React.useState<PosterSets>({
-		Sets: [],
-	});
+	const [posterSets, setPosterSets] = useState<PosterSets | null>(null);
 
 	// State to track the selected sorting option
 	const [sortOption, setSortOption] = useState<string>("");
@@ -116,11 +114,8 @@ const MediaItemPage = () => {
 						throw new Error(resp.message);
 					}
 					const sets = resp.data;
-					if (sets) {
-						setPosterSets(sets);
-					} else {
-						setPosterSets({ Sets: [] });
-					}
+					// If no sets are returned, assign an empty array.
+					setPosterSets(sets ? sets : { Sets: [] });
 				} else {
 					log(
 						"Media Item Page - No TMDB ID found in GUIDs, searching by external IDs (not implemented yet)"
@@ -183,6 +178,27 @@ const MediaItemPage = () => {
 		return <Loader message="Loading media item..." />;
 	}
 
+	if (!mediaItem) {
+		return (
+			<div className="flex flex-col items-center">
+				<ErrorMessage message="No media item found." />
+				<Button
+					className="mt-4"
+					variant="secondary"
+					onClick={() => {
+						router.push("/");
+					}}
+				>
+					Go to Home
+				</Button>
+			</div>
+		);
+	}
+
+	if (posterSets?.Sets?.length === 0) {
+		return <ErrorMessage message="No poster sets found." />;
+	}
+
 	if (hasError) {
 		document.title = "Poster-Setter - Error";
 		return (
@@ -216,23 +232,6 @@ const MediaItemPage = () => {
 			tmdbLink,
 			tvdbLink,
 		});
-	}
-
-	if (!mediaItem) {
-		return (
-			<div className="flex flex-col items-center">
-				<ErrorMessage message="No media item found." />
-				<Button
-					className="mt-4"
-					variant="secondary"
-					onClick={() => {
-						router.push("/");
-					}}
-				>
-					Go to Home
-				</Button>
-			</div>
-		);
 	}
 
 	return (
@@ -444,7 +443,7 @@ const MediaItemPage = () => {
 						)}
 					</div>
 
-					{posterSets.Sets && posterSets.Sets.length > 0 ? (
+					{posterSets?.Sets && posterSets.Sets.length > 0 && (
 						<>
 							<div className="flex justify-end mb-6 pr-4">
 								<Select
@@ -499,10 +498,6 @@ const MediaItemPage = () => {
 										))}
 							</div>
 						</>
-					) : (
-						<ErrorMessage
-							message={`No poster sets found for ${mediaItem.Title}`}
-						/>
 					)}
 				</div>
 			</div>
