@@ -253,11 +253,11 @@ const PosterSetModal: React.FC<{
 						<DialogDescription>
 							<div className="flex flex-col ">
 								<span className="text-sm text-muted-foreground">
-									Set by: {posterSet.User.Name}
+									Set Author: {posterSet.User.Name}
 								</span>
 								<Link
 									href={`https://mediux.pro/sets/${posterSet.ID}`}
-									className="hover:underline"
+									className="hover:text-primary transition-colors"
 									target="_blank"
 									rel="noopener noreferrer"
 								>

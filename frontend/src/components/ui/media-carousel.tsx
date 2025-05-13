@@ -79,7 +79,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 			<div className="flex flex-col">
 				<div className="flex flex-row items-center">
 					<P className="text-primary-dynamic">
-						Set by: {set.User.Name}
+						Set Author: {set.User.Name}
 					</P>
 					<div className="ml-auto">
 						<button

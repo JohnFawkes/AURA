@@ -171,7 +171,7 @@ const SetPage = () => {
 										);
 									}}
 								>
-									Set by: {posterSet.User.Name}
+									Set Author: {posterSet.User.Name}
 								</Badge>
 								<Badge className="flex items-center text-sm">
 									{fileCounts}
