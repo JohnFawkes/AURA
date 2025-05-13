@@ -4,7 +4,8 @@ services:
         container_name: poster-setter
         restart: unless-stopped
         ports:
-            - 3000:3000 # Web UI
+            - "3000:3000" # Web UI PORT
+            - "8888:8888" # API PORT
         volumes:
             - /mnt/user/appdata/poster-setter:/config # Config directory
             - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container
