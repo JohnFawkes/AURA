@@ -3,7 +3,6 @@ import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { openDB } from "idb";
 import { useEffect, useState, useContext } from "react";
 import { SearchContext } from "@/app/layout";
-import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
 import HomeMediaItemCard from "@/components/ui/home-media-item-card";
 import {
@@ -31,39 +30,49 @@ import {
 	fetchMediaServerLibrarySections,
 } from "@/services/api.mediaserver";
 import { log } from "@/lib/logger";
+import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
-	// Context to manage search query
-	const { searchQuery } = useContext(SearchContext); // Access the search query from context
+	// -------------------------------
+	// Contexts
+	// -------------------------------
+	const { searchQuery } = useContext(SearchContext);
+
+	// -------------------------------
+	// States
+	// -------------------------------
+	// Search
 	const [debouncedQuery, setDebouncedQuery] = useState<string>("");
 
-	// State for loading, error, and library sections
-	const [loading, setLoading] = useState<boolean>(true);
-	const [loadingMessage, setLoadingMessage] = useState<string>();
+	// Loading & Error
 	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [fullyLoaded, setFullyLoaded] = useState<boolean>(false);
+
+	// Library sections & progress
 	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
 		[]
 	);
+	const [loadingLibraryName, setLoadingLibraryName] = useState<string>("");
+	const [loadingLibraryProgress, setLoadingProgress] = useState<number>(0);
+	const [loadingLibraryTotalSize, setLoadingTotalSize] = useState<number>(0);
 
-	// State for filtered libraries and items
+	// Filtering & Pagination
 	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
-
-	// State for pagination
 	const [currentPage, setCurrentPage] = useState<number>(1);
-	const itemsPerPage = 20; // Number of items per page
+	const itemsPerPage = 20;
 
-	// Calculate paginated items
+	// -------------------------------
+	// Derived values
+	// -------------------------------
 	const paginatedItems = filteredItems.slice(
 		(currentPage - 1) * itemsPerPage,
 		currentPage * itemsPerPage
 	);
-
 	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
 	// Fetch data from cache or API
 	const getMediaItems = async (useCache: boolean) => {
-		setLoading(true);
 		try {
 			const db = await openDB(CACHE_DB_NAME, 1, {
 				upgrade(db) {
@@ -88,6 +97,7 @@ export default function Home() {
 					if (validSections.length > 0) {
 						sections = validSections.map((s) => s.data);
 						setLibrarySections(sections);
+						setFullyLoaded(true);
 						log("Home Page - Using cached sections", validSections);
 						return;
 					}
@@ -98,9 +108,10 @@ export default function Home() {
 				}
 			}
 
+			setFullyLoaded(false);
+
 			// If sections were not loaded from cache, fetch them from the API.
 			if (sections.length === 0) {
-				setLoadingMessage("Fetching all library sections...");
 				const sectionsResponse =
 					await fetchMediaServerLibrarySections();
 				if (sectionsResponse.status !== "success") {
@@ -119,64 +130,62 @@ export default function Home() {
 				setLibrarySections(sections);
 			}
 
-			sections.forEach(async (section, idx) => {
-				let itemsFetched = 0;
-				let totalSize = Infinity;
-				let allItems: LibrarySection["MediaItems"] = [];
-				while (itemsFetched < totalSize) {
-					setLoadingMessage(
-						totalSize === Infinity
-							? `Fetching items for '${section.Title}'...`
-							: `Fetching items for '${section.Title}' (${itemsFetched} / ${totalSize})`
+			await Promise.all(
+				sections.map(async (section, idx) => {
+					let itemsFetched = 0;
+					let totalSize = Infinity;
+					let allItems: LibrarySection["MediaItems"] = [];
+					while (itemsFetched < totalSize) {
+						setLoadingLibraryName(section.Title);
+						const itemsResponse =
+							await fetchMediaServerLibrarySectionItems(
+								section,
+								itemsFetched
+							);
+						if (itemsResponse.status !== "success") {
+							console.error(itemsResponse.message);
+							break;
+						}
+						const data = itemsResponse.data;
+						allItems = allItems.concat(data?.MediaItems || []);
+						if (totalSize === Infinity) {
+							totalSize = data?.TotalSize ?? 0;
+							setLoadingTotalSize(totalSize);
+						}
+						itemsFetched += data?.MediaItems?.length || 0;
+						setLoadingProgress(itemsFetched);
+						if ((data?.MediaItems?.length || 0) === 0) {
+							break;
+						}
+					}
+					// Update section with fetched media items.
+					section.MediaItems = allItems;
+					setLibrarySections((prev) => {
+						const updated = [...prev];
+						updated[idx] = section;
+						return updated;
+					});
+					// Cache the complete section (using title as key).
+					const db = await openDB(CACHE_DB_NAME, 1);
+					await db.put(
+						CACHE_STORE_NAME,
+						{
+							data: section,
+							timestamp: Date.now(),
+						},
+						section.Title
 					);
-					const itemsResponse =
-						await fetchMediaServerLibrarySectionItems(
-							section,
-							itemsFetched
-						);
-					if (itemsResponse.status !== "success") {
-						console.error(itemsResponse.message);
-						break;
-					}
-					const data = itemsResponse.data;
-					allItems = allItems.concat(data?.MediaItems || []);
-					if (totalSize === Infinity) {
-						totalSize = data?.TotalSize ?? 0;
-					}
-					itemsFetched += data?.MediaItems?.length || 0;
-					if ((data?.MediaItems?.length || 0) === 0) {
-						break;
-					}
-				}
+				})
+			);
 
-				// Update section with fetched media items.
-				section.MediaItems = allItems;
-				setLibrarySections((prev) => {
-					const updated = [...prev];
-					updated[idx] = section;
-					return updated;
-				});
-				// Cache the complete section (using title as key).
-				await db.put(
-					CACHE_STORE_NAME,
-					{
-						data: section,
-						timestamp: Date.now(),
-					},
-					section.Title
-				);
-			});
-
-			// Optionally, cache the sections list under a separate key if needed.
 			log("Home Page - Sections fetched successfully", sections);
+			setFullyLoaded(true);
 		} catch (error) {
 			setErrorMessage(
 				error instanceof Error
 					? error.message
 					: "An unknown error occurred"
 			);
-		} finally {
-			setLoading(false);
 		}
 	};
 
@@ -258,27 +267,43 @@ export default function Home() {
 		setCurrentPage(1); // Reset to the first page on new search
 	}, [librarySections, filteredLibraries, debouncedQuery]);
 
-	if (loading) {
-		return (
-			<>
-				<Loader
-					message={
-						loadingMessage ||
-						"Loading all content from your media server..."
-					}
-				/>
-			</>
-		);
-	}
-
 	if (errorMessage) {
 		return <ErrorMessage message={errorMessage} />;
 	}
 
 	return (
 		<div className="min-h-screen px-8 pb-20 sm:px-20">
+			{!fullyLoaded && (
+				<div className="w-full mt-2">
+					<div className="flex items-center justify-between">
+						<Label
+							htmlFor="library-filter"
+							className="text-lg font-semibold"
+						>
+							Loading {loadingLibraryName || "Media Items"}
+						</Label>
+						<Progress
+							value={
+								(loadingLibraryProgress /
+									loadingLibraryTotalSize) *
+									100 || 0
+							}
+							className="flex-1 ml-2"
+						/>
+						<span className="ml-2 text-sm text-muted-foreground">
+							{Math.round(
+								(loadingLibraryProgress /
+									loadingLibraryTotalSize) *
+									100 || 0
+							)}
+							%
+						</span>
+					</div>
+				</div>
+			)}
+
 			{/* Filter and Sort Section */}
-			<div className="flex flex-col sm:flex-row mb-4 mt-4">
+			<div className="flex flex-col sm:flex-row mb-4 mt-2">
 				{/* Label */}
 				<Label
 					htmlFor="library-filter"
@@ -326,7 +351,7 @@ export default function Home() {
 
 			{/* Grid of Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
-				{paginatedItems.length === 0 ? (
+				{paginatedItems.length === 0 && searchQuery && fullyLoaded ? (
 					<div className="col-span-full text-center text-red-500">
 						No items found matching '{searchQuery}' in{" "}
 						{filteredLibraries.length > 0
