@@ -430,7 +430,7 @@ export default function Home() {
 				variant="outline"
 				size="sm"
 				className={cn(
-					"fixed z-100 bottom-15 right-3 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-background cursor-pointer"
+					"fixed z-100 bottom-10 right-15 sm:bottom-15 sm:right-32 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer"
 				)}
 				onClick={() => getMediaItems(false)}
 				aria-label="refresh"
