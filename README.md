@@ -1,5 +1,7 @@
 # Poster-Setter
 
+[![Discord](https://img.shields.io/discord/1077169076113248307?logo=discord&label=Discord)](https://discord.gg/HP9TpTmfcp)
+
 ## Description
 
 **Poster-Setter** is a tool designed to use Mediux images for your media server content. It provides a simple and intuitive web interface to browse and select image sets for your library. While there are many tools available for this purpose, Poster-Setter stands out by offering a visual web interface to preview images before selection.
@@ -22,27 +24,28 @@ Poster-Setter is designed to run in Docker for easy setup and deployment.
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/xmoosex/poster-setter.git
+    git clone https://github.com/mediux-team/poster-setter.git
     ```
 2. Navigate to the project directory:
     ```sh
     cd poster-setter
     ```
 3. Tweak the docker-compose file to match your settings
-4. Run the following to login to ghcr.io
+4. Log in to ghcr.io (if required):
     ```sh
-    docker login ghrcr.io
+    docker login ghcr.io
     ```
 5. Run the application with:
     ```sh
-    docker-compose up --build
+     docker-compose up --build
     ```
+    The web interface will now be available at `http://localhost:3000`.
 
 ### Using Dockerfile
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/xmoosex/poster-setter.git
+    git clone https://github.com/mediux-team/poster-setter.git
     ```
 2. Navigate to the project directory:
     ```sh
@@ -52,16 +55,16 @@ Poster-Setter is designed to run in Docker for easy setup and deployment.
     ```sh
     docker build -t poster-setter .
     ```
-4. Run the Docker Container (make sure to change the port and path to what you want)
+4. Run the Docker Container (adjust the volume paths and ports as needed):
     ```sh
-    docker run -d -p 8888:8888 -v '/mnt/user/appdata/poster-setter/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' poster-setter
+    docker run -d -p 3000:3000 -v '/mnt/user/appdata/poster-setter/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' poster-setter
     ```
-
-Before running the application in Docker, you need to set up a config.yml file. You can use the config.yml.sample file as a template. Be sure to place this file in the Docker's /config directory.
 
 ## Usage
 
-1. Access the web interface by navigating to `http://localhost:8888` in your browser.
+Before running the application, set up a `config.yml` file. You can use [config.yml.sample](config.yml.sample) as a template and place the file in the container’s `/config` directory.
+
+1. Access the web interface by navigating to `http://localhost:3000` in your browser.
 2. Browse all of your media server content and choose what you want to search Mediux for.
 3. Browse and preview Mediux image sets for that item.
 4. Select the set you want to use for your content.
