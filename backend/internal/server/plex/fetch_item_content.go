@@ -10,6 +10,7 @@ import (
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
 	"regexp"
+	"strconv"
 )
 
 func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
@@ -49,6 +50,12 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Guids = guids
 	}
 
+	// Get IMDB rating from the response body
+	imdbRating, _ := getIMDBRatingFromBody(body)
+	if parsedRating, err := strconv.ParseFloat(imdbRating, 64); err == nil {
+		itemInfo.AudienceRating = parsedRating
+	}
+
 	// If the item is a movie
 	if len(responseSection.Videos) > 0 && responseSection.Directory == nil {
 		itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
@@ -57,7 +64,7 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Title = responseSection.Videos[0].Title
 		itemInfo.Year = responseSection.Videos[0].Year
 		itemInfo.Thumb = responseSection.Videos[0].Thumb
-		itemInfo.AudienceRating = responseSection.Videos[0].AudienceRating
+		//itemInfo.AudienceRating = responseSection.Videos[0].AudienceRating
 		itemInfo.UserRating = responseSection.Videos[0].UserRating
 		itemInfo.ContentRating = responseSection.Videos[0].ContentRating
 		itemInfo.Summary = responseSection.Videos[0].Summary
@@ -80,7 +87,7 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Title = responseSection.Directory[0].Title
 		itemInfo.Year = responseSection.Directory[0].Year
 		itemInfo.Thumb = responseSection.Directory[0].Thumb
-		itemInfo.AudienceRating = responseSection.Directory[0].AudienceRating
+		//itemInfo.AudienceRating = responseSection.Directory[0].AudienceRating
 		itemInfo.UserRating = responseSection.Directory[0].UserRating
 		itemInfo.ContentRating = responseSection.Directory[0].ContentRating
 		itemInfo.Summary = responseSection.Directory[0].Summary
@@ -235,4 +242,15 @@ func getGUIDsFromBody(body []byte) ([]modals.Guid, error) {
 		}
 	}
 	return guids, nil
+}
+
+func getIMDBRatingFromBody(body []byte) (string, error) {
+	// Regex looks for a Rating tag with image starting with "imdb://" and type="audience"
+	// Example tag: <Rating image="imdb://image.rating" value="6.8" type="audience"/>
+	ratingRegex := regexp.MustCompile(`(?i)<Rating\s+image="imdb://[^"]+"\s+value="([^"]+)"\s+type="audience" ?/?>`)
+	matches := ratingRegex.FindStringSubmatch(string(body))
+	if len(matches) < 2 {
+		return "", fmt.Errorf("IMDB rating not found in the XML response")
+	}
+	return matches[1], nil
 }
