@@ -70,12 +70,13 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 									}
 								}
 							}
-							return "", logging.ErrorLog{
-								Err: fmt.Errorf("no local poster found for rating key: %s", ratingKey),
-								Log: logging.Log{Message: fmt.Sprintf("No local poster found for rating key: %s", ratingKey)},
+							logErr = logging.ErrorLog{
+								Err: fmt.Errorf("no local posters found for rating key: %s", ratingKey),
+								Log: logging.Log{Message: "No local posters found for the item"},
 							}
+
 						}
-						return "", logging.ErrorLog{
+						logErr = logging.ErrorLog{
 							Err: fmt.Errorf("no posters found for rating key: %s", ratingKey),
 							Log: logging.Log{Message: "No posters found for the item"},
 						}
@@ -102,7 +103,7 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 
 		// If this is not the last attempt, refresh the Plex item and retry
 		if attempt < 3 {
-			logging.LOG.Trace(fmt.Sprintf("Waiting 2 seconds before retrying..."))
+			logging.LOG.Trace(fmt.Sprintf("Retrying to get posters for rating key: %s in 2 seconds", ratingKey))
 			time.Sleep(2 * time.Second) // Wait before retrying
 			refreshErr := refreshPlexItem(ratingKey)
 			if refreshErr.Err != nil {
