@@ -20,15 +20,15 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					href="https://mediux.pro"
 					target="_blank"
 					rel="noopener noreferrer"
-					className="flex items-center hover:text-primary transition-colors"
+					className="group flex items-center hover:text-primary transition-colors"
 				>
 					MediUX
-					<div className="relative w-[16px] h-[16px] rounded-t-md overflow-hidden">
+					<div className="relative ml-1 w-[16px] h-[16px] rounded-t-md overflow-hidden">
 						<Image
 							src="/mediux.svg"
 							alt="Logo"
 							fill
-							className="object-contain filter dark:invert-0 invert hover:text-primary transition-colors"
+							className="object-contain"
 						/>
 					</div>
 				</Link>
