@@ -158,16 +158,10 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	if clientMessage.AutoDownload {
-		logging.LOG.Trace("AutoDownload is set to true, saving to database")
-		logErr := database.SaveClientMessage(clientMessage)
-		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-			return
-		}
-		logging.LOG.Info(fmt.Sprintf("Added posters for '%s' to the database", clientMessage.MediaItem.Title))
-	} else {
-		logging.LOG.Trace("AutoDownload is set to false, not saving to database")
+	logErr := database.SaveClientMessage(clientMessage)
+	if logErr.Err != nil {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		return
 	}
 
 	utils.SendSSEResponse(w, flusher, utils.SSEMessage{
