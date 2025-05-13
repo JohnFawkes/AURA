@@ -51,6 +51,7 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 
 	// If the item is a movie
 	if len(responseSection.Videos) > 0 && responseSection.Directory == nil {
+		itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
 		itemInfo.RatingKey = responseSection.Videos[0].RatingKey
 		itemInfo.Type = responseSection.Videos[0].Type
 		itemInfo.Title = responseSection.Videos[0].Title
@@ -73,6 +74,7 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 
 	// If the item is a series
 	if len(responseSection.Directory) > 0 && responseSection.Videos == nil {
+		itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
 		itemInfo.RatingKey = responseSection.Directory[0].RatingKey
 		itemInfo.Type = responseSection.Directory[0].Type
 		itemInfo.Title = responseSection.Directory[0].Title

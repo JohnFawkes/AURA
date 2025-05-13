@@ -32,6 +32,7 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 				id
 				file_type
 				modified_on
+				filesize
 				season {
 					season_number
 				}
@@ -83,6 +84,7 @@ query movies_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 					id
 					file_type
 					modified_on
+					filesize
 					movie {
 						id
 					}
@@ -100,6 +102,7 @@ query movies_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 				id
 				file_type
 				modified_on
+				filesize
 				movie {
 					id
 				}
@@ -130,6 +133,7 @@ query collection_sets_by_id($collectionID: ID!, $tmdbID: String!) {
 			id
 			file_type
 			modified_on
+			filesize
 			movie {
 				id
 			}
@@ -160,6 +164,7 @@ query movie_sets_by_id($movieSetID: ID!, $tmdbID: String!) {
 			id
 			file_type
 			modified_on
+			filesize
 			movie {
 				id
 			}
@@ -191,6 +196,7 @@ query show_sets_by_id($showSetID: ID!) {
 			id
 			file_type
 			modified_on
+			filesize
 			season {
 				season_number
 			}

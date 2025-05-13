@@ -4,22 +4,24 @@ type LibrarySection struct {
 	ID         string      `json:"ID"`
 	Type       string      `json:"Type"` // "movie" or "show"
 	Title      string      `json:"Title"`
+	TotalSize  int         `json:"TotalSize"`
 	MediaItems []MediaItem `json:"MediaItems"`
 }
 
 type MediaItem struct {
-	RatingKey      string  `json:"RatingKey"`
-	Type           string  `json:"Type"` // "movie" or "series"
-	LibraryTitle   string  `json:"LibraryTitle"`
-	Title          string  `json:"Title"`
-	Year           int     `json:"Year"`
-	Thumb          string  `json:"Thumb,omitempty"`
-	AudienceRating float64 `json:"AudienceRating,omitempty"`
-	UserRating     float64 `json:"UserRating,omitempty"`
-	ContentRating  string  `json:"ContentRating,omitempty"`
-	Summary        string  `json:"Summary,omitempty"`
-	UpdatedAt      int64   `json:"UpdatedAt,omitempty"`
-	Guids          []Guid  `json:"Guids,omitempty"`
+	RatingKey       string  `json:"RatingKey"`
+	Type            string  `json:"Type"` // "movie" or "series"
+	LibraryTitle    string  `json:"LibraryTitle"`
+	Title           string  `json:"Title"`
+	Year            int     `json:"Year"`
+	ExistInDatabase bool    `json:"ExistInDatabase"`
+	Thumb           string  `json:"Thumb,omitempty"`
+	AudienceRating  float64 `json:"AudienceRating,omitempty"`
+	UserRating      float64 `json:"UserRating,omitempty"`
+	ContentRating   string  `json:"ContentRating,omitempty"`
+	Summary         string  `json:"Summary,omitempty"`
+	UpdatedAt       int64   `json:"UpdatedAt,omitempty"`
+	Guids           []Guid  `json:"Guids,omitempty"`
 
 	Movie  *MediaItemMovie  `json:"Movie,omitempty"`
 	Series *MediaItemSeries `json:"Series,omitempty"`

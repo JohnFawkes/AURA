@@ -38,6 +38,10 @@ func SaveClientMessage(clientMessage modals.ClientMessage) logging.ErrorLog {
 		}}
 	}
 
+	if !clientMessage.AutoDownload {
+		clientMessage.AutoDownload = false
+	}
+
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
 	selectedTypes := strings.Join(clientMessage.SelectedTypes, ",")
 

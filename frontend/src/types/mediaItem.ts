@@ -2,6 +2,7 @@ export interface LibrarySection {
 	ID: string;
 	Type: string; // "movie" or "show"
 	Title: string;
+	TotalSize: number;
 	MediaItems: MediaItem[];
 }
 
@@ -11,6 +12,7 @@ export interface MediaItem {
 	Type: string; // "movie" or "show"
 	Title: string;
 	Year: number;
+	ExistInDatabase: boolean;
 	Thumb?: string;
 	AudienceRating?: number;
 	UserRating?: number;

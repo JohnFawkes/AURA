@@ -16,13 +16,26 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
 
-	// Get the SKU from the URL
+	// Get the ratingKey from the URL
 	ratingKey := chi.URLParam(r, "ratingKey")
 	if ratingKey == "" {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
 			Err: fmt.Errorf("missing rating key"),
 			Log: logging.Log{
 				Message: "Missing rating key in URL",
+				Elapsed: utils.ElapsedTime(startTime),
+			},
+		})
+		return
+	}
+
+	// Get the library section title from the query parameters
+	sectionTitle := r.URL.Query().Get("sectionTitle")
+	if sectionTitle == "" {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			Err: fmt.Errorf("missing section title"),
+			Log: logging.Log{
+				Message: "Missing section title in query parameters",
 				Elapsed: utils.ElapsedTime(startTime),
 			},
 		})
@@ -46,7 +59,7 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemInfo, logErr := mediaServer.FetchItemContent(ratingKey)
+	itemInfo, logErr := mediaServer.FetchItemContent(ratingKey, sectionTitle)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -54,7 +67,7 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 
 	if itemInfo.RatingKey == "" {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("no item found with the given rating key"),
+			Err: fmt.Errorf("bad rating key"),
 			Log: logging.Log{
 				Message: "No item found with the given rating key",
 				Elapsed: utils.ElapsedTime(startTime),

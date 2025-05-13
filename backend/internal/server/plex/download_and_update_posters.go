@@ -113,7 +113,11 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	}
 
 	// If cacheImages is False, delete the image from the temporary folder
-	if !config.Global.CacheImages {
+	// 		This is to prevent the temporary folder from getting too large
+	// If the image is a poster or backdrop, delete it from the temporary folder as well.
+	// 		This is to grab the latest image from the server on each update
+	if !config.Global.CacheImages || file.Type == "poster" || file.Type == "backdrop" {
+		logging.LOG.Trace("Deleting image from temporary folder")
 		err := os.Remove(filePath)
 		if err != nil {
 			logging.LOG.Error(fmt.Sprintf("Failed to delete image from temporary folder: %v", err))

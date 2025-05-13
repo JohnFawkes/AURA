@@ -1,8 +1,47 @@
 # Frontend build
-frontend/node_modules
-frontend/dist
-frontend/dist-ssr
-frontend/*.local
+**frontend/node_modules
+**frontend/dist
+**frontend/dist-ssr
+**frontend/*.local
+
+# dependencies
+**frontend//.pnp
+**frontend/.pnp.*
+**frontend/.yarn/*
+!**frontend/.yarn/patches
+!**frontend/.yarn/plugins
+!**frontend/.yarn/releases
+!**frontend/.yarn/versions
+
+# testing
+**frontend/coverage
+
+# next.js
+**frontend/.next/
+**frontend/out/
+
+# production
+**frontend/build
+
+# misc
+**.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
 # VS Code files
 .vscode/*
@@ -13,7 +52,10 @@ frontend/*.local
 # Local files 
 local/*
 backend/run_backend
+frontend/run_frontend
 backend/.air.toml
 *.graphql
 .secrets
 docker_local_build.sh
+docker_local_beta_build.sh
+docker-compose.beta.yml

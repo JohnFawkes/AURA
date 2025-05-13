@@ -8,6 +8,7 @@ import (
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
+	"strconv"
 	"time"
 
 	"encoding/json"
@@ -199,7 +200,7 @@ func processResponse(itemType string, response modals.MediuxItem) modals.PosterS
 func processPosterSets(setType string, mediuxPosterSets []modals.MediuxPosterSet) []modals.PosterSet {
 	var posterSets []modals.PosterSet
 	for _, set := range mediuxPosterSets {
-		if set.Files == nil || len(set.Files) == 0 {
+		if len(set.Files) == 0 {
 			continue
 		}
 		var posterSet modals.PosterSet
@@ -219,7 +220,7 @@ func processPosterSets(setType string, mediuxPosterSets []modals.MediuxPosterSet
 func processCollectionSets(collection modals.MediuxCollectionID) []modals.PosterSet {
 	var posterSets []modals.PosterSet
 	for _, set := range collection.CollectionSets {
-		if set.Files == nil || len(set.Files) == 0 {
+		if len(set.Files) == 0 {
 			continue
 		}
 		var posterSet modals.PosterSet
@@ -234,6 +235,14 @@ func processCollectionSets(collection modals.MediuxCollectionID) []modals.Poster
 	}
 
 	return posterSets
+}
+
+func parseFileSize(fileSize string) int64 {
+	size, err := strconv.Atoi(fileSize)
+	if err != nil {
+		return 0
+	}
+	return int64(size)
 }
 
 func processFiles(files []modals.MediuxFileItem) []modals.PosterFile {
@@ -253,6 +262,7 @@ func processFiles(files []modals.MediuxFileItem) []modals.PosterFile {
 			ID:       file.ID,
 			Type:     file.FileType,
 			Modified: file.ModifiedOn,
+			FileSize: parseFileSize(file.FileSize),
 		}
 
 		// Safely assign Movie if it is not nil

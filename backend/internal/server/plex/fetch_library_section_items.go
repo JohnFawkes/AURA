@@ -6,28 +6,31 @@ import (
 	"fmt"
 	"net/http"
 	"poster-setter/internal/config"
+	"poster-setter/internal/database"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
+	"time"
 )
 
 // Get all items/metadata for a specific item in a specific library section
-func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.ErrorLog) {
-	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s", sectionID))
+func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {
+	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s and title: %s", section.ID, section.Title))
 
-	// Construct the URL for the Plex server API request
-	url := fmt.Sprintf("%s/library/sections/%s/all", config.Global.MediaServer.URL, sectionID)
+	// Construct the URL for the Plex server API request including pagination parameters.
+	url := fmt.Sprintf("%s/library/sections/%s/all?X-Plex-Container-Start=%s&X-Plex-Container-Size=%s",
+		config.Global.MediaServer.URL, section.ID, sectionStartIndex, "500")
 
 	// Make a GET request to the Plex server
 	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 180, nil, "MediaServer")
 	if logErr.Err != nil {
-		return nil, logErr
+		return nil, 0, logErr
 	}
 	defer response.Body.Close()
 
 	// Check if the response status is OK
 	if response.StatusCode != http.StatusOK {
-		return nil, logging.ErrorLog{Err: errors.New("plex server error"),
+		return nil, 0, logging.ErrorLog{Err: errors.New("plex server error"),
 			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
 		}
 	}
@@ -36,7 +39,7 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return nil, logging.ErrorLog{Err: err,
+		return nil, 0, logging.ErrorLog{Err: err,
 			Log: logging.Log{Message: "Failed to parse XML response"},
 		}
 	}
@@ -51,19 +54,13 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-			// itemInfo.Thumb = item.Thumb
-			// itemInfo.AudienceRating = item.AudienceRating
-			// itemInfo.UserRating = item.UserRating
-			// itemInfo.ContentRating = item.ContentRating
-			// itemInfo.Summary = item.Summary
-			// itemInfo.UpdatedAt = item.UpdatedAt
-			// itemInfo.Movie = &modals.MediaItemMovie{
-			// 	File: modals.MediaItemFile{
-			// 		Path:     item.Media[0].Part[0].File,
-			// 		Size:     item.Media[0].Part[0].Size,
-			// 		Duration: item.Media[0].Part[0].Duration,
-			// 	},
-			// }
+
+			existsInDB, _ := database.CheckIfAlreadyInDatabase(itemInfo.RatingKey)
+			if existsInDB {
+				itemInfo.ExistInDatabase = true
+			} else {
+				itemInfo.ExistInDatabase = false
+			}
 
 			items = append(items, itemInfo)
 		}
@@ -78,19 +75,18 @@ func FetchLibrarySectionItems(sectionID string) ([]modals.MediaItem, logging.Err
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-			// itemInfo.Thumb = item.Thumb
-			// itemInfo.AudienceRating = item.AudienceRating
-			// itemInfo.UserRating = item.UserRating
-			// itemInfo.ContentRating = item.ContentRating
-			// itemInfo.Summary = item.Summary
-			// itemInfo.UpdatedAt = item.UpdatedAt
-			// itemInfo.Series = &modals.MediaItemSeries{
-			// 	SeasonCount:  item.ChildCount,
-			// 	EpisodeCount: item.LeafCount,
-			// }
+
+			existsInDB, _ := database.CheckIfAlreadyInDatabase(itemInfo.RatingKey)
+			if existsInDB {
+				itemInfo.ExistInDatabase = true
+			} else {
+				itemInfo.ExistInDatabase = false
+			}
+
 			items = append(items, itemInfo)
 		}
 	}
 
-	return items, logging.ErrorLog{}
+	time.Sleep(200 * time.Millisecond)
+	return items, responseSection.TotalSize, logging.ErrorLog{}
 }

@@ -87,5 +87,13 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type)}}
 	}
 
+	if file.Type == "poster" || file.Type == "backdrop" {
+		logging.LOG.Trace("Deleting image from temporary folder")
+		err := os.Remove(filePath)
+		if err != nil {
+			logging.LOG.Error(fmt.Sprintf("Failed to delete image from temporary folder: %v", err))
+		}
+	}
+
 	return logging.ErrorLog{}
 }

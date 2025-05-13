@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"poster-setter/internal/config"
 	"poster-setter/internal/database"
 	"poster-setter/internal/download"
@@ -11,15 +10,15 @@ import (
 	"poster-setter/internal/routes"
 	mediaserver_shared "poster-setter/internal/server/shared"
 	"poster-setter/internal/utils"
-	"strconv"
 
 	"github.com/robfig/cron/v3"
 )
 
 var (
-	Author  = "xmoosex"
-	License = "MIT"
-	Version = "dev"
+	Author      = "xmoosex"
+	License     = "MIT"
+	APP_VERSION = "dev"
+	APP_PORT    = 8888
 )
 
 func main() {
@@ -33,21 +32,11 @@ func main() {
 		return
 	}
 
-	APP_PORT := os.Getenv("APP_PORT")
-	if APP_PORT == "" {
-		APP_PORT = "8888"
-	}
-	APP_PORT_INT, err := strconv.Atoi(APP_PORT)
-	if err != nil {
-		fmt.Printf("Error converting app_port to integer: %s\n", err.Error())
-		return
-	}
-
 	utils.PrintBanner(
-		Version,
+		APP_VERSION,
 		Author,
 		License,
-		APP_PORT_INT,
+		APP_PORT,
 		config.Global.Logging.Level,
 	)
 
@@ -64,10 +53,6 @@ func main() {
 		fmt.Printf("Emby/Jellyfin user ID fetch error: %s\n", logErr.Log.Message)
 		return
 	}
-
-	// Set the VITE environment variables for the frontend
-	os.Setenv("VITE_APP_PORT", APP_PORT)
-	os.Setenv("VITE_MEDIA_SERVER_TYPE", config.Global.MediaServer.Type)
 
 	// Create a new router
 	r := routes.NewRouter()
@@ -90,7 +75,7 @@ func main() {
 
 	go func() {
 		// Start the API server
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT_INT), r); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), r); err != nil {
 			fmt.Printf("Error starting server: %s\n", err.Error())
 		}
 	}()

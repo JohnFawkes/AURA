@@ -11,7 +11,7 @@ import (
 	"poster-setter/internal/utils"
 )
 
-func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
+func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog) {
 
 	logging.LOG.Trace(fmt.Sprintf("Fetching item content for rating key: %s", ratingKey))
 
@@ -56,6 +56,7 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 	itemInfo.Type = resp.Type
 	itemInfo.Title = resp.Name
 	itemInfo.Year = resp.ProductionYear
+	itemInfo.LibraryTitle = sectionTitle
 	itemInfo.Thumb = resp.ImageTags.Thumb
 	itemInfo.AudienceRating = float64(resp.CriticRating) / 10
 	itemInfo.UserRating = float64(resp.CommunityRating) / 10
