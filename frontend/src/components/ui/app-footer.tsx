@@ -48,7 +48,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					rel="noopener noreferrer"
 					className="flex items-center hover:text-primary transition-colors"
 				>
-					Github <FaGithub className="ml-1 h-3 w-3" />
+					GitHub <FaGithub className="ml-1 h-3 w-3" />
 				</Link>
 				<Link
 					href="/logs"
