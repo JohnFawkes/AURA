@@ -4,9 +4,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);
+	const pathName = usePathname();
+
+	const isHomePage = pathName === "/";
+	const rightClass = isHomePage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {
 		const toggleVisibility = () => {
@@ -38,7 +43,7 @@ export function JumpToTop() {
 			variant="outline"
 			size="sm"
 			className={cn(
-				"fixed z-100 bottom-10 sm:bottom-15 right-3 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer",
+				`fixed z-100 ${rightClass} bottom-10 sm:bottom-15  rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer`,
 				isVisible
 					? "opacity-100 translate-y-0"
 					: "opacity-0 translate-y-4 pointer-events-none"
