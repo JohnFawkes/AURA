@@ -47,20 +47,10 @@ func GetAllSections(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		mediaItems, logErr := mediaServer.FetchLibrarySectionItems(library.SectionID, library.Name)
-		if logErr.Err != nil {
-			logging.LOG.Warn(logErr.Log.Message)
-			continue
-		}
-		if len(mediaItems) == 0 {
-			logging.LOG.Warn(fmt.Sprintf("Library section '%s' is empty", library.Name))
-			continue
-		}
 		var section modals.LibrarySection
 		section.ID = library.SectionID
 		section.Type = library.Type
 		section.Title = library.Name
-		section.MediaItems = mediaItems
 		allSections = append(allSections, section)
 	}
 

@@ -24,10 +24,12 @@ import { cn } from "@/lib/utils";
 import {
 	CACHE_DB_NAME,
 	CACHE_STORE_NAME,
-	CACHE_KEY,
 	CACHE_EXPIRY,
 } from "@/constants/cache";
-import { fetchMediaServerLibraryItems } from "@/services/api.mediaserver";
+import {
+	fetchMediaServerLibrarySectionItems,
+	fetchMediaServerLibrarySections,
+} from "@/services/api.mediaserver";
 import { log } from "@/lib/logger";
 
 export default function Home() {
@@ -37,6 +39,7 @@ export default function Home() {
 
 	// State for loading, error, and library sections
 	const [loading, setLoading] = useState<boolean>(true);
+	const [loadingMessage, setLoadingMessage] = useState<string>();
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
 		[]
@@ -70,34 +73,101 @@ export default function Home() {
 				},
 			});
 
+			let sections: LibrarySection[] = [];
+
+			// If cache is allowed, try loading all sections from DB (using title as key)
 			if (useCache) {
-				const cachedData = await db.get(CACHE_STORE_NAME, CACHE_KEY);
-				if (cachedData) {
-					const now = new Date().getTime();
-					if (now - cachedData.timestamp < CACHE_EXPIRY) {
-						setLibrarySections(cachedData.data);
-						setLoading(false);
+				// Get all cached sections
+				const cachedSections = await db.getAll(CACHE_STORE_NAME);
+				if (cachedSections.length > 0) {
+					// Filter valid cached sections
+					const validSections = cachedSections.filter(
+						(section) =>
+							Date.now() - section.timestamp < CACHE_EXPIRY
+					);
+					if (validSections.length > 0) {
+						sections = validSections.map((s) => s.data);
+						setLibrarySections(sections);
+						log("Home Page - Using cached sections", validSections);
 						return;
 					}
 				}
+				// If no valid cached sections, clear the store.
+				if (sections.length === 0) {
+					await db.clear(CACHE_STORE_NAME);
+				}
 			}
 
-			const resp = await fetchMediaServerLibraryItems();
-			if (resp.status !== "success") {
-				throw new Error(resp.message);
-			}
-			const sections = resp.data;
-			if (!sections || sections.length === 0) {
-				throw new Error("No sections found, please check the logs.");
+			// If sections were not loaded from cache, fetch them from the API.
+			if (sections.length === 0) {
+				setLoadingMessage("Fetching all library sections...");
+				const sectionsResponse =
+					await fetchMediaServerLibrarySections();
+				if (sectionsResponse.status !== "success") {
+					throw new Error(sectionsResponse.message);
+				}
+				sections = sectionsResponse.data || [];
+				if (!sections || sections.length === 0) {
+					throw new Error(
+						"No sections found, please check the logs."
+					);
+				}
+				// Initialize media items for each section.
+				sections.forEach((section) => {
+					section.MediaItems = [];
+				});
+				setLibrarySections(sections);
 			}
 
-			const dataToStore = {
-				data: sections,
-				timestamp: new Date().getTime(),
-			};
-			await db.put(CACHE_STORE_NAME, dataToStore, CACHE_KEY);
+			sections.forEach(async (section, idx) => {
+				let itemsFetched = 0;
+				let totalSize = Infinity;
+				let allItems: LibrarySection["MediaItems"] = [];
+				while (itemsFetched < totalSize) {
+					setLoadingMessage(
+						totalSize === Infinity
+							? `Fetching items for '${section.Title}'...`
+							: `Fetching items for '${section.Title}' (${itemsFetched} / ${totalSize})`
+					);
+					const itemsResponse =
+						await fetchMediaServerLibrarySectionItems(
+							section,
+							itemsFetched
+						);
+					if (itemsResponse.status !== "success") {
+						console.error(itemsResponse.message);
+						break;
+					}
+					const data = itemsResponse.data;
+					allItems = allItems.concat(data?.MediaItems || []);
+					if (totalSize === Infinity) {
+						totalSize = data?.TotalSize ?? 0;
+					}
+					itemsFetched += data?.MediaItems?.length || 0;
+					if ((data?.MediaItems?.length || 0) === 0) {
+						break;
+					}
+				}
 
-			setLibrarySections(sections);
+				// Update section with fetched media items.
+				section.MediaItems = allItems;
+				setLibrarySections((prev) => {
+					const updated = [...prev];
+					updated[idx] = section;
+					return updated;
+				});
+				// Cache the complete section (using title as key).
+				await db.put(
+					CACHE_STORE_NAME,
+					{
+						data: section,
+						timestamp: Date.now(),
+					},
+					section.Title
+				);
+			});
+
+			// Optionally, cache the sections list under a separate key if needed.
 			log("Home Page - Sections fetched successfully", sections);
 		} catch (error) {
 			setErrorMessage(
@@ -190,7 +260,14 @@ export default function Home() {
 
 	if (loading) {
 		return (
-			<Loader message="Loading all content from your media server..." />
+			<>
+				<Loader
+					message={
+						loadingMessage ||
+						"Loading all content from your media server..."
+					}
+				/>
+			</>
 		);
 	}
 

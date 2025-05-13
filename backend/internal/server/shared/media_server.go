@@ -19,7 +19,7 @@ type MediaServer interface {
 	FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.ErrorLog)
 
 	// Get the library section items
-	FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog)
+	FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog)
 
 	// Get an item's content by Rating Key/ID
 	FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog)
@@ -52,22 +52,22 @@ func (e *EmbyJellyServer) FetchLibrarySectionInfo(library *modals.Config_MediaSe
 	return found, logging.ErrorLog{}
 }
 
-func (p *PlexServer) FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog) {
+func (p *PlexServer) FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {
 	// Fetch the section content from Plex
-	mediaItems, logErr := plex.FetchLibrarySectionItems(sectionID)
+	mediaItems, totalSize, logErr := plex.FetchLibrarySectionItems(section, sectionStartIndex)
 	if logErr.Err != nil {
-		return nil, logErr
+		return nil, 0, logErr
 	}
-	return mediaItems, logging.ErrorLog{}
+	return mediaItems, totalSize, logging.ErrorLog{}
 }
 
-func (e *EmbyJellyServer) FetchLibrarySectionItems(sectionID, sectionTitle string) ([]modals.MediaItem, logging.ErrorLog) {
+func (e *EmbyJellyServer) FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {
 	// Fetch the section content from Emby/Jellyfin
-	mediaItems, logErr := emby_jellyfin.FetchLibrarySectionItems(sectionID, sectionTitle)
+	mediaItems, totalSize, logErr := emby_jellyfin.FetchLibrarySectionItems(section, sectionStartIndex)
 	if logErr.Err != nil {
-		return nil, logErr
+		return nil, 0, logErr
 	}
-	return mediaItems, logging.ErrorLog{}
+	return mediaItems, totalSize, logging.ErrorLog{}
 }
 
 func (p *PlexServer) FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog) {

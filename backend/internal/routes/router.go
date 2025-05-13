@@ -45,7 +45,8 @@ func AddRoutes(r *chi.Mux) {
 		r.Post("/temp-images/clear", tempimages.ClearTempImages)
 
 		// Media Server Routes
-		r.Get("/mediaserver/sections/all", mediaserver.GetAllSections)
+		r.Get("/mediaserver/sections", mediaserver.GetAllSections)
+		r.Get("/mediaserver/sections/items", mediaserver.GetAllSectionItems)
 		r.Get("/mediaserver/item/{ratingKey}", mediaserver.GetItemContent)
 		r.Get("/mediaserver/image/{ratingKey}/{imageType}", mediaserver.GetImageFromMediaServer)
 		r.Post("/mediaserver/update/send", mediaserver.GetUpdateSetFromClient)
