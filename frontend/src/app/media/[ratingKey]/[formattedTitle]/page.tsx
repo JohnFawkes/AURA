@@ -124,6 +124,12 @@ const MediaItemPage = () => {
 				}
 			} catch (error) {
 				log("Media Item Page - Error fetching poster sets:", error);
+				setHasError(true);
+				if (error instanceof Error) {
+					setErrorMessage(error.message);
+				}
+				// Fallback to empty sets
+				setPosterSets({ Sets: [] });
 			}
 		};
 
@@ -166,6 +172,7 @@ const MediaItemPage = () => {
 				} else {
 					setErrorMessage("An unknown error occurred, check logs.");
 				}
+				console.log("XXXXXXXXXXXXXXX- Error:", error);
 			} finally {
 				setIsLoading(false);
 			}
