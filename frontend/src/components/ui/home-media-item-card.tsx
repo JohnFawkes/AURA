@@ -7,7 +7,7 @@ import { usePosterMediaStore } from "@/lib/setStore";
 import { MediaItem } from "@/types/mediaItem";
 import { H4 } from "./typography";
 import { SearchContext } from "@/app/layout";
-
+import { CheckCircle2 as Checkmark } from "lucide-react";
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
 }
@@ -35,12 +35,16 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	return (
 		<Card
 			key={mediaItem.RatingKey}
-			className="items-center cursor-pointer hover:shadow-xl transition-shadow"
-			style={{
-				backgroundColor: "var(--card)",
-			}}
+			className="relative items-center cursor-pointer hover:shadow-xl transition-shadow"
+			style={{ backgroundColor: "var(--card)" }}
 			onClick={() => handleCardClick(mediaItem)}
 		>
+			{mediaItem.ExistInDatabase && (
+				<div className="absolute top-2 left-2 z-10">
+					<Checkmark className="text-green-500" size={20} />
+				</div>
+			)}
+
 			{/* Poster Image */}
 			<div className="relative w-[150px] h-[220px] rounded-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
 				<Image
@@ -54,13 +58,14 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 			</div>
 
 			<H4 className="text-center font-semibold mb-2 px-2">
-				{mediaItem.Title.length > 45
-					? `${mediaItem.Title.slice(0, 45)}...`
+				{mediaItem.Title.length > 55
+					? `${mediaItem.Title.slice(0, 55)}...`
 					: mediaItem.Title}
 			</H4>
+
 			{/* Badges */}
 			<CardContent className="flex justify-center gap-2">
-				<Badge variant="default" className=" text-xs">
+				<Badge variant="default" className="text-xs">
 					{mediaItem.Year}
 				</Badge>
 				<Badge variant="default" className="text-xs">

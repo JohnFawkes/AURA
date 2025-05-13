@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"poster-setter/internal/config"
+	"poster-setter/internal/database"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
@@ -69,6 +70,14 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 		itemInfo.Year = item.ProductionYear
 		itemInfo.Thumb = item.ImageTags.Thumb
 		itemInfo.LibraryTitle = section.Title
+
+		existsInDB, _ := database.CheckIfAlreadyInDatabase(item.ID)
+
+		if existsInDB {
+			itemInfo.ExistInDatabase = true
+		} else {
+			itemInfo.ExistInDatabase = false
+		}
 
 		items = append(items, itemInfo)
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"poster-setter/internal/config"
+	"poster-setter/internal/database"
 	"poster-setter/internal/logging"
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
@@ -53,6 +54,14 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
+
+			existsInDB, _ := database.CheckIfAlreadyInDatabase(itemInfo.RatingKey)
+			if existsInDB {
+				itemInfo.ExistInDatabase = true
+			} else {
+				itemInfo.ExistInDatabase = false
+			}
+
 			items = append(items, itemInfo)
 		}
 	}
@@ -66,6 +75,14 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
+
+			existsInDB, _ := database.CheckIfAlreadyInDatabase(itemInfo.RatingKey)
+			if existsInDB {
+				itemInfo.ExistInDatabase = true
+			} else {
+				itemInfo.ExistInDatabase = false
+			}
+
 			items = append(items, itemInfo)
 		}
 	}

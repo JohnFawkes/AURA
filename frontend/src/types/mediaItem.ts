@@ -12,6 +12,7 @@ export interface MediaItem {
 	Type: string; // "movie" or "show"
 	Title: string;
 	Year: number;
+	ExistInDatabase: boolean;
 	Thumb?: string;
 	AudienceRating?: number;
 	UserRating?: number;
