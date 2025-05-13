@@ -208,7 +208,7 @@ export default function Home() {
 
 	useEffect(() => {
 		getMediaItems(true);
-	}, []);
+	}, [getMediaItems]);
 
 	// Debounce the search query
 	useEffect(() => {
