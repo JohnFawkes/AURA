@@ -138,7 +138,21 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	refreshPlexItem(itemRatingKey)
 	posterKey, logErr := getPosters(itemRatingKey)
 	if logErr.Err != nil {
-		return logErr
+		var posterName string
+		if file.Type == "poster" {
+			posterName = "Poster"
+		} else if file.Type == "backdrop" {
+			posterName = "Backdrop"
+		} else if file.Type == "seasonPoster" {
+			posterName = fmt.Sprintf("Season %s Poster", utils.Get2DigitNumber(int64(file.Season.Number)))
+		} else if file.Type == "titlecard" {
+			posterName = fmt.Sprintf("S%sE%s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)))
+		}
+
+		return logging.ErrorLog{
+			Err: logErr.Err,
+			Log: logging.Log{Message: fmt.Sprintf("Failed to find poster for item '%s'", posterName)},
+		}
 	}
 	setPoster(itemRatingKey, posterKey, file.Type)
 
