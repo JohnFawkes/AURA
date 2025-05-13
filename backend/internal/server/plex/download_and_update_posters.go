@@ -93,6 +93,10 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		}
 	}
 
+	if config.Global.Dev.Enable {
+		newFilePath = path.Join(config.Global.Dev.LocalPath, newFilePath)
+	}
+
 	// Ensure the directory exists
 	err := os.MkdirAll(newFilePath, os.ModePerm)
 	if err != nil {
@@ -134,6 +138,16 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		return logErr
 	}
 	setPoster(itemRatingKey, posterKey, file.Type)
+
+	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
+	if config.Global.Kometa.RemoveLabels {
+		for _, label := range config.Global.Kometa.Labels {
+			logErr := removeLabel(itemRatingKey, label)
+			if logErr.Err != nil {
+				logging.LOG.Warn(fmt.Sprintf("Failed to remove label '%s': %v", label, logErr.Err))
+			}
+		}
+	}
 
 	return logging.ErrorLog{}
 }

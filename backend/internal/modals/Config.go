@@ -4,6 +4,7 @@ package modals
 // It includes options for server setup, caching, data storage, logging,
 // and integration with external services such as Plex, TMDB, and Mediux.
 type Config struct {
+	Dev                    Config_Dev          `yaml:"Dev"`                    // Development mode settings.
 	CacheImages            bool                `yaml:"CacheImages"`            // Whether to cache images locally.
 	SaveImageNextToContent bool                `yaml:"SaveImageNextToContent"` // Whether to save images next to the associated content.
 	Logging                Config_Logging      `yaml:"Logging"`                // Logging configuration settings.
@@ -11,6 +12,12 @@ type Config struct {
 	TMDB                   Config_TMDB         `yaml:"TMDB"`                   // TMDB (The Movie Database) integration settings.
 	Mediux                 Config_Mediux       `yaml:"Mediux"`                 // Mediux integration settings.
 	AutoDownload           Config_AutoDownload `yaml:"AutoDownload"`           // Auto-download settings.
+	Kometa                 Config_Kometa       `yaml:"Kometa"`                 // Kometa settings.
+}
+
+type Config_Dev struct {
+	Enable    bool   `yaml:"Enable"`    // Whether to enable development mode.
+	LocalPath string `yaml:"LocalPath"` // Local path for development mode.
 }
 
 // Config_Logging represents the logging configuration settings.
@@ -49,6 +56,11 @@ type Config_Mediux struct {
 type Config_AutoDownload struct {
 	Enabled bool   `yaml:"Enabled"` // Whether auto-download is enabled.
 	Cron    string `yaml:"Cron"`    // Cron expression for scheduling auto-downloads.
+}
+
+type Config_Kometa struct {
+	RemoveLabels bool     `yaml:"RemoveLabels"` // Whether to remove overlays from images.
+	Labels       []string `yaml:"Labels"`       // List of labels to remove from images.
 }
 
 // SetDefaults sets default values for the Config struct.

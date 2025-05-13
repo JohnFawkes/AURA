@@ -167,3 +167,30 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.Er
 
 	return logging.ErrorLog{}
 }
+
+func removeLabel(ratingKey string, label string) logging.ErrorLog {
+	logging.LOG.Trace(fmt.Sprintf("Removing label '%s' from rating key: %s", label, ratingKey))
+
+	// Construct the query parameter that removes the label.
+	// "label%5B%5D.tag.tag-=" is the URL encoded version for "label[].tag.tag-="
+	removalParam := fmt.Sprintf("label%%5B%%5D.tag.tag-=%s", url.QueryEscape(label))
+	// Construct the request URL using the removal parameter
+	requestUrl := fmt.Sprintf("%s/library/metadata/%s?%s", config.Global.MediaServer.URL, ratingKey, removalParam)
+
+	// Send the request via PUT
+	response, body, logErr := utils.MakeHTTPRequest(requestUrl, "PUT", nil, 60, nil, "MediaServer")
+	if logErr.Err != nil {
+		return logErr
+	}
+	defer response.Body.Close()
+
+	// Check if the response was successful
+	if response.StatusCode != http.StatusOK {
+		return logging.ErrorLog{
+			Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
+			Log: logging.Log{Message: fmt.Sprintf("Failed to remove label for rating key: %s", ratingKey)},
+		}
+	}
+	logging.LOG.Trace(fmt.Sprintf("Label removal response: %s", string(body)))
+	return logging.ErrorLog{}
+}

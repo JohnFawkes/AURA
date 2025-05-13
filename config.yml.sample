@@ -43,6 +43,14 @@ MediaServer:
         - Name: "4K Movies"
         - Name: "4K Series"
 
+# Kometa - Configuration for Kometa
+#   RemoveLabels - Whether to remove labels or not. This will remove all specific labels from the Media Server Item.
+Kometa:
+    RemoveLabels: true
+    Labels:
+        - "Overlay"
+
+
 # TMDB - Configuration for TMDB (The Movie Database) This is not used yet.
 #   ApiKey - The API key for TMDB. This can be obtained by creating an account on TMDB and generating an API key.
 TMDB:
