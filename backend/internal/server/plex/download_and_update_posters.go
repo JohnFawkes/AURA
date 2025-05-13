@@ -1,6 +1,7 @@
 package plex
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -130,7 +131,8 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	itemRatingKey := getItemRatingKey(plex, file)
 	if itemRatingKey == "" {
 		logging.LOG.Error(fmt.Sprintf("Item rating key is empty for '%s' not found", plex.Title))
-		return logging.ErrorLog{Err: fmt.Errorf("'%s' not found", plex.Title), Log: logging.Log{Message: fmt.Sprintf("'%s' not found", plex.Title)}}
+		return logging.ErrorLog{Err: errors.New("media not found"),
+			Log: logging.Log{Message: "Media Item not found"}}
 	}
 
 	refreshPlexItem(itemRatingKey)
