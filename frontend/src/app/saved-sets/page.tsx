@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ClientMessage } from "@/types/clientMessage";
 import { fetchAllItemsFromDB } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
@@ -13,7 +13,7 @@ const SavedSetsPage: React.FC = () => {
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 
-	const fetchSavedSets = async () => {
+	const fetchSavedSets = useCallback(async () => {
 		if (isMounted) return;
 		setIsMounted(true);
 		try {
@@ -37,11 +37,11 @@ const SavedSetsPage: React.FC = () => {
 			setLoading(false);
 			setIsMounted(false);
 		}
-	};
+	}, [isMounted]);
 
 	useEffect(() => {
 		fetchSavedSets();
-	}, []);
+	}, [fetchSavedSets]);
 
 	if (loading) {
 		return <Loader message="Loading saved sets..." />;

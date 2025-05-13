@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { fetchLogContents } from "@/services/api.settings";
 import {
@@ -21,12 +21,13 @@ export default function LogsPage() {
 	const [logs, setLogs] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string>("");
-	const [isMounted, setIsMounted] = useState<boolean>(false);
+	const hasFetched = useRef(false);
 
 	useEffect(() => {
+		if (hasFetched.current) return;
+		hasFetched.current = true;
+
 		const fetchLogs = async () => {
-			if (isMounted) return;
-			setIsMounted(true);
 			log("LogsPage - Fetching logs started");
 			try {
 				const resp = await fetchLogContents();
@@ -63,7 +64,6 @@ export default function LogsPage() {
 			} finally {
 				log("LogsPage - Fetching logs completed");
 				setLoading(false);
-				setIsMounted(false);
 			}
 		};
 

@@ -26,13 +26,13 @@ import { Guid, MediaItem } from "@/types/mediaItem";
 import { PosterSets } from "@/types/posterSets";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePosterMediaStore } from "@/lib/setStore";
 
 const MediaItemPage = () => {
 	const router = useRouter();
 
-	const [isMounted, setIsMounted] = useState(false);
+	const hasFetchedInfo = useRef(false);
 
 	const partialMediaItem = usePosterMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
@@ -78,8 +78,8 @@ const MediaItemPage = () => {
 	}, []);
 
 	useEffect(() => {
-		if (isMounted) return;
-		setIsMounted(true);
+		if (hasFetchedInfo.current) return;
+		hasFetchedInfo.current = true;
 
 		const fetchIMDBLink = (guids: Guid[]) => {
 			if (!guids || guids.length === 0) {
@@ -180,12 +180,11 @@ const MediaItemPage = () => {
 				}
 			} finally {
 				setIsLoading(false);
-				setIsMounted(false);
 			}
 		};
 
 		fetchAllInfo();
-	}, [partialMediaItem]);
+	}, [partialMediaItem, mediaItem]);
 
 	if (isLoading) {
 		return <Loader message="Loading media item..." />;

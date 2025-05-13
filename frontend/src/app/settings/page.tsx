@@ -14,19 +14,19 @@ import { Badge } from "@/components/ui/badge";
 import { fetchConfig } from "@/services/api.settings";
 import { AppConfig } from "@/types/config";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
-	const [isMounted, setIsMounted] = useState(false);
+	const isMounted = useRef(false); // useRef instead of useState
 	const [config, setConfig] = useState<AppConfig | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	// Fetch configuration data
 	useEffect(() => {
-		if (isMounted) return;
-		setIsMounted(true);
+		if (isMounted.current) return;
+		isMounted.current = true;
 		const fetchConfigFromAPI = async () => {
 			try {
 				const resp = await fetchConfig();
@@ -50,11 +50,10 @@ const SettingsPage: React.FC = () => {
 				);
 			} finally {
 				setLoading(false);
-				setIsMounted(true);
 			}
 		};
 		fetchConfigFromAPI();
-	}, [loading]);
+	}, []);
 
 	const handleViewLogs = () => {
 		router.push("/logs");
