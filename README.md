@@ -2,6 +2,8 @@
 
 [![Discord](https://img.shields.io/discord/1077169076113248307?logo=discord&label=Discord)](https://discord.gg/HP9TpTmfcp)
 
+![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/poster-setter/version.json)
+
 ## Description
 
 **Poster-Setter** is a tool designed to use Mediux images for your media server content. It provides a simple and intuitive web interface to browse and select image sets for your library. While there are many tools available for this purpose, Poster-Setter stands out by offering a visual web interface to preview images before selection.
