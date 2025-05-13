@@ -2,7 +2,7 @@
 
 [![Discord](https://img.shields.io/discord/1077169076113248307?logo=discord&label=Discord)](https://discord.gg/HP9TpTmfcp)
 
-![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/poster-setter/master/version.json)
+[![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/poster-setter/master/version.json)](https://github.com/mediux-team/poster-setter/pkgs/container/poster-setter)
 
 ## Description
 
