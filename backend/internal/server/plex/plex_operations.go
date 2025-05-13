@@ -28,7 +28,7 @@ func refreshPlexItem(ratingKey string) logging.ErrorLog {
 			Log: logging.Log{Message: fmt.Sprintf("Failed to refresh Plex item with rating key: %s", ratingKey)},
 		}
 	}
-
+	time.Sleep(500 * time.Millisecond)
 	return logging.ErrorLog{}
 }
 

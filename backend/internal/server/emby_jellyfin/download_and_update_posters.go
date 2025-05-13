@@ -17,8 +17,8 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
-		return logging.ErrorLog{Err: fmt.Errorf("item rating key is empty"),
-			Log: logging.Log{Message: "Item rating key is empty"}}
+		return logging.ErrorLog{Err: fmt.Errorf("media not found"),
+			Log: logging.Log{Message: "Media not found"}}
 	}
 
 	// Check if the temporary folder has the image

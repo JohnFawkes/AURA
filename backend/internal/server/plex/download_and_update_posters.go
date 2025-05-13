@@ -129,10 +129,13 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	// Determine the itemRatingKey
 	itemRatingKey := getItemRatingKey(plex, file)
 	if itemRatingKey == "" {
-		logging.LOG.Error(fmt.Sprintf("Item rating key is empty for '%s'", plex.Title))
-		return logging.ErrorLog{Err: fmt.Errorf("item rating key is empty"), Log: logging.Log{Message: fmt.Sprintf("Item rating key is empty for '%s'", plex.Title)}}
+		logging.LOG.Error(fmt.Sprintf("Item rating key is empty for '%s' not found", plex.Title))
+		return logging.ErrorLog{Err: fmt.Errorf("'%s' not found", plex.Title), Log: logging.Log{Message: fmt.Sprintf("'%s' not found", plex.Title)}}
 	}
-	refreshPlexItem(itemRatingKey)
+
+	if file.Type != "poster" && file.Type != "backdrop" {
+		refreshPlexItem(itemRatingKey)
+	}
 	posterKey, logErr := getPosters(itemRatingKey)
 	if logErr.Err != nil {
 		return logErr
