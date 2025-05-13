@@ -18,7 +18,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
-	const isMounted = useRef(false); // useRef instead of useState
+	const isMounted = useRef(false);
 	const [config, setConfig] = useState<AppConfig | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);

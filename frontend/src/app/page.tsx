@@ -1,7 +1,7 @@
 "use client";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { openDB } from "idb";
-import { useEffect, useState, useContext, useCallback } from "react";
+import { useEffect, useState, useContext, useCallback, useRef } from "react";
 import { SearchContext } from "@/app/layout";
 import ErrorMessage from "@/components/ui/error-message";
 import HomeMediaItemCard from "@/components/ui/home-media-item-card";
@@ -33,7 +33,7 @@ import { log } from "@/lib/logger";
 import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
-	const [isMounted, setIsMounted] = useState(false);
+	const isMounted = useRef(false);
 
 	// -------------------------------
 	// Contexts
@@ -54,9 +54,9 @@ export default function Home() {
 	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
 		[]
 	);
-	const [loadingLibraryName, setLoadingLibraryName] = useState<string>("");
-	const [loadingLibraryProgress, setLoadingProgress] = useState<number>(0);
-	const [loadingLibraryTotalSize, setLoadingTotalSize] = useState<number>(0);
+	const [sectionProgress, setSectionProgress] = useState<{
+		[key: string]: { loaded: number; total: number };
+	}>({});
 
 	// Filtering & Pagination
 	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
@@ -74,136 +74,141 @@ export default function Home() {
 	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
 	// Fetch data from cache or API
-	const getMediaItems = useCallback(
-		async (useCache: boolean) => {
-			if (isMounted) return;
-			setIsMounted(true);
-			try {
-				const db = await openDB(CACHE_DB_NAME, 1, {
-					upgrade(db) {
-						if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-							db.createObjectStore(CACHE_STORE_NAME);
-						}
-					},
-				});
-
-				let sections: LibrarySection[] = [];
-
-				// If cache is allowed, try loading all sections from DB (using title as key)
-				if (useCache) {
-					// Get all cached sections
-					const cachedSections = await db.getAll(CACHE_STORE_NAME);
-					if (cachedSections.length > 0) {
-						// Filter valid cached sections
-						const validSections = cachedSections.filter(
-							(section) =>
-								Date.now() - section.timestamp < CACHE_EXPIRY
-						);
-						if (validSections.length > 0) {
-							sections = validSections.map((s) => s.data);
-							setLibrarySections(sections);
-							setFullyLoaded(true);
-							log(
-								"Home Page - Using cached sections",
-								validSections
-							);
-							return;
-						}
+	const getMediaItems = useCallback(async (useCache: boolean) => {
+		if (isMounted.current) return;
+		// Reset progress state before starting a new fetch
+		setSectionProgress({});
+		setFullyLoaded(false);
+		isMounted.current = true;
+		try {
+			const db = await openDB(CACHE_DB_NAME, 1, {
+				upgrade(db) {
+					if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+						db.createObjectStore(CACHE_STORE_NAME);
 					}
-					// If no valid cached sections, clear the store.
-					if (sections.length === 0) {
-						await db.clear(CACHE_STORE_NAME);
+				},
+			});
+
+			let sections: LibrarySection[] = [];
+
+			// If cache is allowed, try loading all sections from DB (using title as key)
+			if (useCache) {
+				// Get all cached sections
+				const cachedSections = await db.getAll(CACHE_STORE_NAME);
+				if (cachedSections.length > 0) {
+					// Filter valid cached sections
+					const validSections = cachedSections.filter(
+						(section) =>
+							Date.now() - section.timestamp < CACHE_EXPIRY
+					);
+					if (validSections.length > 0) {
+						sections = validSections.map((s) => s.data);
+						setLibrarySections(sections);
+						setFullyLoaded(true);
+						log("Home Page - Using cached sections", validSections);
+						return;
 					}
 				}
-
-				setFullyLoaded(false);
-
-				// If sections were not loaded from cache, fetch them from the API.
+				// If no valid cached sections, clear the store.
 				if (sections.length === 0) {
-					const sectionsResponse =
-						await fetchMediaServerLibrarySections();
-					if (sectionsResponse.status !== "success") {
-						throw new Error(sectionsResponse.message);
-					}
-					sections = sectionsResponse.data || [];
-					if (!sections || sections.length === 0) {
-						throw new Error(
-							"No sections found, please check the logs."
-						);
-					}
-					// Initialize media items for each section.
-					sections.forEach((section) => {
-						section.MediaItems = [];
-					});
-					setLibrarySections(sections);
+					await db.clear(CACHE_STORE_NAME);
 				}
-
-				await Promise.all(
-					sections.map(async (section, idx) => {
-						let itemsFetched = 0;
-						let totalSize = Infinity;
-						let allItems: LibrarySection["MediaItems"] = [];
-						while (itemsFetched < totalSize) {
-							setLoadingLibraryName(section.Title);
-							const itemsResponse =
-								await fetchMediaServerLibrarySectionItems(
-									section,
-									itemsFetched
-								);
-							if (itemsResponse.status !== "success") {
-								console.error(itemsResponse.message);
-								break;
-							}
-							const data = itemsResponse.data;
-							allItems = allItems.concat(data?.MediaItems || []);
-							if (totalSize === Infinity) {
-								totalSize = data?.TotalSize ?? 0;
-								setLoadingTotalSize(totalSize);
-							}
-							itemsFetched += data?.MediaItems?.length || 0;
-							setLoadingProgress(itemsFetched);
-							if ((data?.MediaItems?.length || 0) === 0) {
-								break;
-							}
-						}
-						// Update section with fetched media items.
-						section.MediaItems = allItems;
-						setLibrarySections((prev) => {
-							const updated = [...prev];
-							updated[idx] = section;
-							return updated;
-						});
-						// Cache the complete section (using title as key).
-						const db = await openDB(CACHE_DB_NAME, 1);
-						await db.put(
-							CACHE_STORE_NAME,
-							{
-								data: section,
-								timestamp: Date.now(),
-							},
-							section.Title
-						);
-					})
-				);
-
-				log("Home Page - Sections fetched successfully", sections);
-				setFullyLoaded(true);
-			} catch (error) {
-				setErrorMessage(
-					error instanceof Error
-						? error.message
-						: "An unknown error occurred"
-				);
-			} finally {
-				setIsMounted(false);
 			}
-		},
-		[isMounted]
-	);
+
+			setFullyLoaded(false);
+
+			// If sections were not loaded from cache, fetch them from the API.
+			if (sections.length === 0) {
+				const sectionsResponse =
+					await fetchMediaServerLibrarySections();
+				if (sectionsResponse.status !== "success") {
+					throw new Error(sectionsResponse.message);
+				}
+				sections = sectionsResponse.data || [];
+				if (!sections || sections.length === 0) {
+					throw new Error(
+						"No sections found, please check the logs."
+					);
+				}
+				// Initialize media items for each section.
+				sections.forEach((section) => {
+					section.MediaItems = [];
+				});
+				setLibrarySections(sections);
+			}
+
+			// Process each section concurrently
+			await Promise.all(
+				sections.map(async (section, idx) => {
+					let itemsFetched = 0;
+					let totalSize = Infinity;
+					let allItems: LibrarySection["MediaItems"] = [];
+
+					while (itemsFetched < totalSize) {
+						const itemsResponse =
+							await fetchMediaServerLibrarySectionItems(
+								section,
+								itemsFetched
+							);
+						if (itemsResponse.status !== "success") {
+							console.error(itemsResponse.message);
+							break;
+						}
+						const data = itemsResponse.data;
+						const items = data?.MediaItems || [];
+						allItems = allItems.concat(items);
+						if (totalSize === Infinity) {
+							totalSize = data?.TotalSize ?? 0;
+						}
+						itemsFetched += items.length;
+						// Update the progress state for this section:
+						setSectionProgress((prev) => ({
+							...prev,
+							[section.ID]: {
+								loaded: itemsFetched,
+								total: totalSize,
+							},
+						}));
+						if (items.length === 0) {
+							break;
+						}
+					}
+					// Update section with fetched media items.
+					section.MediaItems = allItems;
+					setLibrarySections((prev) => {
+						const updated = [...prev];
+						updated[idx] = section;
+						return updated;
+					});
+					// Cache the complete section (using title as key).
+					const freshDB = await openDB(CACHE_DB_NAME, 1);
+					await freshDB.put(
+						CACHE_STORE_NAME,
+						{
+							data: section,
+							timestamp: Date.now(),
+						},
+						section.Title
+					);
+				})
+			);
+
+			log("Home Page - Sections fetched successfully", sections);
+			setFullyLoaded(true);
+		} catch (error) {
+			setErrorMessage(
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred"
+			);
+		} finally {
+			isMounted.current = false;
+		}
+	}, []);
 
 	useEffect(() => {
 		getMediaItems(true);
-	}, [getMediaItems]);
+	}, []);
 
 	// Debounce the search query
 	useEffect(() => {
@@ -285,32 +290,39 @@ export default function Home() {
 
 	return (
 		<div className="min-h-screen px-8 pb-20 sm:px-20">
-			{!fullyLoaded && (
-				<div className="w-full mt-2">
-					<div className="flex items-center justify-between">
-						<Label
-							htmlFor="library-filter"
-							className="text-lg font-semibold"
-						>
-							Loading {loadingLibraryName || "Media Items"}
-						</Label>
-						<Progress
-							value={
-								(loadingLibraryProgress /
-									loadingLibraryTotalSize) *
-									100 || 0
-							}
-							className="flex-1 ml-2"
-						/>
-						<span className="ml-2 text-sm text-muted-foreground">
-							{Math.round(
-								(loadingLibraryProgress /
-									loadingLibraryTotalSize) *
-									100 || 0
-							)}
-							%
-						</span>
-					</div>
+			{!fullyLoaded && librarySections.length > 0 && (
+				<div className="mb-4">
+					{librarySections.map((section) => {
+						// Retrieve progress info for this section
+						const progressInfo = sectionProgress[section.ID];
+						const percentage =
+							progressInfo && progressInfo.total > 0
+								? Math.min(
+										(progressInfo.loaded /
+											progressInfo.total) *
+											100,
+										100
+								  )
+								: 0;
+
+						// Render progress UI only if the percentage is not 100
+						if (Math.round(percentage) !== 100) {
+							return (
+								<div key={section.ID} className="mb-2">
+									<Label className="text-lg font-semibold">
+										Loading {section.Title}
+									</Label>
+									<Progress
+										value={percentage}
+										className="mt-1"
+									/>
+									<span className="ml-2 text-sm text-muted-foreground">
+										{Math.round(percentage)}%
+									</span>
+								</div>
+							);
+						}
+					})}
 				</div>
 			)}
 
