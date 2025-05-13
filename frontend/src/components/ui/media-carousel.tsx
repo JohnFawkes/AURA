@@ -10,10 +10,11 @@ import {
 import { PosterSet } from "@/types/posterSets";
 import { ShowCarousel } from "./show-carousel";
 import { MediaItem } from "@/types/mediaItem";
-import { Download } from "lucide-react";
+import { ZoomInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePosterMediaStore } from "@/lib/setStore";
 import { Lead, P } from "./typography";
+import PosterSetModal from "./poster-set-modal";
 
 type MediaCarouselProps = {
 	set: PosterSet;
@@ -81,14 +82,20 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 					<P className="text-primary-dynamic">
 						Set Author: {set.User.Name}
 					</P>
-					<div className="ml-auto">
+					<div className="ml-auto flex space-x-2">
 						<button
 							className="btn"
 							onClick={() => {
 								goToSetPage();
 							}}
 						>
-							<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+							<ZoomInIcon className="mb-1 mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+						</button>
+						<button className="btn">
+							<PosterSetModal
+								posterSet={set}
+								mediaItem={mediaItem}
+							/>
 						</button>
 					</div>
 				</div>

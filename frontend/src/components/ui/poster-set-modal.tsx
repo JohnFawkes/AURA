@@ -35,6 +35,12 @@ import { ClientMessage } from "@/types/clientMessage";
 import { postSendSetToAPI } from "@/services/api.mediaserver";
 import { Progress } from "./progress";
 
+const formSchema = z.object({
+	items: z.array(z.string()).refine((value) => value.length > 0, {
+		message: "You must select at least one asset type.",
+	}),
+});
+
 const PosterSetModal: React.FC<{
 	posterSet: PosterSet;
 	mediaItem: MediaItem;
@@ -83,12 +89,7 @@ const PosterSetModal: React.FC<{
 		return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 	}
 
-	const formSchema = z.object({
-		items: z.array(z.string()).refine((value) => value.length > 0, {
-			message: "You must select at least one asset type.",
-		}),
-	});
-
+	// Compute asset options
 	const assetOptions = useMemo(() => {
 		const typeSet = new Set(posterSet.Files.map((file) => file.Type));
 		const assetLabels: Record<string, string> = {
@@ -102,10 +103,11 @@ const PosterSetModal: React.FC<{
 			.map(([key, label]) => ({ id: key, label }));
 	}, [posterSet]);
 
+	// Initialize form with all asset options selected by default
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			items: [],
+			items: assetOptions.map((item) => item.id),
 		},
 	});
 
@@ -240,7 +242,7 @@ const PosterSetModal: React.FC<{
 		<Dialog>
 			<DialogTrigger asChild>
 				<button className="btn">
-					<Download className="mr-2 h-4 w-4" />
+					<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
 				</button>
 			</DialogTrigger>
 			<DialogPortal>
@@ -439,6 +441,7 @@ const PosterSetModal: React.FC<{
 
 									{/* Download button to display download info */}
 									<Button
+										disabled={items.length === 0}
 										className=""
 										onClick={() => {
 											onSubmit(form.getValues());
