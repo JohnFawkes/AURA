@@ -134,12 +134,22 @@ const MediaItemPage = () => {
 
 		const fetchAllInfo = async () => {
 			try {
-				if (!partialMediaItem) {
-					throw new Error("No media item found");
+				// Use local state, fallback to Zustand if needed.
+				let currentMediaItem = mediaItem;
+				if (!currentMediaItem) {
+					const storedMediaItem =
+						usePosterMediaStore.getState().mediaItem;
+					if (storedMediaItem) {
+						currentMediaItem = storedMediaItem;
+						setMediaItem(storedMediaItem);
+					} else {
+						throw new Error("No media item found");
+					}
 				}
+				// Now safely use currentMediaItem
 				const resp = await fetchMediaServerItemContent(
-					partialMediaItem.RatingKey,
-					partialMediaItem.LibraryTitle
+					currentMediaItem.RatingKey,
+					currentMediaItem.LibraryTitle
 				);
 				if (!resp) {
 					throw new Error("No response from Plex API");
