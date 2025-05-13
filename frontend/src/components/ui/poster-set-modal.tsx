@@ -247,7 +247,7 @@ const PosterSetModal: React.FC<{
 			</DialogTrigger>
 			<DialogPortal>
 				<DialogOverlay />
-				<DialogContent className="sm:max-w-[425px]">
+				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[425px] ">
 					<DialogHeader>
 						<DialogTitle>
 							Download Poster Set - {mediaItem.Title}
