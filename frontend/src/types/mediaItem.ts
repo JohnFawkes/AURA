@@ -2,6 +2,7 @@ export interface LibrarySection {
 	ID: string;
 	Type: string; // "movie" or "show"
 	Title: string;
+	TotalSize: number;
 	MediaItems: MediaItem[];
 }
 

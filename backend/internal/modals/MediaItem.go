@@ -4,6 +4,7 @@ type LibrarySection struct {
 	ID         string      `json:"ID"`
 	Type       string      `json:"Type"` // "movie" or "show"
 	Title      string      `json:"Title"`
+	TotalSize  int         `json:"TotalSize"`
 	MediaItems []MediaItem `json:"MediaItems"`
 }
 
