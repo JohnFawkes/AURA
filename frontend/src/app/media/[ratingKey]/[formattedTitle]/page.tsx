@@ -172,7 +172,6 @@ const MediaItemPage = () => {
 				} else {
 					setErrorMessage("An unknown error occurred, check logs.");
 				}
-				console.log("XXXXXXXXXXXXXXX- Error:", error);
 			} finally {
 				setIsLoading(false);
 			}
