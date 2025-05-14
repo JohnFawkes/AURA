@@ -1,29 +1,25 @@
-import React, { useContext } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { usePosterMediaStore } from "@/lib/setStore";
 import { MediaItem } from "@/types/mediaItem";
 import { H4 } from "./typography";
-import { SearchContext } from "@/app/layout";
 import { CheckCircle2 as Checkmark } from "lucide-react";
+import { useMediaStore } from "@/lib/mediaStore";
+
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
 }
 
 const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	const router = useRouter();
-	const { setSearchQuery } = useContext(SearchContext);
 
-	const setMediaItem = usePosterMediaStore((state) => state.setMediaItem);
+	const setMediaItem = useMediaStore((state) => state.setMediaItem);
 
 	const handleCardClick = (mediaItem: MediaItem) => {
 		// Store the mediaItem in Zustand
 		setMediaItem(mediaItem);
-
-		// Clear the search query
-		setSearchQuery("");
 
 		// Replace space with underscore for URL compatibility
 		const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");

@@ -12,9 +12,10 @@ import { ShowCarousel } from "./show-carousel";
 import { MediaItem } from "@/types/mediaItem";
 import { ZoomInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { usePosterMediaStore } from "@/lib/setStore";
 import { Lead, P } from "./typography";
 import PosterSetModal from "./poster-set-modal";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+import { useMediaStore } from "@/lib/mediaStore";
 
 type MediaCarouselProps = {
 	set: PosterSet;
@@ -61,7 +62,9 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 		.filter(Boolean) // Remove null values
 		.join(" • ");
 
-	const { setPosterSet, setMediaItem } = usePosterMediaStore();
+	const { setPosterSet } = usePosterSetStore();
+	const { setMediaItem } = useMediaStore();
+
 	const goToSetPage = () => {
 		setPosterSet(set);
 		setMediaItem(mediaItem);

@@ -27,20 +27,20 @@ import { PosterSets } from "@/types/posterSets";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { usePosterMediaStore } from "@/lib/setStore";
 import {
 	ArrowDownAZ,
 	ArrowUpAZ,
 	CalendarArrowDown,
 	CalendarArrowUp,
 } from "lucide-react";
+import { useMediaStore } from "@/lib/mediaStore";
 
 const MediaItemPage = () => {
 	const router = useRouter();
 
 	const hasFetchedInfo = useRef(false);
 
-	const partialMediaItem = usePosterMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
+	const partialMediaItem = useMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
 	const [isBlurred, setIsBlurred] = useState(false);
 
@@ -151,8 +151,7 @@ const MediaItemPage = () => {
 				// Use local state, fallback to Zustand if needed.
 				let currentMediaItem = mediaItem;
 				if (!currentMediaItem) {
-					const storedMediaItem =
-						usePosterMediaStore.getState().mediaItem;
+					const storedMediaItem = useMediaStore.getState().mediaItem;
 					if (storedMediaItem) {
 						currentMediaItem = storedMediaItem;
 						setMediaItem(storedMediaItem);

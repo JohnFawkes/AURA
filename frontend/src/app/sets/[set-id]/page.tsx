@@ -1,7 +1,6 @@
 "use client";
 
 import ErrorMessage from "@/components/ui/error-message";
-import { usePosterMediaStore } from "@/lib/setStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -16,9 +15,13 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import PosterSetModal from "@/components/ui/poster-set-modal";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+import { useMediaStore } from "@/lib/mediaStore";
+import { Button } from "@/components/ui/button";
 
 const SetPage = () => {
-	const { posterSet, mediaItem } = usePosterMediaStore();
+	const { posterSet } = usePosterSetStore();
+	const { mediaItem } = useMediaStore();
 	const [isBlurred, setIsBlurred] = useState(false);
 	const [backdropURL, setBackdropURL] = useState("");
 
@@ -87,7 +90,19 @@ const SetPage = () => {
 
 	// Check if posterSet and mediaItem are defined
 	if (!posterSet || !mediaItem) {
-		return <ErrorMessage message="Poster set or media item not found." />;
+		return (
+			<div className="flex flex-col items-center p-6 gap-4">
+				<ErrorMessage message="Poster set or media item not found." />
+				<Button
+					className="mt-4"
+					onClick={() => {
+						window.location.href = "/";
+					}}
+				>
+					Go to Home Page
+				</Button>
+			</div>
+		);
 	}
 
 	return (
