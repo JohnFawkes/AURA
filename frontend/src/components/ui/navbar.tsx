@@ -40,6 +40,13 @@ export default function Navbar() {
 		return () => clearTimeout(handler);
 	}, [localSearch, setSearchQuery]);
 
+	const handleHomeClick = () => {
+		if (isHomePage) {
+			setSearchQuery("");
+		}
+		router.push("/");
+	};
+
 	return (
 		<nav
 			suppressHydrationWarning
@@ -51,7 +58,7 @@ export default function Navbar() {
 			<Link
 				href="/"
 				className="flex items-center gap-2 hover:text-primary transition-colors"
-				onClick={() => router.push("/")}
+				onClick={() => handleHomeClick()}
 			>
 				<div className="relative w-[32px] h-[32px] rounded-t-md overflow-hidden">
 					<Image
@@ -106,22 +113,6 @@ export default function Navbar() {
 						<FileCogIcon className="w-4 h-4 mr-2" />
 						Settings
 					</DropdownMenuItem>
-
-					{/* 
-					
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						onClick={() =>
-							setTheme(theme === "dark" ? "light" : "dark")
-						}
-					>
-						{theme === "dark" ? (
-							<SunIcon className="w-4 h-4 mr-2" />
-						) : (
-							<MoonIcon className="w-4 h-4 mr-2" />
-						)}
-						{theme === "dark" ? "Light Mode" : "Dark Mode"}
-					</DropdownMenuItem> */}
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</nav>
