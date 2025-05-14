@@ -1,8 +1,7 @@
 "use client";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { openDB } from "idb";
-import { useEffect, useState, useContext, useCallback, useRef } from "react";
-import { SearchContext } from "@/app/layout";
+import { useEffect, useState, useCallback, useRef } from "react";
 import ErrorMessage from "@/components/ui/error-message";
 import HomeMediaItemCard from "@/components/ui/home-media-item-card";
 import {
@@ -31,20 +30,17 @@ import {
 } from "@/services/api.mediaserver";
 import { log } from "@/lib/logger";
 import { Progress } from "@/components/ui/progress";
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
 
 export default function Home() {
 	const isMounted = useRef(false);
 
 	// -------------------------------
-	// Contexts
-	// -------------------------------
-	const { searchQuery } = useContext(SearchContext);
-
-	// -------------------------------
 	// States
 	// -------------------------------
 	// Search
-	const [debouncedQuery, setDebouncedQuery] = useState<string>("");
+	const { searchQuery } = useHomeSearchStore();
+	const prevSearchQuery = useRef(searchQuery);
 
 	// Loading & Error
 	const [errorMessage, setErrorMessage] = useState<string>("");
@@ -61,7 +57,7 @@ export default function Home() {
 	// Filtering & Pagination
 	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
-	const [currentPage, setCurrentPage] = useState<number>(1);
+	const { currentPage, setCurrentPage } = useHomeSearchStore();
 	const itemsPerPage = 20;
 	const [filterOutInDB, setFilterOutInDB] = useState<boolean>(false);
 
@@ -211,14 +207,12 @@ export default function Home() {
 		getMediaItems(true);
 	}, [getMediaItems]);
 
-	// Debounce the search query
 	useEffect(() => {
-		const handler = setTimeout(() => {
-			setDebouncedQuery(searchQuery);
-		}, 300);
-
-		return () => clearTimeout(handler);
-	}, [searchQuery]);
+		if (searchQuery !== prevSearchQuery.current) {
+			setCurrentPage(1);
+			prevSearchQuery.current = searchQuery;
+		}
+	}, [searchQuery, setCurrentPage]);
 
 	// Filter items based on the search query
 	useEffect(() => {
@@ -239,8 +233,8 @@ export default function Home() {
 		}
 
 		// Handle search query
-		if (debouncedQuery.trim() !== "") {
-			const query = debouncedQuery.trim();
+		if (searchQuery.trim() !== "") {
+			const query = searchQuery.trim();
 			let exactQuery = "";
 			let yearFilter = null;
 
@@ -287,8 +281,7 @@ export default function Home() {
 		}
 
 		setFilteredItems(items);
-		setCurrentPage(1); // Reset to the first page on new search
-	}, [librarySections, filteredLibraries, debouncedQuery, filterOutInDB]);
+	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB]);
 
 	if (errorMessage) {
 		return <ErrorMessage message={errorMessage} />;
@@ -418,8 +411,8 @@ export default function Home() {
 							<PaginationItem>
 								<PaginationPrevious
 									onClick={() =>
-										setCurrentPage((prev) =>
-											Math.max(prev - 1, 1)
+										setCurrentPage(
+											Math.max(currentPage - 1, 1)
 										)
 									}
 								/>
@@ -438,8 +431,11 @@ export default function Home() {
 							<PaginationItem>
 								<PaginationNext
 									onClick={() =>
-										setCurrentPage((prev) =>
-											Math.min(prev + 1, totalPages)
+										setCurrentPage(
+											Math.min(
+												currentPage + 1,
+												totalPages
+											)
 										)
 									}
 								/>

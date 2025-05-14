@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
 	Bookmark as BookmarkIcon,
 	Settings as SettingsIcon,
-	//Moon as MoonIcon,
-	//Sun as SunIcon,
 	FileCog as FileCogIcon,
 	Search as SearchIcon,
 } from "lucide-react";
@@ -19,18 +17,28 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-//import { useTheme } from "next-themes";
-import { useContext } from "react";
-import { SearchContext } from "@/app/layout";
 import Link from "next/link";
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
-	const { setSearchQuery } = useContext(SearchContext);
-	//const { theme, setTheme } = useTheme();
+	const { setSearchQuery } = useHomeSearchStore();
 	const router = useRouter();
 	const pathName = usePathname();
 
 	const isHomePage = pathName === "/";
+
+	// Local state to hold the immediate search input
+	const [localSearch, setLocalSearch] = useState("");
+
+	// Debounce updating the zustand store by 300ms
+	useEffect(() => {
+		const handler = setTimeout(() => {
+			setSearchQuery(localSearch);
+		}, 300);
+
+		return () => clearTimeout(handler);
+	}, [localSearch, setSearchQuery]);
 
 	return (
 		<nav
@@ -59,12 +67,22 @@ export default function Navbar() {
 			{isHomePage && (
 				<div className="relative w-full max-w-2xl ml-1 mr-1">
 					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					{/* Desktop Search Input */}
 					<Input
 						type="search"
-						placeholder="Search movies or shows"
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
+						placeholder="Search for movies or shows"
+						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted hidden md:block"
 						onChange={(e) => {
-							setSearchQuery(e.target.value);
+							setLocalSearch(e.target.value);
+						}}
+					/>
+					{/* Mobile Search Input */}
+					<Input
+						type="search"
+						placeholder="Search Media"
+						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted block md:hidden"
+						onChange={(e) => {
+							setLocalSearch(e.target.value);
 						}}
 					/>
 				</div>
