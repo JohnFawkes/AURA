@@ -24,7 +24,6 @@ import { CheckCircle2 as Checkmark } from "lucide-react";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { MoreHorizontal } from "lucide-react";
-import { log } from "@/lib/logger";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -99,8 +98,6 @@ const SavedSetsCard: React.FC<{
 					: type}
 			</Badge>
 		));
-
-	log("SavedSetsCard - Rendered", savedSet);
 
 	return (
 		<Card className="relative w-full max-w-md mx-auto mb-4">
