@@ -4,6 +4,7 @@ frontend/node_modules
 frontend/dist
 frontend/dist-ssr
 frontend/\*.local
+legacy-frontend
 
 # VS Code files
 

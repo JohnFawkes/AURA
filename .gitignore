@@ -33,7 +33,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files 
 .env*
 
 # vercel
@@ -59,3 +59,4 @@ backend/.air.toml
 docker_local_build.sh
 docker_local_beta_build.sh
 docker-compose.beta.yml
+legacy-frontend
