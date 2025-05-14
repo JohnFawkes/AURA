@@ -28,6 +28,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { usePosterMediaStore } from "@/lib/setStore";
+import {
+	ArrowDownAZ,
+	ArrowUpAZ,
+	CalendarArrowDown,
+	CalendarArrowUp,
+} from "lucide-react";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -49,6 +55,7 @@ const MediaItemPage = () => {
 
 	// State to track the selected sorting option
 	const [sortOption, setSortOption] = useState<string>("");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
 	// Loading State
 	const [isLoading, setIsLoading] = React.useState(true);
@@ -458,6 +465,35 @@ const MediaItemPage = () => {
 					{posterSets?.Sets && posterSets.Sets.length > 0 && (
 						<>
 							<div className="flex justify-end mb-6 pr-4">
+								{sortOption !== "" && (
+									<Button
+										variant="ghost"
+										onClick={() => {
+											setSortOrder(
+												sortOrder === "asc"
+													? "desc"
+													: "asc"
+											);
+										}}
+									>
+										{sortOption === "name" &&
+											sortOrder === "desc" && (
+												<ArrowUpAZ />
+											)}
+										{sortOption === "name" &&
+											sortOrder === "asc" && (
+												<ArrowDownAZ />
+											)}
+										{sortOption === "date" &&
+											sortOrder === "desc" && (
+												<CalendarArrowDown />
+											)}
+										{sortOption === "date" &&
+											sortOrder === "asc" && (
+												<CalendarArrowUp />
+											)}
+									</Button>
+								)}
 								<Select
 									onValueChange={(value) => {
 										setSortOption(value);
@@ -483,20 +519,29 @@ const MediaItemPage = () => {
 									posterSets.Sets.length > 0 &&
 									[...posterSets.Sets]
 										.sort((a, b) => {
-											// Inline sorting logic based on the selected sort option
+											// Sorting logic based on the sort option and sort order
 											if (sortOption === "date") {
-												return (
-													new Date(
-														b.DateUpdated
-													).getTime() -
-													new Date(
-														a.DateUpdated
-													).getTime()
-												);
+												return sortOrder === "asc"
+													? new Date(
+															a.DateUpdated
+													  ).getTime() -
+															new Date(
+																b.DateUpdated
+															).getTime()
+													: new Date(
+															b.DateUpdated
+													  ).getTime() -
+															new Date(
+																a.DateUpdated
+															).getTime();
 											} else if (sortOption === "name") {
-												return a.User.Name.localeCompare(
-													b.User.Name
-												);
+												return sortOrder === "asc"
+													? a.User.Name.localeCompare(
+															b.User.Name
+													  )
+													: b.User.Name.localeCompare(
+															a.User.Name
+													  );
 											}
 											return 0; // Default case (no sorting)
 										})
