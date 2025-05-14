@@ -63,6 +63,7 @@ export default function Home() {
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const [currentPage, setCurrentPage] = useState<number>(1);
 	const itemsPerPage = 20;
+	const [filterOutInDB, setFilterOutInDB] = useState<boolean>(false);
 
 	// -------------------------------
 	// Derived values
@@ -232,6 +233,11 @@ export default function Home() {
 			);
 		}
 
+		// Filter out items already in the DB
+		if (filterOutInDB) {
+			items = items.filter((item) => item.ExistInDatabase);
+		}
+
 		// Handle search query
 		if (debouncedQuery.trim() !== "") {
 			const query = debouncedQuery.trim();
@@ -282,7 +288,7 @@ export default function Home() {
 
 		setFilteredItems(items);
 		setCurrentPage(1); // Reset to the first page on new search
-	}, [librarySections, filteredLibraries, debouncedQuery]);
+	}, [librarySections, filteredLibraries, debouncedQuery, filterOutInDB]);
 
 	if (errorMessage) {
 		return <ErrorMessage message={errorMessage} />;
@@ -326,14 +332,14 @@ export default function Home() {
 				</div>
 			)}
 
-			{/* Filter and Sort Section */}
+			{/* Filter Section*/}
 			<div className="flex flex-col sm:flex-row mb-4 mt-2">
 				{/* Label */}
 				<Label
 					htmlFor="library-filter"
 					className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
 				>
-					Filter by Library Name:
+					Filters:
 				</Label>
 
 				{/* ToggleGroup */}
@@ -370,6 +376,17 @@ export default function Home() {
 							{section.Title}
 						</Badge>
 					))}
+
+					<Badge
+						key={"filter-out-in-db"}
+						className="cursor-pointer"
+						variant={filterOutInDB ? "default" : "outline"}
+						onClick={() => {
+							setFilterOutInDB((prev) => !prev);
+						}}
+					>
+						{filterOutInDB ? "Items in DB" : "All Items"}
+					</Badge>
 				</ToggleGroup>
 			</div>
 
