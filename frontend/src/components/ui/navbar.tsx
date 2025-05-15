@@ -36,6 +36,8 @@ export default function Navbar() {
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
+	const isSavedSetsPage =
+		pathName === "/saved-sets" || pathName === "/saved-sets/";
 
 	// Local state for search input
 	const [localSearch, setLocalSearch] = useState("");
@@ -69,13 +71,13 @@ export default function Navbar() {
 
 	// Debounce updating the zustand store when on the homepage
 	useEffect(() => {
-		if (isHomePage) {
+		if (isHomePage || isSavedSetsPage) {
 			const handler = setTimeout(() => {
 				setSearchQuery(localSearch);
 			}, 300);
 			return () => clearTimeout(handler);
 		}
-	}, [localSearch, setSearchQuery, isHomePage]);
+	}, [localSearch, setSearchQuery, isHomePage, isSavedSetsPage]);
 
 	// When not on homepage, search the IDB (cache) for matching MediaItems
 	useEffect(() => {
@@ -166,36 +168,42 @@ export default function Navbar() {
 					onBlur={() => setShowDropdown(false)}
 				/>
 				{/* If not on homepage, display dropdown results */}
-				{!isHomePage && showDropdown && searchResults.length > 0 && (
-					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
-						{searchResults.map((result) => (
-							<div
-								key={result.RatingKey}
-								onMouseDown={() => handleResultClick(result)}
-								className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
-							>
-								<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
-									<Image
-										src={`/api/mediaserver/image/${result.RatingKey}/poster`}
-										alt={result.Title}
-										fill
-										className="object-cover"
-										loading="lazy"
-										unoptimized
-									/>
+				{!isHomePage &&
+					!isSavedSetsPage &&
+					showDropdown &&
+					searchResults.length > 0 && (
+						<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
+							{searchResults.map((result) => (
+								<div
+									key={result.RatingKey}
+									onMouseDown={() =>
+										handleResultClick(result)
+									}
+									className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
+								>
+									<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
+										<Image
+											src={`/api/mediaserver/image/${result.RatingKey}/poster`}
+											alt={result.Title}
+											fill
+											className="object-cover"
+											loading="lazy"
+											unoptimized
+										/>
+									</div>
+									<div>
+										<p className="font-medium text-sm md:text-base">
+											{result.Title}
+										</p>
+										<p className="text-xs text-muted-foreground">
+											{result.LibraryTitle} ·{" "}
+											{result.Year}
+										</p>
+									</div>
 								</div>
-								<div>
-									<p className="font-medium text-sm md:text-base">
-										{result.Title}
-									</p>
-									<p className="text-xs text-muted-foreground">
-										{result.LibraryTitle} · {result.Year}
-									</p>
-								</div>
-							</div>
-						))}
-					</div>
-				)}
+							))}
+						</div>
+					)}
 			</div>
 			{/* Settings */}
 			<DropdownMenu>
