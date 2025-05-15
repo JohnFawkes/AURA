@@ -10,7 +10,10 @@ export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);
 	const pathName = usePathname();
 
-	const isRefreshPage = pathName === "/" || pathName === "/saved-sets/";
+	const isRefreshPage =
+		pathName === "/" ||
+		pathName === "/saved-sets" ||
+		pathName === "/saved-sets/";
 	const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {
@@ -49,10 +52,10 @@ export function JumpToTop() {
 					: "opacity-0 translate-y-4 pointer-events-none"
 			)}
 			onClick={scrollToTop}
-			aria-label="back to Top"
+			aria-label="jump to top"
 		>
 			<ArrowUp className="h-3 w-3 mr-1" />
-			<span className="text-xs hidden sm:inline">Back to Top</span>
+			<span className="text-xs hidden sm:inline">Jump to Top</span>
 		</Button>
 	);
 }
