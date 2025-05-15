@@ -15,15 +15,12 @@ interface HomeMediaItemCardProps {
 const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	const router = useRouter();
 
-	const setMediaItem = useMediaStore((state) => state.setMediaItem);
+	const { setMediaItem } = useMediaStore();
 
 	const handleCardClick = (mediaItem: MediaItem) => {
-		// Store the mediaItem in Zustand
 		setMediaItem(mediaItem);
-
-		// Replace space with underscore for URL compatibility
+		// Format title for URL (replace spaces with underscores, remove special characters)
 		const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");
-		// Replace special characters with empty string
 		const sanitizedTitle = formattedTitle.replace(/[^a-zA-Z0-9_]/g, "");
 		router.push(`/media/${mediaItem.RatingKey}/${sanitizedTitle}`);
 	};
