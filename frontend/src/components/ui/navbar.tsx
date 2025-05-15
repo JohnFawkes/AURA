@@ -22,7 +22,12 @@ import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
-	const { setSearchQuery } = useHomeSearchStore();
+	const {
+		setSearchQuery,
+		setCurrentPage,
+		setFilteredLibraries,
+		setFilterOutInDB,
+	} = useHomeSearchStore();
 	const router = useRouter();
 	const pathName = usePathname();
 
@@ -43,6 +48,9 @@ export default function Navbar() {
 	const handleHomeClick = () => {
 		if (isHomePage) {
 			setSearchQuery("");
+			setCurrentPage(1);
+			setFilteredLibraries([]);
+			setFilterOutInDB(false);
 		}
 		router.push("/");
 	};

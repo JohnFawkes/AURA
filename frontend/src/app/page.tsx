@@ -55,11 +55,16 @@ export default function Home() {
 	}>({});
 
 	// Filtering & Pagination
-	const [filteredLibraries, setFilteredLibraries] = useState<string[]>([]);
+	const {
+		filteredLibraries,
+		setFilteredLibraries,
+		filterOutInDB,
+		setFilterOutInDB,
+	} = useHomeSearchStore();
+	const {} = useHomeSearchStore();
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const { currentPage, setCurrentPage } = useHomeSearchStore();
 	const itemsPerPage = 20;
-	const [filterOutInDB, setFilterOutInDB] = useState<boolean>(false);
 
 	// -------------------------------
 	// Derived values
@@ -353,16 +358,19 @@ export default function Home() {
 							}
 							onClick={() => {
 								if (filteredLibraries.includes(section.Title)) {
-									setFilteredLibraries((prev) =>
-										prev.filter(
-											(lib) => lib !== section.Title
+									setFilteredLibraries(
+										filteredLibraries.filter(
+											(lib: string) =>
+												lib !== section.Title
 										)
 									);
+									setCurrentPage(1);
 								} else {
-									setFilteredLibraries((prev) => [
-										...prev,
+									setFilteredLibraries([
+										...filteredLibraries,
 										section.Title,
 									]);
+									setCurrentPage(1);
 								}
 							}}
 						>
@@ -375,7 +383,8 @@ export default function Home() {
 						className="cursor-pointer"
 						variant={filterOutInDB ? "default" : "outline"}
 						onClick={() => {
-							setFilterOutInDB((prev) => !prev);
+							setFilterOutInDB(!filterOutInDB);
+							setCurrentPage(1);
 						}}
 					>
 						{filterOutInDB ? "Items in DB" : "All Items"}
