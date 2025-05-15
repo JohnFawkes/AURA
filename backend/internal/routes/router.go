@@ -55,7 +55,7 @@ func AddRoutes(r *chi.Mux) {
 		// Database Routes
 		r.Get("/db/get/all", database.GetAllItems)
 		r.Delete("/db/delete/{ratingKey}", database.DeleteItemFromDatabase)
-		r.Patch("/db/update/{ratingKey}", database.UpdateSelectedTypesForItem)
+		r.Patch("/db/update/{ratingKey}", database.UpdateSavedSetTypesForItem)
 
 		// Mediux Routes
 		r.Get("/mediux/sets/get/{itemType}/{tmdbID}", mediux.GetAllSets)

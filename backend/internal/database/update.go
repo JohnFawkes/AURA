@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func UpdateSelectedTypesForItem(w http.ResponseWriter, r *http.Request) {
+func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Debug(r.URL.Path)
 	startTime := time.Now()
 
@@ -33,6 +33,7 @@ func UpdateSelectedTypesForItem(w http.ResponseWriter, r *http.Request) {
 	// Define a struct to match the expected JSON object
 	var requestBody struct {
 		SelectedTypes []string `json:"selectedTypes"`
+		Autodownload  bool     `json:"autoDownload"`
 	}
 	// Decode the request body into the struct
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
@@ -47,10 +48,12 @@ func UpdateSelectedTypesForItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	selectedTypes := requestBody.SelectedTypes
-	fmt.Println("Selected types:", selectedTypes)
+	autoDownload := requestBody.Autodownload
+	logging.LOG.Debug(fmt.Sprintf("Updating Selected Types to: %v", selectedTypes))
+	logging.LOG.Debug(fmt.Sprintf("Updating AutoDownload to: %v", autoDownload))
 
 	// Update the selected types in the database
-	logErr := UpdateSelectedTypesForItemInDB(ratingKey, selectedTypes)
+	logErr := UpdateSavedSetForItemInDB(ratingKey, selectedTypes, autoDownload)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -63,7 +66,7 @@ func UpdateSelectedTypesForItem(w http.ResponseWriter, r *http.Request) {
 		Data:    nil})
 }
 
-func UpdateSelectedTypesForItemInDB(ratingKey string, selectedTypes []string) logging.ErrorLog {
+func UpdateSavedSetForItemInDB(ratingKey string, selectedTypes []string, autoDownload bool) logging.ErrorLog {
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
 	selectedTypesStr := strings.Join(selectedTypes, ",")
 
@@ -72,15 +75,15 @@ func UpdateSelectedTypesForItemInDB(ratingKey string, selectedTypes []string) lo
 
 	query := `
 UPDATE auto_downloader
-SET selected_types = ?, last_update = ?
+SET selected_types = ?, last_update = ?, auto_download = ?
 WHERE id = ?`
-	_, err := db.Exec(query, selectedTypesStr, now.UTC().Format(time.RFC3339), ratingKey)
+	_, err := db.Exec(query, selectedTypesStr, now.UTC().Format(time.RFC3339), autoDownload, ratingKey)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to update selected types in database",
+			Message: "Failed to update Saved Set in database",
 		}}
 	}
-	logging.LOG.Debug(fmt.Sprintf("Selected types updated successfully for item with ratingKey: %s", ratingKey))
+	logging.LOG.Debug(fmt.Sprintf("Saved Set updated successfully for item with ratingKey: %s", ratingKey))
 	return logging.ErrorLog{}
 }
 

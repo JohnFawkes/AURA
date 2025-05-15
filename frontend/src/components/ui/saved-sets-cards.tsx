@@ -52,6 +52,9 @@ const SavedSetsCard: React.FC<{
 	const [editSelectedTypes, setEditSelectedTypes] = useState<string[]>(
 		savedSet.SelectedTypes
 	);
+	const [editAutoDownload, setEditAutoDownload] = useState<boolean>(
+		savedSet.AutoDownload
+	);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [updateError, setUpdateError] = useState("");
 	const [isMounted, setIsMounted] = useState(false);
@@ -59,7 +62,11 @@ const SavedSetsCard: React.FC<{
 	const confirmEdit = async () => {
 		if (isMounted) return;
 		setIsMounted(true);
-		const resp = await patchSelectedTypesInDB(id, editSelectedTypes);
+		const resp = await patchSelectedTypesInDB(
+			id,
+			editSelectedTypes,
+			editAutoDownload
+		);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
 		} else {
@@ -84,7 +91,7 @@ const SavedSetsCard: React.FC<{
 		setIsMounted(false);
 	};
 
-	const renderBadges = () =>
+	const renderTypeBadges = () =>
 		savedSet.SelectedTypes.map((type) => (
 			<Badge key={type}>
 				{type === "poster"
@@ -199,7 +206,10 @@ const SavedSetsCard: React.FC<{
 				<Separator className="my-4" />
 
 				{/* Badges */}
-				<div className="flex flex-wrap gap-2">{renderBadges()}</div>
+				<div className="flex flex-wrap gap-2">{renderTypeBadges()}</div>
+				{savedSet.AutoDownload && (
+					<Badge className="text-xs">Auto Download</Badge>
+				)}
 			</CardContent>
 
 			{/* Edit Modal */}
@@ -221,7 +231,11 @@ const SavedSetsCard: React.FC<{
 						].map((type) => (
 							<Badge
 								key={type}
-								className="flex items-center gap-2"
+								className={`flex items-center gap-2 transition duration-200 ${
+									editSelectedTypes.includes(type)
+										? "hover:bg-red-800 hover:text-white"
+										: "hover:text-primary"
+								}`}
 								variant={
 									editSelectedTypes.includes(type)
 										? "default"
@@ -247,6 +261,23 @@ const SavedSetsCard: React.FC<{
 							</Badge>
 						))}
 					</div>
+					<span className="text-xs text-muted-foreground">
+						This will automatically download any new files added to
+						this set.
+					</span>
+					<Badge
+						className={`flex items-center gap-2 transition duration-200 ${
+							editAutoDownload
+								? "hover:bg-red-800 hover:text-white"
+								: "hover:text-primary"
+						}`}
+						variant={editAutoDownload ? "default" : "outline"}
+						onClick={() => {
+							setEditAutoDownload((prev) => !prev);
+						}}
+					>
+						Auto Download
+					</Badge>
 					{updateError && (
 						<Small className="text-destructive">
 							{updateError}

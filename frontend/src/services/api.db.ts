@@ -46,7 +46,8 @@ export const deleteItemFromDB = async (
 
 export const patchSelectedTypesInDB = async (
 	id: string,
-	selectedTypes: string[]
+	selectedTypes: string[],
+	autoDownload: boolean
 ): Promise<APIResponse<ClientMessage>> => {
 	log(
 		`api.db - Patching selected types for item with ID ${id} started. Selected types: ${JSON.stringify(
@@ -56,7 +57,7 @@ export const patchSelectedTypesInDB = async (
 	try {
 		const response = await apiClient.patch<APIResponse<ClientMessage>>(
 			`/db/update/${id}`,
-			{ selectedTypes }
+			{ selectedTypes, autoDownload }
 		);
 		log(
 			`api.db - Patching selected types for item with ID ${id} succeeded`
