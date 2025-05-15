@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,11 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { useEffect, useState } from "react";
+import { openDB } from "idb";
+import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
+import { LibrarySection, MediaItem } from "@/types/mediaItem";
+import { useMediaStore } from "@/lib/mediaStore";
+import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 export default function Navbar() {
 	const {
@@ -30,31 +35,31 @@ export default function Navbar() {
 	} = useHomeSearchStore();
 	const router = useRouter();
 	const pathName = usePathname();
-
 	const isHomePage = pathName === "/";
 
-	// Local state to hold the immediate search input
+	// Local state for search input
 	const [localSearch, setLocalSearch] = useState("");
-
-	// State to hold Placeholder text for the search input
+	// State for placeholder (optional)
 	const [placeholderText, setPlaceholderText] = useState(
 		"Search for movies or shows"
 	);
+	// State for search dropdown results (for non-homepage)
+	// This will be populated with results from the IDB
+	// when the user types in the search input
+	const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
+	const [showDropdown, setShowDropdown] = useState(false);
+	const { setMediaItem } = useMediaStore();
 
-	// Use matchMedia to determine if we're on mobile
+	// Use matchMedia to update placeholder based on screen width
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 768px)");
-		if (mediaQuery.matches) {
-			setPlaceholderText("Search Media");
-		} else {
-			setPlaceholderText("Search for movies or shows");
-		}
+		setPlaceholderText(
+			mediaQuery.matches ? "Search Media" : "Search for movies or shows"
+		);
 		const handleMediaQueryChange = (event: MediaQueryListEvent) => {
-			if (event.matches) {
-				setPlaceholderText("Search Media");
-			} else {
-				setPlaceholderText("Search for movies or shows");
-			}
+			setPlaceholderText(
+				event.matches ? "Search Media" : "Search for movies or shows"
+			);
 		};
 		mediaQuery.addEventListener("change", handleMediaQueryChange);
 		return () => {
@@ -62,14 +67,52 @@ export default function Navbar() {
 		};
 	}, []);
 
-	// Debounce updating the zustand store by 300ms
+	// Debounce updating the zustand store when on the homepage
 	useEffect(() => {
-		const handler = setTimeout(() => {
-			setSearchQuery(localSearch);
-		}, 300);
+		if (isHomePage) {
+			const handler = setTimeout(() => {
+				setSearchQuery(localSearch);
+			}, 300);
+			return () => clearTimeout(handler);
+		}
+	}, [localSearch, setSearchQuery, isHomePage]);
 
-		return () => clearTimeout(handler);
-	}, [localSearch, setSearchQuery]);
+	// When not on homepage, search the IDB (cache) for matching MediaItems
+	useEffect(() => {
+		if (!isHomePage && localSearch.trim() !== "") {
+			const handler = setTimeout(async () => {
+				try {
+					const db = await openDB(CACHE_DB_NAME, 1);
+					// getAll cached sections from idb
+					const cachedSections = await db.getAll(CACHE_STORE_NAME);
+					if (cachedSections.length === 0) {
+						setSearchResults([]);
+						return;
+					}
+					let allMediaItems: MediaItem[] = [];
+					let sections: LibrarySection[] = [];
+					sections = cachedSections.map((s) => s.data);
+					sections.forEach((section: LibrarySection) => {
+						if (section.MediaItems) {
+							allMediaItems = allMediaItems.concat(
+								section.MediaItems
+							);
+						}
+					});
+					// Filter items based on the localSearch (case-insensitive)
+					const query = localSearch.trim().toLowerCase();
+					const results = searchMediaItems(allMediaItems, query, 10);
+					setSearchResults(results);
+				} catch (error) {
+					console.error("Error fetching cached sections", error);
+					setSearchResults([]);
+				}
+			}, 300);
+			return () => clearTimeout(handler);
+		} else {
+			setSearchResults([]);
+		}
+	}, [localSearch, isHomePage]);
 
 	const handleHomeClick = () => {
 		if (isHomePage) {
@@ -81,12 +124,19 @@ export default function Navbar() {
 		router.push("/");
 	};
 
+	// When clicking on a dropdown result (non-homepage), set the mediaStore and navigate
+	const handleResultClick = (result: MediaItem) => {
+		setMediaItem(result);
+		// Format title for URL (replace spaces with underscores, remove special characters)
+		const formattedTitle = result.Title.replace(/\s+/g, "_");
+		const sanitizedTitle = formattedTitle.replace(/[^a-zA-Z0-9_]/g, "");
+		router.push(`/media/${result.RatingKey}/${sanitizedTitle}`);
+	};
+
 	return (
 		<nav
 			suppressHydrationWarning
-			className={
-				"sticky top-0 z-50 flex items-center px-6 py-4 justify-between shadow-md bg-background dark:bg-background-dark border-b border-border dark:border-border-dark"
-			}
+			className="sticky top-0 z-50 flex items-center px-6 py-4 justify-between shadow-md bg-background dark:bg-background-dark border-b border-border dark:border-border-dark"
 		>
 			{/* Logo */}
 			<Link
@@ -105,20 +155,48 @@ export default function Navbar() {
 				Poster-Setter
 			</Link>
 			{/* Search Section */}
-			{isHomePage && (
-				<div className="relative w-full max-w-2xl ml-1 mr-1">
-					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					{/* Desktop Search Input */}
-					<Input
-						type="search"
-						placeholder={placeholderText}
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
-						onChange={(e) => {
-							setLocalSearch(e.target.value);
-						}}
-					/>
-				</div>
-			)}
+			<div className="relative w-full max-w-2xl ml-1 mr-1">
+				<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+				<Input
+					type="search"
+					placeholder={placeholderText}
+					className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
+					onChange={(e) => setLocalSearch(e.target.value)}
+					onFocus={() => setShowDropdown(true)}
+					onBlur={() => setShowDropdown(false)}
+				/>
+				{/* If not on homepage, display dropdown results */}
+				{!isHomePage && showDropdown && searchResults.length > 0 && (
+					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
+						{searchResults.map((result) => (
+							<div
+								key={result.RatingKey}
+								onMouseDown={() => handleResultClick(result)}
+								className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
+							>
+								<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
+									<Image
+										src={`/api/mediaserver/image/${result.RatingKey}/poster`}
+										alt={result.Title}
+										fill
+										className="object-cover"
+										loading="lazy"
+										unoptimized
+									/>
+								</div>
+								<div>
+									<p className="font-medium text-sm md:text-base">
+										{result.Title}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{result.LibraryTitle} · {result.Year}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
 			{/* Settings */}
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
