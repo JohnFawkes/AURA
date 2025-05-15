@@ -1,21 +1,24 @@
 "use client";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { ClientMessage } from "@/types/clientMessage";
 import { fetchAllItemsFromDB } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
 import SavedSetsCard from "@/components/ui/saved-sets-cards";
+import { Button } from "@/components/ui/button";
+import { RefreshCcw as RefreshIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SavedSetsPage: React.FC = () => {
-	const [isMounted, setIsMounted] = useState(false);
 	const [savedSets, setSavedSets] = useState<ClientMessage[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
+	const isFetchingRef = useRef(false);
 
 	const fetchSavedSets = useCallback(async () => {
-		if (isMounted) return;
-		setIsMounted(true);
+		if (isFetchingRef.current) return;
+		isFetchingRef.current = true;
 		try {
 			const resp = await fetchAllItemsFromDB();
 			if (resp.status !== "success") {
@@ -35,9 +38,9 @@ const SavedSetsPage: React.FC = () => {
 			);
 		} finally {
 			setLoading(false);
-			setIsMounted(false);
+			isFetchingRef.current = false;
 		}
-	}, [isMounted]);
+	}, []);
 
 	useEffect(() => {
 		fetchSavedSets();
@@ -69,6 +72,19 @@ const SavedSetsPage: React.FC = () => {
 			) : (
 				<p className="text-muted-foreground">No saved sets found.</p>
 			)}
+
+			<Button
+				variant="outline"
+				size="sm"
+				className={cn(
+					"fixed z-100 right-3 bottom-10 sm:bottom-15 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer"
+				)}
+				onClick={() => fetchSavedSets()}
+				aria-label="refresh"
+			>
+				<RefreshIcon className="h-3 w-3 mr-1" />
+				<span className="text-xs hidden sm:inline">Refresh</span>
+			</Button>
 		</div>
 	);
 };
