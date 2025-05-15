@@ -10,8 +10,8 @@ export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);
 	const pathName = usePathname();
 
-	const isHomePage = pathName === "/";
-	const rightClass = isHomePage ? "right-15 sm:right-25" : "right-3";
+	const isRefreshPage = pathName === "/" || pathName === "/saved-sets/";
+	const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {
 		const toggleVisibility = () => {
