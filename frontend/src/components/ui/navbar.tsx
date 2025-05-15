@@ -36,6 +36,32 @@ export default function Navbar() {
 	// Local state to hold the immediate search input
 	const [localSearch, setLocalSearch] = useState("");
 
+	// State to hold Placeholder text for the search input
+	const [placeholderText, setPlaceholderText] = useState(
+		"Search for movies or shows"
+	);
+
+	// Use matchMedia to determine if we're on mobile
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(max-width: 768px)");
+		if (mediaQuery.matches) {
+			setPlaceholderText("Search Media");
+		} else {
+			setPlaceholderText("Search for movies or shows");
+		}
+		const handleMediaQueryChange = (event: MediaQueryListEvent) => {
+			if (event.matches) {
+				setPlaceholderText("Search Media");
+			} else {
+				setPlaceholderText("Search for movies or shows");
+			}
+		};
+		mediaQuery.addEventListener("change", handleMediaQueryChange);
+		return () => {
+			mediaQuery.removeEventListener("change", handleMediaQueryChange);
+		};
+	}, []);
+
 	// Debounce updating the zustand store by 300ms
 	useEffect(() => {
 		const handler = setTimeout(() => {
@@ -85,17 +111,8 @@ export default function Navbar() {
 					{/* Desktop Search Input */}
 					<Input
 						type="search"
-						placeholder="Search for movies or shows"
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted hidden md:block"
-						onChange={(e) => {
-							setLocalSearch(e.target.value);
-						}}
-					/>
-					{/* Mobile Search Input */}
-					<Input
-						type="search"
-						placeholder="Search Media"
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted block md:hidden"
+						placeholder={placeholderText}
+						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
 						onChange={(e) => {
 							setLocalSearch(e.target.value);
 						}}
