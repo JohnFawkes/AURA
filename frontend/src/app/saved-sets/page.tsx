@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useState,
+	useRef,
+	useMemo,
+} from "react";
 import { ClientMessage } from "@/types/clientMessage";
 import { fetchAllItemsFromDB } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
@@ -8,6 +14,8 @@ import SavedSetsCard from "@/components/ui/saved-sets-cards";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw as RefreshIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<ClientMessage[]>([]);
@@ -15,6 +23,7 @@ const SavedSetsPage: React.FC = () => {
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const isFetchingRef = useRef(false);
+	const { searchQuery } = useHomeSearchStore();
 
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;
@@ -46,6 +55,23 @@ const SavedSetsPage: React.FC = () => {
 		fetchSavedSets();
 	}, [fetchSavedSets]);
 
+	// Filter saved sets using the same search logic
+	const filteredSavedSets = useMemo(() => {
+		if (searchQuery.trim() === "") {
+			return savedSets;
+		}
+		// Map saved sets to their media items
+		const mediaItems = savedSets.map((set) => set.MediaItem);
+		// Use your search hook to get filtered media items
+		const filteredMediaItems = searchMediaItems(mediaItems, searchQuery);
+		const filteredKeys = new Set(
+			filteredMediaItems.map((item) => item.RatingKey)
+		);
+		return savedSets.filter((set) =>
+			filteredKeys.has(set.MediaItem.RatingKey)
+		);
+	}, [savedSets, searchQuery]);
+
 	if (loading) {
 		return <Loader message="Loading saved sets..." />;
 	}
@@ -60,8 +86,8 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			{savedSets.length > 0 ? (
-				savedSets.map((savedSet) => (
+			{filteredSavedSets.length > 0 ? (
+				filteredSavedSets.map((savedSet) => (
 					<SavedSetsCard
 						key={savedSet.MediaItem.RatingKey}
 						id={savedSet.MediaItem.RatingKey}
