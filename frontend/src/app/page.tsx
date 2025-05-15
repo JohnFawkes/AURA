@@ -235,7 +235,7 @@ export default function Home() {
 
 		// Filter out items already in the DB
 		if (filterOutInDB) {
-			items = items.filter((item) => item.ExistInDatabase);
+			items = items.filter((item) => !item.ExistInDatabase);
 		}
 
 		// Filter out items by search
@@ -341,7 +341,7 @@ export default function Home() {
 							setCurrentPage(1);
 						}}
 					>
-						{filterOutInDB ? "Items in DB" : "All Items"}
+						{filterOutInDB ? "Items Not in DB" : "All Items"}
 					</Badge>
 				</ToggleGroup>
 			</div>
