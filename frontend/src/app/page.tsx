@@ -31,6 +31,7 @@ import {
 import { log } from "@/lib/logger";
 import { Progress } from "@/components/ui/progress";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 export default function Home() {
 	const isMounted = useRef(false);
@@ -237,55 +238,8 @@ export default function Home() {
 			items = items.filter((item) => item.ExistInDatabase);
 		}
 
-		// Handle search query
-		if (searchQuery.trim() !== "") {
-			const query = searchQuery.trim();
-			let exactQuery = "";
-			let yearFilter = null;
-
-			// Check if the query contains a year filter (e.g., y:2012)
-			const yearMatch = query.match(/y:(\d{4})/);
-			if (yearMatch) {
-				yearFilter = parseInt(yearMatch[1], 10);
-			}
-
-			// Check if the query is wrapped in quotes for exact match
-			if (
-				(query.startsWith('"') && query.endsWith('"')) ||
-				(query.startsWith("'") && query.endsWith("'")) ||
-				(query.startsWith("‘") && query.endsWith("’")) ||
-				(query.startsWith("'“") && query.endsWith("”'"))
-			) {
-				// Normalize quotes
-				const normalizedQuery = query
-					.replace(/‘|’/g, "'")
-					.replace(/“|”/g, '"')
-					.replace(/'/g, '"');
-
-				exactQuery = normalizedQuery
-					.slice(1, normalizedQuery.length - 1) // Remove surrounding quotes
-					.toLowerCase();
-				items = items.filter(
-					(item) => item.Title.toLowerCase() === exactQuery
-				);
-			} else {
-				// Partial match (search for the query in the title)
-				const partialQuery = query
-					.replace(/y:\d{4}/, "")
-					.trim()
-					.toLowerCase();
-				items = items.filter((item) =>
-					item.Title.toLowerCase().includes(partialQuery)
-				);
-			}
-
-			// Apply year filter if present
-			if (yearFilter) {
-				items = items.filter((item) => item.Year === yearFilter);
-			}
-		}
-
-		setFilteredItems(items);
+		// Filter out items by search
+		setFilteredItems(searchMediaItems(items, searchQuery));
 	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB]);
 
 	if (errorMessage) {
