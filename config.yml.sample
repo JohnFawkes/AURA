@@ -27,6 +27,14 @@ AutoDownload:
     Enabled: true
     Cron: "0 0 * * *"
 
+# Notification - Configuration for notifications
+#   Provider - The provider for notifications. Currently, the only provider is Discord.
+#   Webhook - The webhook URL for the provider. This can be obtained by creating a webhook in Discord.
+Notification:
+    Provider: "Discord" 
+    Webhook: "https://discord.com/api/webhooks/123456789/abcdefghijklmnopqrstuvwxyz" # Replace with your Discord webhook URL
+
+
 # MediaServer - Configuration for your Media Server
 #   Type - The type of Media Server. This can be one of: Plex, Jellyfin, Emby
 #   URL - The URL of the Media Server. This should be the IP:Port of the Media Server or your Media Server reverse proxy domain.

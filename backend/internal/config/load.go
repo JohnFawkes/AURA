@@ -84,6 +84,11 @@ func LoadYamlConfig() (*modals.Config, error) {
 		return nil, fmt.Errorf("MediaServer type '%s' is not supported, please refer to the documentation for more details", config.MediaServer.Type)
 	}
 
+	// Set the config.Notification.Provider to Title Case
+	if config.Notification.Provider != "" {
+		config.Notification.Provider = cases.Title(language.English).String(config.Notification.Provider)
+	}
+
 	Global = &config
 	return &config, nil
 }
