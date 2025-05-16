@@ -1,15 +1,15 @@
 import apiClient from "./apiClient";
-import { ClientMessage } from "../types/clientMessage";
 import { APIResponse } from "../types/apiResponse";
 import { ReturnErrorMessage } from "./api.shared";
 import { log } from "@/lib/logger";
+import { SavedSet } from "@/types/databaseSavedSet";
 
 export const fetchAllItemsFromDB = async (): Promise<
-	APIResponse<ClientMessage[]>
+	APIResponse<SavedSet[]>
 > => {
 	log("api.db - Fetching all items from the database started");
 	try {
-		const response = await apiClient.get<APIResponse<ClientMessage[]>>(
+		const response = await apiClient.get<APIResponse<SavedSet[]>>(
 			`/db/get/all`
 		);
 		log("api.db - Fetching all items from the database succeeded");
@@ -20,16 +20,16 @@ export const fetchAllItemsFromDB = async (): Promise<
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
-		return ReturnErrorMessage<ClientMessage[]>(error);
+		return ReturnErrorMessage<SavedSet[]>(error);
 	}
 };
 
 export const deleteItemFromDB = async (
 	id: string
-): Promise<APIResponse<ClientMessage>> => {
+): Promise<APIResponse<SavedSet>> => {
 	log(`api.db - Deleting item with ID ${id} started`);
 	try {
-		const response = await apiClient.delete<APIResponse<ClientMessage>>(
+		const response = await apiClient.delete<APIResponse<SavedSet>>(
 			`/db/delete/${id}`
 		);
 		log(`api.db - Deleting item with ID ${id} succeeded`);
@@ -40,35 +40,31 @@ export const deleteItemFromDB = async (
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
-		return ReturnErrorMessage<ClientMessage>(error);
+		return ReturnErrorMessage<SavedSet>(error);
 	}
 };
 
-export const patchSelectedTypesInDB = async (
-	id: string,
-	selectedTypes: string[],
-	autoDownload: boolean
-): Promise<APIResponse<ClientMessage>> => {
-	log(
-		`api.db - Patching selected types for item with ID ${id} started. Selected types: ${JSON.stringify(
-			selectedTypes
-		)}`
-	);
+export const patchSavedSetInDB = async (
+	savedSet: SavedSet
+): Promise<APIResponse<SavedSet>> => {
+	log(`api.db - Patching SavedSet for item with ID ${savedSet.ID} started.`);
 	try {
-		const response = await apiClient.patch<APIResponse<ClientMessage>>(
-			`/db/update/${id}`,
-			{ selectedTypes, autoDownload }
+		const response = await apiClient.patch<APIResponse<SavedSet>>(
+			`/db/update/`,
+			savedSet
 		);
 		log(
-			`api.db - Patching selected types for item with ID ${id} succeeded`
+			`api.db - Patching SavedSet for item with ID ${savedSet.ID} succeeded`
 		);
 		return response.data;
 	} catch (error) {
 		log(
-			`api.db - Patching selected types for item with ID ${id} failed: ${
+			`api.db - Patching SavedSet for item with ID ${
+				savedSet.ID
+			} failed: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
-		return ReturnErrorMessage<ClientMessage>(error);
+		return ReturnErrorMessage<SavedSet>(error);
 	}
 };
