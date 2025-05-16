@@ -2,7 +2,7 @@ import { APIResponse } from "@/types/apiResponse";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import apiClient from "./apiClient";
 import { ReturnErrorMessage } from "./api.shared";
-import { ClientMessage } from "@/types/clientMessage";
+import { SavedSet } from "@/types/databaseSavedSet";
 import { log } from "@/lib/logger";
 
 export const fetchMediaServerLibrarySections = async (): Promise<
@@ -90,7 +90,7 @@ export const fetchMediaServerItemContent = async (
 };
 
 export const postSendSetToAPI = async (
-	sendData: ClientMessage
+	sendData: SavedSet
 ): Promise<APIResponse<null>> => {
 	log("api.mediaserver - Sending set to API started");
 	try {
