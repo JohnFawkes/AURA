@@ -6,7 +6,7 @@ import React, {
 	useRef,
 	useMemo,
 } from "react";
-import { ClientMessage } from "@/types/clientMessage";
+import { SavedSet } from "@/types/databaseSavedSet";
 import { fetchAllItemsFromDB } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
@@ -18,7 +18,7 @@ import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 const SavedSetsPage: React.FC = () => {
-	const [savedSets, setSavedSets] = useState<ClientMessage[]>([]);
+	const [savedSets, setSavedSets] = useState<SavedSet[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
@@ -90,7 +90,6 @@ const SavedSetsPage: React.FC = () => {
 				filteredSavedSets.map((savedSet) => (
 					<SavedSetsCard
 						key={savedSet.MediaItem.RatingKey}
-						id={savedSet.MediaItem.RatingKey}
 						savedSet={savedSet}
 						onUpdate={fetchSavedSets}
 					/>
