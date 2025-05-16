@@ -14,19 +14,19 @@ import (
 
 var UpdateItemStore = struct {
 	sync.Mutex
-	ClientMessage modals.ClientMessage
+	SavedSet modals.Database_SavedSet
 }{
-	ClientMessage: modals.ClientMessage{},
+	SavedSet: modals.Database_SavedSet{},
 }
 
 func GetUpdateSetFromClient(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(fmt.Sprintf("Getting set from client to update in %s", config.Global.MediaServer.Type))
 	startTime := time.Now()
 
-	var clientMessage modals.ClientMessage
+	var SavedSet modals.Database_SavedSet
 
 	// Get the data from the POST request
-	err := json.NewDecoder(r.Body).Decode(&clientMessage)
+	err := json.NewDecoder(r.Body).Decode(&SavedSet)
 	if err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{Err: err,
 			Log: logging.Log{Message: "Failed to decode JSON from client",
@@ -34,18 +34,18 @@ func GetUpdateSetFromClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the clientMessage contains MediaItem.RatingKey
-	if clientMessage.MediaItem.RatingKey == "" {
+	// Validate the SavedSet contains MediaItem.RatingKey
+	if SavedSet.MediaItem.RatingKey == "" {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
 			Err: fmt.Errorf("missing MediaItem.RatingKey"),
-			Log: logging.Log{Message: "Missing MediaItem.RatingKey in clientMessage",
+			Log: logging.Log{Message: "Missing MediaItem.RatingKey in SavedSet",
 				Elapsed: utils.ElapsedTime(startTime)}})
 		return
 	}
 
-	// Store the clientMessage in the UpdateItemStore
+	// Store the SavedSet in the UpdateItemStore
 	UpdateItemStore.Lock()
-	UpdateItemStore.ClientMessage = clientMessage
+	UpdateItemStore.SavedSet = SavedSet
 	UpdateItemStore.Unlock()
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
