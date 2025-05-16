@@ -6,7 +6,7 @@ import (
 	"poster-setter/internal/utils"
 )
 
-func getFileDownloadName(file modals.PosterFile) string {
+func GetFileDownloadName(file modals.PosterFile) string {
 	if file.Type == "poster" {
 		return "Poster"
 	} else if file.Type == "backdrop" {
