@@ -77,7 +77,8 @@ func GetAllItemsFromDatabase() ([]modals.Database_SavedSet, logging.ErrorLog) {
 		}
 
 		var sets []modals.Database_Set
-		for posterRows.Next() {
+
+		if posterRows.Next() {
 			var setID, mediaItemID, setJSON, selectedTypesStr string
 			var autoDownload bool
 			var lastUpdate string
@@ -102,6 +103,7 @@ func GetAllItemsFromDatabase() ([]modals.Database_SavedSet, logging.ErrorLog) {
 					Message: "Failed to unmarshal PosterSet data",
 				}}
 			}
+
 			dbSet := modals.Database_Set{
 				ID:            setID,
 				MediaItemID:   mediaItemID,
@@ -113,10 +115,16 @@ func GetAllItemsFromDatabase() ([]modals.Database_SavedSet, logging.ErrorLog) {
 			}
 			sets = append(sets, dbSet)
 		}
+
 		posterRows.Close()
 
-		savedSet.Sets = sets
-		savedSets = append(savedSets, savedSet)
+		// If no poster sets were found, print a message
+		if len(sets) == 0 {
+			continue
+		} else {
+			savedSet.Sets = sets
+			savedSets = append(savedSets, savedSet)
+		}
 	}
 	if err = mediaRows.Err(); err != nil {
 		return nil, logging.ErrorLog{Err: err, Log: logging.Log{
