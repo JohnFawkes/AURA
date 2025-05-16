@@ -3,12 +3,16 @@ package mediaserver
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"poster-setter/internal/config"
 	"poster-setter/internal/database"
 	"poster-setter/internal/logging"
+	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
 	"time"
 
+	"poster-setter/internal/server/emby_jellyfin"
+	"poster-setter/internal/server/plex"
 	mediaserver_shared "poster-setter/internal/server/shared"
 
 	"github.com/go-chi/chi/v5"
@@ -36,24 +40,25 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the initial clientMessage from the updateItemStore
+	// Get the initial SavedSet from the updateItemStore
 	UpdateItemStore.Lock()
 
 	defer UpdateItemStore.Unlock()
 
-	// Check if the ratingKey matches the stored ClientMessage.MediaItem.RatingKey
-	if UpdateItemStore.ClientMessage.MediaItem.RatingKey != ratingKey {
+	// Check if the ratingKey matches the stored SavedSet.MediaItem.RatingKey
+	//if UpdateItemStore.SavedSet.MediaItem.RatingKey != ratingKey {
+	if UpdateItemStore.SavedSet.MediaItem.RatingKey != ratingKey {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("ratingKey does not match stored ClientMessage"),
-			Log: logging.Log{Message: "RatingKey does not match stored ClientMessage",
+			Err: fmt.Errorf("ratingKey does not match stored SavedSet"),
+			Log: logging.Log{Message: "RatingKey does not match stored SavedSet",
 				Elapsed: utils.ElapsedTime(startTime)}})
 		return
 	}
 
-	// Get the clientMessage from the UpdateItemStore
-	clientMessage := UpdateItemStore.ClientMessage
+	// Get the SavedSet from the UpdateItemStore
+	savedSet := UpdateItemStore.SavedSet
 
-	// Make sure the clientMessage has at least the following fields set
+	// Make sure the SavedSet has at least the following fields set
 	// For MediaItem:
 	// 1. MediaItem.RatingKey
 	// 2. MediaItem.Year
@@ -62,24 +67,27 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 	// 2. Set.Files (at least one file)
 	// For SelectedTypes:
 	// 1. SelectedTypes (at least one type)
-	if clientMessage.MediaItem.RatingKey == "" || clientMessage.MediaItem.Year == 0 {
+	if savedSet.MediaItem.RatingKey == "" || savedSet.MediaItem.Year == 0 {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
 			Err: fmt.Errorf("missing required fields in message.MediaItem"),
 			Log: logging.Log{Message: "Missing required fields in message.MediaItem",
 				Elapsed: utils.ElapsedTime(startTime)}})
 		return
-	} else if clientMessage.Set.ID == "" || len(clientMessage.Set.Files) == 0 {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("missing required fields in message.Set"),
-			Log: logging.Log{Message: "Missing required fields in message.Set",
-				Elapsed: utils.ElapsedTime(startTime)}})
-		return
-	} else if len(clientMessage.SelectedTypes) == 0 {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("missing required fields in message.SelectedTypes"),
-			Log: logging.Log{Message: "Missing required fields in message.SelectedTypes",
-				Elapsed: utils.ElapsedTime(startTime)}})
-		return
+	}
+	for _, set := range savedSet.Sets {
+		if set.ID == "" || len(set.Set.Files) == 0 {
+			utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
+				Err: fmt.Errorf("missing required fields in message.Set"),
+				Log: logging.Log{Message: "Missing required fields in message.Set",
+					Elapsed: utils.ElapsedTime(startTime)}})
+			return
+		} else if len(set.SelectedTypes) == 0 {
+			utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
+				Err: fmt.Errorf("missing required fields in message.SelectedTypes"),
+				Log: logging.Log{Message: "Missing required fields in message.SelectedTypes",
+					Elapsed: utils.ElapsedTime(startTime)}})
+			return
+		}
 	}
 
 	var mediaServer mediaserver_shared.MediaServer
@@ -101,7 +109,7 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the initial clientMessage to the client
+	// Send the initial SavedSet to the client
 	utils.SendSSEResponse(w, flusher, utils.SSEMessage{
 		Response: utils.JSONResponse{
 			Status:  "success",
@@ -115,15 +123,15 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	clientMessage.Set.Files = mediaserver_shared.FilterAndSortFiles(clientMessage.Set.Files, clientMessage.SelectedTypes)
+	savedSet.Sets[0].Set.Files = mediaserver_shared.FilterAndSortFiles(savedSet.Sets[0].Set.Files, savedSet.Sets[0].SelectedTypes)
 
 	// Download the selected types from the Set.Files
 	progressValue := 2
-	progressStep := 95 / len(clientMessage.Set.Files)
+	progressStep := 95 / len(savedSet.Sets[0].Set.Files)
 
-	for _, file := range clientMessage.Set.Files {
+	for _, file := range savedSet.Sets[0].Set.Files {
 		progressValue += progressStep
-		downloadFileName := getFileDownloadName(file)
+		downloadFileName := GetFileDownloadName(file)
 		utils.SendSSEResponse(w, flusher, utils.SSEMessage{
 			Response: utils.JSONResponse{
 				Status:  "success",
@@ -138,7 +146,7 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 		})
 		logging.LOG.Debug(fmt.Sprintf("Downloading %s", downloadFileName))
 		// Download the image from the media server
-		logErr := mediaServer.DownloadAndUpdatePosters(clientMessage.MediaItem, file)
+		logErr := mediaServer.DownloadAndUpdatePosters(savedSet.MediaItem, file)
 		if logErr.Err != nil {
 			utils.SendSSEResponse(w, flusher, utils.SSEMessage{
 				Response: utils.JSONResponse{
@@ -155,10 +163,10 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 			logging.LOG.ErrorWithLog(logErr)
 			continue
 		}
-
+		deleteTempImageForNextLoad(file, savedSet.MediaItem.RatingKey)
 	}
 
-	logErr := database.SaveClientMessage(clientMessage)
+	logErr := database.SaveSavedSet(savedSet)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -176,5 +184,33 @@ func UpdateItemPosters(w http.ResponseWriter, r *http.Request) {
 			NextStep: "",
 		},
 	})
+}
 
+func deleteTempImageForNextLoad(file modals.PosterFile, ratingKey string) {
+	if file.Type == "poster" || file.Type == "backdrop" {
+		var tmpFolder string
+		switch config.Global.MediaServer.Type {
+		case "Plex":
+			tmpFolder = plex.PlexTempImageFolder
+		case "Emby", "Jellyfin":
+			tmpFolder = emby_jellyfin.EmbyJellyTempImageFolder
+		default:
+			logging.LOG.Error(fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type))
+			return
+		}
+
+		// Delete the temporary image file
+		fileName := fmt.Sprintf("%s_%s.jpg", ratingKey, file.Type)
+		filePath := fmt.Sprintf("%s/%s", tmpFolder, fileName)
+		exists := utils.CheckIfImageExists(filePath)
+		if exists {
+			logging.LOG.Trace(fmt.Sprintf("Deleting temporary image %s", fileName))
+			err := os.Remove(filePath)
+			if err != nil {
+				logging.LOG.Error(fmt.Sprintf("Failed to delete temporary image %s: %s", fileName, err.Error()))
+			}
+		} else {
+			logging.LOG.Trace(fmt.Sprintf("Temporary image %s does not exist", fileName))
+		}
+	}
 }

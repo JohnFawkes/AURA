@@ -49,19 +49,9 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	case "Plex":
 		mediaServer = &mediaserver_shared.PlexServer{}
 		tmpFolder = plex.PlexTempImageFolder
-		if imageType == "poster" {
-			imageType = "thumb"
-		} else if imageType == "backdrop" {
-			imageType = "art"
-		}
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 		tmpFolder = emby_jellyfin.EmbyJellyTempImageFolder
-		if imageType == "poster" {
-			imageType = "Primary"
-		} else if imageType == "backdrop" {
-			imageType = "Backdrop"
-		}
 	default:
 		logErr := logging.ErrorLog{
 			Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),

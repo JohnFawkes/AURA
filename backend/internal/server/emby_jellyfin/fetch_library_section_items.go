@@ -71,7 +71,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 		itemInfo.Thumb = item.ImageTags.Thumb
 		itemInfo.LibraryTitle = section.Title
 
-		existsInDB, _ := database.CheckIfAlreadyInDatabase(item.ID)
+		existsInDB, _ := database.CheckIfMediaItemAlreadyInDatabase(item.ID)
 
 		if existsInDB {
 			itemInfo.ExistInDatabase = true

@@ -10,7 +10,7 @@ import (
 	"poster-setter/internal/modals"
 	"poster-setter/internal/utils"
 	"regexp"
-	"strconv"
+	"strings"
 )
 
 func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
@@ -44,16 +44,10 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		}
 	}
 
-	// Get GUIDs from the response body
-	guids, _ := getGUIDsFromBody(body)
+	// Get GUIDs and Ratings from the response body
+	guids, _ := getGUIDsAndRatingsFromBody(body)
 	if len(guids) > 0 {
 		itemInfo.Guids = guids
-	}
-
-	// Get IMDB rating from the response body
-	imdbRating, _ := getIMDBRatingFromBody(body)
-	if parsedRating, err := strconv.ParseFloat(imdbRating, 64); err == nil {
-		itemInfo.AudienceRating = parsedRating
 	}
 
 	// If the item is a movie
@@ -64,8 +58,6 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Title = responseSection.Videos[0].Title
 		itemInfo.Year = responseSection.Videos[0].Year
 		itemInfo.Thumb = responseSection.Videos[0].Thumb
-		//itemInfo.AudienceRating = responseSection.Videos[0].AudienceRating
-		itemInfo.UserRating = responseSection.Videos[0].UserRating
 		itemInfo.ContentRating = responseSection.Videos[0].ContentRating
 		itemInfo.Summary = responseSection.Videos[0].Summary
 		itemInfo.UpdatedAt = responseSection.Videos[0].UpdatedAt
@@ -76,6 +68,11 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 				Duration: responseSection.Videos[0].Media[0].Part[0].Duration,
 			},
 		}
+		// Append the community rating to the guids
+		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+			Provider: "community",
+			Rating:   fmt.Sprintf("%.1f", responseSection.Videos[0].AudienceRating),
+		})
 		return itemInfo, logging.ErrorLog{}
 	}
 
@@ -87,8 +84,6 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Title = responseSection.Directory[0].Title
 		itemInfo.Year = responseSection.Directory[0].Year
 		itemInfo.Thumb = responseSection.Directory[0].Thumb
-		//itemInfo.AudienceRating = responseSection.Directory[0].AudienceRating
-		itemInfo.UserRating = responseSection.Directory[0].UserRating
 		itemInfo.ContentRating = responseSection.Directory[0].ContentRating
 		itemInfo.Summary = responseSection.Directory[0].Summary
 		itemInfo.UpdatedAt = responseSection.Directory[0].UpdatedAt
@@ -99,6 +94,10 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.Series.SeasonCount = responseSection.Directory[0].ChildCount
 		itemInfo.Series.EpisodeCount = responseSection.Directory[0].LeafCount
 		itemInfo.Series.Location = responseSection.Directory[0].Location.Path
+		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+			Provider: "community",
+			Rating:   fmt.Sprintf("%.1f", responseSection.Directory[0].AudienceRating),
+		})
 	}
 
 	return itemInfo, logging.ErrorLog{}
@@ -212,9 +211,8 @@ func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeas
 	return season, logging.ErrorLog{}
 }
 
-func getGUIDsFromBody(body []byte) ([]modals.Guid, error) {
+func getGUIDsAndRatingsFromBody(body []byte) ([]modals.Guid, error) {
 	// Use Regex to search for GUIDs manually in the XML response
-	// Grab the provider and ID from the GUIDs
 	// Example GUIDs:
 	// <Guid id="imdb://tt######" />
 	// <Guid id="tmdb://######" />
@@ -233,7 +231,7 @@ func getGUIDsFromBody(body []byte) ([]modals.Guid, error) {
 	// Iterate over the matches and extract the provider and ID
 	for _, match := range guidMatches {
 		if len(match) == 3 {
-			provider := match[1]
+			provider := strings.ToLower(match[1])
 			id := match[2]
 			guids = append(guids, modals.Guid{
 				Provider: provider,
@@ -241,16 +239,52 @@ func getGUIDsFromBody(body []byte) ([]modals.Guid, error) {
 			})
 		}
 	}
-	return guids, nil
-}
 
-func getIMDBRatingFromBody(body []byte) (string, error) {
-	// Regex looks for a Rating tag with image starting with "imdb://" and type="audience"
-	// Example tag: <Rating image="imdb://image.rating" value="6.8" type="audience"/>
-	ratingRegex := regexp.MustCompile(`(?i)<Rating\s+image="imdb://[^"]+"\s+value="([^"]+)"\s+type="audience" ?/?>`)
-	matches := ratingRegex.FindStringSubmatch(string(body))
-	if len(matches) < 2 {
-		return "", fmt.Errorf("IMDB rating not found in the XML response")
+	// Use Regex to search for Ratings manually in the XML response
+	// This regex matches ratings for audience (and similar types if needed)
+	// Example Ratings:
+	// <Rating image="imdb://image.rating" value="7.9" type="audience" />
+	// <Rating image="rottentomatoes://image.rating.ripe" value="8.1" type="critic" />
+	// <Rating image="rottentomatoes://image.rating.upright" value="8.2" type="audience" />
+	// <Rating image="themoviedb://image.rating" value="7.6" type="audience" />
+	ratingRegex := regexp.MustCompile(`(?i)<Rating\s+image="([a-z]+)://[^"]+"\s+value="([^"]+)"\s+type="audience" ?/?>`)
+	ratingMatches := ratingRegex.FindAllStringSubmatch(string(body), -1)
+
+	// If no Ratings were found, simply return the GUIDs slice
+	if len(ratingMatches) == 0 {
+		return guids, nil
 	}
-	return matches[1], nil
+
+	// Iterate over the rating matches and associate the rating with the proper provider
+	for _, match := range ratingMatches {
+		if len(match) == 3 {
+			provider := strings.ToLower(match[1])
+			ratingValue := match[2]
+
+			// Normalize provider if needed
+			if provider == "themoviedb" {
+				provider = "tmdb"
+			}
+
+			// Check if the provider already exists in the GUIDs slice using an index-based loop
+			found := false
+			for i := 0; i < len(guids); i++ {
+				if guids[i].Provider == provider {
+					guids[i].Rating = ratingValue // assign rating as a single string
+					found = true
+					break
+				}
+			}
+
+			// If the provider was not found, add a new GUID with the rating.
+			if !found {
+				guids = append(guids, modals.Guid{
+					Provider: provider,
+					Rating:   ratingValue,
+				})
+			}
+		}
+	}
+
+	return guids, nil
 }

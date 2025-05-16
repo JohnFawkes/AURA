@@ -22,6 +22,12 @@ func init() {
 
 // https://emby.mooseboxx.com/emby/Items/1396/Images/Backdrop/0?tag=e317e1fc568744cd70cdd45ef99903ca&maxWidth=1920&quality=70
 func FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.ErrorLog) {
+	if imageType == "poster" {
+		imageType = "Primary"
+	} else if imageType == "backdrop" {
+		imageType = "Backdrop"
+	}
+
 	logging.LOG.Trace(fmt.Sprintf("Getting %s for rating key: %s", imageType, ratingKey))
 
 	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("Items/%s/Images/%s", ratingKey, imageType), config.Global.MediaServer.URL)

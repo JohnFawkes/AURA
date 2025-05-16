@@ -49,44 +49,11 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the temporary folder has the image
-	fileName := fmt.Sprintf("%s_%s.jpg", ratingKey, imageType)
-	filePath := path.Join(PlexTempImageFolder, fileName)
-	exists := utils.CheckIfImageExists(filePath)
-	if exists {
-		logging.LOG.Trace(fmt.Sprintf("Image %s already exists in temporary folder", fileName))
-		// Serve the image from the temporary folder
-		imagePath := path.Join(PlexTempImageFolder, fileName)
-		http.ServeFile(w, r, imagePath)
-		return
-	}
-
-	logging.LOG.Trace(fmt.Sprintf("Image %s does not exist in temporary folder", fileName))
 	// If the image does not exist, then get it from Plex
 	imageData, logErr := FetchImageFromMediaServer(ratingKey, imageType)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
-	}
-
-	if config.Global.CacheImages {
-		// Add the image to the temporary folder
-		logErr = utils.CheckFolderExists(PlexTempImageFolder)
-		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-			return
-		}
-		imagePath := fmt.Sprintf("%s/%s", PlexTempImageFolder, fileName)
-		err := os.WriteFile(imagePath, imageData, 0644)
-		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
-				Log: logging.Log{
-					Message: "Failed to write image to temporary folder",
-					Elapsed: utils.ElapsedTime(startTime),
-				},
-			})
-			return
-		}
 	}
 
 	// Set the content type for the response
@@ -99,7 +66,9 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 	logging.LOG.Trace(fmt.Sprintf("Getting %s for rating key: %s", imageType, ratingKey))
 
 	// Construct the URL for the Plex server API request
-	//plexURL := fmt.Sprintf("%s/library/metadata/%s/%s/", config.Global.MediaServer.URL, ratingKey, imageType)
+	if imageType == "backdrop" {
+		imageType = "art"
+	}
 	photoUrl := fmt.Sprintf("/library/metadata/%s/%s/", ratingKey, imageType)
 	// Encode the URL for the request
 	encodedPhotoUrl := url.QueryEscape(photoUrl)

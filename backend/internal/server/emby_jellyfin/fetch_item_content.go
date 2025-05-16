@@ -58,8 +58,6 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	itemInfo.Year = resp.ProductionYear
 	itemInfo.LibraryTitle = sectionTitle
 	itemInfo.Thumb = resp.ImageTags.Thumb
-	itemInfo.AudienceRating = float64(resp.CriticRating) / 10
-	itemInfo.UserRating = float64(resp.CommunityRating) / 10
 	itemInfo.ContentRating = resp.OfficialRating
 	itemInfo.Summary = resp.Overview
 	if resp.ProviderIds.Imdb != "" {
@@ -71,6 +69,14 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	if resp.ProviderIds.Tvdb != "" {
 		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{Provider: "tvdb", ID: resp.ProviderIds.Tvdb})
 	}
+	itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+		Provider: "community",
+		Rating:   fmt.Sprintf("%.1f", float64(resp.CommunityRating)),
+	})
+	itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+		Provider: "critic",
+		Rating:   fmt.Sprintf("%.1f", float64(resp.CriticRating)/10.0),
+	})
 
 	if resp.Type == "Movie" {
 		itemInfo.Type = "movie"
@@ -84,7 +90,6 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	}
 	if resp.Type == "Series" {
 		itemInfo.Type = "show"
-		itemInfo.AudienceRating = float64(resp.CommunityRating)
 		itemInfo, logErr = fetchSeasonsForShow(&itemInfo)
 		if logErr.Err != nil {
 			return itemInfo, logErr

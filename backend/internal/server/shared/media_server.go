@@ -165,6 +165,7 @@ func InitUserID() logging.ErrorLog {
 			config.Global.MediaServer.UserID = user.ID
 			maskedUserID := fmt.Sprintf("****%s", user.ID[len(user.ID)-7:])
 			logging.LOG.Trace(fmt.Sprintf("Found Admin user ID: %s", maskedUserID))
+			logging.LOG.Trace(fmt.Sprintf("User ID: %s", user.ID))
 			return logging.ErrorLog{}
 		}
 	}
