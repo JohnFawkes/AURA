@@ -14,8 +14,6 @@ export interface MediaItem {
 	Year: number;
 	ExistInDatabase: boolean;
 	Thumb?: string;
-	AudienceRating?: number;
-	UserRating?: number;
 	ContentRating?: string;
 	Summary?: string;
 	UpdatedAt?: number;
@@ -25,8 +23,9 @@ export interface MediaItem {
 }
 
 export interface Guid {
-	Provider: string;
-	ID: string;
+	Provider?: string;
+	ID?: string;
+	Rating?: string;
 }
 
 export interface MediaItemMovie {
