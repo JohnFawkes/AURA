@@ -69,12 +69,12 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 	if imageType == "backdrop" {
 		imageType = "art"
 	}
-	photoUrl := fmt.Sprintf("/library/metadata/%s/%s/", ratingKey, imageType)
+	photoUrl := fmt.Sprintf("/library/metadata/%s/%s", ratingKey, imageType)
 	// Encode the URL for the request
-	encodedPhotoUrl := url.QueryEscape(photoUrl)
-	plexURL := fmt.Sprintf("%s/photo/:/transcode?url=%s&width=300&height=450", config.Global.MediaServer.URL, encodedPhotoUrl)
+	encodedPhotoUrl := url.QueryEscape(photoUrl + fmt.Sprintf("/%d", time.Now().Unix()))
+	plexURL := fmt.Sprintf("%s/photo/:/transcode?width=300&height=450&url=%s", config.Global.MediaServer.URL, encodedPhotoUrl)
 	if imageType == "art" {
-		plexURL = fmt.Sprintf("%s/photo/:/transcode?url=%s&width=1920&height=1080", config.Global.MediaServer.URL, encodedPhotoUrl)
+		plexURL = fmt.Sprintf("%s/photo/:/transcode?width=1920&height=1080&url=%s", config.Global.MediaServer.URL, encodedPhotoUrl)
 	}
 
 	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "MediaServer")
