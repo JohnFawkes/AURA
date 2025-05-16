@@ -99,9 +99,6 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 		}
 	}
 
-	// Print the response body for debugging
-	logging.LOG.Trace(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
-
 	// Parse the response body into the appropriate struct based on itemType
 	var responseBody modals.MediuxResponse
 
@@ -117,7 +114,7 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 	if response.StatusCode() != http.StatusOK {
 		return modals.PosterSets{}, logging.ErrorLog{
 			Err: errors.New("received non-200 response from Mediux API"),
-			Log: logging.Log{Message: "Received non-200 response from Mediux API"},
+			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
 		}
 	}
 
@@ -327,12 +324,10 @@ func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, loggin
 		}
 	}
 
-	logging.LOG.Trace(fmt.Sprintf("Response from Mediux API:\n%s", response.String()))
-
 	if response.StatusCode() != http.StatusOK {
 		return modals.PosterSet{}, logging.ErrorLog{
 			Err: errors.New("received non-200 response from Mediux API"),
-			Log: logging.Log{Message: "Received non-200 response from Mediux API"},
+			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
 		}
 	}
 
