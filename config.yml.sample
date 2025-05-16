@@ -41,6 +41,9 @@ Notification:
 #   Token - The token for the Media Server. This can be found in the Media Server web interface.
 #   Libraries - A list of libraries to scan for images. Each library should have the following fields:
 #     - Name: The name of the library to scan for content. Please note that this application will only work on Movies and Series libraries.
+#   SeasonNamingConvention - The season naming convention for Plex. This is a Plex exclusive requirement. This can be one of: 1 or 2. This will default to 2
+#     1 - Season 1  (non-padded)
+#     2 - Season 01 (padded)
 MediaServer:
     Type: "Plex" # The type of Media Server. This can be one of: Plex, Jellyfin, Emby
     URL: http://<MEDIA_SERVER_IP>:<MEDIA_SERVER_PORT> # Replace with your Media Server server IP and port
@@ -50,6 +53,7 @@ MediaServer:
         - Name: "Series"
         - Name: "4K Movies"
         - Name: "4K Series"
+    SeasonNamingConvention: 1 # This is a Plex exclusive requirement. This is the season naming convention for Plex. This can be one of: 1 or 2
 
 # Kometa - Configuration for Kometa
 #   RemoveLabels - Whether to remove labels or not. This will remove all specific labels from the Media Server Item.

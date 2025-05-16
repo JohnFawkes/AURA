@@ -79,8 +79,15 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		} else if file.Type == "backdrop" {
 			newFileName = "backdrop.jpg"
 		} else if file.Type == "seasonPoster" {
-			newFilePath = path.Join(newFilePath, fmt.Sprintf("Season %s", utils.Get2DigitNumber(int64(file.Season.Number))))
-			newFileName = fmt.Sprintf("Season%s.jpg", utils.Get2DigitNumber(int64(file.Season.Number)))
+			seasonNumberConvention := config.Global.MediaServer.SeasonNamingConvention
+			var seasonNumber string
+			if seasonNumberConvention == "1" {
+				seasonNumber = fmt.Sprintf("%d", file.Season.Number)
+			} else {
+				seasonNumber = fmt.Sprintf("%s", utils.Get2DigitNumber(int64(file.Season.Number)))
+			}
+			newFilePath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
+			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
 		} else if file.Type == "titlecard" {
 			// For titlecards, get the file path from Plex
 			episodePath := getEpisodePathFromPlex(plex, file)
