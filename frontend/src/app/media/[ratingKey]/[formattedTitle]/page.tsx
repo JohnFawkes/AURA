@@ -322,8 +322,8 @@ const MediaItemPage = () => {
 							src={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
 							alt={"Backdrop"}
 							fill
-							priority
 							unoptimized
+							loading="lazy"
 							className="object-cover object-right-top"
 							style={{
 								maskImage: `url(/gradient.svg)`,
