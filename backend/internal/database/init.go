@@ -177,22 +177,28 @@ func migrateDatabase() {
 			}
 		}
 
-		// Insert into Media_Item table if not already present.
-		_, err = db.Exec(`
-            INSERT OR IGNORE INTO Media_Item (id, media_item)
-            VALUES (?, ?)`, mediaItemID, mediaItemJSON)
-		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to insert into Media_Item: %v", err))
-			migrationSuccess = false
-			continue
-		}
-
 		// Unmarshal the poster set JSON into a struct
 		// This is a placeholder, you should define the struct according to your JSON structure
 		var posterSet modals.PosterSet
 		err = json.Unmarshal([]byte(posterSetJSON), &posterSet)
 		if err != nil {
 			logging.LOG.Error(fmt.Sprintf("Failed to unmarshal poster set JSON: %v", err))
+			migrationSuccess = false
+			continue
+		}
+
+		// If posterSet is empty, skip the insert
+		if posterSet.ID == "" || posterSet.Files == nil {
+			logging.LOG.Warn("Poster set is empty, skipping insert")
+			continue
+		}
+
+		// Insert into Media_Item table if not already present.
+		_, err = db.Exec(`
+            INSERT OR IGNORE INTO Media_Item (id, media_item)
+            VALUES (?, ?)`, mediaItemID, mediaItemJSON)
+		if err != nil {
+			logging.LOG.Error(fmt.Sprintf("Failed to insert into Media_Item: %v", err))
 			migrationSuccess = false
 			continue
 		}
@@ -209,9 +215,14 @@ func migrateDatabase() {
             INSERT INTO Poster_Sets (id, media_item_id, poster_set, selected_types, auto_download, last_update)
             VALUES (?, ?, ?, ?, ?, ?)`, posterSetID, mediaItemID, posterSetJSON, selectedTypes, autoDownload, lastUpdate)
 		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to insert into Poster_Sets: %v", err))
-			migrationSuccess = false
-			continue
+			if err.Error() == "UNIQUE constraint failed: Poster_Sets.id" {
+				logging.LOG.Warn(fmt.Sprintf("Poster set with ID %s already exists, skipping insert", posterSetID))
+				continue
+			} else {
+				logging.LOG.Error(fmt.Sprintf("Failed to insert into Poster_Sets: %v", err))
+				migrationSuccess = false
+				continue
+			}
 		}
 		logging.LOG.Info(fmt.Sprintf("Migrated poster set with ID %s for media item %s into new DB", posterSetID, mediaItemID))
 	}
