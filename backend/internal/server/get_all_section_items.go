@@ -87,7 +87,7 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Fetched all section items successfully", // TODO: Update this message
+		Message: "Fetched all section items successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    section,
 	})
