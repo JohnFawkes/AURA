@@ -31,7 +31,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { log } from "@/lib/logger";
-import { ClientMessage } from "@/types/clientMessage";
+import { SavedSet } from "@/types/databaseSavedSet";
 import { postSendSetToAPI } from "@/services/api.mediaserver";
 import { Progress } from "./progress";
 
@@ -151,15 +151,21 @@ const PosterSetModal: React.FC<{
 		setCancelButtonText("Cancel");
 
 		try {
-			const clientMessage: ClientMessage = {
-				Set: posterSet,
-				SelectedTypes: data.items,
+			const savedSet: SavedSet = {
+				ID: mediaItem.RatingKey,
 				MediaItem: mediaItem,
-				AutoDownload: autoDownload,
+				Sets: [
+					{
+						ID: posterSet.ID,
+						Set: posterSet,
+						SelectedTypes: data.items,
+						AutoDownload: autoDownload,
+					},
+				],
 			};
-			log("Poster Set Modal - Client Message:", clientMessage);
+			log("Poster Set Modal - Saved Set:", savedSet);
 
-			const response = await postSendSetToAPI(clientMessage);
+			const response = await postSendSetToAPI(savedSet);
 			if (!response || response.status !== "success") {
 				throw new Error("Failed to start the task.");
 			}
