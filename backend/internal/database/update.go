@@ -9,34 +9,17 @@ import (
 	"poster-setter/internal/utils"
 	"strings"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Debug(r.URL.Path)
 	startTime := time.Now()
 
-	// Get the ratingKey from the URL
-	ratingKey := chi.URLParam(r, "ratingKey")
-	if ratingKey == "" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("missing ratingKey in request"),
-			Log: logging.Log{
-				Message: "Missing ratingKey in request",
-			},
-		})
-		return
-	}
-
 	// Get the request body
 	// Define a struct to match the expected JSON object
-	var requestBody struct {
-		SelectedTypes []string `json:"selectedTypes"`
-		Autodownload  bool     `json:"autoDownload"`
-	}
+	var savedSet modals.Database_SavedSet
 	// Decode the request body into the struct
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	err := json.NewDecoder(r.Body).Decode(&savedSet)
 	if err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
 			Err: err,
@@ -47,16 +30,21 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	selectedTypes := requestBody.SelectedTypes
-	autoDownload := requestBody.Autodownload
-	logging.LOG.Debug(fmt.Sprintf("Updating Selected Types to: %v", selectedTypes))
-	logging.LOG.Debug(fmt.Sprintf("Updating AutoDownload to: %v", autoDownload))
+	for _, set := range savedSet.Sets {
+		// Check if the set is marked for deletion
+		if set.ToDelete {
+			logErr := DeletePosterSetFromDatabaseByID(set.ID)
+			if logErr.Err != nil {
+				logging.LOG.Error(fmt.Sprintf("Failed to delete PosterSet '%s': %v", set.ID, logErr.Err))
+			}
 
-	// Update the selected types in the database
-	logErr := UpdateSavedSetForItemInDB(ratingKey, selectedTypes, autoDownload)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-		return
+		} else { // Update the MediaItem in the database
+			logging.LOG.Debug(fmt.Sprintf("Updating Poster Set '%s'", set.ID))
+			logErr := UpdatePosterSetInDatabase(set.Set, savedSet.MediaItem.RatingKey, set.SelectedTypes, set.AutoDownload)
+			if logErr.Err != nil {
+				utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+			}
+		}
 	}
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
@@ -66,36 +54,33 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 		Data:    nil})
 }
 
-func UpdateSavedSetForItemInDB(ratingKey string, selectedTypes []string, autoDownload bool) logging.ErrorLog {
-	// Convert SelectedTypes (slice of strings) to a comma-separated string
-	selectedTypesStr := strings.Join(selectedTypes, ",")
-
-	// Get the current time in the local timezone
-	now := time.Now().In(time.Local)
-
-	query := `
-UPDATE auto_downloader
-SET selected_types = ?, last_update = ?, auto_download = ?
-WHERE id = ?`
-	_, err := db.Exec(query, selectedTypesStr, now.UTC().Format(time.RFC3339), autoDownload, ratingKey)
-	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to update Saved Set in database",
-		}}
-	}
-	logging.LOG.Debug(fmt.Sprintf("Saved Set updated successfully for item with ratingKey: %s", ratingKey))
-	return logging.ErrorLog{}
-}
-
-func UpdateAutoDownloadItem(clientMessage modals.ClientMessage) logging.ErrorLog {
-	mediaItemJSON, err := json.Marshal(clientMessage.MediaItem)
+func UpdateMediaItemInDatabase(savedSet modals.Database_SavedSet) logging.ErrorLog {
+	// Marshal the MediaItem into JSON
+	mediaItemJSONBytes, err := json.Marshal(savedSet.MediaItem)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to marshal MediaItem data",
 		}}
 	}
+	savedSet.MediaItemJSON = string(mediaItemJSONBytes)
 
-	setJSON, err := json.Marshal(clientMessage.Set)
+	query := `
+UPDATE Media_Item
+SET media_item = ?
+WHERE id = ?`
+	_, err = db.Exec(query, savedSet.MediaItemJSON, savedSet.MediaItem.RatingKey)
+	if err != nil {
+		return logging.ErrorLog{Err: err, Log: logging.Log{
+			Message: "Failed to update MediaItem data in database",
+		}}
+	}
+	logging.LOG.Info(fmt.Sprintf("DB - MediaItem updated successfully for item: %s", savedSet.MediaItem.Title))
+	return logging.ErrorLog{}
+}
+
+func UpdatePosterSetInDatabase(posterSet modals.PosterSet, ratingKey string, selectedTypes []string, autoDownload bool) logging.ErrorLog {
+	// Marshal the Set into JSON
+	setJSONBytes, err := json.Marshal(posterSet)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to marshal Set data",
@@ -103,22 +88,27 @@ func UpdateAutoDownloadItem(clientMessage modals.ClientMessage) logging.ErrorLog
 	}
 
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
-	selectedTypes := strings.Join(clientMessage.SelectedTypes, ",")
+	selectedTypesStr := strings.Join(selectedTypes, ",")
 
 	// Get the current time in the local timezone
 	now := time.Now().In(time.Local)
 
 	query := `
-UPDATE auto_downloader
-SET media_item = ?, poster_set = ?, selected_types = ?, auto_download = ?, last_update = ?
+UPDATE Poster_Sets
+SET media_item_id = ?, poster_set = ?, selected_types = ?, auto_download = ?, last_update = ?
 WHERE id = ?`
-	_, err = db.Exec(query, mediaItemJSON, setJSON, selectedTypes, clientMessage.AutoDownload, now.UTC().Format(time.RFC3339), clientMessage.MediaItem.RatingKey)
+	_, err = db.Exec(query,
+		ratingKey,
+		string(setJSONBytes),
+		selectedTypesStr,
+		autoDownload,
+		now.UTC().Format(time.RFC3339),
+		posterSet.ID)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to update data in database",
+			Message: "Failed to update Set data in database",
 		}}
 	}
-
-	logging.LOG.Debug("Item updated successfully in the database")
+	logging.LOG.Debug(fmt.Sprintf("DB - PosterSet '%s' updated successfully for item '%s'", posterSet.ID, ratingKey))
 	return logging.ErrorLog{}
 }
