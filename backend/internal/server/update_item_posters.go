@@ -199,7 +199,7 @@ func deleteTempImageForNextLoad(file modals.PosterFile, ratingKey string) {
 			return
 		}
 
-		// Delete the temporary image file
+		// Delete the poster and backdrop temporary image file
 		fileName := fmt.Sprintf("%s_%s.jpg", ratingKey, file.Type)
 		filePath := fmt.Sprintf("%s/%s", tmpFolder, fileName)
 		exists := utils.CheckIfImageExists(filePath)
@@ -209,8 +209,22 @@ func deleteTempImageForNextLoad(file modals.PosterFile, ratingKey string) {
 			if err != nil {
 				logging.LOG.Error(fmt.Sprintf("Failed to delete temporary image %s: %s", fileName, err.Error()))
 			}
-		} else {
-			logging.LOG.Trace(fmt.Sprintf("Temporary image %s does not exist", fileName))
+		}
+
+		otherFile := "backdrop"
+		if file.Type == "backdrop" {
+			otherFile = "poster"
+		}
+		// Delete the other temporary image file
+		otherFileName := fmt.Sprintf("%s_%s.jpg", ratingKey, otherFile)
+		otherFilePath := fmt.Sprintf("%s/%s", tmpFolder, otherFileName)
+		exists = utils.CheckIfImageExists(otherFilePath)
+		if exists {
+			logging.LOG.Trace(fmt.Sprintf("Deleting temporary image %s", otherFileName))
+			err := os.Remove(otherFilePath)
+			if err != nil {
+				logging.LOG.Error(fmt.Sprintf("Failed to delete temporary image %s: %s", otherFileName, err.Error()))
+			}
 		}
 	}
 }
