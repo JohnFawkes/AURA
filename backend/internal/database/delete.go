@@ -26,7 +26,7 @@ func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logErr := DeleteFromDatabase(ratingKey)
+	logErr := DeleteMediaItemFromDatabase(ratingKey)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -39,14 +39,46 @@ func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 		Data:    nil})
 }
 
-func DeleteFromDatabase(ratingKey string) logging.ErrorLog {
-	query := `
-DELETE FROM auto_downloader WHERE id = ?`
-	_, err := db.Exec(query, ratingKey)
+func DeleteMediaItemFromDatabase(ratingKey string) logging.ErrorLog {
+	deleteMediaItemQuery := `
+DELETE FROM Media_Item WHERE id = ?`
+	_, err := db.Exec(deleteMediaItemQuery, ratingKey)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to delete data from database",
 		}}
 	}
+
+	logErr := DeletePosterSetFromDatabaseByMediaID(ratingKey)
+	if logErr.Err != nil {
+		return logErr
+	}
+	logging.LOG.Info(fmt.Sprintf("DB - MediaItem deleted successfully for item: %s", ratingKey))
+	return logging.ErrorLog{}
+}
+
+func DeletePosterSetFromDatabaseByMediaID(ratingKey string) logging.ErrorLog {
+	deletePosterSetQuery := `
+DELETE FROM Poster_Sets WHERE media_item_id = ?`
+	_, err := db.Exec(deletePosterSetQuery, ratingKey)
+	if err != nil {
+		return logging.ErrorLog{Err: err, Log: logging.Log{
+			Message: "Failed to delete data from database",
+		}}
+	}
+	logging.LOG.Info(fmt.Sprintf("DB - PosterSet deleted successfully for item: %s", ratingKey))
+	return logging.ErrorLog{}
+}
+
+func DeletePosterSetFromDatabaseByID(posterSetID string) logging.ErrorLog {
+	deletePosterSetQuery := `
+DELETE FROM Poster_Sets WHERE id = ?`
+	_, err := db.Exec(deletePosterSetQuery, posterSetID)
+	if err != nil {
+		return logging.ErrorLog{Err: err, Log: logging.Log{
+			Message: "Failed to delete data from database",
+		}}
+	}
+	logging.LOG.Info(fmt.Sprintf("DB - PosterSet deleted successfully for item: %s", posterSetID))
 	return logging.ErrorLog{}
 }
