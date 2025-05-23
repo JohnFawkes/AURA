@@ -1,10 +1,10 @@
 package plex
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/modals"
 	"fmt"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
 )
 
 func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.ErrorLog {

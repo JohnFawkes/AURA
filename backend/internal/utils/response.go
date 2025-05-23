@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"aura/internal/logging"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/logging"
 	"strings"
 )
 

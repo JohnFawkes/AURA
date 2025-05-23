@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"aura/internal/logging"
 	"fmt"
 	"os"
-	"poster-setter/internal/logging"
 )
 
 func CheckFolderExists(folderPath string) logging.ErrorLog {

@@ -1,17 +1,18 @@
 package mediaserver_shared
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/mediux"
+	"aura/internal/modals"
+	"aura/internal/server/emby_jellyfin"
+	"aura/internal/server/plex"
+	"aura/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/server/emby_jellyfin"
-	"poster-setter/internal/server/plex"
-	"poster-setter/internal/utils"
 )
 
 type MediaServer interface {

@@ -1,6 +1,6 @@
 package plex
 
-import "poster-setter/internal/modals"
+import "aura/internal/modals"
 
 func getItemRatingKey(plexItem modals.MediaItem, file modals.PosterFile) string {
 	if plexItem.Type == "movie" || file.Type == "poster" || file.Type == "backdrop" {
