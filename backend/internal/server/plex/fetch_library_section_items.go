@@ -1,15 +1,15 @@
 package plex
 
 import (
+	"aura/internal/config"
+	"aura/internal/database"
+	"aura/internal/logging"
+	"aura/internal/modals"
+	"aura/internal/utils"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/config"
-	"poster-setter/internal/database"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
 	"time"
 )
 

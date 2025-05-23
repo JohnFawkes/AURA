@@ -1,14 +1,14 @@
 package mediux
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"time"
 
 	"github.com/go-chi/chi/v5"

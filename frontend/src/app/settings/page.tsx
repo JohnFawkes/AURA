@@ -27,6 +27,8 @@ const SettingsPage: React.FC = () => {
 	useEffect(() => {
 		if (isMounted.current) return;
 		isMounted.current = true;
+		document.title = "Aura | Settings";
+
 		const fetchConfigFromAPI = async () => {
 			try {
 				const resp = await fetchConfig();

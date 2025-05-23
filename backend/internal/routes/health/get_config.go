@@ -1,10 +1,10 @@
 package health
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"net/http"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"time"
 )
 

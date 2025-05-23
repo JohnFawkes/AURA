@@ -1,6 +1,6 @@
 package notifications
 
-import "poster-setter/internal/config"
+import "aura/internal/config"
 
 // Valid NotificationProviders is a list of valid notification providers
 var ValidNotificationProviders = []string{

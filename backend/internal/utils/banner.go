@@ -4,7 +4,7 @@ import "fmt"
 
 func PrintBanner(Version string, Author string, License string, port int, logLevel string) {
 	fmt.Printf(("┌────────────────────────────────┐\n"))
-	fmt.Print(formatBanner("Poster Setter"))
+	fmt.Print(formatBanner("AURA"))
 	fmt.Print(formatBanner("App Version: " + Version))
 	fmt.Print(formatBanner("Author: " + Author))
 	fmt.Print(formatBanner("License: " + License))

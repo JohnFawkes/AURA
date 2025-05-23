@@ -1,6 +1,8 @@
 package database
 
-import "poster-setter/internal/logging"
+import (
+	"aura/internal/logging"
+)
 
 func CheckIfMediaItemAlreadyInDatabase(ratingKey string) (bool, logging.ErrorLog) {
 	query := `

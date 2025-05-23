@@ -227,7 +227,7 @@ const MediaItemPage = () => {
 	}
 
 	if (hasError) {
-		document.title = "Poster-Setter - Error";
+		document.title = "AURA | Error";
 		return (
 			<div className="flex flex-col items-center">
 				<ErrorMessage message={errorMessage} />
@@ -251,7 +251,7 @@ const MediaItemPage = () => {
 			</div>
 		);
 	} else {
-		document.title = `Poster-Setter - ${mediaItem?.Title}`;
+		document.title = `AURA | ${mediaItem?.Title}`;
 		log("Media Item Page - Fetched media item:", mediaItem);
 		log("Media Item Page - Fetched poster sets:", posterSets);
 	}

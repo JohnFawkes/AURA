@@ -1,15 +1,13 @@
 package download
 
 import (
+	"aura/internal/database"
+	"aura/internal/logging"
+	"aura/internal/mediux"
+	"aura/internal/modals"
+	"aura/internal/notifications"
+	mediaserver "aura/internal/server"
 	"fmt"
-	"poster-setter/internal/config"
-	"poster-setter/internal/database"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/mediux"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/notifications"
-	mediaserver "poster-setter/internal/server"
-	mediaserver_shared "poster-setter/internal/server/shared"
 	"time"
 )
 

@@ -1,16 +1,16 @@
 package mediaserver
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/server/emby_jellyfin"
+	"aura/internal/server/plex"
+	mediaserver_shared "aura/internal/server/shared"
+	"aura/internal/utils"
 	"fmt"
 	"net/http"
 	"os"
 	"path"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/server/emby_jellyfin"
-	"poster-setter/internal/server/plex"
-	mediaserver_shared "poster-setter/internal/server/shared"
-	"poster-setter/internal/utils"
 	"time"
 
 	"github.com/go-chi/chi/v5"

@@ -1,15 +1,15 @@
 package plex
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	"aura/internal/mediux"
+	"aura/internal/modals"
+	"aura/internal/utils"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/mediux"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
 )
 
 func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) logging.ErrorLog {

@@ -1,10 +1,10 @@
 package plex
 
 import (
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"time"
 
 	"github.com/go-chi/chi/v5"

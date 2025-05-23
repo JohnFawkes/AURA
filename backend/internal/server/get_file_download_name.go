@@ -1,9 +1,9 @@
 package mediaserver
 
 import (
+	"aura/internal/modals"
+	"aura/internal/utils"
 	"fmt"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
 )
 
 func GetFileDownloadName(file modals.PosterFile) string {

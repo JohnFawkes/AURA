@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -8,8 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
 	"strings"
 	"time"
 )
@@ -39,7 +39,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	}
 
 	// Add a User-Agent header to the request
-	req.Header.Set("User-Agent", "PosterSetter/1.0")
+	req.Header.Set("User-Agent", "AURA/1.0")
 
 	// Add headers to the request
 	if tokenType == "MediaServer" {

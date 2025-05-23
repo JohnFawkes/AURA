@@ -1,7 +1,7 @@
 package download
 
 import (
-	"poster-setter/internal/logging"
+	"aura/internal/logging"
 	"time"
 )
 

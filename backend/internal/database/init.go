@@ -1,13 +1,11 @@
 package database
 
 import (
+	"aura/internal/logging"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"

@@ -43,7 +43,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				</Link>
 
 				<Link
-					href="https://github.com/xmoosex/poster-setter"
+					href="https://github.com/mediux-team/aura"
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center hover:text-primary transition-colors"

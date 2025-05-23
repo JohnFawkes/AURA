@@ -1,15 +1,15 @@
 package emby_jellyfin
 
 import (
+	"aura/internal/config"
+	"aura/internal/database"
+	"aura/internal/logging"
+	"aura/internal/modals"
+	"aura/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"poster-setter/internal/config"
-	"poster-setter/internal/database"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
 )
 
 func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {

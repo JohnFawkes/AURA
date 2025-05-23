@@ -24,9 +24,9 @@ export default function LogsPage() {
 	const hasFetched = useRef(false);
 
 	useEffect(() => {
-		if (hasFetched.current) return;
-		hasFetched.current = true;
-
+		if (isMounted) return;
+		setIsMounted(true);
+		document.title = "Aura | Logs";
 		const fetchLogs = async () => {
 			log("LogsPage - Fetching logs started");
 			try {

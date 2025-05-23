@@ -52,6 +52,8 @@ const SavedSetsPage: React.FC = () => {
 	}, []);
 
 	useEffect(() => {
+		document.title = "Aura | Saved Sets";
+
 		fetchSavedSets();
 	}, [fetchSavedSets]);
 

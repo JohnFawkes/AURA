@@ -1,12 +1,12 @@
 package routes
 
 import (
-	"poster-setter/internal/database"
-	"poster-setter/internal/mediux"
-	"poster-setter/internal/routes/health"
-	"poster-setter/internal/routes/middleware"
-	tempimages "poster-setter/internal/routes/temp-images"
-	mediaserver "poster-setter/internal/server"
+	"aura/internal/database"
+	"aura/internal/mediux"
+	"aura/internal/routes/health"
+	"aura/internal/routes/middleware"
+	tempimages "aura/internal/routes/temp-images"
+	mediaserver "aura/internal/server"
 
 	"github.com/go-chi/chi/v5"
 )

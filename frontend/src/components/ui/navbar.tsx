@@ -18,7 +18,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { openDB } from "idb";
 import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
@@ -141,21 +140,18 @@ export default function Navbar() {
 			className="sticky top-0 z-50 flex items-center px-6 py-4 justify-between shadow-md bg-background dark:bg-background-dark border-b border-border dark:border-border-dark"
 		>
 			{/* Logo */}
-			<Link
-				href="/"
-				className="flex items-center gap-2 hover:text-primary transition-colors"
-				onClick={() => handleHomeClick()}
-			>
-				<div className="relative w-[32px] h-[32px] rounded-t-md overflow-hidden">
+			<div className="relative">
+				<div className="relative w-[120px] h-[35px] cursor-pointer">
 					<Image
-						src="/mediux.svg"
+						src="/aura_word_logo.svg"
 						alt="Logo"
 						fill
 						className="object-contain filter dark:invert-0 invert"
+						onClick={() => handleHomeClick()}
 					/>
 				</div>
-				Poster-Setter
-			</Link>
+			</div>
+
 			{/* Search Section */}
 			<div className="relative w-full max-w-2xl ml-1 mr-1">
 				<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

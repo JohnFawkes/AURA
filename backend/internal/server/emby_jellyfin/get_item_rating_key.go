@@ -1,6 +1,6 @@
 package emby_jellyfin
 
-import "poster-setter/internal/modals"
+import "aura/internal/modals"
 
 func getItemRatingKey(embyJellyItem modals.MediaItem, file modals.PosterFile) string {
 	if embyJellyItem.Type == "movie" || file.Type == "poster" || file.Type == "backdrop" {

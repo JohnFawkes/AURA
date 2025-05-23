@@ -1,12 +1,12 @@
 package mediaserver
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
+	mediaserver_shared "aura/internal/server/shared"
+	"aura/internal/utils"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
-	mediaserver_shared "poster-setter/internal/server/shared"
-	"poster-setter/internal/utils"
 	"time"
 
 	"github.com/go-chi/chi/v5"

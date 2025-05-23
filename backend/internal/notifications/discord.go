@@ -1,12 +1,12 @@
 package notifications
 
 import (
+	"aura/internal/config"
+	"aura/internal/logging"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/config"
-	"poster-setter/internal/logging"
 )
 
 func SendDiscordNotification(message string, imageURL string) logging.ErrorLog {
@@ -31,13 +31,13 @@ func SendDiscordNotification(message string, imageURL string) logging.ErrorLog {
 
 	webhookBody := map[string]any{
 		"username":   "MediUX AURA Bot",
-		"avatar_url": "https://posters.mooseboxx.com/web-app-manifest-512x512.png",
+		"avatar_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
 		"embeds": []map[string]any{
 			{
 				"author": map[string]any{
 					"name":     "MediUX AURA Bot",
-					"url":      "https://github.com/xmoosex/poster-setter",
-					"icon_url": "https://raw.githubusercontent.com/mediux-team/poster-setter/master/frontend/public/mediux.png",
+					"url":      "https://github.com/mediux-team/aura",
+					"icon_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
 				},
 				"title":       "Image Updated",
 				"description": message,

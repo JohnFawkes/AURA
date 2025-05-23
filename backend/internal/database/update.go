@@ -1,12 +1,12 @@
 package database
 
 import (
+	"aura/internal/logging"
+	"aura/internal/modals"
+	"aura/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/modals"
-	"poster-setter/internal/utils"
 	"strings"
 	"time"
 )
