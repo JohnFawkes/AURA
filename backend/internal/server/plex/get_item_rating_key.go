@@ -6,7 +6,7 @@ func getItemRatingKey(plexItem modals.MediaItem, file modals.PosterFile) string 
 	if plexItem.Type == "movie" || file.Type == "poster" || file.Type == "backdrop" {
 		return plexItem.RatingKey
 	}
-	if file.Type == "seasonPoster" {
+	if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
 		return getSeasonRatingKey(plexItem, file)
 	}
 	if file.Type == "titlecard" {
