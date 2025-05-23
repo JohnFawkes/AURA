@@ -16,41 +16,76 @@ export function searchMediaItems(
 		return items.slice(0, limit);
 	}
 
+	// Extract year filter (e.g., Y:2023 or y:2023)
 	let yearFilter: number | null = null;
-
-	// Check for a year filter (e.g., y:2012)
-	const yearMatch = trimmedQuery.match(/y:(\d{4})/);
+	const yearMatch = trimmedQuery.match(/[Yy]:(\d{4})/);
 	if (yearMatch) {
 		yearFilter = parseInt(yearMatch[1], 10);
 	}
 
+	// Extract library filter (e.g., L:4K Movies:)
+	let libraryFilter: string | null = null;
+	// This regex captures everything between "L:" and the next colon.
+	const libraryMatch = trimmedQuery.match(/[Ll]:(.+?):/);
+	if (libraryMatch) {
+		libraryFilter = libraryMatch[1].trim().toLowerCase();
+	}
+
+	// Extract rating key filter (e.g., ID:239:)
+	let ratingFilter: string | null = null;
+	const ratingMatch = trimmedQuery.match(/[Ii][Dd]:(.+?):/);
+	if (ratingMatch) {
+		ratingFilter = ratingMatch[1].trim();
+	}
+
+	// Remove year, library, and rating tokens from the query before further processing
+	const partialQuery = trimmedQuery
+		.replace(/[Yy]:(\d{4})/, "")
+		.replace(/[Ll]:(.+?):/, "")
+		.replace(/[Ii][Dd]:(.+?):/, "")
+		.trim();
+
 	// If the query is wrapped in quotes, perform an exact match ignoring special characters.
 	if (
-		(trimmedQuery.startsWith('"') && trimmedQuery.endsWith('"')) ||
-		(trimmedQuery.startsWith("'") && trimmedQuery.endsWith("'")) ||
-		(trimmedQuery.startsWith("‘") && trimmedQuery.endsWith("’")) ||
-		(trimmedQuery.startsWith("'“") && trimmedQuery.endsWith("”'"))
+		(partialQuery.startsWith('"') && partialQuery.endsWith('"')) ||
+		(partialQuery.startsWith("'") && partialQuery.endsWith("'")) ||
+		(partialQuery.startsWith("‘") && partialQuery.endsWith("’")) ||
+		(partialQuery.startsWith("'“") && partialQuery.endsWith("”'"))
 	) {
-		const rawQuery = trimmedQuery.slice(1, trimmedQuery.length - 1);
+		const rawQuery = partialQuery.slice(1, partialQuery.length - 1);
 		const normalizedQuery = normalizeString(rawQuery);
 		filteredItems = filteredItems.filter(
 			(item) => normalizeString(item.Title) === normalizedQuery
 		);
-	} else {
-		// Remove year syntax from query and normalize it
-		const partialQuery = trimmedQuery.replace(/y:\d{4}/, "").trim();
+	} else if (partialQuery !== "") {
+		// Normalize remaining query and split into words
 		const normalizedQuery = normalizeString(partialQuery);
 		const queryWords = normalizedQuery.split(/\s+/);
 		filteredItems = filteredItems.filter((item) => {
 			const normalizedTitle = normalizeString(item.Title);
-			// Check that every word in the query exists in the title
+			// Check that every query word exists in the title
 			return queryWords.every((word) => normalizedTitle.includes(word));
 		});
 	}
 
+	// Apply year filter if present
 	if (yearFilter) {
 		filteredItems = filteredItems.filter(
 			(item) => item.Year === yearFilter
+		);
+	}
+
+	// Apply library filter if present
+	if (libraryFilter) {
+		filteredItems = filteredItems.filter((item) =>
+			normalizeString(item.LibraryTitle).includes(libraryFilter)
+		);
+	}
+
+	// Apply rating key filter if present (exact match)
+	if (ratingFilter) {
+		filteredItems = filteredItems.filter(
+			(item) => item.RatingKey === ratingFilter
 		);
 	}
 
