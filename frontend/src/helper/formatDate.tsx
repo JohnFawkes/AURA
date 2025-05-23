@@ -24,7 +24,7 @@ export const formatLastUpdatedDate = (
 			`${value} ${unit}${value !== 1 ? "s" : ""}`;
 
 		if (diffYears >= 1) {
-			return `over ${pluralize(diffYears, "year")} ago`;
+			return `Over ${pluralize(diffYears, "year")} ago`;
 		} else if (diffMonths >= 1) {
 			return `${pluralize(diffMonths, "month")} ago`;
 		} else if (diffWeeks >= 1) {
