@@ -29,8 +29,10 @@ const SetPage = () => {
 	// If the posterSet has a backdrop, use that
 	// Otherwise, use the mediaItem's backdrop
 	useEffect(() => {
-		document.title = "Aura | Poster Set";
-
+		if (typeof window !== "undefined") {
+			// Safe to use document here.
+			document.title = "Aura | Poster Set";
+		}
 		if (posterSet && posterSet.Backdrop) {
 			const backdropFile = posterSet.Backdrop;
 			if (backdropFile) {

@@ -26,7 +26,10 @@ export default function LogsPage() {
 	useEffect(() => {
 		if (isMounted) return;
 		setIsMounted(true);
-		document.title = "Aura | Logs";
+		if (typeof window !== "undefined") {
+			// Safe to use document here.
+			document.title = "Aura | Logs";
+		}
 		const fetchLogs = async () => {
 			try {
 				const resp = await fetchLogContents();

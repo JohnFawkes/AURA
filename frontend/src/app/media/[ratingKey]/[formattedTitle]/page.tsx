@@ -163,7 +163,10 @@ const MediaItemPage = () => {
 	}
 
 	if (hasError) {
-		document.title = "AURA | Error";
+		if (typeof window !== "undefined") {
+			// Safe to use document here.
+			document.title = "Aura | Error";
+		}
 		return (
 			<div className="flex flex-col items-center">
 				<ErrorMessage message={errorMessage} />
@@ -187,7 +190,11 @@ const MediaItemPage = () => {
 			</div>
 		);
 	} else {
-		document.title = `AURA | ${mediaItem?.Title}`;
+		if (typeof window !== "undefined") {
+			// Safe to use document here.
+			document.title = `AURA | ${mediaItem?.Title}`;
+		}
+
 		log("Media Item Page - Fetched media item:", mediaItem);
 		log("Media Item Page - Fetched poster sets:", posterSets);
 	}

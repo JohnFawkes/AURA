@@ -35,7 +35,10 @@ import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 export default function Home() {
 	const isMounted = useRef(false);
-	document.title = "AURA - Home";
+	if (typeof window !== "undefined") {
+		// Safe to use document here.
+		document.title = "Aura | Home";
+	}
 	// -------------------------------
 	// States
 	// -------------------------------
