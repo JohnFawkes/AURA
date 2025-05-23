@@ -21,9 +21,6 @@ func NewRouter() *chi.Mux {
 	// Add the routes to the router
 	AddRoutes(r)
 
-	// Serve static files
-	//ServeStaticFiles(r)
-
 	// If the route is not found, return a JSON response
 	r.NotFound(health.NotFound)
 
@@ -63,34 +60,3 @@ func AddRoutes(r *chi.Mux) {
 
 	})
 }
-
-// func ServeStaticFiles(r *chi.Mux) {
-// 	// Get the current working directory
-// 	workingDir, err := os.Getwd()
-// 	if err != nil {
-// 		panic("Failed to get current working directory: " + err.Error())
-// 	}
-
-// 	// Define the path to the static files directory (assuming `next export` output)
-// 	staticDir := filepath.Join(workingDir, "..", "frontend", "out")
-
-// 	// Check if the directory exists
-// 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
-// 		panic("Static files directory not found: " + staticDir)
-// 	}
-
-// 	// Serve static files and handle client-side routing fallback
-// 	r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		// Build the full file path
-// 		filePath := filepath.Join(staticDir, req.URL.Path)
-
-// 		// Check if the file exists and is not a directory
-// 		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
-// 			http.ServeFile(w, req, filePath)
-// 			return
-// 		}
-
-// 		// If the file doesn't exist, serve index.html (for SPA routing)
-// 		http.ServeFile(w, req, filepath.Join(staticDir, "index.html"))
-// 	}))
-// }
