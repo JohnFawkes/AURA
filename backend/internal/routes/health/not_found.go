@@ -1,9 +1,9 @@
 package health
 
 import (
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"net/http"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"time"
 )
 
