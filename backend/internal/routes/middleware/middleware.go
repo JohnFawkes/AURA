@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"aura/internal/logging"
 	"net/http"
-	"poster-setter/internal/logging"
 	"strings"
 
 	"github.com/go-chi/chi/middleware"
