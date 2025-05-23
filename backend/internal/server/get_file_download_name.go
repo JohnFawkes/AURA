@@ -11,7 +11,7 @@ func GetFileDownloadName(file modals.PosterFile) string {
 		return "Poster"
 	} else if file.Type == "backdrop" {
 		return "Backdrop"
-	} else if file.Type == "seasonPoster" {
+	} else if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
 		return fmt.Sprintf("Season %s Poster", utils.Get2DigitNumber(int64(file.Season.Number)))
 	} else if file.Type == "titlecard" {
 		return fmt.Sprintf("S%sE%s - %s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)), file.Episode.Title)
