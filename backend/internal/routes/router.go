@@ -42,20 +42,21 @@ func AddRoutes(r *chi.Mux) {
 		r.Post("/temp-images/clear", tempimages.ClearTempImages)
 
 		// Media Server Routes
+		r.Get("/mediaserver/type", health.GetMediaServerType)
 		r.Get("/mediaserver/sections", mediaserver.GetAllSections)
 		r.Get("/mediaserver/sections/items", mediaserver.GetAllSectionItems)
 		r.Get("/mediaserver/item/{ratingKey}", mediaserver.GetItemContent)
 		r.Get("/mediaserver/image/{ratingKey}/{imageType}", mediaserver.GetImageFromMediaServer)
-		r.Post("/mediaserver/update/send", mediaserver.GetUpdateSetFromClient)
-		r.Get("/mediaserver/update/set/{ratingKey}", mediaserver.UpdateItemPosters)
+		r.Patch("/mediaserver/download/file", mediaserver.DownloadAndUpdate)
 
 		// Database Routes
 		r.Get("/db/get/all", database.GetAllItems)
-		r.Delete("/db/delete/{ratingKey}", database.DeleteItemFromDatabase)
+		r.Delete("/db/delete/mediaitem/{ratingKey}", database.DeleteMediaItemFromDatabase)
 		r.Patch("/db/update", database.UpdateSavedSetTypesForItem)
+		r.Post("/db/add/item", mediaserver.AddItemToDatabase)
 
 		// Mediux Routes
-		r.Get("/mediux/sets/get/{itemType}/{tmdbID}", mediux.GetAllSets)
+		r.Get("/mediux/sets/get/{itemType}/{librarySection}/{ratingKey}/{tmdbID}", mediux.GetAllSets)
 		r.Get("/mediux/image/{assetID}", mediux.GetMediuxImage)
 
 	})
