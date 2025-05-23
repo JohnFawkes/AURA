@@ -108,8 +108,23 @@ type EmbyJellyLibraryItemsResponse struct {
 		RunTimeTicks   int64  `json:"RunTimeTicks"`
 		ProductionYear int    `json:"ProductionYear"`
 		IsFolder       bool   `json:"IsFolder"`
-		Type           string `json:"Type"`
-		UserData       struct {
+		ProviderIds    struct {
+			Tvdb            string `json:"Tvdb"`
+			Imdb            string `json:"Imdb"`
+			Tmdb            string `json:"Tmdb"`
+			Eidr            string `json:"EIDR"`
+			Facebook        string `json:"Facebook"`
+			Instagram       string `json:"Instagram"`
+			OfficialWebsite string `json:"Official Website"`
+			Reddit          string `json:"Reddit"`
+			TVMaze          string `json:"TV Maze"`
+			XTwitter        string `json:"X (Twitter)"`
+			Wikidata        string `json:"Wikidata"`
+			Wikipedia       string `json:"Wikipedia"`
+			Youtube         string `json:"Youtube"`
+		} `json:"ProviderIds"`
+		Type     string `json:"Type"`
+		UserData struct {
 			PlaybackPositionTicks int  `json:"PlaybackPositionTicks"`
 			PlayCount             int  `json:"PlayCount"`
 			IsFavorite            bool `json:"IsFavorite"`
