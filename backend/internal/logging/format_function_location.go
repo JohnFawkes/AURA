@@ -2,7 +2,6 @@ package logging
 
 import (
 	"fmt"
-	"path"
 	"runtime"
 	"strings"
 )
@@ -27,9 +26,6 @@ func getFunctionLocation() string {
 		}
 	}
 
-	// Get the file name
-	fileName := path.Base(frame.File)
-
 	// Split the frame.Function into package and function name
 	parts := strings.Split(frame.Function, ".")
 
@@ -39,7 +35,7 @@ func getFunctionLocation() string {
 	} else {
 		functionName = parts[0]
 	}
-	callerLocation := fmt.Sprintf("[%s:%s]", fileName, functionName)
+	callerLocation := fmt.Sprintf("[%s]", functionName)
 
 	return callerLocation
 }
