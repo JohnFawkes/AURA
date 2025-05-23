@@ -6,7 +6,7 @@ func getItemRatingKey(embyJellyItem modals.MediaItem, file modals.PosterFile) st
 	if embyJellyItem.Type == "movie" || file.Type == "poster" || file.Type == "backdrop" {
 		return embyJellyItem.RatingKey
 	}
-	if file.Type == "seasonPoster" {
+	if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
 		return getSeasonRatingKey(embyJellyItem, file)
 	}
 	if file.Type == "titlecard" {
