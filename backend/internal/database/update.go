@@ -15,11 +15,11 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Debug(r.URL.Path)
 	startTime := time.Now()
 
-	// Get the request body
-	// Define a struct to match the expected JSON object
-	var savedSet modals.Database_SavedSet
+	//Get the request body
+	var SaveItem modals.DBMediaItemWithPosterSets
+
 	// Decode the request body into the struct
-	err := json.NewDecoder(r.Body).Decode(&savedSet)
+	err := json.NewDecoder(r.Body).Decode(&SaveItem)
 	if err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
 			Err: err,
@@ -30,19 +30,29 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, set := range savedSet.Sets {
-		// Check if the set is marked for deletion
-		if set.ToDelete {
-			logErr := DeletePosterSetFromDatabaseByID(set.ID)
-			if logErr.Err != nil {
-				logging.LOG.Error(fmt.Sprintf("Failed to delete PosterSet '%s': %v", set.ID, logErr.Err))
-			}
-
-		} else { // Update the MediaItem in the database
-			logging.LOG.Debug(fmt.Sprintf("Updating Poster Set '%s'", set.ID))
-			logErr := UpdatePosterSetInDatabase(set.Set, savedSet.MediaItem.RatingKey, set.SelectedTypes, set.AutoDownload)
+	for _, posterSet := range SaveItem.PosterSets {
+		// Check if posterSet.toDelete is true
+		if posterSet.ToDelete {
+			logErr := deletePosterItemFromDatabase(SaveItem.MediaItemID, posterSet.PosterSet.ID)
 			if logErr.Err != nil {
 				utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+				return
+			}
+		} else {
+			// Update the poster set in the database
+			saveItem := modals.DBSavedItem{
+				MediaItemID:   SaveItem.MediaItemID,
+				MediaItem:     SaveItem.MediaItem,
+				PosterSetID:   posterSet.PosterSet.ID,
+				PosterSet:     posterSet.PosterSet,
+				SelectedTypes: posterSet.SelectedTypes,
+				AutoDownload:  posterSet.AutoDownload,
+			}
+
+			logErr := UpdateItemInDatabase(saveItem)
+			if logErr.Err != nil {
+				utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+				return
 			}
 		}
 	}
@@ -51,64 +61,51 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "Item updated successfully",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    nil})
+		Data:    "success"})
 }
 
-func UpdateMediaItemInDatabase(savedSet modals.Database_SavedSet) logging.ErrorLog {
+func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 	// Marshal the MediaItem into JSON
-	mediaItemJSONBytes, err := json.Marshal(savedSet.MediaItem)
+	mediaItemJSONBytes, err := json.Marshal(saveItem.MediaItem)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
 			Message: "Failed to marshal MediaItem data",
 		}}
 	}
-	savedSet.MediaItemJSON = string(mediaItemJSONBytes)
 
-	query := `
-UPDATE Media_Item
-SET media_item = ?
-WHERE id = ?`
-	_, err = db.Exec(query, savedSet.MediaItemJSON, savedSet.MediaItem.RatingKey)
+	// Marshal the PosterSet into JSON
+	posterSetJSONBytes, err := json.Marshal(saveItem.PosterSet)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to update MediaItem data in database",
-		}}
-	}
-	logging.LOG.Info(fmt.Sprintf("DB - MediaItem updated successfully for item: %s", savedSet.MediaItem.Title))
-	return logging.ErrorLog{}
-}
-
-func UpdatePosterSetInDatabase(posterSet modals.PosterSet, ratingKey string, selectedTypes []string, autoDownload bool) logging.ErrorLog {
-	// Marshal the Set into JSON
-	setJSONBytes, err := json.Marshal(posterSet)
-	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to marshal Set data",
+			Message: "Failed to marshal PosterSet data",
 		}}
 	}
 
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
-	selectedTypesStr := strings.Join(selectedTypes, ",")
+	selectedTypesStr := strings.Join(saveItem.SelectedTypes, ",")
 
 	// Get the current time in the local timezone
 	now := time.Now().In(time.Local)
 
+	// Update the PosterSet in the database
 	query := `
-UPDATE Poster_Sets
-SET media_item_id = ?, poster_set = ?, selected_types = ?, auto_download = ?, last_update = ?
-WHERE id = ?`
+	UPDATE SavedItems
+	SET media_item = ?, poster_set_id = ?, poster_set = ?, selected_types = ?, auto_download = ?, last_update = ?
+	WHERE media_item_id = ? AND poster_set_id = ?`
 	_, err = db.Exec(query,
-		ratingKey,
-		string(setJSONBytes),
+		string(mediaItemJSONBytes),
+		saveItem.PosterSet.ID,
+		string(posterSetJSONBytes),
 		selectedTypesStr,
-		autoDownload,
+		saveItem.AutoDownload,
 		now.UTC().Format(time.RFC3339),
-		posterSet.ID)
+		saveItem.MediaItem.RatingKey,
+		saveItem.PosterSet.ID)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to update Set data in database",
+			Message: "Failed to update Item data in database",
 		}}
 	}
-	logging.LOG.Debug(fmt.Sprintf("DB - PosterSet '%s' updated successfully for item '%s'", posterSet.ID, ratingKey))
+	logging.LOG.Info(fmt.Sprintf("DB - Item updated successfully for: %s - Set %s", saveItem.MediaItem.Title, saveItem.PosterSet.ID))
 	return logging.ErrorLog{}
 }

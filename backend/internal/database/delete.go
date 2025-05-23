@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
+func DeleteMediaItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Debug(r.URL.Path)
 	startTime := time.Now()
 
@@ -18,7 +18,7 @@ func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 	ratingKey := chi.URLParam(r, "ratingKey")
 	if ratingKey == "" {
 		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("missing ratingKey in request"),
+			Err: fmt.Errorf("bad request"),
 			Log: logging.Log{
 				Message: "Missing ratingKey in request",
 			},
@@ -26,7 +26,7 @@ func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logErr := DeleteMediaItemFromDatabase(ratingKey)
+	logErr := deleteMediaItemFromDatabase(ratingKey)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
@@ -36,49 +36,32 @@ func DeleteItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "Item deleted successfully",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    nil})
+		Data:    "success"})
 }
 
-func DeleteMediaItemFromDatabase(ratingKey string) logging.ErrorLog {
+func deleteMediaItemFromDatabase(ratingKey string) logging.ErrorLog {
 	deleteMediaItemQuery := `
-DELETE FROM Media_Item WHERE id = ?`
+DELETE FROM SavedItems WHERE media_item_id = ?`
 	_, err := db.Exec(deleteMediaItemQuery, ratingKey)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to delete data from database",
+			Message: "Failed to delete Media Item from database",
 		}}
 	}
 
-	logErr := DeletePosterSetFromDatabaseByMediaID(ratingKey)
-	if logErr.Err != nil {
-		return logErr
-	}
-	logging.LOG.Info(fmt.Sprintf("DB - MediaItem deleted successfully for item: %s", ratingKey))
+	logging.LOG.Info(fmt.Sprintf("DB - Media Item deleted successfully for item: %s", ratingKey))
 	return logging.ErrorLog{}
 }
 
-func DeletePosterSetFromDatabaseByMediaID(ratingKey string) logging.ErrorLog {
-	deletePosterSetQuery := `
-DELETE FROM Poster_Sets WHERE media_item_id = ?`
-	_, err := db.Exec(deletePosterSetQuery, ratingKey)
+func deletePosterItemFromDatabase(ratingKey string, setID string) logging.ErrorLog {
+	deletePosterItemQuery := `
+DELETE FROM SavedItems WHERE media_item_id = ? AND poster_set_id = ?`
+	_, err := db.Exec(deletePosterItemQuery, ratingKey, setID)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to delete data from database",
+			Message: "Failed to delete Poster Item from database",
 		}}
 	}
-	logging.LOG.Info(fmt.Sprintf("DB - PosterSet deleted successfully for item: %s", ratingKey))
-	return logging.ErrorLog{}
-}
-
-func DeletePosterSetFromDatabaseByID(posterSetID string) logging.ErrorLog {
-	deletePosterSetQuery := `
-DELETE FROM Poster_Sets WHERE id = ?`
-	_, err := db.Exec(deletePosterSetQuery, posterSetID)
-	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to delete data from database",
-		}}
-	}
-	logging.LOG.Info(fmt.Sprintf("DB - PosterSet deleted successfully for item: %s", posterSetID))
+	logging.LOG.Info(fmt.Sprintf("DB - Poster Item deleted successfully for item: %s - %s", ratingKey, setID))
 	return logging.ErrorLog{}
 }
