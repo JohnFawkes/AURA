@@ -55,7 +55,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
 
-			existsInDB, _ := database.CheckIfMediaItemAlreadyInDatabase(itemInfo.RatingKey)
+			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
 				itemInfo.ExistInDatabase = true
 			} else {
@@ -76,7 +76,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
 
-			existsInDB, _ := database.CheckIfMediaItemAlreadyInDatabase(itemInfo.RatingKey)
+			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
 				itemInfo.ExistInDatabase = true
 			} else {
