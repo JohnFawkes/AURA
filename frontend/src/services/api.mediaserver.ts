@@ -117,8 +117,8 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 		const response = await apiClient.patch<APIResponse<string>>(
 			`/mediaserver/download/file`,
 			{
-				posterFile,
-				mediaItem,
+				PosterFile: posterFile,
+				MediaItem: mediaItem,
 			}
 		);
 		return response.data;

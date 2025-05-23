@@ -21,8 +21,8 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the request body to get posterFile & mediaItem
 	var requestBody struct {
-		PosterFile modals.PosterFile `json:"posterFile"`
-		MediaItem  modals.MediaItem  `json:"mediaItem"`
+		PosterFile modals.PosterFile `json:"PosterFile"`
+		MediaItem  modals.MediaItem  `json:"MediaItem"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {

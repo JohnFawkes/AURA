@@ -8,8 +8,8 @@ export interface LibrarySection {
 
 export interface MediaItem {
 	RatingKey: string;
-	LibraryTitle: string;
 	Type: string; // "movie" or "show"
+	LibraryTitle: string;
 	Title: string;
 	Year: number;
 	ExistInDatabase: boolean;

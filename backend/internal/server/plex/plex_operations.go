@@ -50,7 +50,6 @@ func getPosters(ratingKey string) (string, logging.ErrorLog) {
 			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, logErr.Err))
 		} else {
 			defer response.Body.Close()
-
 			// Check if the response body starts with valid XML
 			if strings.HasPrefix(string(body), "<?xml version=\"1.0\"") {
 				// Check if the response status code is OK
