@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"aura/internal/logging"
 	"fmt"
 	"net/url"
 	"path"
-	"poster-setter/internal/logging"
 )
 
 func MakeMediaServerAPIURL(endpoint, baseURL string) (*url.URL, logging.ErrorLog) {
