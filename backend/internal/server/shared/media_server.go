@@ -30,6 +30,9 @@ type MediaServer interface {
 
 	// Use the set to update the item on the media server
 	DownloadAndUpdatePosters(mediaItem modals.MediaItem, file modals.PosterFile) logging.ErrorLog
+
+	// Use the TMDB ID, type, title and library section to search for the item on the media server
+	SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog)
 }
 
 type PlexServer struct{}
@@ -125,13 +128,29 @@ func (e *EmbyJellyServer) DownloadAndUpdatePosters(mediaItem modals.MediaItem, f
 	return logging.ErrorLog{}
 }
 
-func InitUserID() logging.ErrorLog {
+func (p *PlexServer) SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog) {
+	// Search for the item on Plex
+	ratingKey, logErr := mediux.PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
+	if logErr.Err != nil {
+		return ratingKey, logErr
+	}
+	return ratingKey, logging.ErrorLog{}
+}
 
+func (e *EmbyJellyServer) SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog) {
+	// Search for the item on Emby/Jellyfin
+	ratingKey, logErr := mediux.EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
+	if logErr.Err != nil {
+		return ratingKey, logErr
+	}
+	return ratingKey, logging.ErrorLog{}
+}
+
+func InitUserID() logging.ErrorLog {
 	if config.Global.MediaServer.Type == "Plex" {
 		return logging.ErrorLog{}
 	}
 
-	logging.LOG.Trace("Initializing User ID for Emby/Jellyfin")
 	// Parse the base URL
 	baseURL, err := url.Parse(config.Global.MediaServer.URL)
 	if err != nil {
@@ -150,7 +169,7 @@ func InitUserID() logging.ErrorLog {
 
 	// Check if the response status is OK
 	if response.StatusCode != http.StatusOK {
-		return logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
+		return logging.ErrorLog{Err: fmt.Errorf("bad status code"),
 			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type)}}
 	}
 
@@ -165,8 +184,7 @@ func InitUserID() logging.ErrorLog {
 		if user.Policy.IsAdministrator {
 			config.Global.MediaServer.UserID = user.ID
 			maskedUserID := fmt.Sprintf("****%s", user.ID[len(user.ID)-7:])
-			logging.LOG.Trace(fmt.Sprintf("Found Admin user ID: %s", maskedUserID))
-			logging.LOG.Trace(fmt.Sprintf("User ID: %s", user.ID))
+			logging.LOG.Debug(fmt.Sprintf("Found Admin user ID: %s", maskedUserID))
 			return logging.ErrorLog{}
 		}
 	}
