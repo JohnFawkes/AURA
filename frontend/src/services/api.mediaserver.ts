@@ -2,8 +2,28 @@ import { APIResponse } from "@/types/apiResponse";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import apiClient from "./apiClient";
 import { ReturnErrorMessage } from "./api.shared";
-import { SavedSet } from "@/types/databaseSavedSet";
 import { log } from "@/lib/logger";
+import { PosterFile } from "@/types/posterSets";
+
+export const fetchMediaServerType = async (): Promise<
+	APIResponse<{ serverType: string }>
+> => {
+	log("api.mediaserver - Fetching server type started");
+	try {
+		const response = await apiClient.get<
+			APIResponse<{ serverType: string }>
+		>(`/mediaserver/type`);
+		log("api.mediaserver - Fetching server type succeeded");
+		return response.data;
+	} catch (error) {
+		log(
+			`api.mediaserver - Fetching server type failed: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		return ReturnErrorMessage<{ serverType: string }>(error);
+	}
+};
 
 export const fetchMediaServerLibrarySections = async (): Promise<
 	APIResponse<LibrarySection[]>
@@ -89,23 +109,25 @@ export const fetchMediaServerItemContent = async (
 	}
 };
 
-export const postSendSetToAPI = async (
-	sendData: SavedSet
-): Promise<APIResponse<null>> => {
-	log("api.mediaserver - Sending set to API started");
+export const patchDownloadPosterFileAndUpdateMediaServer = async (
+	posterFile: PosterFile,
+	mediaItem: MediaItem
+): Promise<APIResponse<string>> => {
 	try {
-		const response = await apiClient.post<APIResponse<null>>(
-			`/mediaserver/update/send`,
-			sendData
+		const response = await apiClient.patch<APIResponse<string>>(
+			`/mediaserver/download/file`,
+			{
+				posterFile,
+				mediaItem,
+			}
 		);
-		log("api.mediaserver - Sending set to API succeeded");
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Sending set to API failed: ${
+			`api.mediaserver - Download and update failed: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
-		return ReturnErrorMessage<null>(error);
+		return ReturnErrorMessage<string>(error);
 	}
 };
