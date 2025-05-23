@@ -28,8 +28,6 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	params.Add("ExcludeFields", "VideoChapters,VideoMediaSources,MediaStreams")
 	baseURL.RawQuery = params.Encode()
 
-	logging.LOG.Trace(fmt.Sprintf("Making request to: %s", baseURL.String()))
-
 	// Make a GET request to the Emby/Jellyfin server
 	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
 	if logErr.Err != nil {
@@ -102,6 +100,13 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 			itemInfo.Series.EpisodeCount += len(season.Episodes)
 		}
 
+	}
+
+	existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
+	if existsInDB {
+		itemInfo.ExistInDatabase = true
+	} else {
+		itemInfo.ExistInDatabase = false
 	}
 
 	return itemInfo, logging.ErrorLog{}
