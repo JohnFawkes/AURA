@@ -56,23 +56,24 @@ type PlexPartItem struct {
 // Directory represents each Directory element inside MediaContainer
 // It is used for TV Shows
 type PlexDirectoryItem struct {
-	RatingKey      string  `xml:"ratingKey,attr"`
-	Key            string  `xml:"key,attr"`
-	Type           string  `xml:"type,attr"`
-	Title          string  `xml:"title,attr"`
-	ContentRating  string  `xml:"contentRating,attr"`
-	Summary        string  `xml:"summary,attr"`
-	Index          int     `xml:"index,attr"`
-	AudienceRating float64 `xml:"audienceRating,attr"`
-	UserRating     float64 `xml:"userRating,attr"`
-	ViewCount      int     `xml:"viewCount,attr"`
-	LastViewedAt   int64   `xml:"lastViewedAt,attr"`
-	Year           int     `xml:"year,attr"`
-	Thumb          string  `xml:"thumb,attr"`
-	LeafCount      int     `xml:"leafCount,attr"`  // Episodes
-	ChildCount     int     `xml:"childCount,attr"` // Seasons
-	UpdatedAt      int64   `xml:"updatedAt,attr"`
-	Location       struct {
+	RatingKey           string  `xml:"ratingKey,attr"`
+	Key                 string  `xml:"key,attr"`
+	Type                string  `xml:"type,attr"`
+	Title               string  `xml:"title,attr"`
+	ContentRating       string  `xml:"contentRating,attr"`
+	Summary             string  `xml:"summary,attr"`
+	Index               int     `xml:"index,attr"`
+	AudienceRating      float64 `xml:"audienceRating,attr"`
+	UserRating          float64 `xml:"userRating,attr"`
+	ViewCount           int     `xml:"viewCount,attr"`
+	LastViewedAt        int64   `xml:"lastViewedAt,attr"`
+	Year                int     `xml:"year,attr"`
+	Thumb               string  `xml:"thumb,attr"`
+	LeafCount           int     `xml:"leafCount,attr"`  // Episodes
+	ChildCount          int     `xml:"childCount,attr"` // Seasons
+	UpdatedAt           int64   `xml:"updatedAt,attr"`
+	LibrarySectionTitle string  `xml:"librarySectionTitle,attr"`
+	Location            struct {
 		Path string `xml:"path,attr"`
 	} `xml:"Location"`
 }
