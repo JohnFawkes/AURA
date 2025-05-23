@@ -4,8 +4,8 @@ package mediux
 func generateShowRequestBody(tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
-    shows_by_id(id: $tmdbID) {
+query shows_by_id($tmdbID: ID!) {
+	shows_by_id(id: $tmdbID) {
 		id
 		date_updated
 		status
@@ -16,31 +16,68 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 		imdb_id
 		trakt_id
 		slug
-		show_sets(
-			filter: { show_id: { id: { _eq: $tmdbIDString } }, files: { file_type: { _neq: "album" } } }
-			sort: "-user_created.username"
-		) {
+		posters {
 			id
-			user_created {
-				username
-			}
-			date_created
-			date_updated
-			files (
-			sort: ["-season.season_number", "-episode.season_id.season_number", "-episode.episode_number"]
-			){
+			modified_on
+			filesize
+			show_set {
 				id
-				file_type
+				set_title
+				user_created {
+					username
+				}
+				date_created
+				date_updated
+			}
+		}
+		backdrops {
+			id
+			modified_on
+			filesize
+			show_set {
+				id
+				set_title
+				user_created {
+					username
+				}
+				date_created
+				date_updated
+			}
+		}
+		seasons {
+			season_number
+			posters {
+				id
 				modified_on
 				filesize
-				season {
+				show_set {
+					id
+					set_title
+					user_created {
+						username
+					}
+					date_created
+					date_updated
+				}
+			}
+			episodes {
+				episode_title
+				episode_number
+				season_id {
 					season_number
 				}
-				episode {
-					episode_title
-					episode_number
-					season_id {
-						season_number
+				titlecards {
+					id
+					modified_on
+					filesize
+					show_set {
+						id
+						set_title
+						user_created {
+							username
+						}
+						date_created
+						date_updated
 					}
 				}
 			}
@@ -49,8 +86,7 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 }
 	`,
 		"variables": map[string]string{
-			"tmdbID":       tmdbID,
-			"tmdbIDString": tmdbID,
+			"tmdbID": tmdbID,
 		},
 	}
 }
@@ -58,131 +94,103 @@ query shows_by_id($tmdbID: ID!, $tmdbIDString: String!) {
 func generateMovieRequestBody(tmdbID string) map[string]any {
 	return map[string]any{
 		"query": `
-query movies_by_id($tmdbID: ID!, $tmdbIDString: String!) {
+query movies_by_id($tmdbID: ID!) {
 	movies_by_id(id: $tmdbID) {
 		id
 		date_updated
 		status
 		title
-		release_date
 		tagline
+		release_date
 		tvdb_id
 		imdb_id
 		trakt_id
 		slug
-		collection_id {
+		collection_id{
 			id
 			collection_name
-			collection_sets {
+			movies{
 				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+				posters{
+					id
+					modified_on
+					filesize
+					collection_set{
+						id
+						set_title
+						user_created {
+							username
+						}
+						date_created
+						date_updated
+					}
+				}
+				backdrops{
+					id
+					modified_on
+					filesize
+					collection_set{
+						id
+						set_title
+						user_created {
+							username
+						}
+						date_created
+						date_updated
+					}
+				}
+			}
+		}
+		posters(filter: { movie_set: { id: { _neq: null } } }){
+			id
+			modified_on
+			filesize
+			movie_set{
+				id
+				set_title
 				user_created {
 					username
 				}
 				date_created
 				date_updated
-				files(filter: { movie: { id: { _eq: $tmdbIDString } }, file_type: { _neq: "album" } }) {
-					id
-					file_type
-					modified_on
-					filesize
-					movie {
-						id
-					}
-				}
 			}
 		}
-		movie_sets(sort: "-user_created.username") {
+		backdrops(filter: { movie_set: { id: { _neq: null } } }){
 			id
-			user_created {
-				username
-			}
-			date_created
-			date_updated
-			files(filter: { movie: { id: { _eq: $tmdbIDString } }, file_type: { _neq: "album" } }) {
-				id
-				file_type
-				modified_on
-				filesize
-				movie {
-					id
-				}
-			}
-		}
-	}
-}
-`,
-		"variables": map[string]string{
-			"tmdbID":       tmdbID,
-			"tmdbIDString": tmdbID,
-		},
-	}
-}
-
-func generateCollectionSetByIDRequestBody(collectionID, tmdbID string) map[string]any {
-	return map[string]any{
-		"query": `
-query collection_sets_by_id($collectionID: ID!, $tmdbID: String!) {
-	collection_sets_by_id(id: $collectionID) {
-		id
-		user_created {
-			username
-		}
-		date_created
-		date_updated
-		files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
-			id
-			file_type
 			modified_on
 			filesize
-			movie {
+			movie_set{
 				id
-			}
-		}
-	}
-}
-
-`,
-		"variables": map[string]string{
-			"collectionID": collectionID,
-			"tmdbID":       tmdbID,
-		},
-	}
-}
-
-func generateMovieSetByIDRequestBody(movieSetID, tmdbID string) map[string]any {
-	return map[string]any{
-		"query": `
-query movie_sets_by_id($movieSetID: ID!, $tmdbID: String!) {
-	movie_sets_by_id(id: $movieSetID) {
-		id
-		user_created {
-			username
-		}
-		date_created
-		date_updated
-		files(filter: { movie: { id: { _eq: $tmdbID } }, file_type: { _neq: "album" } }) {
-			id
-			file_type
-			modified_on
-			filesize
-			movie {
-				id
+				set_title
+				user_created {
+					username
+				}
+				date_created
+				date_updated
 			}
 		}
 	}
 }
 `,
 		"variables": map[string]string{
-			"movieSetID": movieSetID,
-			"tmdbID":     tmdbID,
+			"tmdbID": tmdbID,
 		},
 	}
 }
 
-func generateShowSetByIDRequestBody(showSetID string) map[string]any {
+func generateShowSetByIDRequestBody(setIDString string) map[string]any {
 	return map[string]any{
 		"query": `
-query show_sets_by_id($showSetID: ID!) {
+query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 	show_sets_by_id(id: $showSetID) {
 		id
 		user_created {
@@ -190,29 +198,62 @@ query show_sets_by_id($showSetID: ID!) {
 		}
 		date_created
 		date_updated
-		files  (
-			sort: ["-season.season_number", "-episode.season_id.season_number", "-episode.episode_number"]
-			){
+		show_id {
 			id
-			file_type
-			modified_on
-			filesize
-			season {
-				season_number
+			title
+			posters(filter: { show_set: { id: { _eq: $showSetIDString } } }) {
+				id
+				modified_on
+				filesize
+				show_set {
+					id
+				}
 			}
-			episode {
-				episode_title
-				episode_number
-				season_id {
-					season_number
+			backdrops(filter: { show_set: { id: { _eq: $showSetIDString } } }) {
+				id
+				modified_on
+				filesize
+				show_set {
+					id
+				}
+			}
+			seasons {
+				season_number
+				posters(
+					filter: { show_set: { id: { _eq: $showSetIDString } } }
+				) {
+					id
+					modified_on
+					filesize
+					show_set {
+						id
+					}
+				}
+				episodes {
+					episode_title
+					episode_number
+					season_id {
+						season_number
+					}
+					titlecards(
+						filter: { show_set: { id: { _eq: $showSetIDString } } }
+					) {
+						id
+						modified_on
+						filesize
+						show_set {
+							id
+						}
+					}
 				}
 			}
 		}
 	}
-	}
+}
 `,
 		"variables": map[string]string{
-			"showSetID": showSetID,
+			"showSetID":       setIDString,
+			"showSetIDString": setIDString,
 		},
 	}
 }
