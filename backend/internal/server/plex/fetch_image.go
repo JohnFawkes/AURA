@@ -63,8 +63,6 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
-	logging.LOG.Trace(fmt.Sprintf("Getting %s for rating key: %s", imageType, ratingKey))
-
 	// Construct the URL for the Plex server API request
 	if imageType == "backdrop" {
 		imageType = "art"
