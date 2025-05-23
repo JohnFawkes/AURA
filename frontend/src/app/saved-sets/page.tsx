@@ -6,7 +6,7 @@ import React, {
 	useRef,
 	useMemo,
 } from "react";
-import { SavedSet } from "@/types/databaseSavedSet";
+import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 import { fetchAllItemsFromDB } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
@@ -18,7 +18,7 @@ import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 const SavedSetsPage: React.FC = () => {
-	const [savedSets, setSavedSets] = useState<SavedSet[]>([]);
+	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");

@@ -1,8 +1,6 @@
 "use client";
 
 import ErrorMessage from "@/components/ui/error-message";
-import { cn } from "@/lib/utils";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { H1, Lead } from "@/components/ui/typography";
 import { Badge } from "@/components/ui/badge";
@@ -14,79 +12,38 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import PosterSetModal from "@/components/ui/poster-set-modal";
 import { usePosterSetStore } from "@/lib/posterSetStore";
 import { useMediaStore } from "@/lib/mediaStore";
 import { Button } from "@/components/ui/button";
+import { DimmedBackground } from "@/components/dimmed_backdrop";
+import { SetFileCounts } from "@/components/set_file_counts";
+import DownloadModalShow from "@/components/download-modal-show";
+import DownloadModalMovie from "@/components/download-modal-movie";
 
 const SetPage = () => {
 	const { posterSet } = usePosterSetStore();
 	const { mediaItem } = useMediaStore();
-	const [isBlurred, setIsBlurred] = useState(false);
 	const [backdropURL, setBackdropURL] = useState("");
 
 	// Construct the backdrop URL
-	// If the posterSet.Files contains a backdrop, use that
+	// If the posterSet has a backdrop, use that
 	// Otherwise, use the mediaItem's backdrop
 	useEffect(() => {
 		document.title = "Aura | Poster Set";
 
-				(file) => file.Type === "backdrop"
-			);
+		if (posterSet && posterSet.Backdrop) {
+			const backdropFile = posterSet.Backdrop;
 			if (backdropFile) {
 				setBackdropURL(
 					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
 				);
-			} else {
-				setBackdropURL(
-					`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
-				);
 			}
+		} else {
+			setBackdropURL(
+				`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
+			);
 		}
 	}, [mediaItem?.RatingKey, posterSet]);
-
-	// Handle scroll event to blur the background
-	useEffect(() => {
-		const handleScroll = () => {
-			// Check if the user has scrolled down 300px (adjust as needed)
-			if (window.scrollY > 300) {
-				setIsBlurred(true);
-			} else {
-				setIsBlurred(false);
-			}
-		};
-
-		// Add scroll event listener
-		window.addEventListener("scroll", handleScroll);
-
-		// Cleanup event listener on component unmount
-		return () => {
-			window.removeEventListener("scroll", handleScroll);
-		};
-	}, []);
-
-	// Helper function to get the count and label for each type
-	const getFileTypeCount = (type: string, label: string) => {
-		const count =
-			posterSet?.Files?.filter((file) => file.Type === type).length || 0;
-		return count > 0 ? `${count} ${label}${count > 1 ? "s" : ""}` : null;
-	};
-
-	// Get counts for each type
-	const posterCount = getFileTypeCount("poster", "Poster");
-	const backdropCount = getFileTypeCount("backdrop", "Backdrop");
-	const seasonPosterCount = getFileTypeCount("seasonPoster", "Season Poster");
-	const titlecardCount = getFileTypeCount("titlecard", "Titlecard");
-
-	// Combine counts into a single string
-	const fileCounts = [
-		posterCount,
-		backdropCount,
-		seasonPosterCount,
-		titlecardCount,
-	]
-		.filter(Boolean) // Remove null values
-		.join(" • ");
 
 	// Check if posterSet and mediaItem are defined
 	if (!posterSet || !mediaItem) {
@@ -107,70 +64,14 @@ const SetPage = () => {
 
 	return (
 		<div>
-			<div
-				className={cn(
-					"fixed inset-0 -z-20 overflow-hidden w-full h-full transition-all duration-1000",
-					isBlurred && "blur-lg"
-				)}
-			>
-				{/* Background Gradient */}
-				<div className="absolute inset-0 bg-background">
-					{/* Subtle Noise Texture */}
-					<div className="absolute inset-0 opacity-[0.015] mix-blend-overlay">
-						<div className="absolute inset-0 bg-[url(/gradient.svg)]"></div>{" "}
-					</div>
-
-					{/* Dynamic Overlay */}
-					<div
-						className="absolute inset-0"
-						style={
-							{
-								background: `
-						radial-gradient(ellipse at 30% 30%, var(--dynamic-left) 0%, transparent 60%),
-						radial-gradient(ellipse at bottom right, var(--dynamic-bottom) 0%, transparent 60%),
-						radial-gradient(ellipse at center, var(--dynamic-dark-muted) 0%, transparent 80%),
-						var(--background)
-					  `,
-								opacity: 0.5,
-							} as React.CSSProperties
-						}
-					/>
-				</div>
-
-				{/* Image Container - Positioned Top Right, width driven, height by aspect ratio */}
-				<div className="absolute top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
-					<div className="relative w-full h-full">
-						{backdropURL ? (
-							<Image
-								src={backdropURL}
-								alt="Backdrop"
-								fill
-								priority
-								unoptimized
-								className="object-cover object-right-top"
-								style={{
-									maskImage: `url(/gradient.svg)`,
-									WebkitMaskImage: `url(/gradient.svg)`,
-									maskSize: "100% 100%",
-									WebkitMaskSize: "100% 100%",
-									maskRepeat: "no-repeat",
-									WebkitMaskRepeat: "no-repeat",
-									maskPosition: "center",
-									WebkitMaskPosition: "center",
-								}}
-							/>
-						) : (
-							<div className="w-full h-full bg-gray-200 animate-pulse" />
-						)}
-					</div>
-				</div>
-			</div>
+			{/* Backdrop Background */}
+			{backdropURL && <DimmedBackground backdropURL={backdropURL} />}
 
 			<div className="p-4 lg:p-6">
 				<div className="pb-6">
 					{/* Title */}
 					<div className="flex flex-col pt-40 justify-end items-center text-center lg:items-start lg:text-left">
-						<H1 className="mb-1">{mediaItem?.Title}</H1>
+						<H1 className="mb-1">{posterSet.Title}</H1>
 					</div>
 
 					{/* Set Author */}
@@ -188,32 +89,82 @@ const SetPage = () => {
 								>
 									Set Author: {posterSet.User.Name}
 								</Badge>
-								<Badge className="flex items-center text-sm">
-									{fileCounts}
-								</Badge>
+								<SetFileCounts
+									mediaItem={mediaItem}
+									set={posterSet}
+								/>
 								<div className="ml-auto">
-									<PosterSetModal
-										posterSet={posterSet}
-										mediaItem={mediaItem}
-									/>
+									{mediaItem.Type === "show" ? (
+										<button className="btn">
+											<DownloadModalShow
+												posterSet={posterSet}
+												mediaItem={mediaItem}
+											/>
+										</button>
+									) : mediaItem.Type === "movie" ? (
+										<button className="btn">
+											<DownloadModalMovie
+												posterSet={posterSet}
+												mediaItem={mediaItem}
+											/>
+										</button>
+									) : null}
 								</div>
 							</>
 						)}
 					</div>
 
-					{/* Display all posters (if any) */}
-					{posterSet.Files.some((file) => file.Type === "poster") && (
+					{/* Display the main poster */}
+					{posterSet.Poster && (
 						<div className="flex flex-col gap-2 mt-4">
 							<Lead className="text-muted-foreground text-md">
-								{posterSet.Files.filter(
-									(file) => file.Type === "poster"
-								).length > 1
-									? "Posters"
-									: "Poster"}
+								Poster
 							</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-								{posterSet.Files.map((file) => {
-									if (file.Type === "poster") {
+								<AssetImage
+									image={
+										posterSet.Poster as unknown as PosterFile
+									}
+									displayUser={true}
+									displayMediaType={true}
+									aspect="poster"
+									className="w-[200px] h-auto"
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Display the main backdrop */}
+					{posterSet.Backdrop && (
+						<div className="flex flex-col gap-2 mt-4">
+							<Lead className="text-muted-foreground text-md">
+								Backdrop
+							</Lead>
+							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+								<AssetImage
+									image={
+										posterSet.Backdrop as unknown as PosterFile
+									}
+									displayUser={true}
+									displayMediaType={true}
+									aspect="backdrop"
+									className="w-[200px] h-auto"
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Display all Other Posters (if any) */}
+					{posterSet.OtherPosters &&
+						posterSet.OtherPosters.length > 0 && (
+							<div className="flex flex-col gap-2 mt-4">
+								<Lead className="text-muted-foreground text-md">
+									{posterSet.OtherPosters.length > 1
+										? "Other Posters"
+										: "Other Poster"}
+								</Lead>
+								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+									{posterSet.OtherPosters.map((file) => {
 										return (
 											<AssetImage
 												key={file.ID}
@@ -226,28 +177,22 @@ const SetPage = () => {
 												className="w-[200px] h-auto"
 											/>
 										);
-									}
-									return null;
-								})}
+									})}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					{/* Display all backdrops (if any) */}
-					{posterSet.Files.some(
-						(file) => file.Type === "backdrop"
-					) && (
-						<div className="flex flex-col gap-2 mt-4">
-							<Lead className="text-muted-foreground text-md">
-								{posterSet.Files.filter(
-									(file) => file.Type === "backdrop"
-								).length > 1
-									? "Backdrops"
-									: "Backdrop"}
-							</Lead>
-							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-								{posterSet.Files.map((file) => {
-									if (file.Type === "backdrop") {
+					{/* Display all Other Backdrops (if any) */}
+					{posterSet.OtherBackdrops &&
+						posterSet.OtherBackdrops.length > 0 && (
+							<div className="flex flex-col gap-2 mt-4">
+								<Lead className="text-muted-foreground text-md">
+									{posterSet.OtherBackdrops.length > 1
+										? "Other Backdrops"
+										: "Other Backdrop"}
+								</Lead>
+								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+									{posterSet.OtherBackdrops.map((file) => {
 										return (
 											<AssetImage
 												key={file.ID}
@@ -260,29 +205,28 @@ const SetPage = () => {
 												className="w-[200px] h-auto"
 											/>
 										);
-									}
-									return null;
-								})}
+									})}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					{/* Display all season posters (if any) */}
-					{posterSet.Files.some(
-						(file) => file.Type === "seasonPoster"
-					) && (
-						<div className="flex flex-col gap-2 mt-4">
-							<Lead className="text-muted-foreground text-md">
-								{posterSet.Files.filter(
-									(file) => file.Type === "seasonPoster"
-								).length > 1
-									? "Season Posters"
-									: "Season Poster"}
-							</Lead>
-							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-								{posterSet.Files.map((file) => {
-									if (file.Type === "seasonPoster") {
-										return (
+					{/* Display all Season Posters (if any) */}
+					{posterSet.SeasonPosters &&
+						posterSet.SeasonPosters.length > 0 && (
+							<div className="flex flex-col gap-2 mt-4">
+								<Lead className="text-muted-foreground text-md">
+									{posterSet.SeasonPosters.length > 1
+										? "Season Posters"
+										: "Season Poster"}
+								</Lead>
+								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+									{[...posterSet.SeasonPosters]
+										.sort(
+											(a, b) =>
+												(b.Season?.Number ?? 0) -
+												(a.Season?.Number ?? 0)
+										)
+										.map((file) => (
 											<AssetImage
 												key={file.ID}
 												image={
@@ -293,72 +237,87 @@ const SetPage = () => {
 												aspect="poster"
 												className="w-[200px] h-auto"
 											/>
-										);
-									}
-									return null;
-								})}
+										))}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					{/* Display all titlecards (if any) */}
-					{posterSet.Files.some(
-						(file) => file.Type === "titlecard"
-					) && (
-						<div className="flex flex-col gap-2 mt-4">
-							<Lead className="text-muted-foreground text-md">
-								Titlecards
-							</Lead>
-							<Accordion
-								type="single"
-								collapsible
-								className="w-full"
-							>
-								{/* Group titlecards by season */}
-								{Object.entries(
-									posterSet.Files.filter(
-										(file) => file.Type === "titlecard"
-									).reduce((acc, file) => {
-										const season =
-											file.Episode?.SeasonNumber ||
-											"Unknown Season"; // Default to "Unknown Season" if no season is specified
-										if (!acc[season]) {
-											acc[season] = [];
-										}
-										acc[season].push(file);
-										return acc;
-									}, {} as Record<string, PosterFile[]>)
-								).map(([season, files]) => (
-									<AccordionItem
-										key={season}
-										value={`season-${season}`}
-									>
-										<AccordionTrigger>
-											<Lead className="text-muted-foreground text-md">
-												Season {season}
-											</Lead>
-										</AccordionTrigger>
-										<AccordionContent>
-											<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-												{files.map((file) => (
-													<AssetImage
-														key={file.ID}
-														image={
-															file as unknown as PosterFile
-														}
-														displayUser={true}
-														displayMediaType={true}
-														aspect="titlecard"
-														className="w-[200px] h-auto"
-													/>
-												))}
-											</div>
-										</AccordionContent>
-									</AccordionItem>
-								))}
-							</Accordion>
-						</div>
-					)}
+					{/* Display all titlecards grouped by season (if any) */}
+					{posterSet.TitleCards &&
+						posterSet.TitleCards.length > 0 && (
+							<div className="flex flex-col gap-2 mt-4">
+								<Lead className="text-muted-foreground text-md">
+									{posterSet.TitleCards.length > 1
+										? "Titlecards"
+										: "Titlecard"}
+								</Lead>
+								<Accordion
+									type="single"
+									collapsible
+									className="w-full"
+								>
+									{Object.entries(
+										posterSet.TitleCards.reduce(
+											(acc, file) => {
+												const season =
+													file.Episode
+														?.SeasonNumber ??
+													"Unknown Season";
+												if (!acc[season]) {
+													acc[season] = [];
+												}
+												acc[season].push(file);
+												return acc;
+											},
+											{} as Record<
+												string | number,
+												PosterFile[]
+											>
+										)
+									)
+										.sort(([a], [b]) => {
+											// Sort numerically, "Unknown Season" last
+											if (a === "Unknown Season")
+												return 1;
+											if (b === "Unknown Season")
+												return -1;
+											return Number(b) - Number(a);
+										})
+										.map(([season, files]) => (
+											<AccordionItem
+												key={season}
+												value={`season-${season}`}
+											>
+												<AccordionTrigger>
+													<Lead className="text-muted-foreground text-md">
+														Season {season}
+													</Lead>
+												</AccordionTrigger>
+												<AccordionContent>
+													<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+														{files.map((file) => (
+															<AssetImage
+																key={file.ID}
+																image={
+																	file as unknown as PosterFile
+																}
+																displayUser={
+																	true
+																}
+																displayMediaType={
+																	true
+																}
+																aspect="titlecard"
+																className="w-[200px] h-auto"
+															/>
+														))}
+													</div>
+												</AccordionContent>
+											</AccordionItem>
+										))}
+								</Accordion>
+							</div>
+						)}
 				</div>
 			</div>
 		</div>

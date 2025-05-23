@@ -43,17 +43,13 @@ export function ContentBackground({
 	// Helper function to get backdrop from set with fallback
 	const getSetBackdrop = () => {
 		if (posterSet) {
-			// First try show set backdrop
+			// First try item backdrop if it exists
 			if (
-				posterSet.Files.filter((file) => file.Type === "backdrop")
-					.length > 0
+				posterSet.Backdrop &&
+				posterSet.Backdrop.ID &&
+				posterSet.Backdrop.Modified
 			) {
-				return `/api/mediaserver/image/${
-					posterSet.Files.find((file) => file.Type === "backdrop")?.ID
-				}?modifiedDate=${
-					posterSet.Files.find((file) => file.Type === "backdrop")
-						?.Modified
-				}`;
+				return `/api/mediaserver/image/${posterSet.Backdrop.ID}?modifiedDate=${posterSet.Backdrop.Modified}`;
 			}
 			// Fallback to show backdrop
 			if (mediaItem.RatingKey) {

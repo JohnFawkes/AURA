@@ -1,61 +1,50 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { fetchLogContents } from "@/services/api.settings";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardHeader,
 	CardFooter,
+	CardHeader,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import Loader from "@/components/ui/loader";
 import ErrorMessage from "@/components/ui/error-message";
-import { Download, ArrowLeft } from "lucide-react";
+import Loader from "@/components/ui/loader";
+import { Textarea } from "@/components/ui/textarea";
 import { log } from "@/lib/logger";
+import { fetchLogContents } from "@/services/api.settings";
+import { ArrowLeft, Download } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function LogsPage() {
 	const router = useRouter();
 	const [logs, setLogs] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string>("");
-	const hasFetched = useRef(false);
+	const [isMounted, setIsMounted] = useState(false);
 
 	useEffect(() => {
 		if (isMounted) return;
 		setIsMounted(true);
 		document.title = "Aura | Logs";
 		const fetchLogs = async () => {
-			log("LogsPage - Fetching logs started");
 			try {
 				const resp = await fetchLogContents();
-				log("LogsPage - Fetch response received");
 
 				if (!resp) {
-					log("LogsPage - Fetch failed: No response");
 					throw new Error("Failed to fetch logs");
 				}
 				if (resp.status !== "success") {
-					log(`LogsPage - Fetch failed: ${resp.message}`);
 					throw new Error(resp.message);
 				}
 
 				const logContents = resp.data;
 				if (!logContents) {
-					log("LogsPage - Fetch failed: No log contents found");
 					throw new Error("No log contents found");
 				}
 
-				log("LogsPage - Logs fetched successfully");
 				setLogs(logContents);
 			} catch (error) {
-				log(
-					`LogsPage - Error while fetching logs: ${
-						error instanceof Error ? error.message : "Unknown error"
-					}`
-				);
 				setError(
 					error instanceof Error
 						? error.message
@@ -68,7 +57,7 @@ export default function LogsPage() {
 		};
 
 		fetchLogs();
-	}, []);
+	}, [isMounted]);
 
 	const handleDownloadLogs = () => {
 		const blob = new Blob([logs], {

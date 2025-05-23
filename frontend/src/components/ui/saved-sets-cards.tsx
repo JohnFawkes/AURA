@@ -10,8 +10,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { H4, P, Small } from "@/components/ui/typography";
-import { deleteItemFromDB, patchSavedSetInDB } from "@/services/api.db";
-import { SavedSet } from "@/types/databaseSavedSet";
+import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,49 +19,21 @@ import {
 } from "./dropdown-menu";
 import { Badge } from "./badge";
 import { Separator } from "./separator";
-import { CheckCircle2 as Checkmark } from "lucide-react";
-import { X } from "lucide-react";
+import { CheckCircle2 as Checkmark, X, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
-import { MoreHorizontal } from "lucide-react";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-
-const formatDate = (dateString: string) => {
-	try {
-		const date = new Date(dateString);
-		return new Intl.DateTimeFormat("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		}).format(date);
-	} catch {
-		return "Invalid Date";
-	}
-};
-
-// Helper to get the latest date from all sets.
-const getLatestUpdate = (sets: SavedSet["Sets"]) => {
-	// Map each set's LastUpdate into a Date instance and filter out invalid dates.
-	const dates = sets
-		.map((set) => new Date(set.LastUpdate ?? ""))
-		.filter((date) => !isNaN(date.getTime()));
-	if (dates.length === 0) return "";
-	const latest = new Date(Math.max(...dates.map((d) => d.getTime())));
-	return latest.toISOString();
-};
+import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 
 const SavedSetsCard: React.FC<{
-	savedSet: SavedSet;
+	savedSet: DBMediaItemWithPosterSets;
 	onUpdate: () => void;
 }> = ({ savedSet, onUpdate }) => {
-	// Initialize edit state from the savedSet.Sets array.
+	// Initialize edit state from the savedSet.PosterSets array.
 	const [editSets, setEditSets] = useState(() =>
-		savedSet.Sets.map((set) => ({
-			id: set.ID,
-			set: set.Set,
+		savedSet.PosterSets.map((set) => ({
+			id: set.PosterSetID,
+			set: set.PosterSet || "Unknown",
 			selectedTypes: set.SelectedTypes,
 			autoDownload: set.AutoDownload,
 			toDelete: false,
@@ -70,13 +41,18 @@ const SavedSetsCard: React.FC<{
 	);
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
 	const [updateError, setUpdateError] = useState("");
 	const [isMounted, setIsMounted] = useState(false);
 
 	const allToDelete = editSets.every((set) => set.toDelete);
+
+	const onClose = () => {
+		setIsEditModalOpen(false);
+		setIsDeleteModalOpen(false);
+		setUpdateError("");
+		setIsMounted(false);
+	};
 
 	const confirmEdit = async () => {
 		if (isMounted) return;
@@ -90,18 +66,25 @@ const SavedSetsCard: React.FC<{
 			return;
 		}
 
-		const updatedSavedSet = {
+		// Create a new DBSavedItem object with updated values
+		const updatedSavedSet: DBMediaItemWithPosterSets = {
 			...savedSet,
-			Sets: editSets.map((editSet) => ({
-				ID: editSet.id,
-				Set: editSet.set,
+			PosterSets: editSets.map((editSet, idx) => ({
+				PosterSetID: editSet.id,
+				PosterSet: editSet.set,
+				PosterSetJSON:
+					typeof editSet.set === "object"
+						? JSON.stringify(editSet.set)
+						: savedSet.PosterSets[idx]?.PosterSetJSON || "",
+				LastDownloaded: new Date().toISOString(),
 				SelectedTypes: editSet.selectedTypes,
 				AutoDownload: editSet.autoDownload,
 				ToDelete: editSet.toDelete,
 			})),
 		};
 
-		const response = await patchSavedSetInDB(updatedSavedSet);
+		const response = await patchSavedItemInDB(updatedSavedSet);
+
 		if (response.status !== "success") {
 			setUpdateError(response.message);
 		} else {
@@ -116,7 +99,7 @@ const SavedSetsCard: React.FC<{
 	const confirmDelete = async () => {
 		if (isMounted) return;
 		setIsMounted(true);
-		const resp = await deleteItemFromDB(savedSet.ID);
+		const resp = await deleteMediaItemFromDB(savedSet.MediaItemID);
 		if (resp.status !== "success") {
 			setUpdateError(resp.message);
 		} else {
@@ -128,50 +111,157 @@ const SavedSetsCard: React.FC<{
 	};
 
 	const renderSetBadges = () => {
-		return savedSet.Sets.map((set) => (
+		return savedSet.PosterSets.map((set) => (
 			<Link
-				key={set.ID}
-				href={`https://mediux.pro/sets/${set.ID}`}
+				key={set.PosterSetID}
+				href={`https://mediux.pro/sets/${set.PosterSetID}`}
 				target="_blank"
 				rel="noopener noreferrer"
 				className="transition transform hover:scale-105 hover:underline"
 			>
-				<Badge className="cursor-pointer text-sm">{set.ID}</Badge>
+				<Badge className="cursor-pointer text-sm">
+					{set.PosterSetID}
+				</Badge>
 			</Link>
 		));
 	};
 
+	// Replace the hard-coded array with dynamically generated list.
+	const renderEditTypeBadges = (
+		editSet: (typeof editSets)[number],
+		index: number
+	) => {
+		const availableTypes: string[] = [];
+		if (editSet.set && editSet.set.Poster) {
+			availableTypes.push("poster");
+		}
+		if (editSet.set && editSet.set.Backdrop) {
+			availableTypes.push("backdrop");
+		}
+		if (
+			editSet.set &&
+			editSet.set.SeasonPosters &&
+			editSet.set.SeasonPosters.length > 0
+		) {
+			// Check to see if any of the Season Posters are Season 0
+			const hasSeason0 = editSet.set.SeasonPosters.some(
+				(season) => season.Season?.Number === 0
+			);
+			if (hasSeason0) {
+				availableTypes.push("specialSeasonPoster");
+			}
+			// Check to see if any of the Season Posters are not Season 0
+			const hasNonSeason0 = editSet.set.SeasonPosters.some(
+				(season) => season.Season?.Number !== 0
+			);
+			if (hasNonSeason0) {
+				availableTypes.push("seasonPoster");
+			}
+		}
+		if (
+			editSet.set &&
+			editSet.set.TitleCards &&
+			editSet.set.TitleCards.length > 0
+		) {
+			availableTypes.push("titlecard");
+		}
+
+		return availableTypes.map((type) => {
+			const isSelected = editSet.selectedTypes.includes(type);
+			// Disable the type if this set is marked for deletion
+			// or if it's not selected here, but found in any other set.
+			const isTypeDisabled =
+				editSet.toDelete ||
+				(!isSelected &&
+					editSets.some(
+						(item, j) =>
+							j !== index && item.selectedTypes.includes(type)
+					));
+			return (
+				<Badge
+					key={type}
+					className={`flex items-center gap-2 transition duration-200 ${
+						isTypeDisabled
+							? "bg-secondary opacity-50 cursor-not-allowed"
+							: isSelected
+							? "cursor-pointer bg-primary text-primary-foreground hover:bg-red-500"
+							: "cursor-pointer bg-secondary text-secondary-foreground"
+					}`}
+					onClick={() => {
+						if (isTypeDisabled) return;
+						setEditSets((prev) =>
+							prev.map((item, i) => {
+								if (i !== index) return item;
+								const newSelectedTypes =
+									item.selectedTypes.includes(type)
+										? item.selectedTypes.filter(
+												(t) => t !== type
+										  )
+										: [...item.selectedTypes, type];
+								return {
+									...item,
+									selectedTypes: newSelectedTypes,
+								};
+							})
+						);
+					}}
+				>
+					{type === "poster"
+						? "Poster"
+						: type === "backdrop"
+						? "Backdrop"
+						: type === "seasonPoster"
+						? "Season Posters"
+						: type === "specialSeasonPoster"
+						? "Special Poster"
+						: type === "titlecard"
+						? "Title Card"
+						: type}
+				</Badge>
+			);
+		});
+	};
+
 	const renderTypeBadges = () => {
-		// Flatten all SelectedTypes arrays from every set
-		const allTypes = savedSet.Sets.flatMap((set) => set.SelectedTypes);
-		// Create a deduplicated array of unique types
+		// Flatten all SelectedTypes arrays from every poster set.
+		const allTypes = savedSet.PosterSets.flatMap(
+			(set) => set.SelectedTypes
+		);
 		const uniqueTypes = Array.from(new Set(allTypes));
-		return uniqueTypes.map((type) => (
-			<Badge key={type}>
-				{type === "poster"
-					? "Poster"
-					: type === "backdrop"
-					? "Backdrop"
-					: type === "seasonPoster"
-					? "Season Posters"
-					: type === "titlecard"
-					? "Title Card"
-					: type}
-			</Badge>
-		));
+		return uniqueTypes.map((type) =>
+			// Check if the type is empty or not
+			type.trim() === "" ? null : (
+				// Render the badge only if the type is not empty
+				<Badge key={type}>
+					{type === "poster"
+						? "Poster"
+						: type === "backdrop"
+						? "Backdrop"
+						: type === "seasonPoster"
+						? "Season Posters"
+						: type === "specialSeasonPoster"
+						? "Special Poster"
+						: type === "titlecard"
+						? "Title Card"
+						: type}
+				</Badge>
+			)
+		);
 	};
 
 	return (
 		<Card className="relative w-full max-w-md mx-auto mb-4">
 			<CardHeader>
 				{/* Top Left: Auto Download Icon */}
-				<div className="absolute top-2 left-2">
-					{savedSet.Sets[0].AutoDownload ? (
-						<Checkmark className="text-green-500" size={24} />
-					) : (
-						<X className="text-red-500" size={24} />
-					)}
-				</div>
+				{savedSet.MediaItem.Type === "show" && (
+					<div className="absolute top-2 left-2">
+						{savedSet.PosterSets[0].AutoDownload ? (
+							<Checkmark className="text-green-500" size={24} />
+						) : (
+							<X className="text-red-500" size={24} />
+						)}
+					</div>
+				)}
 
 				{/* Top Right: Dropdown Menu */}
 				<div className="absolute top-2 right-2">
@@ -219,49 +309,44 @@ const SavedSetsCard: React.FC<{
 				</H4>
 
 				{/* Year */}
-				<P
-					className={cn(
-						"text-sm text-muted-foreground",
-						savedSet.MediaItem.Year
-					)}
-				>
+				<P className="text-sm text-muted-foreground">
 					Year: {savedSet.MediaItem.Year}
 				</P>
 
 				{/* Library Title */}
-				<P
-					className={cn(
-						"text-sm text-muted-foreground",
-						savedSet.MediaItem.Year
-					)}
-				>
+				<P className="text-sm text-muted-foreground">
 					Library: {savedSet.MediaItem.LibraryTitle}
 				</P>
 
 				{/* Last Updated */}
-				<P
-					className={cn(
-						"text-sm text-muted-foreground",
-						savedSet.MediaItem.Year
-					)}
-				>
-					Last Updated:{" "}
-					{formatDate(getLatestUpdate(savedSet.Sets) || "")}
+				<P className="text-sm text-muted-foreground">
+					Last Updated: {savedSet.PosterSets[0].LastDownloaded}
 				</P>
 
 				<div className="flex flex-wrap gap-2">
-					Sets: {renderSetBadges()}
+					{savedSet.PosterSets.length > 1 ? "Sets:" : "Set:"}
+					{renderSetBadges()}
 				</div>
 
-				{/* Separator */}
 				<Separator className="my-4" />
 
-				{/* Badges */}
-				<div className="flex flex-wrap gap-2">{renderTypeBadges()}</div>
+				{savedSet.PosterSets.some(
+					(set) =>
+						Array.isArray(set.SelectedTypes) &&
+						set.SelectedTypes.some((type) => type.trim() !== "")
+				) ? (
+					<div className="flex flex-wrap gap-2">
+						{renderTypeBadges()}
+					</div>
+				) : (
+					<P className="text-sm text-muted-foreground">
+						No types selected.
+					</P>
+				)}
 			</CardContent>
 
 			{/* Edit Modal */}
-			<Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+			<Dialog open={isEditModalOpen} onOpenChange={onClose}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Edit Saved Set</DialogTitle>
@@ -272,7 +357,6 @@ const SavedSetsCard: React.FC<{
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4">
-						{/* Iterate over each set */}
 						{editSets.map((editSet, index) => (
 							<div
 								key={editSet.id}
@@ -280,7 +364,15 @@ const SavedSetsCard: React.FC<{
 							>
 								<div className="flex items-center justify-between">
 									<span className="font-semibold">
-										Set ID: {editSet.id}
+										Set ID:{" "}
+										<Link
+											href={`https://mediux.pro/sets/${editSet.id}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="hover:underline"
+										>
+											{editSet.id}
+										</Link>
 									</span>
 									<Button
 										variant={
@@ -297,7 +389,7 @@ const SavedSetsCard: React.FC<{
 																...item,
 																toDelete:
 																	!item.toDelete,
-																// When marking as delete, clear the selected types.
+																// Clear the selected types when marking for deletion.
 																selectedTypes:
 																	!item.toDelete
 																		? []
@@ -314,114 +406,39 @@ const SavedSetsCard: React.FC<{
 									</Button>
 								</div>
 								<div className="flex flex-wrap gap-2 mt-2">
-									{[
-										"poster",
-										"backdrop",
-										"seasonPoster",
-										"titlecard",
-									].map((type) => {
-										// Determine if the current set already has this type selected.
-										const isSelected =
-											editSet.selectedTypes.includes(
-												type
-											);
-										// Disable the badge if the current set is marked for deletion or if another set (other than the current) already selected this type.
-										const isTypeDisabled =
-											editSet.toDelete ||
-											(!isSelected &&
-												editSets.some(
-													(item, j) =>
-														j !== index &&
-														item.selectedTypes.includes(
-															type
-														)
-												));
-										return (
-											<Badge
-												key={type}
-												className={`flex items-center gap-2 transition duration-200
-                            ${
-								isTypeDisabled
-									? "bg-secondary opacity-50 cursor-not-allowed"
-									: isSelected
-									? "cursor-pointer bg-primary text-primary-foreground hover:bg-red-500"
-									: "cursor-pointer bg-secondary text-secondary-foreground"
-							}`}
-												onClick={() => {
-													if (isTypeDisabled) return;
-													setEditSets((prev) =>
-														prev.map((item, i) => {
-															if (i !== index)
-																return item;
-															const newSelectedTypes =
-																item.selectedTypes.includes(
-																	type
-																)
-																	? item.selectedTypes.filter(
-																			(
-																				t
-																			) =>
-																				t !==
-																				type
-																	  )
-																	: [
-																			...item.selectedTypes,
-																			type,
-																	  ];
-															return {
-																...item,
-																selectedTypes:
-																	newSelectedTypes,
-															};
-														})
-													);
-												}}
-											>
-												{type === "poster"
-													? "Poster"
-													: type === "backdrop"
-													? "Backdrop"
-													: type === "seasonPoster"
-													? "Season Posters"
-													: type === "titlecard"
-													? "Title Card"
-													: type}
-											</Badge>
-										);
-									})}
+									{renderEditTypeBadges(editSet, index)}
 								</div>
-								{/* Auto Download Badge */}
-								<div className="flex flex-wrap gap-2 mt-2">
-									<Badge
-										className={`cursor-pointer transition duration-200
-                    ${
-						editSet.autoDownload
-							? "bg-primary text-primary-foreground hover:bg-red-500"
-							: "bg-secondary text-secondary-foreground"
-					}`}
-										onClick={() => {
-											setEditSets((prev) =>
-												prev.map((item, i) =>
-													i === index
-														? {
-																...item,
-																autoDownload:
-																	!item.autoDownload,
-														  }
-														: item
-												)
-											);
-										}}
-									>
-										{editSet.autoDownload
-											? "Autodownload"
-											: "No Autodownload"}
-									</Badge>
-								</div>
+								{savedSet.MediaItem.Type === "show" && (
+									<div className="flex flex-wrap gap-2 mt-2">
+										<Badge
+											className={`cursor-pointer transition duration-200 ${
+												editSet.autoDownload
+													? "bg-primary text-primary-foreground hover:bg-red-500"
+													: "bg-secondary text-secondary-foreground"
+											}`}
+											onClick={() => {
+												setEditSets((prev) =>
+													prev.map((item, i) =>
+														i === index
+															? {
+																	...item,
+																	autoDownload:
+																		!item.autoDownload,
+															  }
+															: item
+													)
+												);
+											}}
+										>
+											{editSet.autoDownload
+												? "Autodownload"
+												: "No Autodownload"}
+										</Badge>
+									</div>
+								)}
 							</div>
 						))}
 					</div>
-
 					{updateError && (
 						<Small className="text-destructive mt-2">
 							{updateError}
@@ -432,15 +449,15 @@ const SavedSetsCard: React.FC<{
 							variant="outline"
 							onClick={() => {
 								setEditSets(
-									savedSet.Sets.map((set) => ({
-										id: set.ID,
-										set: set.Set,
+									savedSet.PosterSets.map((set) => ({
+										id: set.PosterSetID,
+										set: set.PosterSet,
 										selectedTypes: set.SelectedTypes,
 										autoDownload: set.AutoDownload,
 										toDelete: false,
 									}))
 								);
-								setIsEditModalOpen(false);
+								onClose();
 							}}
 						>
 							Cancel
@@ -460,10 +477,7 @@ const SavedSetsCard: React.FC<{
 			</Dialog>
 
 			{/* Delete Confirmation Modal */}
-			<Dialog
-				open={isDeleteModalOpen}
-				onOpenChange={setIsDeleteModalOpen}
-			>
+			<Dialog open={isDeleteModalOpen} onOpenChange={onClose}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Confirm Delete</DialogTitle>
@@ -473,12 +487,8 @@ const SavedSetsCard: React.FC<{
 							undone.
 						</DialogDescription>
 					</DialogHeader>
-
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsDeleteModalOpen(false)}
-						>
+						<Button variant="outline" onClick={onClose}>
 							Cancel
 						</Button>
 						<Button variant="destructive" onClick={confirmDelete}>

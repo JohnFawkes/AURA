@@ -8,59 +8,26 @@ import {
 } from "@/components/ui/carousel";
 
 import { PosterSet } from "@/types/posterSets";
-import { ShowCarousel } from "./show-carousel";
+import { CarouselShow } from "../carousel-show";
+import { CarouselMovie } from "../carousel-movie";
 import { MediaItem } from "@/types/mediaItem";
 import { ZoomInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Lead, P } from "./typography";
-import PosterSetModal from "./poster-set-modal";
 import { usePosterSetStore } from "@/lib/posterSetStore";
 import { useMediaStore } from "@/lib/mediaStore";
+import { formatLastUpdatedDate } from "@/helper/formatDate";
+import { SetFileCounts } from "../set_file_counts";
+import DownloadModalShow from "../download-modal-show";
+import DownloadModalMovie from "../download-modal-movie";
 
 type MediaCarouselProps = {
 	set: PosterSet;
 	mediaItem: MediaItem;
 };
 
-const formatDate = (dateString: string) => {
-	try {
-		const date = new Date(dateString);
-		return new Intl.DateTimeFormat("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		}).format(date);
-	} catch {
-		return "Invalid Date";
-	}
-};
-
 export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 	const router = useRouter();
-
-	// Helper function to get the count and label for each type
-	const getFileTypeCount = (type: string, label: string) => {
-		const count = set.Files.filter((file) => file.Type === type).length;
-		return count > 0 ? `${count} ${label}${count > 1 ? "s" : ""}` : null;
-	};
-
-	// Get counts for each type
-	const posterCount = getFileTypeCount("poster", "Poster");
-	const backdropCount = getFileTypeCount("backdrop", "Backdrop");
-	const seasonPosterCount = getFileTypeCount("seasonPoster", "Season Poster");
-	const titlecardCount = getFileTypeCount("titlecard", "Titlecard");
-
-	// Combine counts into a single string
-	const fileCounts = [
-		posterCount,
-		backdropCount,
-		seasonPosterCount,
-		titlecardCount,
-	]
-		.filter(Boolean) // Remove null values
-		.join(" • ");
 
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
@@ -82,8 +49,13 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 		>
 			<div className="flex flex-col">
 				<div className="flex flex-row items-center">
-					<P className="text-primary-dynamic">
-						Set Author: {set.User.Name}
+					<P
+						className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
+						onClick={() => {
+							goToSetPage();
+						}}
+					>
+						{set.Title} by {set.User.Name}
 					</P>
 					<div className="ml-auto flex space-x-2">
 						<button
@@ -92,31 +64,39 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 								goToSetPage();
 							}}
 						>
-							<ZoomInIcon className="mb-1 mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
 						</button>
-						<button className="btn">
-							<PosterSetModal
-								posterSet={set}
-								mediaItem={mediaItem}
-							/>
-						</button>
+						{mediaItem.Type === "show" ? (
+							<button className="btn">
+								<DownloadModalShow
+									posterSet={set}
+									mediaItem={mediaItem}
+								/>
+							</button>
+						) : mediaItem.Type === "movie" ? (
+							<button className="btn">
+								<DownloadModalMovie
+									posterSet={set}
+									mediaItem={mediaItem}
+								/>
+							</button>
+						) : null}
 					</div>
 				</div>
-				<P className="text-sm text-muted-foreground flex items-center mb-1">
-					Last Update: {formatDate(set.DateUpdated || "")}
-				</P>
-				<Lead
-					className="text-sm text-muted-foreground"
-					onClick={() => {
-						goToSetPage();
-					}}
-				>
-					{fileCounts}
+				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
+					Last Update:{" "}
+					{formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
 				</Lead>
+
+				<SetFileCounts mediaItem={mediaItem} set={set} />
 			</div>
 
 			<CarouselContent>
-				<ShowCarousel set={set as PosterSet} />
+				{mediaItem.Type === "show" ? (
+					<CarouselShow set={set as PosterSet} />
+				) : mediaItem.Type === "movie" ? (
+					<CarouselMovie set={set as PosterSet} />
+				) : null}
 			</CarouselContent>
 			<CarouselNext className="right-2 bottom-0" />
 			<CarouselPrevious className="right-8 bottom-0" />
