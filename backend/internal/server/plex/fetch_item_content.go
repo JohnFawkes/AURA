@@ -101,6 +101,13 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		})
 	}
 
+	existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
+	if existsInDB {
+		itemInfo.ExistInDatabase = true
+	} else {
+		itemInfo.ExistInDatabase = false
+	}
+
 	return itemInfo, logging.ErrorLog{}
 }
 
