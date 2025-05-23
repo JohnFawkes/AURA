@@ -17,12 +17,10 @@ import (
 )
 
 func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
-	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
 
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
-
 	if ratingKey == "" || imageType == "" {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
 			Err: fmt.Errorf("missing rating key or image type"),
@@ -68,7 +66,6 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	filePath := path.Join(tmpFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
 	if exists {
-		logging.LOG.Trace(fmt.Sprintf("Image %s already exists in temporary folder", fileName))
 		// Serve the image from the temporary folder
 		imagePath := path.Join(tmpFolder, fileName)
 		http.ServeFile(w, r, imagePath)
@@ -76,7 +73,6 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from the media server
-	logging.LOG.Trace(fmt.Sprintf("Image %s does not exist in temporary folder", fileName))
 	imageData, logErr := mediaServer.FetchImageFromMediaServer(ratingKey, imageType)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
