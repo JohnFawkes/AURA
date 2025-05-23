@@ -25,8 +25,6 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 	sectionType := r.URL.Query().Get("sectionType")
 	sectionStartIndex := r.URL.Query().Get("sectionStartIndex")
 
-	logging.LOG.Trace(fmt.Sprintf("Section Start Index: '%s'", sectionStartIndex))
-
 	// Validate the section ID, title, type, and start index
 	if sectionID == "" || sectionTitle == "" || sectionType == "" || sectionStartIndex == "" {
 		logErr := logging.ErrorLog{
