@@ -42,19 +42,34 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	// Get the TMDB ID from the URL
 	tmdbID := chi.URLParam(r, "tmdbID")
 	itemType := chi.URLParam(r, "itemType")
-	if tmdbID == "" || itemType == "" {
+	librarySection := chi.URLParam(r, "librarySection")
+	itemRatingKey := chi.URLParam(r, "ratingKey")
+	if tmdbID == "" || itemType == "" || librarySection == "" {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing tmdbID or itemType in URL"),
 			Log: logging.Log{
-				Message: "Missing TMDB ID or item type in URL",
+				Message: "Missing TMDB ID, item type, or library section in URL",
 				Elapsed: utils.ElapsedTime(startTime),
 			},
 		})
 		return
 	}
 
-	posterSets, logErr := fetchAllSets(tmdbID, itemType)
+	logging.LOG.Debug(fmt.Sprintf("Fetching all sets for TMDB ID: %s, item type: %s, library section: %s", tmdbID, itemType, librarySection))
+
+	posterSets, logErr := fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		return
+	}
+
+	if len(posterSets) == 0 {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			Err: errors.New("no sets found"),
+			Log: logging.Log{
+				Message: "No sets found for the provided TMDB ID and item type",
+				Elapsed: utils.ElapsedTime(startTime),
+			},
+		})
 		return
 	}
 
@@ -67,9 +82,7 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.ErrorLog) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching all sets for TMDB ID: %s", tmdbID))
-
+func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]modals.PosterSet, logging.ErrorLog) {
 	// Generate the request body
 	var requestBody map[string]any
 	if itemType == "movie" {
@@ -77,7 +90,7 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 	} else if itemType == "show" {
 		requestBody = generateShowRequestBody(tmdbID)
 	} else {
-		return modals.PosterSets{}, logging.ErrorLog{
+		return nil, logging.ErrorLog{
 			Err: errors.New("invalid item type"),
 			Log: logging.Log{Message: "Invalid item type provided"},
 		}
@@ -93,7 +106,7 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-		return modals.PosterSets{}, logging.ErrorLog{
+		return nil, logging.ErrorLog{
 			Err: err,
 			Log: logging.Log{Message: "Failed to send request to Mediux API"},
 		}
@@ -104,7 +117,8 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		return modals.PosterSets{}, logging.ErrorLog{
+		logging.LOG.Error(fmt.Sprintf("Response error: %s", response.Body()))
+		return nil, logging.ErrorLog{
 			Err: err,
 			Log: logging.Log{Message: "Failed to parse response from Mediux API"},
 		}
@@ -112,123 +126,441 @@ func fetchAllSets(tmdbID string, itemType string) (modals.PosterSets, logging.Er
 
 	// Check if the response status is OK
 	if response.StatusCode() != http.StatusOK {
-		return modals.PosterSets{}, logging.ErrorLog{
+		return nil, logging.ErrorLog{
 			Err: errors.New("received non-200 response from Mediux API"),
 			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
 		}
 	}
 
+	// Check if the response is nil on all fields
 	if itemType == "movie" {
 		if responseBody.Data.Movie == nil {
-			return modals.PosterSets{}, logging.ErrorLog{
+			return nil, logging.ErrorLog{
 				Err: errors.New("no movies found in the response"),
 				Log: logging.Log{Message: "No movies found in the response"},
 			}
 		}
 
-		if (responseBody.Data.Movie.MovieSets == nil || len(*responseBody.Data.Movie.MovieSets) == 0) &&
-			(responseBody.Data.Movie.CollectionID == nil || len(responseBody.Data.Movie.CollectionID.CollectionSets) == 0) {
-			return modals.PosterSets{}, logging.ErrorLog{
-				Err: errors.New("no movie sets found in the response"),
-				Log: logging.Log{Message: "No movie sets found in the response"},
+		if responseBody.Data.Movie.CollectionID == nil &&
+			responseBody.Data.Movie.Posters == nil &&
+			responseBody.Data.Movie.Backdrops == nil {
+			return nil, logging.ErrorLog{
+				Err: errors.New("no movie sets or collection found in the response"),
+				Log: logging.Log{Message: "No movie sets or collection found in the response"},
 			}
 		}
+
 	} else if itemType == "show" {
 		if responseBody.Data.Show == nil {
-			return modals.PosterSets{}, logging.ErrorLog{
+			return nil, logging.ErrorLog{
 				Err: errors.New("no shows found in the response"),
 				Log: logging.Log{Message: "No shows found in the response"},
 			}
 		}
 
-		if responseBody.Data.Show.ShowSets == nil || len(*responseBody.Data.Show.ShowSets) == 0 {
-			return modals.PosterSets{}, logging.ErrorLog{
+		if responseBody.Data.Show.Posters == nil &&
+			responseBody.Data.Show.Backdrops == nil &&
+			responseBody.Data.Show.Seasons == nil {
+			return nil, logging.ErrorLog{
 				Err: errors.New("no show sets found in the response"),
 				Log: logging.Log{Message: "No show sets found in the response"},
 			}
 		}
+
 	}
 
-	var posterSets modals.PosterSets
+	var posterSets []modals.PosterSet
 	if itemType == "movie" {
-		logging.LOG.Info(fmt.Sprintf("Start response for item type: %s", itemType))
-		posterSets = processResponse(itemType, (*responseBody.Data.Movie))
+		posterSets = processMovieResponse(librarySection, itemRatingKey, (*responseBody.Data.Movie))
 	} else if itemType == "show" {
-		posterSets = processResponse(itemType, (*responseBody.Data.Show))
+		posterSets = processShowResponse((*responseBody.Data.Show))
 	}
 
 	return posterSets, logging.ErrorLog{}
 }
 
-func processResponse(itemType string, response modals.MediuxItem) modals.PosterSets {
-	var posterSets modals.PosterSets
-	posterSets.Type = itemType
-	posterSets.Item.ID = response.ID
-	posterSets.Item.Title = response.Title
-	posterSets.Item.Status = response.Status
-	posterSets.Item.Tagline = response.Tagline
-	posterSets.Item.Slug = response.Slug
-	posterSets.Item.DateUpdated = response.DateUpdated
-	posterSets.Item.TvdbID = response.TvdbID
-	posterSets.Item.ImdbID = response.ImdbID
-	posterSets.Item.TraktID = response.TraktID
-	if itemType == "movie" {
-		posterSets.Item.ReleaseDate = response.ReleaseDate
-		// Process CollectionID if it is not nil
-		if response.CollectionID != nil {
-			collectionSets := processCollectionSets(*response.CollectionID)
-			posterSets.Sets = append(posterSets.Sets, collectionSets...)
-		}
+func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
+	logging.LOG.Trace(fmt.Sprintf("Processing show: %s", show.Title))
+	showSetMap := make(map[string]*modals.PosterSet)
 
-		// Process MovieSets if it is not nil
-		if response.MovieSets != nil {
-			movieSets := processPosterSets(itemType, *response.MovieSets)
-			posterSets.Sets = append(posterSets.Sets, movieSets...)
+	if len(show.Posters) > 0 {
+		logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(show.Posters)))
+		for _, poster := range show.Posters {
+			if poster.ShowSet != nil && poster.ShowSet.ID != "" {
+				setInfo := poster.ShowSet
+				newPoster := modals.PosterFile{
+					ID:       poster.ID,
+					Type:     "poster",
+					Modified: poster.ModifiedOn,
+					FileSize: parseFileSize(poster.FileSize),
+				}
+
+				if ps, exists := showSetMap[setInfo.ID]; exists {
+					ps.Poster = &newPoster
+				} else {
+					newPosterSet := &modals.PosterSet{
+						ID:          setInfo.ID,
+						Title:       setInfo.SetTitle,
+						Type:        "show",
+						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated: setInfo.DateCreated,
+						DateUpdated: setInfo.DateUpdated,
+					}
+					newPosterSet.Poster = &newPoster
+					showSetMap[setInfo.ID] = newPosterSet
+				}
+			}
 		}
-	} else if itemType == "show" {
-		posterSets.Item.FirstAirDate = response.FirstAirDate
-		showSets := processPosterSets(itemType, *response.ShowSets)
-		posterSets.Sets = append(posterSets.Sets, showSets...)
+	}
+	if len(show.Backdrops) > 0 {
+		logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(show.Backdrops)))
+		for _, backdrop := range show.Backdrops {
+			if backdrop.ShowSet != nil && backdrop.ShowSet.ID != "" {
+				setInfo := backdrop.ShowSet
+				newBackdrop := modals.PosterFile{
+					ID:       backdrop.ID,
+					Type:     "backdrop",
+					Modified: backdrop.ModifiedOn,
+					FileSize: parseFileSize(backdrop.FileSize),
+				}
+				if ps, exists := showSetMap[setInfo.ID]; exists {
+					ps.Backdrop = &newBackdrop
+				} else {
+					newPosterSet := &modals.PosterSet{
+						ID:          setInfo.ID,
+						Title:       setInfo.SetTitle,
+						Type:        "show",
+						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated: setInfo.DateCreated,
+						DateUpdated: setInfo.DateUpdated,
+					}
+					newPosterSet.Backdrop = &newBackdrop
+					showSetMap[setInfo.ID] = newPosterSet
+				}
+			}
+		}
+	}
+	if len(show.Seasons) > 0 {
+		logging.LOG.Trace(fmt.Sprintf("Found %d seasons", len(show.Seasons)))
+		for _, season := range show.Seasons {
+			for _, poster := range season.Posters {
+				if poster.ShowSet != nil && poster.ShowSet.ID != "" {
+					setInfo := poster.ShowSet
+					var seasonType string
+					if season.SeasonNumber == 0 {
+						seasonType = "specialSeasonPoster"
+					} else {
+						seasonType = "seasonPoster"
+					}
+					newPoster := modals.PosterFile{
+						ID:       poster.ID,
+						Type:     seasonType,
+						Modified: poster.ModifiedOn,
+						FileSize: parseFileSize(poster.FileSize),
+						Season: &modals.PosterFileSeason{
+							Number: season.SeasonNumber,
+						},
+					}
+					if ps, exists := showSetMap[setInfo.ID]; exists {
+						ps.SeasonPosters = append(ps.SeasonPosters, newPoster)
+					} else {
+						newPosterSet := &modals.PosterSet{
+							ID:          setInfo.ID,
+							Title:       setInfo.SetTitle,
+							Type:        "show",
+							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated: setInfo.DateCreated,
+							DateUpdated: setInfo.DateUpdated,
+						}
+						newPosterSet.SeasonPosters = []modals.PosterFile{newPoster}
+						showSetMap[setInfo.ID] = newPosterSet
+					}
+				}
+			}
+			for _, episode := range season.Episodes {
+				for _, titlecard := range episode.Titlecards {
+					if titlecard.ShowSet != nil && titlecard.ShowSet.ID != "" {
+						setInfo := titlecard.ShowSet
+						newTitlecard := modals.PosterFile{
+							ID:       titlecard.ID,
+							Type:     "titlecard",
+							Modified: titlecard.ModifiedOn,
+							FileSize: parseFileSize(titlecard.FileSize),
+							Episode: &modals.PosterFileEpisode{
+								Title:         episode.EpisodeTitle,
+								EpisodeNumber: episode.EpisodeNumber,
+								SeasonNumber:  episode.Season.SeasonNumber,
+							},
+						}
+						if ps, exists := showSetMap[setInfo.ID]; exists {
+							ps.TitleCards = append(ps.TitleCards, newTitlecard)
+						} else {
+							newPosterSet := &modals.PosterSet{
+								ID:          setInfo.ID,
+								Title:       setInfo.SetTitle,
+								Type:        "show",
+								User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+								DateCreated: setInfo.DateCreated,
+								DateUpdated: setInfo.DateUpdated,
+							}
+							newPosterSet.TitleCards = []modals.PosterFile{newTitlecard}
+							showSetMap[setInfo.ID] = newPosterSet
+						}
+
+					}
+
+				}
+			}
+		}
+	}
+
+	// Convert the map to a slice
+	var posterSets []modals.PosterSet
+	for _, set := range showSetMap {
+		posterSets = append(posterSets, *set)
+	}
+
+	return posterSets
+
+}
+
+func processMovieResponse(librarySection, itemRatingKey string, movie modals.MediuxMovieByID) []modals.PosterSet {
+	var posterSets []modals.PosterSet
+
+	if movie.CollectionID != nil {
+		posterSets = append(posterSets, processMovieCollection(librarySection, movie.ID, movie.CollectionID.Movies)...)
+	}
+	posterSets = append(posterSets, processMovieSetPostersAndBackdrops(librarySection, itemRatingKey, movie)...)
+
+	return posterSets
+}
+
+func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey string, movie modals.MediuxMovieByID) []modals.PosterSet {
+	logging.LOG.Trace(fmt.Sprintf("Processing Movie Set for - %s", movie.Title))
+	var posterSets []modals.PosterSet
+	movieSetMap := make(map[string]*modals.PosterSet)
+
+	if len(movie.Posters) > 0 {
+		logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(movie.Posters)))
+		for _, poster := range movie.Posters {
+			if poster.MovieSet != nil && poster.MovieSet.ID != "" {
+				setInfo := poster.MovieSet
+				newPoster := modals.PosterFile{
+					ID:       poster.ID,
+					Type:     "poster",
+					Modified: poster.ModifiedOn,
+					FileSize: parseFileSize(poster.FileSize),
+					Movie: &modals.PosterFileMovie{
+						ID:             movie.ID,
+						Title:          movie.Title,
+						Status:         movie.Status,
+						Tagline:        movie.Tagline,
+						Slug:           movie.Slug,
+						DateUpdated:    movie.DateUpdated,
+						TvdbID:         movie.TvdbID,
+						ImdbID:         movie.ImdbID,
+						TraktID:        movie.TraktID,
+						ReleaseDate:    movie.ReleaseDate,
+						RatingKey:      itemRatingKey,
+						LibrarySection: librarySection,
+					},
+				}
+
+				// Check to see this set already exists in the map
+				if ps, exists := movieSetMap[setInfo.ID]; exists {
+					ps.Poster = &newPoster
+				} else {
+					newPosterSet := &modals.PosterSet{
+						ID:          setInfo.ID,
+						Title:       setInfo.SetTitle,
+						Type:        "movie",
+						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated: setInfo.DateCreated,
+						DateUpdated: setInfo.DateUpdated,
+					}
+					newPosterSet.Poster = &newPoster
+					movieSetMap[setInfo.ID] = newPosterSet
+				}
+			}
+		}
+	}
+
+	if len(movie.Backdrops) > 0 {
+		logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(movie.Backdrops)))
+		for _, backdrop := range movie.Backdrops {
+			if backdrop.MovieSet != nil && backdrop.MovieSet.ID != "" {
+				setInfo := backdrop.MovieSet
+				newBackdrop := modals.PosterFile{
+					ID:       backdrop.ID,
+					Type:     "backdrop",
+					Modified: backdrop.ModifiedOn,
+					FileSize: parseFileSize(backdrop.FileSize),
+					Movie: &modals.PosterFileMovie{
+						ID:             movie.ID,
+						Title:          movie.Title,
+						Status:         movie.Status,
+						Tagline:        movie.Tagline,
+						Slug:           movie.Slug,
+						DateUpdated:    movie.DateUpdated,
+						TvdbID:         movie.TvdbID,
+						ImdbID:         movie.ImdbID,
+						TraktID:        movie.TraktID,
+						ReleaseDate:    movie.ReleaseDate,
+						RatingKey:      itemRatingKey,
+						LibrarySection: librarySection,
+					},
+				}
+				if ps, exists := movieSetMap[setInfo.ID]; exists {
+					ps.Backdrop = &newBackdrop
+				} else {
+					newPosterSet := &modals.PosterSet{
+						ID:          setInfo.ID,
+						Title:       setInfo.SetTitle,
+						Type:        "movie",
+						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated: setInfo.DateCreated,
+						DateUpdated: setInfo.DateUpdated,
+					}
+					newPosterSet.Backdrop = &newBackdrop
+					movieSetMap[setInfo.ID] = newPosterSet
+				}
+			}
+		}
+	}
+
+	// Convert the map to a slice
+	for _, set := range movieSetMap {
+		posterSets = append(posterSets, *set)
 	}
 
 	return posterSets
 }
 
-func processPosterSets(setType string, mediuxPosterSets []modals.MediuxPosterSet) []modals.PosterSet {
-	var posterSets []modals.PosterSet
-	for _, set := range mediuxPosterSets {
-		if len(set.Files) == 0 {
-			continue
+func processMovieCollection(librarySection, mainMovieID string, movies []modals.MediuxMovieCollectionMovie) []modals.PosterSet {
+	if len(movies) == 0 {
+		return nil
+	}
+	logging.LOG.Trace("Processing movie collection")
+	collectionSetMap := make(map[string]*modals.PosterSet)
+	for _, movie := range movies {
+		fetchedRatingKey, _ := SearchForItemAndGetRatingKey(
+			movie.ID, "movie",
+			movie.Title, librarySection)
+		logging.LOG.Trace(fmt.Sprintf("Processing movie: %s", movie.Title))
+		if len(movie.Posters) > 0 {
+			logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(movie.Posters)))
+			for _, poster := range movie.Posters {
+				if poster.CollectionSet.ID != "" {
+					setInfo := poster.CollectionSet
+
+					newPoster := modals.PosterFile{
+						ID:       poster.ID,
+						Type:     "poster",
+						Modified: poster.ModifiedOn,
+						FileSize: parseFileSize(poster.FileSize),
+						Movie: &modals.PosterFileMovie{
+							ID:             movie.ID,
+							Title:          movie.Title,
+							Status:         movie.Status,
+							Tagline:        movie.Tagline,
+							Slug:           movie.Slug,
+							DateUpdated:    movie.DateUpdated,
+							TvdbID:         movie.TvdbID,
+							ImdbID:         movie.ImdbID,
+							TraktID:        movie.TraktID,
+							ReleaseDate:    movie.ReleaseDate,
+							RatingKey:      fetchedRatingKey,
+							LibrarySection: librarySection,
+						},
+					}
+
+					// Check to see this set already exists in the map
+					if cs, exists := collectionSetMap[setInfo.ID]; exists {
+						if mainMovieID == movie.ID {
+							cs.Poster = &newPoster
+						} else {
+							cs.OtherPosters = append(cs.OtherPosters, newPoster)
+						}
+					} else {
+						// Create a new PosterSet
+						newPosterSet := &modals.PosterSet{
+							ID:          setInfo.ID,
+							Title:       setInfo.SetTitle,
+							Type:        "movie",
+							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated: setInfo.DateCreated,
+							DateUpdated: setInfo.DateUpdated,
+						}
+						if mainMovieID == movie.ID {
+							newPosterSet.Poster = &newPoster
+						} else {
+							newPosterSet.OtherPosters = append(newPosterSet.OtherPosters, newPoster)
+						}
+						collectionSetMap[setInfo.ID] = newPosterSet
+					}
+
+				}
+			}
 		}
-		var posterSet modals.PosterSet
-		posterSet.ID = set.ID
-		posterSet.Type = setType
-		posterSet.User.Name = set.UserCreated.Username
-		posterSet.DateCreated = set.DateCreated
-		posterSet.DateUpdated = set.DateUpdated
-		files := processFiles(set.Files)
-		posterSet.Files = files
-		posterSets = append(posterSets, posterSet)
+		if len(movie.Backdrops) > 0 {
+			logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(movie.Backdrops)))
+			for _, backdrop := range movie.Backdrops {
+				if backdrop.CollectionSet.ID != "" {
+					setInfo := backdrop.CollectionSet
+
+					newBackdrop := modals.PosterFile{
+						ID:       backdrop.ID,
+						Type:     "backdrop",
+						Modified: backdrop.ModifiedOn,
+						FileSize: parseFileSize(backdrop.FileSize),
+						Movie: &modals.PosterFileMovie{
+							ID:             movie.ID,
+							Title:          movie.Title,
+							Status:         movie.Status,
+							Tagline:        movie.Tagline,
+							Slug:           movie.Slug,
+							DateUpdated:    movie.DateUpdated,
+							TvdbID:         movie.TvdbID,
+							ImdbID:         movie.ImdbID,
+							TraktID:        movie.TraktID,
+							ReleaseDate:    movie.ReleaseDate,
+							RatingKey:      fetchedRatingKey,
+							LibrarySection: librarySection,
+						},
+					}
+
+					if cs, exists := collectionSetMap[setInfo.ID]; exists {
+						if mainMovieID == movie.ID {
+							cs.Backdrop = &newBackdrop
+						} else {
+							cs.OtherBackdrops = append(cs.OtherBackdrops, newBackdrop)
+						}
+					} else {
+						newPosterSet := &modals.PosterSet{
+							ID:          setInfo.ID,
+							Title:       setInfo.SetTitle,
+							Type:        "movie",
+							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated: setInfo.DateCreated,
+							DateUpdated: setInfo.DateUpdated,
+						}
+						if mainMovieID == movie.ID {
+							newPosterSet.Backdrop = &newBackdrop
+						} else {
+							newPosterSet.OtherBackdrops = append(newPosterSet.OtherBackdrops, newBackdrop)
+						}
+						collectionSetMap[setInfo.ID] = newPosterSet
+					}
+				}
+			}
+		}
 	}
 
-	return posterSets
-}
-
-func processCollectionSets(collection modals.MediuxCollectionID) []modals.PosterSet {
+	// Convert the map to a slice
 	var posterSets []modals.PosterSet
-	for _, set := range collection.CollectionSets {
-		if len(set.Files) == 0 {
-			continue
-		}
-		var posterSet modals.PosterSet
-		posterSet.ID = set.ID
-		posterSet.Type = "collection"
-		posterSet.User.Name = set.UserCreated.Username
-		posterSet.DateCreated = set.DateCreated
-		posterSet.DateUpdated = set.DateUpdated
-		files := processFiles(set.Files)
-		posterSet.Files = files
-		posterSets = append(posterSets, posterSet)
+	for _, set := range collectionSetMap {
+		posterSets = append(posterSets, *set)
+
 	}
 
 	return posterSets
@@ -242,71 +574,9 @@ func parseFileSize(fileSize string) int64 {
 	return int64(size)
 }
 
-func processFiles(files []modals.MediuxFileItem) []modals.PosterFile {
-	var posterFiles []modals.PosterFile
-	for _, file := range files {
-		if file.FileType == "album" {
-			continue
-		}
-		if file.FileType == "misc" {
-			file.FileType = "backdrop"
-		}
-		if file.Season != nil {
-			file.FileType = "seasonPoster"
-		}
+func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 
-		posterFile := modals.PosterFile{
-			ID:       file.ID,
-			Type:     file.FileType,
-			Modified: file.ModifiedOn,
-			FileSize: parseFileSize(file.FileSize),
-		}
-
-		// Safely assign Movie if it is not nil
-		if file.Movie != nil {
-			posterFile.Movie = &modals.PosterFileMovie{
-				ID: file.Movie.ID,
-			}
-		}
-
-		// Safely assign Season if it is not nil
-		if file.Season != nil {
-			posterFile.Season = &modals.PosterFileSeason{
-				Number: file.Season.SeasonNumber,
-			}
-		}
-
-		// Safely assign Episode if it is not nil
-		if file.Episode != nil {
-			posterFile.Episode = &modals.PosterFileEpisode{
-				Title:         file.Episode.EpisodeTitle,
-				EpisodeNumber: file.Episode.EpisodeNumber,
-			}
-			// Safely assign SeasonNumber if Episode.Season is not nil
-			if file.Episode.Season != nil {
-				posterFile.Episode.SeasonNumber = file.Episode.Season.SeasonNumber
-			}
-		}
-
-		posterFiles = append(posterFiles, posterFile)
-	}
-
-	return posterFiles
-}
-
-func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, logging.ErrorLog) {
-
-	setType := set.Type
-	setID := set.ID
-
-	var requestBody map[string]any
-	if setType == "collection" {
-		requestBody = generateCollectionSetByIDRequestBody(setID, tmdbID)
-	} else if setType == "movie" {
-		requestBody = generateMovieSetByIDRequestBody(setID, tmdbID)
-	} else if setType == "show" {
-		requestBody = generateShowSetByIDRequestBody(setID)
-	}
+	requestBody := generateShowSetByIDRequestBody(setID)
 
 	// Create a new Resty client
 	client := resty.New()
@@ -324,6 +594,7 @@ func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, loggin
 		}
 	}
 
+	// Check if the response status is OK
 	if response.StatusCode() != http.StatusOK {
 		return modals.PosterSet{}, logging.ErrorLog{
 			Err: errors.New("received non-200 response from Mediux API"),
@@ -331,7 +602,8 @@ func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, loggin
 		}
 	}
 
-	var responseBody modals.MediuxSetResponse
+	// Parse the response body into a MediuxShowSetResponse struct
+	var responseBody modals.MediuxShowSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
 		return modals.PosterSet{}, logging.ErrorLog{
@@ -340,49 +612,21 @@ func FetchSetByID(set modals.PosterSet, tmdbID string) (modals.PosterSet, loggin
 		}
 	}
 
-	if setType == "movie" {
-		if responseBody.Data.MovieSet == nil {
-			return modals.PosterSet{}, logging.ErrorLog{
-				Err: errors.New("no movies found in the response"),
-				Log: logging.Log{Message: "No movie found in the response"},
-			}
-		}
-	} else if setType == "show" {
-		if responseBody.Data.ShowSet == nil {
-			return modals.PosterSet{}, logging.ErrorLog{
-				Err: errors.New("no shows found in the response"),
-				Log: logging.Log{Message: "No show found in the response"},
-			}
-		}
-	} else if setType == "collection" {
-		if responseBody.Data.CollectionSet == nil {
-			return modals.PosterSet{}, logging.ErrorLog{
-				Err: errors.New("no collection found in the response"),
-				Log: logging.Log{Message: "No collection found in the response"},
-			}
-		}
-	}
+	showSet := responseBody.Data.ShowSetID
 
-	var posterSet modals.PosterSet
-	if setType == "show" {
-		posterSet = modals.PosterSet{
-			ID:          responseBody.Data.ShowSet.ID,
-			Type:        "show",
-			User:        modals.SetUser{Name: responseBody.Data.ShowSet.UserCreated.Username},
-			DateCreated: responseBody.Data.ShowSet.DateCreated,
-			DateUpdated: responseBody.Data.ShowSet.DateUpdated,
-			Files:       processFiles(responseBody.Data.ShowSet.Files),
-		}
-	} else if setType == "movie" {
-		posterSet = modals.PosterSet{
-			ID:          responseBody.Data.MovieSet.ID,
-			Type:        "movie",
-			User:        modals.SetUser{Name: responseBody.Data.MovieSet.UserCreated.Username},
-			DateCreated: responseBody.Data.MovieSet.DateCreated,
-			DateUpdated: responseBody.Data.MovieSet.DateUpdated,
-			Files:       processFiles(responseBody.Data.MovieSet.Files),
-		}
-	}
+	logging.LOG.Trace(fmt.Sprintf("Processing show set: %s", showSet.SetTitle))
+	logging.LOG.Trace(fmt.Sprintf("Date Created: %s", showSet.DateCreated))
+	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", showSet.DateUpdated))
+
+	// Process the response and return the poster sets
+	posterSets := processShowResponse(showSet.Show)
+	posterSet := posterSets[0]
+
+	posterSet.ID = showSet.ID
+	posterSet.Title = showSet.SetTitle
+	posterSet.Type = "show"
+	posterSet.DateCreated = showSet.DateCreated
+	posterSet.DateUpdated = showSet.DateUpdated
 
 	return posterSet, logging.ErrorLog{}
 }
