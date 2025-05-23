@@ -64,6 +64,16 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	newFileName := ""
 
 	if plex.Type == "movie" {
+
+		// If item.Movie is nil, get the movie from the library
+		if plex.Movie == nil {
+			var logErr logging.ErrorLog
+			plex, logErr = FetchItemContent(plex.RatingKey)
+			if logErr.Err != nil {
+				return logErr
+			}
+		}
+
 		// Handle movie-specific logic
 		newFilePath = path.Dir(plex.Movie.File.Path)
 		if file.Type == "poster" {
@@ -84,7 +94,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			if seasonNumberConvention == "1" {
 				seasonNumber = fmt.Sprintf("%d", file.Season.Number)
 			} else {
-				seasonNumber = fmt.Sprintf("%s", utils.Get2DigitNumber(int64(file.Season.Number)))
+				seasonNumber = utils.Get2DigitNumber(int64(file.Season.Number))
 			}
 			newFilePath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
 			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
