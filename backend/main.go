@@ -50,7 +50,7 @@ func main() {
 
 	logErr := mediaserver_shared.InitUserID()
 	if logErr.Err != nil {
-		fmt.Printf("Emby/Jellyfin user ID fetch error: %s\n", logErr.Log.Message)
+		logging.LOG.ErrorWithLog(logErr)
 		return
 	}
 
@@ -76,7 +76,7 @@ func main() {
 	go func() {
 		// Start the API server
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), r); err != nil {
-			fmt.Printf("Error starting server: %s\n", err.Error())
+			logging.LOG.Error(fmt.Sprintf("Error starting server: %s", err.Error()))
 		}
 	}()
 
