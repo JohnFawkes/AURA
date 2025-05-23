@@ -1,119 +1,201 @@
 package download
 
 import (
+	"aura/internal/config"
 	"aura/internal/database"
 	"aura/internal/logging"
 	"aura/internal/mediux"
 	"aura/internal/modals"
 	"aura/internal/notifications"
 	mediaserver "aura/internal/server"
+	mediaserver_shared "aura/internal/server/shared"
 	"fmt"
 	"time"
 )
 
 func CheckForUpdatesToPosters() {
-	dbSets, logErr := database.GetAllItemsFromDatabase()
+	// Get all items from the database
+	dbSavedItems, logErr := database.GetAllItemsFromDatabase()
 	if logErr.Err != nil {
 		logging.LOG.ErrorWithLog(logErr)
 		return
 	}
 
-	for _, dbSet := range dbSets {
-		for _, dbPosterSet := range dbSet.Sets {
+	// Loop through each item in the database
+	for _, dbSavedItem := range dbSavedItems {
+		// If the is not a show skip it
+		if dbSavedItem.MediaItem.Type != "show" {
+			continue
+		}
+		// Loop through each poster set for the item
+		for _, dbPosterSet := range dbSavedItem.PosterSets {
+			// If the poster set is not auto download, skip it
 			if !dbPosterSet.AutoDownload {
 				continue
 			}
-			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s' on set '%s'", dbSet.MediaItem.Title, dbPosterSet.Set.ID))
-			var updatedSet modals.PosterSet
-			if dbPosterSet.Set.Type == "movie" || dbPosterSet.Set.Type == "collection" || dbPosterSet.Set.Type == "show" {
-				tmdbID := ""
-				for _, guid := range dbSet.MediaItem.Guids {
-					if guid.Provider == "tmdb" {
-						tmdbID = guid.ID
-						break
-					}
-				}
-				if tmdbID == "" {
-					logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", dbSet.MediaItem.Title))
-					continue
-				}
-				updatedSet, logErr = mediux.FetchSetByID(dbPosterSet.Set, tmdbID)
-				if logErr.Err != nil {
-					logging.LOG.ErrorWithLog(logErr)
-					continue
-				}
-			} else {
-				logging.LOG.Error(fmt.Sprintf("Set '%s' for '%s' is not a valid type: %s", dbPosterSet.Set.ID, dbSet.MediaItem.Title, dbPosterSet.Set.Type))
+			// If selected types are empty, skip it
+			if len(dbPosterSet.SelectedTypes) == 0 {
 				continue
 			}
-
-			updated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastUpdate, updatedSet.DateUpdated)
-			updatedSetDateUpdated := updatedSet.DateUpdated.Format("2006-01-02 15:04:05")
-			dbPosterSetLastUpdateTime, err := time.Parse("2006-01-02T15:04:05Z07:00", dbPosterSet.LastUpdate)
-			dbPosterSetDateUpdated := dbPosterSet.LastUpdate
-			if err == nil {
-				dbPosterSetDateUpdated = dbPosterSetLastUpdateTime.Format("2006-01-02 15:04:05")
-			}
-			if updated {
-				logging.LOG.Trace(fmt.Sprintf("'%s' - Set '%s' updated. Downloading new images...", dbSet.MediaItem.Title, dbPosterSet.Set.ID))
-				// Filter and sort the files based on the selected types
-				updatedSet.Files = mediaserver_shared.FilterAndSortFiles(updatedSet.Files, dbPosterSet.SelectedTypes)
-
-				// Go through each file and download it if it has been updated
-				for _, file := range updatedSet.Files {
-					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastUpdate, file.Modified)
-					if !fileUpdated {
-						logging.LOG.Trace(fmt.Sprintf("File '%s' for '%s' in set '%s' has not been updated. Skipping...", file.Type, dbSet.MediaItem.Title, dbPosterSet.Set.ID))
-						continue
-					}
-					logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s' in set '%s'", file.Type, dbSet.MediaItem.Title, dbPosterSet.Set.ID))
-					var mediaServer mediaserver_shared.MediaServer
-					switch config.Global.MediaServer.Type {
-					case "Plex":
-						mediaServer = &mediaserver_shared.PlexServer{}
-					case "Emby", "Jellyfin":
-						mediaServer = &mediaserver_shared.EmbyJellyServer{}
-					default:
-						logErr := logging.ErrorLog{
-							Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-							Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
-						}
-						logging.LOG.ErrorWithLog(logErr)
-						continue
-					}
-					logErr = mediaServer.DownloadAndUpdatePosters(dbSet.MediaItem, file)
-					if logErr.Err != nil {
-						logging.LOG.ErrorWithLog(logErr)
-						continue
-					}
-					logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' in set '%s' downloaded successfully", file.Type, dbSet.MediaItem.Title, dbPosterSet.Set.ID))
-
-					// Send a notification with the following information:
-					// - 'File Type' has been updated for 'Media Item' in 'Set'
-					// - Image URL
-					notifications.SendDiscordNotification(
-						fmt.Sprintf(
-							"%s has been updated for %s in set %s",
-							mediaserver.GetFileDownloadName(file),
-							dbSet.MediaItem.Title,
-							dbPosterSet.Set.ID,
-						),
-						fmt.Sprintf("%s/%s?%s",
-							"https://staged.mediux.io/assets",
-							file.ID,
-							file.Modified.Format("20060102"),
-						),
-					)
+			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s' on set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+			// Get the TMDB ID from the media item
+			tmdbID := ""
+			for _, guid := range dbSavedItem.MediaItem.Guids {
+				if guid.Provider == "tmdb" {
+					tmdbID = guid.ID
+					break
 				}
+			}
+			// If the TMDB ID is not found, skip the item
+			if tmdbID == "" {
+				logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", dbSavedItem.MediaItem.Title))
+				continue
+			}
+			// Fetch the updated set from Mediux using the TMDB ID
+			updatedSet, logErr := mediux.FetchShowSetByID(dbPosterSet.PosterSetID)
+			if logErr.Err != nil {
+				logging.LOG.ErrorWithLog(logErr)
+				continue
+			}
+			updated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.DateUpdated)
+			var formattedLastDownloaded string
+			lastDownloadedTime, err := time.Parse("2006-01-02T15:04:05Z07:00", dbPosterSet.LastDownloaded)
+			if err == nil {
+				formattedLastDownloaded = lastDownloadedTime.Format("2006-01-02 15:04:05")
+			} else {
+				formattedLastDownloaded = dbPosterSet.LastDownloaded
+			}
+			if !updated {
+				logging.LOG.Debug(fmt.Sprintf("Skipping '%s' - Set '%s' | Last update: %s < Last download: %s",
+					dbSavedItem.MediaItem.Title,
+					dbPosterSet.PosterSetID,
+					updatedSet.DateUpdated.Format("2006-01-02 15:04:05"),
+					formattedLastDownloaded))
+				continue
+			}
+			logging.LOG.Trace(fmt.Sprintf("'%s' - Set '%s' updated. Downloading new images...", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
 
-				// Update the item in the database with the new info
-				logErr = database.UpdatePosterSetInDatabase(dbPosterSet.Set, dbSet.MediaItem.RatingKey, dbPosterSet.SelectedTypes, dbPosterSet.AutoDownload)
+			// Check if selectedTypes contains "poster"
+			posterSet := false
+			backdropSet := false
+			seasonSet := false
+			specialSeasonSet := false
+			titlecardSet := false
+			for _, selectedType := range dbPosterSet.SelectedTypes {
+				switch selectedType {
+				case "poster":
+					posterSet = true
+				case "backdrop":
+					backdropSet = true
+				case "seasonPoster":
+					seasonSet = true
+				case "specialSeasonPoster":
+					specialSeasonSet = true
+				case "titlecard":
+					titlecardSet = true
+				}
+			}
+
+			filesToDownload := []modals.PosterFile{}
+			if posterSet {
+				fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.Poster.Modified)
+				if !fileUpdated {
+					continue
+				}
+				filesToDownload = append(filesToDownload, *updatedSet.Poster)
+			}
+			if backdropSet {
+				fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.Backdrop.Modified)
+				if !fileUpdated {
+					continue
+				}
+				filesToDownload = append(filesToDownload, *updatedSet.Backdrop)
+			}
+			if seasonSet {
+				for _, season := range updatedSet.SeasonPosters {
+					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, season.Modified)
+					if !fileUpdated {
+						continue
+					}
+					filesToDownload = append(filesToDownload, season)
+				}
+			}
+			if specialSeasonSet {
+				for _, season := range updatedSet.SeasonPosters {
+					if season.Season.Number != 0 {
+						continue
+					}
+					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, season.Modified)
+					if !fileUpdated {
+						continue
+					}
+					filesToDownload = append(filesToDownload, season)
+				}
+			}
+			if titlecardSet {
+				for _, titlecard := range updatedSet.TitleCards {
+					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, titlecard.Modified)
+					if !fileUpdated {
+						continue
+					}
+					filesToDownload = append(filesToDownload, titlecard)
+				}
+			}
+
+			for _, file := range filesToDownload {
+				logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s' in set '%s'", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+				var mediaServer mediaserver_shared.MediaServer
+				switch config.Global.MediaServer.Type {
+				case "Plex":
+					mediaServer = &mediaserver_shared.PlexServer{}
+				case "Emby", "Jellyfin":
+					mediaServer = &mediaserver_shared.EmbyJellyServer{}
+				default:
+					logErr := logging.ErrorLog{
+						Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
+						Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
+					}
+					logging.LOG.ErrorWithLog(logErr)
+					continue
+				}
+				logErr = mediaServer.DownloadAndUpdatePosters(dbSavedItem.MediaItem, file)
 				if logErr.Err != nil {
 					logging.LOG.ErrorWithLog(logErr)
 					continue
 				}
-			} else {
-				logging.LOG.Trace(fmt.Sprintf("Skipping '%s' - Set '%s' (No Update). Last update: %s, Last download: %s", dbSet.MediaItem.Title, dbPosterSet.Set.ID, updatedSetDateUpdated, dbPosterSetDateUpdated))
+				logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' in set '%s' downloaded successfully", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+
+				// Send a notification with the following information:
+				// - 'File Type' has been updated for 'Media Item' in 'Set'
+				// - Image URL
+				notifications.SendDiscordNotification(
+					fmt.Sprintf(
+						"%s has been updated for %s in set %s",
+						mediaserver.GetFileDownloadName(file),
+						dbSavedItem.MediaItem.Title,
+						dbPosterSet.PosterSetID,
+					),
+					fmt.Sprintf("%s/%s?%s",
+						"https://staged.mediux.io/assets",
+						file.ID,
+						file.Modified.Format("20060102"),
+					),
+				)
+			}
+
+			// Update the item in the database with the new info
+			dbSaveItem := modals.DBSavedItem{
+				MediaItemID:    dbSavedItem.MediaItemID,
+				MediaItem:      dbSavedItem.MediaItem,
+				PosterSetID:    dbPosterSet.PosterSetID,
+				PosterSet:      dbPosterSet.PosterSet,
+				LastDownloaded: time.Now().Format("2006-01-02T15:04:05Z07:00"),
+				SelectedTypes:  dbPosterSet.SelectedTypes,
+				AutoDownload:   dbPosterSet.AutoDownload,
+			}
+			logErr = database.UpdateItemInDatabase(dbSaveItem)
+			if logErr.Err != nil {
+				logging.LOG.ErrorWithLog(logErr)
 				continue
 			}
 		}
