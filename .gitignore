@@ -4,6 +4,7 @@
 **frontend/dist-ssr
 **frontend/*.local
 frontend/tmp/*
+tmp/*
 
 # dependencies
 **frontend//.pnp
