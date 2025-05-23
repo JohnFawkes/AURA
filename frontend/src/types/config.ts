@@ -6,6 +6,8 @@ export interface AppConfig {
 	TMDB: AppConfigTMDB; // TMDB (The Movie Database) integration settings
 	Mediux: AppConfigMediux; // Mediux integration settings
 	AutoDownload: AppConfigAutoDownload; // Auto-download settings
+	Kometa: AppConfigKometa; // Kometa integration settings
+	Notification: AppConfigNotification; // Notification settings
 }
 
 export interface AppConfigLogging {
@@ -39,4 +41,14 @@ export interface AppConfigAutoDownload {
 	Enabled: boolean; // Whether auto-download is enabled
 	Cron: string; // Cron expression for scheduling auto-downloads
 	CronText: string; // Human-readable text for the cron expression
+}
+
+export interface AppConfigKometa {
+	RemoveLabels: boolean; // Whether to remove labels from media items
+	Labels: string[]; // List of labels to apply to media items
+}
+
+export interface AppConfigNotification {
+	Provider: string; // Notification provider (Discord only for now)
+	Webhook: string; // Webhook URL for the notification provider
 }

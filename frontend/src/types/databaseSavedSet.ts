@@ -1,17 +1,29 @@
 import { MediaItem } from "./mediaItem";
 import { PosterSet } from "./posterSets";
 
-export interface SavedSet {
-	ID: string;
+export interface DBSavedItem {
+	MediaItemID: string;
 	MediaItem: MediaItem;
-	Sets: Database_Set[];
-}
-
-export interface Database_Set {
-	ID: string;
-	Set: PosterSet;
+	PosterSetID: string;
+	PosterSet: PosterSet;
+	LastDownloaded: string;
 	SelectedTypes: string[];
 	AutoDownload: boolean;
-	LastUpdate?: string; // Optional field
-	ToDelete?: boolean; // Optional field
+}
+
+export interface DBPosterSetDetail {
+	PosterSetID: string;
+	PosterSet: PosterSet;
+	PosterSetJSON: string;
+	LastDownloaded: string;
+	SelectedTypes: string[];
+	AutoDownload: boolean;
+	ToDelete: boolean;
+}
+
+export interface DBMediaItemWithPosterSets {
+	MediaItemID: string;
+	MediaItem: MediaItem;
+	MediaItemJSON: string;
+	PosterSets: DBPosterSetDetail[];
 }
