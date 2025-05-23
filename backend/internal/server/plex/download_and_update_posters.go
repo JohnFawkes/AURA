@@ -78,7 +78,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			newFileName = "poster.jpg"
 		} else if file.Type == "backdrop" {
 			newFileName = "backdrop.jpg"
-		} else if file.Type == "seasonPoster" {
+		} else if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
 			seasonNumberConvention := config.Global.MediaServer.SeasonNamingConvention
 			var seasonNumber string
 			if seasonNumberConvention == "1" {
@@ -150,7 +150,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			posterName = "Poster"
 		} else if file.Type == "backdrop" {
 			posterName = "Backdrop"
-		} else if file.Type == "seasonPoster" {
+		} else if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
 			posterName = fmt.Sprintf("Season %s Poster", utils.Get2DigitNumber(int64(file.Season.Number)))
 		} else if file.Type == "titlecard" {
 			posterName = fmt.Sprintf("S%sE%s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)))
