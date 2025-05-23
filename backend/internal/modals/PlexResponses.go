@@ -17,25 +17,26 @@ type PlexResponse struct {
 // Video represents each Video element inside MediaContainer
 // It is used for Movies
 type PlexVideoItem struct {
-	RatingKey      string          `xml:"ratingKey,attr"`
-	Key            string          `xml:"key,attr"`
-	Type           string          `xml:"type,attr"`
-	Title          string          `xml:"title,attr"`
-	ContentRating  string          `xml:"contentRating,attr"`
-	Summary        string          `xml:"summary,attr"`
-	Rating         float64         `xml:"rating,attr"`
-	AudienceRating float64         `xml:"audienceRating,attr"`
-	UserRating     float64         `xml:"userRating,attr"`
-	ViewCount      int             `xml:"viewCount,attr"`
-	LastViewedAt   int64           `xml:"lastViewedAt,attr"`
-	Year           int             `xml:"year,attr"`
-	Tagline        string          `xml:"tagline,attr"`
-	Thumb          string          `xml:"thumb,attr"`
-	Art            string          `xml:"art,attr"`
-	UpdatedAt      int64           `xml:"updatedAt,attr"`
-	Media          []PlexMediaItem `xml:"Media"`
-	Index          int             `xml:"index,attr,omitempty"`       // Episode Number
-	ParentIndex    int             `xml:"parentIndex,attr,omitempty"` // Season Number
+	RatingKey           string          `xml:"ratingKey,attr"`
+	Key                 string          `xml:"key,attr"`
+	Type                string          `xml:"type,attr"`
+	Title               string          `xml:"title,attr"`
+	ContentRating       string          `xml:"contentRating,attr"`
+	Summary             string          `xml:"summary,attr"`
+	Rating              float64         `xml:"rating,attr"`
+	AudienceRating      float64         `xml:"audienceRating,attr"`
+	UserRating          float64         `xml:"userRating,attr"`
+	ViewCount           int             `xml:"viewCount,attr"`
+	LastViewedAt        int64           `xml:"lastViewedAt,attr"`
+	Year                int             `xml:"year,attr"`
+	Tagline             string          `xml:"tagline,attr"`
+	Thumb               string          `xml:"thumb,attr"`
+	Art                 string          `xml:"art,attr"`
+	UpdatedAt           int64           `xml:"updatedAt,attr"`
+	Media               []PlexMediaItem `xml:"Media"`
+	Index               int             `xml:"index,attr,omitempty"`       // Episode Number
+	ParentIndex         int             `xml:"parentIndex,attr,omitempty"` // Season Number
+	LibrarySectionTitle string          `xml:"librarySectionTitle,attr"`
 }
 
 // Media represents the Media element inside a Video
