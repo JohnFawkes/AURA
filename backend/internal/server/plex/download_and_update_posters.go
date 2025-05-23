@@ -64,9 +64,9 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	newFileName := ""
 
 	if plex.Type == "movie" {
-
 		// If item.Movie is nil, get the movie from the library
 		if plex.Movie == nil {
+			logging.LOG.Debug(fmt.Sprintf("Fetching full movie details for '%s'", plex.Title))
 			var logErr logging.ErrorLog
 			plex, logErr = FetchItemContent(plex.RatingKey)
 			if logErr.Err != nil {
