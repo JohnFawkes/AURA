@@ -91,3 +91,14 @@ type PlexPhotoItem struct {
 	Selected  int    `xml:"selected,attr"`
 	Provider  string `xml:"provider,attr,omitempty"`
 }
+
+type PlexSearchResponse struct {
+	XMLName       xml.Name                   `xml:"MediaContainer"`
+	Size          int                        `xml:"size,attr"`
+	SearchResults []PlexSearchResultResponse `xml:"SearchResult"`
+}
+
+type PlexSearchResultResponse struct {
+	Video     PlexVideoItem     `xml:"Video,omitempty"`
+	Directory PlexDirectoryItem `xml:"Directory,omitempty"`
+}
