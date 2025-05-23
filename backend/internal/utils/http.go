@@ -24,8 +24,6 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 		urlTitle = getURLTitle(url)
 	}
 
-	logging.LOG.Trace(fmt.Sprintf("Making HTTP request (%s)", urlTitle))
-
 	// Create a context with a timeout
 	timeoutInterval := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutInterval)
@@ -34,7 +32,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	// Create a new request with context
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {
-		errorMsg := fmt.Sprintf("error creating HTTP request (%s)", urlTitle)
+		errorMsg := fmt.Sprintf("Error creating HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
 		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
 	}
 
@@ -77,23 +75,21 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	// Send the HTTP request
 	resp, err := client.Do(req)
 	if err != nil {
-		errorMsg := fmt.Sprintf("error sending HTTP request (%s)", urlTitle)
+		errorMsg := fmt.Sprintf("Error sending HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
 		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
 	}
-	logging.LOG.Trace("Sent HTTP request")
 
 	// Read the response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		resp.Body.Close()
-		errorMsg := fmt.Sprintf("error reading HTTP response body (%s)", urlTitle)
+		errorMsg := fmt.Sprintf("Error reading HTTP response body (%s) [%s]", urlTitle, ElapsedTime(startTime))
 		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
 	}
-	logging.LOG.Trace("Read response body")
 
 	// Defer closing the response body
 	defer resp.Body.Close()
-	logging.LOG.Trace(fmt.Sprintf("Time taken for HTTP request (%s): %s", urlTitle, ElapsedTime(startTime)))
+	logging.LOG.Trace(fmt.Sprintf("Sent HTTP request to %s [%s]", urlTitle, ElapsedTime(startTime)))
 	// Return the response
 	return resp, respBody, logging.ErrorLog{}
 }
