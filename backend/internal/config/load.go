@@ -1,10 +1,10 @@
 package config
 
 import (
+	"aura/internal/modals"
 	"fmt"
 	"os"
 	"path"
-	"poster-setter/internal/modals"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -28,7 +28,6 @@ var Global *modals.Config
 //   - A pointer to the `Config` struct containing the loaded configuration.
 //   - An error if the configuration file is missing, unreadable, or invalid.
 func LoadYamlConfig() (*modals.Config, error) {
-
 	// Use an environment variable to determine the config path
 	// By default, it will use /config
 	// This is useful for testing and local development

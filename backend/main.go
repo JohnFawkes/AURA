@@ -1,15 +1,15 @@
 package main
 
 import (
+	"aura/internal/config"
+	"aura/internal/database"
+	"aura/internal/download"
+	"aura/internal/logging"
+	"aura/internal/routes"
+	mediaserver_shared "aura/internal/server/shared"
+	"aura/internal/utils"
 	"fmt"
 	"net/http"
-	"poster-setter/internal/config"
-	"poster-setter/internal/database"
-	"poster-setter/internal/download"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/routes"
-	mediaserver_shared "poster-setter/internal/server/shared"
-	"poster-setter/internal/utils"
 
 	"github.com/robfig/cron/v3"
 )

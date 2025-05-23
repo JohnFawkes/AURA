@@ -1,11 +1,11 @@
 services:
-    poster-setter:
-        image: ghcr.io/mediux-team/poster-setter:latest
-        container_name: poster-setter
+    aura:
+        image: ghcr.io/mediux-team/aura:latest
+        container_name: aura
         restart: unless-stopped
         ports:
             - "3000:3000" # Web UI PORT
             - "8888:8888" # API PORT
         volumes:
-            - /mnt/user/appdata/poster-setter:/config # Config directory
+            - /mnt/user/appdata/aura:/config # Config directory
             - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container

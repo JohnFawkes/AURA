@@ -1,4 +1,4 @@
-module poster-setter
+module aura
 
 go 1.23.4
 
