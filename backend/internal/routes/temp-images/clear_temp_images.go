@@ -1,13 +1,11 @@
 package tempimages
 
 import (
-	"io/fs"
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"time"
 )
 
@@ -32,23 +30,7 @@ func ClearTempImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Iterate over the contents of the folder and remove each item
-	err := filepath.Walk(TempImageFolder, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Skip the root folder itself
-		if path == TempImageFolder {
-			return nil
-		}
-
-		// Remove the file or directory
-		if info.IsDir() {
-			return os.RemoveAll(path) // Remove subdirectories
-		}
-		return os.Remove(path) // Remove files
-	})
+	err := os.RemoveAll(TempImageFolder)
 	if err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
 			Log: logging.Log{
@@ -60,7 +42,7 @@ func ClearTempImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return a JSON response
-	utils.SendJsonResponse(w, http.StatusInternalServerError, utils.JSONResponse{
+	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
 		Message: "Temporary images folder cleared successfully",
 		Elapsed: utils.ElapsedTime(startTime),
