@@ -1,11 +1,11 @@
 package health
 
 import (
+	"aura/internal/logging"
+	"aura/internal/utils"
 	"fmt"
 	"net/http"
 	"os"
-	"poster-setter/internal/logging"
-	"poster-setter/internal/utils"
 	"regexp"
 	"time"
 )
