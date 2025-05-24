@@ -320,7 +320,23 @@ const SavedSetsCard: React.FC<{
 
 				{/* Last Updated */}
 				<P className="text-sm text-muted-foreground">
-					Last Updated: {savedSet.PosterSets[0].LastDownloaded}
+					Last Updated:{" "}
+					{(() => {
+						const latestTimestamp = Math.max(
+							...savedSet.PosterSets.map((ps) =>
+								new Date(ps.LastDownloaded).getTime()
+							)
+						);
+						const latestDate = new Date(latestTimestamp);
+						return `${latestDate.toLocaleDateString(
+							"en-US"
+						)} at ${latestDate.toLocaleTimeString("en-US", {
+							hour: "numeric",
+							minute: "numeric",
+							second: "numeric",
+							hour12: true,
+						})}`;
+					})()}
 				</P>
 
 				<div className="flex flex-wrap gap-2">
