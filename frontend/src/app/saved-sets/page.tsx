@@ -59,21 +59,45 @@ const SavedSetsPage: React.FC = () => {
 		fetchSavedSets();
 	}, [fetchSavedSets]);
 
-	// Filter saved sets using the same search logic
-	const filteredSavedSets = useMemo(() => {
-		if (searchQuery.trim() === "") {
-			return savedSets;
+	// This useMemo will first filter the savedSets using your search logic,
+	// then sort the resulting array from newest to oldest using the LastDownloaded values.
+	const filteredAndSortedSavedSets = useMemo(() => {
+		let filtered = savedSets;
+		if (searchQuery.trim() !== "") {
+			// Map saved sets to their media items
+			const mediaItems = savedSets.map((set) => set.MediaItem);
+			// Use your search hook to get filtered media items
+			const filteredMediaItems = searchMediaItems(
+				mediaItems,
+				searchQuery
+			);
+			const filteredKeys = new Set(
+				filteredMediaItems.map((item) => item.RatingKey)
+			);
+			filtered = savedSets.filter((set) =>
+				filteredKeys.has(set.MediaItem.RatingKey)
+			);
 		}
-		// Map saved sets to their media items
-		const mediaItems = savedSets.map((set) => set.MediaItem);
-		// Use your search hook to get filtered media items
-		const filteredMediaItems = searchMediaItems(mediaItems, searchQuery);
-		const filteredKeys = new Set(
-			filteredMediaItems.map((item) => item.RatingKey)
-		);
-		return savedSets.filter((set) =>
-			filteredKeys.has(set.MediaItem.RatingKey)
-		);
+
+		// Sort the filtered sets by the newest LastDownloaded date from their PosterSets
+		const sorted = filtered.slice().sort((a, b) => {
+			const getMaxDownloadTimestamp = (
+				set: DBMediaItemWithPosterSets
+			) => {
+				if (!set.PosterSets || set.PosterSets.length === 0) return 0;
+				return set.PosterSets.reduce((max, ps) => {
+					const time = new Date(ps.LastDownloaded).getTime();
+					return time > max ? time : max;
+				}, 0);
+			};
+
+			const aMax = getMaxDownloadTimestamp(a);
+			const bMax = getMaxDownloadTimestamp(b);
+			// Newest first
+			return bMax - aMax;
+		});
+
+		return sorted;
 	}, [savedSets, searchQuery]);
 
 	if (loading) {
@@ -90,8 +114,8 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			{filteredSavedSets.length > 0 ? (
-				filteredSavedSets.map((savedSet) => (
+			{filteredAndSortedSavedSets.length > 0 ? (
+				filteredAndSortedSavedSets.map((savedSet) => (
 					<SavedSetsCard
 						key={savedSet.MediaItem.RatingKey}
 						savedSet={savedSet}
