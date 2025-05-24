@@ -50,6 +50,7 @@ export default function Navbar() {
 	const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
 	const [showDropdown, setShowDropdown] = useState(false);
 	const { setMediaItem } = useMediaStore();
+	const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
 
 	// Use matchMedia to update placeholder based on screen width
 	useEffect(() => {
@@ -57,9 +58,15 @@ export default function Navbar() {
 		setPlaceholderText(
 			mediaQuery.matches ? "Search Media" : "Search for movies or shows"
 		);
+		setLogoSrc(
+			mediaQuery.matches ? "/aura_logo.svg" : "/aura_word_logo.svg"
+		);
 		const handleMediaQueryChange = (event: MediaQueryListEvent) => {
 			setPlaceholderText(
 				event.matches ? "Search Media" : "Search for movies or shows"
+			);
+			setLogoSrc(
+				event.matches ? "/aura_logo.svg" : "/aura_word_logo.svg"
 			);
 		};
 		mediaQuery.addEventListener("change", handleMediaQueryChange);
@@ -141,9 +148,13 @@ export default function Navbar() {
 		>
 			{/* Logo */}
 			<div className="relative">
-				<div className="relative w-[120px] h-[35px] cursor-pointer">
+				<div
+					className={`relative h-[35px] cursor-pointer w-[${
+						logoSrc === "/aura_logo.svg" ? "50px" : "150px"
+					}]`}
+				>
 					<Image
-						src="/aura_word_logo.svg"
+						src={logoSrc}
 						alt="Logo"
 						fill
 						className="object-contain filter dark:invert-0 invert"
