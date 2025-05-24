@@ -53,7 +53,7 @@ export function DimmedBackground({ backdropURL }: { backdropURL: string }) {
 				/>
 			</div>
 
-			<div className="absolute top-20 md:top-0 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
+			<div className="absolute top-15 right-0 w-full lg:w-[70vw] aspect-[16/9] z-50">
 				<div className="relative w-full h-full">
 					<Image
 						src={backdropURL}
