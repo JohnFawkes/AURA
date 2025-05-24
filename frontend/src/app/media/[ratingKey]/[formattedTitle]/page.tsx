@@ -78,8 +78,14 @@ const MediaItemPage = () => {
 						throw new Error(resp.message);
 					}
 					const sets = resp.data;
+					if (!sets) {
+						throw new Error(
+							`No Poster Sets found for ${responseItem.Title}`
+						);
+					}
+
 					// If no sets are returned, assign an empty array.
-					setPosterSets(sets ? sets : []);
+					setPosterSets(sets);
 				}
 			} catch (error) {
 				log("Media Item Page - Error fetching poster sets:", error);
@@ -89,6 +95,8 @@ const MediaItemPage = () => {
 				}
 				// Fallback to empty sets
 				setPosterSets([]);
+			} finally {
+				setIsLoading(false);
 			}
 		};
 
@@ -129,17 +137,11 @@ const MediaItemPage = () => {
 				} else {
 					setErrorMessage("An unknown error occurred, check logs.");
 				}
-			} finally {
-				setIsLoading(false);
 			}
 		};
 
 		fetchAllInfo();
 	}, [partialMediaItem, mediaItem]);
-
-	if (isLoading) {
-		return <Loader message="Loading media item..." />;
-	}
 
 	if (!mediaItem) {
 		return (
@@ -158,43 +160,16 @@ const MediaItemPage = () => {
 		);
 	}
 
-	if (posterSets?.length === 0) {
-		return <ErrorMessage message="No poster sets found." />;
-	}
-
 	if (hasError) {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
 			document.title = "Aura | Error";
 		}
-		return (
-			<div className="flex flex-col items-center">
-				<ErrorMessage message={errorMessage} />
-				<Button
-					className="mt-4"
-					variant="secondary"
-					onClick={() => {
-						router.push("/");
-					}}
-				>
-					Go to Home
-				</Button>
-				<Button
-					className="mt-4"
-					onClick={() => {
-						router.push("/logs");
-					}}
-				>
-					Go to Logs
-				</Button>
-			</div>
-		);
 	} else {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
 			document.title = `AURA | ${mediaItem?.Title}`;
 		}
-
 		log("Media Item Page - Fetched media item:", mediaItem);
 		log("Media Item Page - Fetched poster sets:", posterSets);
 	}
@@ -232,6 +207,17 @@ const MediaItemPage = () => {
 						guids={mediaItem.Guids || []}
 						existsInDB={mediaItem.ExistInDatabase || false}
 					/>
+
+					{isLoading && (
+						<div className="flex justify-center">
+							<Loader message="Loading Poster Sets..." />
+						</div>
+					)}
+					{hasError && (
+						<div className="flex justify-center">
+							<ErrorMessage message={errorMessage} />
+						</div>
+					)}
 
 					{posterSets && posterSets.length > 0 && (
 						<>
