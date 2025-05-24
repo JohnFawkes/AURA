@@ -220,9 +220,13 @@ const MediaItemPage = () => {
 	// Compute hiddenCount based on posterSets and userHides
 	const hiddenCount = useMemo(() => {
 		if (!posterSets) return 0;
-		return posterSets.filter((set) =>
-			userHides.some((hide) => hide.Username === set.User.Name)
-		).length;
+		const uniqueHiddenUsers = new Set<string>();
+		posterSets.forEach((set) => {
+			if (userHides.some((hide) => hide.Username === set.User.Name)) {
+				uniqueHiddenUsers.add(set.User.Name);
+			}
+		});
+		return uniqueHiddenUsers.size;
 	}, [posterSets, userHides]);
 
 	useEffect(() => {
