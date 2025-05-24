@@ -77,7 +77,6 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			if len(item.Guids) > 0 {
 				for _, guid := range item.Guids {
 					if guid.ID != "" {
-						logging.LOG.Trace(fmt.Sprintf("Found GUID: %s", guid.ID))
 						// Sample guid.id : tmdb://######
 						// Split into provider and id
 						parts := strings.Split(guid.ID, "://")

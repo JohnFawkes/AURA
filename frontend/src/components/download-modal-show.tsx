@@ -811,7 +811,7 @@ const DownloadModalShow: React.FC<{
 												Auto Download
 											</FormLabel>
 											<div className="ml-auto">
-												<Popover>
+												<Popover modal={true}>
 													<PopoverTrigger className="cursor-pointer">
 														<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
 															?
@@ -844,7 +844,7 @@ const DownloadModalShow: React.FC<{
 												Future Updates Only
 											</FormLabel>
 											<div className="ml-auto">
-												<Popover>
+												<Popover modal={true}>
 													<PopoverTrigger className="cursor-pointer">
 														<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
 															?
