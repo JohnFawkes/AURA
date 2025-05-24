@@ -53,7 +53,7 @@ const DownloadModalShow: React.FC<{
 	mediaItem: MediaItem;
 }> = ({ posterSet, mediaItem }) => {
 	const [isMounted, setIsMounted] = useState(false);
-	const [cancelButtonText, setCancelButtonText] = useState("Close");
+	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
 	const [autoDownload, setAutoDownload] = useState(false);
 	const handleAutoDownloadChange = () => {
@@ -242,6 +242,7 @@ const DownloadModalShow: React.FC<{
 		if (isMounted) return;
 		setIsMounted(true);
 		setCancelButtonText("Cancel");
+		setDownloadButtonText("Downloading...");
 		resetProgressValues();
 
 		try {
@@ -289,6 +290,8 @@ const DownloadModalShow: React.FC<{
 					...prev,
 					progressValue: 100,
 				}));
+				setCancelButtonText("Close");
+				setDownloadButtonText("Download Again");
 				return;
 			} else {
 				// Calculate the number of files to download based on selected types
@@ -687,6 +690,8 @@ const DownloadModalShow: React.FC<{
 			}));
 		} finally {
 			setIsMounted(false);
+			setCancelButtonText("Close");
+			setDownloadButtonText("Download Again");
 		}
 	};
 
