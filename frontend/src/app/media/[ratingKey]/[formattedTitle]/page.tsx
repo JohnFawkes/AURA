@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/select";
 import { log } from "@/lib/logger";
 import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
-import { fetchMediuxSets } from "@/services/api.mediux";
+import {
+	fetchMediuxSets,
+	fetchMediuxUserFollowHides,
+} from "@/services/api.mediux";
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
 import { useRouter } from "next/navigation";
@@ -27,6 +30,7 @@ import {
 import { useMediaStore } from "@/lib/mediaStore";
 import { DimmedBackground } from "@/components/dimmed_backdrop";
 import { MediaItemDetails } from "@/components/media_item_details";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -40,6 +44,9 @@ const MediaItemPage = () => {
 	);
 
 	const [posterSets, setPosterSets] = useState<PosterSet[] | null>(null);
+	const [filteredPosterSets, setFilteredPosterSets] = useState<
+		PosterSet[] | null
+	>(null);
 
 	// State to track the selected sorting option
 	const [sortOption, setSortOption] = useState<string>("");
@@ -52,9 +59,62 @@ const MediaItemPage = () => {
 	const [hasError, setHasError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
 
+	const [userFollows, setUserFollows] = useState<
+		{ ID: string; Username: string }[]
+	>([]);
+	const [userHides, setUserHides] = useState<
+		{ ID: string; Username: string }[]
+	>([]);
+	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
+
+	const handleShowHiddenUsers = () => {
+		setShowHiddenUsers((prev) => {
+			// If the checkbox is checked, set it to false
+			if (prev) {
+				return false;
+			}
+			// If the checkbox is unchecked, set it to true
+			return true;
+		});
+	};
+
 	useEffect(() => {
 		if (hasFetchedInfo.current) return;
 		hasFetchedInfo.current = true;
+
+		const fetchUserFollowHides = async () => {
+			try {
+				const resp = await fetchMediuxUserFollowHides();
+				if (!resp) {
+					throw new Error("No response from Mediux API");
+				}
+				const follows = resp.data?.Follows || [];
+				const hides = resp.data?.Hides || [];
+				log(
+					"Media Item Page - Fetched user follows/hides:",
+					"Follows:",
+					follows,
+					"Hides:",
+					hides
+				);
+				setUserFollows(follows);
+				setUserHides(hides);
+			} catch (error) {
+				log(
+					"Media Item Page - Error fetching user follows/hides:",
+					error
+				);
+				setHasError(true);
+				if (error instanceof Error) {
+					setErrorMessage(error.message);
+				}
+				// Fallback to empty follows/hides
+				setUserFollows([]);
+				setUserHides([]);
+			} finally {
+				setIsLoading(false);
+			}
+		};
 
 		const fetchPosterSets = async (responseItem: MediaItem) => {
 			// Check if the item has GUIDs
@@ -83,9 +143,9 @@ const MediaItemPage = () => {
 							`No Poster Sets found for ${responseItem.Title}`
 						);
 					}
-
-					// If no sets are returned, assign an empty array.
+					log(`Poster Sets for ${responseItem.Title}:`, sets);
 					setPosterSets(sets);
+					fetchUserFollowHides();
 				}
 			} catch (error) {
 				log("Media Item Page - Error fetching poster sets:", error);
@@ -95,8 +155,6 @@ const MediaItemPage = () => {
 				}
 				// Fallback to empty sets
 				setPosterSets([]);
-			} finally {
-				setIsLoading(false);
 			}
 		};
 
@@ -128,6 +186,10 @@ const MediaItemPage = () => {
 				if (!responseItem) {
 					throw new Error("No item found in response");
 				}
+				log(
+					`Media Item Page - Fetched item: ${responseItem.Title}`,
+					responseItem
+				);
 				setMediaItem(responseItem);
 				fetchPosterSets(responseItem);
 			} catch (error) {
@@ -142,6 +204,62 @@ const MediaItemPage = () => {
 
 		fetchAllInfo();
 	}, [partialMediaItem, mediaItem]);
+
+	useEffect(() => {
+		if (posterSets) {
+			console.log("Poster Sets:", posterSets);
+
+			// Filter out hidden users
+			const filtered = posterSets.filter((set) => {
+				if (showHiddenUsers) {
+					return true; // Show all if the checkbox is checked
+				}
+				// Check if the user is in the hides list
+				const isHidden = userHides.some(
+					(hide) => hide.Username === set.User.Name
+				);
+				return !isHidden; // Show only if not hidden
+			});
+
+			// Sort the filtered poster sets
+			// Follows should always be at the top
+			filtered.sort((a, b) => {
+				const isAFollow = userFollows.some(
+					(follow) => follow.Username === a.User.Name
+				);
+				const isBFollow = userFollows.some(
+					(follow) => follow.Username === b.User.Name
+				);
+				if (isAFollow && !isBFollow) return -1;
+				if (!isAFollow && isBFollow) return 1;
+
+				if (sortOption === "name") {
+					return a.User.Name.localeCompare(b.User.Name);
+				}
+
+				// Default and "date" sort: newest to oldest unless sortOrder is "asc"
+				const dateA = new Date(a.DateUpdated);
+				const dateB = new Date(b.DateUpdated);
+				if (sortOption === "date") {
+					return sortOrder === "asc"
+						? dateA.getTime() - dateB.getTime() // oldest to newest
+						: dateB.getTime() - dateA.getTime(); // newest to oldest
+				}
+				// Default: newest to oldest
+				return dateB.getTime() - dateA.getTime();
+			});
+
+			console.log("Filter & Sorted Poster Sets:", filtered);
+			setFilteredPosterSets(filtered);
+		}
+	}, [
+		posterSets,
+		showHiddenUsers,
+		userHides,
+		userFollows,
+		sortOption,
+		sortOrder,
+	]);
 
 	if (!mediaItem) {
 		return (
@@ -170,8 +288,6 @@ const MediaItemPage = () => {
 			// Safe to use document here.
 			document.title = `AURA | ${mediaItem?.Title}`;
 		}
-		log("Media Item Page - Fetched media item:", mediaItem);
-		log("Media Item Page - Fetched poster sets:", posterSets);
 	}
 
 	return (
@@ -221,17 +337,31 @@ const MediaItemPage = () => {
 
 					{posterSets && posterSets.length > 0 && (
 						<>
-							<div className="flex justify-end mb-6 pr-4">
+							<div className="flex justify-end mb-6 pr-4 items-center gap-4">
+								{userHides.length > 0 && (
+									<label className="inline-flex items-center">
+										<Checkbox
+											checked={showHiddenUsers}
+											onCheckedChange={
+												handleShowHiddenUsers
+											}
+											className="mr-2 h-5 w-5 sm:h-4 sm:w-4" // Larger on mobile, normal on sm+
+										/>
+										<span className="text-sm">
+											Show hidden users
+										</span>
+									</label>
+								)}
 								{sortOption !== "" && (
 									<Button
 										variant="ghost"
-										onClick={() => {
+										onClick={() =>
 											setSortOrder(
 												sortOrder === "asc"
 													? "desc"
 													: "asc"
-											);
-										}}
+											)
+										}
 									>
 										{sortOption === "name" &&
 											sortOrder === "desc" && (
@@ -252,10 +382,10 @@ const MediaItemPage = () => {
 									</Button>
 								)}
 								<Select
-									onValueChange={(value) => {
-										setSortOption(value);
-									}}
-									defaultValue=""
+									onValueChange={(value) =>
+										setSortOption(value)
+									}
+									defaultValue="date"
 								>
 									<SelectTrigger className="w-[180px]">
 										<SelectValue placeholder="Sort By" />
@@ -271,52 +401,14 @@ const MediaItemPage = () => {
 								</Select>
 							</div>
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
-								{mediaItem &&
-									posterSets &&
-									posterSets.length > 0 &&
-									[...posterSets]
-										.sort((a, b) => {
-											// Sorting logic based on the sort option and sort order
-											if (sortOption === "date") {
-												return sortOrder === "asc"
-													? new Date(
-															a.DateUpdated
-													  ).getTime() -
-															new Date(
-																b.DateUpdated
-															).getTime()
-													: new Date(
-															b.DateUpdated
-													  ).getTime() -
-															new Date(
-																a.DateUpdated
-															).getTime();
-											} else if (sortOption === "name") {
-												return sortOrder === "asc"
-													? a.User.Name.localeCompare(
-															b.User.Name
-													  )
-													: b.User.Name.localeCompare(
-															a.User.Name
-													  );
-											}
-											return (
-												new Date(
-													b.DateUpdated
-												).getTime() -
-												new Date(
-													a.DateUpdated
-												).getTime()
-											);
-										})
-										.map((set) => (
-											<div key={set.ID} className="pb-6">
-												<MediaCarousel
-													set={set}
-													mediaItem={mediaItem}
-												/>
-											</div>
-										))}
+								{(filteredPosterSets ?? []).map((set) => (
+									<div key={set.ID} className="pb-6">
+										<MediaCarousel
+											set={set}
+											mediaItem={mediaItem}
+										/>
+									</div>
+								))}
 							</div>
 						</>
 					)}
