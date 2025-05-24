@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -17,12 +19,21 @@ import (
 func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s and title: %s", section.ID, section.Title))
 
-	// Construct the URL for the Plex server API request including pagination parameters.
-	url := fmt.Sprintf("%s/library/sections/%s/all?X-Plex-Container-Start=%s&X-Plex-Container-Size=%s",
-		config.Global.MediaServer.URL, section.ID, sectionStartIndex, "500")
+	// Construct Base URL
+	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/sections/%s/all", section.ID), config.Global.MediaServer.URL)
+	if logErr.Err != nil {
+		return nil, 0, logErr
+	}
+
+	// Add parameters to the URL
+	params := url.Values{}
+	params.Add("X-Plex-Container-Start", sectionStartIndex)
+	params.Add("X-Plex-Container-Size", "500")
+	params.Add("includeGuids", "1")
+	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 180, nil, "MediaServer")
+	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 180, nil, "MediaServer")
 	if logErr.Err != nil {
 		return nil, 0, logErr
 	}
