@@ -49,8 +49,8 @@ const MediaItemPage = () => {
 	>(null);
 
 	// State to track the selected sorting option
-	const [sortOption, setSortOption] = useState<string>("");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+	const [sortOption, setSortOption] = useState<string>("date");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
 	// Loading State
 	const [isLoading, setIsLoading] = useState(true);
@@ -337,68 +337,103 @@ const MediaItemPage = () => {
 
 					{posterSets && posterSets.length > 0 && (
 						<>
-							<div className="flex justify-end mb-6 pr-4 items-center gap-4">
+							<div
+								className="flex flex-col sm:flex-row sm:justify-end mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
+								style={{
+									background: "oklch(0.16 0.0202 282.55)",
+									opacity: "0.95",
+									borderRadius: "0.5rem",
+									padding: "0.5rem",
+									boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+								}}
+							>
 								{userHides.length > 0 && (
-									<label className="inline-flex items-center">
+									<label className="inline-flex items-center mb-2 sm:mb-0">
 										<Checkbox
 											checked={showHiddenUsers}
 											onCheckedChange={
 												handleShowHiddenUsers
 											}
-											className="mr-2 h-5 w-5 sm:h-4 sm:w-4" // Larger on mobile, normal on sm+
+											className="ml-2 mr-5 h-5 w-5 sm:h-4 sm:w-4"
 										/>
 										<span className="text-sm">
-											Show hidden users
+											Show hidden users{" "}
+											{userHides.length > 0 &&
+												!showHiddenUsers &&
+												posterSets && (
+													<span className="ml-2 text-xs text-muted-foreground">
+														(
+														{
+															posterSets.filter(
+																(set) =>
+																	userHides.some(
+																		(
+																			hide
+																		) =>
+																			hide.Username ===
+																			set
+																				.User
+																				.Name
+																	)
+															).length
+														}{" "}
+														hidden)
+													</span>
+												)}
 										</span>
 									</label>
 								)}
-								{sortOption !== "" && (
-									<Button
-										variant="ghost"
-										onClick={() =>
-											setSortOrder(
-												sortOrder === "asc"
-													? "desc"
-													: "asc"
-											)
+								<div className="flex flex-row gap-2 items-center">
+									{sortOption !== "" && (
+										<Button
+											variant="ghost"
+											size="icon"
+											className="p-2"
+											onClick={() =>
+												setSortOrder(
+													sortOrder === "asc"
+														? "desc"
+														: "asc"
+												)
+											}
+										>
+											{sortOption === "name" &&
+												sortOrder === "desc" && (
+													<ArrowUpAZ />
+												)}
+											{sortOption === "name" &&
+												sortOrder === "asc" && (
+													<ArrowDownAZ />
+												)}
+											{sortOption === "date" &&
+												sortOrder === "desc" && (
+													<CalendarArrowDown />
+												)}
+											{sortOption === "date" &&
+												sortOrder === "asc" && (
+													<CalendarArrowUp />
+												)}
+										</Button>
+									)}
+									<Select
+										onValueChange={(value) =>
+											setSortOption(value)
 										}
+										defaultValue="date"
 									>
-										{sortOption === "name" &&
-											sortOrder === "desc" && (
-												<ArrowUpAZ />
-											)}
-										{sortOption === "name" &&
-											sortOrder === "asc" && (
-												<ArrowDownAZ />
-											)}
-										{sortOption === "date" &&
-											sortOrder === "desc" && (
-												<CalendarArrowDown />
-											)}
-										{sortOption === "date" &&
-											sortOrder === "asc" && (
-												<CalendarArrowUp />
-											)}
-									</Button>
-								)}
-								<Select
-									onValueChange={(value) =>
-										setSortOption(value)
-									}
-									defaultValue="date"
-								>
-									<SelectTrigger className="w-[180px]">
-										<SelectValue placeholder="Sort By" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="date">
-											Date
-										</SelectItem>
-										<SelectItem value="name">
-											User Name
-										</SelectItem>
-									</SelectContent>
-								</Select>
+										<SelectTrigger className="w-[140px] sm:w-[180px]">
+											<SelectValue placeholder="Sort By" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="date">
+												Date
+											</SelectItem>
+											<SelectItem value="name">
+												User Name
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
 							</div>
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
