@@ -190,7 +190,11 @@ const SettingsPage: React.FC = () => {
 				},
 				{
 					Label: "Labels",
-					Value: config?.Kometa?.Labels.join(", "),
+					Value:
+						Array.isArray(config?.Kometa?.Labels) &&
+						config?.Kometa?.Labels.length > 1
+							? config?.Kometa?.Labels.join(", ")
+							: config?.Kometa?.Labels?.[0] || "",
 					Tooltip: "The list of labels to apply to media items.",
 				},
 			],
@@ -251,89 +255,130 @@ const SettingsPage: React.FC = () => {
 				<>
 					<h1 className="text-3xl font-bold mb-4">Settings</h1>
 					{AppConfig &&
-						Object.entries(AppConfig).map(([key, value]) => (
-							<Card className="mb-2" key={key}>
-								<CardHeader>
-									<h2 className="text-xl font-semibold">
-										{value.Title}
-									</h2>
-								</CardHeader>
-								<CardContent>
-									<div className="space-y-2">
-										{"Fields" in value &&
-											value.Fields.map((field, index) => (
-												<div key={index}>
-													<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-														{field.Label}
-													</label>
-													{field.Label ===
-														"Libraries" ||
-													field.Label === "Labels" ? (
-														<>
-															{(field.Value ?? "")
-																.split(", ")
-																.map(
-																	(
-																		item: string,
-																		idx: number
-																	) => (
-																		<Badge
-																			key={
-																				idx
-																			}
-																			className="mr-1 text-sm"
-																		>
-																			{
-																				item
-																			}
-																		</Badge>
+						Object.entries(AppConfig).map(([key, value]) => {
+							// Filter out fields with empty values (after trimming)
+							const fieldsToShow =
+								"Fields" in value
+									? value.Fields.filter(
+											(field) =>
+												field.Value &&
+												field.Value.toString().trim() !==
+													""
+									  )
+									: [];
+							// Check if there are any buttons
+							const hasButtons =
+								"Buttons" in value &&
+								(
+									value.Buttons as {
+										onClick: () => void;
+										Label: string;
+									}[]
+								).length > 0;
+
+							// If there are no non-empty fields and no buttons, skip the card
+							if (!fieldsToShow.length && !hasButtons)
+								return null;
+
+							return (
+								<Card className="mb-4" key={key}>
+									<CardHeader>
+										<h2 className="text-xl font-semibold">
+											{value.Title}
+										</h2>
+									</CardHeader>
+									<CardContent>
+										<div className="space-y-2">
+											{"Fields" in value &&
+												fieldsToShow.map(
+													(field, index) => (
+														<div key={index}>
+															<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+																{field.Label}
+															</label>
+															{field.Label ===
+																"Libraries" ||
+															field.Label ===
+																"Labels" ? (
+																<>
+																	{(
+																		field.Value ??
+																		""
 																	)
-																)}
-														</>
-													) : (
-														<div className="flex items-center gap-2">
-															<Input
-																value={
-																	field.Value
-																}
-																disabled
-																className="w-full"
-															/>
-															<Popover>
-																<PopoverTrigger className="cursor-pointer">
-																	<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
-																		?
-																	</span>
-																</PopoverTrigger>
-																<PopoverContent className="w-60">
-																	{
-																		field.Tooltip
-																	}
-																</PopoverContent>
-															</Popover>
+																		.split(
+																			", "
+																		)
+																		.filter(
+																			(
+																				item: string
+																			) =>
+																				item.trim() !==
+																				""
+																		)
+																		.map(
+																			(
+																				item: string,
+																				idx: number
+																			) => (
+																				<Badge
+																					key={
+																						idx
+																					}
+																					className="mr-1 text-sm"
+																				>
+																					{
+																						item
+																					}
+																				</Badge>
+																			)
+																		)}
+																</>
+															) : (
+																<div className="flex items-center gap-2">
+																	<Input
+																		value={
+																			field.Value
+																		}
+																		disabled
+																		className="w-full"
+																	/>
+																	<Popover>
+																		<PopoverTrigger className="cursor-pointer">
+																			<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
+																				?
+																			</span>
+																		</PopoverTrigger>
+																		<PopoverContent className="w-60">
+																			{
+																				field.Tooltip
+																			}
+																		</PopoverContent>
+																	</Popover>
+																</div>
+															)}
 														</div>
-													)}
-												</div>
-											))}
-										{"Buttons" in value &&
-											(
-												value.Buttons as {
-													onClick: () => void;
-													Label: string;
-												}[]
-											).map((button, index) => (
-												<Button
-													key={index}
-													onClick={button.onClick}
-													className="w-full"
-												>
-													{button.Label}
-												</Button>
-											))}
-									</div>
-								</CardContent>
-							</Card>
-						))}
+													)
+												)}
+											{"Buttons" in value &&
+												(
+													value.Buttons as {
+														onClick: () => void;
+														Label: string;
+													}[]
+												).map((button, index) => (
+													<Button
+														key={index}
+														onClick={button.onClick}
+														className="w-full"
+													>
+														{button.Label}
+													</Button>
+												))}
+										</div>
+									</CardContent>
+								</Card>
+							);
+						})}
 				</>
 			)}
 		</div>
