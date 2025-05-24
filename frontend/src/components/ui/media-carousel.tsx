@@ -95,7 +95,10 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 				{mediaItem.Type === "show" ? (
 					<CarouselShow set={set as PosterSet} />
 				) : mediaItem.Type === "movie" ? (
-					<CarouselMovie set={set as PosterSet} />
+					<CarouselMovie
+						set={set as PosterSet}
+						librarySection={mediaItem.LibraryTitle}
+					/>
 				) : null}
 			</CarouselContent>
 			<CarouselNext className="right-2 bottom-0" />
