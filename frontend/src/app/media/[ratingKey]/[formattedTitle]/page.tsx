@@ -385,23 +385,31 @@ const MediaItemPage = () => {
 									padding: "0.5rem",
 								}}
 							>
-								<div className="flex items-center space-x-2 mb-2 sm:mb-0">
-									<Checkbox
-										checked={showHiddenUsers}
-										onCheckedChange={handleShowHiddenUsers}
-										disabled={hiddenCount === 0}
-										className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0"
-									/>
-									{showHiddenUsers ? (
-										<span className="text-sm text-muted-foreground">
-											Showing all users
-										</span>
-									) : (
-										<span className="text-sm text-muted-foreground">
-											Show hidden users
-										</span>
-									)}
-								</div>
+								{hiddenCount === 0 ? (
+									<span className="text-sm text-muted-foreground">
+										No hidden users
+									</span>
+								) : (
+									<div className="flex items-center space-x-2 mb-2 sm:mb-0">
+										<Checkbox
+											checked={showHiddenUsers}
+											onCheckedChange={
+												handleShowHiddenUsers
+											}
+											disabled={hiddenCount === 0}
+											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0"
+										/>
+										{showHiddenUsers ? (
+											<span className="text-sm text-muted-foreground">
+												Showing all users
+											</span>
+										) : (
+											<span className="text-sm text-muted-foreground">
+												Show hidden users
+											</span>
+										)}
+									</div>
+								)}
 
 								{/* Sorting controls */}
 								<div className="flex flex-row gap-2 items-center">
