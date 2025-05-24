@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import {
 	ArrowDownAZ,
-	ArrowUpAZ,
+	ArrowDownZA,
 	CalendarArrowDown,
 	CalendarArrowUp,
 } from "lucide-react";
@@ -402,7 +402,7 @@ const MediaItemPage = () => {
 										>
 											{sortOption === "name" &&
 												sortOrder === "desc" && (
-													<ArrowUpAZ />
+													<ArrowDownZA />
 												)}
 											{sortOption === "name" &&
 												sortOrder === "asc" && (
