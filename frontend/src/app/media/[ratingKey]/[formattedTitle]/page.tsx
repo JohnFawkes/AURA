@@ -234,10 +234,12 @@ const MediaItemPage = () => {
 				if (!isAFollow && isBFollow) return 1;
 
 				if (sortOption === "name") {
-					return a.User.Name.localeCompare(b.User.Name);
+					return sortOrder === "asc"
+						? a.User.Name.localeCompare(b.User.Name)
+						: b.User.Name.localeCompare(a.User.Name);
 				}
 
-				// Default and "date" sort: newest to oldest unless sortOrder is "asc"
+				// For date sorting: newest to oldest unless sortOrder is "asc"
 				const dateA = new Date(a.DateUpdated);
 				const dateB = new Date(b.DateUpdated);
 				if (sortOption === "date") {
@@ -245,6 +247,7 @@ const MediaItemPage = () => {
 						? dateA.getTime() - dateB.getTime() // oldest to newest
 						: dateB.getTime() - dateA.getTime(); // newest to oldest
 				}
+
 				// Default: newest to oldest
 				return dateB.getTime() - dateA.getTime();
 			});
