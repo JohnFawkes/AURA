@@ -37,6 +37,12 @@ type PlexVideoItem struct {
 	Index               int             `xml:"index,attr,omitempty"`       // Episode Number
 	ParentIndex         int             `xml:"parentIndex,attr,omitempty"` // Season Number
 	LibrarySectionTitle string          `xml:"librarySectionTitle,attr"`
+	Guids               []PlexGuidItem  `xml:"Guid"`
+}
+
+// Guid represents the GUID element inside a Video
+type PlexGuidItem struct {
+	ID string `xml:"id,attr"`
 }
 
 // Media represents the Media element inside a Video
