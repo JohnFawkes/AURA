@@ -27,6 +27,29 @@ func CheckForUpdatesToPosters() {
 		if dbSavedItem.MediaItem.Type != "show" {
 			continue
 		}
+
+		var mediaServer mediaserver_shared.MediaServer
+		switch config.Global.MediaServer.Type {
+		case "Plex":
+			mediaServer = &mediaserver_shared.PlexServer{}
+		case "Emby", "Jellyfin":
+			mediaServer = &mediaserver_shared.EmbyJellyServer{}
+		default:
+			logErr := logging.ErrorLog{
+				Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
+				Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
+			}
+			logging.LOG.ErrorWithLog(logErr)
+			continue
+		}
+
+		// Get the latest media item from the media server using the rating key
+		latestMediaItem, logErr := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
+		if logErr.Err != nil {
+			logging.LOG.ErrorWithLog(logErr)
+			continue
+		}
+
 		// Loop through each poster set for the item
 		for _, dbPosterSet := range dbSavedItem.PosterSets {
 			// If the poster set is not auto download, skip it
@@ -144,21 +167,8 @@ func CheckForUpdatesToPosters() {
 
 			for _, file := range filesToDownload {
 				logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s' in set '%s'", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
-				var mediaServer mediaserver_shared.MediaServer
-				switch config.Global.MediaServer.Type {
-				case "Plex":
-					mediaServer = &mediaserver_shared.PlexServer{}
-				case "Emby", "Jellyfin":
-					mediaServer = &mediaserver_shared.EmbyJellyServer{}
-				default:
-					logErr := logging.ErrorLog{
-						Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-						Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
-					}
-					logging.LOG.ErrorWithLog(logErr)
-					continue
-				}
-				logErr = mediaServer.DownloadAndUpdatePosters(dbSavedItem.MediaItem, file)
+
+				logErr = mediaServer.DownloadAndUpdatePosters(latestMediaItem, file)
 				if logErr.Err != nil {
 					logging.LOG.ErrorWithLog(logErr)
 					continue
