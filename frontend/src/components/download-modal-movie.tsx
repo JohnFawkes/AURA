@@ -209,7 +209,6 @@ const DownloadModalMovie: React.FC<{
 	}
 
 	const moviesDisplay: MovieDisplay[] = useMemo(() => {
-		console.log("IDB Results:", idbResults);
 		const movies: MovieDisplay[] = [];
 
 		// Use the main poster and backdrop to create the main movie entry.
