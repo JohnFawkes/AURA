@@ -46,11 +46,11 @@ const MediaItemPage = () => {
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
 	// Loading State
-	const [isLoading, setIsLoading] = React.useState(true);
+	const [isLoading, setIsLoading] = useState(true);
 
 	// Error Handling
-	const [hasError, setHasError] = React.useState(false);
-	const [errorMessage, setErrorMessage] = React.useState("");
+	const [hasError, setHasError] = useState(false);
+	const [errorMessage, setErrorMessage] = useState("");
 
 	useEffect(() => {
 		if (hasFetchedInfo.current) return;
