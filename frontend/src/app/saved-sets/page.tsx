@@ -114,17 +114,21 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			{filteredAndSortedSavedSets.length > 0 ? (
-				filteredAndSortedSavedSets.map((savedSet) => (
-					<SavedSetsCard
-						key={savedSet.MediaItem.RatingKey}
-						savedSet={savedSet}
-						onUpdate={fetchSavedSets}
-					/>
-				))
-			) : (
-				<p className="text-muted-foreground">No saved sets found.</p>
-			)}
+			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+				{filteredAndSortedSavedSets.length > 0 ? (
+					filteredAndSortedSavedSets.map((savedSet) => (
+						<SavedSetsCard
+							key={savedSet.MediaItem.RatingKey}
+							savedSet={savedSet}
+							onUpdate={fetchSavedSets}
+						/>
+					))
+				) : (
+					<p className="text-muted-foreground">
+						No saved sets found.
+					</p>
+				)}
+			</div>
 
 			<Button
 				variant="outline"
