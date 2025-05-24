@@ -149,16 +149,18 @@ export default function Navbar() {
 			{/* Logo */}
 			<div className="relative">
 				<div
-					className={`relative h-[35px] cursor-pointer w-[${
-						logoSrc === "/aura_logo.svg" ? "50px" : "150px"
-					}]`}
+					onClick={() => handleHomeClick()}
+					className="relative cursor-pointer"
+					style={{
+						width: logoSrc === "/aura_logo.svg" ? "50px" : "150px",
+						height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
+					}}
 				>
 					<Image
 						src={logoSrc}
 						alt="Logo"
 						fill
-						className="object-contain filter dark:invert-0 invert"
-						onClick={() => handleHomeClick()}
+						className="object-contain filter"
 					/>
 				</div>
 			</div>
