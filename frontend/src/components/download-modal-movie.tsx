@@ -42,6 +42,7 @@ import { DBSavedItem } from "@/types/databaseSavedSet";
 import { openDB } from "idb";
 import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
 import { postAddItemToDB } from "@/services/api.db";
+import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
 
 const formSchema = z
 	.object({
@@ -64,7 +65,7 @@ const DownloadModalMovie: React.FC<{
 	mediaItem: MediaItem;
 }> = ({ posterSet, mediaItem }) => {
 	const [isMounted, setIsMounted] = useState(false);
-	const [cancelButtonText, setCancelButtonText] = useState("Close");
+	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
 
 	// Tracking selected checkboxes for what to download
@@ -91,6 +92,107 @@ const DownloadModalMovie: React.FC<{
 		string[]
 	>([]);
 
+	// New state to hold lookup results from searchIDBForTMDBID for OtherPosters and OtherBackdrops
+	const [idbResults, setIdbResults] = useState<{
+		[id: string]: { exists: boolean; ratingKey: string };
+	}>({});
+
+	useEffect(() => {
+		if (posterSet.OtherPosters) {
+			const otherPosters = posterSet.OtherPosters; // Capturing the narrowed value
+			const fetchData = async () => {
+				const results = await Promise.all(
+					otherPosters.map(async (poster: PosterFile) => {
+						if (!poster.Movie?.ID) return null; // Skip if no Movie ID
+
+						if (poster.Movie && poster.Movie.RatingKey) {
+							return {
+								id: poster.Movie.ID,
+								exists: true,
+								ratingKey: poster.Movie.RatingKey,
+							};
+						}
+						const lookupResult = await searchIDBForTMDBID(
+							poster.Movie.ID,
+							mediaItem.LibraryTitle
+						);
+						return {
+							id: poster.Movie.ID,
+							exists: !!lookupResult,
+							ratingKey:
+								typeof lookupResult === "object" &&
+								lookupResult !== null &&
+								"RatingKey" in lookupResult
+									? lookupResult.RatingKey
+									: "",
+						};
+					})
+				);
+				const filteredResults = results.filter(Boolean) as {
+					id: string;
+					exists: boolean;
+					ratingKey: string;
+				}[];
+				const newResults = filteredResults.reduce((acc, curr) => {
+					acc[curr.id] = {
+						exists: curr.exists,
+						ratingKey: curr.ratingKey,
+					};
+					return acc;
+				}, {} as { [id: string]: { exists: boolean; ratingKey: string } });
+				setIdbResults(newResults);
+			};
+			fetchData();
+		}
+
+		if (posterSet.OtherBackdrops) {
+			const otherBackdrops = posterSet.OtherBackdrops;
+			const fetchData = async () => {
+				const results = await Promise.all(
+					otherBackdrops.map(async (backdrop: PosterFile) => {
+						if (!backdrop.Movie?.ID) return null; // Skip if no Movie ID
+
+						if (backdrop.Movie.RatingKey) {
+							return {
+								id: backdrop.Movie.ID,
+								exists: true,
+								ratingKey: backdrop.Movie.RatingKey,
+							};
+						}
+						const lookupResult = await searchIDBForTMDBID(
+							backdrop.Movie.ID,
+							mediaItem.LibraryTitle
+						);
+						return {
+							id: backdrop.Movie.ID,
+							exists: !!lookupResult,
+							ratingKey:
+								typeof lookupResult === "object" &&
+								lookupResult !== null &&
+								"RatingKey" in lookupResult
+									? lookupResult.RatingKey
+									: "",
+						};
+					})
+				);
+				const filteredResults = results.filter(Boolean) as {
+					id: string;
+					exists: boolean;
+					ratingKey: string;
+				}[];
+				const newResults = filteredResults.reduce((acc, curr) => {
+					acc[curr.id] = {
+						exists: curr.exists,
+						ratingKey: curr.ratingKey,
+					};
+					return acc;
+				}, {} as { [id: string]: { exists: boolean; ratingKey: string } });
+				setIdbResults((prev) => ({ ...prev, ...newResults }));
+			};
+			fetchData();
+		}
+	}, [posterSet, mediaItem.LibraryTitle]);
+
 	// Create a map of Movies within the Poster Set
 	// This is used to display the movies in the set in the modal
 	// and to download the files for each movie
@@ -107,80 +209,60 @@ const DownloadModalMovie: React.FC<{
 	}
 
 	const moviesDisplay: MovieDisplay[] = useMemo(() => {
+		console.log("IDB Results:", idbResults);
 		const movies: MovieDisplay[] = [];
-		if (posterSet.Poster) {
-			const existingMovie = movies.find(
-				(m) =>
-					m.MediaItemRatingKey === posterSet.Poster?.Movie?.RatingKey
-			);
-			if (existingMovie) {
-				existingMovie.Poster = posterSet.Poster;
-			} else {
-				const movie: MovieDisplay = {
-					MediaItemRatingKey: mediaItem.RatingKey,
-					MediaItem: {
-						RatingKey: mediaItem.RatingKey,
-						LibraryTitle: mediaItem.LibraryTitle,
-						Type: mediaItem.Type,
-						Title: "",
-						Year: 0,
-						ExistInDatabase: false,
-						Guids: [],
-					},
-					SetID: posterSet.ID,
-					Poster: posterSet.Poster,
-					Backdrop: posterSet.Backdrop,
-					Title: mediaItem.Title,
-					Year: mediaItem.Year,
-					MainItem: true,
-				};
-				movies.push(movie);
-			}
+
+		// Use the main poster and backdrop to create the main movie entry.
+		if (posterSet.Poster || posterSet.Backdrop) {
+			// Derive a key: if poster exists and its movie has a RatingKey, use it.
+			// Otherwise, fall back to mediaItem.RatingKey.
+			const mainKey =
+				posterSet.Poster?.Movie?.RatingKey || mediaItem.RatingKey;
+			// Create the movie display entry.
+			const movie: MovieDisplay = {
+				MediaItemRatingKey: mainKey,
+				MediaItem: {
+					RatingKey: mediaItem.RatingKey,
+					LibraryTitle: mediaItem.LibraryTitle,
+					Type: mediaItem.Type,
+					Title: "",
+					Year: 0,
+					ExistInDatabase: false,
+					Guids: [],
+				},
+				SetID: posterSet.ID,
+				Poster: posterSet.Poster,
+				Backdrop: posterSet.Backdrop,
+				Title: mediaItem.Title,
+				Year: mediaItem.Year,
+				MainItem: true,
+			};
+			movies.push(movie);
 		}
-		if (posterSet.Backdrop) {
-			const existingMovie = movies.find(
-				(m) => m.MediaItemRatingKey === mediaItem.RatingKey
-			);
-			if (existingMovie) {
-				existingMovie.Backdrop = posterSet.Backdrop;
-			} else {
-				const movie: MovieDisplay = {
-					MediaItemRatingKey: mediaItem.RatingKey,
-					MediaItem: {
-						Type: mediaItem.Type,
-						RatingKey: mediaItem.RatingKey,
-						LibraryTitle: mediaItem.LibraryTitle,
-						Title: "",
-						Year: 0,
-						ExistInDatabase: false,
-						Guids: [],
-					},
-					SetID: posterSet.ID,
-					Poster: posterSet.Poster,
-					Backdrop: posterSet.Backdrop,
-					Title: mediaItem.Title,
-					Year: mediaItem.Year,
-					MainItem: true,
-				};
-				movies.push(movie);
-			}
-		}
+
+		// Process OtherPosters
 		if (posterSet.OtherPosters) {
 			posterSet.OtherPosters.forEach((poster: PosterFile) => {
-				if (poster.Movie && poster.Movie.RatingKey) {
+				if (!poster.Movie || !poster.Movie.ID) return;
+				const lookup = idbResults[poster.Movie.ID];
+				const movieKey =
+					poster.Movie.RatingKey ||
+					lookup?.ratingKey ||
+					poster.Movie.ID;
+				if (poster.Movie.RatingKey || (lookup && lookup.exists)) {
 					const existingMovie = movies.find(
-						(m) =>
-							poster.Movie &&
-							m.MediaItemRatingKey === poster.Movie.RatingKey
+						(m) => m.MediaItemRatingKey === movieKey
 					);
 					if (existingMovie) {
+						// Update the poster.
 						existingMovie.Poster = poster;
 					} else {
 						const movie: MovieDisplay = {
-							MediaItemRatingKey: poster.Movie.RatingKey,
+							MediaItemRatingKey: movieKey,
 							MediaItem: {
 								Type: mediaItem.Type,
-								RatingKey: poster.Movie.RatingKey,
+								RatingKey:
+									poster.Movie.RatingKey || lookup.ratingKey,
 								LibraryTitle: mediaItem.LibraryTitle,
 								Title: "",
 								Year: 0,
@@ -189,7 +271,7 @@ const DownloadModalMovie: React.FC<{
 							},
 							SetID: posterSet.ID,
 							Poster: poster,
-							Title: poster.Movie.Title,
+							Title: poster.Movie.Title || "Unknown",
 							Year: poster.Movie.ReleaseDate
 								? new Date(
 										poster.Movie.ReleaseDate
@@ -202,22 +284,30 @@ const DownloadModalMovie: React.FC<{
 				}
 			});
 		}
+
+		// Process OtherBackdrops
 		if (posterSet.OtherBackdrops) {
 			posterSet.OtherBackdrops.forEach((backdrop: PosterFile) => {
-				if (backdrop.Movie && backdrop.Movie.RatingKey) {
-					const existingMovie = movies.find(
-						(m) =>
-							backdrop.Movie &&
-							m.MediaItemRatingKey === backdrop.Movie.RatingKey
+				if (!backdrop.Movie || !backdrop.Movie.ID) return;
+				const lookup = idbResults[backdrop.Movie.ID];
+				const movieKey =
+					backdrop.Movie.RatingKey ||
+					lookup?.ratingKey ||
+					backdrop.Movie.ID;
+				if (backdrop.Movie.RatingKey || (lookup && lookup.exists)) {
+					const existing = movies.find(
+						(m) => m.MediaItemRatingKey === movieKey
 					);
-					if (existingMovie) {
-						existingMovie.Backdrop = backdrop;
+					if (existing) {
+						existing.Backdrop = backdrop;
 					} else {
 						const movie: MovieDisplay = {
-							MediaItemRatingKey: backdrop.Movie.RatingKey,
+							MediaItemRatingKey: movieKey,
 							MediaItem: {
 								Type: mediaItem.Type,
-								RatingKey: backdrop.Movie.RatingKey,
+								RatingKey:
+									backdrop.Movie.RatingKey ||
+									lookup.ratingKey,
 								LibraryTitle: mediaItem.LibraryTitle,
 								Title: "",
 								Year: 0,
@@ -226,7 +316,7 @@ const DownloadModalMovie: React.FC<{
 							},
 							SetID: posterSet.ID,
 							Backdrop: backdrop,
-							Title: backdrop.Movie.Title,
+							Title: backdrop.Movie.Title || "Unknown",
 							Year: backdrop.Movie.ReleaseDate
 								? new Date(
 										backdrop.Movie.ReleaseDate
@@ -240,7 +330,7 @@ const DownloadModalMovie: React.FC<{
 			});
 		}
 		return movies;
-	}, [mediaItem, posterSet]);
+	}, [mediaItem, posterSet, idbResults]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -254,6 +344,18 @@ const DownloadModalMovie: React.FC<{
 			}, {} as Record<string, string[]>),
 		},
 	});
+
+	useEffect(() => {
+		form.reset({
+			selectedTypesByMovie: moviesDisplay.reduce((acc, movie) => {
+				const types: string[] = [];
+				if (movie.Poster) types.push("poster");
+				if (movie.Backdrop) types.push("backdrop");
+				acc[movie.MediaItemRatingKey] = types;
+				return acc;
+			}, {} as Record<string, string[]>),
+		});
+	}, [form, moviesDisplay]);
 
 	const watchSelectionsByMovie = useWatch({
 		control: form.control,
@@ -350,6 +452,7 @@ const DownloadModalMovie: React.FC<{
 		if (isMounted) return;
 		setIsMounted(true);
 		setCancelButtonText("Cancel");
+		setDownloadButtonText("Downloading...");
 		setProgressValue(0);
 		setProgressDownloads({});
 		setProgressWarningMessages([]);
@@ -476,7 +579,7 @@ const DownloadModalMovie: React.FC<{
 						);
 
 						const SaveItem: DBSavedItem = {
-							MediaItemID: movie.MediaItemRatingKey ?? "",
+							MediaItemID: movie.MediaItemRatingKey,
 							MediaItem: mediaDetails,
 							PosterSetID: posterSet.ID,
 							PosterSet: posterSet,
@@ -521,6 +624,8 @@ const DownloadModalMovie: React.FC<{
 			}
 
 			setProgressValue(100);
+			setCancelButtonText("Close");
+			setDownloadButtonText("Download Again");
 		} catch (error) {
 			log("Poster Set Modal - Download Error:", error);
 			setProgressColor("red");
