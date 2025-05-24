@@ -390,26 +390,27 @@ const MediaItemPage = () => {
 								}}
 							>
 								{hiddenCount === 0 ? (
-									<span className="text-sm text-muted-foreground">
+									<span className="text-sm text-muted-foreground ml-2">
 										No hidden users
 									</span>
 								) : (
-									<div className="flex items-center space-x-2 mb-2 sm:mb-0">
+									<div className="flex items-center space-x-2">
 										<Checkbox
 											checked={showHiddenUsers}
 											onCheckedChange={
 												handleShowHiddenUsers
 											}
 											disabled={hiddenCount === 0}
-											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0"
+											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
 										/>
 										{showHiddenUsers ? (
-											<span className="text-sm text-muted-foreground">
+											<span className="text-sm text-muted-foreground ml-2">
 												Showing all users
 											</span>
 										) : (
-											<span className="text-sm text-muted-foreground">
-												Show hidden users
+											<span className="text-sm text-muted-foreground ml-2">
+												Show {hiddenCount} hidden user
+												{hiddenCount > 1 ? "s" : ""}
 											</span>
 										)}
 									</div>
