@@ -419,9 +419,15 @@ const MediaItemPage = () => {
 										</Button>
 									)}
 									<Select
-										onValueChange={(value) =>
-											setSortOption(value)
-										}
+										onValueChange={(value) => {
+											setSortOption(value);
+											// Auto-set sortOrder based on sort option
+											if (value === "name") {
+												setSortOrder("asc");
+											} else if (value === "date") {
+												setSortOrder("desc");
+											}
+										}}
 										defaultValue="date"
 									>
 										<SelectTrigger className="w-[140px] sm:w-[180px]">
