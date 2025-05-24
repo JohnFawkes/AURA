@@ -257,3 +257,24 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 		},
 	}
 }
+
+func generateUserFollowingAndHidingBody() map[string]any {
+	return map[string]any{
+		"query": `
+query {
+    user_follows (filter: {follower_id: {id: {_eq: "$CURRENT_USER" }}}) {
+        followee_id {
+            id
+            username
+        }
+    }
+	user_hides (filter: {hider_id: {id: {_eq: "$CURRENT_USER" }}}) {
+		hiding_id {
+			id
+			username
+		}
+	}
+}
+`,
+	}
+}
