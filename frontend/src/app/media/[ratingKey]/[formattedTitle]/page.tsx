@@ -404,11 +404,11 @@ const MediaItemPage = () => {
 											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
 										/>
 										{showHiddenUsers ? (
-											<span className="text-sm text-muted-foreground ml-2">
+											<span className="text-sm ml-2">
 												Showing all users
 											</span>
 										) : (
-											<span className="text-sm text-muted-foreground ml-2">
+											<span className="text-sm ml-2">
 												Show {hiddenCount} hidden user
 												{hiddenCount > 1 ? "s" : ""}
 											</span>
