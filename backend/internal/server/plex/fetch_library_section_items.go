@@ -73,6 +73,27 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 				itemInfo.ExistInDatabase = false
 			}
 
+			// Get GUIDs and Ratings from the response body
+			if len(item.Guids) > 0 {
+				for _, guid := range item.Guids {
+					if guid.ID != "" {
+						logging.LOG.Trace(fmt.Sprintf("Found GUID: %s", guid.ID))
+						// Sample guid.id : tmdb://######
+						// Split into provider and id
+						parts := strings.Split(guid.ID, "://")
+						if len(parts) == 2 {
+							provider := parts[0]
+							id := parts[1]
+							itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+								Provider: provider,
+								ID:       id,
+							})
+						}
+
+					}
+				}
+			}
+
 			items = append(items, itemInfo)
 		}
 	}
