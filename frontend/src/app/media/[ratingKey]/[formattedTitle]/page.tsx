@@ -20,7 +20,7 @@ import {
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
@@ -151,10 +151,21 @@ const MediaItemPage = () => {
 				log("Media Item Page - Error fetching poster sets:", error);
 				setHasError(true);
 				if (error instanceof Error) {
-					setErrorMessage(error.message);
+					if (
+						error.message.startsWith(
+							"No sets found for the provided TMDB ID"
+						)
+					) {
+						setErrorMessage(
+							`No Poster Sets found for ${responseItem.Title}`
+						);
+					} else {
+						setErrorMessage(error.message);
+					}
 				}
 				// Fallback to empty sets
 				setPosterSets([]);
+				setIsLoading(false);
 			}
 		};
 
@@ -199,16 +210,24 @@ const MediaItemPage = () => {
 				} else {
 					setErrorMessage("An unknown error occurred, check logs.");
 				}
+				setIsLoading(false);
 			}
 		};
 
 		fetchAllInfo();
 	}, [partialMediaItem, mediaItem]);
 
+	// Compute hiddenCount based on posterSets and userHides
+	const hiddenCount = useMemo(() => {
+		if (!posterSets) return 0;
+		return posterSets.filter((set) =>
+			userHides.some((hide) => hide.Username === set.User.Name)
+		).length;
+	}, [posterSets, userHides]);
+
 	useEffect(() => {
 		if (posterSets) {
 			console.log("Poster Sets:", posterSets);
-
 			// Filter out hidden users
 			const filtered = posterSets.filter((set) => {
 				if (showHiddenUsers) {
@@ -338,54 +357,53 @@ const MediaItemPage = () => {
 						</div>
 					)}
 
-					{posterSets && posterSets.length > 0 && (
+					{/* Check if all poster sets are hidden */}
+					{posterSets &&
+						!showHiddenUsers &&
+						posterSets.length > 0 &&
+						posterSets.length === hiddenCount && (
+							<div className="flex flex-col items-center">
+								<ErrorMessage message="All poster sets are hidden." />
+								<Button
+									className="mt-4"
+									variant="secondary"
+									onClick={handleShowHiddenUsers}
+								>
+									Show Hidden Users
+								</Button>
+							</div>
+						)}
+
+					{/* Render filtered poster sets */}
+					{filteredPosterSets && filteredPosterSets.length > 0 && (
 						<>
 							<div
 								className="flex flex-col sm:flex-row sm:justify-end mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
 								style={{
 									background: "oklch(0.16 0.0202 282.55)",
 									opacity: "0.95",
-									borderRadius: "0.5rem",
 									padding: "0.5rem",
-									boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
 								}}
 							>
-								{userHides.length > 0 && (
-									<label className="inline-flex items-center mb-2 sm:mb-0">
-										<Checkbox
-											checked={showHiddenUsers}
-											onCheckedChange={
-												handleShowHiddenUsers
-											}
-											className="ml-2 mr-5 h-5 w-5 sm:h-4 sm:w-4"
-										/>
-										<span className="text-sm">
-											Show hidden users{" "}
-											{userHides.length > 0 &&
-												!showHiddenUsers &&
-												posterSets && (
-													<span className="ml-2 text-xs text-muted-foreground">
-														(
-														{
-															posterSets.filter(
-																(set) =>
-																	userHides.some(
-																		(
-																			hide
-																		) =>
-																			hide.Username ===
-																			set
-																				.User
-																				.Name
-																	)
-															).length
-														}{" "}
-														hidden)
-													</span>
-												)}
+								<div className="flex items-center space-x-2 mb-2 sm:mb-0">
+									<Checkbox
+										checked={showHiddenUsers}
+										onCheckedChange={handleShowHiddenUsers}
+										disabled={hiddenCount === 0}
+										className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0"
+									/>
+									{showHiddenUsers ? (
+										<span className="text-sm text-muted-foreground">
+											Showing all users
 										</span>
-									</label>
-								)}
+									) : (
+										<span className="text-sm text-muted-foreground">
+											Show hidden users
+										</span>
+									)}
+								</div>
+
+								{/* Sorting controls */}
 								<div className="flex flex-row gap-2 items-center">
 									{sortOption !== "" && (
 										<Button
@@ -401,21 +419,17 @@ const MediaItemPage = () => {
 											}
 										>
 											{sortOption === "name" &&
-												sortOrder === "desc" && (
+												(sortOrder === "desc" ? (
 													<ArrowDownZA />
-												)}
-											{sortOption === "name" &&
-												sortOrder === "asc" && (
+												) : (
 													<ArrowDownAZ />
-												)}
+												))}
 											{sortOption === "date" &&
-												sortOrder === "desc" && (
+												(sortOrder === "desc" ? (
 													<CalendarArrowDown />
-												)}
-											{sortOption === "date" &&
-												sortOrder === "asc" && (
+												) : (
 													<CalendarArrowUp />
-												)}
+												))}
 										</Button>
 									)}
 									<Select
@@ -444,6 +458,7 @@ const MediaItemPage = () => {
 									</Select>
 								</div>
 							</div>
+
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
 									<div key={set.ID} className="pb-6">
