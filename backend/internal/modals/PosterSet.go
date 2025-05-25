@@ -142,6 +142,7 @@ type PosterSet struct {
 	OtherBackdrops []PosterFile `json:"OtherBackdrops,omitempty"` // User for movie collections
 	SeasonPosters  []PosterFile `json:"SeasonPosters,omitempty"`
 	TitleCards     []PosterFile `json:"TitleCards,omitempty"`
+	Status         string       `json:"Status,omitempty"`
 }
 
 type PosterFile struct {

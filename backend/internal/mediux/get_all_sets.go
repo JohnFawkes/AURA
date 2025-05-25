@@ -205,6 +205,7 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 						DateCreated: setInfo.DateCreated,
 						DateUpdated: setInfo.DateUpdated,
+						Status:      show.Status,
 					}
 					newPosterSet.Poster = &newPoster
 					showSetMap[setInfo.ID] = newPosterSet
@@ -233,6 +234,7 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 						DateCreated: setInfo.DateCreated,
 						DateUpdated: setInfo.DateUpdated,
+						Status:      show.Status,
 					}
 					newPosterSet.Backdrop = &newBackdrop
 					showSetMap[setInfo.ID] = newPosterSet
@@ -271,6 +273,7 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 							DateCreated: setInfo.DateCreated,
 							DateUpdated: setInfo.DateUpdated,
+							Status:      show.Status,
 						}
 						newPosterSet.SeasonPosters = []modals.PosterFile{newPoster}
 						showSetMap[setInfo.ID] = newPosterSet
@@ -302,6 +305,7 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 								User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 								DateCreated: setInfo.DateCreated,
 								DateUpdated: setInfo.DateUpdated,
+								Status:      show.Status,
 							}
 							newPosterSet.TitleCards = []modals.PosterFile{newTitlecard}
 							showSetMap[setInfo.ID] = newPosterSet
@@ -377,6 +381,7 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 						DateCreated: setInfo.DateCreated,
 						DateUpdated: setInfo.DateUpdated,
+						Status:      movie.Status,
 					}
 					newPosterSet.Poster = &newPoster
 					movieSetMap[setInfo.ID] = newPosterSet
@@ -420,6 +425,7 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 						User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 						DateCreated: setInfo.DateCreated,
 						DateUpdated: setInfo.DateUpdated,
+						Status:      movie.Status,
 					}
 					newPosterSet.Backdrop = &newBackdrop
 					movieSetMap[setInfo.ID] = newPosterSet
@@ -490,6 +496,7 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 							DateCreated: setInfo.DateCreated,
 							DateUpdated: setInfo.DateUpdated,
+							Status:      movie.Status,
 						}
 						if mainMovieID == movie.ID {
 							newPosterSet.Poster = &newPoster
@@ -543,6 +550,7 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 							DateCreated: setInfo.DateCreated,
 							DateUpdated: setInfo.DateUpdated,
+							Status:      movie.Status,
 						}
 						if mainMovieID == movie.ID {
 							newPosterSet.Backdrop = &newBackdrop
