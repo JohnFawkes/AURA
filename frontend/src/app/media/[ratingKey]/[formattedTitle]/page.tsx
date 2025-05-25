@@ -480,6 +480,12 @@ const MediaItemPage = () => {
 								</div>
 							</div>
 
+							{filteredPosterSets.length > 2 && (
+								<div className="text-center mb-5">
+									{filteredPosterSets.length} Poster Sets
+								</div>
+							)}
+
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
 									<div key={set.ID} className="pb-6">
