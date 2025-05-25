@@ -255,7 +255,7 @@ const SavedSetsCard: React.FC<{
 				{/* Top Left: Auto Download Icon */}
 				{savedSet.MediaItem.Type === "show" && (
 					<div className="absolute top-2 left-2">
-						{savedSet.PosterSets[0].AutoDownload ? (
+						{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
 							<Checkmark className="text-green-500" size={24} />
 						) : (
 							<X className="text-red-500" size={24} />

@@ -16,6 +16,7 @@ import { RefreshCcw as RefreshIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
+import { Badge } from "@/components/ui/badge";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
@@ -24,6 +25,7 @@ const SavedSetsPage: React.FC = () => {
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const isFetchingRef = useRef(false);
 	const { searchQuery } = useHomeSearchStore();
+	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
 
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;
@@ -63,10 +65,9 @@ const SavedSetsPage: React.FC = () => {
 	// then sort the resulting array from newest to oldest using the LastDownloaded values.
 	const filteredAndSortedSavedSets = useMemo(() => {
 		let filtered = savedSets;
+
 		if (searchQuery.trim() !== "") {
-			// Map saved sets to their media items
 			const mediaItems = savedSets.map((set) => set.MediaItem);
-			// Use your search hook to get filtered media items
 			const filteredMediaItems = searchMediaItems(
 				mediaItems,
 				searchQuery
@@ -79,7 +80,14 @@ const SavedSetsPage: React.FC = () => {
 			);
 		}
 
-		// Sort the filtered sets by the newest LastDownloaded date from their PosterSets
+		if (filterAutoDownloadOnly) {
+			filtered = filtered.filter(
+				(set) =>
+					set.PosterSets &&
+					set.PosterSets.some((ps) => ps.AutoDownload === true)
+			);
+		}
+
 		const sorted = filtered.slice().sort((a, b) => {
 			const getMaxDownloadTimestamp = (
 				set: DBMediaItemWithPosterSets
@@ -93,12 +101,11 @@ const SavedSetsPage: React.FC = () => {
 
 			const aMax = getMaxDownloadTimestamp(a);
 			const bMax = getMaxDownloadTimestamp(b);
-			// Newest first
 			return bMax - aMax;
 		});
 
 		return sorted;
-	}, [savedSets, searchQuery]);
+	}, [savedSets, searchQuery, filterAutoDownloadOnly]);
 
 	if (loading) {
 		return <Loader message="Loading saved sets..." />;
@@ -114,6 +121,17 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
+			<Badge
+				key={"filter-auto-download-only"}
+				className="cursor-pointer mb-4"
+				variant={filterAutoDownloadOnly ? "default" : "outline"}
+				onClick={() => {
+					setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
+				}}
+			>
+				{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
+			</Badge>
+
 			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
 				{filteredAndSortedSavedSets.length > 0 ? (
 					filteredAndSortedSavedSets.map((savedSet) => (
