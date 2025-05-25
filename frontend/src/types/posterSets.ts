@@ -15,6 +15,7 @@ export interface PosterSet {
 	OtherBackdrops?: PosterFile[];
 	SeasonPosters?: PosterFile[];
 	TitleCards?: PosterFile[];
+	Status: string;
 }
 
 export interface PosterFile {
