@@ -376,11 +376,17 @@ export default function Home() {
 						{totalPages > 1 && (
 							<PaginationItem>
 								<PaginationPrevious
-									onClick={() =>
-										setCurrentPage(
-											Math.max(currentPage - 1, 1)
-										)
-									}
+									onClick={() => {
+										const newPage = Math.max(
+											currentPage - 1,
+											1
+										);
+										setCurrentPage(newPage);
+										window.scrollTo({
+											top: 0,
+											behavior: "smooth",
+										});
+									}}
 								/>
 							</PaginationItem>
 						)}
@@ -396,14 +402,17 @@ export default function Home() {
 						{totalPages > 1 && currentPage < totalPages && (
 							<PaginationItem>
 								<PaginationNext
-									onClick={() =>
-										setCurrentPage(
-											Math.min(
-												currentPage + 1,
-												totalPages
-											)
-										)
-									}
+									onClick={() => {
+										const newPage = Math.min(
+											currentPage + 1,
+											totalPages
+										);
+										setCurrentPage(newPage);
+										window.scrollTo({
+											top: 0,
+											behavior: "smooth",
+										});
+									}}
 								/>
 							</PaginationItem>
 						)}
@@ -416,9 +425,13 @@ export default function Home() {
 								</PaginationItem>
 								<PaginationItem>
 									<PaginationLink
-										onClick={() =>
-											setCurrentPage(totalPages)
-										}
+										onClick={() => {
+											setCurrentPage(totalPages);
+											window.scrollTo({
+												top: 0,
+												behavior: "smooth",
+											});
+										}}
 									>
 										{totalPages}
 									</PaginationLink>
