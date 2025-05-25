@@ -229,6 +229,17 @@ const MediaItemPage = () => {
 		return uniqueHiddenUsers.size;
 	}, [posterSets, userHides]);
 
+	// Check if all sets are hidden
+	const allSetsHidden = useMemo(() => {
+		if (!posterSets) return false;
+		return (
+			posterSets.length > 0 &&
+			posterSets.every((set) =>
+				userHides.some((hide) => hide.Username === set.User.Name)
+			)
+		);
+	}, [posterSets, userHides]);
+
 	useEffect(() => {
 		if (posterSets) {
 			console.log("Poster Sets:", posterSets);
@@ -362,21 +373,18 @@ const MediaItemPage = () => {
 					)}
 
 					{/* Check if all poster sets are hidden */}
-					{posterSets &&
-						!showHiddenUsers &&
-						posterSets.length > 0 &&
-						posterSets.length === hiddenCount && (
-							<div className="flex flex-col items-center">
-								<ErrorMessage message="All poster sets are hidden." />
-								<Button
-									className="mt-4"
-									variant="secondary"
-									onClick={handleShowHiddenUsers}
-								>
-									Show Hidden Users
-								</Button>
-							</div>
-						)}
+					{posterSets && !showHiddenUsers && allSetsHidden && (
+						<div className="flex flex-col items-center">
+							<ErrorMessage message="All poster sets are hidden." />
+							<Button
+								className="mt-4"
+								variant="secondary"
+								onClick={handleShowHiddenUsers}
+							>
+								Show Hidden Users
+							</Button>
+						</div>
+					)}
 
 					{/* Render filtered poster sets */}
 					{filteredPosterSets && filteredPosterSets.length > 0 && (
