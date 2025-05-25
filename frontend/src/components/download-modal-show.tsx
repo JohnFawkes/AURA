@@ -334,6 +334,15 @@ const DownloadModalShow: React.FC<{
 					return order.indexOf(a) - order.indexOf(b);
 				});
 
+				setProgressValues((prev) => ({
+					...prev,
+					progressValue: 1,
+					progressText: {
+						...prev.progressText,
+						poster: "Starting download",
+					},
+				}));
+
 				for (const type of selectedTypes) {
 					switch (type) {
 						case "poster":
