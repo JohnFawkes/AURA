@@ -26,6 +26,7 @@ type MediaItemDetailsProps = {
 	movieDuration: number;
 	guids: Guid[];
 	existsInDB: boolean;
+	status: string;
 };
 
 export function MediaItemDetails({
@@ -40,6 +41,7 @@ export function MediaItemDetails({
 	movieSize,
 	movieDuration,
 	guids,
+	status,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
 
@@ -85,6 +87,23 @@ export function MediaItemDetails({
 				{contentRating && (
 					<Badge className="flex items-center text-sm">
 						{contentRating}
+					</Badge>
+				)}
+
+				{/* Status */}
+				{status && (
+					<Badge
+						className={`flex items-center text-sm ${
+							status.toLowerCase() === "ended"
+								? "bg-red-700 text-white"
+								: status.toLowerCase().startsWith("returning")
+								? "bg-green-700 text-white"
+								: ""
+						}`}
+					>
+						{status.toLowerCase().startsWith("returning")
+							? "Continuing"
+							: status}
 					</Badge>
 				)}
 

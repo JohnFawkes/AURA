@@ -359,6 +359,7 @@ const MediaItemPage = () => {
 						movieDuration={mediaItem.Movie?.File?.Duration || 0}
 						guids={mediaItem.Guids || []}
 						existsInDB={mediaItem.ExistInDatabase || false}
+						status={posterSets ? posterSets[0]?.Status : ""}
 					/>
 
 					{isLoading && (
