@@ -278,3 +278,275 @@ query {
 `,
 	}
 }
+
+func generateAllUserSetsBody(username string) map[string]any {
+	return map[string]any{
+		"query": `
+query user_sets($username: String!) {
+	show_sets( filter: { user_created: { username: { _eq: $username } } }) {
+		id
+		user_created {
+			username
+		}
+		set_title
+		date_created
+		date_updated
+		show_id {
+			id
+			date_updated
+			status
+			title
+			tagline
+			first_air_date
+			tvdb_id
+			imdb_id
+			trakt_id
+			slug
+		}
+		show_poster{
+			id
+			modified_on
+			filesize
+		}
+		show_backdrop{
+			id
+			modified_on
+			filesize
+		}
+		season_posters{
+			id
+			modified_on
+			filesize
+			season {
+				season_number
+			}
+		}
+		titlecards{
+			id
+			modified_on	
+			filesize
+			episode {
+				episode_title
+				episode_number
+				season_id {
+					season_number
+				}
+			}
+		}
+	}
+	movie_sets( filter: { user_created: { username: { _eq: $username } } }) {
+		id
+		user_created {
+			username
+		}
+		set_title
+		date_created
+		date_updated
+		movie_id{
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+		}
+		movie_poster{
+			id
+			modified_on
+			filesize
+		}
+		movie_backdrop{
+			id
+			modified_on
+			filesize
+		}
+	}
+	collection_sets( filter: { user_created: { username: { _eq: $username } } }) {
+		id
+		user_created {
+			username
+		}
+		set_title
+		date_created
+		date_updated
+		movie_posters{
+			id
+			modified_on
+			filesize
+			movie{
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+			}
+		}
+		movie_backdrops{
+			id
+			modified_on
+			filesize
+			movie{
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+			}
+		}
+	}
+	boxsets(
+		 
+		filter: { 
+			user_created: { username: { _eq: $username } },
+			_or: [
+				{ movie_sets: { id: { _null: false } } },
+				{ show_sets: { id: { _null: false } } },
+				{ collection_sets: { id: { _null: false } } }
+			]
+		}
+	) {
+		id
+		user_created {
+			username
+		}
+		boxset_title
+		date_created
+		date_updated
+		movie_sets{
+			id
+			set_title
+			date_created
+			date_updated
+			movie_id{
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+			}
+			movie_poster{
+				id
+				modified_on
+				filesize
+			}
+			movie_backdrop{
+				id
+				modified_on
+				filesize
+			}
+		}
+		show_sets{
+			id
+			set_title
+			date_created
+			date_updated
+			show_id {
+				id
+				date_updated
+				status
+				title
+				tagline
+				first_air_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+			}
+			show_poster{
+				id
+				modified_on
+				filesize
+			}
+			show_backdrop{
+				id
+				modified_on
+				filesize
+			}
+			season_posters{
+				id
+				modified_on
+				filesize
+				season {
+					season_number
+				}
+			}
+			titlecards{
+				id
+				modified_on	
+				filesize
+				episode {
+					episode_title
+					episode_number
+					season_id {
+						season_number
+					}
+				}
+			}
+		}
+		collection_sets{
+			id
+			set_title
+			date_created
+			date_updated
+			movie_posters{
+				id
+				modified_on
+				filesize
+				movie{
+					id
+					date_updated
+					status
+					title
+					tagline
+					release_date
+					tvdb_id
+					imdb_id
+					trakt_id
+					slug
+				}
+			}
+			movie_backdrops{
+				id
+				modified_on
+				filesize
+				movie{
+					id
+					date_updated
+					status
+					title
+					tagline
+					release_date
+					tvdb_id
+					imdb_id
+					trakt_id
+					slug
+				}
+			}
+		}
+	}
+}
+`,
+		"variables": map[string]string{
+			"username": username,
+		},
+	}
+}
