@@ -29,7 +29,10 @@ import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { log } from "@/lib/logger";
-import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/api.mediaserver";
+import {
+	fetchMediaServerItemContent,
+	patchDownloadPosterFileAndUpdateMediaServer,
+} from "@/services/api.mediaserver";
 import { Progress } from "./ui/progress";
 import { formatDownloadSize } from "@/helper/formatDownloadSize";
 import {
@@ -215,7 +218,8 @@ const DownloadModalShow: React.FC<{
 
 	const downloadPosterFileAndUpdateMediaServer = async (
 		posterFile: PosterFile,
-		fileName: string
+		fileName: string,
+		mediaItem: MediaItem
 	) => {
 		try {
 			const resp = await patchDownloadPosterFileAndUpdateMediaServer(
@@ -249,10 +253,26 @@ const DownloadModalShow: React.FC<{
 			// Using the Selected Types, download the files and update the media server
 			const selectedTypes = data.selectedTypes || [];
 
+			// Get the latest Media Item details from the server
+			const latestMediaItemResp = await fetchMediaServerItemContent(
+				mediaItem.RatingKey,
+				mediaItem.LibraryTitle
+			);
+			if (!latestMediaItemResp) {
+				throw new Error("No response from Plex API");
+			}
+			if (latestMediaItemResp.status !== "success") {
+				throw new Error(latestMediaItemResp.message);
+			}
+			const latestMediaItem = latestMediaItemResp.data;
+			if (!latestMediaItem) {
+				throw new Error("No item found in response");
+			}
+
 			if (futureUpdatesOnly) {
 				const SaveItem: DBSavedItem = {
-					MediaItemID: mediaItem.RatingKey,
-					MediaItem: mediaItem,
+					MediaItemID: latestMediaItem.RatingKey,
+					MediaItem: latestMediaItem,
 					PosterSetID: posterSet.ID,
 					PosterSet: posterSet,
 					LastDownloaded: new Date().toISOString(),
@@ -337,10 +357,6 @@ const DownloadModalShow: React.FC<{
 				setProgressValues((prev) => ({
 					...prev,
 					progressValue: 1,
-					progressText: {
-						...prev.progressText,
-						poster: "Starting download",
-					},
 				}));
 
 				for (const type of selectedTypes) {
@@ -359,7 +375,8 @@ const DownloadModalShow: React.FC<{
 							const posterResp =
 								await downloadPosterFileAndUpdateMediaServer(
 									posterSet.Poster,
-									"Poster"
+									"Poster",
+									latestMediaItem
 								);
 							if (posterResp === null) {
 								setProgressValues((prev) => ({
@@ -398,7 +415,8 @@ const DownloadModalShow: React.FC<{
 							const backdropResp =
 								await downloadPosterFileAndUpdateMediaServer(
 									posterSet.Backdrop,
-									"Backdrop"
+									"Backdrop",
+									latestMediaItem
 								);
 							if (backdropResp === null) {
 								setProgressValues((prev) => ({
@@ -436,7 +454,7 @@ const DownloadModalShow: React.FC<{
 								// Use the season.Season.Number
 								// Check MediaItem.Series.Season.Number
 								const seasonExists =
-									mediaItem.Series?.Seasons?.some(
+									latestMediaItem.Series?.Seasons?.some(
 										(seasonItem) =>
 											seasonItem.SeasonNumber ===
 											season.Season?.Number
@@ -460,7 +478,8 @@ const DownloadModalShow: React.FC<{
 										season,
 										`S${String(
 											season.Season?.Number
-										).padStart(2, "0")} Poster`
+										).padStart(2, "0")} Poster`,
+										latestMediaItem
 									);
 								if (seasonResp === null) {
 									seasonErrorCount++;
@@ -508,7 +527,7 @@ const DownloadModalShow: React.FC<{
 								// Use the season.Season.Number
 								// Check MediaItem.Series.Season.Number
 								const seasonExists =
-									mediaItem.Series?.Seasons?.some(
+									latestMediaItem.Series?.Seasons?.some(
 										(seasonItem) =>
 											seasonItem.SeasonNumber ===
 											season.Season?.Number
@@ -531,7 +550,8 @@ const DownloadModalShow: React.FC<{
 										season,
 										`S${String(
 											season.Season?.Number
-										).padStart(2, "0")} Poster`
+										).padStart(2, "0")} Poster`,
+										latestMediaItem
 									);
 								if (seasonResp === null) {
 									setProgressValues((prev) => ({
@@ -564,7 +584,7 @@ const DownloadModalShow: React.FC<{
 								// Check to see if the episode is present in the MediaItem
 								// Use the titlecard.Episode.SeasonNumber and titlecard.Episode.EpisodeNumber
 								const episode =
-									mediaItem.Series?.Seasons?.flatMap(
+									latestMediaItem.Series?.Seasons?.flatMap(
 										(season) => season.Episodes
 									).find(
 										(episode) =>
@@ -595,7 +615,8 @@ const DownloadModalShow: React.FC<{
 											titleCard.Episode?.SeasonNumber
 										).padStart(2, "0")}E${String(
 											titleCard.Episode?.EpisodeNumber
-										).padStart(2, "0")} Titlecard`
+										).padStart(2, "0")} Titlecard`,
+										latestMediaItem
 									);
 								if (titlecardResp === null) {
 									titleCardErrorCount++;
@@ -637,8 +658,8 @@ const DownloadModalShow: React.FC<{
 				}
 
 				const SaveItem: DBSavedItem = {
-					MediaItemID: mediaItem.RatingKey,
-					MediaItem: mediaItem,
+					MediaItemID: latestMediaItem.RatingKey,
+					MediaItem: latestMediaItem,
 					PosterSetID: posterSet.ID,
 					PosterSet: posterSet,
 					LastDownloaded: new Date().toISOString(),
@@ -705,7 +726,13 @@ const DownloadModalShow: React.FC<{
 	};
 
 	return (
-		<Dialog>
+		<Dialog
+			onOpenChange={(open) => {
+				if (!open) {
+					handleClose();
+				}
+			}}
+		>
 			<DialogTrigger asChild>
 				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
 			</DialogTrigger>
