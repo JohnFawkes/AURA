@@ -1,5 +1,3 @@
-import { LibrarySection } from "./mediaItem";
-
 export interface PosterSet {
 	ID: string;
 	Title: string;
@@ -40,7 +38,7 @@ export interface PosterFileMovie {
 	TraktID: string;
 	ReleaseDate: string;
 	RatingKey?: string;
-	LibrarySection: LibrarySection;
+	LibrarySection: string;
 }
 
 export interface PosterFileSeason {
