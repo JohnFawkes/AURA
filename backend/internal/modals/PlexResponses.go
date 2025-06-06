@@ -82,6 +82,7 @@ type PlexDirectoryItem struct {
 	Location            struct {
 		Path string `xml:"path,attr"`
 	} `xml:"Location"`
+	Guids []PlexGuidItem `xml:"Guid"`
 }
 
 type PlexPhotosResponse struct {

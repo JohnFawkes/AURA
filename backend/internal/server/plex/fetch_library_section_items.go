@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 // Get all items/metadata for a specific item in a specific library section
@@ -65,6 +64,12 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
+			itemInfo.Movie = &modals.MediaItemMovie{
+				File: modals.MediaItemFile{Path: item.Media[0].Part[0].File,
+					Size:     item.Media[0].Part[0].Size,
+					Duration: item.Media[0].Part[0].Duration,
+				},
+			}
 
 			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
@@ -114,10 +119,28 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 				itemInfo.ExistInDatabase = false
 			}
 
+			// Get GUIDs and Ratings from the response body
+			if len(item.Guids) > 0 {
+				for _, guid := range item.Guids {
+					if guid.ID != "" {
+						// Sample guid.id : tmdb://######
+						// Split into provider and id
+						parts := strings.Split(guid.ID, "://")
+						if len(parts) == 2 {
+							provider := parts[0]
+							id := parts[1]
+							itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
+								Provider: provider,
+								ID:       id,
+							})
+						}
+					}
+				}
+			}
+
 			items = append(items, itemInfo)
 		}
 	}
 
-	time.Sleep(200 * time.Millisecond)
 	return items, responseSection.TotalSize, logging.ErrorLog{}
 }
