@@ -19,11 +19,13 @@ import { DimmedBackground } from "@/components/dimmed_backdrop";
 import { SetFileCounts } from "@/components/set_file_counts";
 import DownloadModalShow from "@/components/download-modal-show";
 import DownloadModalMovie from "@/components/download-modal-movie";
+import { useRouter } from "next/navigation";
 
 const SetPage = () => {
 	const { posterSet } = usePosterSetStore();
 	const { mediaItem } = useMediaStore();
 	const [backdropURL, setBackdropURL] = useState("");
+	const router = useRouter();
 
 	// Construct the backdrop URL
 	// If the posterSet has a backdrop, use that
@@ -64,6 +66,10 @@ const SetPage = () => {
 		);
 	}
 
+	const goToUserPage = () => {
+		router.push(`/user/${posterSet.User.Name}`);
+	};
+
 	return (
 		<div>
 			{/* Backdrop Background */}
@@ -82,19 +88,41 @@ const SetPage = () => {
 							<>
 								<Badge
 									className="flex items-center text-sm hover:text-white transition-colors"
-									onClick={() => {
+									onClick={(e) => {
+										e.stopPropagation();
+										goToUserPage();
+									}}
+								>
+									Set Author: {posterSet.User.Name}
+								</Badge>
+								<Badge
+									className="flex items-center text-sm hover:text-white transition-colors"
+									onClick={(e) => {
+										e.stopPropagation();
 										window.open(
 											`https://mediux.pro/sets/${posterSet.ID}`,
 											"_blank"
 										);
 									}}
 								>
-									Set Author: {posterSet.User.Name}
+									View on Mediux
 								</Badge>
+							</>
+						)}
+					</div>
+					<div className="flex flex-wrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
+						{posterSet.User.Name && (
+							<>
 								<SetFileCounts
 									mediaItem={mediaItem}
 									set={posterSet}
 								/>
+							</>
+						)}
+					</div>
+					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
+						{posterSet.User.Name && (
+							<>
 								<div className="ml-auto">
 									{mediaItem.Type === "show" ? (
 										<button className="btn">
