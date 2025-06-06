@@ -67,6 +67,14 @@ const UserSetPage = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
 
+	// Add state to track progress
+	const [, setProgressCount] = useState<{
+		current: number;
+		total: number;
+	}>({
+		current: 0,
+		total: 0,
+	});
 	const [respShowSets, setRespShowSets] = useState<MediuxUserShowSet[]>([]);
 	const [respMovieSets, setRespMovieSets] = useState<MediuxUserMovieSet[]>(
 		[]
@@ -136,6 +144,7 @@ const UserSetPage = () => {
 				setRespMovieSets(resp.data?.movie_sets || []);
 				setRespCollectionSets(resp.data?.collection_sets || []);
 				setRespBoxsets(resp.data?.boxsets || []);
+
 				setIsLoading(false);
 			} catch (error) {
 				log("User Page - Error fetching user sets", error);
@@ -151,6 +160,27 @@ const UserSetPage = () => {
 		getAllUserSets();
 	}, [username]);
 
+	const getTotalItemsToProcess = (
+		boxset: MediuxUserBoxset,
+		libraryType: string
+	) => {
+		if (libraryType === "show") {
+			return boxset.show_sets?.length || 0;
+		} else {
+			const movieSetsCount = boxset.movie_sets?.length || 0;
+			const collectionSetsCount =
+				boxset.collection_sets?.reduce((acc, collection) => {
+					// Count both posters and backdrops for each collection
+					const posterCount = collection.movie_posters?.length || 0;
+					const backdropCount =
+						collection.movie_backdrops?.length || 0;
+					return acc + posterCount + backdropCount;
+				}, 0) || 0;
+
+			return movieSetsCount + collectionSetsCount;
+		}
+	};
+
 	// Filter out the sets based on which Library type is selected
 	useEffect(() => {
 		setShowSets([]);
@@ -162,25 +192,38 @@ const UserSetPage = () => {
 		setIdbCollectionSets([]);
 		setIdbBoxsets([]);
 
-		setIsLoading(true);
 		setLoadMessage("Filtering sets based on selected library");
 		const filterOutItems = async () => {
-			if (!selectedLibrarySection) {
-				setIsLoading(false);
-				return;
-			}
+			if (!selectedLibrarySection) return;
+			setIsLoading(true);
+
 			log(
 				"Setting items based on",
 				selectedLibrarySection,
 				filterOutInDB
 			);
 			if (respBoxsets && respBoxsets.length > 0) {
-				setLoadMessage("Filtering Boxsets");
 				const userBoxsets: MediuxUserBoxset[] = [];
 				log("User Page - Filtering Boxsets", respBoxsets);
+				// Calculate total items first
+				let totalItemsToProcess = 0;
+				let processedItems = 0;
+				respBoxsets.forEach((boxset) => {
+					totalItemsToProcess += getTotalItemsToProcess(
+						boxset,
+						selectedLibrarySection.type
+					);
+				});
+
+				setProgressCount({
+					current: 0,
+					total: totalItemsToProcess,
+				});
+
 				await Promise.all(
 					respBoxsets.map(async (origBoxset) => {
 						const boxset = JSON.parse(JSON.stringify(origBoxset));
+
 						if (selectedLibrarySection.type === "show") {
 							boxset.movie_sets = []; // Clear movie sets since its not needed
 							boxset.collection_sets = []; // Clear collection sets since its not needed
@@ -188,9 +231,6 @@ const UserSetPage = () => {
 								boxset.show_sets &&
 								boxset.show_sets.length > 0
 							) {
-								setLoadMessage(
-									"Filtering Show Sets in Boxsets"
-								);
 								const updatedShowSets: MediuxUserShowSet[] = [];
 								await Promise.all(
 									boxset.show_sets.map(
@@ -200,11 +240,17 @@ const UserSetPage = () => {
 													showSet.show_id.id,
 													selectedLibrarySection.title
 												);
-											console.log(
-												"SHOW RESULT",
-												dbResult,
-												showSet.set_title
+
+											// Add progress tracking here
+											processedItems++;
+											setProgressCount((prev) => ({
+												...prev,
+												current: processedItems,
+											}));
+											setLoadMessage(
+												`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
 											);
+
 											if (dbResult && dbResult !== true) {
 												showSet.MediaItem = dbResult;
 												if (filterOutInDB === "all") {
@@ -240,9 +286,6 @@ const UserSetPage = () => {
 								boxset.movie_sets &&
 								boxset.movie_sets.length > 0
 							) {
-								setLoadMessage(
-									"Filtering Movie Sets in Boxsets"
-								);
 								const updatedMovieSets: MediuxUserMovieSet[] =
 									[];
 								await Promise.all(
@@ -255,6 +298,16 @@ const UserSetPage = () => {
 													movieSet.movie_id.id,
 													selectedLibrarySection.title
 												);
+
+											// Add progress tracking here
+											processedItems++;
+											setProgressCount((prev) => ({
+												...prev,
+												current: processedItems,
+											}));
+											setLoadMessage(
+												`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+											);
 											if (dbResult && dbResult !== true) {
 												movieSet.MediaItem = dbResult;
 												if (filterOutInDB === "all") {
@@ -305,6 +358,19 @@ const UserSetPage = () => {
 																poster.movie.id,
 																selectedLibrarySection.title
 															);
+
+														// Add progress tracking here
+														processedItems++;
+														setProgressCount(
+															(prev) => ({
+																...prev,
+																current:
+																	processedItems,
+															})
+														);
+														setLoadMessage(
+															`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+														);
 														if (
 															dbResult &&
 															dbResult !== true
@@ -350,6 +416,19 @@ const UserSetPage = () => {
 																	.id,
 																selectedLibrarySection.title
 															);
+
+														// Add progress tracking here
+														processedItems++;
+														setProgressCount(
+															(prev) => ({
+																...prev,
+																current:
+																	processedItems,
+															})
+														);
+														setLoadMessage(
+															`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+														);
 														if (
 															dbResult &&
 															dbResult !== true
@@ -424,11 +503,28 @@ const UserSetPage = () => {
 			) {
 				const userShowSets: MediuxUserShowSet[] = [];
 				log("User Page - Filtering Show Sets", respShowSets);
+				// Reset progress counts before processing
+				let processedItems = 0;
+				const totalItemsToProcess = respShowSets.length;
+				setProgressCount({
+					current: 0,
+					total: totalItemsToProcess,
+				});
+				setLoadMessage("Filtering show sets");
 				await Promise.all(
 					respShowSets.map(async (showSet) => {
 						const dbResult = await searchIDBForTMDBID(
 							showSet.show_id.id,
 							selectedLibrarySection.title
+						);
+						// Update progress count
+						processedItems++;
+						setProgressCount((prev) => ({
+							...prev,
+							current: processedItems,
+						}));
+						setLoadMessage(
+							`Filtering show sets - Processing ${processedItems} of ${totalItemsToProcess} items`
 						);
 						if (dbResult && dbResult !== true) {
 							showSet.MediaItem = dbResult;
@@ -461,11 +557,27 @@ const UserSetPage = () => {
 			) {
 				const userMovieSets: MediuxUserMovieSet[] = [];
 				log("User Page - Filtering Movie Sets", respMovieSets);
+				// Reset progress counts before processing
+				let processedItems = 0;
+				const totalItemsToProcess = respMovieSets.length;
+				setProgressCount({
+					current: 0,
+					total: totalItemsToProcess,
+				});
 				await Promise.all(
 					respMovieSets.map(async (movieSet) => {
 						const dbResult = await searchIDBForTMDBID(
 							movieSet.movie_id.id,
 							selectedLibrarySection.title
+						);
+						// Update progress count
+						processedItems++;
+						setProgressCount((prev) => ({
+							...prev,
+							current: processedItems,
+						}));
+						setLoadMessage(
+							`Filtering movie sets - Processing ${processedItems} of ${totalItemsToProcess} items`
 						);
 						if (dbResult && dbResult !== true) {
 							movieSet.MediaItem = dbResult;
@@ -501,6 +613,23 @@ const UserSetPage = () => {
 					"User Page - Filtering Collection Sets",
 					respCollectionSets
 				);
+				// Reset progress counts before processing
+				let processedItems = 0;
+				const totalItemsToProcess = respCollectionSets.reduce(
+					(acc, collectionSet) => {
+						return (
+							acc +
+							(collectionSet.movie_posters?.length || 0) +
+							(collectionSet.movie_backdrops?.length || 0)
+						);
+					},
+					0
+				);
+				setProgressCount({
+					current: 0,
+					total: totalItemsToProcess,
+				});
+
 				await Promise.all(
 					respCollectionSets.map(async (collectionSet) => {
 						const posterMovies: MediuxUserCollectionMovie[] = [];
@@ -510,6 +639,16 @@ const UserSetPage = () => {
 									poster.movie.id,
 									selectedLibrarySection.title
 								);
+								// Add progress tracking here
+								processedItems++;
+								setProgressCount((prev) => ({
+									...prev,
+									current: processedItems,
+								}));
+								setLoadMessage(
+									`Filtering collection sets - Processing ${processedItems} of ${totalItemsToProcess} items`
+								);
+
 								if (dbResult && dbResult !== true) {
 									poster.movie.MediaItem = dbResult;
 									if (filterOutInDB === "all") {
@@ -536,6 +675,11 @@ const UserSetPage = () => {
 										backdrop.movie.id,
 										selectedLibrarySection.title
 									);
+									// Add progress tracking here
+									setProgressCount((prev) => ({
+										...prev,
+										current: prev.current + 1,
+									}));
 									if (dbResult && dbResult !== true) {
 										backdrop.movie.MediaItem = dbResult;
 										if (filterOutInDB === "all") {
