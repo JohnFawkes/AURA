@@ -21,7 +21,7 @@ import { Badge } from "./badge";
 import { Separator } from "./separator";
 import { CheckCircle2 as Checkmark, X, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
-import { DialogDescription } from "@radix-ui/react-dialog";
+import { DialogDescription } from "@/components/ui/dialog";
 import Link from "next/link";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 
