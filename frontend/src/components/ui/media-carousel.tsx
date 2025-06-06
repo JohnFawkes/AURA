@@ -13,7 +13,7 @@ import { CarouselMovie } from "../carousel-movie";
 import { MediaItem } from "@/types/mediaItem";
 import { ZoomInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Lead, P } from "./typography";
+import { Lead } from "./typography";
 import { usePosterSetStore } from "@/lib/posterSetStore";
 import { useMediaStore } from "@/lib/mediaStore";
 import { formatLastUpdatedDate } from "@/helper/formatDate";
@@ -38,6 +38,10 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 		router.push(`/sets/${set.ID}`);
 	};
 
+	const goToUserPage = () => {
+		router.push(`/user/${set.User.Name}`);
+	};
+
 	return (
 		<Carousel
 			opts={{
@@ -49,14 +53,16 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 		>
 			<div className="flex flex-col">
 				<div className="flex flex-row items-center">
-					<P
-						className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
-						onClick={() => {
-							goToSetPage();
-						}}
-					>
-						{set.Title} by {set.User.Name}
-					</P>
+					<div className="flex flex-row items-center">
+						<div
+							onClick={() => {
+								goToSetPage();
+							}}
+							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
+						>
+							{set.Title}
+						</div>
+					</div>
 					<div className="ml-auto flex space-x-2">
 						<button
 							className="btn"
@@ -82,6 +88,18 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 							</button>
 						) : null}
 					</div>
+				</div>
+				<div className="text-md text-muted-foreground  mb-1">
+					By:{" "}
+					<span
+						onClick={(e) => {
+							e.stopPropagation();
+							goToUserPage();
+						}}
+						className="hover:text-primary cursor-pointer"
+					>
+						{set.User.Name}
+					</span>
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
 					Last Update:{" "}
