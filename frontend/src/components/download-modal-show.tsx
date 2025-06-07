@@ -601,6 +601,9 @@ const DownloadModalShow: React.FC<{
 												titleCard.Episode?.EpisodeNumber
 									);
 								if (!episode) {
+									log(
+										"Poster Set Modal - Title Card Skipped: Episode not found in MediaItem"
+									);
 									continue;
 								}
 								setProgressValues((prev) => ({
