@@ -72,3 +72,23 @@ export const fetchAllUserSets = async (
 		return ReturnErrorMessage<MediuxUserAllSetsResponse>(error);
 	}
 };
+
+export const fetchShowSetByID = async (
+	setID: string
+): Promise<APIResponse<PosterSet>> => {
+	log(`api.mediux - Fetching show set by ID: ${setID} started`);
+	try {
+		const response = await apiClient.get<APIResponse<PosterSet>>(
+			`/mediux/sets/get_set/${setID}`
+		);
+		log(`api.mediux - Fetching show set by ID: ${setID} completed`);
+		return response.data;
+	} catch (error) {
+		log(
+			`api.mediux - Fetching show set by ID: ${setID} failed with error: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		return ReturnErrorMessage<PosterSet>(error);
+	}
+};
