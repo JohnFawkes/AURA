@@ -322,6 +322,7 @@ const SavedSetsCard: React.FC<{
 							autoDownloadDefault={
 								savedSet.PosterSets[0].AutoDownload
 							}
+							forceSetRefresh={true}
 						/>
 					)}
 

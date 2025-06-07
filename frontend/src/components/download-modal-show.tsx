@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	Dialog,
 	DialogClose,
@@ -44,6 +46,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { DBSavedItem } from "@/types/databaseSavedSet";
 import { postAddItemToDB } from "@/services/api.db";
+import { fetchShowSetByID } from "@/services/api.mediux";
 
 const formSchema = z.object({
 	selectedTypes: z.array(z.string()).refine((value) => value.length > 0, {
@@ -57,7 +60,15 @@ const DownloadModalShow: React.FC<{
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	autoDownloadDefault?: boolean;
-}> = ({ posterSet, mediaItem, open, onOpenChange, autoDownloadDefault }) => {
+	forceSetRefresh?: boolean; // Optional prop to force a refresh of the set
+}> = ({
+	posterSet,
+	mediaItem,
+	open,
+	onOpenChange,
+	autoDownloadDefault,
+	forceSetRefresh,
+}) => {
 	const [isMounted, setIsMounted] = useState(false);
 	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
@@ -65,6 +76,14 @@ const DownloadModalShow: React.FC<{
 		autoDownloadDefault || false
 	);
 	const [futureUpdatesOnly, setFutureUpdatesOnly] = useState(false);
+
+	// Tracking selected checkboxes for what to download
+	const [totalSelectedSize, setTotalSelectedSize] = useState("");
+	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState(
+		"Total Download Size: "
+	);
+	const [currentPosterSet, setCurrentPosterSet] =
+		useState<PosterSet>(posterSet);
 
 	const handleAutoDownloadChange = () => {
 		if (futureUpdatesOnly) {
@@ -83,12 +102,6 @@ const DownloadModalShow: React.FC<{
 			return newValue;
 		});
 	};
-
-	// Tracking selected checkboxes for what to download
-	const [totalSelectedSize, setTotalSelectedSize] = useState("");
-	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState(
-		"Total Download Size: "
-	);
 
 	// Download Progress
 	const [progressValues, setProgressValues] = useState<{
@@ -117,15 +130,49 @@ const DownloadModalShow: React.FC<{
 		warningMessages: [],
 	});
 
+	useEffect(() => {
+		// If forceSetRefresh is true, we need to get the latest poster set from the server
+		if (forceSetRefresh) {
+			log("Poster Set Modal - Force Refresh Triggered");
+			const getShowSetByID = async () => {
+				const resp = await fetchShowSetByID(posterSet.ID);
+				if (resp.status !== "success") {
+					return;
+				}
+
+				// Update the posterSet state with the latest data
+				if (resp.data) {
+					setCurrentPosterSet(resp.data);
+					log(
+						"Poster Set Modal - Poster Set Updated:",
+						"Before:",
+						posterSet,
+						"After:",
+						resp.data
+					);
+				}
+			};
+			getShowSetByID();
+		} else {
+			// If not forcing a refresh, use the passed posterSet directly
+			log("Poster Set Modal - Using passed posterSet data");
+			setCurrentPosterSet(posterSet);
+		}
+	}, [forceSetRefresh, posterSet]);
+
 	// Compute asset options
 	const assetTypes = useMemo(() => {
-		const setHasPoster = posterSet.Poster;
-		const setHasBackdrop = posterSet.Backdrop;
-		const setHasSeasonPosters = (posterSet.SeasonPosters?.length ?? 0) > 0;
-		const setHasSpecialSeasonPosters = posterSet.SeasonPosters?.some(
+		if (!currentPosterSet) {
+			return [];
+		}
+		const setHasPoster = currentPosterSet.Poster;
+		const setHasBackdrop = currentPosterSet.Backdrop;
+		const setHasSeasonPosters =
+			(currentPosterSet.SeasonPosters?.length ?? 0) > 0;
+		const setHasSpecialSeasonPosters = currentPosterSet.SeasonPosters?.some(
 			(season) => season.Type === "specialSeasonPoster"
 		);
-		const setHasTitleCards = (posterSet.TitleCards?.length ?? 0) > 0;
+		const setHasTitleCards = (currentPosterSet.TitleCards?.length ?? 0) > 0;
 
 		return [
 			setHasPoster ? { id: "poster", label: "Poster" } : null,
@@ -138,7 +185,7 @@ const DownloadModalShow: React.FC<{
 				: null,
 			setHasTitleCards ? { id: "titlecard", label: "Titlecard" } : null,
 		].filter(Boolean);
-	}, [posterSet]);
+	}, [currentPosterSet]);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -159,33 +206,36 @@ const DownloadModalShow: React.FC<{
 
 	// Calculate the total size of selected types
 	useEffect(() => {
+		if (!currentPosterSet) {
+			return;
+		}
 		const selectedTypes = watchSelectedTypes || [];
 		log("Poster Set Modal - Selected Types:", selectedTypes);
 		const totalSize = selectedTypes.reduce((acc, type) => {
 			let size = 0;
 			switch (type) {
 				case "poster":
-					size = posterSet.Poster?.FileSize || 0;
+					size = currentPosterSet.Poster?.FileSize || 0;
 					break;
 				case "backdrop":
-					size = posterSet.Backdrop?.FileSize || 0;
+					size = currentPosterSet.Backdrop?.FileSize || 0;
 					break;
 				case "seasonPoster":
 					size =
-						posterSet.SeasonPosters?.reduce(
+						currentPosterSet.SeasonPosters?.reduce(
 							(s, sp) => s + (sp.FileSize || 0),
 							0
 						) || 0;
 					break;
 				case "specialSeasonPoster":
 					size =
-						posterSet.SeasonPosters?.filter(
+						currentPosterSet.SeasonPosters?.filter(
 							(season) => season.Type === "specialSeasonPoster"
 						).reduce((s, sp) => s + (sp.FileSize || 0), 0) || 0;
 					break;
 				case "titlecard":
 					size =
-						posterSet.TitleCards?.reduce(
+						currentPosterSet.TitleCards?.reduce(
 							(s, tc) => s + (tc.FileSize || 0),
 							0
 						) || 0;
@@ -196,7 +246,43 @@ const DownloadModalShow: React.FC<{
 			return acc + size;
 		}, 0);
 		setTotalSelectedSize(formatDownloadSize(totalSize));
-	}, [watchSelectedTypes, posterSet]);
+	}, [watchSelectedTypes, currentPosterSet]);
+
+	if (!currentPosterSet) {
+		return (
+			<Dialog
+				open={open}
+				onOpenChange={(isOpen) => {
+					if (typeof onOpenChange === "function") {
+						onOpenChange(isOpen);
+					}
+					if (!isOpen) {
+						handleClose();
+					}
+				}}
+			>
+				{!open && (
+					<DialogTrigger asChild>
+						<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+					</DialogTrigger>
+				)}
+				<DialogPortal>
+					<DialogOverlay />
+					<DialogContent className="max-w-md">
+						<DialogHeader>
+							<DialogTitle>Loading Poster Set...</DialogTitle>
+							<DialogDescription>
+								This may take a moment.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="flex justify-center items-center">
+							<LoaderIcon className="h-8 w-8 animate-spin" />
+						</div>
+					</DialogContent>
+				</DialogPortal>
+			</Dialog>
+		);
+	}
 
 	const resetProgressValues = () => {
 		setProgressValues({
@@ -250,6 +336,8 @@ const DownloadModalShow: React.FC<{
 	// Function to handle form submission
 	const onSubmit = async (data: z.infer<typeof formSchema>) => {
 		if (isMounted) return;
+		if (!currentPosterSet) return;
+
 		setIsMounted(true);
 		setCancelButtonText("Cancel");
 		setDownloadButtonText("Downloading...");
@@ -279,8 +367,8 @@ const DownloadModalShow: React.FC<{
 				const SaveItem: DBSavedItem = {
 					MediaItemID: latestMediaItem.RatingKey,
 					MediaItem: latestMediaItem,
-					PosterSetID: posterSet.ID,
-					PosterSet: posterSet,
+					PosterSetID: currentPosterSet.ID,
+					PosterSet: currentPosterSet,
 					LastDownloaded: new Date().toISOString(),
 					SelectedTypes: data.selectedTypes,
 					AutoDownload: autoDownload,
@@ -332,11 +420,14 @@ const DownloadModalShow: React.FC<{
 							case "seasonPoster":
 							case "specialSeasonPoster":
 								return (
-									acc + (posterSet.SeasonPosters?.length || 0)
+									acc +
+									(currentPosterSet.SeasonPosters?.length ||
+										0)
 								);
 							case "titlecard":
 								return (
-									acc + (posterSet.TitleCards?.length || 0)
+									acc +
+									(currentPosterSet.TitleCards?.length || 0)
 								);
 							default:
 								return acc;
@@ -368,7 +459,7 @@ const DownloadModalShow: React.FC<{
 				for (const type of selectedTypes) {
 					switch (type) {
 						case "poster":
-							if (!posterSet.Poster) {
+							if (!currentPosterSet.Poster) {
 								throw new Error("Poster file is missing");
 							}
 							setProgressValues((prev) => ({
@@ -380,7 +471,7 @@ const DownloadModalShow: React.FC<{
 							}));
 							const posterResp =
 								await downloadPosterFileAndUpdateMediaServer(
-									posterSet.Poster,
+									currentPosterSet.Poster,
 									"Poster",
 									latestMediaItem
 								);
@@ -408,7 +499,7 @@ const DownloadModalShow: React.FC<{
 							}));
 							break;
 						case "backdrop":
-							if (!posterSet.Backdrop) {
+							if (!currentPosterSet.Backdrop) {
 								throw new Error("Backdrop file is missing");
 							}
 							setProgressValues((prev) => ({
@@ -420,7 +511,7 @@ const DownloadModalShow: React.FC<{
 							}));
 							const backdropResp =
 								await downloadPosterFileAndUpdateMediaServer(
-									posterSet.Backdrop,
+									currentPosterSet.Backdrop,
 									"Backdrop",
 									latestMediaItem
 								);
@@ -449,7 +540,7 @@ const DownloadModalShow: React.FC<{
 							break;
 						case "seasonPoster":
 							let seasonErrorCount = 0;
-							for (const season of posterSet.SeasonPosters ||
+							for (const season of currentPosterSet.SeasonPosters ||
 								[]) {
 								if (season.Season?.Number === 0) {
 									// Skip season 0
@@ -512,8 +603,8 @@ const DownloadModalShow: React.FC<{
 									progressText: {
 										...prev.progressText,
 										seasonPoster: `Finished Season Poster${
-											(posterSet.SeasonPosters?.length ??
-												0) > 1
+											(currentPosterSet.SeasonPosters
+												?.length ?? 0) > 1
 												? "s"
 												: ""
 										} Download`,
@@ -522,7 +613,7 @@ const DownloadModalShow: React.FC<{
 							}
 							break;
 						case "specialSeasonPoster":
-							for (const season of posterSet.SeasonPosters ||
+							for (const season of currentPosterSet.SeasonPosters ||
 								[]) {
 								if (season.Season?.Number !== 0) {
 									// Skip season 0
@@ -585,7 +676,7 @@ const DownloadModalShow: React.FC<{
 							break;
 						case "titlecard":
 							let titleCardErrorCount = 0;
-							for (const titleCard of posterSet.TitleCards ||
+							for (const titleCard of currentPosterSet.TitleCards ||
 								[]) {
 								// Check to see if the episode is present in the MediaItem
 								// Use the titlecard.Episode.SeasonNumber and titlecard.Episode.EpisodeNumber
@@ -652,8 +743,8 @@ const DownloadModalShow: React.FC<{
 									progressText: {
 										...prev.progressText,
 										titleCard: `Finished Title Card${
-											(posterSet.TitleCards?.length ??
-												0) > 1
+											(currentPosterSet.TitleCards
+												?.length ?? 0) > 1
 												? "s"
 												: ""
 										} Download`,
@@ -669,8 +760,8 @@ const DownloadModalShow: React.FC<{
 				const SaveItem: DBSavedItem = {
 					MediaItemID: latestMediaItem.RatingKey,
 					MediaItem: latestMediaItem,
-					PosterSetID: posterSet.ID,
-					PosterSet: posterSet,
+					PosterSetID: currentPosterSet.ID,
+					PosterSet: currentPosterSet,
 					LastDownloaded: new Date().toISOString(),
 					SelectedTypes: data.selectedTypes,
 					AutoDownload: autoDownload,
@@ -755,18 +846,18 @@ const DownloadModalShow: React.FC<{
 				<DialogOverlay />
 				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[425px] ">
 					<DialogHeader>
-						<DialogTitle>{posterSet.Title}</DialogTitle>
+						<DialogTitle>{currentPosterSet.Title}</DialogTitle>
 						<DialogDescription>
-							Set Author: {posterSet.User.Name}
+							Set Author: {currentPosterSet.User.Name}
 						</DialogDescription>
 						<DialogDescription>
 							<Link
-								href={`https://mediux.pro/sets/${posterSet.ID}`}
+								href={`https://mediux.pro/sets/${currentPosterSet.ID}`}
 								className="hover:text-primary transition-colors text-sm text-muted-foreground"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								Set ID: {posterSet.ID}
+								Set ID: {currentPosterSet.ID}
 							</Link>
 						</DialogDescription>
 					</DialogHeader>
@@ -1036,7 +1127,7 @@ const DownloadModalShow: React.FC<{
 													<div className="flex items-center text-destructive">
 														{(() => {
 															const total =
-																posterSet
+																currentPosterSet
 																	.SeasonPosters
 																	?.length ??
 																0;
@@ -1137,7 +1228,7 @@ const DownloadModalShow: React.FC<{
 													<div className="flex items-center text-destructive">
 														{(() => {
 															const total =
-																posterSet
+																currentPosterSet
 																	.TitleCards
 																	?.length ??
 																0;
