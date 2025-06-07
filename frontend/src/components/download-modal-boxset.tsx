@@ -1839,7 +1839,7 @@ const DownloadModalBoxset: React.FC<{
 									},
 								}));
 								const posterFile: PosterFile = {
-									ID: collection.id,
+									ID: collection.movie_posters[0]?.id,
 									Type: "poster",
 									Modified: collectionPoster.modified_on,
 									FileSize: Number(collectionPoster.filesize),
@@ -1922,7 +1922,7 @@ const DownloadModalBoxset: React.FC<{
 									},
 								}));
 								const backdropFile: PosterFile = {
-									ID: collection.id,
+									ID: collection.movie_backdrops[0]?.id,
 									Type: "backdrop",
 									Modified: collectionBackdrop.modified_on,
 									FileSize: Number(
