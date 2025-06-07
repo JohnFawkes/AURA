@@ -632,6 +632,7 @@ func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 
 	posterSet.ID = showSet.ID
 	posterSet.Title = showSet.SetTitle
+	posterSet.User.Name = showSet.UserCreated.Username
 	posterSet.Type = "show"
 	posterSet.DateCreated = showSet.DateCreated
 	posterSet.DateUpdated = showSet.DateUpdated

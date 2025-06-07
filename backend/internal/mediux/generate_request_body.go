@@ -193,6 +193,7 @@ func generateShowSetByIDRequestBody(setIDString string) map[string]any {
 query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 	show_sets_by_id(id: $showSetID) {
 		id
+		set_title
 		user_created {
 			username
 		}
