@@ -80,7 +80,7 @@ func CheckForUpdatesToPosters() {
 				logging.LOG.ErrorWithLog(logErr)
 				continue
 			}
-			updated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.DateUpdated)
+			posterSetUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.DateUpdated)
 			var formattedLastDownloaded string
 			lastDownloadedTime, err := time.Parse("2006-01-02T15:04:05Z07:00", dbPosterSet.LastDownloaded)
 			if err == nil {
@@ -88,8 +88,10 @@ func CheckForUpdatesToPosters() {
 			} else {
 				formattedLastDownloaded = dbPosterSet.LastDownloaded
 			}
-			if !updated {
-				logging.LOG.Debug(fmt.Sprintf("Skipping '%s' - Set '%s' | Last update: %s < Last download: %s",
+
+			addedSeasonOrEpisodes := AddedMoreSeasonsOrEpisodes(dbSavedItem.MediaItem, latestMediaItem)
+			if !posterSetUpdated && !addedSeasonOrEpisodes {
+				logging.LOG.Debug(fmt.Sprintf("Skipping '%s' - Set '%s' | Last update: %s < Last download: %s | No new seasons or episodes added",
 					dbSavedItem.MediaItem.Title,
 					dbPosterSet.PosterSetID,
 					updatedSet.DateUpdated.Format("2006-01-02 15:04:05"),
@@ -121,26 +123,20 @@ func CheckForUpdatesToPosters() {
 
 			filesToDownload := []modals.PosterFile{}
 			if posterSet {
-				fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.Poster.Modified)
-				if !fileUpdated {
-					continue
+				if shouldDownloadFile(dbPosterSet, *updatedSet.Poster, dbSavedItem.MediaItem, latestMediaItem) {
+					filesToDownload = append(filesToDownload, *updatedSet.Poster)
 				}
-				filesToDownload = append(filesToDownload, *updatedSet.Poster)
 			}
 			if backdropSet {
-				fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.Backdrop.Modified)
-				if !fileUpdated {
-					continue
+				if shouldDownloadFile(dbPosterSet, *updatedSet.Backdrop, dbSavedItem.MediaItem, latestMediaItem) {
+					filesToDownload = append(filesToDownload, *updatedSet.Backdrop)
 				}
-				filesToDownload = append(filesToDownload, *updatedSet.Backdrop)
 			}
 			if seasonSet {
 				for _, season := range updatedSet.SeasonPosters {
-					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, season.Modified)
-					if !fileUpdated {
-						continue
+					if shouldDownloadFile(dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem) {
+						filesToDownload = append(filesToDownload, season)
 					}
-					filesToDownload = append(filesToDownload, season)
 				}
 			}
 			if specialSeasonSet {
@@ -148,20 +144,16 @@ func CheckForUpdatesToPosters() {
 					if season.Season.Number != 0 {
 						continue
 					}
-					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, season.Modified)
-					if !fileUpdated {
-						continue
+					if shouldDownloadFile(dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem) {
+						filesToDownload = append(filesToDownload, season)
 					}
-					filesToDownload = append(filesToDownload, season)
 				}
 			}
 			if titlecardSet {
 				for _, titlecard := range updatedSet.TitleCards {
-					fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, titlecard.Modified)
-					if !fileUpdated {
-						continue
+					if shouldDownloadFile(dbPosterSet, titlecard, dbSavedItem.MediaItem, latestMediaItem) {
+						filesToDownload = append(filesToDownload, titlecard)
 					}
-					filesToDownload = append(filesToDownload, titlecard)
 				}
 			}
 
@@ -196,9 +188,9 @@ func CheckForUpdatesToPosters() {
 			// Update the item in the database with the new info
 			dbSaveItem := modals.DBSavedItem{
 				MediaItemID:    dbSavedItem.MediaItemID,
-				MediaItem:      dbSavedItem.MediaItem,
-				PosterSetID:    dbPosterSet.PosterSetID,
-				PosterSet:      dbPosterSet.PosterSet,
+				MediaItem:      latestMediaItem,
+				PosterSetID:    updatedSet.ID,
+				PosterSet:      updatedSet,
 				LastDownloaded: time.Now().Format("2006-01-02T15:04:05Z07:00"),
 				SelectedTypes:  dbPosterSet.SelectedTypes,
 				AutoDownload:   dbPosterSet.AutoDownload,
@@ -209,5 +201,20 @@ func CheckForUpdatesToPosters() {
 				continue
 			}
 		}
+	}
+}
+
+func shouldDownloadFile(dbPosterSet modals.DBPosterSetDetail, file modals.PosterFile, dbSavedItem, latestMediaItem modals.MediaItem) bool {
+	// Check if file was modified after last download
+	fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, file.Modified)
+
+	// For season posters and titlecards, also check if new seasons/episodes were added
+	switch file.Type {
+	case "seasonPoster":
+		return fileUpdated || CheckSeasonAdded(file.Season.Number, dbSavedItem, latestMediaItem)
+	case "titlecard":
+		return fileUpdated || CheckEpisodeAdded(file.Episode.SeasonNumber, file.Episode.EpisodeNumber, dbSavedItem, latestMediaItem)
+	default:
+		return fileUpdated
 	}
 }
