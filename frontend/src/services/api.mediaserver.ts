@@ -113,6 +113,13 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 	posterFile: PosterFile,
 	mediaItem: MediaItem
 ): Promise<APIResponse<string>> => {
+	log(
+		`api.mediaserver - Downloading poster file and updating media server for ratingKey ${mediaItem.RatingKey} started`,
+		{
+			posterFile: posterFile,
+			mediaItem: mediaItem,
+		}
+	);
 	try {
 		const response = await apiClient.patch<APIResponse<string>>(
 			`/mediaserver/download/file`,
