@@ -829,6 +829,16 @@ const DownloadModalBoxset: React.FC<{
 											FileSize: Number(
 												titleCard.filesize
 											),
+											Episode: {
+												Title: titleCard.episode
+													.episode_title,
+												EpisodeNumber:
+													titleCard.episode
+														.episode_number,
+												SeasonNumber:
+													titleCard.episode.season_id
+														.season_number,
+											},
 										})
 									),
 									Status: "",
@@ -1390,6 +1400,16 @@ const DownloadModalBoxset: React.FC<{
 										Type: "titlecard",
 										Modified: titleCard.modified_on,
 										FileSize: Number(titleCard.filesize),
+										Episode: {
+											Title: titleCard.episode
+												.episode_title,
+											EpisodeNumber:
+												titleCard.episode
+													?.episode_number,
+											SeasonNumber:
+												titleCard.episode.season_id
+													.season_number,
+										},
 									})
 								),
 								Status: "",
