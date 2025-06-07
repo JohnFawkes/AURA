@@ -582,6 +582,50 @@ func parseFileSize(fileSize string) int64 {
 	return int64(size)
 }
 
+func GetShowSetByID(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+	logging.LOG.Trace(r.URL.Path)
+
+	// Get the set ID from the URL
+	setID := chi.URLParam(r, "setID")
+	if setID == "" {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			Err: errors.New("missing setID in URL"),
+			Log: logging.Log{
+				Message: "Missing setID in URL",
+				Elapsed: utils.ElapsedTime(startTime),
+			},
+		})
+		return
+	}
+
+	logging.LOG.Debug(fmt.Sprintf("Fetching show set by ID: %s", setID))
+
+	showSet, logErr := FetchShowSetByID(setID)
+	if logErr.Err != nil {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		return
+	}
+
+	if showSet.ID == "" {
+		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
+			Err: errors.New("no show set found"),
+			Log: logging.Log{
+				Message: "No show set found for the provided ID",
+				Elapsed: utils.ElapsedTime(startTime),
+			},
+		})
+		return
+	}
+
+	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+		Status:  "success",
+		Message: "Retrieved show set from Mediux",
+		Elapsed: utils.ElapsedTime(startTime),
+		Data:    showSet,
+	})
+}
+
 func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 
 	requestBody := generateShowSetByIDRequestBody(setID)
