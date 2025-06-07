@@ -91,7 +91,7 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 		Status:  "success",
 		Message: "Downloaded and Updated successfully",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    "downloaded some file successfully",
+		Data:    fmt.Sprintf("Downloaded %s successfully", downloadFileName),
 	})
 }
 

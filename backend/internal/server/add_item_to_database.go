@@ -44,8 +44,8 @@ func AddItemToDatabase(w http.ResponseWriter, r *http.Request) {
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Downloaded and Updated successfully",
+		Message: "Item added to database successfully",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    "downloaded some file successfully",
+		Data:    fmt.Sprintf("Item with ID %s added successfully", SaveItem.MediaItemID),
 	})
 }
