@@ -1305,6 +1305,7 @@ const RenderShowSetsCarousel = ({
 	const router = useRouter();
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
+	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
 	const posterSet: PosterSet = {
 		ID: showSet.id,
@@ -1390,6 +1391,8 @@ const RenderShowSetsCarousel = ({
 							<DownloadModalShow
 								posterSet={posterSet}
 								mediaItem={showSet.MediaItem}
+								open={isDownloadModalOpen}
+								onOpenChange={setIsDownloadModalOpen}
 							/>
 						</button>
 					</div>
@@ -1420,6 +1423,7 @@ const RenderMovieSetsCarousel = ({
 	const router = useRouter();
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
+	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
 	const posterSet: PosterSet = {
 		ID: movieSet.id,
@@ -1487,6 +1491,8 @@ const RenderMovieSetsCarousel = ({
 								<DownloadModalMovie
 									posterSet={posterSet}
 									mediaItem={movieSet.MediaItem}
+									open={isDownloadModalOpen}
+									onOpenChange={setIsDownloadModalOpen}
 								/>
 							}
 						</button>
@@ -1520,6 +1526,7 @@ const RenderCollectionSetsCarousel = ({
 }) => {
 	const router = useRouter();
 	const { setPosterSet } = usePosterSetStore();
+	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
 	const posterSet: PosterSet = {
 		ID: collectionSet.id,
@@ -1603,6 +1610,8 @@ const RenderCollectionSetsCarousel = ({
 										collectionSet.movie_posters[0].movie
 											.MediaItem
 									}
+									open={isDownloadModalOpen}
+									onOpenChange={setIsDownloadModalOpen}
 								/>
 							}
 						</button>

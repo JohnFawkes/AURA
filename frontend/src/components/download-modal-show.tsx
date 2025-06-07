@@ -54,11 +54,18 @@ const formSchema = z.object({
 const DownloadModalShow: React.FC<{
 	posterSet: PosterSet;
 	mediaItem: MediaItem;
-}> = ({ posterSet, mediaItem }) => {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	autoDownloadDefault?: boolean;
+}> = ({ posterSet, mediaItem, open, onOpenChange, autoDownloadDefault }) => {
 	const [isMounted, setIsMounted] = useState(false);
 	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
-	const [autoDownload, setAutoDownload] = useState(false);
+	const [autoDownload, setAutoDownload] = useState(
+		autoDownloadDefault || false
+	);
+	const [futureUpdatesOnly, setFutureUpdatesOnly] = useState(false);
+
 	const handleAutoDownloadChange = () => {
 		if (futureUpdatesOnly) {
 			// Auto Download must remain true if Future Updates Only is selected
@@ -67,7 +74,6 @@ const DownloadModalShow: React.FC<{
 			setAutoDownload((prev) => !prev);
 		}
 	};
-	const [futureUpdatesOnly, setFutureUpdatesOnly] = useState(false);
 	const handleFutureUpdatesOnlyChange = () => {
 		setFutureUpdatesOnly((prev) => {
 			const newValue = !prev;
@@ -727,15 +733,21 @@ const DownloadModalShow: React.FC<{
 
 	return (
 		<Dialog
-			onOpenChange={(open) => {
-				if (!open) {
+			open={open}
+			onOpenChange={(isOpen) => {
+				if (typeof onOpenChange === "function") {
+					onOpenChange(isOpen);
+				}
+				if (!isOpen) {
 					handleClose();
 				}
 			}}
 		>
-			<DialogTrigger asChild>
-				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
-			</DialogTrigger>
+			{!open && (
+				<DialogTrigger asChild>
+					<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+				</DialogTrigger>
+			)}
 			<DialogPortal>
 				<DialogOverlay />
 				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[425px] ">

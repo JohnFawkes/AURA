@@ -19,11 +19,20 @@ import {
 } from "./dropdown-menu";
 import { Badge } from "./badge";
 import { Separator } from "./separator";
-import { CheckCircle2 as Checkmark, X, MoreHorizontal } from "lucide-react";
+import {
+	CheckCircle2 as Checkmark,
+	X,
+	MoreHorizontal,
+	Edit,
+	Delete,
+	Download,
+} from "lucide-react";
 import Image from "next/image";
 import { DialogDescription } from "@/components/ui/dialog";
 import Link from "next/link";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
+import DownloadModalShow from "@/components/download-modal-show";
+import DownloadModalMovie from "@/components/download-modal-movie";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -42,6 +51,8 @@ const SavedSetsCard: React.FC<{
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [isRedownloadModalOpen, setIsRedownloadModalOpen] = useState(false);
+	// State to track any error messages during updates.
 	const [updateError, setUpdateError] = useState("");
 	const [isMounted, setIsMounted] = useState(false);
 
@@ -50,6 +61,7 @@ const SavedSetsCard: React.FC<{
 	const onClose = () => {
 		setIsEditModalOpen(false);
 		setIsDeleteModalOpen(false);
+
 		setUpdateError("");
 		setIsMounted(false);
 	};
@@ -275,17 +287,53 @@ const SavedSetsCard: React.FC<{
 							<DropdownMenuItem
 								onClick={() => setIsEditModalOpen(true)}
 							>
+								<Edit className="ml-2" />
 								Edit
 							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => setIsRedownloadModalOpen(true)}
+							>
+								<Download className="ml-2" />
+								Redownload{" "}
+								{savedSet.MediaItem.Type === "movie"
+									? "Movie Set"
+									: "Show Set"}
+							</DropdownMenuItem>
+
 							<DropdownMenuItem
 								onClick={() => setIsDeleteModalOpen(true)}
 								className="text-destructive"
 							>
+								<Delete className="ml-2" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
+
+				{/* Add the modals at the bottom of the Card component */}
+				{isRedownloadModalOpen &&
+					savedSet.MediaItem.Type === "show" && (
+						<DownloadModalShow
+							open={isRedownloadModalOpen}
+							onOpenChange={setIsRedownloadModalOpen}
+							posterSet={savedSet.PosterSets[0].PosterSet}
+							mediaItem={savedSet.MediaItem}
+							autoDownloadDefault={
+								savedSet.PosterSets[0].AutoDownload
+							}
+						/>
+					)}
+
+				{isRedownloadModalOpen &&
+					savedSet.MediaItem.Type === "movie" && (
+						<DownloadModalMovie
+							open={isRedownloadModalOpen}
+							onOpenChange={setIsRedownloadModalOpen}
+							posterSet={savedSet.PosterSets[0].PosterSet}
+							mediaItem={savedSet.MediaItem}
+						/>
+					)}
 
 				{/* Middle: Image */}
 				<div className="flex justify-center mt-6">

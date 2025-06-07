@@ -25,6 +25,7 @@ const SetPage = () => {
 	const { posterSet } = usePosterSetStore();
 	const { mediaItem } = useMediaStore();
 	const [backdropURL, setBackdropURL] = useState("");
+	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 	const router = useRouter();
 
 	// Construct the backdrop URL
@@ -125,17 +126,31 @@ const SetPage = () => {
 							<>
 								<div className="ml-auto">
 									{mediaItem.Type === "show" ? (
-										<button className="btn">
+										<Button
+											onClick={() => {
+												setIsDownloadModalOpen(true);
+											}}
+											className="btn"
+										>
 											<DownloadModalShow
 												posterSet={posterSet}
 												mediaItem={mediaItem}
+												open={isDownloadModalOpen}
+												onOpenChange={
+													setIsDownloadModalOpen
+												}
 											/>
-										</button>
+											Download
+										</Button>
 									) : mediaItem.Type === "movie" ? (
 										<button className="btn">
 											<DownloadModalMovie
 												posterSet={posterSet}
 												mediaItem={mediaItem}
+												open={isDownloadModalOpen}
+												onOpenChange={
+													setIsDownloadModalOpen
+												}
 											/>
 										</button>
 									) : null}
