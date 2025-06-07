@@ -20,6 +20,7 @@ import { formatLastUpdatedDate } from "@/helper/formatDate";
 import { SetFileCounts } from "../set_file_counts";
 import DownloadModalShow from "../download-modal-show";
 import DownloadModalMovie from "../download-modal-movie";
+import { useState } from "react";
 
 type MediaCarouselProps = {
 	set: PosterSet;
@@ -31,6 +32,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
+	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
 	const goToSetPage = () => {
 		setPosterSet(set);
@@ -77,6 +79,8 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 								<DownloadModalShow
 									posterSet={set}
 									mediaItem={mediaItem}
+									open={isDownloadModalOpen}
+									onOpenChange={setIsDownloadModalOpen}
 								/>
 							</button>
 						) : mediaItem.Type === "movie" ? (
@@ -84,6 +88,8 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 								<DownloadModalMovie
 									posterSet={set}
 									mediaItem={mediaItem}
+									open={isDownloadModalOpen}
+									onOpenChange={setIsDownloadModalOpen}
 								/>
 							</button>
 						) : null}
