@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "./ui/badge";
 import DownloadModalBoxset from "./download-modal-boxset";
+import {
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+} from "./ui/carousel";
 
 export function BoxsetDisplay({
 	boxset,
@@ -230,41 +237,79 @@ export function BoxsetDisplay({
 					<AccordionItem value="posters">
 						<AccordionTrigger>All Posters</AccordionTrigger>
 						<AccordionContent>
-							<div className="flex flex-wrap gap-4">
-								{allPosters.map((poster) => (
-									<AssetImage
-										key={poster.ID}
-										image={poster}
-										displayUser={true}
-										displayMediaType={true}
-										aspect="poster"
-										className="w-[200px] h-auto"
-									/>
-								))}
-							</div>
+							<Carousel
+								opts={{
+									align: "start",
+									dragFree: true,
+									slidesToScroll: "auto",
+								}}
+								className="w-full"
+							>
+								<CarouselContent>
+									{allPosters.map((poster) => (
+										<CarouselItem
+											key={`${boxset.id}-poster-${poster.ID}`}
+										>
+											<div className="space-y-2">
+												<AssetImage
+													image={
+														poster as unknown as PosterFile
+													}
+													displayUser={true}
+													displayMediaType={true}
+													aspect="poster"
+													className="w-full h-auto"
+												/>
+											</div>
+										</CarouselItem>
+									))}
+								</CarouselContent>
+								<CarouselNext className="right-2 bottom-0" />
+								<CarouselPrevious className="right-8 bottom-0" />
+							</Carousel>
 						</AccordionContent>
 					</AccordionItem>
 				)}
+
 				{/* All Backdrops */}
 				{allBackdrops.length > 0 && (
 					<AccordionItem value="backdrops">
 						<AccordionTrigger>All Backdrops</AccordionTrigger>
 						<AccordionContent>
-							<div className="flex flex-wrap gap-4">
-								{allBackdrops.map((backdrop) => (
-									<AssetImage
-										key={backdrop.ID}
-										image={backdrop}
-										displayUser={true}
-										displayMediaType={true}
-										aspect="backdrop"
-										className="w-[300px] h-auto"
-									/>
-								))}
-							</div>
+							<Carousel
+								opts={{
+									align: "start",
+									dragFree: true,
+									slidesToScroll: "auto",
+								}}
+								className="w-full"
+							>
+								<CarouselContent>
+									{allBackdrops.map((backdrop) => (
+										<CarouselItem
+											key={`${boxset.id}-backdrop-${backdrop.ID}`}
+										>
+											<div className="space-y-2">
+												<AssetImage
+													image={
+														backdrop as unknown as PosterFile
+													}
+													displayUser={true}
+													displayMediaType={true}
+													aspect="backdrop"
+													className="w-full h-auto"
+												/>
+											</div>
+										</CarouselItem>
+									))}
+								</CarouselContent>
+								<CarouselNext className="right-2 bottom-0" />
+								<CarouselPrevious className="right-8 bottom-0" />
+							</Carousel>
 						</AccordionContent>
 					</AccordionItem>
 				)}
+
 				{/* Season Posters by Show */}
 				{Object.values(seasonPostersByShow).some(
 					(posters) => posters.length > 0
@@ -275,27 +320,49 @@ export function BoxsetDisplay({
 							{Object.entries(seasonPostersByShow)
 								.filter(([, posters]) => posters.length > 0)
 								.map(([showTitle, posters]) => (
-									<div key={showTitle} className="mb-4">
-										<Lead className="mb-2">
+									<div key={showTitle} className="mb-8">
+										<Lead className="mb-4">
 											{showTitle}
 										</Lead>
-										<div className="flex flex-wrap gap-4">
-											{posters.map((poster) => (
-												<AssetImage
-													key={poster.ID}
-													image={poster}
-													displayUser={true}
-													displayMediaType={true}
-													aspect="poster"
-													className="w-[200px] h-auto"
-												/>
-											))}
-										</div>
+										<Carousel
+											opts={{
+												align: "start",
+												dragFree: true,
+												slidesToScroll: "auto",
+											}}
+											className="w-full"
+										>
+											<CarouselContent>
+												{posters.map((poster) => (
+													<CarouselItem
+														key={`season-poster-${poster.ID}`}
+													>
+														<div className="space-y-2">
+															<AssetImage
+																key={poster.ID}
+																image={poster}
+																displayUser={
+																	true
+																}
+																displayMediaType={
+																	true
+																}
+																aspect="poster"
+																className="w-full h-auto"
+															/>
+														</div>
+													</CarouselItem>
+												))}
+											</CarouselContent>
+											<CarouselNext className="right-2 bottom-0" />
+											<CarouselPrevious className="right-8 bottom-0" />
+										</Carousel>
 									</div>
 								))}
 						</AccordionContent>
 					</AccordionItem>
 				)}
+
 				{/* Title Cards by Show and Season */}
 				{Object.values(titleCardsByShowAndSeason).some((seasons) =>
 					Object.values(seasons).some((cards) => cards.length > 0)
@@ -310,61 +377,69 @@ export function BoxsetDisplay({
 									)
 								)
 								.map(([showTitle, seasons]) => (
-									<div key={showTitle} className="mb-4">
-										<Lead className="mb-2">
+									<div key={showTitle} className="mb-8">
+										<Lead className="mb-4">
 											{showTitle}
 										</Lead>
 										<Accordion
 											type="multiple"
-											className="w-full ml-2"
+											className="w-full"
 										>
-											{Object.entries(seasons)
-												.filter(
-													([, titlecards]) =>
-														titlecards.length > 0
-												)
-												.map(
-													([
-														seasonNum,
-														titlecards,
-													]) => (
-														<AccordionItem
-															key={seasonNum}
-															value={`season-${showTitle}-${seasonNum}`}
-														>
-															<AccordionTrigger>
-																Season{" "}
-																{seasonNum}
-															</AccordionTrigger>
-															<AccordionContent>
-																<div className="flex flex-wrap gap-4">
-																	{titlecards.map(
+											{Object.entries(seasons).map(
+												([seasonNumber, cards]) => (
+													<AccordionItem
+														key={`${showTitle}-season-${seasonNumber}`}
+														value={`${showTitle}-season-${seasonNumber}`}
+													>
+														<AccordionTrigger>
+															Season{" "}
+															{seasonNumber}
+														</AccordionTrigger>
+														<AccordionContent>
+															<Carousel
+																opts={{
+																	align: "start",
+																	dragFree:
+																		true,
+																	slidesToScroll:
+																		"auto",
+																}}
+																className="w-full"
+															>
+																<CarouselContent>
+																	{cards.map(
 																		(
-																			titlecard
+																			card
 																		) => (
-																			<AssetImage
-																				key={
-																					titlecard.ID
-																				}
-																				image={
-																					titlecard
-																				}
-																				displayUser={
-																					true
-																				}
-																				displayMediaType={
-																					true
-																				}
-																				aspect="backdrop"
-																				className="w-[300px] h-auto"
-																			/>
+																			<CarouselItem
+																				key={`title-card-${card.ID}`}
+																			>
+																				<div className="space-y-2">
+																					<AssetImage
+																						image={
+																							card as unknown as PosterFile
+																						}
+																						displayUser={
+																							true
+																						}
+																						displayMediaType={
+																							true
+																						}
+																						aspect="backdrop"
+																						className="w-full h-auto"
+																					/>
+																				</div>
+																			</CarouselItem>
 																		)
 																	)}
-																</div>
-															</AccordionContent>
-														</AccordionItem>
-													)
-												)}
+																</CarouselContent>
+																<CarouselNext className="right-2 bottom-0" />
+																<CarouselPrevious className="right-8 bottom-0" />
+															</Carousel>
+														</AccordionContent>
+													</AccordionItem>
+												)
+											)}
 										</Accordion>
 									</div>
 								))}
