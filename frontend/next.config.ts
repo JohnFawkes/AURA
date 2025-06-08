@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
 		NEXT_PUBLIC_APP_VERSION: APP_VERSION,
 	},
 	experimental: {
-		proxyTimeout: 3000000,
+		proxyTimeout: 300000,
 	},
 
 	async rewrites() {
