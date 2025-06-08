@@ -27,6 +27,7 @@ import { Progress } from "@/components/ui/progress";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 import localforage from "localforage";
+import { Input } from "@/components/ui/input";
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
 // Initialize localforage
@@ -387,7 +388,7 @@ export default function Home() {
 				<Pagination>
 					<PaginationContent>
 						{/* Previous Page Button */}
-						{totalPages > 1 && (
+						{totalPages > 1 && currentPage > 1 && (
 							<PaginationItem>
 								<PaginationPrevious
 									onClick={() => {
@@ -405,11 +406,39 @@ export default function Home() {
 							</PaginationItem>
 						)}
 
-						{/* Current Page */}
+						{/* Page Input */}
 						<PaginationItem>
-							<PaginationLink isActive>
-								{currentPage}
-							</PaginationLink>
+							<div className="flex items-center gap-2">
+								<Input
+									type="number"
+									min={1}
+									max={totalPages}
+									value={currentPage}
+									onChange={(e) => {
+										const value = parseInt(e.target.value);
+										if (
+											!isNaN(value) &&
+											value >= 1 &&
+											value <= totalPages
+										) {
+											setCurrentPage(value);
+											window.scrollTo({
+												top: 0,
+												behavior: "smooth",
+											});
+										}
+									}}
+									className="w-16 h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+									onBlur={(e) => {
+										const value = parseInt(e.target.value);
+										if (isNaN(value) || value < 1) {
+											setCurrentPage(1);
+										} else if (value > totalPages) {
+											setCurrentPage(totalPages);
+										}
+									}}
+								/>
+							</div>
 						</PaginationItem>
 
 						{/* Next Page Button */}
