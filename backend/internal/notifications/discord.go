@@ -80,3 +80,16 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 
 	return logging.ErrorLog{}
 }
+
+func SendDiscordAppStartNotification() logging.ErrorLog {
+	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
+		return logging.ErrorLog{
+			Err: fmt.Errorf("invalid notification provider"),
+			Log: logging.Log{
+				Message: fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider),
+			}}
+	}
+
+	message := "MediUX AURA has started successfully!"
+	return SendDiscordNotification(message, "", "MediUX AURA Notification")
+}

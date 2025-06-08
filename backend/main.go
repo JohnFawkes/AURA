@@ -5,6 +5,7 @@ import (
 	"aura/internal/database"
 	"aura/internal/download"
 	"aura/internal/logging"
+	"aura/internal/notifications"
 	"aura/internal/routes"
 	mediaserver_shared "aura/internal/server/shared"
 	"aura/internal/utils"
@@ -73,6 +74,7 @@ func main() {
 		c.Start()
 	}
 
+	notifications.SendDiscordAppStartNotification()
 	go func() {
 		// Start the API server
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), r); err != nil {
