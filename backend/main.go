@@ -11,6 +11,7 @@ import (
 	"aura/internal/utils"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/robfig/cron/v3"
 )
@@ -74,7 +75,10 @@ func main() {
 		c.Start()
 	}
 
-	notifications.SendDiscordAppStartNotification()
+	if !strings.Contains(APP_VERSION, "dev") {
+		notifications.SendDiscordAppStartNotification()
+	}
+
 	go func() {
 		// Start the API server
 		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), r); err != nil {
