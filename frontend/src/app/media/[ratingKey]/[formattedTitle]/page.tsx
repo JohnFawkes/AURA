@@ -24,6 +24,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
+	ArrowLeftCircle,
+	ArrowRightCircle,
 	CalendarArrowDown,
 	CalendarArrowUp,
 } from "lucide-react";
@@ -31,7 +33,10 @@ import { useMediaStore } from "@/lib/mediaStore";
 import { DimmedBackground } from "@/components/dimmed_backdrop";
 import { MediaItemDetails } from "@/components/media_item_details";
 import { Checkbox } from "@/components/ui/checkbox";
-import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import {
+	getAdjacentMediaItemFromIDB,
+	searchIDBForTMDBID,
+} from "@/helper/searchIDBForTMDBID";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -68,6 +73,14 @@ const MediaItemPage = () => {
 		{ ID: string; Username: string }[]
 	>([]);
 	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
+
+	const [adjacentItems, setAdjacentItems] = useState<{
+		previous: MediaItem | null;
+		next: MediaItem | null;
+	}>({
+		previous: null,
+		next: null,
+	});
 
 	const handleShowHiddenUsers = () => {
 		setShowHiddenUsers((prev) => {
@@ -396,6 +409,32 @@ const MediaItemPage = () => {
 		sortOrder,
 	]);
 
+	useEffect(() => {
+		const fetchAdjacentItems = async () => {
+			if (!mediaItem?.LibraryTitle || !mediaItem?.RatingKey) return;
+
+			const [previousItem, nextItem] = await Promise.all([
+				getAdjacentMediaItemFromIDB(
+					mediaItem.LibraryTitle,
+					mediaItem.RatingKey,
+					"previous"
+				),
+				getAdjacentMediaItemFromIDB(
+					mediaItem.LibraryTitle,
+					mediaItem.RatingKey,
+					"next"
+				),
+			]);
+
+			setAdjacentItems({
+				previous: previousItem,
+				next: nextItem,
+			});
+		};
+
+		fetchAdjacentItems();
+	}, [mediaItem?.LibraryTitle, mediaItem?.RatingKey]);
+
 	if (!mediaItem) {
 		return (
 			<div className="flex flex-col items-center">
@@ -431,6 +470,58 @@ const MediaItemPage = () => {
 			<DimmedBackground
 				backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
 			/>
+
+			{/* Navigation Buttons */}
+			{adjacentItems.previous && adjacentItems.previous.RatingKey && (
+				<div className="fixed top-20 left-2 z-10">
+					<ArrowLeftCircle
+						className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+						onClick={() => {
+							useMediaStore.setState({
+								mediaItem: adjacentItems.previous,
+							});
+							const formattedTitle =
+								adjacentItems.previous!.Title.replace(
+									/\s+/g,
+									"_"
+								);
+							const sanitizedTitle = formattedTitle.replace(
+								/[^a-zA-Z0-9_]/g,
+								""
+							);
+							router.push(
+								`/media/${
+									adjacentItems.previous!.RatingKey
+								}/${sanitizedTitle}`
+							);
+						}}
+					/>
+				</div>
+			)}
+
+			{adjacentItems.next && (
+				<div className="fixed top-20 right-2 z-10">
+					<ArrowRightCircle
+						className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+						onClick={() => {
+							useMediaStore.setState({
+								mediaItem: adjacentItems.next,
+							});
+							const formattedTitle =
+								adjacentItems.next!.Title.replace(/\s+/g, "_");
+							const sanitizedTitle = formattedTitle.replace(
+								/[^a-zA-Z0-9_]/g,
+								""
+							);
+							router.push(
+								`/media/${
+									adjacentItems.next!.RatingKey
+								}/${sanitizedTitle}`
+							);
+						}}
+					/>
+				</div>
+			)}
 
 			{/* Header */}
 			<div className="p-4 lg:p-6">

@@ -93,3 +93,43 @@ export const searchIDBForTMDBIDNoLibrary = async (
 
 	return false;
 };
+
+type Direction = "next" | "previous";
+
+export const getAdjacentMediaItemFromIDB = async (
+	libraryTitle: string,
+	currentRatingKey: string,
+	direction: Direction
+): Promise<MediaItem | null> => {
+	const librarySection = await localforage.getItem<{
+		data: {
+			MediaItems: MediaItem[];
+		};
+	}>(libraryTitle);
+
+	if (!librarySection?.data?.MediaItems) {
+		return null;
+	}
+
+	const mediaItems = librarySection.data.MediaItems;
+	const currentIndex = mediaItems.findIndex(
+		(item) => item.RatingKey === currentRatingKey
+	);
+
+	if (currentIndex === -1) {
+		return null; // Current item not found
+	}
+
+	let nextIndex: number;
+	if (direction === "next") {
+		// If at the end, wrap to beginning, otherwise move forward
+		nextIndex =
+			currentIndex === mediaItems.length - 1 ? 0 : currentIndex + 1;
+	} else {
+		// If at the beginning, wrap to end, otherwise move backward
+		nextIndex =
+			currentIndex === 0 ? mediaItems.length - 1 : currentIndex - 1;
+	}
+
+	return mediaItems[nextIndex];
+};
