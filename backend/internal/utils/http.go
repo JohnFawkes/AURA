@@ -106,7 +106,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	return resp, respBody, logging.ErrorLog{}
 }
 
-func DecodeJSONBody(w http.ResponseWriter, r *http.Request, v interface{}, structName string, startTime time.Time) logging.ErrorLog {
+func DecodeJSONBody(w http.ResponseWriter, r *http.Request, v any, structName string, startTime time.Time) logging.ErrorLog {
 	logging.LOG.Debug(fmt.Sprintf("Decoding the request body into the `%s` struct", structName))
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(v)
