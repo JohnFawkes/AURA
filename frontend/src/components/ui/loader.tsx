@@ -1,12 +1,40 @@
 import React from "react";
 import { LoaderIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const Loader: React.FC<{ message: string }> = ({ message }) => {
+interface LoaderProps {
+	message?: string;
+	className?: string;
+	iconClassName?: string;
+	messageClassName?: string;
+}
+
+const Loader: React.FC<LoaderProps> = ({
+	message,
+	className,
+	iconClassName,
+	messageClassName,
+}) => {
 	return (
-		<div className="flex flex-col items-center justify-center">
-			<LoaderIcon className="animate-spin h-6 w-6 text-gray-500" />
+		<div
+			className={cn(
+				"flex flex-col items-center justify-center",
+				className
+			)}
+		>
+			<LoaderIcon
+				className={cn(
+					"animate-spin h-6 w-6 text-gray-500",
+					iconClassName
+				)}
+			/>
 			{message && (
-				<span className="mt-2 text-gray-500 text-center">
+				<span
+					className={cn(
+						"mt-2 text-gray-500 text-center",
+						messageClassName
+					)}
+				>
 					{message}
 				</span>
 			)}
