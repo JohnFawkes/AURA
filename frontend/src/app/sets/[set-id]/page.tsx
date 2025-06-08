@@ -126,12 +126,7 @@ const SetPage = () => {
 							<>
 								<div className="ml-auto">
 									{mediaItem.Type === "show" ? (
-										<Button
-											onClick={() => {
-												setIsDownloadModalOpen(true);
-											}}
-											className="btn"
-										>
+										<button className="btn">
 											<DownloadModalShow
 												posterSet={posterSet}
 												mediaItem={mediaItem}
@@ -140,8 +135,7 @@ const SetPage = () => {
 													setIsDownloadModalOpen
 												}
 											/>
-											Download
-										</Button>
+										</button>
 									) : mediaItem.Type === "movie" ? (
 										<button className="btn">
 											<DownloadModalMovie
