@@ -472,56 +472,62 @@ const MediaItemPage = () => {
 			/>
 
 			{/* Navigation Buttons */}
-			{adjacentItems.previous && adjacentItems.previous.RatingKey && (
-				<div className="fixed top-20 left-2 z-10">
-					<ArrowLeftCircle
-						className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
-						onClick={() => {
-							useMediaStore.setState({
-								mediaItem: adjacentItems.previous,
-							});
-							const formattedTitle =
-								adjacentItems.previous!.Title.replace(
-									/\s+/g,
-									"_"
+			<div className="flex justify-between mt-2 mx-2">
+				<div>
+					{adjacentItems.previous &&
+						adjacentItems.previous.RatingKey && (
+							<ArrowLeftCircle
+								className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+								onClick={() => {
+									useMediaStore.setState({
+										mediaItem: adjacentItems.previous,
+									});
+									const formattedTitle =
+										adjacentItems.previous!.Title.replace(
+											/\s+/g,
+											"_"
+										);
+									const sanitizedTitle =
+										formattedTitle.replace(
+											/[^a-zA-Z0-9_]/g,
+											""
+										);
+									router.push(
+										`/media/${
+											adjacentItems.previous!.RatingKey
+										}/${sanitizedTitle}`
+									);
+								}}
+							/>
+						)}
+				</div>
+				<div>
+					{adjacentItems.next && (
+						<ArrowRightCircle
+							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+							onClick={() => {
+								useMediaStore.setState({
+									mediaItem: adjacentItems.next,
+								});
+								const formattedTitle =
+									adjacentItems.next!.Title.replace(
+										/\s+/g,
+										"_"
+									);
+								const sanitizedTitle = formattedTitle.replace(
+									/[^a-zA-Z0-9_]/g,
+									""
 								);
-							const sanitizedTitle = formattedTitle.replace(
-								/[^a-zA-Z0-9_]/g,
-								""
-							);
-							router.push(
-								`/media/${
-									adjacentItems.previous!.RatingKey
-								}/${sanitizedTitle}`
-							);
-						}}
-					/>
+								router.push(
+									`/media/${
+										adjacentItems.next!.RatingKey
+									}/${sanitizedTitle}`
+								);
+							}}
+						/>
+					)}
 				</div>
-			)}
-
-			{adjacentItems.next && (
-				<div className="fixed top-20 right-2 z-10">
-					<ArrowRightCircle
-						className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
-						onClick={() => {
-							useMediaStore.setState({
-								mediaItem: adjacentItems.next,
-							});
-							const formattedTitle =
-								adjacentItems.next!.Title.replace(/\s+/g, "_");
-							const sanitizedTitle = formattedTitle.replace(
-								/[^a-zA-Z0-9_]/g,
-								""
-							);
-							router.push(
-								`/media/${
-									adjacentItems.next!.RatingKey
-								}/${sanitizedTitle}`
-							);
-						}}
-					/>
-				</div>
-			)}
+			</div>
 
 			{/* Header */}
 			<div className="p-4 lg:p-6">
