@@ -28,7 +28,7 @@ import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 import localforage from "localforage";
 
-export const CACHE_DURATION = 24 * 60 * 60 * 1000;
+const CACHE_DURATION = 24 * 60 * 60 * 1000;
 // Initialize localforage
 localforage.config({
 	name: "aura",
