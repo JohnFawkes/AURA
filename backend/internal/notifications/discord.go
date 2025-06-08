@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func SendDiscordNotification(message string, imageURL string) logging.ErrorLog {
+func SendDiscordNotification(message string, imageURL string, title string) logging.ErrorLog {
 
 	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
 		return logging.ErrorLog{
@@ -29,24 +29,26 @@ func SendDiscordNotification(message string, imageURL string) logging.ErrorLog {
 			}}
 	}
 
+	embed := map[string]any{
+		"author": map[string]any{
+			"name":     "MediUX AURA Bot",
+			"url":      "https://github.com/mediux-team/aura",
+			"icon_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
+		},
+		"title":       title,
+		"description": message,
+		"color":       0x9B59B6, // purple color
+	}
+	if imageURL != "" {
+		embed["image"] = map[string]any{
+			"url": imageURL,
+		}
+	}
+
 	webhookBody := map[string]any{
 		"username":   "MediUX AURA Bot",
 		"avatar_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
-		"embeds": []map[string]any{
-			{
-				"author": map[string]any{
-					"name":     "MediUX AURA Bot",
-					"url":      "https://github.com/mediux-team/aura",
-					"icon_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
-				},
-				"title":       "Image Updated",
-				"description": message,
-				"color":       0x9B59B6, // purple color
-				"image": map[string]any{
-					"url": imageURL,
-				},
-			},
-		},
+		"embeds":     []map[string]any{embed},
 	}
 
 	bodyBytes, err := json.Marshal(webhookBody)
