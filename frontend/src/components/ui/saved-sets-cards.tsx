@@ -122,20 +122,43 @@ const SavedSetsCard: React.FC<{
 		setIsMounted(false);
 	};
 
-	const renderSetBadges = () => {
-		return savedSet.PosterSets.map((set) => (
-			<Link
-				key={set.PosterSetID}
-				href={`https://mediux.pro/sets/${set.PosterSetID}`}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="transition transform hover:scale-105 hover:underline"
-			>
-				<Badge className="cursor-pointer text-sm">
-					{set.PosterSetID}
-				</Badge>
-			</Link>
-		));
+	const renderSetList = () => {
+		return (
+			<div className="w-full">
+				<span className="text-sm text-muted-foreground mb-1 block">
+					{savedSet.PosterSets.length > 1 ? "Sets:" : "Set:"}
+				</span>
+				<table className="w-full text-sm">
+					<tbody>
+						{savedSet.PosterSets.map((set) => (
+							<tr
+								key={set.PosterSetID}
+								className={`hover:bg-muted/50 rounded-sm`}
+							>
+								<td className="py-1.5" style={{ width: "80%" }}>
+									<Link
+										href={`/sets/${set.PosterSetID}`}
+										className="text-primary hover:underline"
+									>
+										{set.PosterSetID}
+									</Link>
+								</td>
+
+								<td className="py-1.5" style={{ width: "50%" }}>
+									<Link
+										href={`/user/${set.PosterSet.User.Name}`}
+										className="text-primary hover:underline"
+									>
+										{set.PosterSet.User.Name ||
+											"Unknown User"}
+									</Link>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		);
 	};
 
 	// Replace the hard-coded array with dynamically generated list.
@@ -388,10 +411,7 @@ const SavedSetsCard: React.FC<{
 					})()}
 				</P>
 
-				<div className="flex flex-wrap gap-2">
-					{savedSet.PosterSets.length > 1 ? "Sets:" : "Set:"}
-					{renderSetBadges()}
-				</div>
+				<div className="flex flex-wrap gap-2">{renderSetList()}</div>
 
 				<Separator className="my-4" />
 
