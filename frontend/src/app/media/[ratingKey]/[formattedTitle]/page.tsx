@@ -458,6 +458,7 @@ const MediaItemPage = () => {
 						guids={mediaItem.Guids || []}
 						existsInDB={mediaItem.ExistInDatabase || false}
 						status={posterSets ? posterSets[0]?.Status : ""}
+						libraryTitle={mediaItem.LibraryTitle || ""}
 					/>
 
 					{isLoading && (

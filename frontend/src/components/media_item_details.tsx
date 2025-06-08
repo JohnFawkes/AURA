@@ -27,6 +27,7 @@ type MediaItemDetailsProps = {
 	guids: Guid[];
 	existsInDB: boolean;
 	status: string;
+	libraryTitle: string;
 };
 
 export function MediaItemDetails({
@@ -42,6 +43,7 @@ export function MediaItemDetails({
 	movieDuration,
 	guids,
 	status,
+	libraryTitle,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
 
@@ -111,6 +113,17 @@ export function MediaItemDetails({
 				{/* External Ratings/Links from GUIDs */}
 				<MediaItemRatings guids={guids} mediaItemType={mediaItemType} />
 			</div>
+
+			{/* Library Information */}
+			{libraryTitle && (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+					<Lead className="text-md text-primary-dynamic">
+						<span className="font-semibold">
+							{libraryTitle} Library
+						</span>{" "}
+					</Lead>
+				</div>
+			)}
 
 			{/* Show Information for TV Shows */}
 			{mediaItemType === "show" && seasonCount && episodeCount > 0 && (
