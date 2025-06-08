@@ -5,6 +5,7 @@ import (
 	"aura/internal/logging"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,6 +39,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 
 	// Add a User-Agent header to the request
 	req.Header.Set("User-Agent", "AURA/1.0")
+	req.Header.Set("X-Request", "mediux-aura")
 
 	// Add headers to the request
 	if tokenType == "MediaServer" {
@@ -67,10 +69,20 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 		logging.LOG.Trace("Added custom headers to request")
 	}
 
-	// Create a new HTTP client
+	// Create a new HTTP client with both HTTP/1.1 and HTTP/2 support
 	client := &http.Client{
-		Transport: http.DefaultTransport,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+			},
+			ForceAttemptHTTP2: true, // Try HTTP/2 but fallback to HTTP/1.1 if needed
+		},
+		Timeout: timeoutInterval,
 	}
+
+	// Add common headers
+	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Accept", "*/*")
 
 	// Send the HTTP request
 	resp, err := client.Do(req)
