@@ -1069,7 +1069,7 @@ const UserSetPage = () => {
 										}}
 										className="mt-2 w-full"
 									>
-										<TabsList className="flex flex-wrap justify-center">
+										<TabsList className="flex flex-wrap justify-center gap-2 px-2">
 											{showSets.length > 0 && (
 												<TabsTrigger value="showSets">
 													Show Sets ({showSets.length}
