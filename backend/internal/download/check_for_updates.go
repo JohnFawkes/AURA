@@ -193,6 +193,7 @@ func CheckForUpdatesToPosters() {
 						file.ID,
 						file.Modified.Format("20060102"),
 					),
+					"Image Updated",
 				)
 			}
 
