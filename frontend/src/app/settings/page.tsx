@@ -324,7 +324,7 @@ const SettingsPage: React.FC = () => {
 																					key={
 																						idx
 																					}
-																					className="mr-1 text-sm"
+																					className="mr-2 mt-1 text-sm"
 																				>
 																					{
 																						item
@@ -334,7 +334,7 @@ const SettingsPage: React.FC = () => {
 																		)}
 																</>
 															) : (
-																<div className="flex items-center gap-2">
+																<div className="flex items-center gap-2 mt-1">
 																	<Input
 																		value={
 																			field.Value
