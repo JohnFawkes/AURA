@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/accordion";
 import { fetchMediaServerType } from "@/services/api.mediaserver";
 import { log } from "@/lib/logger";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 type MediaItemDetailsProps = {
 	ratingKey: string;
@@ -42,6 +43,7 @@ export function MediaItemDetails({
 	movieSize,
 	movieDuration,
 	guids,
+	existsInDB,
 	status,
 	libraryTitle,
 }: MediaItemDetailsProps) {
@@ -121,6 +123,22 @@ export function MediaItemDetails({
 						<span className="font-semibold">
 							{libraryTitle} Library
 						</span>{" "}
+					</Lead>
+				</div>
+			)}
+
+			{/* Show Existence in Database */}
+			{existsInDB ? (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+					<Lead className="text-md text-green-500">
+						<CheckCircle2 className="inline mr-1" /> Already in
+						Database
+					</Lead>
+				</div>
+			) : (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+					<Lead className="text-md text-red-500">
+						<XCircle className="inline mr-1" /> Not in Database
 					</Lead>
 				</div>
 			)}

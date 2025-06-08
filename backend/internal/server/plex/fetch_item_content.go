@@ -74,7 +74,6 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 			Provider: "community",
 			Rating:   fmt.Sprintf("%.1f", responseSection.Videos[0].AudienceRating),
 		})
-		return itemInfo, logging.ErrorLog{}
 	}
 
 	// If the item is a series
