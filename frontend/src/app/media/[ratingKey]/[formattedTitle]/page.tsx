@@ -31,6 +31,7 @@ import { useMediaStore } from "@/lib/mediaStore";
 import { DimmedBackground } from "@/components/dimmed_backdrop";
 import { MediaItemDetails } from "@/components/media_item_details";
 import { Checkbox } from "@/components/ui/checkbox";
+import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -54,6 +55,7 @@ const MediaItemPage = () => {
 
 	// Loading State
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
 	// Error Handling
 	const [hasError, setHasError] = useState(false);
@@ -84,6 +86,7 @@ const MediaItemPage = () => {
 
 		const fetchUserFollowHides = async () => {
 			try {
+				setLoadingMessage("Loading User Follows/Hides");
 				const resp = await fetchMediuxUserFollowHides();
 				if (!resp) {
 					throw new Error("No response from Mediux API");
@@ -126,25 +129,117 @@ const MediaItemPage = () => {
 					(guid) => guid.Provider === "tmdb"
 				)?.ID;
 				if (tmdbID) {
+					setLoadingMessage("Loading Poster Sets");
 					const resp = await fetchMediuxSets(
 						tmdbID,
 						responseItem.Type,
 						responseItem.LibraryTitle,
 						responseItem.RatingKey
 					);
-					if (!resp) {
-						throw new Error("No response from Mediux API");
-					} else if (resp.status !== "success") {
-						throw new Error(resp.message);
-					}
-					const sets = resp.data;
-					if (!sets) {
+					if (!resp || resp.status !== "success" || !resp.data) {
 						throw new Error(
-							`No Poster Sets found for ${responseItem.Title}`
+							resp?.message || "No response from Mediux API"
 						);
 					}
-					log(`Poster Sets for ${responseItem.Title}:`, sets);
-					setPosterSets(sets);
+
+					// Check if there are any OtherPosters or OtherBackdrops that need processing
+					const hasOtherMedia = resp.data.some(
+						(set) =>
+							(set.OtherPosters && set.OtherPosters.length > 0) ||
+							(set.OtherBackdrops &&
+								set.OtherBackdrops.length > 0)
+					);
+
+					if (hasOtherMedia) {
+						// Get all unique TMDB IDs from other posters and backdrops
+						const uniqueTMDBIds = new Map<string, string>();
+						resp.data.forEach((set) => {
+							set.OtherPosters?.forEach((poster) => {
+								if (poster.Movie?.ID) {
+									uniqueTMDBIds.set(
+										poster.Movie.ID,
+										poster.Movie.Title
+									);
+								}
+							});
+							set.OtherBackdrops?.forEach((backdrop) => {
+								if (backdrop.Movie?.ID) {
+									uniqueTMDBIds.set(
+										backdrop.Movie.ID,
+										backdrop.Movie.Title
+									);
+								}
+							});
+						});
+
+						if (uniqueTMDBIds.size > 0) {
+							// Fetch all rating keys at once
+							const tmdbToRatingKey = new Map<string, string>();
+							await Promise.all(
+								Array.from(uniqueTMDBIds).map(
+									async ([id, title]) => {
+										const item = await searchIDBForTMDBID(
+											id,
+											responseItem.LibraryTitle
+										);
+										if (item && typeof item !== "boolean") {
+											tmdbToRatingKey.set(
+												id,
+												item.RatingKey
+											);
+											log(
+												`Found Rating Key for ${title} (${id}): ${item.RatingKey}`
+											);
+										}
+									}
+								)
+							);
+
+							const processedSets = resp.data.map((set) => {
+								if (set.OtherPosters) {
+									set.OtherPosters = set.OtherPosters.map(
+										(poster) => ({
+											...poster,
+											Movie: poster.Movie
+												? {
+														...poster.Movie,
+														RatingKey:
+															tmdbToRatingKey.get(
+																poster.Movie
+																	.ID ?? ""
+															) || "",
+												  }
+												: undefined,
+										})
+									);
+								}
+								if (set.OtherBackdrops) {
+									set.OtherBackdrops = set.OtherBackdrops.map(
+										(backdrop) => ({
+											...backdrop,
+											Movie: backdrop.Movie
+												? {
+														...backdrop.Movie,
+														RatingKey:
+															tmdbToRatingKey.get(
+																backdrop.Movie
+																	.ID ?? ""
+															) || "",
+												  }
+												: undefined, // Changed from null to undefined
+										})
+									);
+								}
+								return set;
+							});
+							setPosterSets(processedSets);
+						} else {
+							setPosterSets(resp.data);
+						}
+					} else {
+						// No other posters or backdrops, set directly
+						setPosterSets(resp.data);
+					}
 					fetchUserFollowHides();
 				}
 			} catch (error) {
@@ -182,6 +277,9 @@ const MediaItemPage = () => {
 						throw new Error("No media item found");
 					}
 				}
+				setLoadingMessage(
+					`Loading Details for ${currentMediaItem.Title}...`
+				);
 				// Now safely use currentMediaItem
 				const resp = await fetchMediaServerItemContent(
 					currentMediaItem.RatingKey,
@@ -364,7 +462,7 @@ const MediaItemPage = () => {
 
 					{isLoading && (
 						<div className="flex justify-center">
-							<Loader message="Loading Poster Sets..." />
+							<Loader message={loadingMessage} />
 						</div>
 					)}
 					{hasError && (

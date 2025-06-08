@@ -449,9 +449,9 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 	logging.LOG.Trace("Processing movie collection")
 	collectionSetMap := make(map[string]*modals.PosterSet)
 	for _, movie := range movies {
-		fetchedRatingKey, _ := SearchForItemAndGetRatingKey(
-			movie.ID, "movie",
-			movie.Title, librarySection)
+		// fetchedRatingKey, _ := SearchForItemAndGetRatingKey(
+		// 	movie.ID, "movie",
+		// 	movie.Title, librarySection)
 		logging.LOG.Trace(fmt.Sprintf("Processing movie: %s", movie.Title))
 		if len(movie.Posters) > 0 {
 			logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(movie.Posters)))
@@ -465,17 +465,17 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 						Modified: poster.ModifiedOn,
 						FileSize: parseFileSize(poster.FileSize),
 						Movie: &modals.PosterFileMovie{
-							ID:             movie.ID,
-							Title:          movie.Title,
-							Status:         movie.Status,
-							Tagline:        movie.Tagline,
-							Slug:           movie.Slug,
-							DateUpdated:    movie.DateUpdated,
-							TvdbID:         movie.TvdbID,
-							ImdbID:         movie.ImdbID,
-							TraktID:        movie.TraktID,
-							ReleaseDate:    movie.ReleaseDate,
-							RatingKey:      fetchedRatingKey,
+							ID:          movie.ID,
+							Title:       movie.Title,
+							Status:      movie.Status,
+							Tagline:     movie.Tagline,
+							Slug:        movie.Slug,
+							DateUpdated: movie.DateUpdated,
+							TvdbID:      movie.TvdbID,
+							ImdbID:      movie.ImdbID,
+							TraktID:     movie.TraktID,
+							ReleaseDate: movie.ReleaseDate,
+							//RatingKey:      fetchedRatingKey,
 							LibrarySection: librarySection,
 						},
 					}
@@ -521,17 +521,17 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 						Modified: backdrop.ModifiedOn,
 						FileSize: parseFileSize(backdrop.FileSize),
 						Movie: &modals.PosterFileMovie{
-							ID:             movie.ID,
-							Title:          movie.Title,
-							Status:         movie.Status,
-							Tagline:        movie.Tagline,
-							Slug:           movie.Slug,
-							DateUpdated:    movie.DateUpdated,
-							TvdbID:         movie.TvdbID,
-							ImdbID:         movie.ImdbID,
-							TraktID:        movie.TraktID,
-							ReleaseDate:    movie.ReleaseDate,
-							RatingKey:      fetchedRatingKey,
+							ID:          movie.ID,
+							Title:       movie.Title,
+							Status:      movie.Status,
+							Tagline:     movie.Tagline,
+							Slug:        movie.Slug,
+							DateUpdated: movie.DateUpdated,
+							TvdbID:      movie.TvdbID,
+							ImdbID:      movie.ImdbID,
+							TraktID:     movie.TraktID,
+							ReleaseDate: movie.ReleaseDate,
+							//RatingKey:      fetchedRatingKey,
 							LibrarySection: librarySection,
 						},
 					}
