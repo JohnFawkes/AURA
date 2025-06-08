@@ -33,6 +33,15 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
@@ -48,7 +57,7 @@ const SavedSetsPage: React.FC = () => {
 			messages: string[];
 		};
 	}>({});
-	const ITEMS_PER_PAGE = 20;
+	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();
 	const [currentPage, setCurrentPage] = useState(1);
 
 	const fetchSavedSets = useCallback(async () => {
@@ -137,13 +146,13 @@ const SavedSetsPage: React.FC = () => {
 	}, [savedSets, searchQuery, filterAutoDownloadOnly]);
 
 	const paginatedSets = useMemo(() => {
-		const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-		const endIndex = startIndex + ITEMS_PER_PAGE;
+		const startIndex = (currentPage - 1) * itemsPerPage;
+		const endIndex = startIndex + itemsPerPage;
 		return filteredAndSortedSavedSets.slice(startIndex, endIndex);
-	}, [filteredAndSortedSavedSets, currentPage]);
+	}, [currentPage, itemsPerPage, filteredAndSortedSavedSets]);
 
 	const totalPages = Math.ceil(
-		filteredAndSortedSavedSets.length / ITEMS_PER_PAGE
+		filteredAndSortedSavedSets.length / itemsPerPage
 	);
 
 	if (loading) {
@@ -288,6 +297,39 @@ const SavedSetsPage: React.FC = () => {
 					)
 					<RefreshIcon className="h-3 w-3 ml-1" />
 				</Button>
+			</div>
+
+			{/* Items Per Page Selection */}
+			<div className="w-full flex items-center mb-2">
+				<Label
+					htmlFor="items-per-page-trigger"
+					className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+				>
+					Items per page:
+				</Label>
+				<Select
+					value={itemsPerPage.toString()}
+					onValueChange={(value) => {
+						const newItemsPerPage = parseInt(value);
+						if (!isNaN(newItemsPerPage)) {
+							setItemsPerPage(newItemsPerPage);
+							setCurrentPage(1);
+						}
+					}}
+				>
+					<SelectTrigger id="items-per-page-trigger">
+						<SelectValue placeholder="Select" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="10">10</SelectItem>
+						<SelectItem value="20">20</SelectItem>
+						<SelectItem value="30">30</SelectItem>
+						<SelectItem value="50">50</SelectItem>
+						<SelectItem value="100">100</SelectItem>
+						<SelectScrollUpButton />
+						<SelectScrollDownButton />
+					</SelectContent>
+				</Select>
 			</div>
 
 			{Object.keys(recheckStatus).length > 0 && (

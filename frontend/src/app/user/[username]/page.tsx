@@ -54,8 +54,16 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 as Checkmark } from "lucide-react";
 import { BoxsetDisplay } from "@/components/boxset-display";
-
-const itemsPerPage = 10; // adjust as needed
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 const UserSetPage = () => {
 	// Get the username from the URL
@@ -66,6 +74,7 @@ const UserSetPage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
+	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();
 
 	// Add state to track progress
 	const [, setProgressCount] = useState<{
@@ -851,6 +860,7 @@ const UserSetPage = () => {
 		activeTab,
 		boxsets.length,
 		collectionSets.length,
+		itemsPerPage,
 		movieSets.length,
 		showSets.length,
 		totalPages,
@@ -944,7 +954,7 @@ const UserSetPage = () => {
 						</div>
 
 						<div className="w-full max-w-3xl">
-							{/* Filter Section */}
+							{/* Library Section */}
 							<div className="flex flex-col sm:flex-row mb-4 mt-2">
 								<Label
 									htmlFor="library-filter"
@@ -1007,37 +1017,48 @@ const UserSetPage = () => {
 								</ToggleGroup>
 							</div>
 
-							<Badge
-								key="filter-out-in-db"
-								className={`cursor-pointer ${
-									filterOutInDB === "inDB"
-										? "bg-green-600 text-white"
-										: filterOutInDB === "notInDB"
-										? "bg-red-600 text-white"
-										: ""
-								}`}
-								variant={
-									filterOutInDB !== "all"
-										? "default"
-										: "outline"
-								}
-								onClick={() => {
-									const next =
-										filterOutInDB === "all"
-											? "inDB"
-											: filterOutInDB === "inDB"
-											? "notInDB"
-											: "all";
-									setFilterOutInDB(next);
-									setCurrentPage(1);
-								}}
-							>
-								{filterOutInDB === "all"
-									? "All Items"
-									: filterOutInDB === "inDB"
-									? "Items In DB"
-									: "Items Not in DB"}
-							</Badge>
+							{/* Filter Out In DB Selection */}
+							<div className="w-full flex items-center mb-2">
+								<Label
+									htmlFor="filter-out-in-db"
+									className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+								>
+									Filter:
+								</Label>
+								{/* Filter Out In DB Toggle */}
+
+								<Badge
+									key="filter-out-in-db"
+									className={`cursor-pointer ${
+										filterOutInDB === "inDB"
+											? "bg-green-600 text-white"
+											: filterOutInDB === "notInDB"
+											? "bg-red-600 text-white"
+											: ""
+									}`}
+									variant={
+										filterOutInDB !== "all"
+											? "default"
+											: "outline"
+									}
+									onClick={() => {
+										const next =
+											filterOutInDB === "all"
+												? "inDB"
+												: filterOutInDB === "inDB"
+												? "notInDB"
+												: "all";
+										setFilterOutInDB(next);
+										setCurrentPage(1);
+									}}
+								>
+									{filterOutInDB === "all"
+										? "All Items"
+										: filterOutInDB === "inDB"
+										? "Items In DB"
+										: "Items Not in DB"}
+								</Badge>
+							</div>
 						</div>
 
 						{/* No library selected message */}
@@ -1060,6 +1081,51 @@ const UserSetPage = () => {
 								</div>
 							) : (
 								<div className="flex flex-col items-center mt-4 mb-4">
+									{/* Items Per Page Selection */}
+									<div className="w-full flex items-center mb-2">
+										<Label
+											htmlFor="items-per-page-trigger"
+											className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+										>
+											Items per page:
+										</Label>
+										<Select
+											value={itemsPerPage.toString()}
+											onValueChange={(value) => {
+												const newItemsPerPage =
+													parseInt(value);
+												if (!isNaN(newItemsPerPage)) {
+													setItemsPerPage(
+														newItemsPerPage
+													);
+													setCurrentPage(1);
+												}
+											}}
+										>
+											<SelectTrigger id="items-per-page-trigger">
+												<SelectValue placeholder="Select" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="10">
+													10
+												</SelectItem>
+												<SelectItem value="20">
+													20
+												</SelectItem>
+												<SelectItem value="30">
+													30
+												</SelectItem>
+												<SelectItem value="50">
+													50
+												</SelectItem>
+												<SelectItem value="100">
+													100
+												</SelectItem>
+												<SelectScrollUpButton />
+												<SelectScrollDownButton />
+											</SelectContent>
+										</Select>
+									</div>
 									<Tabs
 										defaultValue="boxSets"
 										value={activeTab}
