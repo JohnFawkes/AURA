@@ -10,6 +10,7 @@ import (
 	mediaserver "aura/internal/server"
 	mediaserver_shared "aura/internal/server/shared"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -43,13 +44,6 @@ func CheckForUpdatesToPosters() {
 			continue
 		}
 
-		// Get the latest media item from the media server using the rating key
-		latestMediaItem, logErr := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
-		if logErr.Err != nil {
-			logging.LOG.ErrorWithLog(logErr)
-			continue
-		}
-
 		// Loop through each poster set for the item
 		for _, dbPosterSet := range dbSavedItem.PosterSets {
 			// If the poster set is not auto download, skip it
@@ -61,6 +55,14 @@ func CheckForUpdatesToPosters() {
 				continue
 			}
 			logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s' on set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+
+			// Get the latest media item from the media server using the rating key
+			latestMediaItem, logErr := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
+			if logErr.Err != nil {
+				logging.LOG.ErrorWithLog(logErr)
+				continue
+			}
+
 			// Get the TMDB ID from the media item
 			tmdbID := ""
 			for _, guid := range dbSavedItem.MediaItem.Guids {
@@ -98,7 +100,15 @@ func CheckForUpdatesToPosters() {
 					formattedLastDownloaded))
 				continue
 			}
-			logging.LOG.Trace(fmt.Sprintf("'%s' - Set '%s' updated. Downloading new images...", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+			updateReasons := []string{}
+			if posterSetUpdated {
+				updateReasons = append(updateReasons, "Poster set updated")
+			}
+			if addedSeasonOrEpisodes {
+				updateReasons = append(updateReasons, "New seasons or episodes added")
+			}
+			updateReason := strings.Join(updateReasons, " and ")
+			logging.LOG.Trace(fmt.Sprintf("'%s' - Set '%s' updated. %s", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, updateReason))
 
 			// Check if selectedTypes contains "poster"
 			posterSet := false
@@ -120,6 +130,7 @@ func CheckForUpdatesToPosters() {
 					titlecardSet = true
 				}
 			}
+			logging.LOG.Debug(fmt.Sprintf("Downloading selected types: %s", strings.Join(dbPosterSet.SelectedTypes, ", ")))
 
 			filesToDownload := []modals.PosterFile{}
 			if posterSet {
