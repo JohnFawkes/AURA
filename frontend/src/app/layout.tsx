@@ -4,10 +4,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import AppFooter from "@/components/ui/app-footer";
 import { JumpToTop } from "@/components/ui/jump-to-top";
 import Navbar from "@/components/ui/navbar";
-import { Gabarito } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-const gabarito = Gabarito({ subsets: ["latin"] });
+import { gabarito } from "../../public/fonts/Gabarito";
 
 export default function RootLayout({
 	children,
