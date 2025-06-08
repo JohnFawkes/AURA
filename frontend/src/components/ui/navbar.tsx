@@ -19,11 +19,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { openDB } from "idb";
-import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { useMediaStore } from "@/lib/mediaStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
+import localforage from "localforage";
 
 export default function Navbar() {
 	const {
@@ -90,16 +89,33 @@ export default function Navbar() {
 		if (!isHomePage && localSearch.trim() !== "") {
 			const handler = setTimeout(async () => {
 				try {
-					const db = await openDB(CACHE_DB_NAME, 1);
-					// getAll cached sections from idb
-					const cachedSections = await db.getAll(CACHE_STORE_NAME);
+					// Get all cached sections from localforage
+					const keys = await localforage.keys();
+					const cachedSectionsPromises = keys.map((key) =>
+						localforage.getItem<{
+							data: LibrarySection;
+							timestamp: number;
+						}>(key)
+					);
+					const cachedSections = (
+						await Promise.all(cachedSectionsPromises)
+					).filter(
+						(
+							section
+						): section is {
+							data: LibrarySection;
+							timestamp: number;
+						} => section !== null
+					);
+
 					if (cachedSections.length === 0) {
 						setSearchResults([]);
 						return;
 					}
+
 					let allMediaItems: MediaItem[] = [];
-					let sections: LibrarySection[] = [];
-					sections = cachedSections.map((s) => s.data);
+					const sections = cachedSections.map((s) => s.data);
+
 					sections.forEach((section: LibrarySection) => {
 						if (section.MediaItems) {
 							allMediaItems = allMediaItems.concat(
@@ -107,6 +123,7 @@ export default function Navbar() {
 							);
 						}
 					});
+
 					// Filter items based on the localSearch (case-insensitive)
 					const query = localSearch.trim().toLowerCase();
 					const results = searchMediaItems(allMediaItems, query, 10);

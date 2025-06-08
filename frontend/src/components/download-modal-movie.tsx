@@ -39,10 +39,9 @@ import {
 	AccordionTrigger,
 } from "./ui/accordion";
 import { DBSavedItem } from "@/types/databaseSavedSet";
-import { openDB } from "idb";
-import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
 import { postAddItemToDB } from "@/services/api.db";
 import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import localforage from "localforage";
 
 const formSchema = z
 	.object({
@@ -426,23 +425,19 @@ const DownloadModalMovie: React.FC<{
 		}
 	};
 
+	// Replace the existing getMediaItemDetails function
 	async function getMediaItemDetails(key: string) {
-		const db = await openDB(CACHE_DB_NAME, 1, {
-			upgrade(db) {
-				if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-					db.createObjectStore(CACHE_STORE_NAME);
-				}
-			},
-		});
+		// Get the library section details from localforage
+		const librarySection = await localforage.getItem<{
+			data: {
+				MediaItems: MediaItem[];
+			};
+		}>(mediaItem.LibraryTitle);
 
-		// Get the library section details from the cache
-		const librarySection = await db.get(
-			CACHE_STORE_NAME,
-			mediaItem.LibraryTitle
-		);
 		if (!librarySection) {
 			return undefined;
 		}
+
 		// Get the media item details from the cache
 		const mediaItems = librarySection.data.MediaItems;
 		return mediaItems.find((item: MediaItem) => item.RatingKey === key);
@@ -578,6 +573,13 @@ const DownloadModalMovie: React.FC<{
 						const mediaDetails = await getMediaItemDetails(
 							movie.MediaItemRatingKey
 						);
+
+						if (!mediaDetails) {
+							log(
+								`Media item details not found for ${movie.MediaItemRatingKey}`
+							);
+							continue; // Skip if media details are not found
+						}
 
 						const SaveItem: DBSavedItem = {
 							MediaItemID: movie.MediaItemRatingKey,

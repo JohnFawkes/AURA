@@ -1,6 +1,5 @@
 "use client";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
-import { openDB } from "idb";
 import { useEffect, useState, useCallback, useRef } from "react";
 import ErrorMessage from "@/components/ui/error-message";
 import HomeMediaItemCard from "@/components/ui/home-media-item-card";
@@ -20,11 +19,6 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
-	CACHE_DB_NAME,
-	CACHE_STORE_NAME,
-	CACHE_EXPIRY,
-} from "@/constants/cache";
-import {
 	fetchMediaServerLibrarySectionItems,
 	fetchMediaServerLibrarySections,
 } from "@/services/api.mediaserver";
@@ -32,6 +26,16 @@ import { log } from "@/lib/logger";
 import { Progress } from "@/components/ui/progress";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
+import localforage from "localforage";
+
+export const CACHE_DURATION = 24 * 60 * 60 * 1000;
+// Initialize localforage
+localforage.config({
+	name: "aura",
+	storeName: "LibrarySections",
+	version: 1.0,
+	description: "Library sections cache for Aura",
+});
 
 export default function Home() {
 	const isMounted = useRef(false);
@@ -87,26 +91,40 @@ export default function Home() {
 		setFullyLoaded(false);
 		isMounted.current = true;
 		try {
-			const db = await openDB(CACHE_DB_NAME, 1, {
-				upgrade(db) {
-					if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-						db.createObjectStore(CACHE_STORE_NAME);
-					}
-				},
-			});
-
 			let sections: LibrarySection[] = [];
 
-			// If cache is allowed, try loading all sections from DB (using title as key)
+			// If cache is allowed, try loading from localforage
 			if (useCache) {
+				log("Home Page - Attempting to load sections from cache");
 				// Get all cached sections
-				const cachedSections = await db.getAll(CACHE_STORE_NAME);
-				if (cachedSections.length > 0) {
+				const cachedSections: {
+					data: LibrarySection;
+					timestamp: number;
+				}[] = (
+					await localforage.keys().then((keys) =>
+						Promise.all(
+							keys.map((key) =>
+								localforage.getItem<{
+									data: LibrarySection;
+									timestamp: number;
+								}>(key)
+							)
+						)
+					)
+				).filter(
+					(
+						section
+					): section is { data: LibrarySection; timestamp: number } =>
+						section !== null
+				);
+
+				if (cachedSections && cachedSections.length > 0) {
 					// Filter valid cached sections
 					const validSections = cachedSections.filter(
 						(section) =>
-							Date.now() - section.timestamp < CACHE_EXPIRY
+							Date.now() - section.timestamp < CACHE_DURATION
 					);
+
 					if (validSections.length > 0) {
 						sections = validSections.map((s) => s.data);
 						setLibrarySections(sections);
@@ -115,9 +133,10 @@ export default function Home() {
 						return;
 					}
 				}
-				// If no valid cached sections, clear the store.
+
+				// Clear invalid cache
 				if (sections.length === 0) {
-					await db.clear(CACHE_STORE_NAME);
+					await localforage.clear();
 				}
 			}
 
@@ -186,16 +205,12 @@ export default function Home() {
 						updated[idx] = section;
 						return updated;
 					});
-					// Cache the complete section (using title as key).
-					const freshDB = await openDB(CACHE_DB_NAME, 1);
-					await freshDB.put(
-						CACHE_STORE_NAME,
-						{
-							data: section,
-							timestamp: Date.now(),
-						},
-						section.Title
-					);
+
+					// Cache using localforage
+					await localforage.setItem(`${section.Title}`, {
+						data: section,
+						timestamp: Date.now(),
+					});
 				})
 			);
 

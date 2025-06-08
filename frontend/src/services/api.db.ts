@@ -6,43 +6,60 @@ import {
 	DBMediaItemWithPosterSets,
 	DBSavedItem,
 } from "@/types/databaseSavedSet";
-import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
-import { openDB } from "idb";
 import { MediaItem } from "@/types/mediaItem";
+import localforage from "localforage";
 
 const updateMediaItemStore = async (
 	ratingKey: string,
 	sectionTitle: string
 ): Promise<void> => {
-	const db = await openDB(CACHE_DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-				db.createObjectStore(CACHE_STORE_NAME);
-			}
-		},
-	});
+	try {
+		// Retrieve the library record from localforage
+		const librarySection = await localforage.getItem<{
+			data: {
+				MediaItems: MediaItem[];
+			};
+			timestamp: number;
+		}>(sectionTitle);
 
-	// Retrieve the library record
-	const librarySection = await db.get(CACHE_STORE_NAME, sectionTitle);
-	if (
-		!librarySection ||
-		!librarySection.data ||
-		!librarySection.data.MediaItems
-	) {
-		throw new Error("Library record not found or invalid structure");
+		if (
+			!librarySection ||
+			!librarySection.data ||
+			!librarySection.data.MediaItems
+		) {
+			throw new Error("Library record not found or invalid structure");
+		}
+
+		// Find and update the media item with the matching ratingKey
+		const mediaItems: MediaItem[] = librarySection.data.MediaItems;
+		const index = mediaItems.findIndex(
+			(item) => item.RatingKey === ratingKey
+		);
+		if (index === -1) {
+			throw new Error("Media item not found in library section");
+		}
+
+		// Update the ExistInDatabase flag
+		mediaItems[index].ExistInDatabase = true;
+
+		// Write the updated record back to localforage
+		await localforage.setItem(sectionTitle, {
+			...librarySection,
+			data: {
+				...librarySection.data,
+				MediaItems: mediaItems,
+			},
+		});
+
+		log("api.db - Updated media item cache successfully");
+	} catch (error) {
+		log(
+			`api.db - Error updating media item cache: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		throw error;
 	}
-
-	// Find and update the media item with the matching ratingKey
-	const mediaItems: MediaItem[] = librarySection.data.MediaItems;
-	const index = mediaItems.findIndex((item) => item.RatingKey === ratingKey);
-	if (index === -1) {
-		throw new Error("Media item not found in library section");
-	}
-
-	mediaItems[index].ExistInDatabase = true;
-
-	// Write the updated record back to the store
-	await db.put(CACHE_STORE_NAME, librarySection, sectionTitle);
 };
 
 export const postAddItemToDB = async (

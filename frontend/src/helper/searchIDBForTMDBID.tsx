@@ -1,106 +1,95 @@
-import { CACHE_DB_NAME, CACHE_STORE_NAME } from "@/constants/cache";
 import { MediaItem } from "@/types/mediaItem";
-import { openDB } from "idb";
+import localforage from "localforage";
 
 export const getAllLibrarySectionsFromIDB = async (): Promise<
 	{ title: string; type: string }[]
 > => {
-	const db = await openDB(CACHE_DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-				db.createObjectStore(CACHE_STORE_NAME);
-			}
-		},
-	});
+	// Get all cached sections from localforage
+	const keys = await localforage.keys();
+	const cachedSectionsPromises = keys.map((key) =>
+		localforage.getItem<{
+			data: {
+				Title: string;
+				Type: string;
+			};
+		}>(key)
+	);
 
-	// Retrieve all library records
-	const librarySections = await db.getAll(CACHE_STORE_NAME);
-	if (!librarySections || librarySections.length === 0) {
+	const sections = (await Promise.all(cachedSectionsPromises)).filter(
+		(section) => section !== null
+	);
+
+	if (sections.length === 0) {
 		return [];
 	}
-	console.log("Library sections found:", librarySections);
 
-	return librarySections.map((section) => {
-		return {
-			title: section.data.Title,
-			type: section.data.Type,
-		};
-	});
+	console.log("Library sections found:", sections);
+
+	return sections.map((section) => ({
+		title: section!.data.Title,
+		type: section!.data.Type,
+	}));
 };
 
 export const searchIDBForTMDBID = async (
 	tmdbID: string,
 	sectionTitle: string
 ): Promise<MediaItem | boolean> => {
-	const db = await openDB(CACHE_DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-				db.createObjectStore(CACHE_STORE_NAME);
-			}
-		},
-	});
+	// Get section from localforage
+	const librarySection = await localforage.getItem<{
+		data: {
+			MediaItems: MediaItem[];
+		};
+	}>(sectionTitle);
 
-	// Retrieve the library record
-	const librarySection = await db.get(CACHE_STORE_NAME, sectionTitle);
-	if (
-		!librarySection ||
-		!librarySection.data ||
-		!librarySection.data.MediaItems
-	) {
+	if (!librarySection?.data?.MediaItems) {
 		return false;
 	}
 
-	// Find and update the media item with the matching ratingKey
-	const mediaItems: MediaItem[] = librarySection.data.MediaItems;
-	const index = mediaItems.findIndex((item) =>
+	// Find media item with matching TMDB ID
+	const mediaItem = librarySection.data.MediaItems.find((item) =>
 		item.Guids.some(
 			(guid) => guid.ID === tmdbID && guid.Provider === "tmdb"
 		)
 	);
-	if (index === -1) {
-		return false;
-	}
-	return mediaItems[index];
+
+	return mediaItem || false;
 };
 
 export const searchIDBForTMDBIDNoLibrary = async (
 	tmdbID: string
 ): Promise<MediaItem | boolean> => {
-	const db = await openDB(CACHE_DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
-				db.createObjectStore(CACHE_STORE_NAME);
-			}
-		},
-	});
+	// Get all cached sections
+	const keys = await localforage.keys();
+	const cachedSectionsPromises = keys.map((key) =>
+		localforage.getItem<{
+			data: {
+				MediaItems: MediaItem[];
+			};
+		}>(key)
+	);
 
-	// Retrieve all library records
-	const librarySections = await db.getAll(CACHE_STORE_NAME);
-	if (!librarySections || librarySections.length === 0) {
+	const sections = (await Promise.all(cachedSectionsPromises)).filter(
+		(section) => section !== null
+	);
+
+	if (sections.length === 0) {
 		return false;
 	}
 
-	// Find and update the media item with the matching ratingKey
-	const mediaItems: MediaItem[] = [];
-	librarySections.forEach((librarySection) => {
-		if (
-			librarySection &&
-			librarySection.data &&
-			librarySection.data.MediaItems
-		) {
-			const items: MediaItem[] = librarySection.data.MediaItems;
-			const index = items.findIndex((item) =>
+	// Search through all sections for matching TMDB ID
+	for (const section of sections) {
+		if (section?.data?.MediaItems) {
+			const mediaItem = section.data.MediaItems.find((item) =>
 				item.Guids.some(
 					(guid) => guid.ID === tmdbID && guid.Provider === "tmdb"
 				)
 			);
-			if (index !== -1) {
-				mediaItems.push(items[index]);
+			if (mediaItem) {
+				return mediaItem;
 			}
 		}
-	});
-	if (mediaItems.length === 0) {
-		return false;
 	}
-	return mediaItems[0];
+
+	return false;
 };
