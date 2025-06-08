@@ -159,3 +159,32 @@ export const patchSavedItemInDB = async (
 		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);
 	}
 };
+
+export const postForceRecheckDBItemForAutoDownload = async (
+	item: DBMediaItemWithPosterSets
+): Promise<APIResponse<string>> => {
+	log(
+		`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} started`
+	);
+	try {
+		const response = await apiClient.post<APIResponse<string>>(
+			`/db/force/recheck`,
+			{
+				Item: item,
+			}
+		);
+		log(
+			`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} succeeded`
+		);
+		return response.data;
+	} catch (error) {
+		log(
+			`api.db - Forcing recheck for auto-download for item with ID ${
+				item.MediaItemID
+			} failed: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		return ReturnErrorMessage<string>(error);
+	}
+};

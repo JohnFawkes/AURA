@@ -2,6 +2,7 @@ package routes
 
 import (
 	"aura/internal/database"
+	"aura/internal/download"
 	"aura/internal/mediux"
 	"aura/internal/notifications"
 	"aura/internal/routes/health"
@@ -63,6 +64,7 @@ func AddRoutes(r *chi.Mux) {
 		r.Delete("/db/delete/mediaitem/{ratingKey}", database.DeleteMediaItemFromDatabase)
 		r.Patch("/db/update", database.UpdateSavedSetTypesForItem)
 		r.Post("/db/add/item", mediaserver.AddItemToDatabase)
+		r.Post("/db/force/recheck", download.ForceRecheckItem)
 
 		// Mediux Routes
 		r.Get("/mediux/sets/get/{itemType}/{librarySection}/{ratingKey}/{tmdbID}", mediux.GetAllSets)
