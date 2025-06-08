@@ -3,6 +3,7 @@ package routes
 import (
 	"aura/internal/database"
 	"aura/internal/mediux"
+	"aura/internal/notifications"
 	"aura/internal/routes/health"
 	"aura/internal/routes/middleware"
 	tempimages "aura/internal/routes/temp-images"
@@ -28,9 +29,17 @@ func NewRouter() *chi.Mux {
 }
 
 func AddRoutes(r *chi.Mux) {
+
+	r.Get("/", health.HealthCheck)
+
 	r.Route("/api", func(r chi.Router) {
 		// Base API Route: Check if the API is up and running
 		r.Get("/", health.HealthCheck)
+
+		// Health Check Routes
+		r.Get("/health", health.HealthCheck)
+		r.Get("/health/status/mediaserver", mediaserver.GetMediaServerStatus)
+		r.Post("/health/status/notification", notifications.SendTestNotification)
 
 		// Config Routes
 		r.Get("/config", health.GetConfig)

@@ -16,6 +16,10 @@ import (
 )
 
 type MediaServer interface {
+
+	// Get Status of the Media Server
+	GetMediaServerStatus() (string, logging.ErrorLog)
+
 	// Get the library section info
 	FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.ErrorLog)
 
@@ -37,6 +41,24 @@ type MediaServer interface {
 
 type PlexServer struct{}
 type EmbyJellyServer struct{}
+
+func (p *PlexServer) GetMediaServerStatus() (string, logging.ErrorLog) {
+	// Get the status of the Plex server
+	version, logErr := plex.GetMediaServerStatus()
+	if logErr.Err != nil {
+		return "", logErr
+	}
+	return version, logging.ErrorLog{}
+}
+
+func (e *EmbyJellyServer) GetMediaServerStatus() (string, logging.ErrorLog) {
+	//Get the status of the Emby/Jellyfin server
+	version, logErr := emby_jellyfin.GetMediaServerStatus()
+	if logErr.Err != nil {
+		return "", logErr
+	}
+	return version, logging.ErrorLog{}
+}
 
 func (p *PlexServer) FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.ErrorLog) {
 	// Fetch the library section from Plex

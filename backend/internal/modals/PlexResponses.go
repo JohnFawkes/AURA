@@ -12,6 +12,7 @@ type PlexResponse struct {
 	ViewGroup           string              `xml:"viewGroup,attr"`      // Shows whether it is a movie, show
 	Videos              []PlexVideoItem     `xml:"Video,omitempty"`     // Movies and Episodes
 	Directory           []PlexDirectoryItem `xml:"Directory,omitempty"` // Shows and Seasons
+	Version             string              `xml:"version,attr,omitempty"`
 }
 
 // Video represents each Video element inside MediaContainer

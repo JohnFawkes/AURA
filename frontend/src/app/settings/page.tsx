@@ -13,7 +13,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
 	fetchConfig,
+	fetchMediaServerConnectionStatus,
 	postClearTempImagesFolder,
+	postSendTestNotification,
 } from "@/services/api.settings";
 import { AppConfig } from "@/types/config";
 import { useRouter } from "next/navigation";
@@ -79,6 +81,44 @@ const SettingsPage: React.FC = () => {
 		}
 	};
 
+	const checkMediaServerConnectionStatus = async () => {
+		try {
+			const mediaServerResp = await fetchMediaServerConnectionStatus();
+			if (!mediaServerResp) {
+				throw new Error("No response from API");
+			}
+			if (mediaServerResp.status !== "success") {
+				throw new Error(mediaServerResp.message);
+			}
+			toast.success(`Running with version: ${mediaServerResp.data}`);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : String(error));
+		}
+	};
+
+	const sendTestNotification = async () => {
+		try {
+			const notificationResp = await postSendTestNotification();
+			if (!notificationResp) {
+				throw new Error("No response from API");
+			}
+			if (notificationResp.status !== "success") {
+				throw new Error(notificationResp.message);
+			}
+			if (!notificationResp.data) {
+				throw new Error("No data in response");
+			}
+			if (notificationResp.data !== "success") {
+				throw new Error(notificationResp.data);
+			}
+			toast.success(
+				"Test notification sent successfully. Check your Discord channel."
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : String(error));
+		}
+	};
+
 	const parseCronToHumanReadable = (cronExpression: string): string => {
 		const parts = cronExpression.split(" ");
 		if (parts.length !== 5) return "Current cron expression is invalid";
@@ -126,6 +166,12 @@ const SettingsPage: React.FC = () => {
 						(library) => library.Name
 					).join(", "),
 					Tooltip: "",
+				},
+			],
+			Buttons: [
+				{
+					Label: "Check Connection Status",
+					onClick: checkMediaServerConnectionStatus,
 				},
 			],
 		},
@@ -213,6 +259,12 @@ const SettingsPage: React.FC = () => {
 					Value: config?.Notification?.Webhook,
 					Tooltip:
 						"he webhook URL for the provider. This can be obtained by creating a webhook in Discord.",
+				},
+			],
+			Buttons: [
+				{
+					Label: "Send Test Notification",
+					onClick: sendTestNotification,
 				},
 			],
 		},
