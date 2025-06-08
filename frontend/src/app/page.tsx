@@ -69,7 +69,6 @@ export default function Home() {
 		filterOutInDB,
 		setFilterOutInDB,
 	} = useHomeSearchStore();
-	const {} = useHomeSearchStore();
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const { currentPage, setCurrentPage } = useHomeSearchStore();
 	const itemsPerPage = 20;
