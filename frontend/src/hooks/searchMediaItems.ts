@@ -8,7 +8,7 @@ function normalizeString(str: string): string {
 export function searchMediaItems(
 	items: MediaItem[],
 	query: string,
-	limit: number = 10000
+	limit?: number
 ): MediaItem[] {
 	let filteredItems = [...items];
 	const trimmedQuery = query.trim();
