@@ -55,15 +55,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 as Checkmark } from "lucide-react";
 import { BoxsetDisplay } from "@/components/boxset-display";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectScrollDownButton,
-	SelectScrollUpButton,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { SelectItemsPerPage } from "@/components/items-per-page-select";
 
 const UserSetPage = () => {
 	// Get the username from the URL
@@ -74,7 +66,7 @@ const UserSetPage = () => {
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
-	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();
+	const { itemsPerPage } = useHomeSearchStore();
 
 	// Add state to track progress
 	const [, setProgressCount] = useState<{
@@ -1083,48 +1075,9 @@ const UserSetPage = () => {
 								<div className="flex flex-col items-center mt-4 mb-4">
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
-										<Label
-											htmlFor="items-per-page-trigger"
-											className="text-lg font-semibold mb-2 sm:mb-0 mr-2"
-										>
-											Items per page:
-										</Label>
-										<Select
-											value={itemsPerPage.toString()}
-											onValueChange={(value) => {
-												const newItemsPerPage =
-													parseInt(value);
-												if (!isNaN(newItemsPerPage)) {
-													setItemsPerPage(
-														newItemsPerPage
-													);
-													setCurrentPage(1);
-												}
-											}}
-										>
-											<SelectTrigger id="items-per-page-trigger">
-												<SelectValue placeholder="Select" />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="10">
-													10
-												</SelectItem>
-												<SelectItem value="20">
-													20
-												</SelectItem>
-												<SelectItem value="30">
-													30
-												</SelectItem>
-												<SelectItem value="50">
-													50
-												</SelectItem>
-												<SelectItem value="100">
-													100
-												</SelectItem>
-												<SelectScrollUpButton />
-												<SelectScrollDownButton />
-											</SelectContent>
-										</Select>
+										<SelectItemsPerPage
+											setCurrentPage={setCurrentPage}
+										/>
 									</div>
 									<Tabs
 										defaultValue="boxSets"
