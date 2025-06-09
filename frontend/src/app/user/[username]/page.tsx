@@ -1088,27 +1088,39 @@ const UserSetPage = () => {
 										}}
 										className="mt-2 w-full"
 									>
-										<TabsList className="flex flex-wrap justify-center gap-2 px-2">
+										<TabsList className="flex flex-wrap w-full rounded-none bg-transparent gap-2 justify-start px-2 mb-2 border-b">
 											{showSets.length > 0 && (
-												<TabsTrigger value="showSets">
+												<TabsTrigger
+													value="showSets"
+													className="data-[state=active]:bg-background"
+												>
 													Show Sets ({showSets.length}
 													)
 												</TabsTrigger>
 											)}
 											{movieSets.length > 0 && (
-												<TabsTrigger value="movieSets">
+												<TabsTrigger
+													value="movieSets"
+													className="data-[state=active]:bg-background"
+												>
 													Movie Sets (
 													{movieSets.length})
 												</TabsTrigger>
 											)}
 											{collectionSets.length > 0 && (
-												<TabsTrigger value="collectionSets">
+												<TabsTrigger
+													value="collectionSets"
+													className="data-[state=active]:bg-background"
+												>
 													Collection Sets (
 													{collectionSets.length})
 												</TabsTrigger>
 											)}
 											{boxsets.length > 0 && (
-												<TabsTrigger value="boxSets">
+												<TabsTrigger
+													value="boxSets"
+													className="data-[state=active]:bg-background"
+												>
 													Box Sets ({boxsets.length})
 												</TabsTrigger>
 											)}
