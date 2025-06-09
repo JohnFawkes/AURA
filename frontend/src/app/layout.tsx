@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from "@/components/theme-provider";
 import AppFooter from "@/components/ui/app-footer";
-import { JumpToTop } from "@/components/ui/jump-to-top";
+import { JumpToTop } from "@/components/shared/buttons/jump-to-top";
 import Navbar from "@/components/ui/navbar";
 import { Toaster } from "sonner";
 import "./globals.css";
