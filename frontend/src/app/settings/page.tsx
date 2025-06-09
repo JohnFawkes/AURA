@@ -22,6 +22,8 @@ import { AppConfig } from "@/types/config";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { CircleX, HeartPulseIcon, Logs } from "lucide-react";
+import { FaDiscord } from "react-icons/fa";
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
@@ -187,6 +189,7 @@ const SettingsPage: React.FC = () => {
 			Buttons: [
 				{
 					Label: "Check Connection Status",
+					Icon: <HeartPulseIcon />,
 					onClick: checkMediaServerConnectionStatus,
 				},
 			],
@@ -280,6 +283,10 @@ const SettingsPage: React.FC = () => {
 			Buttons: [
 				{
 					Label: "Send Test Notification",
+					Icon:
+						config?.Notification?.Provider === "Discord" ? (
+							<FaDiscord />
+						) : null,
 					onClick: sendTestNotification,
 				},
 			],
@@ -302,11 +309,13 @@ const SettingsPage: React.FC = () => {
 			Buttons: [
 				{
 					Label: "View Logs",
+					Icon: <Logs />,
 					onClick: handleViewLogs,
 				},
 				{
 					Label: "Clear Old Logs",
 					Variant: "destructive",
+					Icon: <CircleX />,
 					onClick: handleClearOldLogs,
 				},
 			],
@@ -317,6 +326,7 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Clear Temp Images Folder",
 					Variant: "destructive",
+					Icon: <CircleX />,
 					onClick: clearTempImagesFolder,
 				},
 			],
@@ -446,6 +456,7 @@ const SettingsPage: React.FC = () => {
 															| "default"
 															| "destructive";
 														Label: string;
+														Icon?: React.ReactNode;
 													}[]
 												).map((button, index) => (
 													<Button
@@ -457,7 +468,9 @@ const SettingsPage: React.FC = () => {
 														onClick={button.onClick}
 														className="w-full"
 													>
-														{button.Label}
+														{button.Label}{" "}
+														{button.Icon &&
+															button.Icon}
 													</Button>
 												))}
 										</div>
