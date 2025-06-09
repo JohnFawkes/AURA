@@ -26,6 +26,7 @@ import {
 	Edit,
 	Delete,
 	Download,
+	RefreshCcw,
 } from "lucide-react";
 import Image from "next/image";
 import { DialogDescription } from "@/components/ui/dialog";
@@ -33,11 +34,17 @@ import Link from "next/link";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 import DownloadModalShow from "@/components/download-modal-show";
 import DownloadModalMovie from "@/components/download-modal-movie";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+import { useMediaStore } from "@/lib/mediaStore";
+import { useRouter } from "next/navigation";
+import { fetchShowSetByID } from "@/services/api.mediux";
+import { PosterSet } from "@/types/posterSets";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
 	onUpdate: () => void;
-}> = ({ savedSet, onUpdate }) => {
+	handleRecheckItem: (title: string, item: DBMediaItemWithPosterSets) => void;
+}> = ({ savedSet, onUpdate, handleRecheckItem }) => {
 	// Initialize edit state from the savedSet.PosterSets array.
 	const [editSets, setEditSets] = useState(() =>
 		savedSet.PosterSets.map((set) => ({
@@ -55,6 +62,9 @@ const SavedSetsCard: React.FC<{
 	// State to track any error messages during updates.
 	const [updateError, setUpdateError] = useState("");
 	const [isMounted, setIsMounted] = useState(false);
+	const { setPosterSet } = usePosterSetStore();
+	const { setMediaItem } = useMediaStore();
+	const router = useRouter();
 
 	const allToDelete = editSets.every((set) => set.toDelete);
 
@@ -139,6 +149,9 @@ const SavedSetsCard: React.FC<{
 									<Link
 										href={`/sets/${set.PosterSetID}`}
 										className="text-primary hover:underline"
+										onClick={() => {
+											setPosterSet(set.PosterSet);
+										}}
 									>
 										{set.PosterSetID}
 									</Link>
@@ -284,6 +297,39 @@ const SavedSetsCard: React.FC<{
 		);
 	};
 
+	const refreshPosterSet = async () => {
+		try {
+			await Promise.all(
+				editSets.map(async (set) => {
+					const resp = await fetchShowSetByID(set.id);
+
+					// Skip updating state if response is not valid
+					if (resp.status !== "success" || !resp.data) {
+						console.error(
+							`Failed to fetch poster set with ID: ${set.id}`
+						);
+						return;
+					}
+
+					const posterSet: PosterSet = resp.data;
+
+					setEditSets((prev) =>
+						prev.map((item) =>
+							item.id === set.id
+								? {
+										...item,
+										set: posterSet,
+								  }
+								: item
+						)
+					);
+				})
+			);
+		} catch (error) {
+			console.error("Error refreshing poster sets:", error);
+		}
+	};
+
 	return (
 		<Card className="relative w-full max-w-md mx-auto mb-4">
 			<CardHeader>
@@ -308,7 +354,10 @@ const SavedSetsCard: React.FC<{
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
-								onClick={() => setIsEditModalOpen(true)}
+								onClick={() => {
+									refreshPosterSet();
+									setIsEditModalOpen(true);
+								}}
 							>
 								<Edit className="ml-2" />
 								Edit
@@ -322,7 +371,17 @@ const SavedSetsCard: React.FC<{
 									? "Movie Set"
 									: "Show Set"}
 							</DropdownMenuItem>
-
+							<DropdownMenuItem
+								onClick={() => {
+									handleRecheckItem(
+										savedSet.MediaItem.Title,
+										savedSet
+									);
+								}}
+							>
+								<RefreshCcw className="ml-2" />
+								Force Autodownload Recheck
+							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => setIsDeleteModalOpen(true)}
 								className="text-destructive"
@@ -376,7 +435,24 @@ const SavedSetsCard: React.FC<{
 			{/* Content */}
 			<CardContent>
 				{/* Title */}
-				<H4 className="text-lg font-semibold">
+				<H4
+					className="text-lg font-semibold cursor-pointer hover:underline"
+					onClick={() => {
+						setMediaItem(savedSet.MediaItem);
+						// Format title for URL (replace spaces with underscores, remove special characters)
+						const formattedTitle = savedSet.MediaItem.Title.replace(
+							/\s+/g,
+							"_"
+						);
+						const sanitizedTitle = formattedTitle.replace(
+							/[^a-zA-Z0-9_]/g,
+							""
+						);
+						router.push(
+							`/media/${savedSet.MediaItem.RatingKey}/${sanitizedTitle}`
+						);
+					}}
+				>
 					{savedSet.MediaItem.Title}
 				</H4>
 

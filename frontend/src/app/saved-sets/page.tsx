@@ -462,6 +462,7 @@ const SavedSetsPage: React.FC = () => {
 							key={savedSet.MediaItem.RatingKey}
 							savedSet={savedSet}
 							onUpdate={fetchSavedSets}
+							handleRecheckItem={handleRecheckItem}
 						/>
 					))
 				) : (
