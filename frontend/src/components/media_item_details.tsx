@@ -99,7 +99,8 @@ export function MediaItemDetails({
 					<Badge
 						className={`flex items-center text-sm ${
 							status.toLowerCase() === "ended" ||
-							status.toLowerCase() === "cancelled"
+							status.toLowerCase() === "cancelled" ||
+							status.toLowerCase() === "canceled"
 								? "bg-red-700 text-white"
 								: status.toLowerCase().startsWith("returning")
 								? "bg-green-700 text-white"
