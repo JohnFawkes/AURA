@@ -26,7 +26,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 	params.Add("SortBy", "Name")
 	params.Add("SortOrder", "Ascending")
 	params.Add("IncludeItemTypes", "Movie,Series")
-	params.Add("Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
+	params.Add("Fields", "ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
 	params.Add("ParentId", section.ID)
 	params.Add("StartIndex", sectionStartIndex)
 	params.Add("Limit", "500")
@@ -70,6 +70,9 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 		itemInfo.Year = item.ProductionYear
 		itemInfo.Thumb = item.ImageTags.Thumb
 		itemInfo.LibraryTitle = section.Title
+		if item.ProviderIds.Tmdb != "" {
+			itemInfo.Guids = append(itemInfo.Guids, modals.Guid{Provider: "tmdb", ID: item.ProviderIds.Tmdb})
+		}
 
 		existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(item.ID)
 
