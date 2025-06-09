@@ -1,15 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-	Bookmark as BookmarkIcon,
-	Settings as SettingsIcon,
-	FileCog as FileCogIcon,
-	Search as SearchIcon,
-} from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -18,12 +9,21 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { LibrarySection, MediaItem } from "@/types/mediaItem";
-import { useMediaStore } from "@/lib/mediaStore";
-import { searchMediaItems } from "@/hooks/searchMediaItems";
-import localforage from "localforage";
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { searchMediaItems } from "@/hooks/searchMediaItems";
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { useMediaStore } from "@/lib/mediaStore";
+import { LibrarySection, MediaItem } from "@/types/mediaItem";
+import localforage from "localforage";
+import {
+	Bookmark as BookmarkIcon,
+	FileCog as FileCogIcon,
+	Search as SearchIcon,
+	Settings as SettingsIcon,
+} from "lucide-react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
 	const {
