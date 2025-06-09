@@ -260,13 +260,12 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 
 		// Update the item in the database with the new info
 		dbSaveItem := modals.DBSavedItem{
-			MediaItemID:    dbSavedItem.MediaItemID,
-			MediaItem:      latestMediaItem,
-			PosterSetID:    updatedSet.ID,
-			PosterSet:      updatedSet,
-			LastDownloaded: time.Now().Format("2006-01-02T15:04:05Z07:00"),
-			SelectedTypes:  dbPosterSet.SelectedTypes,
-			AutoDownload:   dbPosterSet.AutoDownload,
+			MediaItemID:   dbSavedItem.MediaItemID,
+			MediaItem:     latestMediaItem,
+			PosterSetID:   updatedSet.ID,
+			PosterSet:     updatedSet,
+			SelectedTypes: dbPosterSet.SelectedTypes,
+			AutoDownload:  dbPosterSet.AutoDownload,
 		}
 		logErr = database.UpdateItemInDatabase(dbSaveItem)
 		if logErr.Err != nil {

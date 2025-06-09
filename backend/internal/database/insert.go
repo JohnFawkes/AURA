@@ -57,9 +57,6 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
 	selectedTypesStr := strings.Join(saveItem.SelectedTypes, ",")
 
-	// Get the current time in the local timezone
-	now := time.Now().In(time.Local)
-
 	query := `
 		INSERT INTO SavedItems (media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -71,7 +68,7 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 		string(posterSetJSON),
 		selectedTypesStr,
 		saveItem.AutoDownload,
-		now.UTC().Format(time.RFC3339),
+		saveItem.PosterSet.DateUpdated.UTC().Format(time.RFC3339),
 	)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{

@@ -84,17 +84,13 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
 	selectedTypesStr := strings.Join(saveItem.SelectedTypes, ",")
 
-	// Get the current time in the local timezone
-	now := time.Now().In(time.Local)
-
 	// Update the MediaItem in the database for any media item changes
 	query := `
 	UPDATE SavedItems
-	SET media_item = ?, last_update = ?
+	SET media_item = ?
 	WHERE media_item_id = ?`
 	_, err = db.Exec(query,
 		string(mediaItemJSONBytes),
-		now.UTC().Format(time.RFC3339),
 		saveItem.MediaItem.RatingKey)
 	if err != nil {
 		return logging.ErrorLog{Err: err, Log: logging.Log{
@@ -113,7 +109,7 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 		string(posterSetJSONBytes),
 		selectedTypesStr,
 		saveItem.AutoDownload,
-		now.UTC().Format(time.RFC3339),
+		saveItem.PosterSet.DateUpdated.UTC().Format(time.RFC3339),
 		saveItem.MediaItem.RatingKey,
 		saveItem.PosterSet.ID)
 	if err != nil {
