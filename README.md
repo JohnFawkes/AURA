@@ -59,7 +59,7 @@ AURA is designed to run in Docker for easy setup and deployment.
     ```
 4. Run the Docker Container (adjust the volume paths and ports as needed):
     ```sh
-    docker run -d -p 3000:3000 -v '/mnt/user/appdata/aura/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' aura
+    docker run -d -p 3000:3000 -p 8888:8888 -v '/mnt/user/appdata/aura/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' aura
     ```
 
 ## Usage
