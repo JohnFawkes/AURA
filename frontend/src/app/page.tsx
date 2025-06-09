@@ -2,7 +2,7 @@
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { ErrorMessage } from "@/components/ui/error-message";
-import HomeMediaItemCard from "@/components/ui/home-media-item-card";
+import HomeMediaItemCard from "@/app/_components/home/media-card";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
@@ -42,9 +42,7 @@ export default function Home() {
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Loading & Error
-	const [errorMessage, setErrorMessage] = useState<string>(
-		"This is a test error"
-	);
+	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [fullyLoaded, setFullyLoaded] = useState<boolean>(false);
 
 	// Library sections & progress

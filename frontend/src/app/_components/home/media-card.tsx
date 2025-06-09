@@ -1,12 +1,15 @@
+"use client";
+
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { MediaItem } from "@/types/mediaItem";
-import { H4 } from "./typography";
+import { H4 } from "../../../components/ui/typography";
 import { CheckCircle2 as Checkmark } from "lucide-react";
 import { useMediaStore } from "@/lib/mediaStore";
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
@@ -19,10 +22,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 
 	const handleCardClick = (mediaItem: MediaItem) => {
 		setMediaItem(mediaItem);
-		// Format title for URL (replace spaces with underscores, remove special characters)
-		const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");
-		const sanitizedTitle = formattedTitle.replace(/[^a-zA-Z0-9_]/g, "");
-		router.push(`/media/${mediaItem.RatingKey}/${sanitizedTitle}`);
+		router.push(formatMediaItemUrl(mediaItem));
 	};
 
 	return (
