@@ -35,15 +35,6 @@ import { usePosterSetStore } from "@/lib/posterSetStore";
 import { useMediaStore } from "@/lib/mediaStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-	Pagination,
-	PaginationContent,
-	PaginationItem,
-	PaginationLink,
-	PaginationPrevious,
-	PaginationNext,
-	PaginationEllipsis,
-} from "@/components/ui/pagination";
-import {
 	Accordion,
 	AccordionItem,
 	AccordionTrigger,
@@ -56,6 +47,7 @@ import { CheckCircle2 as Checkmark } from "lucide-react";
 import { BoxsetDisplay } from "@/components/boxset-display";
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { SelectItemsPerPage } from "@/components/items-per-page-select";
+import { CustomPagination } from "@/components/custom-pagination";
 
 const UserSetPage = () => {
 	// Get the username from the URL
@@ -1229,95 +1221,13 @@ const UserSetPage = () => {
 										</div>
 									</Tabs>
 
-									{/* Pagination Component */}
-									<div className="flex justify-center mt-8">
-										<Pagination>
-											<PaginationContent>
-												{totalPages > 1 && (
-													<PaginationItem>
-														<PaginationPrevious
-															onClick={() => {
-																const newPage =
-																	Math.max(
-																		currentPage -
-																			1,
-																		1
-																	);
-																setCurrentPage(
-																	newPage
-																);
-																window.scrollTo(
-																	{
-																		top: 0,
-																		behavior:
-																			"smooth",
-																	}
-																);
-															}}
-														/>
-													</PaginationItem>
-												)}
-												<PaginationItem>
-													<PaginationLink isActive>
-														{currentPage}
-													</PaginationLink>
-												</PaginationItem>
-												{totalPages > 1 &&
-													currentPage <
-														totalPages && (
-														<PaginationItem>
-															<PaginationNext
-																onClick={() => {
-																	const newPage =
-																		Math.min(
-																			currentPage +
-																				1,
-																			totalPages
-																		);
-																	setCurrentPage(
-																		newPage
-																	);
-																	window.scrollTo(
-																		{
-																			top: 0,
-																			behavior:
-																				"smooth",
-																		}
-																	);
-																}}
-															/>
-														</PaginationItem>
-													)}
-												{totalPages > 3 &&
-													currentPage <
-														totalPages - 1 && (
-														<>
-															<PaginationItem>
-																<PaginationEllipsis />
-															</PaginationItem>
-															<PaginationItem>
-																<PaginationLink
-																	onClick={() => {
-																		setCurrentPage(
-																			totalPages
-																		);
-																		window.scrollTo(
-																			{
-																				top: 0,
-																				behavior:
-																					"smooth",
-																			}
-																		);
-																	}}
-																>
-																	{totalPages}
-																</PaginationLink>
-															</PaginationItem>
-														</>
-													)}
-											</PaginationContent>
-										</Pagination>
-									</div>
+									{/* Pagination */}
+									<CustomPagination
+										currentPage={currentPage}
+										totalPages={totalPages}
+										setCurrentPage={setCurrentPage}
+										scrollToTop={true}
+									/>
 								</div>
 							))}
 					</div>

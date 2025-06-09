@@ -24,17 +24,9 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { log } from "@/lib/logger";
-import {
-	Pagination,
-	PaginationContent,
-	PaginationEllipsis,
-	PaginationItem,
-	PaginationLink,
-	PaginationNext,
-	PaginationPrevious,
-} from "@/components/ui/pagination";
-import { Input } from "@/components/ui/input";
 import { SelectItemsPerPage } from "@/components/items-per-page-select";
+import { CustomPagination } from "@/components/custom-pagination";
+import { RefreshButton } from "@/components/shared/buttons/refresh-button";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
@@ -437,119 +429,15 @@ const SavedSetsPage: React.FC = () => {
 			</div>
 
 			{/* Pagination */}
-			<div className="flex justify-center mt-8">
-				<Pagination>
-					<PaginationContent>
-						{/* Previous Page Button */}
-						{totalPages > 1 && currentPage > 1 && (
-							<PaginationItem>
-								<PaginationPrevious
-									onClick={() => {
-										const newPage = Math.max(
-											currentPage - 1,
-											1
-										);
-										setCurrentPage(newPage);
-										window.scrollTo({
-											top: 0,
-											behavior: "smooth",
-										});
-									}}
-								/>
-							</PaginationItem>
-						)}
+			<CustomPagination
+				currentPage={currentPage}
+				totalPages={totalPages}
+				setCurrentPage={setCurrentPage}
+				scrollToTop={true}
+			/>
 
-						{/* Page Input */}
-						<PaginationItem>
-							<div className="flex items-center gap-2">
-								<Input
-									type="number"
-									min={1}
-									max={totalPages}
-									value={currentPage}
-									onChange={(e) => {
-										const value = parseInt(e.target.value);
-										if (
-											!isNaN(value) &&
-											value >= 1 &&
-											value <= totalPages
-										) {
-											setCurrentPage(value);
-											window.scrollTo({
-												top: 0,
-												behavior: "smooth",
-											});
-										}
-									}}
-									className="w-16 h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									onBlur={(e) => {
-										const value = parseInt(e.target.value);
-										if (isNaN(value) || value < 1) {
-											setCurrentPage(1);
-										} else if (value > totalPages) {
-											setCurrentPage(totalPages);
-										}
-									}}
-								/>
-							</div>
-						</PaginationItem>
-
-						{/* Next Page Button */}
-						{totalPages > 1 && currentPage < totalPages && (
-							<PaginationItem>
-								<PaginationNext
-									onClick={() => {
-										const newPage = Math.min(
-											currentPage + 1,
-											totalPages
-										);
-										setCurrentPage(newPage);
-										window.scrollTo({
-											top: 0,
-											behavior: "smooth",
-										});
-									}}
-								/>
-							</PaginationItem>
-						)}
-
-						{/* Ellipsis and End Page */}
-						{totalPages > 3 && currentPage < totalPages - 1 && (
-							<>
-								<PaginationItem>
-									<PaginationEllipsis />
-								</PaginationItem>
-								<PaginationItem>
-									<PaginationLink
-										onClick={() => {
-											setCurrentPage(totalPages);
-											window.scrollTo({
-												top: 0,
-												behavior: "smooth",
-											});
-										}}
-									>
-										{totalPages}
-									</PaginationLink>
-								</PaginationItem>
-							</>
-						)}
-					</PaginationContent>
-				</Pagination>
-			</div>
-
-			<Button
-				variant="outline"
-				size="sm"
-				className={cn(
-					"fixed z-100 right-3 bottom-10 sm:bottom-15 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer"
-				)}
-				onClick={() => fetchSavedSets()}
-				aria-label="refresh"
-			>
-				<RefreshIcon className="h-3 w-3 mr-1" />
-				<span className="text-xs hidden sm:inline">Refresh</span>
-			</Button>
+			{/* Refresh Button */}
+			<RefreshButton onClick={fetchSavedSets} />
 		</div>
 	);
 };
