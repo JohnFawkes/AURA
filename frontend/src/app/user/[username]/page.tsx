@@ -7,7 +7,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import Loader from "@/components/ui/loader";
 import { Lead } from "@/components/ui/typography";
 import { formatLastUpdatedDate } from "@/helper/formatDate";

@@ -1,7 +1,7 @@
 "use client";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { useEffect, useState, useCallback, useRef } from "react";
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import HomeMediaItemCard from "@/components/ui/home-media-item-card";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup } from "@/components/ui/toggle-group";
@@ -42,7 +42,9 @@ export default function Home() {
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Loading & Error
-	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [errorMessage, setErrorMessage] = useState<string>(
+		"This is a test error"
+	);
 	const [fullyLoaded, setFullyLoaded] = useState<boolean>(false);
 
 	// Library sections & progress

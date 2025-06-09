@@ -1,6 +1,6 @@
 "use client";
 
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { useEffect, useState } from "react";
 import { H1, Lead } from "@/components/ui/typography";
 import { Badge } from "@/components/ui/badge";

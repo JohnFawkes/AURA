@@ -7,7 +7,7 @@ import {
 	CardFooter,
 	CardHeader,
 } from "@/components/ui/card";
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import Loader from "@/components/ui/loader";
 import { Textarea } from "@/components/ui/textarea";
 import { log } from "@/lib/logger";

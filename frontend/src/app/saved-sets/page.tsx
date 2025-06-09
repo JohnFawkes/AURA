@@ -13,7 +13,7 @@ import {
 	postForceRecheckDBItemForAutoDownload,
 } from "@/services/api.db";
 import Loader from "@/components/ui/loader";
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import SavedSetsCard from "@/components/ui/saved-sets-cards";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw as RefreshIcon, XCircle } from "lucide-react";

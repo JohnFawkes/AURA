@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import ErrorMessage from "@/components/ui/error-message";
+import { ErrorMessage } from "@/components/ui/error-message";
 import Loader from "@/components/ui/loader";
 import { MediaCarousel } from "@/components/ui/media-carousel";
 import {
