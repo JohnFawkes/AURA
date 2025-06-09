@@ -143,6 +143,9 @@ export default function Home() {
 
 			setFullyLoaded(false);
 
+			// Clear the cache
+			localforage.clear();
+
 			// If sections were not loaded from cache, fetch them from the API.
 			if (sections.length === 0) {
 				const sectionsResponse =
