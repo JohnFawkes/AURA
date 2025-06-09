@@ -210,25 +210,33 @@ const SavedSetsPage: React.FC = () => {
 
 		if (setsToRecheck.length === 0) {
 			toast.warning("No sets with AutoDownload enabled found", {
-				id: "no-sets-to-recheck",
+				id: "force-recheck",
 				duration: 2000,
 			});
 		}
 
 		// Show loading toast
-		toast.loading("Rechecking sets...", {
-			id: "recheck-loading",
+		toast.loading(`Rechecking ${setsToRecheck.length} sets...`, {
+			id: "force-recheck",
 			duration: 0, // Keep it open until we manually close it
 		});
 
-		for (const set of setsToRecheck) {
+		for (const [index, set] of setsToRecheck.entries()) {
+			toast.loading(
+				`Rechecking ${index + 1} of ${setsToRecheck.length} - ${
+					set.MediaItem.Title
+				}`,
+				{
+					id: "force-recheck",
+					duration: 0, // Keep it open until we manually close it
+				}
+			);
 			await handleRecheckItem(set.MediaItem.Title, set);
 		}
 
 		// Close loading toast
-		toast.dismiss("recheck-loading");
 		toast.success("Recheck completed", {
-			id: "recheck-complete",
+			id: "force-recheck",
 			duration: 2000,
 		});
 
