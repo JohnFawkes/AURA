@@ -31,7 +31,7 @@ const SetPage = () => {
 
 	// Update the Poster Set
 	useEffect(() => {
-		if (posterSet) {
+		if (posterSet?.ID) {
 			const getShowSetByID = async () => {
 				const resp = await fetchShowSetByID(posterSet.ID);
 				if (resp.status !== "success") {
@@ -45,7 +45,7 @@ const SetPage = () => {
 			};
 			getShowSetByID();
 		}
-	}, [setPosterSet]);
+	}, [setPosterSet, posterSet?.ID]);
 
 	// Construct the backdrop URL
 	// If the posterSet has a backdrop, use that
