@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
 	fetchConfig,
 	fetchMediaServerConnectionStatus,
+	postClearOldLogs,
 	postClearTempImagesFolder,
 	postSendTestNotification,
 } from "@/services/api.settings";
@@ -67,6 +68,21 @@ const SettingsPage: React.FC = () => {
 
 	const handleViewLogs = () => {
 		router.push("/logs");
+	};
+
+	const handleClearOldLogs = async () => {
+		try {
+			const clearOldLogsResp = await postClearOldLogs();
+			if (!clearOldLogsResp) {
+				throw new Error("No response from API");
+			}
+			if (clearOldLogsResp.status !== "success") {
+				throw new Error(clearOldLogsResp.message);
+			}
+			toast.success(clearOldLogsResp.message || "Success");
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : String(error));
+		}
 	};
 
 	const clearTempImagesFolder = async () => {
@@ -283,7 +299,17 @@ const SettingsPage: React.FC = () => {
 					Tooltip: "The file path where logs are stored.",
 				},
 			],
-			Buttons: [{ Label: "View Logs", onClick: handleViewLogs }],
+			Buttons: [
+				{
+					Label: "View Logs",
+					onClick: handleViewLogs,
+				},
+				{
+					Label: "Clear Old Logs",
+					Variant: "destructive",
+					onClick: handleClearOldLogs,
+				},
+			],
 		},
 		"Admin Tools": {
 			Title: "Admin Tools",

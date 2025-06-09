@@ -36,6 +36,22 @@ export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 	}
 };
 
+export const postClearOldLogs = async (): Promise<APIResponse<void>> => {
+	log("api.settings - Clearing old logs started");
+	try {
+		const response = await apiClient.post<APIResponse<void>>(`/logs/clear`);
+		log("api.settings - Clearing old logs succeeded");
+		return response.data;
+	} catch (error) {
+		log(
+			`api.settings - Clearing old logs failed: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		return ReturnErrorMessage<void>(error);
+	}
+};
+
 export const postClearTempImagesFolder = async (): Promise<
 	APIResponse<void>
 > => {

@@ -47,6 +47,7 @@ func AddRoutes(r *chi.Mux) {
 
 		// Log Routes
 		r.Get("/logs", health.GetCurrentLogFile)
+		r.Post("/logs/clear", health.ClearLogOldFiles)
 
 		// Clear Temporary Images Route
 		r.Post("/temp-images/clear", tempimages.ClearTempImages)
