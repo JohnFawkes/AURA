@@ -145,16 +145,19 @@ export function MediaItemDetails({
 			)}
 
 			{/* Show Information for TV Shows */}
-			{mediaItemType === "show" && seasonCount && episodeCount > 0 && (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="flex items-center text-md text-primary-dynamic">
-						{seasonCount} {seasonCount > 1 ? "Seasons" : "Season"}{" "}
-						with {episodeCount}{" "}
-						{episodeCount > 1 ? "Episodes" : "Episode"} in{" "}
-						{serverType}
-					</Lead>
-				</div>
-			)}
+			{mediaItemType === "show" &&
+				seasonCount > 0 &&
+				episodeCount > 0 && (
+					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+						<Lead className="flex items-center text-md text-primary-dynamic">
+							{seasonCount}{" "}
+							{seasonCount > 1 ? "Seasons" : "Season"} with{" "}
+							{episodeCount}{" "}
+							{episodeCount > 1 ? "Episodes" : "Episode"} in{" "}
+							{serverType}
+						</Lead>
+					</div>
+				)}
 
 			{/* Movie Information */}
 			<div className="lg:flex items-center text-white gap-8 tracking-wide mt-4">
