@@ -1,10 +1,12 @@
-import apiClient from "./apiClient";
+import { log } from "@/lib/logger";
+
+import { MediuxUserAllSetsResponse } from "@/types/mediuxUserAllSets";
+import { MediuxUserFollowHide } from "@/types/mediuxUserFollowsHides";
+
 import { APIResponse } from "../types/apiResponse";
 import { PosterSet } from "../types/posterSets";
 import { ReturnErrorMessage } from "./api.shared";
-import { log } from "@/lib/logger";
-import { MediuxUserFollowHide } from "@/types/mediuxUserFollowsHides";
-import { MediuxUserAllSetsResponse } from "@/types/mediuxUserAllSets";
+import apiClient from "./apiClient";
 
 export const fetchMediuxSets = async (
 	tmdbID: string,
@@ -33,9 +35,7 @@ export const fetchMediuxSets = async (
 	}
 };
 
-export const fetchMediuxUserFollowHides = async (): Promise<
-	APIResponse<MediuxUserFollowHide>
-> => {
+export const fetchMediuxUserFollowHides = async (): Promise<APIResponse<MediuxUserFollowHide>> => {
 	log(`api.mediux - Fetching Mediux user follow/hide data started`);
 	try {
 		const response = await apiClient.get<APIResponse<MediuxUserFollowHide>>(
@@ -58,9 +58,9 @@ export const fetchAllUserSets = async (
 ): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
 	log(`api.mediux - Fetching all user sets for ${username} started`);
 	try {
-		const response = await apiClient.get<
-			APIResponse<MediuxUserAllSetsResponse>
-		>(`/mediux/sets/get_user/sets/${username}`);
+		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>(
+			`/mediux/sets/get_user/sets/${username}`
+		);
 		log(`api.mediux - Fetching all user sets for ${username} completed`);
 		return response.data;
 	} catch (error) {
@@ -73,9 +73,7 @@ export const fetchAllUserSets = async (
 	}
 };
 
-export const fetchShowSetByID = async (
-	setID: string
-): Promise<APIResponse<PosterSet>> => {
+export const fetchShowSetByID = async (setID: string): Promise<APIResponse<PosterSet>> => {
 	log(`api.mediux - Fetching show set by ID: ${setID} started`);
 	try {
 		const response = await apiClient.get<APIResponse<PosterSet>>(

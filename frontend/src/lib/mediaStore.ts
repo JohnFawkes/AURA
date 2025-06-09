@@ -1,6 +1,7 @@
-import { MediaItem } from "@/types/mediaItem";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
+import { MediaItem } from "@/types/mediaItem";
 
 interface MediaStore {
 	mediaItem: MediaItem | null;

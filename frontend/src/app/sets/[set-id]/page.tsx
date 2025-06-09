@@ -1,26 +1,31 @@
 "use client";
 
-import { ErrorMessage } from "@/components/ui/error-message";
+import { fetchShowSetByID } from "@/services/api.mediux";
+
 import { useEffect, useState } from "react";
-import { H1, Lead } from "@/components/ui/typography";
-import { Badge } from "@/components/ui/badge";
-import { AssetImage } from "@/components/ui/asset-image";
-import { PosterFile } from "@/types/posterSets";
+
+import { useRouter } from "next/navigation";
+
+import { DimmedBackground } from "@/components/dimmed_backdrop";
+import DownloadModalMovie from "@/components/download-modal-movie";
+import DownloadModalShow from "@/components/download-modal-show";
+import { SetFileCounts } from "@/components/set_file_counts";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { usePosterSetStore } from "@/lib/posterSetStore";
-import { useMediaStore } from "@/lib/mediaStore";
+import { AssetImage } from "@/components/ui/asset-image";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DimmedBackground } from "@/components/dimmed_backdrop";
-import { SetFileCounts } from "@/components/set_file_counts";
-import DownloadModalShow from "@/components/download-modal-show";
-import DownloadModalMovie from "@/components/download-modal-movie";
-import { useRouter } from "next/navigation";
-import { fetchShowSetByID } from "@/services/api.mediux";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { H1, Lead } from "@/components/ui/typography";
+
+import { useMediaStore } from "@/lib/mediaStore";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+
+import { PosterFile } from "@/types/posterSets";
 
 const SetPage = () => {
 	const { posterSet, setPosterSet } = usePosterSetStore();
@@ -63,9 +68,7 @@ const SetPage = () => {
 				);
 			}
 		} else {
-			setBackdropURL(
-				`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`
-			);
+			setBackdropURL(`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop`);
 		}
 	}, [mediaItem?.RatingKey, posterSet]);
 
@@ -133,10 +136,7 @@ const SetPage = () => {
 					<div className="flex flex-wrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
 						{posterSet.User.Name && (
 							<>
-								<SetFileCounts
-									mediaItem={mediaItem}
-									set={posterSet}
-								/>
+								<SetFileCounts mediaItem={mediaItem} set={posterSet} />
 							</>
 						)}
 					</div>
@@ -150,9 +150,7 @@ const SetPage = () => {
 												posterSet={posterSet}
 												mediaItem={mediaItem}
 												open={isDownloadModalOpen}
-												onOpenChange={
-													setIsDownloadModalOpen
-												}
+												onOpenChange={setIsDownloadModalOpen}
 											/>
 										</button>
 									) : mediaItem.Type === "movie" ? (
@@ -161,9 +159,7 @@ const SetPage = () => {
 												posterSet={posterSet}
 												mediaItem={mediaItem}
 												open={isDownloadModalOpen}
-												onOpenChange={
-													setIsDownloadModalOpen
-												}
+												onOpenChange={setIsDownloadModalOpen}
 											/>
 										</button>
 									) : null}
@@ -175,14 +171,10 @@ const SetPage = () => {
 					{/* Display the main poster */}
 					{posterSet.Poster && (
 						<div className="flex flex-col gap-2 mt-4">
-							<Lead className="text-muted-foreground text-md">
-								Poster
-							</Lead>
+							<Lead className="text-muted-foreground text-md">Poster</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								<AssetImage
-									image={
-										posterSet.Poster as unknown as PosterFile
-									}
+									image={posterSet.Poster as unknown as PosterFile}
 									displayUser={true}
 									displayMediaType={true}
 									aspect="poster"
@@ -195,14 +187,10 @@ const SetPage = () => {
 					{/* Display the main backdrop */}
 					{posterSet.Backdrop && (
 						<div className="flex flex-col gap-2 mt-4">
-							<Lead className="text-muted-foreground text-md">
-								Backdrop
-							</Lead>
+							<Lead className="text-muted-foreground text-md">Backdrop</Lead>
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								<AssetImage
-									image={
-										posterSet.Backdrop as unknown as PosterFile
-									}
+									image={posterSet.Backdrop as unknown as PosterFile}
 									displayUser={true}
 									displayMediaType={true}
 									aspect="backdrop"
@@ -213,169 +201,135 @@ const SetPage = () => {
 					)}
 
 					{/* Display all Other Posters (if any) */}
-					{posterSet.OtherPosters &&
-						posterSet.OtherPosters.length > 0 && (
-							<div className="flex flex-col gap-2 mt-4">
-								<Lead className="text-muted-foreground text-md">
-									{posterSet.OtherPosters.length > 1
-										? "Other Posters"
-										: "Other Poster"}
-								</Lead>
-								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-									{posterSet.OtherPosters.map((file) => {
-										return (
-											<AssetImage
-												key={file.ID}
-												image={
-													file as unknown as PosterFile
-												}
-												displayUser={true}
-												displayMediaType={true}
-												aspect="poster"
-												className="w-[200px] h-auto"
-											/>
-										);
-									})}
-								</div>
+					{posterSet.OtherPosters && posterSet.OtherPosters.length > 0 && (
+						<div className="flex flex-col gap-2 mt-4">
+							<Lead className="text-muted-foreground text-md">
+								{posterSet.OtherPosters.length > 1
+									? "Other Posters"
+									: "Other Poster"}
+							</Lead>
+							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+								{posterSet.OtherPosters.map((file) => {
+									return (
+										<AssetImage
+											key={file.ID}
+											image={file as unknown as PosterFile}
+											displayUser={true}
+											displayMediaType={true}
+											aspect="poster"
+											className="w-[200px] h-auto"
+										/>
+									);
+								})}
 							</div>
-						)}
+						</div>
+					)}
 
 					{/* Display all Other Backdrops (if any) */}
-					{posterSet.OtherBackdrops &&
-						posterSet.OtherBackdrops.length > 0 && (
-							<div className="flex flex-col gap-2 mt-4">
-								<Lead className="text-muted-foreground text-md">
-									{posterSet.OtherBackdrops.length > 1
-										? "Other Backdrops"
-										: "Other Backdrop"}
-								</Lead>
-								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-									{posterSet.OtherBackdrops.map((file) => {
-										return (
-											<AssetImage
-												key={file.ID}
-												image={
-													file as unknown as PosterFile
-												}
-												displayUser={true}
-												displayMediaType={true}
-												aspect="backdrop"
-												className="w-[200px] h-auto"
-											/>
-										);
-									})}
-								</div>
+					{posterSet.OtherBackdrops && posterSet.OtherBackdrops.length > 0 && (
+						<div className="flex flex-col gap-2 mt-4">
+							<Lead className="text-muted-foreground text-md">
+								{posterSet.OtherBackdrops.length > 1
+									? "Other Backdrops"
+									: "Other Backdrop"}
+							</Lead>
+							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+								{posterSet.OtherBackdrops.map((file) => {
+									return (
+										<AssetImage
+											key={file.ID}
+											image={file as unknown as PosterFile}
+											displayUser={true}
+											displayMediaType={true}
+											aspect="backdrop"
+											className="w-[200px] h-auto"
+										/>
+									);
+								})}
 							</div>
-						)}
+						</div>
+					)}
 
 					{/* Display all Season Posters (if any) */}
-					{posterSet.SeasonPosters &&
-						posterSet.SeasonPosters.length > 0 && (
-							<div className="flex flex-col gap-2 mt-4">
-								<Lead className="text-muted-foreground text-md">
-									{posterSet.SeasonPosters.length > 1
-										? "Season Posters"
-										: "Season Poster"}
-								</Lead>
-								<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-									{[...posterSet.SeasonPosters]
-										.sort(
-											(a, b) =>
-												(b.Season?.Number ?? 0) -
-												(a.Season?.Number ?? 0)
-										)
-										.map((file) => (
-											<AssetImage
-												key={file.ID}
-												image={
-													file as unknown as PosterFile
-												}
-												displayUser={true}
-												displayMediaType={true}
-												aspect="poster"
-												className="w-[200px] h-auto"
-											/>
-										))}
-								</div>
+					{posterSet.SeasonPosters && posterSet.SeasonPosters.length > 0 && (
+						<div className="flex flex-col gap-2 mt-4">
+							<Lead className="text-muted-foreground text-md">
+								{posterSet.SeasonPosters.length > 1
+									? "Season Posters"
+									: "Season Poster"}
+							</Lead>
+							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+								{[...posterSet.SeasonPosters]
+									.sort(
+										(a, b) => (b.Season?.Number ?? 0) - (a.Season?.Number ?? 0)
+									)
+									.map((file) => (
+										<AssetImage
+											key={file.ID}
+											image={file as unknown as PosterFile}
+											displayUser={true}
+											displayMediaType={true}
+											aspect="poster"
+											className="w-[200px] h-auto"
+										/>
+									))}
 							</div>
-						)}
+						</div>
+					)}
 
 					{/* Display all titlecards grouped by season (if any) */}
-					{posterSet.TitleCards &&
-						posterSet.TitleCards.length > 0 && (
-							<div className="flex flex-col gap-2 mt-4">
-								<Lead className="text-muted-foreground text-md">
-									{posterSet.TitleCards.length > 1
-										? "Titlecards"
-										: "Titlecard"}
-								</Lead>
-								<Accordion
-									type="single"
-									collapsible
-									className="w-full"
-								>
-									{Object.entries(
-										posterSet.TitleCards.reduce(
-											(acc, file) => {
-												const season =
-													file.Episode
-														?.SeasonNumber ??
-													"Unknown Season";
-												if (!acc[season]) {
-													acc[season] = [];
-												}
-												acc[season].push(file);
-												return acc;
-											},
-											{} as Record<
-												string | number,
-												PosterFile[]
-											>
-										)
+					{posterSet.TitleCards && posterSet.TitleCards.length > 0 && (
+						<div className="flex flex-col gap-2 mt-4">
+							<Lead className="text-muted-foreground text-md">
+								{posterSet.TitleCards.length > 1 ? "Titlecards" : "Titlecard"}
+							</Lead>
+							<Accordion type="single" collapsible className="w-full">
+								{Object.entries(
+									posterSet.TitleCards.reduce(
+										(acc, file) => {
+											const season =
+												file.Episode?.SeasonNumber ?? "Unknown Season";
+											if (!acc[season]) {
+												acc[season] = [];
+											}
+											acc[season].push(file);
+											return acc;
+										},
+										{} as Record<string | number, PosterFile[]>
 									)
-										.sort(([a], [b]) => {
-											// Sort numerically, "Unknown Season" last
-											if (a === "Unknown Season")
-												return 1;
-											if (b === "Unknown Season")
-												return -1;
-											return Number(b) - Number(a);
-										})
-										.map(([season, files]) => (
-											<AccordionItem
-												key={season}
-												value={`season-${season}`}
-											>
-												<AccordionTrigger>
-													<Lead className="text-muted-foreground text-md">
-														Season {season}
-													</Lead>
-												</AccordionTrigger>
-												<AccordionContent>
-													<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
-														{files.map((file) => (
-															<AssetImage
-																key={file.ID}
-																image={
-																	file as unknown as PosterFile
-																}
-																displayUser={
-																	true
-																}
-																displayMediaType={
-																	true
-																}
-																aspect="titlecard"
-																className="w-[200px] h-auto"
-															/>
-														))}
-													</div>
-												</AccordionContent>
-											</AccordionItem>
-										))}
-								</Accordion>
-							</div>
-						)}
+								)
+									.sort(([a], [b]) => {
+										// Sort numerically, "Unknown Season" last
+										if (a === "Unknown Season") return 1;
+										if (b === "Unknown Season") return -1;
+										return Number(b) - Number(a);
+									})
+									.map(([season, files]) => (
+										<AccordionItem key={season} value={`season-${season}`}>
+											<AccordionTrigger>
+												<Lead className="text-muted-foreground text-md">
+													Season {season}
+												</Lead>
+											</AccordionTrigger>
+											<AccordionContent>
+												<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
+													{files.map((file) => (
+														<AssetImage
+															key={file.ID}
+															image={file as unknown as PosterFile}
+															displayUser={true}
+															displayMediaType={true}
+															aspect="titlecard"
+															className="w-[200px] h-auto"
+														/>
+													))}
+												</div>
+											</AccordionContent>
+										</AccordionItem>
+									))}
+							</Accordion>
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

@@ -1,5 +1,19 @@
 "use client";
 
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import localforage from "localforage";
+import {
+	Bookmark as BookmarkIcon,
+	FileCog as FileCogIcon,
+	Search as SearchIcon,
+	Settings as SettingsIcon,
+} from "lucide-react";
+
+import { useEffect, useState } from "react";
+
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,41 +23,26 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { searchMediaItems } from "@/hooks/searchMediaItems";
+
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { useMediaStore } from "@/lib/mediaStore";
+
+import { searchMediaItems } from "@/hooks/searchMediaItems";
+
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
-import localforage from "localforage";
-import {
-	Bookmark as BookmarkIcon,
-	FileCog as FileCogIcon,
-	Search as SearchIcon,
-	Settings as SettingsIcon,
-} from "lucide-react";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 export default function Navbar() {
-	const {
-		setSearchQuery,
-		setCurrentPage,
-		setFilteredLibraries,
-		setFilterOutInDB,
-	} = useHomeSearchStore();
+	const { setSearchQuery, setCurrentPage, setFilteredLibraries, setFilterOutInDB } =
+		useHomeSearchStore();
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
-	const isSavedSetsPage =
-		pathName === "/saved-sets" || pathName === "/saved-sets/";
+	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 
 	// Local state for search input
 	const [localSearch, setLocalSearch] = useState("");
 	// State for placeholder (optional)
-	const [placeholderText, setPlaceholderText] = useState(
-		"Search for movies or shows"
-	);
+	const [placeholderText, setPlaceholderText] = useState("Search for movies or shows");
 	// State for search dropdown results (for non-homepage)
 	// This will be populated with results from the IDB
 	// when the user types in the search input
@@ -55,19 +54,11 @@ export default function Navbar() {
 	// Use matchMedia to update placeholder based on screen width
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 768px)");
-		setPlaceholderText(
-			mediaQuery.matches ? "Search Media" : "Search for movies or shows"
-		);
-		setLogoSrc(
-			mediaQuery.matches ? "/aura_logo.svg" : "/aura_word_logo.svg"
-		);
+		setPlaceholderText(mediaQuery.matches ? "Search Media" : "Search for movies or shows");
+		setLogoSrc(mediaQuery.matches ? "/aura_logo.svg" : "/aura_word_logo.svg");
 		const handleMediaQueryChange = (event: MediaQueryListEvent) => {
-			setPlaceholderText(
-				event.matches ? "Search Media" : "Search for movies or shows"
-			);
-			setLogoSrc(
-				event.matches ? "/aura_logo.svg" : "/aura_word_logo.svg"
-			);
+			setPlaceholderText(event.matches ? "Search Media" : "Search for movies or shows");
+			setLogoSrc(event.matches ? "/aura_logo.svg" : "/aura_word_logo.svg");
 		};
 		mediaQuery.addEventListener("change", handleMediaQueryChange);
 		return () => {
@@ -98,9 +89,7 @@ export default function Navbar() {
 							timestamp: number;
 						}>(key)
 					);
-					const cachedSections = (
-						await Promise.all(cachedSectionsPromises)
-					).filter(
+					const cachedSections = (await Promise.all(cachedSectionsPromises)).filter(
 						(
 							section
 						): section is {
@@ -119,9 +108,7 @@ export default function Navbar() {
 
 					sections.forEach((section: LibrarySection) => {
 						if (section.MediaItems) {
-							allMediaItems = allMediaItems.concat(
-								section.MediaItems
-							);
+							allMediaItems = allMediaItems.concat(section.MediaItems);
 						}
 					});
 
@@ -171,12 +158,7 @@ export default function Navbar() {
 						height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
 					}}
 				>
-					<Image
-						src={logoSrc}
-						alt="Logo"
-						fill
-						className="object-contain filter"
-					/>
+					<Image src={logoSrc} alt="Logo" fill className="object-contain filter" />
 				</div>
 			</div>
 
@@ -192,42 +174,36 @@ export default function Navbar() {
 					onBlur={() => setShowDropdown(false)}
 				/>
 				{/* If not on homepage, display dropdown results */}
-				{!isHomePage &&
-					!isSavedSetsPage &&
-					showDropdown &&
-					searchResults.length > 0 && (
-						<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
-							{searchResults.map((result) => (
-								<div
-									key={result.RatingKey}
-									onMouseDown={() =>
-										handleResultClick(result)
-									}
-									className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
-								>
-									<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
-										<Image
-											src={`/api/mediaserver/image/${result.RatingKey}/poster`}
-											alt={result.Title}
-											fill
-											className="object-cover"
-											loading="lazy"
-											unoptimized
-										/>
-									</div>
-									<div>
-										<p className="font-medium text-sm md:text-base">
-											{result.Title}
-										</p>
-										<p className="text-xs text-muted-foreground">
-											{result.LibraryTitle} ·{" "}
-											{result.Year}
-										</p>
-									</div>
+				{!isHomePage && !isSavedSetsPage && showDropdown && searchResults.length > 0 && (
+					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
+						{searchResults.map((result) => (
+							<div
+								key={result.RatingKey}
+								onMouseDown={() => handleResultClick(result)}
+								className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
+							>
+								<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
+									<Image
+										src={`/api/mediaserver/image/${result.RatingKey}/poster`}
+										alt={result.Title}
+										fill
+										className="object-cover"
+										loading="lazy"
+										unoptimized
+									/>
 								</div>
-							))}
-						</div>
-					)}
+								<div>
+									<p className="font-medium text-sm md:text-base">
+										{result.Title}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{result.LibraryTitle} · {result.Year}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
 			</div>
 			{/* Settings */}
 			<DropdownMenu>
@@ -237,9 +213,7 @@ export default function Navbar() {
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent className="w-56">
-					<DropdownMenuItem
-						onClick={() => router.push("/saved-sets")}
-					>
+					<DropdownMenuItem onClick={() => router.push("/saved-sets")}>
 						<BookmarkIcon className="w-4 h-4 mr-2" />
 						Saved Sets
 					</DropdownMenuItem>

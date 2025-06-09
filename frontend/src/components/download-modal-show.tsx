@@ -1,5 +1,21 @@
 "use client";
 
+import { formatDownloadSize } from "@/helper/formatDownloadSize";
+import { postAddItemToDB } from "@/services/api.db";
+import {
+	fetchMediaServerItemContent,
+	patchDownloadPosterFileAndUpdateMediaServer,
+} from "@/services/api.mediaserver";
+import { fetchShowSetByID } from "@/services/api.mediux";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Download, LoaderIcon, TriangleAlert, X } from "lucide-react";
+import { z } from "zod";
+
+import { useEffect, useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+
+import Link from "next/link";
+
 import {
 	Dialog,
 	DialogClose,
@@ -12,13 +28,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { MediaItem } from "@/types/mediaItem";
-import { PosterFile, PosterSet } from "@/types/posterSets";
-import { Check, Download, LoaderIcon, TriangleAlert, X } from "lucide-react";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { useEffect, useMemo, useState } from "react";
-import { Checkbox } from "./ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -27,26 +36,18 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import { log } from "@/lib/logger";
-import {
-	fetchMediaServerItemContent,
-	patchDownloadPosterFileAndUpdateMediaServer,
-} from "@/services/api.mediaserver";
-import { Progress } from "./ui/progress";
-import { formatDownloadSize } from "@/helper/formatDownloadSize";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "./ui/accordion";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+
 import { DBSavedItem } from "@/types/databaseSavedSet";
-import { postAddItemToDB } from "@/services/api.db";
-import { fetchShowSetByID } from "@/services/api.mediux";
+import { MediaItem } from "@/types/mediaItem";
+import { PosterFile, PosterSet } from "@/types/posterSets";
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Progress } from "./ui/progress";
 
 const formSchema = z.object({
 	selectedTypes: z.array(z.string()).refine((value) => value.length > 0, {
@@ -61,29 +62,17 @@ const DownloadModalShow: React.FC<{
 	onOpenChange: (open: boolean) => void;
 	autoDownloadDefault?: boolean;
 	forceSetRefresh?: boolean; // Optional prop to force a refresh of the set
-}> = ({
-	posterSet,
-	mediaItem,
-	open,
-	onOpenChange,
-	autoDownloadDefault,
-	forceSetRefresh,
-}) => {
+}> = ({ posterSet, mediaItem, open, onOpenChange, autoDownloadDefault, forceSetRefresh }) => {
 	const [isMounted, setIsMounted] = useState(false);
 	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
-	const [autoDownload, setAutoDownload] = useState(
-		autoDownloadDefault || false
-	);
+	const [autoDownload, setAutoDownload] = useState(autoDownloadDefault || false);
 	const [futureUpdatesOnly, setFutureUpdatesOnly] = useState(false);
 
 	// Tracking selected checkboxes for what to download
 	const [totalSelectedSize, setTotalSelectedSize] = useState("");
-	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState(
-		"Total Download Size: "
-	);
-	const [currentPosterSet, setCurrentPosterSet] =
-		useState<PosterSet>(posterSet);
+	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState("Total Download Size: ");
+	const [currentPosterSet, setCurrentPosterSet] = useState<PosterSet>(posterSet);
 
 	const handleAutoDownloadChange = () => {
 		if (futureUpdatesOnly) {
@@ -167,8 +156,7 @@ const DownloadModalShow: React.FC<{
 		}
 		const setHasPoster = currentPosterSet.Poster;
 		const setHasBackdrop = currentPosterSet.Backdrop;
-		const setHasSeasonPosters =
-			(currentPosterSet.SeasonPosters?.length ?? 0) > 0;
+		const setHasSeasonPosters = (currentPosterSet.SeasonPosters?.length ?? 0) > 0;
 		const setHasSpecialSeasonPosters = currentPosterSet.SeasonPosters?.some(
 			(season) => season.Type === "specialSeasonPoster"
 		);
@@ -177,9 +165,7 @@ const DownloadModalShow: React.FC<{
 		return [
 			setHasPoster ? { id: "poster", label: "Poster" } : null,
 			setHasBackdrop ? { id: "backdrop", label: "Backdrop" } : null,
-			setHasSeasonPosters
-				? { id: "seasonPoster", label: "Season Poster" }
-				: null,
+			setHasSeasonPosters ? { id: "seasonPoster", label: "Season Poster" } : null,
 			setHasSpecialSeasonPosters
 				? { id: "specialSeasonPoster", label: "Special Poster" }
 				: null,
@@ -191,10 +177,7 @@ const DownloadModalShow: React.FC<{
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			selectedTypes: assetTypes
-				.filter(
-					(item): item is { id: string; label: string } =>
-						item !== null
-				)
+				.filter((item): item is { id: string; label: string } => item !== null)
 				.map((item) => item.id),
 		},
 	});
@@ -235,10 +218,8 @@ const DownloadModalShow: React.FC<{
 					break;
 				case "titlecard":
 					size =
-						currentPosterSet.TitleCards?.reduce(
-							(s, tc) => s + (tc.FileSize || 0),
-							0
-						) || 0;
+						currentPosterSet.TitleCards?.reduce((s, tc) => s + (tc.FileSize || 0), 0) ||
+						0;
 					break;
 				default:
 					size = 0;
@@ -271,9 +252,7 @@ const DownloadModalShow: React.FC<{
 					<DialogContent className="max-w-md">
 						<DialogHeader>
 							<DialogTitle>Loading Poster Set...</DialogTitle>
-							<DialogDescription>
-								This may take a moment.
-							</DialogDescription>
+							<DialogDescription>This may take a moment.</DialogDescription>
 						</DialogHeader>
 						<div className="flex justify-center items-center">
 							<LoaderIcon className="h-8 w-8 animate-spin" />
@@ -314,10 +293,7 @@ const DownloadModalShow: React.FC<{
 		mediaItem: MediaItem
 	) => {
 		try {
-			const resp = await patchDownloadPosterFileAndUpdateMediaServer(
-				posterFile,
-				mediaItem
-			);
+			const resp = await patchDownloadPosterFileAndUpdateMediaServer(posterFile, mediaItem);
 			if (resp.status !== "success") {
 				throw new Error(`Failed to download ${fileName}`);
 			} else {
@@ -410,31 +386,21 @@ const DownloadModalShow: React.FC<{
 			} else {
 				// Calculate the number of files to download based on selected types
 				// This will be used to update the progress bar in increments
-				const totalFilesToDownload = selectedTypes.reduce(
-					(acc, type) => {
-						switch (type) {
-							case "poster":
-								return acc + 1;
-							case "backdrop":
-								return acc + 1;
-							case "seasonPoster":
-							case "specialSeasonPoster":
-								return (
-									acc +
-									(currentPosterSet.SeasonPosters?.length ||
-										0)
-								);
-							case "titlecard":
-								return (
-									acc +
-									(currentPosterSet.TitleCards?.length || 0)
-								);
-							default:
-								return acc;
-						}
-					},
-					0
-				);
+				const totalFilesToDownload = selectedTypes.reduce((acc, type) => {
+					switch (type) {
+						case "poster":
+							return acc + 1;
+						case "backdrop":
+							return acc + 1;
+						case "seasonPoster":
+						case "specialSeasonPoster":
+							return acc + (currentPosterSet.SeasonPosters?.length || 0);
+						case "titlecard":
+							return acc + (currentPosterSet.TitleCards?.length || 0);
+						default:
+							return acc;
+					}
+				}, 0);
 				const progressIncrement = 95 / totalFilesToDownload;
 
 				// Sort Selected Types to ensure the order of download
@@ -469,12 +435,11 @@ const DownloadModalShow: React.FC<{
 									poster: "Downloading Poster",
 								},
 							}));
-							const posterResp =
-								await downloadPosterFileAndUpdateMediaServer(
-									currentPosterSet.Poster,
-									"Poster",
-									latestMediaItem
-								);
+							const posterResp = await downloadPosterFileAndUpdateMediaServer(
+								currentPosterSet.Poster,
+								"Poster",
+								latestMediaItem
+							);
 							if (posterResp === null) {
 								setProgressValues((prev) => ({
 									...prev,
@@ -494,8 +459,7 @@ const DownloadModalShow: React.FC<{
 							}
 							setProgressValues((prev) => ({
 								...prev,
-								progressValue:
-									prev.progressValue + progressIncrement,
+								progressValue: prev.progressValue + progressIncrement,
 							}));
 							break;
 						case "backdrop":
@@ -509,12 +473,11 @@ const DownloadModalShow: React.FC<{
 									backdrop: "Downloading Backdrop",
 								},
 							}));
-							const backdropResp =
-								await downloadPosterFileAndUpdateMediaServer(
-									currentPosterSet.Backdrop,
-									"Backdrop",
-									latestMediaItem
-								);
+							const backdropResp = await downloadPosterFileAndUpdateMediaServer(
+								currentPosterSet.Backdrop,
+								"Backdrop",
+								latestMediaItem
+							);
 							if (backdropResp === null) {
 								setProgressValues((prev) => ({
 									...prev,
@@ -534,14 +497,12 @@ const DownloadModalShow: React.FC<{
 							}
 							setProgressValues((prev) => ({
 								...prev,
-								progressValue:
-									prev.progressValue + progressIncrement,
+								progressValue: prev.progressValue + progressIncrement,
 							}));
 							break;
 						case "seasonPoster":
 							let seasonErrorCount = 0;
-							for (const season of currentPosterSet.SeasonPosters ||
-								[]) {
+							for (const season of currentPosterSet.SeasonPosters || []) {
 								if (season.Season?.Number === 0) {
 									// Skip season 0
 									continue;
@@ -550,12 +511,10 @@ const DownloadModalShow: React.FC<{
 								// Check to see if the season is present in the MediaItem
 								// Use the season.Season.Number
 								// Check MediaItem.Series.Season.Number
-								const seasonExists =
-									latestMediaItem.Series?.Seasons?.some(
-										(seasonItem) =>
-											seasonItem.SeasonNumber ===
-											season.Season?.Number
-									);
+								const seasonExists = latestMediaItem.Series?.Seasons?.some(
+									(seasonItem) =>
+										seasonItem.SeasonNumber === season.Season?.Number
+								);
 								if (!seasonExists) {
 									continue;
 								}
@@ -570,21 +529,17 @@ const DownloadModalShow: React.FC<{
 									},
 								}));
 
-								const seasonResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										season,
-										`S${String(
-											season.Season?.Number
-										).padStart(2, "0")} Poster`,
-										latestMediaItem
-									);
+								const seasonResp = await downloadPosterFileAndUpdateMediaServer(
+									season,
+									`S${String(season.Season?.Number).padStart(2, "0")} Poster`,
+									latestMediaItem
+								);
 								if (seasonResp === null) {
 									seasonErrorCount++;
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 							}
 							if (seasonErrorCount > 0) {
@@ -603,8 +558,7 @@ const DownloadModalShow: React.FC<{
 									progressText: {
 										...prev.progressText,
 										seasonPoster: `Finished Season Poster${
-											(currentPosterSet.SeasonPosters
-												?.length ?? 0) > 1
+											(currentPosterSet.SeasonPosters?.length ?? 0) > 1
 												? "s"
 												: ""
 										} Download`,
@@ -613,8 +567,7 @@ const DownloadModalShow: React.FC<{
 							}
 							break;
 						case "specialSeasonPoster":
-							for (const season of currentPosterSet.SeasonPosters ||
-								[]) {
+							for (const season of currentPosterSet.SeasonPosters || []) {
 								if (season.Season?.Number !== 0) {
 									// Skip season 0
 									continue;
@@ -623,12 +576,10 @@ const DownloadModalShow: React.FC<{
 								// Check to see if the season is present in the MediaItem
 								// Use the season.Season.Number
 								// Check MediaItem.Series.Season.Number
-								const seasonExists =
-									latestMediaItem.Series?.Seasons?.some(
-										(seasonItem) =>
-											seasonItem.SeasonNumber ===
-											season.Season?.Number
-									);
+								const seasonExists = latestMediaItem.Series?.Seasons?.some(
+									(seasonItem) =>
+										seasonItem.SeasonNumber === season.Season?.Number
+								);
 								if (!seasonExists) {
 									continue;
 								}
@@ -642,14 +593,11 @@ const DownloadModalShow: React.FC<{
 										)}`,
 									},
 								}));
-								const seasonResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										season,
-										`S${String(
-											season.Season?.Number
-										).padStart(2, "0")} Poster`,
-										latestMediaItem
-									);
+								const seasonResp = await downloadPosterFileAndUpdateMediaServer(
+									season,
+									`S${String(season.Season?.Number).padStart(2, "0")} Poster`,
+									latestMediaItem
+								);
 								if (seasonResp === null) {
 									setProgressValues((prev) => ({
 										...prev,
@@ -669,28 +617,22 @@ const DownloadModalShow: React.FC<{
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 							}
 							break;
 						case "titlecard":
 							let titleCardErrorCount = 0;
-							for (const titleCard of currentPosterSet.TitleCards ||
-								[]) {
+							for (const titleCard of currentPosterSet.TitleCards || []) {
 								// Check to see if the episode is present in the MediaItem
 								// Use the titlecard.Episode.SeasonNumber and titlecard.Episode.EpisodeNumber
-								const episode =
-									latestMediaItem.Series?.Seasons?.flatMap(
-										(season) => season.Episodes
-									).find(
-										(episode) =>
-											episode.SeasonNumber ===
-												titleCard.Episode
-													?.SeasonNumber &&
-											episode.EpisodeNumber ===
-												titleCard.Episode?.EpisodeNumber
-									);
+								const episode = latestMediaItem.Series?.Seasons?.flatMap(
+									(season) => season.Episodes
+								).find(
+									(episode) =>
+										episode.SeasonNumber === titleCard.Episode?.SeasonNumber &&
+										episode.EpisodeNumber === titleCard.Episode?.EpisodeNumber
+								);
 								if (!episode) {
 									log(
 										"Poster Set Modal - Title Card Skipped: Episode not found in MediaItem"
@@ -708,23 +650,23 @@ const DownloadModalShow: React.FC<{
 										).padStart(2, "0")} Titlecard`,
 									},
 								}));
-								const titlecardResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										titleCard,
-										`S${String(
-											titleCard.Episode?.SeasonNumber
-										).padStart(2, "0")}E${String(
-											titleCard.Episode?.EpisodeNumber
-										).padStart(2, "0")} Titlecard`,
-										latestMediaItem
-									);
+								const titlecardResp = await downloadPosterFileAndUpdateMediaServer(
+									titleCard,
+									`S${String(titleCard.Episode?.SeasonNumber).padStart(
+										2,
+										"0"
+									)}E${String(titleCard.Episode?.EpisodeNumber).padStart(
+										2,
+										"0"
+									)} Titlecard`,
+									latestMediaItem
+								);
 								if (titlecardResp === null) {
 									titleCardErrorCount++;
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 							}
 							if (titleCardErrorCount > 0) {
@@ -743,8 +685,7 @@ const DownloadModalShow: React.FC<{
 									progressText: {
 										...prev.progressText,
 										titleCard: `Finished Title Card${
-											(currentPosterSet.TitleCards
-												?.length ?? 0) > 1
+											(currentPosterSet.TitleCards?.length ?? 0) > 1
 												? "s"
 												: ""
 										} Download`,
@@ -814,9 +755,7 @@ const DownloadModalShow: React.FC<{
 			setProgressValues((prev) => ({
 				...prev,
 				progressColor: "red",
-				warningMessages: [
-					"An error occurred while downloading the files.",
-				],
+				warningMessages: ["An error occurred while downloading the files."],
 			}));
 		} finally {
 			setIsMounted(false);
@@ -863,10 +802,7 @@ const DownloadModalShow: React.FC<{
 					</DialogHeader>
 
 					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="space-y-2"
-						>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
 							<FormField
 								control={form.control}
 								name="selectedTypes"
@@ -896,25 +832,19 @@ const DownloadModalShow: React.FC<{
 																	checked={field.value?.includes(
 																		item.id
 																	)}
-																	onCheckedChange={(
-																		checked
-																	) => {
+																	onCheckedChange={(checked) => {
 																		return checked
-																			? field.onChange(
-																					[
-																						...field.value,
-																						item.id,
-																					]
-																			  )
+																			? field.onChange([
+																					...field.value,
+																					item.id,
+																				])
 																			: field.onChange(
 																					field.value?.filter(
-																						(
-																							v
-																						) =>
+																						(v) =>
 																							v !==
 																							item.id
 																					)
-																			  );
+																				);
 																	}}
 																	className="h-5 w-5 sm:h-4 sm:w-4" // Larger on mobile, normal on sm+
 																/>
@@ -942,9 +872,7 @@ const DownloadModalShow: React.FC<{
 											<FormControl>
 												<Checkbox
 													checked={autoDownload}
-													onCheckedChange={
-														handleAutoDownloadChange
-													}
+													onCheckedChange={handleAutoDownloadChange}
 													disabled={futureUpdatesOnly}
 													className="h-5 w-5 sm:h-4 sm:w-4" // Larger on mobile, normal on sm+
 												/>
@@ -960,14 +888,10 @@ const DownloadModalShow: React.FC<{
 														</span>
 													</PopoverTrigger>
 													<PopoverContent className="w-60">
-														Auto Download will check
-														periodically for new
-														updates to this set.
-														This is helpful if you
-														want to download and
-														apply titlecard updates
-														from future updates to
-														this set.
+														Auto Download will check periodically for
+														new updates to this set. This is helpful if
+														you want to download and apply titlecard
+														updates from future updates to this set.
 													</PopoverContent>
 												</Popover>
 											</div>
@@ -976,9 +900,7 @@ const DownloadModalShow: React.FC<{
 											<FormControl>
 												<Checkbox
 													checked={futureUpdatesOnly}
-													onCheckedChange={
-														handleFutureUpdatesOnlyChange
-													}
+													onCheckedChange={handleFutureUpdatesOnlyChange}
 													className="h-5 w-5 sm:h-4 sm:w-4" // Larger on mobile, normal on sm+
 												/>
 											</FormControl>
@@ -993,14 +915,10 @@ const DownloadModalShow: React.FC<{
 														</span>
 													</PopoverTrigger>
 													<PopoverContent className="w-60">
-														Future Updates Only will
-														not download anything
-														right now. This is
-														helpful if you have
-														already downloaded the
-														set and just want to
-														future updates to be
-														applied.
+														Future Updates Only will not download
+														anything right now. This is helpful if you
+														have already downloaded the set and just
+														want to future updates to be applied.
 													</PopoverContent>
 												</Popover>
 											</div>
@@ -1029,10 +947,7 @@ const DownloadModalShow: React.FC<{
 											}`}
 										/>
 										<span className="ml-2 text-sm text-muted-foreground">
-											{Math.round(
-												progressValues.progressValue
-											)}
-											%
+											{Math.round(progressValues.progressValue)}%
 										</span>
 									</div>
 
@@ -1051,22 +966,14 @@ const DownloadModalShow: React.FC<{
 												<div className="flex items-center text-destructive">
 													<X className="mr-1 h-4 w-4" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.poster
-														}
+														{progressValues.progressText.poster}
 													</span>
 												</div>
 											) : (
 												<div className="flex items-center">
 													<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.poster
-														}
+														{progressValues.progressText.poster}
 													</span>
 												</div>
 											)}
@@ -1087,29 +994,20 @@ const DownloadModalShow: React.FC<{
 												<div className="flex items-center text-destructive">
 													<X className="mr-1 h-4 w-4" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.backdrop
-														}
+														{progressValues.progressText.backdrop}
 													</span>
 												</div>
 											) : (
 												<div className="flex items-center">
 													<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.backdrop
-														}
+														{progressValues.progressText.backdrop}
 													</span>
 												</div>
 											)}
 										</div>
 									)}
-									{progressValues.progressText
-										.seasonPoster && (
+									{progressValues.progressText.seasonPoster && (
 										<div className="flex justify-between text-sm text-muted-foreground ">
 											<span>
 												{progressValues.progressText.seasonPoster.startsWith(
@@ -1117,9 +1015,7 @@ const DownloadModalShow: React.FC<{
 												) ? (
 													<div className="flex items-center">
 														<Check className="mr-1 h-4 w-4" />
-														<span>
-															Season Poster
-														</span>
+														<span>Season Poster</span>
 													</div>
 												) : progressValues.progressText.seasonPoster.startsWith(
 														"Failed"
@@ -1127,22 +1023,16 @@ const DownloadModalShow: React.FC<{
 													<div className="flex items-center text-destructive">
 														{(() => {
 															const total =
-																currentPosterSet
-																	.SeasonPosters
-																	?.length ??
-																0;
+																currentPosterSet.SeasonPosters
+																	?.length ?? 0;
 															const text =
 																progressValues.progressText.seasonPoster
 																	.trim()
 																	.toLowerCase();
 															const single = `${total} season poster`;
 															const plural = `${total} season posters`;
-															return text.endsWith(
-																single
-															) ||
-																text.endsWith(
-																	plural
-																) ? (
+															return text.endsWith(single) ||
+																text.endsWith(plural) ? (
 																<X className="mr-1 h-4 w-4" />
 															) : (
 																<TriangleAlert className="mr-1 h-4 w-4" />
@@ -1150,8 +1040,7 @@ const DownloadModalShow: React.FC<{
 														})()}
 														<span>
 															{
-																progressValues
-																	.progressText
+																progressValues.progressText
 																	.seasonPoster
 															}
 														</span>
@@ -1161,8 +1050,7 @@ const DownloadModalShow: React.FC<{
 														<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 														<span>
 															{
-																progressValues
-																	.progressText
+																progressValues.progressText
 																	.seasonPoster
 															}
 														</span>
@@ -1172,17 +1060,14 @@ const DownloadModalShow: React.FC<{
 										</div>
 									)}
 
-									{progressValues.progressText
-										.specialSeasonPoster && (
+									{progressValues.progressText.specialSeasonPoster && (
 										<div className="flex justify-between text-sm text-muted-foreground ">
 											{progressValues.progressText.specialSeasonPoster.startsWith(
 												"Finished"
 											) ? (
 												<div className="flex items-center">
 													<Check className="mr-1 h-4 w-4" />
-													<span>
-														Special Season Poster
-													</span>
+													<span>Special Season Poster</span>
 												</div>
 											) : progressValues.progressText.specialSeasonPoster.startsWith(
 													"Failed"
@@ -1191,8 +1076,7 @@ const DownloadModalShow: React.FC<{
 													<X className="mr-1 h-4 w-4" />
 													<span>
 														{
-															progressValues
-																.progressText
+															progressValues.progressText
 																.specialSeasonPoster
 														}
 													</span>
@@ -1202,8 +1086,7 @@ const DownloadModalShow: React.FC<{
 													<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 													<span>
 														{
-															progressValues
-																.progressText
+															progressValues.progressText
 																.specialSeasonPoster
 														}
 													</span>
@@ -1228,44 +1111,30 @@ const DownloadModalShow: React.FC<{
 													<div className="flex items-center text-destructive">
 														{(() => {
 															const total =
-																currentPosterSet
-																	.TitleCards
-																	?.length ??
-																0;
+																currentPosterSet.TitleCards
+																	?.length ?? 0;
 															const text =
 																progressValues.progressText.titleCard
 																	.trim()
 																	.toLowerCase();
 															const single = `${total} titlecard`;
 															const plural = `${total} titlecards`;
-															return text.endsWith(
-																single
-															) ||
-																text.endsWith(
-																	plural
-																) ? (
+															return text.endsWith(single) ||
+																text.endsWith(plural) ? (
 																<X className="mr-1 h-4 w-4" />
 															) : (
 																<TriangleAlert className="mr-1 h-4 w-4" />
 															);
 														})()}
 														<span>
-															{
-																progressValues
-																	.progressText
-																	.titleCard
-															}
+															{progressValues.progressText.titleCard}
 														</span>
 													</div>
 												) : (
 													<div className="flex items-center">
 														<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 														<span>
-															{
-																progressValues
-																	.progressText
-																	.titleCard
-															}
+															{progressValues.progressText.titleCard}
 														</span>
 													</div>
 												)}
@@ -1288,22 +1157,14 @@ const DownloadModalShow: React.FC<{
 												<div className="flex items-center text-destructive">
 													<X className="mr-1 h-4 w-4" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.addToDB
-														}
+														{progressValues.progressText.addToDB}
 													</span>
 												</div>
 											) : (
 												<div className="flex items-center">
 													<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
 													<span>
-														{
-															progressValues
-																.progressText
-																.addToDB
-														}
+														{progressValues.progressText.addToDB}
 													</span>
 												</div>
 											)}
@@ -1319,11 +1180,7 @@ const DownloadModalShow: React.FC<{
 										<AccordionItem value="warnings">
 											<AccordionTrigger className="text-destructive">
 												Failed Downloads (
-												{
-													progressValues
-														.warningMessages.length
-												}
-												)
+												{progressValues.warningMessages.length})
 											</AccordionTrigger>
 											<AccordionContent>
 												<div className="flex flex-col space-y-2">
@@ -1334,9 +1191,7 @@ const DownloadModalShow: React.FC<{
 																className="flex items-center text-destructive"
 															>
 																<X className="mr-1 h-4 w-4" />
-																<span>
-																	{message}
-																</span>
+																<span>{message}</span>
 															</div>
 														)
 													)}
@@ -1365,9 +1220,7 @@ const DownloadModalShow: React.FC<{
 									{/* Download button to display download info */}
 
 									<Button
-										disabled={
-											watchSelectedTypes.length === 0
-										}
+										disabled={watchSelectedTypes.length === 0}
 										className=""
 										onClick={() => {
 											onSubmit(form.getValues());

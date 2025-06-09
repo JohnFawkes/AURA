@@ -1,11 +1,13 @@
 "use server";
 
+import colorConvert from "color-convert";
+import fs from "fs/promises";
 import { Vibrant } from "node-vibrant/node";
 import path from "path";
-import fs from "fs/promises";
 import sharp from "sharp";
-import colorConvert from "color-convert";
+
 import { cache } from "react";
+
 import { log } from "./logger";
 
 /**
@@ -14,10 +16,7 @@ import { log } from "./logger";
  * @param increaseFactor Factor to increase lightness by (0.05 = 5% brighter)
  * @returns CSS HSL string format "hsl(360, 100%, 100%)"
  */
-function brightenHsl(
-	hsl: [number, number, number],
-	increaseFactor = 0.05
-): string {
+function brightenHsl(hsl: [number, number, number], increaseFactor = 0.05): string {
 	const h = Math.round(hsl[0] * 360);
 	const s = Math.round(hsl[1] * 100);
 	// Increase lightness but cap at 95% to avoid pure white
@@ -32,22 +31,14 @@ function brightenHsl(
  * @param quality The desired quality of the optimized image
  * @returns The optimized image URL
  */
-function createOptimizedImageUrl(
-	imageUrl: string,
-	width = 1920,
-	quality = 80
-): string {
+function createOptimizedImageUrl(imageUrl: string, width = 1920, quality = 80): string {
 	// Use DEPLOYED_URL from environment variables or fallback to a default
 	const baseUrl =
 		process.env.DEPLOYED_URL ||
-		(process.env.NODE_ENV === "development"
-			? "http://localhost:5001"
-			: "https://mediux.io");
+		(process.env.NODE_ENV === "development" ? "http://localhost:5001" : "https://mediux.io");
 
 	// Create the Next.js optimized image URL
-	return `${baseUrl}/_next/image?url=${encodeURIComponent(
-		imageUrl
-	)}&w=${width}&q=${quality}`;
+	return `${baseUrl}/_next/image?url=${encodeURIComponent(imageUrl)}&w=${width}&q=${quality}`;
 }
 
 /**
@@ -79,19 +70,13 @@ export async function extractColors(
 					imageUrl.startsWith("https://image.tmdb.org/t/p/");
 
 				if (isPotentiallyLocalOrCacheable) {
-					const nextCacheDir = path.join(
-						process.cwd(),
-						".next/cache/images"
-					);
+					const nextCacheDir = path.join(process.cwd(), ".next/cache/images");
 
 					try {
 						const files = await fs.readdir(nextCacheDir);
 						const urlParts = imageUrl.split("/");
-						const likelyFileNamePart =
-							urlParts[urlParts.length - 1];
-						const cachedFile = files.find((file) =>
-							file.includes(likelyFileNamePart)
-						);
+						const likelyFileNamePart = urlParts[urlParts.length - 1];
+						const cachedFile = files.find((file) => file.includes(likelyFileNamePart));
 
 						if (cachedFile) {
 							// If we find the cached file, use it instead
@@ -112,9 +97,7 @@ export async function extractColors(
 		// Extract the primary color - prioritizing LightVibrant
 		let primaryColor;
 		if (palette.LightVibrant?.hsl) {
-			primaryColor = brightenHsl(
-				palette.LightVibrant.hsl as [number, number, number]
-			);
+			primaryColor = brightenHsl(palette.LightVibrant.hsl as [number, number, number]);
 		}
 
 		return { primaryColor };
@@ -195,18 +178,14 @@ function smartAdjustLightness(
  * @returns CSS HSL string
  */
 function hslToCss(hsl: [number, number, number]): string {
-	return `hsl(${Math.round(hsl[0])} ${Math.round(hsl[1])}% ${Math.round(
-		hsl[2]
-	)}%)`;
+	return `hsl(${Math.round(hsl[0])} ${Math.round(hsl[1])}% ${Math.round(hsl[2])}%)`;
 }
 
 /**
  * Internal implementation of color extraction and processing
  * This function does the actual work but is wrapped by the cached version below
  */
-async function _extractAndProcessColors(
-	imageUrl: string
-): Promise<DynamicPalette> {
+async function _extractAndProcessColors(imageUrl: string): Promise<DynamicPalette> {
 	log("Color Extraction - Extracting colors for image:", imageUrl);
 	try {
 		const response = await fetch(imageUrl, { cache: "no-store" });
@@ -298,26 +277,24 @@ async function _extractAndProcessColors(
 						Math.min(90, adjustedHsl[1] + 25),
 						Math.min(95, adjustedHsl[2] + 18),
 					];
-					vibrant[key as keyof typeof vibrant] =
-						hslToCss(brightenedHsl);
+					vibrant[key as keyof typeof vibrant] = hslToCss(brightenedHsl);
 				} else {
-					vibrant[key as keyof typeof vibrant] =
-						hslToCss(adjustedHsl);
+					vibrant[key as keyof typeof vibrant] = hslToCss(adjustedHsl);
 				}
 			}
 		}
 
 		// Apply the same dark mode adjustments to the left and bottom HSL
-		const adjustedLeftHsl = smartAdjustLightness(leftHsl, [
-			leftR,
-			leftG,
-			leftB,
-		] as [number, number, number]);
-		const adjustedBottomHsl = smartAdjustLightness(bottomHsl, [
-			bottomR,
-			bottomG,
-			bottomB,
-		] as [number, number, number]);
+		const adjustedLeftHsl = smartAdjustLightness(leftHsl, [leftR, leftG, leftB] as [
+			number,
+			number,
+			number,
+		]);
+		const adjustedBottomHsl = smartAdjustLightness(bottomHsl, [bottomR, bottomG, bottomB] as [
+			number,
+			number,
+			number,
+		]);
 
 		const resultPalette: DynamicPalette = {
 			dynamicLeft: hslToCss(adjustedLeftHsl),
@@ -343,11 +320,7 @@ async function _extractAndProcessColors(
  * @param imageUrl - The URL of the image to process.
  * @returns An object containing the extracted colors and vibrant palette.
  */
-export const extractAndProcessColors = cache(
-	async (imageUrl: string): Promise<DynamicPalette> => {
-		console.log(
-			`Color extraction requested for: ${imageUrl} (cached function)`
-		);
-		return _extractAndProcessColors(imageUrl);
-	}
-);
+export const extractAndProcessColors = cache(async (imageUrl: string): Promise<DynamicPalette> => {
+	console.log(`Color extraction requested for: ${imageUrl} (cached function)`);
+	return _extractAndProcessColors(imageUrl);
+});

@@ -1,14 +1,12 @@
 import { AxiosError } from "axios";
-import { APIResponse } from "../types/apiResponse";
+
 import { log } from "@/lib/logger";
+
+import { APIResponse } from "../types/apiResponse";
 
 export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	if (error instanceof AxiosError) {
-		log(
-			`api.shared - Axios error occurred: ${
-				error.response?.data.message || error.message
-			}`
-		);
+		log(`api.shared - Axios error occurred: ${error.response?.data.message || error.message}`);
 		return {
 			status: "error",
 			message: error.response?.data.message || error.message,

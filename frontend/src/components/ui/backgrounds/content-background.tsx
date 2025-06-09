@@ -1,10 +1,14 @@
 "use client";
 
-import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { DynamicOverlay } from "@/components/ui/backgrounds/dynamic-overlay";
 import { useEffect, useState } from "react";
+
+import Image from "next/image";
+
+import { DynamicOverlay } from "@/components/ui/backgrounds/dynamic-overlay";
+
+import { cn } from "@/lib/utils";
 import { setCssVariable } from "@/lib/utils";
+
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
 
@@ -44,11 +48,7 @@ export function ContentBackground({
 	const getSetBackdrop = () => {
 		if (posterSet) {
 			// First try item backdrop if it exists
-			if (
-				posterSet.Backdrop &&
-				posterSet.Backdrop.ID &&
-				posterSet.Backdrop.Modified
-			) {
+			if (posterSet.Backdrop && posterSet.Backdrop.ID && posterSet.Backdrop.Modified) {
 				return `/api/mediaserver/image/${posterSet.Backdrop.ID}?modifiedDate=${posterSet.Backdrop.Modified}`;
 			}
 			// Fallback to show backdrop
@@ -66,10 +66,7 @@ export function ContentBackground({
 	// Set dynamic CSS variables
 	useEffect(() => {
 		if (dynamicPalette?.vibrant.LightMuted) {
-			setCssVariable(
-				"--primary-dynamic",
-				dynamicPalette.vibrant.LightMuted
-			);
+			setCssVariable("--primary-dynamic", dynamicPalette.vibrant.LightMuted);
 		}
 		if (dynamicPalette?.dynamicLeft) {
 			setCssVariable("--dynamic-left", dynamicPalette.dynamicLeft);
@@ -78,10 +75,7 @@ export function ContentBackground({
 			setCssVariable("--dynamic-bottom", dynamicPalette.dynamicBottom);
 		}
 		if (dynamicPalette?.vibrant.DarkMuted) {
-			setCssVariable(
-				"--dynamic-dark-muted",
-				dynamicPalette.vibrant.DarkMuted
-			);
+			setCssVariable("--dynamic-dark-muted", dynamicPalette.vibrant.DarkMuted);
 		}
 
 		// Clean up when component unmounts

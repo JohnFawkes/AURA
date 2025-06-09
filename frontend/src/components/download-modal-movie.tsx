@@ -1,3 +1,17 @@
+import { formatDownloadSize } from "@/helper/formatDownloadSize";
+import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import { postAddItemToDB } from "@/services/api.db";
+import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/api.mediaserver";
+import { zodResolver } from "@hookform/resolvers/zod";
+import localforage from "localforage";
+import { Check, Download, LoaderIcon, X } from "lucide-react";
+import { z } from "zod";
+
+import { useEffect, useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+
+import Link from "next/link";
+
 import {
 	Dialog,
 	DialogClose,
@@ -10,13 +24,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { MediaItem } from "@/types/mediaItem";
-import { PosterFile, PosterSet } from "@/types/posterSets";
-import { Check, Download, LoaderIcon, X } from "lucide-react";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { useEffect, useMemo, useState } from "react";
-import { Checkbox } from "./ui/checkbox";
 import {
 	Form,
 	FormControl,
@@ -25,23 +32,17 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+
 import { log } from "@/lib/logger";
-import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/api.mediaserver";
-import { Progress } from "./ui/progress";
-import { formatDownloadSize } from "@/helper/formatDownloadSize";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "./ui/accordion";
+
 import { DBSavedItem } from "@/types/databaseSavedSet";
-import { postAddItemToDB } from "@/services/api.db";
-import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
-import localforage from "localforage";
+import { MediaItem } from "@/types/mediaItem";
+import { PosterFile, PosterSet } from "@/types/posterSets";
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { Progress } from "./ui/progress";
 
 const formSchema = z
 	.object({
@@ -53,8 +54,7 @@ const formSchema = z
 				(arr) => Array.isArray(arr) && arr.length > 0
 			),
 		{
-			message:
-				"Please select at least one poster or backdrop to download.",
+			message: "Please select at least one poster or backdrop to download.",
 			path: ["selectedTypesByMovie"],
 		}
 	);
@@ -71,9 +71,7 @@ const DownloadModalMovie: React.FC<{
 
 	// Tracking selected checkboxes for what to download
 	const [totalSelectedSize, setTotalSelectedSize] = useState("");
-	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState(
-		"Total Download Size: "
-	);
+	const [totalSelectedSizeLabel, setTotalSelectedSizeLabel] = useState("Total Download Size: ");
 
 	// Download Progress
 	const [progressValue, setProgressValue] = useState(0);
@@ -89,9 +87,7 @@ const DownloadModalMovie: React.FC<{
 			}
 		>
 	>({});
-	const [progressWarningMessages, setProgressWarningMessages] = useState<
-		string[]
-	>([]);
+	const [progressWarningMessages, setProgressWarningMessages] = useState<string[]>([]);
 
 	// New state to hold lookup results from searchIDBForTMDBID for OtherPosters and OtherBackdrops
 	const [idbResults, setIdbResults] = useState<{
@@ -134,13 +130,16 @@ const DownloadModalMovie: React.FC<{
 					exists: boolean;
 					ratingKey: string;
 				}[];
-				const newResults = filteredResults.reduce((acc, curr) => {
-					acc[curr.id] = {
-						exists: curr.exists,
-						ratingKey: curr.ratingKey,
-					};
-					return acc;
-				}, {} as { [id: string]: { exists: boolean; ratingKey: string } });
+				const newResults = filteredResults.reduce(
+					(acc, curr) => {
+						acc[curr.id] = {
+							exists: curr.exists,
+							ratingKey: curr.ratingKey,
+						};
+						return acc;
+					},
+					{} as { [id: string]: { exists: boolean; ratingKey: string } }
+				);
 				setIdbResults(newResults);
 			};
 			fetchData();
@@ -181,13 +180,16 @@ const DownloadModalMovie: React.FC<{
 					exists: boolean;
 					ratingKey: string;
 				}[];
-				const newResults = filteredResults.reduce((acc, curr) => {
-					acc[curr.id] = {
-						exists: curr.exists,
-						ratingKey: curr.ratingKey,
-					};
-					return acc;
-				}, {} as { [id: string]: { exists: boolean; ratingKey: string } });
+				const newResults = filteredResults.reduce(
+					(acc, curr) => {
+						acc[curr.id] = {
+							exists: curr.exists,
+							ratingKey: curr.ratingKey,
+						};
+						return acc;
+					},
+					{} as { [id: string]: { exists: boolean; ratingKey: string } }
+				);
 				setIdbResults((prev) => ({ ...prev, ...newResults }));
 			};
 			fetchData();
@@ -216,8 +218,7 @@ const DownloadModalMovie: React.FC<{
 		if (posterSet.Poster || posterSet.Backdrop) {
 			// Derive a key: if poster exists and its movie has a RatingKey, use it.
 			// Otherwise, fall back to mediaItem.RatingKey.
-			const mainKey =
-				posterSet.Poster?.Movie?.RatingKey || mediaItem.RatingKey;
+			const mainKey = posterSet.Poster?.Movie?.RatingKey || mediaItem.RatingKey;
 			// Create the movie display entry.
 			const movie: MovieDisplay = {
 				MediaItemRatingKey: mainKey,
@@ -245,14 +246,9 @@ const DownloadModalMovie: React.FC<{
 			posterSet.OtherPosters.forEach((poster: PosterFile) => {
 				if (!poster.Movie || !poster.Movie.ID) return;
 				const lookup = idbResults[poster.Movie.ID];
-				const movieKey =
-					poster.Movie.RatingKey ||
-					lookup?.ratingKey ||
-					poster.Movie.ID;
+				const movieKey = poster.Movie.RatingKey || lookup?.ratingKey || poster.Movie.ID;
 				if (poster.Movie.RatingKey || (lookup && lookup.exists)) {
-					const existingMovie = movies.find(
-						(m) => m.MediaItemRatingKey === movieKey
-					);
+					const existingMovie = movies.find((m) => m.MediaItemRatingKey === movieKey);
 					if (existingMovie) {
 						// Update the poster.
 						existingMovie.Poster = poster;
@@ -261,8 +257,7 @@ const DownloadModalMovie: React.FC<{
 							MediaItemRatingKey: movieKey,
 							MediaItem: {
 								Type: mediaItem.Type,
-								RatingKey:
-									poster.Movie.RatingKey || lookup.ratingKey,
+								RatingKey: poster.Movie.RatingKey || lookup.ratingKey,
 								LibraryTitle: mediaItem.LibraryTitle,
 								Title: "",
 								Year: 0,
@@ -273,9 +268,7 @@ const DownloadModalMovie: React.FC<{
 							Poster: poster,
 							Title: poster.Movie.Title || "Unknown",
 							Year: poster.Movie.ReleaseDate
-								? new Date(
-										poster.Movie.ReleaseDate
-								  ).getFullYear()
+								? new Date(poster.Movie.ReleaseDate).getFullYear()
 								: 0,
 							MainItem: false,
 						};
@@ -290,14 +283,9 @@ const DownloadModalMovie: React.FC<{
 			posterSet.OtherBackdrops.forEach((backdrop: PosterFile) => {
 				if (!backdrop.Movie || !backdrop.Movie.ID) return;
 				const lookup = idbResults[backdrop.Movie.ID];
-				const movieKey =
-					backdrop.Movie.RatingKey ||
-					lookup?.ratingKey ||
-					backdrop.Movie.ID;
+				const movieKey = backdrop.Movie.RatingKey || lookup?.ratingKey || backdrop.Movie.ID;
 				if (backdrop.Movie.RatingKey || (lookup && lookup.exists)) {
-					const existing = movies.find(
-						(m) => m.MediaItemRatingKey === movieKey
-					);
+					const existing = movies.find((m) => m.MediaItemRatingKey === movieKey);
 					if (existing) {
 						existing.Backdrop = backdrop;
 					} else {
@@ -305,9 +293,7 @@ const DownloadModalMovie: React.FC<{
 							MediaItemRatingKey: movieKey,
 							MediaItem: {
 								Type: mediaItem.Type,
-								RatingKey:
-									backdrop.Movie.RatingKey ||
-									lookup.ratingKey,
+								RatingKey: backdrop.Movie.RatingKey || lookup.ratingKey,
 								LibraryTitle: mediaItem.LibraryTitle,
 								Title: "",
 								Year: 0,
@@ -318,9 +304,7 @@ const DownloadModalMovie: React.FC<{
 							Backdrop: backdrop,
 							Title: backdrop.Movie.Title || "Unknown",
 							Year: backdrop.Movie.ReleaseDate
-								? new Date(
-										backdrop.Movie.ReleaseDate
-								  ).getFullYear()
+								? new Date(backdrop.Movie.ReleaseDate).getFullYear()
 								: 0,
 							MainItem: false,
 						};
@@ -335,25 +319,31 @@ const DownloadModalMovie: React.FC<{
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			selectedTypesByMovie: moviesDisplay.reduce((acc, movie) => {
-				const types: string[] = [];
-				if (movie.Poster) types.push("poster");
-				if (movie.Backdrop) types.push("backdrop");
-				acc[movie.MediaItemRatingKey] = types;
-				return acc;
-			}, {} as Record<string, string[]>),
+			selectedTypesByMovie: moviesDisplay.reduce(
+				(acc, movie) => {
+					const types: string[] = [];
+					if (movie.Poster) types.push("poster");
+					if (movie.Backdrop) types.push("backdrop");
+					acc[movie.MediaItemRatingKey] = types;
+					return acc;
+				},
+				{} as Record<string, string[]>
+			),
 		},
 	});
 
 	useEffect(() => {
 		form.reset({
-			selectedTypesByMovie: moviesDisplay.reduce((acc, movie) => {
-				const types: string[] = [];
-				if (movie.Poster) types.push("poster");
-				if (movie.Backdrop) types.push("backdrop");
-				acc[movie.MediaItemRatingKey] = types;
-				return acc;
-			}, {} as Record<string, string[]>),
+			selectedTypesByMovie: moviesDisplay.reduce(
+				(acc, movie) => {
+					const types: string[] = [];
+					if (movie.Poster) types.push("poster");
+					if (movie.Backdrop) types.push("backdrop");
+					acc[movie.MediaItemRatingKey] = types;
+					return acc;
+				},
+				{} as Record<string, string[]>
+			),
 		});
 	}, [form, moviesDisplay]);
 
@@ -366,9 +356,7 @@ const DownloadModalMovie: React.FC<{
 	useEffect(() => {
 		const totalSize = Object.entries(watchSelectionsByMovie).reduce(
 			(acc, [movieKey, selectedTypes]) => {
-				const movie = moviesDisplay.find(
-					(m) => m.MediaItemRatingKey === movieKey
-				);
+				const movie = moviesDisplay.find((m) => m.MediaItemRatingKey === movieKey);
 				if (movie) {
 					const selectedPoster = movie.Poster?.FileSize || 0;
 					const selectedBackdrop = movie.Backdrop?.FileSize || 0;
@@ -457,19 +445,18 @@ const DownloadModalMovie: React.FC<{
 		try {
 			// Calculate the number of files to download based on selected types
 			// This will be used to update the progress bar in increments
-			const totalFilesToDownload = Object.entries(
-				data.selectedTypesByMovie
-			).reduce((acc, [movieKey]) => {
-				const movie = moviesDisplay.find(
-					(m) => m.MediaItemRatingKey === movieKey
-				);
-				if (movie) {
-					const selectedPoster = movie.Poster ? 1 : 0;
-					const selectedBackdrop = movie.Backdrop ? 1 : 0;
-					return acc + selectedPoster + selectedBackdrop;
-				}
-				return acc;
-			}, 0);
+			const totalFilesToDownload = Object.entries(data.selectedTypesByMovie).reduce(
+				(acc, [movieKey]) => {
+					const movie = moviesDisplay.find((m) => m.MediaItemRatingKey === movieKey);
+					if (movie) {
+						const selectedPoster = movie.Poster ? 1 : 0;
+						const selectedBackdrop = movie.Backdrop ? 1 : 0;
+						return acc + selectedPoster + selectedBackdrop;
+					}
+					return acc;
+				},
+				0
+			);
 
 			const progressIncrement = 90 / totalFilesToDownload;
 
@@ -482,20 +469,13 @@ const DownloadModalMovie: React.FC<{
 			];
 
 			for (const movie of orderedMovies) {
-				const selectedTypesByMovie =
-					data.selectedTypesByMovie[movie.MediaItemRatingKey];
-				if (
-					!selectedTypesByMovie ||
-					selectedTypesByMovie.length === 0
-				) {
+				const selectedTypesByMovie = data.selectedTypesByMovie[movie.MediaItemRatingKey];
+				if (!selectedTypesByMovie || selectedTypesByMovie.length === 0) {
 					continue; // Skip if no types are selected
 				}
 				if (movie && movie.MediaItem && movie.MediaItem.RatingKey) {
 					if (movie && movie.MediaItem && movie.MediaItem.RatingKey) {
-						if (
-							selectedTypesByMovie.includes("poster") &&
-							movie.Poster
-						) {
+						if (selectedTypesByMovie.includes("poster") && movie.Poster) {
 							setProgressDownloads((prev) => ({
 								...prev,
 								[movie.Title]: {
@@ -503,12 +483,11 @@ const DownloadModalMovie: React.FC<{
 									poster: "downloading",
 								},
 							}));
-							const posterResp =
-								await downloadFileAndUpdateMediaServer(
-									movie.Poster,
-									`Poster for ${movie.Title} (${movie.Year})`,
-									movie.MediaItem
-								);
+							const posterResp = await downloadFileAndUpdateMediaServer(
+								movie.Poster,
+								`Poster for ${movie.Title} (${movie.Year})`,
+								movie.MediaItem
+							);
 							if (posterResp === null) {
 								setProgressDownloads((prev) => ({
 									...prev,
@@ -525,15 +504,10 @@ const DownloadModalMovie: React.FC<{
 										poster: "success",
 									},
 								}));
-								setProgressValue(
-									(prev) => prev + progressIncrement
-								);
+								setProgressValue((prev) => prev + progressIncrement);
 							}
 						}
-						if (
-							selectedTypesByMovie.includes("backdrop") &&
-							movie.Backdrop
-						) {
+						if (selectedTypesByMovie.includes("backdrop") && movie.Backdrop) {
 							setProgressDownloads((prev) => ({
 								...prev,
 								[movie.Title]: {
@@ -541,12 +515,11 @@ const DownloadModalMovie: React.FC<{
 									backdrop: "downloading",
 								},
 							}));
-							const backdropResp =
-								await downloadFileAndUpdateMediaServer(
-									movie.Backdrop,
-									`Backdrop for ${movie.Title} (${movie.Year})`,
-									movie.MediaItem
-								);
+							const backdropResp = await downloadFileAndUpdateMediaServer(
+								movie.Backdrop,
+								`Backdrop for ${movie.Title} (${movie.Year})`,
+								movie.MediaItem
+							);
 							if (backdropResp === null) {
 								setProgressDownloads((prev) => ({
 									...prev,
@@ -563,21 +536,15 @@ const DownloadModalMovie: React.FC<{
 										backdrop: "success",
 									},
 								}));
-								setProgressValue(
-									(prev) => prev + progressIncrement
-								);
+								setProgressValue((prev) => prev + progressIncrement);
 							}
 						}
 						// Get the media item details from the cache
 
-						const mediaDetails = await getMediaItemDetails(
-							movie.MediaItemRatingKey
-						);
+						const mediaDetails = await getMediaItemDetails(movie.MediaItemRatingKey);
 
 						if (!mediaDetails) {
-							log(
-								`Media item details not found for ${movie.MediaItemRatingKey}`
-							);
+							log(`Media item details not found for ${movie.MediaItemRatingKey}`);
 							continue; // Skip if media details are not found
 						}
 
@@ -632,9 +599,7 @@ const DownloadModalMovie: React.FC<{
 		} catch (error) {
 			log("Poster Set Modal - Download Error:", error);
 			setProgressColor("red");
-			setProgressWarningMessages(() => [
-				"An error occurred while downloading the files.",
-			]);
+			setProgressWarningMessages(() => ["An error occurred while downloading the files."]);
 		} finally {
 			setIsMounted(false);
 		}
@@ -659,45 +624,31 @@ const DownloadModalMovie: React.FC<{
 										checked={field.value.includes("poster")}
 										onCheckedChange={(checked) => {
 											if (checked) {
-												field.onChange([
-													...field.value,
-													"poster",
-												]);
+												field.onChange([...field.value, "poster"]);
 											} else {
 												field.onChange(
-													field.value.filter(
-														(type) =>
-															type !== "poster"
-													)
+													field.value.filter((type) => type !== "poster")
 												);
 											}
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
 									/>
 								</FormControl>
-								<FormLabel className="text-md font-normal">
-									Poster
-								</FormLabel>
+								<FormLabel className="text-md font-normal">Poster</FormLabel>
 							</FormItem>
 						)}
 						{movie.Backdrop && (
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
 									<Checkbox
-										checked={field.value.includes(
-											"backdrop"
-										)}
+										checked={field.value.includes("backdrop")}
 										onCheckedChange={(checked) => {
 											if (checked) {
-												field.onChange([
-													...field.value,
-													"backdrop",
-												]);
+												field.onChange([...field.value, "backdrop"]);
 											} else {
 												field.onChange(
 													field.value.filter(
-														(type) =>
-															type !== "backdrop"
+														(type) => type !== "backdrop"
 													)
 												);
 											}
@@ -705,9 +656,7 @@ const DownloadModalMovie: React.FC<{
 										className="h-5 w-5 sm:h-4 sm:w-4"
 									/>
 								</FormControl>
-								<FormLabel className="text-md font-normal">
-									Backdrop
-								</FormLabel>
+								<FormLabel className="text-md font-normal">Backdrop</FormLabel>
 							</FormItem>
 						)}
 					</div>
@@ -741,9 +690,7 @@ const DownloadModalMovie: React.FC<{
 				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[425px] ">
 					<DialogHeader>
 						<DialogTitle>{posterSet.Title}</DialogTitle>
-						<DialogDescription>
-							Set Author: {posterSet.User.Name}
-						</DialogDescription>
+						<DialogDescription>Set Author: {posterSet.User.Name}</DialogDescription>
 						<DialogDescription>
 							<Link
 								href={`https://mediux.pro/sets/${posterSet.ID}`}
@@ -757,10 +704,7 @@ const DownloadModalMovie: React.FC<{
 					</DialogHeader>
 
 					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="space-y-2"
-						>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
 							{moviesDisplay.length > 1 && (
 								<FormLabel className="text-md font-normal">
 									Movies in Set & Server:
@@ -797,96 +741,64 @@ const DownloadModalMovie: React.FC<{
 									</div>
 									{Object.entries(progressDownloads).map(
 										([movieName, statuses]) => (
-											<div
-												key={movieName}
-												className="my-2"
-											>
-												<div className="font-bold text-sm">
-													{movieName}
-												</div>
+											<div key={movieName} className="my-2">
+												<div className="font-bold text-sm">{movieName}</div>
 												{statuses.poster && (
 													<div className="flex justify-between text-sm text-muted-foreground">
-														{statuses.poster ===
-														"success" ? (
+														{statuses.poster === "success" ? (
 															<div className="flex items-center">
 																<Check className="mr-1 h-4 w-4" />
-																<span>
-																	Poster
-																</span>
+																<span>Poster</span>
 															</div>
-														) : statuses.poster ===
-														  "failed" ? (
+														) : statuses.poster === "failed" ? (
 															<div className="flex items-center text-destructive">
 																<X className="mr-1 h-4 w-4" />
-																<span>
-																	Poster
-																</span>
+																<span>Poster</span>
 															</div>
 														) : (
 															<div className="flex items-center">
 																<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
-																<span>
-																	Downloading
-																	Poster
-																</span>
+																<span>Downloading Poster</span>
 															</div>
 														)}
 													</div>
 												)}
 												{statuses.backdrop && (
 													<div className="flex justify-between text-sm text-muted-foreground">
-														{statuses.backdrop ===
-														"success" ? (
+														{statuses.backdrop === "success" ? (
 															<div className="flex items-center">
 																<Check className="mr-1 h-4 w-4" />
-																<span>
-																	Backdrop
-																</span>
+																<span>Backdrop</span>
 															</div>
-														) : statuses.backdrop ===
-														  "failed" ? (
+														) : statuses.backdrop === "failed" ? (
 															<div className="flex items-center text-destructive">
 																<X className="mr-1 h-4 w-4" />
-																<span>
-																	Backdrop
-																</span>
+																<span>Backdrop</span>
 															</div>
 														) : (
 															<div className="flex items-center">
 																<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
-																<span>
-																	Downloading
-																	Backdrop
-																</span>
+																<span>Downloading Backdrop</span>
 															</div>
 														)}
 													</div>
 												)}
 												{statuses.addToDB && (
 													<div className="flex justify-between text-sm text-muted-foreground">
-														{statuses.addToDB ===
-														"success" ? (
+														{statuses.addToDB === "success" ? (
 															<div className="flex items-center">
 																<Check className="mr-1 h-4 w-4" />
-																<span>
-																	Added to DB
-																</span>
+																<span>Added to DB</span>
 															</div>
-														) : statuses.addToDB ===
-														  "failed" ? (
+														) : statuses.addToDB === "failed" ? (
 															<div className="flex items-center text-destructive">
 																<X className="mr-1 h-4 w-4" />
-																<span>
-																	Failing
-																	adding to DB
-																</span>
+																<span>Failing adding to DB</span>
 															</div>
 														) : (
 															<div className="flex items-center">
 																<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
-																<span>
-																	Adding to DB
-																</span>
+																<span>Adding to DB</span>
 															</div>
 														)}
 													</div>
@@ -903,25 +815,19 @@ const DownloadModalMovie: React.FC<{
 									<Accordion type="single" collapsible>
 										<AccordionItem value="warnings">
 											<AccordionTrigger className="text-destructive">
-												Failed Downloads (
-												{progressWarningMessages.length}
-												)
+												Failed Downloads ({progressWarningMessages.length})
 											</AccordionTrigger>
 											<AccordionContent>
 												<div className="flex flex-col space-y-2">
-													{progressWarningMessages.map(
-														(message) => (
-															<div
-																key={message}
-																className="flex items-center text-destructive"
-															>
-																<X className="mr-1 h-4 w-4" />
-																<span>
-																	{message}
-																</span>
-															</div>
-														)
-													)}
+													{progressWarningMessages.map((message) => (
+														<div
+															key={message}
+															className="flex items-center text-destructive"
+														>
+															<X className="mr-1 h-4 w-4" />
+															<span>{message}</span>
+														</div>
+													))}
 												</div>
 											</AccordionContent>
 										</AccordionItem>
@@ -951,9 +857,7 @@ const DownloadModalMovie: React.FC<{
 										onClick={() => {
 											onSubmit(form.getValues());
 										}}
-										disabled={Object.values(
-											watchSelectionsByMovie
-										).every(
+										disabled={Object.values(watchSelectionsByMovie).every(
 											(arr) => !arr || arr.length === 0
 										)}
 									>

@@ -9,14 +9,14 @@ export type { User } from "./user";
 
 // Media
 export type {
-  Show,
-  Season,
-  Episode,
-  Movie,
-  Collection,
-  SortDirection,
-  SortField,
-  ContentCarouselType,
+	Show,
+	Season,
+	Episode,
+	Movie,
+	Collection,
+	SortDirection,
+	SortField,
+	ContentCarouselType,
 } from "./content";
 
 // Files and Assets

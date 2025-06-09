@@ -1,8 +1,9 @@
-import apiClient from "./apiClient";
+import { log } from "@/lib/logger";
+
 import { APIResponse } from "../types/apiResponse";
 import { AppConfig } from "../types/config";
 import { ReturnErrorMessage } from "./api.shared";
-import { log } from "@/lib/logger";
+import apiClient from "./apiClient";
 
 export const fetchConfig = async (): Promise<APIResponse<AppConfig>> => {
 	log("api.settings - Fetching app configuration started");
@@ -52,14 +53,10 @@ export const postClearOldLogs = async (): Promise<APIResponse<void>> => {
 	}
 };
 
-export const postClearTempImagesFolder = async (): Promise<
-	APIResponse<void>
-> => {
+export const postClearTempImagesFolder = async (): Promise<APIResponse<void>> => {
 	log("api.settings - Clearing temp images folder started");
 	try {
-		const response = await apiClient.post<APIResponse<void>>(
-			`/temp-images/clear`
-		);
+		const response = await apiClient.post<APIResponse<void>>(`/temp-images/clear`);
 		log("api.settings - Clearing temp images folder succeeded");
 		return response.data;
 	} catch (error) {
@@ -72,14 +69,10 @@ export const postClearTempImagesFolder = async (): Promise<
 	}
 };
 
-export const fetchMediaServerConnectionStatus = async (): Promise<
-	APIResponse<string>
-> => {
+export const fetchMediaServerConnectionStatus = async (): Promise<APIResponse<string>> => {
 	log("api.settings - Fetching media server connection status started");
 	try {
-		const response = await apiClient.get<APIResponse<string>>(
-			`/health/status/mediaserver`
-		);
+		const response = await apiClient.get<APIResponse<string>>(`/health/status/mediaserver`);
 		log("api.settings - Fetching media server connection status succeeded");
 		return response.data;
 	} catch (error) {
@@ -92,14 +85,10 @@ export const fetchMediaServerConnectionStatus = async (): Promise<
 	}
 };
 
-export const postSendTestNotification = async (): Promise<
-	APIResponse<string>
-> => {
+export const postSendTestNotification = async (): Promise<APIResponse<string>> => {
 	log("api.settings - Sending test notification started");
 	try {
-		const response = await apiClient.post<APIResponse<string>>(
-			`/health/status/notification`
-		);
+		const response = await apiClient.post<APIResponse<string>>(`/health/status/notification`);
 		log("api.settings - Sending test notification succeeded");
 		return response.data;
 	} catch (error) {

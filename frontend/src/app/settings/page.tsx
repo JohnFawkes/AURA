@@ -1,16 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ErrorMessage } from "@/components/ui/error-message";
-import { Input } from "@/components/ui/input";
-import Loader from "@/components/ui/loader";
-import {
-	Popover,
-	PopoverTrigger,
-	PopoverContent,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 import {
 	fetchConfig,
 	fetchMediaServerConnectionStatus,
@@ -18,12 +7,23 @@ import {
 	postClearTempImagesFolder,
 	postSendTestNotification,
 } from "@/services/api.settings";
-import { AppConfig } from "@/types/config";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { CircleX, HeartPulseIcon, Logs } from "lucide-react";
+import { toast } from "sonner";
+
+import React, { useEffect, useRef, useState } from "react";
 import { FaDiscord } from "react-icons/fa";
+
+import { useRouter } from "next/navigation";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { Input } from "@/components/ui/input";
+import Loader from "@/components/ui/loader";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+import { AppConfig } from "@/types/config";
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
@@ -58,9 +58,7 @@ const SettingsPage: React.FC = () => {
 				setLoading(false);
 			} catch (error) {
 				setConfig(null);
-				setError(
-					error instanceof Error ? error.message : String(error)
-				);
+				setError(error instanceof Error ? error.message : String(error));
 			} finally {
 				setLoading(false);
 			}
@@ -129,9 +127,7 @@ const SettingsPage: React.FC = () => {
 			if (notificationResp.data !== "success") {
 				throw new Error(notificationResp.data);
 			}
-			toast.success(
-				"Test notification sent successfully. Check your Discord channel."
-			);
+			toast.success("Test notification sent successfully. Check your Discord channel.");
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : String(error));
 		}
@@ -143,16 +139,12 @@ const SettingsPage: React.FC = () => {
 
 		const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
 
-		const minuteText =
-			minute === "0" ? "at the start of" : `at minute ${minute}`;
+		const minuteText = minute === "0" ? "at the start of" : `at minute ${minute}`;
 		const hourText = hour === "*" ? "every hour" : `hour ${hour}`;
-		const dayOfMonthText =
-			dayOfMonth === "*" ? "every day" : `on day ${dayOfMonth}`;
+		const dayOfMonthText = dayOfMonth === "*" ? "every day" : `on day ${dayOfMonth}`;
 		const monthText = month === "*" ? "every month" : `in month ${month}`;
 		const dayOfWeekText =
-			dayOfWeek === "*"
-				? "every day of the week"
-				: `on day ${dayOfWeek} of the week`;
+			dayOfWeek === "*" ? "every day of the week" : `on day ${dayOfWeek} of the week`;
 
 		return `Currently runs ${minuteText} ${hourText}, ${dayOfMonthText}, ${monthText}, and ${dayOfWeekText}.`;
 	};
@@ -164,8 +156,7 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Server Type",
 					Value: config?.MediaServer.Type,
-					Tooltip:
-						"The type of media server (e.g., Plex, Emby, Jellyfin).",
+					Tooltip: "The type of media server (e.g., Plex, Emby, Jellyfin).",
 				},
 				{
 					Label: "Server URL",
@@ -175,14 +166,11 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Authentication Token",
 					Value: config?.MediaServer.Token,
-					Tooltip:
-						"The authentication token for accessing the media server.",
+					Tooltip: "The authentication token for accessing the media server.",
 				},
 				{
 					Label: "Libraries",
-					Value: config?.MediaServer.Libraries.map(
-						(library) => library.Name
-					).join(", "),
+					Value: config?.MediaServer.Libraries.map((library) => library.Name).join(", "),
 					Tooltip: "",
 				},
 			],
@@ -206,8 +194,7 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Mediux Token",
 					Value: config?.Mediux.Token,
-					Tooltip:
-						"The authentication token for accessing Mediux services.",
+					Tooltip: "The authentication token for accessing Mediux services.",
 				},
 			],
 		},
@@ -221,25 +208,18 @@ const SettingsPage: React.FC = () => {
 				},
 				{
 					Label: "Save Images Next to Content",
-					Value: config?.SaveImageNextToContent
-						? "Enabled"
-						: "Disabled",
-					Tooltip:
-						"Whether to save images next to the associated content.",
+					Value: config?.SaveImageNextToContent ? "Enabled" : "Disabled",
+					Tooltip: "Whether to save images next to the associated content.",
 				},
 				{
 					Label: "Auto Download",
-					Value: config?.AutoDownload?.Enabled
-						? "Enabled"
-						: "Disabled",
+					Value: config?.AutoDownload?.Enabled ? "Enabled" : "Disabled",
 					Tooltip: "Whether auto-download is enabled.",
 				},
 				{
 					Label: "Auto Download Cron",
 					Value: config?.AutoDownload?.Cron,
-					Tooltip: parseCronToHumanReadable(
-						config?.AutoDownload?.Cron || ""
-					),
+					Tooltip: parseCronToHumanReadable(config?.AutoDownload?.Cron || ""),
 				},
 			],
 		},
@@ -248,16 +228,13 @@ const SettingsPage: React.FC = () => {
 			Fields: [
 				{
 					Label: "Remove Labels",
-					Value: config?.Kometa?.RemoveLabels
-						? "Enabled"
-						: "Disabled",
+					Value: config?.Kometa?.RemoveLabels ? "Enabled" : "Disabled",
 					Tooltip: "Whether to remove labels from media items.",
 				},
 				{
 					Label: "Labels",
 					Value:
-						Array.isArray(config?.Kometa?.Labels) &&
-						config?.Kometa?.Labels.length > 1
+						Array.isArray(config?.Kometa?.Labels) && config?.Kometa?.Labels.length > 1
 							? config?.Kometa?.Labels.join(", ")
 							: config?.Kometa?.Labels?.[0] || "",
 					Tooltip: "The list of labels to apply to media items.",
@@ -283,10 +260,7 @@ const SettingsPage: React.FC = () => {
 			Buttons: [
 				{
 					Label: "Send Test Notification",
-					Icon:
-						config?.Notification?.Provider === "Discord" ? (
-							<FaDiscord />
-						) : null,
+					Icon: config?.Notification?.Provider === "Discord" ? <FaDiscord /> : null,
 					onClick: sendTestNotification,
 				},
 			],
@@ -297,8 +271,7 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Logging Level",
 					Value: config?.Logging?.Level,
-					Tooltip:
-						"The logging level (e.g., DEBUG, INFO, WARN, ERROR).",
+					Tooltip: "The logging level (e.g., DEBUG, INFO, WARN, ERROR).",
 				},
 				{
 					Label: "Log File Path",
@@ -350,10 +323,8 @@ const SettingsPage: React.FC = () => {
 								"Fields" in value
 									? value.Fields.filter(
 											(field) =>
-												field.Value &&
-												field.Value.toString().trim() !==
-													""
-									  )
+												field.Value && field.Value.toString().trim() !== ""
+										)
 									: [];
 							// Check if there are any buttons
 							const hasButtons =
@@ -366,111 +337,81 @@ const SettingsPage: React.FC = () => {
 								).length > 0;
 
 							// If there are no non-empty fields and no buttons, skip the card
-							if (!fieldsToShow.length && !hasButtons)
-								return null;
+							if (!fieldsToShow.length && !hasButtons) return null;
 
 							return (
 								<Card className="mb-4" key={key}>
 									<CardHeader>
-										<h2 className="text-xl font-semibold">
-											{value.Title}
-										</h2>
+										<h2 className="text-xl font-semibold">{value.Title}</h2>
 									</CardHeader>
 									<CardContent>
 										<div className="space-y-2">
 											{"Fields" in value &&
-												fieldsToShow.map(
-													(field, index) => (
-														<div key={index}>
-															<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-																{field.Label}
-															</label>
-															{field.Label ===
-																"Libraries" ||
-															field.Label ===
-																"Labels" ? (
-																<>
-																	{(
-																		field.Value ??
-																		""
+												fieldsToShow.map((field, index) => (
+													<div key={index}>
+														<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+															{field.Label}
+														</label>
+														{field.Label === "Libraries" ||
+														field.Label === "Labels" ? (
+															<>
+																{(field.Value ?? "")
+																	.split(", ")
+																	.filter(
+																		(item: string) =>
+																			item.trim() !== ""
 																	)
-																		.split(
-																			", "
+																	.map(
+																		(
+																			item: string,
+																			idx: number
+																		) => (
+																			<Badge
+																				key={idx}
+																				className="mr-2 mt-1 text-sm"
+																			>
+																				{item}
+																			</Badge>
 																		)
-																		.filter(
-																			(
-																				item: string
-																			) =>
-																				item.trim() !==
-																				""
-																		)
-																		.map(
-																			(
-																				item: string,
-																				idx: number
-																			) => (
-																				<Badge
-																					key={
-																						idx
-																					}
-																					className="mr-2 mt-1 text-sm"
-																				>
-																					{
-																						item
-																					}
-																				</Badge>
-																			)
-																		)}
-																</>
-															) : (
-																<div className="flex items-center gap-2 mt-1">
-																	<Input
-																		value={
-																			field.Value
-																		}
-																		disabled
-																		className="w-full"
-																	/>
-																	<Popover>
-																		<PopoverTrigger className="cursor-pointer">
-																			<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
-																				?
-																			</span>
-																		</PopoverTrigger>
-																		<PopoverContent className="w-60">
-																			{
-																				field.Tooltip
-																			}
-																		</PopoverContent>
-																	</Popover>
-																</div>
-															)}
-														</div>
-													)
-												)}
+																	)}
+															</>
+														) : (
+															<div className="flex items-center gap-2 mt-1">
+																<Input
+																	value={field.Value}
+																	disabled
+																	className="w-full"
+																/>
+																<Popover>
+																	<PopoverTrigger className="cursor-pointer">
+																		<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
+																			?
+																		</span>
+																	</PopoverTrigger>
+																	<PopoverContent className="w-60">
+																		{field.Tooltip}
+																	</PopoverContent>
+																</Popover>
+															</div>
+														)}
+													</div>
+												))}
 											{"Buttons" in value &&
 												(
 													value.Buttons as {
 														onClick: () => void;
-														Variant?:
-															| "default"
-															| "destructive";
+														Variant?: "default" | "destructive";
 														Label: string;
 														Icon?: React.ReactNode;
 													}[]
 												).map((button, index) => (
 													<Button
 														key={index}
-														variant={
-															button.Variant ||
-															"default"
-														}
+														variant={button.Variant || "default"}
 														onClick={button.onClick}
 														className="w-full"
 													>
-														{button.Label}{" "}
-														{button.Icon &&
-															button.Icon}
+														{button.Label} {button.Icon && button.Icon}
 													</Button>
 												))}
 										</div>

@@ -1,22 +1,23 @@
 "use client";
 
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { AssetImage } from "@/components/ui/asset-image";
+
 import {
 	MediuxUserBoxset,
 	MediuxUserImage,
 	MediuxUserSeasonPoster,
 	MediuxUserTitlecard,
 } from "@/types/mediuxUserAllSets";
-import { Lead } from "./ui/typography";
 import { PosterFile } from "@/types/posterSets";
-import {
-	Accordion,
-	AccordionItem,
-	AccordionTrigger,
-	AccordionContent,
-} from "@/components/ui/accordion";
-import { Badge } from "./ui/badge";
+
 import DownloadModalBoxset from "./download-modal-boxset";
+import { Badge } from "./ui/badge";
 import {
 	Carousel,
 	CarouselContent,
@@ -24,6 +25,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "./ui/carousel";
+import { Lead } from "./ui/typography";
 
 export function BoxsetDisplay({
 	boxset,
@@ -35,10 +37,7 @@ export function BoxsetDisplay({
 	const allPosters: PosterFile[] = [];
 	const allBackdrops: PosterFile[] = [];
 	const seasonPostersByShow: Record<string, PosterFile[]> = {};
-	const titleCardsByShowAndSeason: Record<
-		string,
-		Record<number, PosterFile[]>
-	> = {};
+	const titleCardsByShowAndSeason: Record<string, Record<number, PosterFile[]>> = {};
 
 	const showSets = boxset.show_sets;
 	const movieSets = boxset.movie_sets;
@@ -65,26 +64,22 @@ export function BoxsetDisplay({
 			});
 		});
 		// Season Posters (grouped by show)
-		const showTitle =
-			showSet.MediaItem?.Title || showSet.set_title || "Unknown Show";
-		showSet.season_posters.forEach(
-			(seasonPoster: MediuxUserSeasonPoster) => {
-				if (!seasonPostersByShow[showTitle]) {
-					seasonPostersByShow[showTitle] = [];
-				}
-				seasonPostersByShow[showTitle].push({
-					ID: seasonPoster.id,
-					Type: "season_poster",
-					Modified: seasonPoster.modified_on,
-					FileSize: Number(seasonPoster.filesize),
-					Season: { Number: seasonPoster.season.season_number },
-				});
+		const showTitle = showSet.MediaItem?.Title || showSet.set_title || "Unknown Show";
+		showSet.season_posters.forEach((seasonPoster: MediuxUserSeasonPoster) => {
+			if (!seasonPostersByShow[showTitle]) {
+				seasonPostersByShow[showTitle] = [];
 			}
-		);
+			seasonPostersByShow[showTitle].push({
+				ID: seasonPoster.id,
+				Type: "season_poster",
+				Modified: seasonPoster.modified_on,
+				FileSize: Number(seasonPoster.filesize),
+				Season: { Number: seasonPoster.season.season_number },
+			});
+		});
 		// Title Cards (grouped by show and season)
 		showSet.titlecards.forEach((titleCard: MediuxUserTitlecard) => {
-			const seasonNumber =
-				titleCard.episode?.season_id?.season_number ?? 0;
+			const seasonNumber = titleCard.episode?.season_id?.season_number ?? 0;
 			if (!titleCardsByShowAndSeason[showTitle]) {
 				titleCardsByShowAndSeason[showTitle] = {};
 			}
@@ -167,8 +162,7 @@ export function BoxsetDisplay({
 						<Badge>Shows: {boxset.show_sets.length}</Badge>
 					</div>
 				)}
-				{(boxset.movie_sets.length > 0 ||
-					boxset.collection_sets.length > 0) && (
+				{(boxset.movie_sets.length > 0 || boxset.collection_sets.length > 0) && (
 					<div>
 						<Badge>Movies: {getUniqueMovieCount(boxset)}</Badge>
 					</div>
@@ -200,10 +194,7 @@ export function BoxsetDisplay({
 				{Object.values(titleCardsByShowAndSeason).reduce(
 					(acc, seasons) =>
 						acc +
-						Object.values(seasons).reduce(
-							(acc2, cards) => acc2 + cards.length,
-							0
-						),
+						Object.values(seasons).reduce((acc2, cards) => acc2 + cards.length, 0),
 					0
 				) > 0 && (
 					<div>
@@ -225,10 +216,7 @@ export function BoxsetDisplay({
 
 			{/* Download Button */}
 			<div className="mb-4">
-				<DownloadModalBoxset
-					boxset={boxset}
-					libraryType={libraryType}
-				/>
+				<DownloadModalBoxset boxset={boxset} libraryType={libraryType} />
 			</div>
 
 			<Accordion type="multiple" className="w-full">
@@ -247,14 +235,10 @@ export function BoxsetDisplay({
 							>
 								<CarouselContent>
 									{allPosters.map((poster) => (
-										<CarouselItem
-											key={`${boxset.id}-poster-${poster.ID}`}
-										>
+										<CarouselItem key={`${boxset.id}-poster-${poster.ID}`}>
 											<div className="space-y-2">
 												<AssetImage
-													image={
-														poster as unknown as PosterFile
-													}
+													image={poster as unknown as PosterFile}
 													displayUser={true}
 													displayMediaType={true}
 													aspect="poster"
@@ -286,14 +270,10 @@ export function BoxsetDisplay({
 							>
 								<CarouselContent>
 									{allBackdrops.map((backdrop) => (
-										<CarouselItem
-											key={`${boxset.id}-backdrop-${backdrop.ID}`}
-										>
+										<CarouselItem key={`${boxset.id}-backdrop-${backdrop.ID}`}>
 											<div className="space-y-2">
 												<AssetImage
-													image={
-														backdrop as unknown as PosterFile
-													}
+													image={backdrop as unknown as PosterFile}
 													displayUser={true}
 													displayMediaType={true}
 													aspect="backdrop"
@@ -311,9 +291,7 @@ export function BoxsetDisplay({
 				)}
 
 				{/* Season Posters by Show */}
-				{Object.values(seasonPostersByShow).some(
-					(posters) => posters.length > 0
-				) && (
+				{Object.values(seasonPostersByShow).some((posters) => posters.length > 0) && (
 					<AccordionItem value="season-posters">
 						<AccordionTrigger>Season Posters</AccordionTrigger>
 						<AccordionContent>
@@ -321,9 +299,7 @@ export function BoxsetDisplay({
 								.filter(([, posters]) => posters.length > 0)
 								.map(([showTitle, posters]) => (
 									<div key={showTitle} className="mb-8">
-										<Lead className="mb-4">
-											{showTitle}
-										</Lead>
+										<Lead className="mb-4">{showTitle}</Lead>
 										<Carousel
 											opts={{
 												align: "start",
@@ -341,12 +317,8 @@ export function BoxsetDisplay({
 															<AssetImage
 																key={poster.ID}
 																image={poster}
-																displayUser={
-																	true
-																}
-																displayMediaType={
-																	true
-																}
+																displayUser={true}
+																displayMediaType={true}
 																aspect="poster"
 																className="w-full h-auto"
 															/>
@@ -372,19 +344,12 @@ export function BoxsetDisplay({
 						<AccordionContent>
 							{Object.entries(titleCardsByShowAndSeason)
 								.filter(([, seasons]) =>
-									Object.values(seasons).some(
-										(cards) => cards.length > 0
-									)
+									Object.values(seasons).some((cards) => cards.length > 0)
 								)
 								.map(([showTitle, seasons]) => (
 									<div key={showTitle} className="mb-8">
-										<Lead className="mb-4">
-											{showTitle}
-										</Lead>
-										<Accordion
-											type="multiple"
-											className="w-full"
-										>
+										<Lead className="mb-4">{showTitle}</Lead>
+										<Accordion type="multiple" className="w-full">
 											{Object.entries(seasons).map(
 												([seasonNumber, cards]) => (
 													<AccordionItem
@@ -392,46 +357,39 @@ export function BoxsetDisplay({
 														value={`${showTitle}-season-${seasonNumber}`}
 													>
 														<AccordionTrigger>
-															Season{" "}
-															{seasonNumber}
+															Season {seasonNumber}
 														</AccordionTrigger>
 														<AccordionContent>
 															<Carousel
 																opts={{
 																	align: "start",
-																	dragFree:
-																		true,
-																	slidesToScroll:
-																		"auto",
+																	dragFree: true,
+																	slidesToScroll: "auto",
 																}}
 																className="w-full"
 															>
 																<CarouselContent>
-																	{cards.map(
-																		(
-																			card
-																		) => (
-																			<CarouselItem
-																				key={`title-card-${card.ID}`}
-																			>
-																				<div className="space-y-2">
-																					<AssetImage
-																						image={
-																							card as unknown as PosterFile
-																						}
-																						displayUser={
-																							true
-																						}
-																						displayMediaType={
-																							true
-																						}
-																						aspect="backdrop"
-																						className="w-full h-auto"
-																					/>
-																				</div>
-																			</CarouselItem>
-																		)
-																	)}
+																	{cards.map((card) => (
+																		<CarouselItem
+																			key={`title-card-${card.ID}`}
+																		>
+																			<div className="space-y-2">
+																				<AssetImage
+																					image={
+																						card as unknown as PosterFile
+																					}
+																					displayUser={
+																						true
+																					}
+																					displayMediaType={
+																						true
+																					}
+																					aspect="backdrop"
+																					className="w-full h-auto"
+																				/>
+																			</div>
+																		</CarouselItem>
+																	))}
 																</CarouselContent>
 																<CarouselNext className="right-2 bottom-0" />
 																<CarouselPrevious className="right-8 bottom-0" />

@@ -1,5 +1,6 @@
-import { Guid } from "@/types/mediaItem";
 import Image from "next/image";
+
+import { Guid } from "@/types/mediaItem";
 
 interface ProviderInfo {
 	id: string;
@@ -38,10 +39,7 @@ type MediaItemRatingsProps = {
 	mediaItemType: string;
 };
 
-export function MediaItemRatings({
-	guids,
-	mediaItemType,
-}: MediaItemRatingsProps) {
+export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps) {
 	const guidMap: { [provider: string]: ProviderInfo } = {};
 	guids.forEach((guid: Guid) => {
 		if (guid.Provider) {
@@ -49,22 +47,18 @@ export function MediaItemRatings({
 			if (providerInfo) {
 				guidMap[guid.Provider] = {
 					id: guid.ID || "",
-					rating:
-						guids.find((g) => g.Provider === guid.Provider)
-							?.Rating || "",
+					rating: guids.find((g) => g.Provider === guid.Provider)?.Rating || "",
 					logoUrl: providerInfo.logoUrl,
 					linkUrl:
 						guid.Provider === "tvdb"
 							? `https://www.thetvdb.com/dereferrer/${
-									mediaItemType === "show"
-										? "series"
-										: "movie"
-							  }/${guid.ID}`
+									mediaItemType === "show" ? "series" : "movie"
+								}/${guid.ID}`
 							: guid.Provider === "tmdb"
-							? mediaItemType === "show"
-								? `https://www.themoviedb.org/tv/${guid.ID}`
-								: `https://www.themoviedb.org/movie/${guid.ID}`
-							: `${providerInfo.urlPrefix}${guid.ID}`,
+								? mediaItemType === "show"
+									? `https://www.themoviedb.org/tv/${guid.ID}`
+									: `https://www.themoviedb.org/movie/${guid.ID}`
+								: `${providerInfo.urlPrefix}${guid.ID}`,
 				};
 			}
 		}
@@ -92,11 +86,7 @@ export function MediaItemRatings({
 						</>
 					) : (
 						<>
-							<a
-								href={info.linkUrl!}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<a href={info.linkUrl!} target="_blank" rel="noopener noreferrer">
 								<div className="relative ml-1 w-[40px] h-[40px]">
 									<Image
 										src={info.logoUrl}
@@ -107,9 +97,7 @@ export function MediaItemRatings({
 								</div>
 							</a>
 							{/* Only display rating if it exists */}
-							{info.rating && (
-								<span className="text-sm">{info.rating}</span>
-							)}
+							{info.rating && <span className="text-sm">{info.rating}</span>}
 						</>
 					)}
 				</div>

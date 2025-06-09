@@ -1,45 +1,52 @@
 "use client";
+
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
+import { fetchShowSetByID } from "@/services/api.mediux";
+import {
+	CheckCircle2 as Checkmark,
+	Delete,
+	Download,
+	Edit,
+	MoreHorizontal,
+	RefreshCcw,
+	X,
+} from "lucide-react";
+
 import React, { useState } from "react";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import DownloadModalMovie from "@/components/download-modal-movie";
+import DownloadModalShow from "@/components/download-modal-show";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
-	DialogHeader,
 	DialogFooter,
+	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogDescription } from "@/components/ui/dialog";
 import { H4, P, Small } from "@/components/ui/typography";
-import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
+
+import { useMediaStore } from "@/lib/mediaStore";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+
+import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
+import { PosterSet } from "@/types/posterSets";
+
+import { Badge } from "./badge";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "./dropdown-menu";
-import { Badge } from "./badge";
 import { Separator } from "./separator";
-import {
-	CheckCircle2 as Checkmark,
-	X,
-	MoreHorizontal,
-	Edit,
-	Delete,
-	Download,
-	RefreshCcw,
-} from "lucide-react";
-import Image from "next/image";
-import { DialogDescription } from "@/components/ui/dialog";
-import Link from "next/link";
-import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
-import DownloadModalShow from "@/components/download-modal-show";
-import DownloadModalMovie from "@/components/download-modal-movie";
-import { usePosterSetStore } from "@/lib/posterSetStore";
-import { useMediaStore } from "@/lib/mediaStore";
-import { useRouter } from "next/navigation";
-import { fetchShowSetByID } from "@/services/api.mediux";
-import { PosterSet } from "@/types/posterSets";
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -142,10 +149,7 @@ const SavedSetsCard: React.FC<{
 				<table className="w-full text-sm">
 					<tbody>
 						{savedSet.PosterSets.map((set) => (
-							<tr
-								key={set.PosterSetID}
-								className={`hover:bg-muted/50 rounded-sm`}
-							>
+							<tr key={set.PosterSetID} className={`hover:bg-muted/50 rounded-sm`}>
 								<td className="py-1.5" style={{ width: "80%" }}>
 									<Link
 										href={`/sets/${set.PosterSetID}`}
@@ -163,8 +167,7 @@ const SavedSetsCard: React.FC<{
 										href={`/user/${set.PosterSet.User.Name}`}
 										className="text-primary hover:underline"
 									>
-										{set.PosterSet.User.Name ||
-											"Unknown User"}
+										{set.PosterSet.User.Name || "Unknown User"}
 									</Link>
 								</td>
 							</tr>
@@ -176,10 +179,7 @@ const SavedSetsCard: React.FC<{
 	};
 
 	// Replace the hard-coded array with dynamically generated list.
-	const renderEditTypeBadges = (
-		editSet: (typeof editSets)[number],
-		index: number
-	) => {
+	const renderEditTypeBadges = (editSet: (typeof editSets)[number], index: number) => {
 		const availableTypes: string[] = [];
 		if (editSet.set && editSet.set.Poster) {
 			availableTypes.push("poster");
@@ -187,11 +187,7 @@ const SavedSetsCard: React.FC<{
 		if (editSet.set && editSet.set.Backdrop) {
 			availableTypes.push("backdrop");
 		}
-		if (
-			editSet.set &&
-			editSet.set.SeasonPosters &&
-			editSet.set.SeasonPosters.length > 0
-		) {
+		if (editSet.set && editSet.set.SeasonPosters && editSet.set.SeasonPosters.length > 0) {
 			// Check to see if any of the Season Posters are Season 0
 			const hasSeason0 = editSet.set.SeasonPosters.some(
 				(season) => season.Season?.Number === 0
@@ -207,11 +203,7 @@ const SavedSetsCard: React.FC<{
 				availableTypes.push("seasonPoster");
 			}
 		}
-		if (
-			editSet.set &&
-			editSet.set.TitleCards &&
-			editSet.set.TitleCards.length > 0
-		) {
+		if (editSet.set && editSet.set.TitleCards && editSet.set.TitleCards.length > 0) {
 			availableTypes.push("titlecard");
 		}
 
@@ -222,10 +214,7 @@ const SavedSetsCard: React.FC<{
 			const isTypeDisabled =
 				editSet.toDelete ||
 				(!isSelected &&
-					editSets.some(
-						(item, j) =>
-							j !== index && item.selectedTypes.includes(type)
-					));
+					editSets.some((item, j) => j !== index && item.selectedTypes.includes(type)));
 			return (
 				<Badge
 					key={type}
@@ -233,20 +222,17 @@ const SavedSetsCard: React.FC<{
 						isTypeDisabled
 							? "bg-secondary opacity-50 cursor-not-allowed"
 							: isSelected
-							? "cursor-pointer bg-primary text-primary-foreground hover:bg-red-500"
-							: "cursor-pointer bg-secondary text-secondary-foreground"
+								? "cursor-pointer bg-primary text-primary-foreground hover:bg-red-500"
+								: "cursor-pointer bg-secondary text-secondary-foreground"
 					}`}
 					onClick={() => {
 						if (isTypeDisabled) return;
 						setEditSets((prev) =>
 							prev.map((item, i) => {
 								if (i !== index) return item;
-								const newSelectedTypes =
-									item.selectedTypes.includes(type)
-										? item.selectedTypes.filter(
-												(t) => t !== type
-										  )
-										: [...item.selectedTypes, type];
+								const newSelectedTypes = item.selectedTypes.includes(type)
+									? item.selectedTypes.filter((t) => t !== type)
+									: [...item.selectedTypes, type];
 								return {
 									...item,
 									selectedTypes: newSelectedTypes,
@@ -258,14 +244,14 @@ const SavedSetsCard: React.FC<{
 					{type === "poster"
 						? "Poster"
 						: type === "backdrop"
-						? "Backdrop"
-						: type === "seasonPoster"
-						? "Season Posters"
-						: type === "specialSeasonPoster"
-						? "Special Poster"
-						: type === "titlecard"
-						? "Title Card"
-						: type}
+							? "Backdrop"
+							: type === "seasonPoster"
+								? "Season Posters"
+								: type === "specialSeasonPoster"
+									? "Special Poster"
+									: type === "titlecard"
+										? "Title Card"
+										: type}
 				</Badge>
 			);
 		});
@@ -273,9 +259,7 @@ const SavedSetsCard: React.FC<{
 
 	const renderTypeBadges = () => {
 		// Flatten all SelectedTypes arrays from every poster set.
-		const allTypes = savedSet.PosterSets.flatMap(
-			(set) => set.SelectedTypes
-		);
+		const allTypes = savedSet.PosterSets.flatMap((set) => set.SelectedTypes);
 		const uniqueTypes = Array.from(new Set(allTypes));
 		return uniqueTypes.map((type) =>
 			// Check if the type is empty or not
@@ -285,14 +269,14 @@ const SavedSetsCard: React.FC<{
 					{type === "poster"
 						? "Poster"
 						: type === "backdrop"
-						? "Backdrop"
-						: type === "seasonPoster"
-						? "Season Posters"
-						: type === "specialSeasonPoster"
-						? "Special Poster"
-						: type === "titlecard"
-						? "Title Card"
-						: type}
+							? "Backdrop"
+							: type === "seasonPoster"
+								? "Season Posters"
+								: type === "specialSeasonPoster"
+									? "Special Poster"
+									: type === "titlecard"
+										? "Title Card"
+										: type}
 				</Badge>
 			)
 		);
@@ -306,9 +290,7 @@ const SavedSetsCard: React.FC<{
 
 					// Skip updating state if response is not valid
 					if (resp.status !== "success" || !resp.data) {
-						console.error(
-							`Failed to fetch poster set with ID: ${set.id}`
-						);
+						console.error(`Failed to fetch poster set with ID: ${set.id}`);
 						return;
 					}
 
@@ -320,7 +302,7 @@ const SavedSetsCard: React.FC<{
 								? {
 										...item,
 										set: posterSet,
-								  }
+									}
 								: item
 						)
 					);
@@ -363,21 +345,14 @@ const SavedSetsCard: React.FC<{
 								<Edit className="ml-2" />
 								Edit
 							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => setIsRedownloadModalOpen(true)}
-							>
+							<DropdownMenuItem onClick={() => setIsRedownloadModalOpen(true)}>
 								<Download className="ml-2" />
 								Redownload{" "}
-								{savedSet.MediaItem.Type === "movie"
-									? "Movie Set"
-									: "Show Set"}
+								{savedSet.MediaItem.Type === "movie" ? "Movie Set" : "Show Set"}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => {
-									handleRecheckItem(
-										savedSet.MediaItem.Title,
-										savedSet
-									);
+									handleRecheckItem(savedSet.MediaItem.Title, savedSet);
 								}}
 							>
 								<RefreshCcw className="ml-2" />
@@ -394,29 +369,25 @@ const SavedSetsCard: React.FC<{
 					</DropdownMenu>
 				</div>
 
-				{isRedownloadModalOpen &&
-					savedSet.MediaItem.Type === "show" && (
-						<DownloadModalShow
-							open={isRedownloadModalOpen}
-							onOpenChange={setIsRedownloadModalOpen}
-							posterSet={savedSet.PosterSets[0].PosterSet}
-							mediaItem={savedSet.MediaItem}
-							autoDownloadDefault={
-								savedSet.PosterSets[0].AutoDownload
-							}
-							forceSetRefresh={true}
-						/>
-					)}
+				{isRedownloadModalOpen && savedSet.MediaItem.Type === "show" && (
+					<DownloadModalShow
+						open={isRedownloadModalOpen}
+						onOpenChange={setIsRedownloadModalOpen}
+						posterSet={savedSet.PosterSets[0].PosterSet}
+						mediaItem={savedSet.MediaItem}
+						autoDownloadDefault={savedSet.PosterSets[0].AutoDownload}
+						forceSetRefresh={true}
+					/>
+				)}
 
-				{isRedownloadModalOpen &&
-					savedSet.MediaItem.Type === "movie" && (
-						<DownloadModalMovie
-							open={isRedownloadModalOpen}
-							onOpenChange={setIsRedownloadModalOpen}
-							posterSet={savedSet.PosterSets[0].PosterSet}
-							mediaItem={savedSet.MediaItem}
-						/>
-					)}
+				{isRedownloadModalOpen && savedSet.MediaItem.Type === "movie" && (
+					<DownloadModalMovie
+						open={isRedownloadModalOpen}
+						onOpenChange={setIsRedownloadModalOpen}
+						posterSet={savedSet.PosterSets[0].PosterSet}
+						mediaItem={savedSet.MediaItem}
+					/>
+				)}
 
 				{/* Middle: Image */}
 				<div className="flex justify-center mt-6">
@@ -446,9 +417,7 @@ const SavedSetsCard: React.FC<{
 				</H4>
 
 				{/* Year */}
-				<P className="text-sm text-muted-foreground">
-					Year: {savedSet.MediaItem.Year}
-				</P>
+				<P className="text-sm text-muted-foreground">Year: {savedSet.MediaItem.Year}</P>
 
 				{/* Library Title */}
 				<P className="text-sm text-muted-foreground">
@@ -485,13 +454,9 @@ const SavedSetsCard: React.FC<{
 						Array.isArray(set.SelectedTypes) &&
 						set.SelectedTypes.some((type) => type.trim() !== "")
 				) ? (
-					<div className="flex flex-wrap gap-2">
-						{renderTypeBadges()}
-					</div>
+					<div className="flex flex-wrap gap-2">{renderTypeBadges()}</div>
 				) : (
-					<P className="text-sm text-muted-foreground">
-						No types selected.
-					</P>
+					<P className="text-sm text-muted-foreground">No types selected.</P>
 				)}
 			</CardContent>
 
@@ -501,17 +466,13 @@ const SavedSetsCard: React.FC<{
 					<DialogHeader>
 						<DialogTitle>Edit Saved Set</DialogTitle>
 						<DialogDescription>
-							Edit each set individually. Toggle type badges to
-							update selected types. Use the delete option to mark
-							a set for deletion.
+							Edit each set individually. Toggle type badges to update selected types.
+							Use the delete option to mark a set for deletion.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4">
 						{editSets.map((editSet, index) => (
-							<div
-								key={editSet.id}
-								className="border p-2 rounded-md"
-							>
+							<div key={editSet.id} className="border p-2 rounded-md">
 								<div className="flex items-center justify-between">
 									<span className="font-semibold">
 										Set ID:{" "}
@@ -525,11 +486,7 @@ const SavedSetsCard: React.FC<{
 										</Link>
 									</span>
 									<Button
-										variant={
-											editSet.toDelete
-												? "destructive"
-												: "outline"
-										}
+										variant={editSet.toDelete ? "destructive" : "outline"}
 										size="sm"
 										onClick={() => {
 											setEditSets((prev) =>
@@ -537,22 +494,18 @@ const SavedSetsCard: React.FC<{
 													i === index
 														? {
 																...item,
-																toDelete:
-																	!item.toDelete,
+																toDelete: !item.toDelete,
 																// Clear the selected types when marking for deletion.
-																selectedTypes:
-																	!item.toDelete
-																		? []
-																		: item.selectedTypes,
-														  }
+																selectedTypes: !item.toDelete
+																	? []
+																	: item.selectedTypes,
+															}
 														: item
 												)
 											);
 										}}
 									>
-										{editSet.toDelete
-											? "Undo Delete"
-											: "Delete Set"}
+										{editSet.toDelete ? "Undo Delete" : "Delete Set"}
 									</Button>
 								</div>
 								<div className="flex flex-wrap gap-2 mt-2">
@@ -574,7 +527,7 @@ const SavedSetsCard: React.FC<{
 																	...item,
 																	autoDownload:
 																		!item.autoDownload,
-															  }
+																}
 															: item
 													)
 												);
@@ -589,11 +542,7 @@ const SavedSetsCard: React.FC<{
 							</div>
 						))}
 					</div>
-					{updateError && (
-						<Small className="text-destructive mt-2">
-							{updateError}
-						</Small>
-					)}
+					{updateError && <Small className="text-destructive mt-2">{updateError}</Small>}
 					<DialogFooter>
 						<Button
 							variant="outline"
@@ -632,9 +581,8 @@ const SavedSetsCard: React.FC<{
 					<DialogHeader>
 						<DialogTitle>Confirm Delete</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete all sets for "
-							{savedSet.MediaItem.Title}"? This action cannot be
-							undone.
+							Are you sure you want to delete all sets for "{savedSet.MediaItem.Title}
+							"? This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

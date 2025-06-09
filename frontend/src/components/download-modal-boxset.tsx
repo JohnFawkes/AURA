@@ -1,3 +1,18 @@
+import { formatDownloadSize } from "@/helper/formatDownloadSize";
+import { postAddItemToDB } from "@/services/api.db";
+import {
+	fetchMediaServerItemContent,
+	patchDownloadPosterFileAndUpdateMediaServer,
+} from "@/services/api.mediaserver";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Download, LoaderIcon, TriangleAlert, X } from "lucide-react";
+import { z } from "zod";
+
+import { useEffect, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+
+import Link from "next/link";
+
 import {
 	Dialog,
 	DialogClose,
@@ -10,14 +25,11 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Check, Download, LoaderIcon, TriangleAlert, X } from "lucide-react";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
-import { z } from "zod";
-import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { formatDownloadSize } from "@/helper/formatDownloadSize";
+
+import { log } from "@/lib/logger";
+
+import { DBSavedItem } from "@/types/databaseSavedSet";
+import { MediaItem } from "@/types/mediaItem";
 import {
 	MediuxUserBoxset,
 	MediuxUserCollectionMovie,
@@ -25,32 +37,14 @@ import {
 	MediuxUserMovieSet,
 	MediuxUserShowSet,
 } from "@/types/mediuxUserAllSets";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "./ui/form";
+import { PosterFile } from "@/types/posterSets";
+
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Progress } from "./ui/progress";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "./ui/accordion";
-import { log } from "@/lib/logger";
-import { DBSavedItem } from "@/types/databaseSavedSet";
-import {
-	fetchMediaServerItemContent,
-	patchDownloadPosterFileAndUpdateMediaServer,
-} from "@/services/api.mediaserver";
-import { postAddItemToDB } from "@/services/api.db";
-import { PosterFile } from "@/types/posterSets";
-import { MediaItem } from "@/types/mediaItem";
 
 const formSchema = z
 	.object({
@@ -85,16 +79,12 @@ type ShowProgressSteps = {
 
 function calculateShowSteps(
 	showSets: MediuxUserShowSet[],
-	selectedShows: Array<
-		[string, { types: string[]; futureUpdatesOnly: boolean }]
-	>
+	selectedShows: Array<[string, { types: string[]; futureUpdatesOnly: boolean }]>
 ): ShowProgressSteps {
 	return showSets.reduce<ShowProgressSteps>(
 		(acc, show) => {
 			// Find the corresponding selected item data
-			const selectedItem = selectedShows.find(
-				([key]) => key === show.MediaItem.RatingKey
-			);
+			const selectedItem = selectedShows.find(([key]) => key === show.MediaItem.RatingKey);
 
 			// If item not found or futureUpdatesOnly is true, don't count its files
 			if (!selectedItem || selectedItem[1].futureUpdatesOnly) {
@@ -108,34 +98,23 @@ function calculateShowSteps(
 
 			return {
 				poster:
-					acc.poster +
-					(selectedTypes.includes("poster")
-						? show.show_poster.length
-						: 0),
+					acc.poster + (selectedTypes.includes("poster") ? show.show_poster.length : 0),
 				backdrop:
 					acc.backdrop +
-					(selectedTypes.includes("backdrop")
-						? show.show_backdrop.length
-						: 0),
+					(selectedTypes.includes("backdrop") ? show.show_backdrop.length : 0),
 				seasonPoster:
 					acc.seasonPoster +
 					(selectedTypes.includes("seasonPoster")
-						? show.season_posters.filter(
-								(p) => p.season.season_number !== 0
-						  ).length
+						? show.season_posters.filter((p) => p.season.season_number !== 0).length
 						: 0),
 				specialSeasonPoster:
 					acc.specialSeasonPoster +
 					(selectedTypes.includes("specialSeasonPoster")
-						? show.season_posters.filter(
-								(p) => p.season.season_number === 0
-						  ).length
+						? show.season_posters.filter((p) => p.season.season_number === 0).length
 						: 0),
 				titleCard:
 					acc.titleCard +
-					(selectedTypes.includes("titlecard")
-						? show.titlecards.length
-						: 0),
+					(selectedTypes.includes("titlecard") ? show.titlecards.length : 0),
 				addToDB: acc.addToDB + 1, // Always count DB entries
 			};
 		},
@@ -157,9 +136,7 @@ type MovieProgressSteps = {
 };
 
 function calculateMovieSteps(
-	selectedItems: Array<
-		[string, { types: string[]; source?: "movie" | "collection" }]
-	>
+	selectedItems: Array<[string, { types: string[]; source?: "movie" | "collection" }]>
 ): MovieProgressSteps {
 	return selectedItems.reduce<MovieProgressSteps>(
 		(acc, [, itemData]) => {
@@ -170,10 +147,7 @@ function calculateMovieSteps(
 
 			// Count poster and backdrop based on selected types
 			// Add to DB count if poster or backdrop is selected
-			if (
-				itemData.types.includes("poster") ||
-				itemData.types.includes("backdrop")
-			) {
+			if (itemData.types.includes("poster") || itemData.types.includes("backdrop")) {
 				if (itemData.types.includes("poster")) {
 					acc.poster += 1;
 				}
@@ -202,9 +176,7 @@ const DownloadModalBoxset: React.FC<{
 	const [cancelButtonText, setCancelButtonText] = useState("Cancel");
 	const [downloadButtonText, setDownloadButtonText] = useState("Download");
 	const [totalSelectedSize, setTotalSelectedSize] = useState("");
-	const [totalSelectedSizeLabel, setTotalSelectedLabel] = useState(
-		"Total Download Size: "
-	);
+	const [totalSelectedSizeLabel, setTotalSelectedLabel] = useState("Total Download Size: ");
 
 	// Update the progress text state type
 	type ItemProgressText = {
@@ -235,29 +207,32 @@ const DownloadModalBoxset: React.FC<{
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			selectedTypesByItem: (() => {
-				const showSetTypes = boxset.show_sets.reduce((acc, showSet) => {
-					const types: string[] = [];
-					if (showSet.show_poster.length > 0) types.push("poster");
-					if (showSet.show_backdrop.length > 0)
-						types.push("backdrop");
-					if (showSet.season_posters.length > 0)
-						types.push("seasonPoster");
-					if (
-						showSet.season_posters.some(
-							(seasonPoster) =>
-								seasonPoster.season.season_number === 0
+				const showSetTypes = boxset.show_sets.reduce(
+					(acc, showSet) => {
+						const types: string[] = [];
+						if (showSet.show_poster.length > 0) types.push("poster");
+						if (showSet.show_backdrop.length > 0) types.push("backdrop");
+						if (showSet.season_posters.length > 0) types.push("seasonPoster");
+						if (
+							showSet.season_posters.some(
+								(seasonPoster) => seasonPoster.season.season_number === 0
+							)
 						)
-					)
-						types.push("specialSeasonPoster");
-					if (showSet.titlecards.length > 0) types.push("titlecard");
+							types.push("specialSeasonPoster");
+						if (showSet.titlecards.length > 0) types.push("titlecard");
 
-					acc[showSet.MediaItem.RatingKey] = {
-						types,
-						autodownload: false,
-						futureUpdatesOnly: false,
-					};
-					return acc;
-				}, {} as Record<string, { types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }>);
+						acc[showSet.MediaItem.RatingKey] = {
+							types,
+							autodownload: false,
+							futureUpdatesOnly: false,
+						};
+						return acc;
+					},
+					{} as Record<
+						string,
+						{ types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }
+					>
+				);
 
 				// Create a Set to track movies that exist in both sets
 				const moviesInBothSets = new Set<string>();
@@ -265,13 +240,10 @@ const DownloadModalBoxset: React.FC<{
 				// Find movies that exist in both sets
 				boxset.movie_sets.forEach((movieSet) => {
 					const ratingKey = movieSet.MediaItem.RatingKey;
-					const inCollection = boxset.collection_sets.some(
-						(collection) =>
-							collection.movie_posters.some(
-								(poster) =>
-									poster.movie.MediaItem.RatingKey ===
-									ratingKey
-							)
+					const inCollection = boxset.collection_sets.some((collection) =>
+						collection.movie_posters.some(
+							(poster) => poster.movie.MediaItem.RatingKey === ratingKey
+						)
 					);
 					if (inCollection) {
 						moviesInBothSets.add(ratingKey);
@@ -284,10 +256,8 @@ const DownloadModalBoxset: React.FC<{
 						const types: string[] = [];
 						const ratingKey = movieSet.MediaItem.RatingKey;
 
-						if (movieSet.movie_poster.length > 0)
-							types.push("poster");
-						if (movieSet.movie_backdrop.length > 0)
-							types.push("backdrop");
+						if (movieSet.movie_poster.length > 0) types.push("poster");
+						if (movieSet.movie_backdrop.length > 0) types.push("backdrop");
 
 						// If this movie exists in both sets, include its types
 						if (moviesInBothSets.has(ratingKey)) {
@@ -376,29 +346,32 @@ const DownloadModalBoxset: React.FC<{
 		form.reset({
 			selectedTypesByItem: (() => {
 				// Initialize show sets
-				const showSetTypes = boxset.show_sets.reduce((acc, showSet) => {
-					const types: string[] = [];
-					if (showSet.show_poster.length > 0) types.push("poster");
-					if (showSet.show_backdrop.length > 0)
-						types.push("backdrop");
-					if (showSet.season_posters.length > 0)
-						types.push("seasonPoster");
-					if (
-						showSet.season_posters.some(
-							(seasonPoster) =>
-								seasonPoster.season.season_number === 0
+				const showSetTypes = boxset.show_sets.reduce(
+					(acc, showSet) => {
+						const types: string[] = [];
+						if (showSet.show_poster.length > 0) types.push("poster");
+						if (showSet.show_backdrop.length > 0) types.push("backdrop");
+						if (showSet.season_posters.length > 0) types.push("seasonPoster");
+						if (
+							showSet.season_posters.some(
+								(seasonPoster) => seasonPoster.season.season_number === 0
+							)
 						)
-					)
-						types.push("specialSeasonPoster");
-					if (showSet.titlecards.length > 0) types.push("titlecard");
+							types.push("specialSeasonPoster");
+						if (showSet.titlecards.length > 0) types.push("titlecard");
 
-					acc[showSet.MediaItem.RatingKey] = {
-						types,
-						autodownload: false,
-						futureUpdatesOnly: false,
-					};
-					return acc;
-				}, {} as Record<string, { types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }>);
+						acc[showSet.MediaItem.RatingKey] = {
+							types,
+							autodownload: false,
+							futureUpdatesOnly: false,
+						};
+						return acc;
+					},
+					{} as Record<
+						string,
+						{ types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }
+					>
+				);
 
 				// Create a Set to track movies that exist in both sets
 				const moviesInBothSets = new Set<string>();
@@ -406,13 +379,10 @@ const DownloadModalBoxset: React.FC<{
 				// Find movies that exist in both sets
 				boxset.movie_sets.forEach((movieSet) => {
 					const ratingKey = movieSet.MediaItem.RatingKey;
-					const inCollection = boxset.collection_sets.some(
-						(collection) =>
-							collection.movie_posters.some(
-								(poster) =>
-									poster.movie.MediaItem.RatingKey ===
-									ratingKey
-							)
+					const inCollection = boxset.collection_sets.some((collection) =>
+						collection.movie_posters.some(
+							(poster) => poster.movie.MediaItem.RatingKey === ratingKey
+						)
 					);
 					if (inCollection) {
 						moviesInBothSets.add(ratingKey);
@@ -425,10 +395,8 @@ const DownloadModalBoxset: React.FC<{
 						const types: string[] = [];
 						const ratingKey = movieSet.MediaItem.RatingKey;
 
-						if (movieSet.movie_poster.length > 0)
-							types.push("poster");
-						if (movieSet.movie_backdrop.length > 0)
-							types.push("backdrop");
+						if (movieSet.movie_poster.length > 0) types.push("poster");
+						if (movieSet.movie_backdrop.length > 0) types.push("backdrop");
 
 						// If this movie exists in both sets, initialize with its types
 						acc[ratingKey] = {
@@ -528,9 +496,7 @@ const DownloadModalBoxset: React.FC<{
 
 				const selectedTypes = itemData.types;
 
-				const movie = boxset.movie_sets.find(
-					(m) => m.MediaItem.RatingKey === itemKey
-				);
+				const movie = boxset.movie_sets.find((m) => m.MediaItem.RatingKey === itemKey);
 				if (movie) {
 					const moviePosterSize = movie.movie_poster.reduce(
 						(total, poster) => total + Number(poster.filesize),
@@ -549,9 +515,7 @@ const DownloadModalBoxset: React.FC<{
 					return acc;
 				}
 
-				const show = boxset.show_sets.find(
-					(s) => s.MediaItem.RatingKey === itemKey
-				);
+				const show = boxset.show_sets.find((s) => s.MediaItem.RatingKey === itemKey);
 				if (show) {
 					const showPosterSize = show.show_poster.reduce(
 						(total, poster) => total + Number(poster.filesize),
@@ -562,53 +526,37 @@ const DownloadModalBoxset: React.FC<{
 						0
 					);
 					const seasonPosterSize = show.season_posters.reduce(
-						(total, seasonPoster) =>
-							total + Number(seasonPoster.filesize),
+						(total, seasonPoster) => total + Number(seasonPoster.filesize),
 						0
 					);
 					const specialSeasonPosterSize = show.season_posters
-						.filter(
-							(seasonPoster) =>
-								seasonPoster.season.season_number === 0
-						)
-						.reduce(
-							(total, seasonPoster) =>
-								total + Number(seasonPoster.filesize),
-							0
-						);
+						.filter((seasonPoster) => seasonPoster.season.season_number === 0)
+						.reduce((total, seasonPoster) => total + Number(seasonPoster.filesize), 0);
 					const titleCardSize = show.titlecards.reduce(
-						(total, titleCard) =>
-							total + Number(titleCard.filesize),
+						(total, titleCard) => total + Number(titleCard.filesize),
 						0
 					);
 
 					if (selectedTypes.includes("poster")) acc += showPosterSize;
-					if (selectedTypes.includes("backdrop"))
-						acc += showBackdropSize;
-					if (selectedTypes.includes("seasonPoster"))
-						acc += seasonPosterSize;
+					if (selectedTypes.includes("backdrop")) acc += showBackdropSize;
+					if (selectedTypes.includes("seasonPoster")) acc += seasonPosterSize;
 					if (selectedTypes.includes("specialSeasonPoster"))
 						acc += specialSeasonPosterSize;
-					if (selectedTypes.includes("titlecard"))
-						acc += titleCardSize;
+					if (selectedTypes.includes("titlecard")) acc += titleCardSize;
 					return acc;
 				}
 
-				const movieFromCollection = boxset.collection_sets.some(
-					(collection) =>
-						collection.movie_posters.some(
-							(poster) =>
-								poster.movie.MediaItem.RatingKey === itemKey
-						)
+				const movieFromCollection = boxset.collection_sets.some((collection) =>
+					collection.movie_posters.some(
+						(poster) => poster.movie.MediaItem.RatingKey === itemKey
+					)
 				);
 
 				if (movieFromCollection) {
-					const collection = boxset.collection_sets.find(
-						(collection) =>
-							collection.movie_posters.some(
-								(poster) =>
-									poster.movie.MediaItem.RatingKey === itemKey
-							)
+					const collection = boxset.collection_sets.find((collection) =>
+						collection.movie_posters.some(
+							(poster) => poster.movie.MediaItem.RatingKey === itemKey
+						)
 					);
 
 					if (collection) {
@@ -677,10 +625,7 @@ const DownloadModalBoxset: React.FC<{
 		mediaItem: MediaItem
 	) => {
 		try {
-			const resp = await patchDownloadPosterFileAndUpdateMediaServer(
-				posterFile,
-				mediaItem
-			);
+			const resp = await patchDownloadPosterFileAndUpdateMediaServer(posterFile, mediaItem);
 			if (resp.status !== "success") {
 				throw new Error(`Failed to download ${fileName}`);
 			} else {
@@ -709,9 +654,7 @@ const DownloadModalBoxset: React.FC<{
 			if (libraryType === "show") {
 				// Get all selected show items
 				const selectedShows = selectedItems.filter(([itemKey]) =>
-					boxset.show_sets.some(
-						(show) => show.MediaItem.RatingKey === itemKey
-					)
+					boxset.show_sets.some((show) => show.MediaItem.RatingKey === itemKey)
 				);
 
 				// Calculate steps for all selected shows
@@ -721,8 +664,7 @@ const DownloadModalBoxset: React.FC<{
 						key,
 						{
 							types: itemData.types,
-							futureUpdatesOnly:
-								itemData.futureUpdatesOnly ?? false,
+							futureUpdatesOnly: itemData.futureUpdatesOnly ?? false,
 						},
 					])
 				);
@@ -730,8 +672,7 @@ const DownloadModalBoxset: React.FC<{
 				const totalFileCount = calculateShowTotalSteps(totalSteps);
 
 				// Reserve 1% for start and 1% for completion
-				const progressIncrement =
-					totalFileCount > 0 ? 98 / totalFileCount : 0;
+				const progressIncrement = totalFileCount > 0 ? 98 / totalFileCount : 0;
 
 				setProgressValues((prev) => ({
 					...prev,
@@ -740,9 +681,7 @@ const DownloadModalBoxset: React.FC<{
 
 				// Only process show sets for show libraries
 				for (const [itemKey, itemData] of selectedItems) {
-					const show = boxset.show_sets.find(
-						(s) => s.MediaItem.RatingKey === itemKey
-					);
+					const show = boxset.show_sets.find((s) => s.MediaItem.RatingKey === itemKey);
 
 					if (!show) {
 						continue; // Skip if no show found
@@ -750,19 +689,17 @@ const DownloadModalBoxset: React.FC<{
 					if (
 						!itemData.types ||
 						itemData.types.length === 0 ||
-						(itemData.futureUpdatesOnly &&
-							!show.MediaItem.RatingKey)
+						(itemData.futureUpdatesOnly && !show.MediaItem.RatingKey)
 					) {
 						continue; // Skip if no types selected or future updates only
 					}
 
 					if (show && itemData.types) {
 						// Get the latest Media Item details from the server
-						const latestMediaItemResp =
-							await fetchMediaServerItemContent(
-								show.MediaItem.RatingKey,
-								show.MediaItem.LibraryTitle
-							);
+						const latestMediaItemResp = await fetchMediaServerItemContent(
+							show.MediaItem.RatingKey,
+							show.MediaItem.LibraryTitle
+						);
 						if (!latestMediaItemResp) {
 							throw new Error("No response from Plex API");
 						}
@@ -792,55 +729,35 @@ const DownloadModalBoxset: React.FC<{
 									Poster: {
 										ID: show.show_poster[0]?.id,
 										Type: "poster",
-										Modified:
-											show.show_poster[0]?.modified_on,
-										FileSize: Number(
-											show.show_poster[0]?.filesize
-										),
+										Modified: show.show_poster[0]?.modified_on,
+										FileSize: Number(show.show_poster[0]?.filesize),
 									},
 									Backdrop: {
 										ID: show.show_backdrop[0]?.id,
 										Type: "backdrop",
-										Modified:
-											show.show_backdrop[0]?.modified_on,
-										FileSize: Number(
-											show.show_backdrop[0]?.filesize
-										),
+										Modified: show.show_backdrop[0]?.modified_on,
+										FileSize: Number(show.show_backdrop[0]?.filesize),
 									},
-									SeasonPosters: show.season_posters.map(
-										(seasonPoster) => ({
-											ID: seasonPoster.id,
-											Type: "seasonPoster",
-											Modified: seasonPoster.modified_on,
-											FileSize: Number(
-												seasonPoster.filesize
-											),
-											Season: {
-												Number: seasonPoster.season
-													.season_number,
-											},
-										})
-									),
-									TitleCards: show.titlecards.map(
-										(titleCard) => ({
-											ID: titleCard.id,
-											Type: "titlecard",
-											Modified: titleCard.modified_on,
-											FileSize: Number(
-												titleCard.filesize
-											),
-											Episode: {
-												Title: titleCard.episode
-													.episode_title,
-												EpisodeNumber:
-													titleCard.episode
-														.episode_number,
-												SeasonNumber:
-													titleCard.episode.season_id
-														.season_number,
-											},
-										})
-									),
+									SeasonPosters: show.season_posters.map((seasonPoster) => ({
+										ID: seasonPoster.id,
+										Type: "seasonPoster",
+										Modified: seasonPoster.modified_on,
+										FileSize: Number(seasonPoster.filesize),
+										Season: {
+											Number: seasonPoster.season.season_number,
+										},
+									})),
+									TitleCards: show.titlecards.map((titleCard) => ({
+										ID: titleCard.id,
+										Type: "titlecard",
+										Modified: titleCard.modified_on,
+										FileSize: Number(titleCard.filesize),
+										Episode: {
+											Title: titleCard.episode.episode_title,
+											EpisodeNumber: titleCard.episode.episode_number,
+											SeasonNumber: titleCard.episode.season_id.season_number,
+										},
+									})),
 									Status: "",
 								},
 								LastDownloaded: new Date().toISOString(),
@@ -852,9 +769,7 @@ const DownloadModalBoxset: React.FC<{
 								progressText: {
 									...prev.progressText,
 									[show.MediaItem.Title]: {
-										...prev.progressText[
-											show.MediaItem.Title
-										],
+										...prev.progressText[show.MediaItem.Title],
 										addToDB: `Adding ${show.MediaItem.Title} to database`,
 									},
 								},
@@ -871,14 +786,11 @@ const DownloadModalBoxset: React.FC<{
 							} else {
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 									progressText: {
 										...prev.progressText,
 										[show.MediaItem.Title]: {
-											...prev.progressText[
-												show.MediaItem.Title
-											],
+											...prev.progressText[show.MediaItem.Title],
 											addToDB: `Added ${show.MediaItem.Title} to database`,
 										},
 									},
@@ -908,9 +820,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[show.MediaItem.Title]: {
-												...prev.progressText[
-													show.MediaItem.Title
-												],
+												...prev.progressText[show.MediaItem.Title],
 												poster: `Downloading Poster`,
 											},
 										},
@@ -919,27 +829,21 @@ const DownloadModalBoxset: React.FC<{
 									const posterFile: PosterFile = {
 										ID: show.show_poster[0]?.id,
 										Type: "poster",
-										Modified:
-											show.show_poster[0]?.modified_on,
-										FileSize: Number(
-											show.show_poster[0]?.filesize
-										),
+										Modified: show.show_poster[0]?.modified_on,
+										FileSize: Number(show.show_poster[0]?.filesize),
 									};
-									const posterResp =
-										await downloadPosterFileAndUpdateMediaServer(
-											posterFile,
-											"Poster",
-											latestMediaItem
-										);
+									const posterResp = await downloadPosterFileAndUpdateMediaServer(
+										posterFile,
+										"Poster",
+										latestMediaItem
+									);
 									if (posterResp === null) {
 										setProgressValues((prev) => ({
 											...prev,
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													poster: `Failed to download Poster`,
 												},
 											},
@@ -950,9 +854,7 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													poster: `Finished Poster Download`,
 												},
 											},
@@ -960,9 +862,7 @@ const DownloadModalBoxset: React.FC<{
 									}
 									setProgressValues((prev) => ({
 										...prev,
-										progressValue:
-											prev.progressValue +
-											progressIncrement,
+										progressValue: prev.progressValue + progressIncrement,
 									}));
 									break;
 
@@ -972,9 +872,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[show.MediaItem.Title]: {
-												...prev.progressText[
-													show.MediaItem.Title
-												],
+												...prev.progressText[show.MediaItem.Title],
 												backdrop: `Downloading Backdrop`,
 											},
 										},
@@ -982,11 +880,8 @@ const DownloadModalBoxset: React.FC<{
 									const backdropFile: PosterFile = {
 										ID: show.show_backdrop[0]?.id,
 										Type: "backdrop",
-										Modified:
-											show.show_backdrop[0]?.modified_on,
-										FileSize: Number(
-											show.show_backdrop[0]?.filesize
-										),
+										Modified: show.show_backdrop[0]?.modified_on,
+										FileSize: Number(show.show_backdrop[0]?.filesize),
 									};
 									const backdropResp =
 										await downloadPosterFileAndUpdateMediaServer(
@@ -1000,9 +895,7 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													backdrop: `Failed to download Backdrop`,
 												},
 											},
@@ -1013,9 +906,7 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													backdrop: `Finished Backdrop Download`,
 												},
 											},
@@ -1023,9 +914,7 @@ const DownloadModalBoxset: React.FC<{
 									}
 									setProgressValues((prev) => ({
 										...prev,
-										progressValue:
-											prev.progressValue +
-											progressIncrement,
+										progressValue: prev.progressValue + progressIncrement,
 									}));
 									break;
 								case "seasonPoster":
@@ -1042,12 +931,9 @@ const DownloadModalBoxset: React.FC<{
 											// Skip special season posters
 											continue;
 										}
-										const seasonExists =
-											latestMediaItem.Series?.Seasons?.some(
-												(s) =>
-													s.SeasonNumber ===
-													season.season.season_number
-											);
+										const seasonExists = latestMediaItem.Series?.Seasons?.some(
+											(s) => s.SeasonNumber === season.season.season_number
+										);
 										if (!seasonExists) {
 											continue;
 										}
@@ -1056,9 +942,7 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													seasonPoster: `Downloading Season Poster ${season.season.season_number
 														?.toString()
 														.padStart(2, "0")}`,
@@ -1072,8 +956,7 @@ const DownloadModalBoxset: React.FC<{
 											Modified: season.modified_on,
 											FileSize: Number(season.filesize),
 											Season: {
-												Number: season.season
-													.season_number,
+												Number: season.season.season_number,
 											},
 										};
 										const seasonPosterResp =
@@ -1088,9 +971,7 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														seasonPoster: `Failed to download Season Poster ${season.season.season_number
 															?.toString()
 															.padStart(2, "0")}`,
@@ -1103,39 +984,30 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														seasonPoster: `Finished Season Poster ${season.season.season_number
 															?.toString()
-															.padStart(
-																2,
-																"0"
-															)} Download`,
+															.padStart(2, "0")} Download`,
 													},
 												},
 											}));
 										}
 										setProgressValues((prev) => ({
 											...prev,
-											progressValue:
-												prev.progressValue +
-												progressIncrement,
+											progressValue: prev.progressValue + progressIncrement,
 										}));
 									}
 									break;
 
 								case "specialSeasonPoster":
-									for (const season of show.season_posters ||
-										[]) {
+									for (const season of show.season_posters || []) {
 										if (season.season.season_number !== 0) {
 											// Skip regular season posters
 											continue;
 										}
-										const seasonExists =
-											latestMediaItem.Series?.Seasons?.some(
-												(s) => s.SeasonNumber === 0
-											);
+										const seasonExists = latestMediaItem.Series?.Seasons?.some(
+											(s) => s.SeasonNumber === 0
+										);
 										if (!seasonExists) {
 											continue;
 										}
@@ -1144,26 +1016,21 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													specialSeasonPoster: `Downloading Special Season Poster`,
 												},
 											},
 										}));
 
-										const specialSeasonPosterFile: PosterFile =
-											{
-												ID: season.id,
-												Type: "specialSeasonPoster",
-												Modified: season.modified_on,
-												FileSize: Number(
-													season.filesize
-												),
-												Season: {
-													Number: 0, // Special season
-												},
-											};
+										const specialSeasonPosterFile: PosterFile = {
+											ID: season.id,
+											Type: "specialSeasonPoster",
+											Modified: season.modified_on,
+											FileSize: Number(season.filesize),
+											Season: {
+												Number: 0, // Special season
+											},
+										};
 										const specialSeasonPosterResp =
 											await downloadPosterFileAndUpdateMediaServer(
 												specialSeasonPosterFile,
@@ -1176,9 +1043,7 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														specialSeasonPoster: `Failed to download Special Season Poster`,
 													},
 												},
@@ -1189,9 +1054,7 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														specialSeasonPoster: `Finished Special Season Poster Download`,
 													},
 												},
@@ -1199,46 +1062,34 @@ const DownloadModalBoxset: React.FC<{
 										}
 										setProgressValues((prev) => ({
 											...prev,
-											progressValue:
-												prev.progressValue +
-												progressIncrement,
+											progressValue: prev.progressValue + progressIncrement,
 										}));
 									}
 									break;
 								case "titlecard":
 									// Sort titlecards on season number and episode number
-									const sortedTitleCards = [
-										...(show.titlecards || []),
-									].sort((a, b) => {
-										const aSeason =
-											a.episode.season_id.season_number ||
-											0;
-										const bSeason =
-											b.episode.season_id.season_number ||
-											0;
-										const aEpisode =
-											a.episode?.episode_number || 0;
-										const bEpisode =
-											b.episode?.episode_number || 0;
-										if (aSeason !== bSeason) {
-											return aSeason - bSeason;
+									const sortedTitleCards = [...(show.titlecards || [])].sort(
+										(a, b) => {
+											const aSeason = a.episode.season_id.season_number || 0;
+											const bSeason = b.episode.season_id.season_number || 0;
+											const aEpisode = a.episode?.episode_number || 0;
+											const bEpisode = b.episode?.episode_number || 0;
+											if (aSeason !== bSeason) {
+												return aSeason - bSeason;
+											}
+											return aEpisode - bEpisode;
 										}
-										return aEpisode - bEpisode;
-									});
+									);
 									for (const titleCard of sortedTitleCards) {
-										const episode =
-											latestMediaItem.Series?.Seasons.flatMap(
-												(s) => s.Episodes
-											).find(
-												(e) =>
-													e.EpisodeNumber ===
-														titleCard.episode
-															?.episode_number &&
-													e.SeasonNumber ===
-														titleCard.episode
-															.season_id
-															.season_number
-											);
+										const episode = latestMediaItem.Series?.Seasons.flatMap(
+											(s) => s.Episodes
+										).find(
+											(e) =>
+												e.EpisodeNumber ===
+													titleCard.episode?.episode_number &&
+												e.SeasonNumber ===
+													titleCard.episode.season_id.season_number
+										);
 										if (!episode) {
 											// Skip titlecards for episodes that don't exist
 											continue;
@@ -1248,9 +1099,7 @@ const DownloadModalBoxset: React.FC<{
 											progressText: {
 												...prev.progressText,
 												[show.MediaItem.Title]: {
-													...prev.progressText[
-														show.MediaItem.Title
-													],
+													...prev.progressText[show.MediaItem.Title],
 													titlecard: `Downloading Title Card for S${titleCard.episode.season_id.season_number
 														?.toString()
 														.padStart(
@@ -1266,18 +1115,12 @@ const DownloadModalBoxset: React.FC<{
 											ID: titleCard.id,
 											Type: "titlecard",
 											Modified: titleCard.modified_on,
-											FileSize: Number(
-												titleCard.filesize
-											),
+											FileSize: Number(titleCard.filesize),
 											Episode: {
-												Title: titleCard.episode
-													.episode_title,
-												EpisodeNumber:
-													titleCard.episode
-														?.episode_number,
+												Title: titleCard.episode.episode_title,
+												EpisodeNumber: titleCard.episode?.episode_number,
 												SeasonNumber:
-													titleCard.episode.season_id
-														.season_number,
+													titleCard.episode.season_id.season_number,
 											},
 										};
 
@@ -1300,9 +1143,7 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														titlecard: `Failed to download Title Card for S${titleCard.episode.season_id.season_number
 															?.toString()
 															.padStart(
@@ -1320,9 +1161,7 @@ const DownloadModalBoxset: React.FC<{
 												progressText: {
 													...prev.progressText,
 													[show.MediaItem.Title]: {
-														...prev.progressText[
-															show.MediaItem.Title
-														],
+														...prev.progressText[show.MediaItem.Title],
 														titlecard: `Finished Title Card for S${titleCard.episode.season_id.season_number
 															?.toString()
 															.padStart(
@@ -1330,19 +1169,14 @@ const DownloadModalBoxset: React.FC<{
 																"0"
 															)}E${titleCard.episode?.episode_number
 															?.toString()
-															.padStart(
-																2,
-																"0"
-															)} Download`,
+															.padStart(2, "0")} Download`,
 													},
 												},
 											}));
 										}
 										setProgressValues((prev) => ({
 											...prev,
-											progressValue:
-												prev.progressValue +
-												progressIncrement,
+											progressValue: prev.progressValue + progressIncrement,
 										}));
 									}
 
@@ -1369,49 +1203,34 @@ const DownloadModalBoxset: React.FC<{
 									ID: show.show_poster[0]?.id,
 									Type: "poster",
 									Modified: show.show_poster[0]?.modified_on,
-									FileSize: Number(
-										show.show_poster[0]?.filesize
-									),
+									FileSize: Number(show.show_poster[0]?.filesize),
 								},
 								Backdrop: {
 									ID: show.show_backdrop[0]?.id,
 									Type: "backdrop",
-									Modified:
-										show.show_backdrop[0]?.modified_on,
-									FileSize: Number(
-										show.show_backdrop[0]?.filesize
-									),
+									Modified: show.show_backdrop[0]?.modified_on,
+									FileSize: Number(show.show_backdrop[0]?.filesize),
 								},
-								SeasonPosters: show.season_posters.map(
-									(seasonPoster) => ({
-										ID: seasonPoster.id,
-										Type: "seasonPoster",
-										Modified: seasonPoster.modified_on,
-										FileSize: Number(seasonPoster.filesize),
-										Season: {
-											Number: seasonPoster.season
-												.season_number,
-										},
-									})
-								),
-								TitleCards: show.titlecards.map(
-									(titleCard) => ({
-										ID: titleCard.id,
-										Type: "titlecard",
-										Modified: titleCard.modified_on,
-										FileSize: Number(titleCard.filesize),
-										Episode: {
-											Title: titleCard.episode
-												.episode_title,
-											EpisodeNumber:
-												titleCard.episode
-													?.episode_number,
-											SeasonNumber:
-												titleCard.episode.season_id
-													.season_number,
-										},
-									})
-								),
+								SeasonPosters: show.season_posters.map((seasonPoster) => ({
+									ID: seasonPoster.id,
+									Type: "seasonPoster",
+									Modified: seasonPoster.modified_on,
+									FileSize: Number(seasonPoster.filesize),
+									Season: {
+										Number: seasonPoster.season.season_number,
+									},
+								})),
+								TitleCards: show.titlecards.map((titleCard) => ({
+									ID: titleCard.id,
+									Type: "titlecard",
+									Modified: titleCard.modified_on,
+									FileSize: Number(titleCard.filesize),
+									Episode: {
+										Title: titleCard.episode.episode_title,
+										EpisodeNumber: titleCard.episode?.episode_number,
+										SeasonNumber: titleCard.episode.season_id.season_number,
+									},
+								})),
 								Status: "",
 							},
 							LastDownloaded: new Date().toISOString(),
@@ -1440,14 +1259,11 @@ const DownloadModalBoxset: React.FC<{
 						} else {
 							setProgressValues((prev) => ({
 								...prev,
-								progressValue:
-									prev.progressValue + progressIncrement,
+								progressValue: prev.progressValue + progressIncrement,
 								progressText: {
 									...prev.progressText,
 									[show.MediaItem.Title]: {
-										...prev.progressText[
-											show.MediaItem.Title
-										],
+										...prev.progressText[show.MediaItem.Title],
 										addToDB: `Added ${show.MediaItem.Title} to database`,
 									},
 								},
@@ -1458,9 +1274,7 @@ const DownloadModalBoxset: React.FC<{
 						if (
 							(setProgressValues((prev) => ({
 								...prev,
-								progressColor: prev.warningMessages.length
-									? "yellow"
-									: "green",
+								progressColor: prev.warningMessages.length ? "yellow" : "green",
 							})),
 							!progressValues.warningMessages.length)
 						) {
@@ -1479,15 +1293,12 @@ const DownloadModalBoxset: React.FC<{
 				console.log("Selected items for movie library:", selectedItems);
 				// Get all selected movie items
 				const selectedMovies = selectedItems.filter(([itemKey]) =>
-					boxset.movie_sets.some(
-						(movie) => movie.MediaItem.RatingKey === itemKey
-					)
+					boxset.movie_sets.some((movie) => movie.MediaItem.RatingKey === itemKey)
 				);
 				const selectedCollections = selectedItems.filter(([itemKey]) =>
 					boxset.collection_sets.some((collection) =>
 						collection.movie_posters.some(
-							(poster) =>
-								poster.movie.MediaItem.RatingKey === itemKey
+							(poster) => poster.movie.MediaItem.RatingKey === itemKey
 						)
 					)
 				);
@@ -1499,8 +1310,7 @@ const DownloadModalBoxset: React.FC<{
 				const totalFileCount = calculateMovieTotalSteps(totalSteps);
 				console.log("Total file count:", totalFileCount);
 				// Reserve 1% for start and 1% for completion
-				const progressIncrement =
-					totalFileCount > 0 ? 98 / totalFileCount : 0;
+				const progressIncrement = totalFileCount > 0 ? 98 / totalFileCount : 0;
 				setProgressValues((prev) => ({
 					...prev,
 					progressValue: 1,
@@ -1513,9 +1323,7 @@ const DownloadModalBoxset: React.FC<{
 						continue;
 					}
 
-					const movie = boxset.movie_sets.find(
-						(m) => m.MediaItem.RatingKey === itemKey
-					);
+					const movie = boxset.movie_sets.find((m) => m.MediaItem.RatingKey === itemKey);
 
 					if (!movie || !itemData.types) {
 						continue;
@@ -1537,9 +1345,7 @@ const DownloadModalBoxset: React.FC<{
 									progressText: {
 										...prev.progressText,
 										[movie.MediaItem.Title]: {
-											...prev.progressText[
-												movie.MediaItem.Title
-											],
+											...prev.progressText[movie.MediaItem.Title],
 											poster: `Downloading Poster`,
 										},
 									},
@@ -1548,45 +1354,36 @@ const DownloadModalBoxset: React.FC<{
 								const posterFile: PosterFile = {
 									ID: movie.movie_poster[0]?.id,
 									Type: "poster",
-									Modified:
-										movie.movie_poster[0]?.modified_on,
-									FileSize: Number(
-										movie.movie_poster[0]?.filesize
-									),
+									Modified: movie.movie_poster[0]?.modified_on,
+									FileSize: Number(movie.movie_poster[0]?.filesize),
 									Movie: {
 										ID: movie.movie_id.id,
 										Title: movie.MediaItem.Title,
 										Status: movie.movie_id.status,
 										Tagline: movie.movie_id.tagline,
 										Slug: movie.movie_id.slug,
-										DateUpdated:
-											movie.movie_id.date_updated,
+										DateUpdated: movie.movie_id.date_updated,
 										TVbdID: movie.movie_id.tvdb_id,
 										ImdbID: movie.movie_id.imdb_id,
 										TraktID: movie.movie_id.trakt_id,
-										ReleaseDate:
-											movie.movie_id.release_date,
+										ReleaseDate: movie.movie_id.release_date,
 										RatingKey: movie.MediaItem.RatingKey,
-										LibrarySection:
-											movie.MediaItem.LibraryTitle,
+										LibrarySection: movie.MediaItem.LibraryTitle,
 									},
 								};
 
-								const posterResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										posterFile,
-										"Poster",
-										movie.MediaItem
-									);
+								const posterResp = await downloadPosterFileAndUpdateMediaServer(
+									posterFile,
+									"Poster",
+									movie.MediaItem
+								);
 								if (posterResp === null) {
 									setProgressValues((prev) => ({
 										...prev,
 										progressText: {
 											...prev.progressText,
 											[movie.MediaItem.Title]: {
-												...prev.progressText[
-													movie.MediaItem.Title
-												],
+												...prev.progressText[movie.MediaItem.Title],
 												poster: `Failed to download Poster`,
 											},
 										},
@@ -1597,9 +1394,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[movie.MediaItem.Title]: {
-												...prev.progressText[
-													movie.MediaItem.Title
-												],
+												...prev.progressText[movie.MediaItem.Title],
 												poster: `Finished Poster Download`,
 											},
 										},
@@ -1607,8 +1402,7 @@ const DownloadModalBoxset: React.FC<{
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 								break;
 							case "backdrop":
@@ -1617,9 +1411,7 @@ const DownloadModalBoxset: React.FC<{
 									progressText: {
 										...prev.progressText,
 										[movie.MediaItem.Title]: {
-											...prev.progressText[
-												movie.MediaItem.Title
-											],
+											...prev.progressText[movie.MediaItem.Title],
 											backdrop: `Downloading Backdrop`,
 										},
 									},
@@ -1627,44 +1419,35 @@ const DownloadModalBoxset: React.FC<{
 								const backdropFile: PosterFile = {
 									ID: movie.movie_backdrop[0]?.id,
 									Type: "backdrop",
-									Modified:
-										movie.movie_backdrop[0]?.modified_on,
-									FileSize: Number(
-										movie.movie_backdrop[0]?.filesize
-									),
+									Modified: movie.movie_backdrop[0]?.modified_on,
+									FileSize: Number(movie.movie_backdrop[0]?.filesize),
 									Movie: {
 										ID: movie.movie_id.id,
 										Title: movie.MediaItem.Title,
 										Status: movie.movie_id.status,
 										Tagline: movie.movie_id.tagline,
 										Slug: movie.movie_id.slug,
-										DateUpdated:
-											movie.movie_id.date_updated,
+										DateUpdated: movie.movie_id.date_updated,
 										TVbdID: movie.movie_id.tvdb_id,
 										ImdbID: movie.movie_id.imdb_id,
 										TraktID: movie.movie_id.trakt_id,
-										ReleaseDate:
-											movie.movie_id.release_date,
+										ReleaseDate: movie.movie_id.release_date,
 										RatingKey: movie.MediaItem.RatingKey,
-										LibrarySection:
-											movie.MediaItem.LibraryTitle,
+										LibrarySection: movie.MediaItem.LibraryTitle,
 									},
 								};
-								const backdropResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										backdropFile,
-										"Backdrop",
-										movie.MediaItem
-									);
+								const backdropResp = await downloadPosterFileAndUpdateMediaServer(
+									backdropFile,
+									"Backdrop",
+									movie.MediaItem
+								);
 								if (backdropResp === null) {
 									setProgressValues((prev) => ({
 										...prev,
 										progressText: {
 											...prev.progressText,
 											[movie.MediaItem.Title]: {
-												...prev.progressText[
-													movie.MediaItem.Title
-												],
+												...prev.progressText[movie.MediaItem.Title],
 												backdrop: `Failed to download Backdrop`,
 											},
 										},
@@ -1675,9 +1458,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[movie.MediaItem.Title]: {
-												...prev.progressText[
-													movie.MediaItem.Title
-												],
+												...prev.progressText[movie.MediaItem.Title],
 												backdrop: `Finished Backdrop Download`,
 											},
 										},
@@ -1685,8 +1466,7 @@ const DownloadModalBoxset: React.FC<{
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 								break;
 						}
@@ -1709,17 +1489,13 @@ const DownloadModalBoxset: React.FC<{
 								ID: movie.movie_poster[0]?.id,
 								Type: "poster",
 								Modified: movie.movie_poster[0]?.modified_on,
-								FileSize: Number(
-									movie.movie_poster[0]?.filesize
-								),
+								FileSize: Number(movie.movie_poster[0]?.filesize),
 							},
 							Backdrop: {
 								ID: movie.movie_backdrop[0]?.id,
 								Type: "backdrop",
 								Modified: movie.movie_backdrop[0]?.modified_on,
-								FileSize: Number(
-									movie.movie_backdrop[0]?.filesize
-								),
+								FileSize: Number(movie.movie_backdrop[0]?.filesize),
 							},
 							Status: "",
 						},
@@ -1747,8 +1523,7 @@ const DownloadModalBoxset: React.FC<{
 					} else {
 						setProgressValues((prev) => ({
 							...prev,
-							progressValue:
-								prev.progressValue + progressIncrement,
+							progressValue: prev.progressValue + progressIncrement,
 							progressText: {
 								...prev.progressText,
 								[movie.MediaItem.Title]: {
@@ -1763,9 +1538,7 @@ const DownloadModalBoxset: React.FC<{
 					if (
 						(setProgressValues((prev) => ({
 							...prev,
-							progressColor: prev.warningMessages.length
-								? "yellow"
-								: "green",
+							progressColor: prev.warningMessages.length ? "yellow" : "green",
 						})),
 						!progressValues.warningMessages.length)
 					) {
@@ -1784,9 +1557,7 @@ const DownloadModalBoxset: React.FC<{
 					}
 
 					const collection = boxset.collection_sets.find((c) =>
-						c.movie_posters.some(
-							(p) => p.movie.MediaItem.RatingKey === itemKey
-						)
+						c.movie_posters.some((p) => p.movie.MediaItem.RatingKey === itemKey)
 					);
 					if (!collection || !itemData.types) {
 						continue; // Skip if no collection found
@@ -1814,8 +1585,7 @@ const DownloadModalBoxset: React.FC<{
 
 					// Get the media item based on the poster or backdrop
 					const thisMediaItem =
-						collectionPoster?.movie.MediaItem ||
-						collectionBackdrop?.movie.MediaItem;
+						collectionPoster?.movie.MediaItem || collectionBackdrop?.movie.MediaItem;
 					if (!thisMediaItem) {
 						continue; // Skip if no media item found
 					}
@@ -1831,9 +1601,7 @@ const DownloadModalBoxset: React.FC<{
 									progressText: {
 										...prev.progressText,
 										[thisMediaItem.Title]: {
-											...prev.progressText[
-												thisMediaItem.Title
-											],
+											...prev.progressText[thisMediaItem.Title],
 											poster: `Downloading Poster`,
 										},
 									},
@@ -1845,42 +1613,32 @@ const DownloadModalBoxset: React.FC<{
 									FileSize: Number(collectionPoster.filesize),
 									Movie: {
 										ID: collectionPoster.movie.id,
-										Title: collectionPoster.movie.MediaItem
-											.Title,
+										Title: collectionPoster.movie.MediaItem.Title,
 										Status: collectionPoster.movie.status,
 										Tagline: collectionPoster.movie.tagline,
 										Slug: collectionPoster.movie.slug,
-										DateUpdated:
-											collectionPoster.movie.date_updated,
+										DateUpdated: collectionPoster.movie.date_updated,
 										TVbdID: collectionPoster.movie.tvdb_id,
 										ImdbID: collectionPoster.movie.imdb_id,
-										TraktID:
-											collectionPoster.movie.trakt_id,
-										ReleaseDate:
-											collectionPoster.movie.release_date,
-										RatingKey:
-											collectionPoster.movie.MediaItem
-												.RatingKey,
+										TraktID: collectionPoster.movie.trakt_id,
+										ReleaseDate: collectionPoster.movie.release_date,
+										RatingKey: collectionPoster.movie.MediaItem.RatingKey,
 										LibrarySection:
-											collectionPoster.movie.MediaItem
-												.LibraryTitle,
+											collectionPoster.movie.MediaItem.LibraryTitle,
 									},
 								};
-								const posterResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										posterFile,
-										"Poster",
-										collectionPoster.movie.MediaItem
-									);
+								const posterResp = await downloadPosterFileAndUpdateMediaServer(
+									posterFile,
+									"Poster",
+									collectionPoster.movie.MediaItem
+								);
 								if (posterResp === null) {
 									setProgressValues((prev) => ({
 										...prev,
 										progressText: {
 											...prev.progressText,
 											[thisMediaItem.Title]: {
-												...prev.progressText[
-													thisMediaItem.Title
-												],
+												...prev.progressText[thisMediaItem.Title],
 												poster: `Failed to download Poster`,
 											},
 										},
@@ -1891,9 +1649,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[thisMediaItem.Title]: {
-												...prev.progressText[
-													thisMediaItem.Title
-												],
+												...prev.progressText[thisMediaItem.Title],
 												poster: `Finished Poster Download`,
 											},
 										},
@@ -1901,8 +1657,7 @@ const DownloadModalBoxset: React.FC<{
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 								break;
 							case "backdrop":
@@ -1914,9 +1669,7 @@ const DownloadModalBoxset: React.FC<{
 									progressText: {
 										...prev.progressText,
 										[thisMediaItem.Title]: {
-											...prev.progressText[
-												thisMediaItem.Title
-											],
+											...prev.progressText[thisMediaItem.Title],
 											backdrop: `Downloading Backdrop`,
 										},
 									},
@@ -1925,52 +1678,35 @@ const DownloadModalBoxset: React.FC<{
 									ID: collection.movie_backdrops[0]?.id,
 									Type: "backdrop",
 									Modified: collectionBackdrop.modified_on,
-									FileSize: Number(
-										collectionBackdrop.filesize
-									),
+									FileSize: Number(collectionBackdrop.filesize),
 									Movie: {
 										ID: collectionBackdrop.movie.id,
-										Title: collectionBackdrop.movie
-											.MediaItem.Title,
+										Title: collectionBackdrop.movie.MediaItem.Title,
 										Status: collectionBackdrop.movie.status,
-										Tagline:
-											collectionBackdrop.movie.tagline,
+										Tagline: collectionBackdrop.movie.tagline,
 										Slug: collectionBackdrop.movie.slug,
-										DateUpdated:
-											collectionBackdrop.movie
-												.date_updated,
-										TVbdID: collectionBackdrop.movie
-											.tvdb_id,
-										ImdbID: collectionBackdrop.movie
-											.imdb_id,
-										TraktID:
-											collectionBackdrop.movie.trakt_id,
-										ReleaseDate:
-											collectionBackdrop.movie
-												.release_date,
-										RatingKey:
-											collectionBackdrop.movie.MediaItem
-												.RatingKey,
+										DateUpdated: collectionBackdrop.movie.date_updated,
+										TVbdID: collectionBackdrop.movie.tvdb_id,
+										ImdbID: collectionBackdrop.movie.imdb_id,
+										TraktID: collectionBackdrop.movie.trakt_id,
+										ReleaseDate: collectionBackdrop.movie.release_date,
+										RatingKey: collectionBackdrop.movie.MediaItem.RatingKey,
 										LibrarySection:
-											collectionBackdrop.movie.MediaItem
-												.LibraryTitle,
+											collectionBackdrop.movie.MediaItem.LibraryTitle,
 									},
 								};
-								const backdropResp =
-									await downloadPosterFileAndUpdateMediaServer(
-										backdropFile,
-										"Backdrop",
-										collectionBackdrop.movie.MediaItem
-									);
+								const backdropResp = await downloadPosterFileAndUpdateMediaServer(
+									backdropFile,
+									"Backdrop",
+									collectionBackdrop.movie.MediaItem
+								);
 								if (backdropResp === null) {
 									setProgressValues((prev) => ({
 										...prev,
 										progressText: {
 											...prev.progressText,
 											[thisMediaItem.Title]: {
-												...prev.progressText[
-													thisMediaItem.Title
-												],
+												...prev.progressText[thisMediaItem.Title],
 												backdrop: `Failed to download Backdrop`,
 											},
 										},
@@ -1981,9 +1717,7 @@ const DownloadModalBoxset: React.FC<{
 										progressText: {
 											...prev.progressText,
 											[thisMediaItem.Title]: {
-												...prev.progressText[
-													thisMediaItem.Title
-												],
+												...prev.progressText[thisMediaItem.Title],
 												backdrop: `Finished Backdrop Download`,
 											},
 										},
@@ -1991,8 +1725,7 @@ const DownloadModalBoxset: React.FC<{
 								}
 								setProgressValues((prev) => ({
 									...prev,
-									progressValue:
-										prev.progressValue + progressIncrement,
+									progressValue: prev.progressValue + progressIncrement,
 								}));
 								break;
 						}
@@ -2025,79 +1758,46 @@ const DownloadModalBoxset: React.FC<{
 										ID: collectionPoster.id,
 										Type: "poster",
 										Modified: collectionPoster.modified_on,
-										FileSize: Number(
-											collectionPoster.filesize
-										),
+										FileSize: Number(collectionPoster.filesize),
 										Movie: {
 											ID: collectionPoster.movie.id,
-											Title: collectionPoster.movie
-												.MediaItem.Title,
-											Status: collectionPoster.movie
-												.status,
-											Tagline:
-												collectionPoster.movie.tagline,
+											Title: collectionPoster.movie.MediaItem.Title,
+											Status: collectionPoster.movie.status,
+											Tagline: collectionPoster.movie.tagline,
 											Slug: collectionPoster.movie.slug,
-											DateUpdated:
-												collectionPoster.movie
-													.date_updated,
-											TVbdID: collectionPoster.movie
-												.tvdb_id,
-											ImdbID: collectionPoster.movie
-												.imdb_id,
-											TraktID:
-												collectionPoster.movie.trakt_id,
-											ReleaseDate:
-												collectionPoster.movie
-													.release_date,
-											RatingKey:
-												collectionPoster.movie.MediaItem
-													.RatingKey,
+											DateUpdated: collectionPoster.movie.date_updated,
+											TVbdID: collectionPoster.movie.tvdb_id,
+											ImdbID: collectionPoster.movie.imdb_id,
+											TraktID: collectionPoster.movie.trakt_id,
+											ReleaseDate: collectionPoster.movie.release_date,
+											RatingKey: collectionPoster.movie.MediaItem.RatingKey,
 											LibrarySection:
-												collectionPoster.movie.MediaItem
-													.LibraryTitle,
+												collectionPoster.movie.MediaItem.LibraryTitle,
 										},
-								  }
+									}
 								: undefined,
 							Backdrop: collectionBackdrop
 								? {
 										ID: collectionBackdrop.id,
 										Type: "backdrop",
-										Modified:
-											collectionBackdrop.modified_on,
-										FileSize: Number(
-											collectionBackdrop.filesize
-										),
+										Modified: collectionBackdrop.modified_on,
+										FileSize: Number(collectionBackdrop.filesize),
 										Movie: {
 											ID: collectionBackdrop.movie.id,
-											Title: collectionBackdrop.movie
-												.MediaItem.Title,
-											Status: collectionBackdrop.movie
-												.status,
-											Tagline:
-												collectionBackdrop.movie
-													.tagline,
+											Title: collectionBackdrop.movie.MediaItem.Title,
+											Status: collectionBackdrop.movie.status,
+											Tagline: collectionBackdrop.movie.tagline,
 											Slug: collectionBackdrop.movie.slug,
-											DateUpdated:
-												collectionBackdrop.movie
-													.date_updated,
-											TVbdID: collectionBackdrop.movie
-												.tvdb_id,
-											ImdbID: collectionBackdrop.movie
-												.imdb_id,
-											TraktID:
-												collectionBackdrop.movie
-													.trakt_id,
-											ReleaseDate:
-												collectionBackdrop.movie
-													.release_date,
-											RatingKey:
-												collectionBackdrop.movie
-													.MediaItem.RatingKey,
+											DateUpdated: collectionBackdrop.movie.date_updated,
+											TVbdID: collectionBackdrop.movie.tvdb_id,
+											ImdbID: collectionBackdrop.movie.imdb_id,
+											TraktID: collectionBackdrop.movie.trakt_id,
+											ReleaseDate: collectionBackdrop.movie.release_date,
+											RatingKey: collectionBackdrop.movie.MediaItem.RatingKey,
 											LibrarySection:
-												collectionBackdrop.movie
-													.MediaItem.LibraryTitle,
+												collectionBackdrop.movie.MediaItem.LibraryTitle,
 										},
-								  }
+									}
 								: undefined,
 							Status: "",
 						},
@@ -2125,8 +1825,7 @@ const DownloadModalBoxset: React.FC<{
 					} else {
 						setProgressValues((prev) => ({
 							...prev,
-							progressValue:
-								prev.progressValue + progressIncrement,
+							progressValue: prev.progressValue + progressIncrement,
 							progressText: {
 								...prev.progressText,
 								[thisMediaItem.Title]: {
@@ -2141,9 +1840,7 @@ const DownloadModalBoxset: React.FC<{
 					if (
 						(setProgressValues((prev) => ({
 							...prev,
-							progressColor: prev.warningMessages.length
-								? "yellow"
-								: "green",
+							progressColor: prev.warningMessages.length ? "yellow" : "green",
 						})),
 						!progressValues.warningMessages.length)
 					) {
@@ -2163,9 +1860,7 @@ const DownloadModalBoxset: React.FC<{
 			setProgressValues((prev) => ({
 				...prev,
 				progressColor: "red",
-				warningMessages: [
-					"An error occurred while downloading the files.",
-				],
+				warningMessages: ["An error occurred while downloading the files."],
 			}));
 		} finally {
 			setIsMounted(false);
@@ -2189,104 +1884,73 @@ const DownloadModalBoxset: React.FC<{
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
 									<Checkbox
-										checked={field.value?.types?.includes(
-											"poster"
-										)}
+										checked={field.value?.types?.includes("poster")}
 										onCheckedChange={(checked) => {
-											const currentTypes =
-												field.value?.types || [];
+											const currentTypes = field.value?.types || [];
 											field.onChange({
 												...field.value,
 												types: checked
-													? [
-															...currentTypes,
-															"poster",
-													  ]
+													? [...currentTypes, "poster"]
 													: currentTypes.filter(
-															(type) =>
-																type !==
-																"poster"
-													  ),
+															(type) => type !== "poster"
+														),
+											});
+										}}
+										className="h-5 w-5 sm:h-4 sm:w-4"
+									/>
+								</FormControl>
+								<FormLabel className="text-md font-normal">Poster</FormLabel>
+							</FormItem>
+						)}
+
+						{show.show_backdrop && show.show_backdrop.length > 0 && (
+							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+								<FormControl>
+									<Checkbox
+										checked={field.value?.types?.includes("backdrop")}
+										onCheckedChange={(checked) => {
+											const currentTypes = field.value?.types || [];
+											field.onChange({
+												...field.value,
+												types: checked
+													? [...currentTypes, "backdrop"]
+													: currentTypes.filter(
+															(type) => type !== "backdrop"
+														),
+											});
+										}}
+										className="h-5 w-5 sm:h-4 sm:w-4"
+									/>
+								</FormControl>
+								<FormLabel className="text-md font-normal">Backdrop</FormLabel>
+							</FormItem>
+						)}
+						{show.season_posters && show.season_posters.length > 0 && (
+							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+								<FormControl>
+									<Checkbox
+										checked={field.value?.types?.includes("seasonPoster")}
+										onCheckedChange={(checked) => {
+											const currentTypes = field.value?.types || [];
+											field.onChange({
+												...field.value,
+												types: checked
+													? [...currentTypes, "seasonPoster"]
+													: currentTypes.filter(
+															(type) => type !== "seasonPoster"
+														),
 											});
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
 									/>
 								</FormControl>
 								<FormLabel className="text-md font-normal">
-									Poster
+									Season Posters
 								</FormLabel>
 							</FormItem>
 						)}
-
-						{show.show_backdrop &&
-							show.show_backdrop.length > 0 && (
-								<FormItem className="flex flex-row items-start space-x-2 space-y-0">
-									<FormControl>
-										<Checkbox
-											checked={field.value?.types?.includes(
-												"backdrop"
-											)}
-											onCheckedChange={(checked) => {
-												const currentTypes =
-													field.value?.types || [];
-												field.onChange({
-													...field.value,
-													types: checked
-														? [
-																...currentTypes,
-																"backdrop",
-														  ]
-														: currentTypes.filter(
-																(type) =>
-																	type !==
-																	"backdrop"
-														  ),
-												});
-											}}
-											className="h-5 w-5 sm:h-4 sm:w-4"
-										/>
-									</FormControl>
-									<FormLabel className="text-md font-normal">
-										Backdrop
-									</FormLabel>
-								</FormItem>
-							)}
-						{show.season_posters &&
-							show.season_posters.length > 0 && (
-								<FormItem className="flex flex-row items-start space-x-2 space-y-0">
-									<FormControl>
-										<Checkbox
-											checked={field.value?.types?.includes(
-												"seasonPoster"
-											)}
-											onCheckedChange={(checked) => {
-												const currentTypes =
-													field.value?.types || [];
-												field.onChange({
-													...field.value,
-													types: checked
-														? [
-																...currentTypes,
-																"seasonPoster",
-														  ]
-														: currentTypes.filter(
-																(type) =>
-																	type !==
-																	"seasonPoster"
-														  ),
-												});
-											}}
-											className="h-5 w-5 sm:h-4 sm:w-4"
-										/>
-									</FormControl>
-									<FormLabel className="text-md font-normal">
-										Season Posters
-									</FormLabel>
-								</FormItem>
-							)}
 						{show.season_posters.some(
-							(seasonPoster) =>
-								seasonPoster.season.season_number === 0
+							(seasonPoster) => seasonPoster.season.season_number === 0
 						) && (
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
@@ -2295,20 +1959,14 @@ const DownloadModalBoxset: React.FC<{
 											"specialSeasonPoster"
 										)}
 										onCheckedChange={(checked) => {
-											const currentTypes =
-												field.value?.types || [];
+											const currentTypes = field.value?.types || [];
 											field.onChange({
 												...field.value,
 												types: checked
-													? [
-															...currentTypes,
-															"specialSeasonPoster",
-													  ]
+													? [...currentTypes, "specialSeasonPoster"]
 													: currentTypes.filter(
-															(type) =>
-																type !==
-																"specialSeasonPoster"
-													  ),
+															(type) => type !== "specialSeasonPoster"
+														),
 											});
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
@@ -2324,32 +1982,22 @@ const DownloadModalBoxset: React.FC<{
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
 									<Checkbox
-										checked={field.value?.types?.includes(
-											"titlecard"
-										)}
+										checked={field.value?.types?.includes("titlecard")}
 										onCheckedChange={(checked) => {
-											const currentTypes =
-												field.value?.types || [];
+											const currentTypes = field.value?.types || [];
 											field.onChange({
 												...field.value,
 												types: checked
-													? [
-															...currentTypes,
-															"titlecard",
-													  ]
+													? [...currentTypes, "titlecard"]
 													: currentTypes.filter(
-															(type) =>
-																type !==
-																"titlecard"
-													  ),
+															(type) => type !== "titlecard"
+														),
 											});
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
 									/>
 								</FormControl>
-								<FormLabel className="text-md font-normal">
-									Title Cards
-								</FormLabel>
+								<FormLabel className="text-md font-normal">Title Cards</FormLabel>
 							</FormItem>
 						)}
 
@@ -2375,14 +2023,10 @@ const DownloadModalBoxset: React.FC<{
 									}}
 									className="h-5 w-5 sm:h-4 sm:w-4"
 									// Disable auto-download if future updates only is checked
-									disabled={
-										field.value?.futureUpdatesOnly || false
-									}
+									disabled={field.value?.futureUpdatesOnly || false}
 								/>
 							</FormControl>
-							<FormLabel className="text-md font-normal">
-								Auto Download
-							</FormLabel>
+							<FormLabel className="text-md font-normal">Auto Download</FormLabel>
 							<div className="ml-auto">
 								<Popover modal={true}>
 									<PopoverTrigger className="cursor-pointer">
@@ -2391,11 +2035,9 @@ const DownloadModalBoxset: React.FC<{
 										</span>
 									</PopoverTrigger>
 									<PopoverContent className="w-60">
-										Auto Download will check periodically
-										for new updates to this set. This is
-										helpful if you want to download and
-										apply titlecard updates from future
-										updates to this set.
+										Auto Download will check periodically for new updates to
+										this set. This is helpful if you want to download and apply
+										titlecard updates from future updates to this set.
 									</PopoverContent>
 								</Popover>
 							</div>
@@ -2405,9 +2047,7 @@ const DownloadModalBoxset: React.FC<{
 						<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 							<FormControl>
 								<Checkbox
-									checked={
-										field.value?.futureUpdatesOnly || false
-									}
+									checked={field.value?.futureUpdatesOnly || false}
 									onCheckedChange={(checked) => {
 										field.onChange({
 											...field.value,
@@ -2435,11 +2075,9 @@ const DownloadModalBoxset: React.FC<{
 										</span>
 									</PopoverTrigger>
 									<PopoverContent className="w-60">
-										Future Updates Only will not download
-										anything right now. This is helpful if
-										you have already downloaded the set and
-										just want to future updates to be
-										applied.
+										Future Updates Only will not download anything right now.
+										This is helpful if you have already downloaded the set and
+										just want to future updates to be applied.
 									</PopoverContent>
 								</Popover>
 							</div>
@@ -2451,9 +2089,7 @@ const DownloadModalBoxset: React.FC<{
 	);
 
 	const isInBothSets = (ratingKey: string) => {
-		const inMovieSet = boxset.movie_sets.some(
-			(m) => m.MediaItem.RatingKey === ratingKey
-		);
+		const inMovieSet = boxset.movie_sets.some((m) => m.MediaItem.RatingKey === ratingKey);
 		const inCollectionSet = boxset.collection_sets.some((collection) =>
 			collection.movie_posters.some(
 				(poster) => poster.movie.MediaItem.RatingKey === ratingKey
@@ -2463,9 +2099,7 @@ const DownloadModalBoxset: React.FC<{
 	};
 
 	const isSelectedInMovieSet = (ratingKey: string) => {
-		const movieSet = boxset.movie_sets.find(
-			(m) => m.MediaItem.RatingKey === ratingKey
-		);
+		const movieSet = boxset.movie_sets.find((m) => m.MediaItem.RatingKey === ratingKey);
 		if (!movieSet) return false;
 
 		const item = watchSelectedTypesByItem[ratingKey];
@@ -2499,9 +2133,7 @@ const DownloadModalBoxset: React.FC<{
 									<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
 								</PopoverTrigger>
 								<PopoverContent className="w-60">
-									{isSelectedInCollectionSet(
-										movie.MediaItem.RatingKey
-									)
+									{isSelectedInCollectionSet(movie.MediaItem.RatingKey)
 										? "This movie is currently selected in the Collection Set"
 										: "This movie exists in both a Movie Set and a Collection Set"}
 								</PopoverContent>
@@ -2509,144 +2141,112 @@ const DownloadModalBoxset: React.FC<{
 						)}
 					</FormLabel>
 					<div className="space-y-2">
-						{movie.movie_poster &&
-							movie.movie_poster.length > 0 && (
-								<FormItem className="flex flex-row items-start space-x-2 space-y-0">
-									<FormControl>
-										<Checkbox
-											checked={
-												isSelectedInCollectionSet(
-													movie.MediaItem.RatingKey
-												)
-													? false
-													: field.value?.types?.includes(
-															"poster"
-													  )
+						{movie.movie_poster && movie.movie_poster.length > 0 && (
+							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+								<FormControl>
+									<Checkbox
+										checked={
+											isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+												? false
+												: field.value?.types?.includes("poster")
+										}
+										disabled={isSelectedInCollectionSet(
+											movie.MediaItem.RatingKey
+										)}
+										onCheckedChange={(checked) => {
+											const currentTypes = field.value?.types || [];
+											// If checking this item, uncheck the collection version
+											if (checked) {
+												const collectionKey = movie.MediaItem.RatingKey;
+												form.setValue(
+													`selectedTypesByItem.${collectionKey}`,
+													{
+														types: [],
+														autodownload: false,
+														futureUpdatesOnly: false,
+														source: "collection",
+													}
+												);
 											}
-											disabled={isSelectedInCollectionSet(
-												movie.MediaItem.RatingKey
-											)}
-											onCheckedChange={(checked) => {
-												const currentTypes =
-													field.value?.types || [];
-												// If checking this item, uncheck the collection version
-												if (checked) {
-													const collectionKey =
-														movie.MediaItem
-															.RatingKey;
-													form.setValue(
-														`selectedTypesByItem.${collectionKey}`,
-														{
-															types: [],
-															autodownload: false,
-															futureUpdatesOnly:
-																false,
-															source: "collection",
-														}
-													);
-												}
-												field.onChange({
-													...field.value,
-													types: checked
-														? [
-																...currentTypes,
-																"poster",
-														  ]
-														: currentTypes.filter(
-																(type) =>
-																	type !==
-																	"poster"
-														  ),
-													autodownload: false,
-													futureUpdatesOnly: false,
-													source: "movie",
-												});
-											}}
-											className="h-5 w-5 sm:h-4 sm:w-4"
-										/>
-									</FormControl>
-									<FormLabel
-										className={`text-md font-normal ${
-											isSelectedInCollectionSet(
-												movie.MediaItem.RatingKey
-											)
-												? "text-muted-foreground"
-												: ""
-										}`}
-									>
-										Poster
-									</FormLabel>
-								</FormItem>
-							)}
-						{movie.movie_backdrop &&
-							movie.movie_backdrop.length > 0 && (
-								<FormItem className="flex flex-row items-start space-x-2 space-y-0">
-									<FormControl>
-										<Checkbox
-											checked={
-												isSelectedInCollectionSet(
-													movie.MediaItem.RatingKey
-												)
-													? false
-													: field.value?.types?.includes(
-															"backdrop"
-													  )
+											field.onChange({
+												...field.value,
+												types: checked
+													? [...currentTypes, "poster"]
+													: currentTypes.filter(
+															(type) => type !== "poster"
+														),
+												autodownload: false,
+												futureUpdatesOnly: false,
+												source: "movie",
+											});
+										}}
+										className="h-5 w-5 sm:h-4 sm:w-4"
+									/>
+								</FormControl>
+								<FormLabel
+									className={`text-md font-normal ${
+										isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+											? "text-muted-foreground"
+											: ""
+									}`}
+								>
+									Poster
+								</FormLabel>
+							</FormItem>
+						)}
+						{movie.movie_backdrop && movie.movie_backdrop.length > 0 && (
+							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+								<FormControl>
+									<Checkbox
+										checked={
+											isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+												? false
+												: field.value?.types?.includes("backdrop")
+										}
+										disabled={isSelectedInCollectionSet(
+											movie.MediaItem.RatingKey
+										)}
+										onCheckedChange={(checked) => {
+											const currentTypes = field.value?.types || [];
+											// If checking this item, uncheck the collection version
+											if (checked) {
+												const collectionKey = movie.MediaItem.RatingKey;
+												form.setValue(
+													`selectedTypesByItem.${collectionKey}`,
+													{
+														types: [],
+														autodownload: false,
+														futureUpdatesOnly: false,
+														source: "collection",
+													}
+												);
 											}
-											disabled={isSelectedInCollectionSet(
-												movie.MediaItem.RatingKey
-											)}
-											onCheckedChange={(checked) => {
-												const currentTypes =
-													field.value?.types || [];
-												// If checking this item, uncheck the collection version
-												if (checked) {
-													const collectionKey =
-														movie.MediaItem
-															.RatingKey;
-													form.setValue(
-														`selectedTypesByItem.${collectionKey}`,
-														{
-															types: [],
-															autodownload: false,
-															futureUpdatesOnly:
-																false,
-															source: "collection",
-														}
-													);
-												}
-												field.onChange({
-													...field.value,
-													types: checked
-														? [
-																...currentTypes,
-																"backdrop",
-														  ]
-														: currentTypes.filter(
-																(type) =>
-																	type !==
-																	"backdrop"
-														  ),
-													autodownload: false,
-													futureUpdatesOnly: false,
-													source: "movie",
-												});
-											}}
-											className="h-5 w-5 sm:h-4 sm:w-4"
-										/>
-									</FormControl>
-									<FormLabel
-										className={`text-md font-normal ${
-											isSelectedInCollectionSet(
-												movie.MediaItem.RatingKey
-											)
-												? "text-muted-foreground"
-												: ""
-										}`}
-									>
-										Backdrop
-									</FormLabel>
-								</FormItem>
-							)}
+											field.onChange({
+												...field.value,
+												types: checked
+													? [...currentTypes, "backdrop"]
+													: currentTypes.filter(
+															(type) => type !== "backdrop"
+														),
+												autodownload: false,
+												futureUpdatesOnly: false,
+												source: "movie",
+											});
+										}}
+										className="h-5 w-5 sm:h-4 sm:w-4"
+									/>
+								</FormControl>
+								<FormLabel
+									className={`text-md font-normal ${
+										isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+											? "text-muted-foreground"
+											: ""
+									}`}
+								>
+									Backdrop
+								</FormLabel>
+							</FormItem>
+						)}
 					</div>
 				</div>
 			)}
@@ -2712,14 +2312,11 @@ const DownloadModalBoxset: React.FC<{
 											checked={
 												isSelectedInMovieSet(movieKey)
 													? false
-													: field.value?.types?.includes(
-															"poster"
-													  )
+													: field.value?.types?.includes("poster")
 											}
 											disabled={isMovieSetSelected}
 											onCheckedChange={(checked) => {
-												const currentTypes =
-													field.value?.types || [];
+												const currentTypes = field.value?.types || [];
 												// If checking this item, uncheck the movie version
 												if (checked) {
 													form.setValue(
@@ -2727,8 +2324,7 @@ const DownloadModalBoxset: React.FC<{
 														{
 															types: [],
 															autodownload: false,
-															futureUpdatesOnly:
-																false,
+															futureUpdatesOnly: false,
 															source: "movie",
 														}
 													);
@@ -2736,15 +2332,10 @@ const DownloadModalBoxset: React.FC<{
 												field.onChange({
 													...field.value,
 													types: checked
-														? [
-																...currentTypes,
-																"poster",
-														  ]
+														? [...currentTypes, "poster"]
 														: currentTypes.filter(
-																(type) =>
-																	type !==
-																	"poster"
-														  ),
+																(type) => type !== "poster"
+															),
 													autodownload: false,
 													futureUpdatesOnly: false,
 													source: "collection",
@@ -2755,9 +2346,7 @@ const DownloadModalBoxset: React.FC<{
 									</FormControl>
 									<FormLabel
 										className={`text-md font-normal ${
-											isMovieSetSelected
-												? "text-muted-foreground"
-												: ""
+											isMovieSetSelected ? "text-muted-foreground" : ""
 										}`}
 									>
 										Poster
@@ -2769,29 +2358,21 @@ const DownloadModalBoxset: React.FC<{
 										<FormControl>
 											<Checkbox
 												checked={
-													isSelectedInMovieSet(
-														movieKey
-													)
+													isSelectedInMovieSet(movieKey)
 														? false
-														: field.value?.types?.includes(
-																"backdrop"
-														  )
+														: field.value?.types?.includes("backdrop")
 												}
 												disabled={isMovieSetSelected}
 												onCheckedChange={(checked) => {
-													const currentTypes =
-														field.value?.types ||
-														[];
+													const currentTypes = field.value?.types || [];
 													// If checking this item, uncheck the movie version
 													if (checked) {
 														form.setValue(
 															`selectedTypesByItem.${movieKey}`,
 															{
 																types: [],
-																autodownload:
-																	false,
-																futureUpdatesOnly:
-																	false,
+																autodownload: false,
+																futureUpdatesOnly: false,
 																source: "movie",
 															}
 														);
@@ -2799,18 +2380,12 @@ const DownloadModalBoxset: React.FC<{
 													field.onChange({
 														...field.value,
 														types: checked
-															? [
-																	...currentTypes,
-																	"backdrop",
-															  ]
+															? [...currentTypes, "backdrop"]
 															: currentTypes.filter(
-																	(type) =>
-																		type !==
-																		"backdrop"
-															  ),
+																	(type) => type !== "backdrop"
+																),
 														autodownload: false,
-														futureUpdatesOnly:
-															false,
+														futureUpdatesOnly: false,
 														source: "collection",
 													});
 												}}
@@ -2819,9 +2394,7 @@ const DownloadModalBoxset: React.FC<{
 										</FormControl>
 										<FormLabel
 											className={`text-md font-normal ${
-												isMovieSetSelected
-													? "text-muted-foreground"
-													: ""
+												isMovieSetSelected ? "text-muted-foreground" : ""
 											}`}
 										>
 											Backdrop
@@ -2868,48 +2441,29 @@ const DownloadModalBoxset: React.FC<{
 					</DialogHeader>
 
 					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="space-y-2"
-						>
-							{boxset.movie_sets &&
-								boxset.movie_sets.length > 0 && (
-									<>
-										<h3 className="text-lg font-semibold mb-2">
-											Movie Sets
-										</h3>
-										{boxset.movie_sets.map((movie) =>
-											renderMovieFields(movie)
-										)}
-									</>
-								)}
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+							{boxset.movie_sets && boxset.movie_sets.length > 0 && (
+								<>
+									<h3 className="text-lg font-semibold mb-2">Movie Sets</h3>
+									{boxset.movie_sets.map((movie) => renderMovieFields(movie))}
+								</>
+							)}
 
-							{boxset.collection_sets &&
-								boxset.collection_sets.length > 0 && (
-									<>
-										<h3 className="text-lg font-semibold mb-2">
-											Collection Sets
-										</h3>
-										{boxset.collection_sets.map(
-											(collection) =>
-												renderCollectionFields(
-													collection
-												)
-										)}
-									</>
-								)}
+							{boxset.collection_sets && boxset.collection_sets.length > 0 && (
+								<>
+									<h3 className="text-lg font-semibold mb-2">Collection Sets</h3>
+									{boxset.collection_sets.map((collection) =>
+										renderCollectionFields(collection)
+									)}
+								</>
+							)}
 
-							{boxset.show_sets &&
-								boxset.show_sets.length > 0 && (
-									<>
-										<h3 className="text-lg font-semibold mb-2">
-											Show Sets
-										</h3>
-										{boxset.show_sets.map((show) =>
-											renderShowFields(show)
-										)}
-									</>
-								)}
+							{boxset.show_sets && boxset.show_sets.length > 0 && (
+								<>
+									<h3 className="text-lg font-semibold mb-2">Show Sets</h3>
+									{boxset.show_sets.map((show) => renderShowFields(show))}
+								</>
+							)}
 
 							{/* Form Message for validation errors */}
 							<FormMessage />
@@ -2934,78 +2488,61 @@ const DownloadModalBoxset: React.FC<{
 											}`}
 										/>
 										<span className="ml-2 text-sm text-muted-foreground">
-											{Math.round(
-												progressValues.progressValue
-											)}
-											%
+											{Math.round(progressValues.progressValue)}%
 										</span>
 									</div>
 
 									{/* Progress text display */}
-									{Object.entries(
-										progressValues.progressText
-									).map(([itemTitle, statuses]) => (
-										<div
-											key={itemTitle}
-											className="space-y-1"
-										>
-											<div className="font-semibold text-sm">
-												{itemTitle}
+									{Object.entries(progressValues.progressText).map(
+										([itemTitle, statuses]) => (
+											<div key={itemTitle} className="space-y-1">
+												<div className="font-semibold text-sm">
+													{itemTitle}
+												</div>
+												{(() => {
+													const typeMap = {
+														poster: "Poster",
+														backdrop: "Backdrop",
+														seasonPoster: "Season Poster",
+														specialSeasonPoster:
+															"Special Season Poster",
+														titlecard: "Title Card",
+														addToDB: "Added to DB",
+													};
+													return Object.entries(statuses).map(
+														([type, status]) => (
+															<div
+																key={`${itemTitle}-${type}`}
+																className="flex justify-between text-sm text-muted-foreground"
+															>
+																{status.startsWith("Finished") ||
+																status.startsWith("Added") ? (
+																	<div className="flex items-center">
+																		<Check className="mr-1 h-4 w-4" />
+																		<span>
+																			{typeMap[
+																				type as keyof typeof typeMap
+																			] || type}
+																		</span>
+																	</div>
+																) : status.startsWith("Failed") ? (
+																	<div className="flex items-center text-destructive">
+																		<X className="mr-1 h-4 w-4" />
+																		<span>{status}</span>
+																	</div>
+																) : (
+																	<div className="flex items-center">
+																		<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
+																		<span>{status}</span>
+																	</div>
+																)}
+															</div>
+														)
+													);
+												})()}
 											</div>
-											{(() => {
-												const typeMap = {
-													poster: "Poster",
-													backdrop: "Backdrop",
-													seasonPoster:
-														"Season Poster",
-													specialSeasonPoster:
-														"Special Season Poster",
-													titlecard: "Title Card",
-													addToDB: "Added to DB",
-												};
-												return Object.entries(
-													statuses
-												).map(([type, status]) => (
-													<div
-														key={`${itemTitle}-${type}`}
-														className="flex justify-between text-sm text-muted-foreground"
-													>
-														{status.startsWith(
-															"Finished"
-														) ||
-														status.startsWith(
-															"Added"
-														) ? (
-															<div className="flex items-center">
-																<Check className="mr-1 h-4 w-4" />
-																<span>
-																	{typeMap[
-																		type as keyof typeof typeMap
-																	] || type}
-																</span>
-															</div>
-														) : status.startsWith(
-																"Failed"
-														  ) ? (
-															<div className="flex items-center text-destructive">
-																<X className="mr-1 h-4 w-4" />
-																<span>
-																	{status}
-																</span>
-															</div>
-														) : (
-															<div className="flex items-center">
-																<LoaderIcon className="mr-1 h-4 w-4 animate-spin" />
-																<span>
-																	{status}
-																</span>
-															</div>
-														)}
-													</div>
-												));
-											})()}
-										</div>
-									))}
+										)
+									)}
 								</div>
 							)}
 
@@ -3016,11 +2553,7 @@ const DownloadModalBoxset: React.FC<{
 										<AccordionItem value="warnings">
 											<AccordionTrigger className="text-destructive">
 												Failed Downloads (
-												{
-													progressValues
-														.warningMessages.length
-												}
-												)
+												{progressValues.warningMessages.length})
 											</AccordionTrigger>
 											<AccordionContent>
 												<div className="flex flex-col space-y-2">
@@ -3031,9 +2564,7 @@ const DownloadModalBoxset: React.FC<{
 																className="flex items-center text-destructive"
 															>
 																<X className="mr-1 h-4 w-4" />
-																<span>
-																	{message}
-																</span>
+																<span>{message}</span>
 															</div>
 														)
 													)}
@@ -3063,9 +2594,7 @@ const DownloadModalBoxset: React.FC<{
 									<Button
 										className=""
 										disabled={
-											!Object.values(
-												watchSelectedTypesByItem
-											).some(
+											!Object.values(watchSelectedTypesByItem).some(
 												(item) =>
 													item?.types &&
 													Array.isArray(item.types) &&

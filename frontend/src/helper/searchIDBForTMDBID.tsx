@@ -1,5 +1,6 @@
-import { MediaItem } from "@/types/mediaItem";
 import localforage from "localforage";
+
+import { MediaItem } from "@/types/mediaItem";
 
 export const getAllLibrarySectionsFromIDB = async (): Promise<
 	{ title: string; type: string }[]
@@ -48,17 +49,13 @@ export const searchIDBForTMDBID = async (
 
 	// Find media item with matching TMDB ID
 	const mediaItem = librarySection.data.MediaItems.find((item) =>
-		item.Guids.some(
-			(guid) => guid.ID === tmdbID && guid.Provider === "tmdb"
-		)
+		item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
 	);
 
 	return mediaItem || false;
 };
 
-export const searchIDBForTMDBIDNoLibrary = async (
-	tmdbID: string
-): Promise<MediaItem | boolean> => {
+export const searchIDBForTMDBIDNoLibrary = async (tmdbID: string): Promise<MediaItem | boolean> => {
 	// Get all cached sections
 	const keys = await localforage.keys();
 	const cachedSectionsPromises = keys.map((key) =>
@@ -81,9 +78,7 @@ export const searchIDBForTMDBIDNoLibrary = async (
 	for (const section of sections) {
 		if (section?.data?.MediaItems) {
 			const mediaItem = section.data.MediaItems.find((item) =>
-				item.Guids.some(
-					(guid) => guid.ID === tmdbID && guid.Provider === "tmdb"
-				)
+				item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
 			);
 			if (mediaItem) {
 				return mediaItem;
@@ -112,9 +107,7 @@ export const getAdjacentMediaItemFromIDB = async (
 	}
 
 	const mediaItems = librarySection.data.MediaItems;
-	const currentIndex = mediaItems.findIndex(
-		(item) => item.RatingKey === currentRatingKey
-	);
+	const currentIndex = mediaItems.findIndex((item) => item.RatingKey === currentRatingKey);
 
 	if (currentIndex === -1) {
 		return null; // Current item not found
@@ -123,12 +116,10 @@ export const getAdjacentMediaItemFromIDB = async (
 	let nextIndex: number;
 	if (direction === "next") {
 		// If at the end, wrap to beginning, otherwise move forward
-		nextIndex =
-			currentIndex === mediaItems.length - 1 ? 0 : currentIndex + 1;
+		nextIndex = currentIndex === mediaItems.length - 1 ? 0 : currentIndex + 1;
 	} else {
 		// If at the beginning, wrap to end, otherwise move backward
-		nextIndex =
-			currentIndex === 0 ? mediaItems.length - 1 : currentIndex - 1;
+		nextIndex = currentIndex === 0 ? mediaItems.length - 1 : currentIndex - 1;
 	}
 
 	return mediaItems[nextIndex];

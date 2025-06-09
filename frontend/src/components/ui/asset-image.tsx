@@ -1,10 +1,15 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { FILE_TYPES } from "@/types";
+
+import { useState } from "react";
+
+import Image from "next/image";
+
+import { cn } from "@/lib/utils";
+
 import { PosterFile } from "@/types/posterSets";
+
 import { Skeleton } from "./skeleton";
 
 interface AssetImageProps {
@@ -47,8 +52,7 @@ export function AssetImage({
 
 	// Determine image sizes based on file type
 	const sizes =
-		image.Type === FILE_TYPES.BACKDROP ||
-		image.Type === FILE_TYPES.TITLECARD
+		image.Type === FILE_TYPES.BACKDROP || image.Type === FILE_TYPES.TITLECARD
 			? "(max-width: 640px) 50vw, 300px"
 			: "300px";
 

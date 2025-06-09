@@ -1,5 +1,12 @@
 "use client";
 
+import { formatLastUpdatedDate } from "@/helper/formatDate";
+import { ZoomInIcon } from "lucide-react";
+
+import { useState } from "react";
+
+import { useRouter } from "next/navigation";
+
 import {
 	Carousel,
 	CarouselContent,
@@ -7,20 +14,18 @@ import {
 	CarouselPrevious,
 } from "@/components/ui/carousel";
 
-import { PosterSet } from "@/types/posterSets";
-import { CarouselShow } from "../carousel-show";
-import { CarouselMovie } from "../carousel-movie";
-import { MediaItem } from "@/types/mediaItem";
-import { ZoomInIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Lead } from "./typography";
-import { usePosterSetStore } from "@/lib/posterSetStore";
 import { useMediaStore } from "@/lib/mediaStore";
-import { formatLastUpdatedDate } from "@/helper/formatDate";
-import { SetFileCounts } from "../set_file_counts";
-import DownloadModalShow from "../download-modal-show";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+
+import { MediaItem } from "@/types/mediaItem";
+import { PosterSet } from "@/types/posterSets";
+
+import { CarouselMovie } from "../carousel-movie";
+import { CarouselShow } from "../carousel-show";
 import DownloadModalMovie from "../download-modal-movie";
-import { useState } from "react";
+import DownloadModalShow from "../download-modal-show";
+import { SetFileCounts } from "../set_file_counts";
+import { Lead } from "./typography";
 
 type MediaCarouselProps = {
 	set: PosterSet;
@@ -108,8 +113,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 					</span>
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
-					Last Update:{" "}
-					{formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
+					Last Update: {formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
 				</Lead>
 
 				<SetFileCounts mediaItem={mediaItem} set={set} />
@@ -119,10 +123,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 				{mediaItem.Type === "show" ? (
 					<CarouselShow set={set as PosterSet} />
 				) : mediaItem.Type === "movie" ? (
-					<CarouselMovie
-						set={set as PosterSet}
-						librarySection={mediaItem.LibraryTitle}
-					/>
+					<CarouselMovie set={set as PosterSet} librarySection={mediaItem.LibraryTitle} />
 				) : null}
 			</CarouselContent>
 			<CarouselNext className="right-2 bottom-0" />

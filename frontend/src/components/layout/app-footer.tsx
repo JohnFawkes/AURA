@@ -1,9 +1,9 @@
 "use client";
-import React from "react";
-import Link from "next/link";
-import { FaGithub } from "react-icons/fa";
-import { FaDiscord } from "react-icons/fa";
+
+import { FaDiscord, FaGithub } from "react-icons/fa";
+
 import Image from "next/image";
+import Link from "next/link";
 
 interface AppFooterProps {
 	version?: string;
@@ -24,12 +24,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				>
 					MediUX
 					<div className="relative ml-1 w-[16px] h-[16px] rounded-t-md overflow-hidden">
-						<Image
-							src="/mediux.svg"
-							alt="Logo"
-							fill
-							className="object-contain"
-						/>
+						<Image src="/mediux.svg" alt="Logo" fill className="object-contain" />
 					</div>
 				</Link>
 

@@ -1,6 +1,26 @@
 "use client";
 
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { getAdjacentMediaItemFromIDB, searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
+import { fetchMediuxSets, fetchMediuxUserFollowHides } from "@/services/api.mediux";
+import {
+	ArrowDownAZ,
+	ArrowDownZA,
+	ArrowLeftCircle,
+	ArrowRightCircle,
+	CalendarArrowDown,
+	CalendarArrowUp,
+} from "lucide-react";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+import { useRouter } from "next/navigation";
+
+import { DimmedBackground } from "@/components/dimmed_backdrop";
+import { MediaItemDetails } from "@/components/media_item_details";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ErrorMessage } from "@/components/ui/error-message";
 import Loader from "@/components/ui/loader";
 import { MediaCarousel } from "@/components/ui/media-carousel";
@@ -11,33 +31,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+
 import { log } from "@/lib/logger";
-import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
-import {
-	fetchMediuxSets,
-	fetchMediuxUserFollowHides,
-} from "@/services/api.mediux";
+import { useMediaStore } from "@/lib/mediaStore";
+
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-	ArrowDownAZ,
-	ArrowDownZA,
-	ArrowLeftCircle,
-	ArrowRightCircle,
-	CalendarArrowDown,
-	CalendarArrowUp,
-} from "lucide-react";
-import { useMediaStore } from "@/lib/mediaStore";
-import { DimmedBackground } from "@/components/dimmed_backdrop";
-import { MediaItemDetails } from "@/components/media_item_details";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-	getAdjacentMediaItemFromIDB,
-	searchIDBForTMDBID,
-} from "@/helper/searchIDBForTMDBID";
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -46,14 +45,10 @@ const MediaItemPage = () => {
 
 	const partialMediaItem = useMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
-	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(
-		partialMediaItem
-	);
+	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(partialMediaItem);
 
 	const [posterSets, setPosterSets] = useState<PosterSet[] | null>(null);
-	const [filteredPosterSets, setFilteredPosterSets] = useState<
-		PosterSet[] | null
-	>(null);
+	const [filteredPosterSets, setFilteredPosterSets] = useState<PosterSet[] | null>(null);
 
 	// State to track the selected sorting option
 	const [sortOption, setSortOption] = useState<string>("date");
@@ -67,12 +62,8 @@ const MediaItemPage = () => {
 	const [hasError, setHasError] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
 
-	const [userFollows, setUserFollows] = useState<
-		{ ID: string; Username: string }[]
-	>([]);
-	const [userHides, setUserHides] = useState<
-		{ ID: string; Username: string }[]
-	>([]);
+	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
+	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
 	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
 
 	const [adjacentItems, setAdjacentItems] = useState<{
@@ -117,10 +108,7 @@ const MediaItemPage = () => {
 				setUserFollows(follows);
 				setUserHides(hides);
 			} catch (error) {
-				log(
-					"Media Item Page - Error fetching user follows/hides:",
-					error
-				);
+				log("Media Item Page - Error fetching user follows/hides:", error);
 				setHasError(true);
 				if (error instanceof Error) {
 					setErrorMessage(error.message);
@@ -139,9 +127,7 @@ const MediaItemPage = () => {
 				if (!responseItem.Guids || responseItem.Guids.length === 0) {
 					return;
 				}
-				const tmdbID = responseItem.Guids.find(
-					(guid) => guid.Provider === "tmdb"
-				)?.ID;
+				const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
 				if (tmdbID) {
 					setLoadingMessage("Loading Poster Sets");
 					const resp = await fetchMediuxSets(
@@ -151,17 +137,14 @@ const MediaItemPage = () => {
 						responseItem.RatingKey
 					);
 					if (!resp || resp.status !== "success" || !resp.data) {
-						throw new Error(
-							resp?.message || "No response from Mediux API"
-						);
+						throw new Error(resp?.message || "No response from Mediux API");
 					}
 
 					// Check if there are any OtherPosters or OtherBackdrops that need processing
 					const hasOtherMedia = resp.data.some(
 						(set) =>
 							(set.OtherPosters && set.OtherPosters.length > 0) ||
-							(set.OtherBackdrops &&
-								set.OtherBackdrops.length > 0)
+							(set.OtherBackdrops && set.OtherBackdrops.length > 0)
 					);
 
 					if (hasOtherMedia) {
@@ -170,18 +153,12 @@ const MediaItemPage = () => {
 						resp.data.forEach((set) => {
 							set.OtherPosters?.forEach((poster) => {
 								if (poster.Movie?.ID) {
-									uniqueTMDBIds.set(
-										poster.Movie.ID,
-										poster.Movie.Title
-									);
+									uniqueTMDBIds.set(poster.Movie.ID, poster.Movie.Title);
 								}
 							});
 							set.OtherBackdrops?.forEach((backdrop) => {
 								if (backdrop.Movie?.ID) {
-									uniqueTMDBIds.set(
-										backdrop.Movie.ID,
-										backdrop.Movie.Title
-									);
+									uniqueTMDBIds.set(backdrop.Movie.ID, backdrop.Movie.Title);
 								}
 							});
 						});
@@ -190,59 +167,48 @@ const MediaItemPage = () => {
 							// Fetch all rating keys at once
 							const tmdbToRatingKey = new Map<string, string>();
 							await Promise.all(
-								Array.from(uniqueTMDBIds).map(
-									async ([id, title]) => {
-										const item = await searchIDBForTMDBID(
-											id,
-											responseItem.LibraryTitle
+								Array.from(uniqueTMDBIds).map(async ([id, title]) => {
+									const item = await searchIDBForTMDBID(
+										id,
+										responseItem.LibraryTitle
+									);
+									if (item && typeof item !== "boolean") {
+										tmdbToRatingKey.set(id, item.RatingKey);
+										log(
+											`Found Rating Key for ${title} (${id}): ${item.RatingKey}`
 										);
-										if (item && typeof item !== "boolean") {
-											tmdbToRatingKey.set(
-												id,
-												item.RatingKey
-											);
-											log(
-												`Found Rating Key for ${title} (${id}): ${item.RatingKey}`
-											);
-										}
 									}
-								)
+								})
 							);
 
 							const processedSets = resp.data.map((set) => {
 								if (set.OtherPosters) {
-									set.OtherPosters = set.OtherPosters.map(
-										(poster) => ({
-											...poster,
-											Movie: poster.Movie
-												? {
-														...poster.Movie,
-														RatingKey:
-															tmdbToRatingKey.get(
-																poster.Movie
-																	.ID ?? ""
-															) || "",
-												  }
-												: undefined,
-										})
-									);
+									set.OtherPosters = set.OtherPosters.map((poster) => ({
+										...poster,
+										Movie: poster.Movie
+											? {
+													...poster.Movie,
+													RatingKey:
+														tmdbToRatingKey.get(
+															poster.Movie.ID ?? ""
+														) || "",
+												}
+											: undefined,
+									}));
 								}
 								if (set.OtherBackdrops) {
-									set.OtherBackdrops = set.OtherBackdrops.map(
-										(backdrop) => ({
-											...backdrop,
-											Movie: backdrop.Movie
-												? {
-														...backdrop.Movie,
-														RatingKey:
-															tmdbToRatingKey.get(
-																backdrop.Movie
-																	.ID ?? ""
-															) || "",
-												  }
-												: undefined, // Changed from null to undefined
-										})
-									);
+									set.OtherBackdrops = set.OtherBackdrops.map((backdrop) => ({
+										...backdrop,
+										Movie: backdrop.Movie
+											? {
+													...backdrop.Movie,
+													RatingKey:
+														tmdbToRatingKey.get(
+															backdrop.Movie.ID ?? ""
+														) || "",
+												}
+											: undefined, // Changed from null to undefined
+									}));
 								}
 								return set;
 							});
@@ -260,14 +226,8 @@ const MediaItemPage = () => {
 				log("Media Item Page - Error fetching poster sets:", error);
 				setHasError(true);
 				if (error instanceof Error) {
-					if (
-						error.message.startsWith(
-							"No sets found for the provided TMDB ID"
-						)
-					) {
-						setErrorMessage(
-							`No Poster Sets found for ${responseItem.Title}`
-						);
+					if (error.message.startsWith("No sets found for the provided TMDB ID")) {
+						setErrorMessage(`No Poster Sets found for ${responseItem.Title}`);
 					} else {
 						setErrorMessage(error.message);
 					}
@@ -291,9 +251,7 @@ const MediaItemPage = () => {
 						throw new Error("No media item found");
 					}
 				}
-				setLoadingMessage(
-					`Loading Details for ${currentMediaItem.Title}...`
-				);
+				setLoadingMessage(`Loading Details for ${currentMediaItem.Title}...`);
 				// Now safely use currentMediaItem
 				const resp = await fetchMediaServerItemContent(
 					currentMediaItem.RatingKey,
@@ -309,10 +267,7 @@ const MediaItemPage = () => {
 				if (!responseItem) {
 					throw new Error("No item found in response");
 				}
-				log(
-					`Media Item Page - Fetched item: ${responseItem.Title}`,
-					responseItem
-				);
+				log(`Media Item Page - Fetched item: ${responseItem.Title}`, responseItem);
 				setMediaItem(responseItem);
 				fetchPosterSets(responseItem);
 			} catch (error) {
@@ -346,9 +301,7 @@ const MediaItemPage = () => {
 		if (!posterSets) return false;
 		return (
 			posterSets.length > 0 &&
-			posterSets.every((set) =>
-				userHides.some((hide) => hide.Username === set.User.Name)
-			)
+			posterSets.every((set) => userHides.some((hide) => hide.Username === set.User.Name))
 		);
 	}, [posterSets, userHides]);
 
@@ -361,21 +314,15 @@ const MediaItemPage = () => {
 					return true; // Show all if the checkbox is checked
 				}
 				// Check if the user is in the hides list
-				const isHidden = userHides.some(
-					(hide) => hide.Username === set.User.Name
-				);
+				const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
 				return !isHidden; // Show only if not hidden
 			});
 
 			// Sort the filtered poster sets
 			// Follows should always be at the top
 			filtered.sort((a, b) => {
-				const isAFollow = userFollows.some(
-					(follow) => follow.Username === a.User.Name
-				);
-				const isBFollow = userFollows.some(
-					(follow) => follow.Username === b.User.Name
-				);
+				const isAFollow = userFollows.some((follow) => follow.Username === a.User.Name);
+				const isBFollow = userFollows.some((follow) => follow.Username === b.User.Name);
 				if (isAFollow && !isBFollow) return -1;
 				if (!isAFollow && isBFollow) return 1;
 
@@ -401,14 +348,7 @@ const MediaItemPage = () => {
 			console.log("Filter & Sorted Poster Sets:", filtered);
 			setFilteredPosterSets(filtered);
 		}
-	}, [
-		posterSets,
-		showHiddenUsers,
-		userHides,
-		userFollows,
-		sortOption,
-		sortOrder,
-	]);
+	}, [posterSets, showHiddenUsers, userHides, userFollows, sortOption, sortOrder]);
 
 	useEffect(() => {
 		const fetchAdjacentItems = async () => {
@@ -420,11 +360,7 @@ const MediaItemPage = () => {
 					mediaItem.RatingKey,
 					"previous"
 				),
-				getAdjacentMediaItemFromIDB(
-					mediaItem.LibraryTitle,
-					mediaItem.RatingKey,
-					"next"
-				),
+				getAdjacentMediaItemFromIDB(mediaItem.LibraryTitle, mediaItem.RatingKey, "next"),
 			]);
 
 			setAdjacentItems({
@@ -475,22 +411,17 @@ const MediaItemPage = () => {
 			{/* Navigation Buttons */}
 			<div className="flex justify-between mt-2 mx-2">
 				<div>
-					{adjacentItems.previous &&
-						adjacentItems.previous.RatingKey && (
-							<ArrowLeftCircle
-								className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
-								onClick={() => {
-									useMediaStore.setState({
-										mediaItem: adjacentItems.previous,
-									});
-									router.push(
-										formatMediaItemUrl(
-											adjacentItems.previous!
-										)
-									);
-								}}
-							/>
-						)}
+					{adjacentItems.previous && adjacentItems.previous.RatingKey && (
+						<ArrowLeftCircle
+							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+							onClick={() => {
+								useMediaStore.setState({
+									mediaItem: adjacentItems.previous,
+								});
+								router.push(formatMediaItemUrl(adjacentItems.previous!));
+							}}
+						/>
+					)}
 				</div>
 				<div>
 					{adjacentItems.next && (
@@ -500,9 +431,7 @@ const MediaItemPage = () => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.next,
 								});
-								router.push(
-									formatMediaItemUrl(adjacentItems.next!)
-								);
+								router.push(formatMediaItemUrl(adjacentItems.next!));
 							}}
 						/>
 					)}
@@ -520,14 +449,10 @@ const MediaItemPage = () => {
 						year={mediaItem.Year}
 						contentRating={mediaItem.ContentRating || ""}
 						seasonCount={
-							mediaItem.Type === "show"
-								? mediaItem.Series?.SeasonCount || 0
-								: 0
+							mediaItem.Type === "show" ? mediaItem.Series?.SeasonCount || 0 : 0
 						}
 						episodeCount={
-							mediaItem.Type === "show"
-								? mediaItem.Series?.EpisodeCount || 0
-								: 0
+							mediaItem.Type === "show" ? mediaItem.Series?.EpisodeCount || 0 : 0
 						}
 						moviePath={mediaItem.Movie?.File?.Path || "N/A"}
 						movieSize={mediaItem.Movie?.File?.Size || 0}
@@ -582,16 +507,12 @@ const MediaItemPage = () => {
 									<div className="flex items-center space-x-2">
 										<Checkbox
 											checked={showHiddenUsers}
-											onCheckedChange={
-												handleShowHiddenUsers
-											}
+											onCheckedChange={handleShowHiddenUsers}
 											disabled={hiddenCount === 0}
 											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
 										/>
 										{showHiddenUsers ? (
-											<span className="text-sm ml-2">
-												Showing all users
-											</span>
+											<span className="text-sm ml-2">Showing all users</span>
 										) : (
 											<span className="text-sm ml-2">
 												Show {hiddenCount} hidden user
@@ -609,11 +530,7 @@ const MediaItemPage = () => {
 											size="icon"
 											className="p-2"
 											onClick={() =>
-												setSortOrder(
-													sortOrder === "asc"
-														? "desc"
-														: "asc"
-												)
+												setSortOrder(sortOrder === "asc" ? "desc" : "asc")
 											}
 										>
 											{sortOption === "name" &&
@@ -646,12 +563,8 @@ const MediaItemPage = () => {
 											<SelectValue placeholder="Sort By" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="date">
-												Date
-											</SelectItem>
-											<SelectItem value="name">
-												User Name
-											</SelectItem>
+											<SelectItem value="date">Date</SelectItem>
+											<SelectItem value="name">User Name</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
@@ -666,10 +579,7 @@ const MediaItemPage = () => {
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
 									<div key={set.ID} className="pb-6">
-										<MediaCarousel
-											set={set}
-											mediaItem={mediaItem}
-										/>
+										<MediaCarousel set={set} mediaItem={mediaItem} />
 									</div>
 								))}
 							</div>

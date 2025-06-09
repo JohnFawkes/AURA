@@ -37,11 +37,7 @@ export function CustomPagination({
 					{totalPages > 1 && currentPage > 1 && (
 						<PaginationItem>
 							<PaginationPrevious
-								onClick={() =>
-									handlePageChange(
-										Math.max(currentPage - 1, 1)
-									)
-								}
+								onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
 							/>
 						</PaginationItem>
 					)}
@@ -56,11 +52,7 @@ export function CustomPagination({
 								value={currentPage}
 								onChange={(e) => {
 									const value = parseInt(e.target.value);
-									if (
-										!isNaN(value) &&
-										value >= 1 &&
-										value <= totalPages
-									) {
+									if (!isNaN(value) && value >= 1 && value <= totalPages) {
 										handlePageChange(value);
 									}
 								}}
@@ -82,9 +74,7 @@ export function CustomPagination({
 						<PaginationItem>
 							<PaginationNext
 								onClick={() =>
-									handlePageChange(
-										Math.min(currentPage + 1, totalPages)
-									)
+									handlePageChange(Math.min(currentPage + 1, totalPages))
 								}
 							/>
 						</PaginationItem>
@@ -97,9 +87,7 @@ export function CustomPagination({
 								<PaginationEllipsis />
 							</PaginationItem>
 							<PaginationItem>
-								<PaginationLink
-									onClick={() => handlePageChange(totalPages)}
-								>
+								<PaginationLink onClick={() => handlePageChange(totalPages)}>
 									{totalPages}
 								</PaginationLink>
 							</PaginationItem>

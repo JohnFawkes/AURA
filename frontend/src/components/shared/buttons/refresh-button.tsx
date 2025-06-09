@@ -1,6 +1,8 @@
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { RefreshCcw as RefreshIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+
+import { cn } from "@/lib/utils";
 
 interface RefreshButtonProps {
 	onClick: () => void;
@@ -8,11 +10,7 @@ interface RefreshButtonProps {
 	className?: string;
 }
 
-export function RefreshButton({
-	onClick,
-	text = "Refresh",
-	className,
-}: RefreshButtonProps) {
+export function RefreshButton({ onClick, text = "Refresh", className }: RefreshButtonProps) {
 	return (
 		<Button
 			variant="outline"

@@ -5,11 +5,7 @@ function normalizeString(str: string): string {
 	return str.replace(/[^\w\s]/g, "").toLowerCase();
 }
 
-export function searchMediaItems(
-	items: MediaItem[],
-	query: string,
-	limit?: number
-): MediaItem[] {
+export function searchMediaItems(items: MediaItem[], query: string, limit?: number): MediaItem[] {
 	let filteredItems = [...items];
 	const trimmedQuery = query.trim();
 	if (trimmedQuery === "") {
@@ -70,9 +66,7 @@ export function searchMediaItems(
 
 	// Apply year filter if present
 	if (yearFilter) {
-		filteredItems = filteredItems.filter(
-			(item) => item.Year === yearFilter
-		);
+		filteredItems = filteredItems.filter((item) => item.Year === yearFilter);
 	}
 
 	// Apply library filter if present
@@ -84,9 +78,7 @@ export function searchMediaItems(
 
 	// Apply rating key filter if present (exact match)
 	if (ratingFilter) {
-		filteredItems = filteredItems.filter(
-			(item) => item.RatingKey === ratingFilter
-		);
+		filteredItems = filteredItems.filter((item) => item.RatingKey === ratingFilter);
 	}
 
 	return filteredItems.slice(0, limit);

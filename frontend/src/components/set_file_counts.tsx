@@ -1,5 +1,6 @@
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
+
 import { Lead } from "./ui/typography";
 
 type SetFileCountsProps = {
@@ -29,9 +30,7 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 
 		// Second line: count files in set.OtherPosters & set.OtherBackdrops.
 		const otherPosterCount = set.OtherPosters ? set.OtherPosters.length : 0;
-		const otherBackdropCount = set.OtherBackdrops
-			? set.OtherBackdrops.length
-			: 0;
+		const otherBackdropCount = set.OtherBackdrops ? set.OtherBackdrops.length : 0;
 		if (otherPosterCount || otherBackdropCount) {
 			secondaryLine = "Other Movies: ";
 			if (otherPosterCount > 0) {
@@ -53,9 +52,7 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 		const backdropCount = set.Backdrop ? 1 : 0;
 		const seasonPosterCount =
 			set.SeasonPosters?.filter(
-				(file) =>
-					file.Type === "seasonPoster" ||
-					file.Type === "specialSeasonPoster"
+				(file) => file.Type === "seasonPoster" || file.Type === "specialSeasonPoster"
 			).length ?? 0;
 		if (posterCount > 0) {
 			primaryLine += `${posterCount} Poster${posterCount > 1 ? "s" : ""}`;
@@ -64,17 +61,13 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 			if (primaryLine) {
 				primaryLine += " • ";
 			}
-			primaryLine += `${backdropCount} Backdrop${
-				backdropCount > 1 ? "s" : ""
-			}`;
+			primaryLine += `${backdropCount} Backdrop${backdropCount > 1 ? "s" : ""}`;
 		}
 		if (seasonPosterCount > 0) {
 			if (primaryLine) {
 				primaryLine += " • ";
 			}
-			primaryLine += `${seasonPosterCount} Season Poster${
-				seasonPosterCount > 1 ? "s" : ""
-			}`;
+			primaryLine += `${seasonPosterCount} Season Poster${seasonPosterCount > 1 ? "s" : ""}`;
 		}
 
 		// Second Line:
@@ -116,14 +109,8 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 
 	return (
 		<div>
-			{primaryLine && (
-				<Lead className="text-sm text-muted-foreground">
-					{primaryLine}
-				</Lead>
-			)}
-			{secondaryLine && (
-				<Lead className={secondaryLineClass}>{secondaryLine}</Lead>
-			)}
+			{primaryLine && <Lead className="text-sm text-muted-foreground">{primaryLine}</Lead>}
+			{secondaryLine && <Lead className={secondaryLineClass}>{secondaryLine}</Lead>}
 		</div>
 	);
 }

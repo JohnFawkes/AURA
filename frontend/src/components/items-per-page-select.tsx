@@ -1,6 +1,7 @@
 "use client";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
+
 import { Label } from "./ui/label";
 import {
 	Select,
@@ -12,11 +13,7 @@ import {
 	SelectValue,
 } from "./ui/select";
 
-export function SelectItemsPerPage({
-	setCurrentPage,
-}: {
-	setCurrentPage: (page: number) => void;
-}) {
+export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: number) => void }) {
 	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();
 	const itemsPerPageOptions = [10, 20, 30, 50, 100];
 

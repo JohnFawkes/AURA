@@ -26,8 +26,7 @@ export const useHomeSearchStore = create<HomeSearchStore>()(
 			setSearchQuery: (query) => set({ searchQuery: query }),
 			setCurrentPage: (page) => set({ currentPage: page }),
 			setItemsPerPage: (itemsPerPage) => set({ itemsPerPage }),
-			setFilteredLibraries: (libraries) =>
-				set({ filteredLibraries: libraries }),
+			setFilteredLibraries: (libraries) => set({ filteredLibraries: libraries }),
 			setFilterOutInDB: (filter) => set({ filterOutInDB: filter }),
 			clear: () => set({ searchQuery: "", currentPage: 1 }),
 		}),

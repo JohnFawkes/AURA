@@ -1,20 +1,19 @@
 "use client";
 
+import { fetchLogContents } from "@/services/api.settings";
+import { ArrowLeft, Download } from "lucide-react";
+
+import React, { useEffect, useState } from "react";
+
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardFooter,
-	CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import Loader from "@/components/ui/loader";
 import { Textarea } from "@/components/ui/textarea";
+
 import { log } from "@/lib/logger";
-import { fetchLogContents } from "@/services/api.settings";
-import { ArrowLeft, Download } from "lucide-react";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
 
 export default function LogsPage() {
 	const router = useRouter();
@@ -48,11 +47,7 @@ export default function LogsPage() {
 
 				setLogs(logContents);
 			} catch (error) {
-				setError(
-					error instanceof Error
-						? error.message
-						: "An unknown error occurred"
-				);
+				setError(error instanceof Error ? error.message : "An unknown error occurred");
 			} finally {
 				log("LogsPage - Fetching logs completed");
 				setLoading(false);
@@ -87,9 +82,7 @@ export default function LogsPage() {
 			) : (
 				<Card className="shadow-lg">
 					<CardHeader>
-						<h1 className="text-2xl font-bold text-center">
-							Application Logs
-						</h1>
+						<h1 className="text-2xl font-bold text-center">Application Logs</h1>
 					</CardHeader>
 					<CardContent className="md:p-6">
 						<Textarea
@@ -104,8 +97,7 @@ export default function LogsPage() {
 							className="w-full sm:w-auto"
 							onClick={() => router.push("/settings")}
 						>
-							<ArrowLeft className="mr-2 h-4 w-4" /> Back to
-							Settings
+							<ArrowLeft className="mr-2 h-4 w-4" /> Back to Settings
 						</Button>
 						<Button
 							variant="default"

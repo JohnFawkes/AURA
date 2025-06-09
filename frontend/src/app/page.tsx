@@ -1,23 +1,29 @@
 "use client";
-import { LibrarySection, MediaItem } from "@/types/mediaItem";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { ErrorMessage } from "@/components/ui/error-message";
+
 import HomeMediaItemCard from "@/app/_components/home/media-card";
-import { Badge } from "@/components/ui/badge";
-import { ToggleGroup } from "@/components/ui/toggle-group";
-import { Label } from "@/components/ui/label";
 import {
 	fetchMediaServerLibrarySectionItems,
 	fetchMediaServerLibrarySections,
 } from "@/services/api.mediaserver";
-import { log } from "@/lib/logger";
-import { Progress } from "@/components/ui/progress";
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { searchMediaItems } from "@/hooks/searchMediaItems";
 import localforage from "localforage";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { CustomPagination } from "@/components/custom-pagination";
 import { SelectItemsPerPage } from "@/components/items-per-page-select";
 import { RefreshButton } from "@/components/shared/buttons/refresh-button";
-import { CustomPagination } from "@/components/custom-pagination";
+import { Badge } from "@/components/ui/badge";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { ToggleGroup } from "@/components/ui/toggle-group";
+
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { log } from "@/lib/logger";
+
+import { searchMediaItems } from "@/hooks/searchMediaItems";
+
+import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
 // Initialize localforage
@@ -46,20 +52,14 @@ export default function Home() {
 	const [fullyLoaded, setFullyLoaded] = useState<boolean>(false);
 
 	// Library sections & progress
-	const [librarySections, setLibrarySections] = useState<LibrarySection[]>(
-		[]
-	);
+	const [librarySections, setLibrarySections] = useState<LibrarySection[]>([]);
 	const [sectionProgress, setSectionProgress] = useState<{
 		[key: string]: { loaded: number; total: number };
 	}>({});
 
 	// Filtering & Pagination
-	const {
-		filteredLibraries,
-		setFilteredLibraries,
-		filterOutInDB,
-		setFilterOutInDB,
-	} = useHomeSearchStore();
+	const { filteredLibraries, setFilteredLibraries, filterOutInDB, setFilterOutInDB } =
+		useHomeSearchStore();
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const { currentPage, setCurrentPage } = useHomeSearchStore();
 	const { itemsPerPage } = useHomeSearchStore();
@@ -102,17 +102,14 @@ export default function Home() {
 						)
 					)
 				).filter(
-					(
-						section
-					): section is { data: LibrarySection; timestamp: number } =>
+					(section): section is { data: LibrarySection; timestamp: number } =>
 						section !== null
 				);
 
 				if (cachedSections && cachedSections.length > 0) {
 					// Filter valid cached sections
 					const validSections = cachedSections.filter(
-						(section) =>
-							Date.now() - section.timestamp < CACHE_DURATION
+						(section) => Date.now() - section.timestamp < CACHE_DURATION
 					);
 
 					if (validSections.length > 0) {
@@ -137,16 +134,13 @@ export default function Home() {
 
 			// If sections were not loaded from cache, fetch them from the API.
 			if (sections.length === 0) {
-				const sectionsResponse =
-					await fetchMediaServerLibrarySections();
+				const sectionsResponse = await fetchMediaServerLibrarySections();
 				if (sectionsResponse.status !== "success") {
 					throw new Error(sectionsResponse.message);
 				}
 				sections = sectionsResponse.data || [];
 				if (!sections || sections.length === 0) {
-					throw new Error(
-						"No sections found, please check the logs."
-					);
+					throw new Error("No sections found, please check the logs.");
 				}
 				// Initialize media items for each section.
 				sections.forEach((section) => {
@@ -163,11 +157,10 @@ export default function Home() {
 					let allItems: LibrarySection["MediaItems"] = [];
 
 					while (itemsFetched < totalSize) {
-						const itemsResponse =
-							await fetchMediaServerLibrarySectionItems(
-								section,
-								itemsFetched
-							);
+						const itemsResponse = await fetchMediaServerLibrarySectionItems(
+							section,
+							itemsFetched
+						);
 						if (itemsResponse.status !== "success") {
 							console.error(itemsResponse.message);
 							break;
@@ -210,11 +203,7 @@ export default function Home() {
 			log("Home Page - Sections fetched successfully", sections);
 			setFullyLoaded(true);
 		} catch (error) {
-			setErrorMessage(
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred"
-			);
+			setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
 		} finally {
 			isMounted.current = false;
 		}
@@ -233,15 +222,11 @@ export default function Home() {
 
 	// Filter items based on the search query
 	useEffect(() => {
-		let items = librarySections.flatMap(
-			(section) => section.MediaItems || []
-		);
+		let items = librarySections.flatMap((section) => section.MediaItems || []);
 
 		// Filter by selected libraries
 		if (filteredLibraries.length > 0) {
-			items = items.filter((item) =>
-				filteredLibraries.includes(item.LibraryTitle)
-			);
+			items = items.filter((item) => filteredLibraries.includes(item.LibraryTitle));
 		}
 
 		// Filter out items already in the DB
@@ -266,12 +251,7 @@ export default function Home() {
 						const progressInfo = sectionProgress[section.ID];
 						const percentage =
 							progressInfo && progressInfo.total > 0
-								? Math.min(
-										(progressInfo.loaded /
-											progressInfo.total) *
-											100,
-										100
-								  )
+								? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
 								: 0;
 
 						// Render progress UI only if the percentage is not 100
@@ -281,10 +261,7 @@ export default function Home() {
 									<Label className="text-lg font-semibold">
 										Loading {section.Title}
 									</Label>
-									<Progress
-										value={percentage}
-										className="mt-1"
-									/>
+									<Progress value={percentage} className="mt-1" />
 									<span className="ml-2 text-sm text-muted-foreground">
 										{Math.round(percentage)}%
 									</span>
@@ -317,24 +294,18 @@ export default function Home() {
 							key={section.ID}
 							className="cursor-pointer"
 							variant={
-								filteredLibraries.includes(section.Title)
-									? "default"
-									: "outline"
+								filteredLibraries.includes(section.Title) ? "default" : "outline"
 							}
 							onClick={() => {
 								if (filteredLibraries.includes(section.Title)) {
 									setFilteredLibraries(
 										filteredLibraries.filter(
-											(lib: string) =>
-												lib !== section.Title
+											(lib: string) => lib !== section.Title
 										)
 									);
 									setCurrentPage(1);
 								} else {
-									setFilteredLibraries([
-										...filteredLibraries,
-										section.Title,
-									]);
+									setFilteredLibraries([...filteredLibraries, section.Title]);
 									setCurrentPage(1);
 								}
 							}}
@@ -373,10 +344,7 @@ export default function Home() {
 					</div>
 				) : (
 					paginatedItems.map((item) => (
-						<HomeMediaItemCard
-							key={item.RatingKey}
-							mediaItem={item}
-						/>
+						<HomeMediaItemCard key={item.RatingKey} mediaItem={item} />
 					))
 				)}
 			</div>

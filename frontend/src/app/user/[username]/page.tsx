@@ -1,6 +1,29 @@
 "use client";
 
+import { formatLastUpdatedDate } from "@/helper/formatDate";
+import { getAllLibrarySectionsFromIDB, searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import { fetchAllUserSets } from "@/services/api.mediux";
+import { CheckCircle2 as Checkmark } from "lucide-react";
+
+import { useEffect, useRef, useState } from "react";
+
+import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+
+import { BoxsetDisplay } from "@/components/boxset-display";
+import { CarouselMovie } from "@/components/carousel-movie";
 import { CarouselShow } from "@/components/carousel-show";
+import { CustomPagination } from "@/components/custom-pagination";
+import DownloadModalMovie from "@/components/download-modal-movie";
+import DownloadModalShow from "@/components/download-modal-show";
+import { SelectItemsPerPage } from "@/components/items-per-page-select";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import {
 	Carousel,
 	CarouselContent,
@@ -8,15 +31,17 @@ import {
 	CarouselPrevious,
 } from "@/components/ui/carousel";
 import { ErrorMessage } from "@/components/ui/error-message";
+import { Label } from "@/components/ui/label";
 import Loader from "@/components/ui/loader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Lead } from "@/components/ui/typography";
-import { formatLastUpdatedDate } from "@/helper/formatDate";
-import {
-	getAllLibrarySectionsFromIDB,
-	searchIDBForTMDBID,
-} from "@/helper/searchIDBForTMDBID";
+
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
-import { fetchAllUserSets } from "@/services/api.mediux";
+import { useMediaStore } from "@/lib/mediaStore";
+import { usePosterSetStore } from "@/lib/posterSetStore";
+
 import {
 	MediuxUserBoxset,
 	MediuxUserCollectionMovie,
@@ -25,29 +50,6 @@ import {
 	MediuxUserShowSet,
 } from "@/types/mediuxUserAllSets";
 import { PosterSet } from "@/types/posterSets";
-import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { CarouselMovie } from "@/components/carousel-movie";
-import DownloadModalShow from "@/components/download-modal-show";
-import DownloadModalMovie from "@/components/download-modal-movie";
-import { useRouter } from "next/navigation";
-import { usePosterSetStore } from "@/lib/posterSetStore";
-import { useMediaStore } from "@/lib/mediaStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Accordion,
-	AccordionItem,
-	AccordionTrigger,
-	AccordionContent,
-} from "@/components/ui/accordion";
-import { Label } from "@/components/ui/label";
-import { ToggleGroup } from "@/components/ui/toggle-group";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 as Checkmark } from "lucide-react";
-import { BoxsetDisplay } from "@/components/boxset-display";
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { SelectItemsPerPage } from "@/components/items-per-page-select";
-import { CustomPagination } from "@/components/custom-pagination";
 
 const UserSetPage = () => {
 	// Get the username from the URL
@@ -69,24 +71,16 @@ const UserSetPage = () => {
 		total: 0,
 	});
 	const [respShowSets, setRespShowSets] = useState<MediuxUserShowSet[]>([]);
-	const [respMovieSets, setRespMovieSets] = useState<MediuxUserMovieSet[]>(
-		[]
-	);
-	const [respCollectionSets, setRespCollectionSets] = useState<
-		MediuxUserCollectionSet[]
-	>([]);
+	const [respMovieSets, setRespMovieSets] = useState<MediuxUserMovieSet[]>([]);
+	const [respCollectionSets, setRespCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
 	const [respBoxsets, setRespBoxsets] = useState<MediuxUserBoxset[]>([]);
 	const [idbShowSets, setIdbShowSets] = useState<MediuxUserShowSet[]>([]);
 	const [idbMovieSets, setIdbMovieSets] = useState<MediuxUserMovieSet[]>([]);
-	const [idbCollectionSets, setIdbCollectionSets] = useState<
-		MediuxUserCollectionSet[]
-	>([]);
+	const [idbCollectionSets, setIdbCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
 	const [idbBoxsets, setIdbBoxsets] = useState<MediuxUserBoxset[]>([]);
 	const [showSets, setShowSets] = useState<MediuxUserShowSet[]>([]);
 	const [movieSets, setMovieSets] = useState<MediuxUserMovieSet[]>([]);
-	const [collectionSets, setCollectionSets] = useState<
-		MediuxUserCollectionSet[]
-	>([]);
+	const [collectionSets, setCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
 	const [boxsets, setBoxSets] = useState<MediuxUserBoxset[]>([]);
 
 	// Pagination and Active Tab state
@@ -95,16 +89,12 @@ const UserSetPage = () => {
 	const [totalPages, setTotalPages] = useState(0);
 
 	// Library sections & progress
-	const [librarySections, setLibrarySections] = useState<
-		{ title: string; type: string }[]
-	>([]);
+	const [librarySections, setLibrarySections] = useState<{ title: string; type: string }[]>([]);
 	const [selectedLibrarySection, setSelectedLibrarySection] = useState<{
 		title: string;
 		type: string;
 	} | null>(null);
-	const [filterOutInDB, setFilterOutInDB] = useState<
-		"all" | "inDB" | "notInDB"
-	>("all");
+	const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB">("all");
 
 	// Get all the library sections from the IDB
 	useEffect(() => {
@@ -153,10 +143,7 @@ const UserSetPage = () => {
 		getAllUserSets();
 	}, [username]);
 
-	const getTotalItemsToProcess = (
-		boxset: MediuxUserBoxset,
-		libraryType: string
-	) => {
+	const getTotalItemsToProcess = (boxset: MediuxUserBoxset, libraryType: string) => {
 		if (libraryType === "show") {
 			return boxset.show_sets?.length || 0;
 		} else {
@@ -165,8 +152,7 @@ const UserSetPage = () => {
 				boxset.collection_sets?.reduce((acc, collection) => {
 					// Count both posters and backdrops for each collection
 					const posterCount = collection.movie_posters?.length || 0;
-					const backdropCount =
-						collection.movie_backdrops?.length || 0;
+					const backdropCount = collection.movie_backdrops?.length || 0;
 					return acc + posterCount + backdropCount;
 				}, 0) || 0;
 
@@ -190,11 +176,7 @@ const UserSetPage = () => {
 			if (!selectedLibrarySection) return;
 			setIsLoading(true);
 
-			log(
-				"Setting items based on",
-				selectedLibrarySection,
-				filterOutInDB
-			);
+			log("Setting items based on", selectedLibrarySection, filterOutInDB);
 			if (respBoxsets && respBoxsets.length > 0) {
 				const userBoxsets: MediuxUserBoxset[] = [];
 				log("User Page - Filtering Boxsets", respBoxsets);
@@ -220,237 +202,159 @@ const UserSetPage = () => {
 						if (selectedLibrarySection.type === "show") {
 							boxset.movie_sets = []; // Clear movie sets since its not needed
 							boxset.collection_sets = []; // Clear collection sets since its not needed
-							if (
-								boxset.show_sets &&
-								boxset.show_sets.length > 0
-							) {
+							if (boxset.show_sets && boxset.show_sets.length > 0) {
 								const updatedShowSets: MediuxUserShowSet[] = [];
 								await Promise.all(
-									boxset.show_sets.map(
-										async (showSet: MediuxUserShowSet) => {
-											const dbResult =
-												await searchIDBForTMDBID(
-													showSet.show_id.id,
-													selectedLibrarySection.title
-												);
+									boxset.show_sets.map(async (showSet: MediuxUserShowSet) => {
+										const dbResult = await searchIDBForTMDBID(
+											showSet.show_id.id,
+											selectedLibrarySection.title
+										);
 
-											// Add progress tracking here
-											processedItems++;
-											setProgressCount((prev) => ({
-												...prev,
-												current: processedItems,
-											}));
-											setLoadMessage(
-												`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
-											);
+										// Add progress tracking here
+										processedItems++;
+										setProgressCount((prev) => ({
+											...prev,
+											current: processedItems,
+										}));
+										setLoadMessage(
+											`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+										);
 
-											if (dbResult && dbResult !== true) {
-												showSet.MediaItem = dbResult;
-												if (filterOutInDB === "all") {
-													updatedShowSets.push(
-														showSet
-													);
-												} else if (
-													filterOutInDB === "inDB" &&
-													dbResult.ExistInDatabase
-												) {
-													updatedShowSets.push(
-														showSet
-													);
-												} else if (
-													filterOutInDB ===
-														"notInDB" &&
-													!dbResult.ExistInDatabase
-												) {
-													updatedShowSets.push(
-														showSet
-													);
-												}
+										if (dbResult && dbResult !== true) {
+											showSet.MediaItem = dbResult;
+											if (filterOutInDB === "all") {
+												updatedShowSets.push(showSet);
+											} else if (
+												filterOutInDB === "inDB" &&
+												dbResult.ExistInDatabase
+											) {
+												updatedShowSets.push(showSet);
+											} else if (
+												filterOutInDB === "notInDB" &&
+												!dbResult.ExistInDatabase
+											) {
+												updatedShowSets.push(showSet);
 											}
 										}
-									)
+									})
 								);
 								boxset.show_sets = updatedShowSets;
 							}
 						} else if (selectedLibrarySection.type === "movie") {
 							boxset.show_sets = []; // Clear show sets since its not needed
 							// Process boxset.movie_sets if they exist.
-							if (
-								boxset.movie_sets &&
-								boxset.movie_sets.length > 0
-							) {
-								const updatedMovieSets: MediuxUserMovieSet[] =
-									[];
+							if (boxset.movie_sets && boxset.movie_sets.length > 0) {
+								const updatedMovieSets: MediuxUserMovieSet[] = [];
 								await Promise.all(
-									boxset.movie_sets.map(
-										async (
-											movieSet: MediuxUserMovieSet
-										) => {
-											const dbResult =
-												await searchIDBForTMDBID(
-													movieSet.movie_id.id,
-													selectedLibrarySection.title
-												);
+									boxset.movie_sets.map(async (movieSet: MediuxUserMovieSet) => {
+										const dbResult = await searchIDBForTMDBID(
+											movieSet.movie_id.id,
+											selectedLibrarySection.title
+										);
 
-											// Add progress tracking here
-											processedItems++;
-											setProgressCount((prev) => ({
-												...prev,
-												current: processedItems,
-											}));
-											setLoadMessage(
-												`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
-											);
-											if (dbResult && dbResult !== true) {
-												movieSet.MediaItem = dbResult;
-												if (filterOutInDB === "all") {
-													updatedMovieSets.push(
-														movieSet
-													);
-												} else if (
-													filterOutInDB === "inDB" &&
-													dbResult.ExistInDatabase
-												) {
-													updatedMovieSets.push(
-														movieSet
-													);
-												} else if (
-													filterOutInDB ===
-														"notInDB" &&
-													!dbResult.ExistInDatabase
-												) {
-													updatedMovieSets.push(
-														movieSet
-													);
-												}
+										// Add progress tracking here
+										processedItems++;
+										setProgressCount((prev) => ({
+											...prev,
+											current: processedItems,
+										}));
+										setLoadMessage(
+											`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+										);
+										if (dbResult && dbResult !== true) {
+											movieSet.MediaItem = dbResult;
+											if (filterOutInDB === "all") {
+												updatedMovieSets.push(movieSet);
+											} else if (
+												filterOutInDB === "inDB" &&
+												dbResult.ExistInDatabase
+											) {
+												updatedMovieSets.push(movieSet);
+											} else if (
+												filterOutInDB === "notInDB" &&
+												!dbResult.ExistInDatabase
+											) {
+												updatedMovieSets.push(movieSet);
 											}
 										}
-									)
+									})
 								);
 								boxset.movie_sets = updatedMovieSets;
 							}
 
-							if (
-								boxset.collection_sets &&
-								boxset.collection_sets.length > 0
-							) {
-								const updatedCollectionSets: MediuxUserCollectionSet[] =
-									[];
+							if (boxset.collection_sets && boxset.collection_sets.length > 0) {
+								const updatedCollectionSets: MediuxUserCollectionSet[] = [];
 								await Promise.all(
 									boxset.collection_sets.map(
-										async (
-											collectionSet: MediuxUserCollectionSet
-										) => {
-											const posterMovies: MediuxUserCollectionMovie[] =
-												[];
+										async (collectionSet: MediuxUserCollectionSet) => {
+											const posterMovies: MediuxUserCollectionMovie[] = [];
 											await Promise.all(
-												collectionSet.movie_posters.map(
-													async (poster) => {
-														const dbResult =
-															await searchIDBForTMDBID(
-																poster.movie.id,
-																selectedLibrarySection.title
-															);
+												collectionSet.movie_posters.map(async (poster) => {
+													const dbResult = await searchIDBForTMDBID(
+														poster.movie.id,
+														selectedLibrarySection.title
+													);
 
-														// Add progress tracking here
-														processedItems++;
-														setProgressCount(
-															(prev) => ({
-																...prev,
-																current:
-																	processedItems,
-															})
-														);
-														setLoadMessage(
-															`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
-														);
-														if (
-															dbResult &&
-															dbResult !== true
+													// Add progress tracking here
+													processedItems++;
+													setProgressCount((prev) => ({
+														...prev,
+														current: processedItems,
+													}));
+													setLoadMessage(
+														`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
+													);
+													if (dbResult && dbResult !== true) {
+														poster.movie.MediaItem = dbResult;
+														if (filterOutInDB === "all") {
+															posterMovies.push(poster);
+														} else if (
+															filterOutInDB === "inDB" &&
+															dbResult.ExistInDatabase
 														) {
-															poster.movie.MediaItem =
-																dbResult;
-															if (
-																filterOutInDB ===
-																"all"
-															) {
-																posterMovies.push(
-																	poster
-																);
-															} else if (
-																filterOutInDB ===
-																	"inDB" &&
-																dbResult.ExistInDatabase
-															) {
-																posterMovies.push(
-																	poster
-																);
-															} else if (
-																filterOutInDB ===
-																	"notInDB" &&
-																!dbResult.ExistInDatabase
-															) {
-																posterMovies.push(
-																	poster
-																);
-															}
+															posterMovies.push(poster);
+														} else if (
+															filterOutInDB === "notInDB" &&
+															!dbResult.ExistInDatabase
+														) {
+															posterMovies.push(poster);
 														}
 													}
-												)
+												})
 											);
-											const backdropMovies: MediuxUserCollectionMovie[] =
-												[];
+											const backdropMovies: MediuxUserCollectionMovie[] = [];
 											await Promise.all(
 												collectionSet.movie_backdrops.map(
 													async (backdrop) => {
-														const dbResult =
-															await searchIDBForTMDBID(
-																backdrop.movie
-																	.id,
-																selectedLibrarySection.title
-															);
+														const dbResult = await searchIDBForTMDBID(
+															backdrop.movie.id,
+															selectedLibrarySection.title
+														);
 
 														// Add progress tracking here
 														processedItems++;
-														setProgressCount(
-															(prev) => ({
-																...prev,
-																current:
-																	processedItems,
-															})
-														);
+														setProgressCount((prev) => ({
+															...prev,
+															current: processedItems,
+														}));
 														setLoadMessage(
 															`Filtering boxsets - Processing ${processedItems} of ${totalItemsToProcess} items`
 														);
-														if (
-															dbResult &&
-															dbResult !== true
-														) {
-															backdrop.movie.MediaItem =
-																dbResult;
-															if (
-																filterOutInDB ===
-																"all"
-															) {
-																backdropMovies.push(
-																	backdrop
-																);
+														if (dbResult && dbResult !== true) {
+															backdrop.movie.MediaItem = dbResult;
+															if (filterOutInDB === "all") {
+																backdropMovies.push(backdrop);
 															} else if (
-																filterOutInDB ===
-																	"inDB" &&
+																filterOutInDB === "inDB" &&
 																dbResult.ExistInDatabase
 															) {
-																backdropMovies.push(
-																	backdrop
-																);
+																backdropMovies.push(backdrop);
 															} else if (
-																filterOutInDB ===
-																	"notInDB" &&
+																filterOutInDB === "notInDB" &&
 																!dbResult.ExistInDatabase
 															) {
-																backdropMovies.push(
-																	backdrop
-																);
+																backdropMovies.push(backdrop);
 															}
 														}
 													}
@@ -464,8 +368,7 @@ const UserSetPage = () => {
 												updatedCollectionSets.push({
 													...collectionSet,
 													movie_posters: posterMovies,
-													movie_backdrops:
-														backdropMovies,
+													movie_backdrops: backdropMovies,
 												});
 											}
 										}
@@ -489,11 +392,7 @@ const UserSetPage = () => {
 			}
 
 			// Handle the show sets
-			if (
-				respShowSets &&
-				respShowSets.length > 0 &&
-				selectedLibrarySection.type === "show"
-			) {
+			if (respShowSets && respShowSets.length > 0 && selectedLibrarySection.type === "show") {
 				const userShowSets: MediuxUserShowSet[] = [];
 				log("User Page - Filtering Show Sets", respShowSets);
 				// Reset progress counts before processing
@@ -523,15 +422,9 @@ const UserSetPage = () => {
 							showSet.MediaItem = dbResult;
 							if (filterOutInDB === "all") {
 								userShowSets.push(showSet);
-							} else if (
-								filterOutInDB === "inDB" &&
-								dbResult.ExistInDatabase
-							) {
+							} else if (filterOutInDB === "inDB" && dbResult.ExistInDatabase) {
 								userShowSets.push(showSet);
-							} else if (
-								filterOutInDB === "notInDB" &&
-								!dbResult.ExistInDatabase
-							) {
+							} else if (filterOutInDB === "notInDB" && !dbResult.ExistInDatabase) {
 								userShowSets.push(showSet);
 							}
 						}
@@ -576,15 +469,9 @@ const UserSetPage = () => {
 							movieSet.MediaItem = dbResult;
 							if (filterOutInDB === "all") {
 								userMovieSets.push(movieSet);
-							} else if (
-								filterOutInDB === "inDB" &&
-								dbResult.ExistInDatabase
-							) {
+							} else if (filterOutInDB === "inDB" && dbResult.ExistInDatabase) {
 								userMovieSets.push(movieSet);
-							} else if (
-								filterOutInDB === "notInDB" &&
-								!dbResult.ExistInDatabase
-							) {
+							} else if (filterOutInDB === "notInDB" && !dbResult.ExistInDatabase) {
 								userMovieSets.push(movieSet);
 							}
 						}
@@ -602,22 +489,16 @@ const UserSetPage = () => {
 				selectedLibrarySection.type === "movie"
 			) {
 				const userCollectionSets: MediuxUserCollectionSet[] = [];
-				log(
-					"User Page - Filtering Collection Sets",
-					respCollectionSets
-				);
+				log("User Page - Filtering Collection Sets", respCollectionSets);
 				// Reset progress counts before processing
 				let processedItems = 0;
-				const totalItemsToProcess = respCollectionSets.reduce(
-					(acc, collectionSet) => {
-						return (
-							acc +
-							(collectionSet.movie_posters?.length || 0) +
-							(collectionSet.movie_backdrops?.length || 0)
-						);
-					},
-					0
-				);
+				const totalItemsToProcess = respCollectionSets.reduce((acc, collectionSet) => {
+					return (
+						acc +
+						(collectionSet.movie_posters?.length || 0) +
+						(collectionSet.movie_backdrops?.length || 0)
+					);
+				}, 0);
 				setProgressCount({
 					current: 0,
 					total: totalItemsToProcess,
@@ -662,40 +543,35 @@ const UserSetPage = () => {
 						);
 						const backdropMovies: MediuxUserCollectionMovie[] = [];
 						await Promise.all(
-							collectionSet.movie_backdrops.map(
-								async (backdrop) => {
-									const dbResult = await searchIDBForTMDBID(
-										backdrop.movie.id,
-										selectedLibrarySection.title
-									);
-									// Add progress tracking here
-									setProgressCount((prev) => ({
-										...prev,
-										current: prev.current + 1,
-									}));
-									if (dbResult && dbResult !== true) {
-										backdrop.movie.MediaItem = dbResult;
-										if (filterOutInDB === "all") {
-											backdropMovies.push(backdrop);
-										} else if (
-											filterOutInDB === "inDB" &&
-											dbResult.ExistInDatabase
-										) {
-											backdropMovies.push(backdrop);
-										} else if (
-											filterOutInDB === "notInDB" &&
-											!dbResult.ExistInDatabase
-										) {
-											backdropMovies.push(backdrop);
-										}
+							collectionSet.movie_backdrops.map(async (backdrop) => {
+								const dbResult = await searchIDBForTMDBID(
+									backdrop.movie.id,
+									selectedLibrarySection.title
+								);
+								// Add progress tracking here
+								setProgressCount((prev) => ({
+									...prev,
+									current: prev.current + 1,
+								}));
+								if (dbResult && dbResult !== true) {
+									backdrop.movie.MediaItem = dbResult;
+									if (filterOutInDB === "all") {
+										backdropMovies.push(backdrop);
+									} else if (
+										filterOutInDB === "inDB" &&
+										dbResult.ExistInDatabase
+									) {
+										backdropMovies.push(backdrop);
+									} else if (
+										filterOutInDB === "notInDB" &&
+										!dbResult.ExistInDatabase
+									) {
+										backdropMovies.push(backdrop);
 									}
 								}
-							)
+							})
 						);
-						if (
-							posterMovies.length > 0 ||
-							backdropMovies.length > 0
-						) {
+						if (posterMovies.length > 0 || backdropMovies.length > 0) {
 							userCollectionSets.push({
 								...collectionSet,
 								movie_posters: posterMovies,
@@ -720,14 +596,10 @@ const UserSetPage = () => {
 	useEffect(() => {
 		if (!selectedLibrarySection) return;
 
-		const filterByDatabaseStatus = (item: {
-			MediaItem: { ExistInDatabase: boolean };
-		}) => {
+		const filterByDatabaseStatus = (item: { MediaItem: { ExistInDatabase: boolean } }) => {
 			if (filterOutInDB === "all") return true;
-			if (filterOutInDB === "inDB")
-				return item.MediaItem?.ExistInDatabase;
-			if (filterOutInDB === "notInDB")
-				return !item.MediaItem?.ExistInDatabase;
+			if (filterOutInDB === "inDB") return item.MediaItem?.ExistInDatabase;
+			if (filterOutInDB === "notInDB") return !item.MediaItem?.ExistInDatabase;
 			return false;
 		};
 		// Filter boxsets
@@ -737,33 +609,22 @@ const UserSetPage = () => {
 					const newBoxset = { ...boxset };
 
 					if (selectedLibrarySection.type === "show") {
-						newBoxset.show_sets = boxset.show_sets.filter(
-							filterByDatabaseStatus
-						);
+						newBoxset.show_sets = boxset.show_sets.filter(filterByDatabaseStatus);
 					} else if (selectedLibrarySection.type === "movie") {
-						newBoxset.movie_sets = boxset.movie_sets.filter(
-							filterByDatabaseStatus
-						);
+						newBoxset.movie_sets = boxset.movie_sets.filter(filterByDatabaseStatus);
 						newBoxset.collection_sets = boxset.collection_sets
 							.map((collectionSet) => ({
 								...collectionSet,
-								movie_posters:
-									collectionSet.movie_posters.filter(
-										(poster) =>
-											filterByDatabaseStatus(poster.movie)
-									),
-								movie_backdrops:
-									collectionSet.movie_backdrops.filter(
-										(backdrop) =>
-											filterByDatabaseStatus(
-												backdrop.movie
-											)
-									),
+								movie_posters: collectionSet.movie_posters.filter((poster) =>
+									filterByDatabaseStatus(poster.movie)
+								),
+								movie_backdrops: collectionSet.movie_backdrops.filter((backdrop) =>
+									filterByDatabaseStatus(backdrop.movie)
+								),
 							}))
 							.filter(
 								(set) =>
-									set.movie_posters.length > 0 ||
-									set.movie_backdrops.length > 0
+									set.movie_posters.length > 0 || set.movie_backdrops.length > 0
 							);
 					}
 
@@ -787,9 +648,7 @@ const UserSetPage = () => {
 
 		// Filter movie sets
 		if (idbMovieSets.length > 0) {
-			const filteredMovieSets = idbMovieSets.filter(
-				filterByDatabaseStatus
-			);
+			const filteredMovieSets = idbMovieSets.filter(filterByDatabaseStatus);
 			setMovieSets(filteredMovieSets);
 		}
 
@@ -798,18 +657,14 @@ const UserSetPage = () => {
 			const filteredCollectionSets = idbCollectionSets
 				.map((collectionSet) => ({
 					...collectionSet,
-					movie_posters: collectionSet.movie_posters.filter(
-						(poster) => filterByDatabaseStatus(poster.movie)
+					movie_posters: collectionSet.movie_posters.filter((poster) =>
+						filterByDatabaseStatus(poster.movie)
 					),
-					movie_backdrops: collectionSet.movie_backdrops.filter(
-						(backdrop) => filterByDatabaseStatus(backdrop.movie)
+					movie_backdrops: collectionSet.movie_backdrops.filter((backdrop) =>
+						filterByDatabaseStatus(backdrop.movie)
 					),
 				}))
-				.filter(
-					(set) =>
-						set.movie_posters.length > 0 ||
-						set.movie_backdrops.length > 0
-				);
+				.filter((set) => set.movie_posters.length > 0 || set.movie_backdrops.length > 0);
 
 			setCollectionSets(filteredCollectionSets);
 		}
@@ -821,8 +676,7 @@ const UserSetPage = () => {
 		if (hasError) {
 			if (typeof window !== "undefined") document.title = "Aura | Error";
 		} else {
-			if (typeof window !== "undefined")
-				document.title = `AURA | ${username} Sets`;
+			if (typeof window !== "undefined") document.title = `AURA | ${username} Sets`;
 		}
 	}, [hasError, username]);
 
@@ -832,10 +686,10 @@ const UserSetPage = () => {
 				(activeTab === "showSets"
 					? showSets.length
 					: activeTab === "movieSets"
-					? movieSets.length
-					: activeTab === "collectionSets"
-					? collectionSets.length
-					: boxsets.length) / itemsPerPage
+						? movieSets.length
+						: activeTab === "collectionSets"
+							? collectionSets.length
+							: boxsets.length) / itemsPerPage
 			)
 		);
 		log("User Page - Total Pages", totalPages);
@@ -891,9 +745,7 @@ const UserSetPage = () => {
 				respCollectionSets.length === 0 &&
 				respBoxsets.length === 0 && (
 					<div className="flex justify-center">
-						<ErrorMessage
-							message={`No sets found for ${username}`}
-						/>
+						<ErrorMessage message={`No sets found for ${username}`} />
 					</div>
 				)}
 
@@ -924,8 +776,7 @@ const UserSetPage = () => {
 									)}
 									{respCollectionSets.length > 0 && (
 										<p className="text-muted-foreground text-sm">
-											Collection Sets:{" "}
-											{respCollectionSets.length}
+											Collection Sets: {respCollectionSets.length}
 										</p>
 									)}
 									{respBoxsets.length > 0 && (
@@ -951,8 +802,7 @@ const UserSetPage = () => {
 									type="single"
 									className="flex flex-wrap sm:flex-nowrap gap-2"
 									value={
-										selectedLibrarySection &&
-										selectedLibrarySection.title
+										selectedLibrarySection && selectedLibrarySection.title
 											? selectedLibrarySection.title
 											: ""
 									}
@@ -960,10 +810,8 @@ const UserSetPage = () => {
 										setSelectedLibrarySection(
 											val
 												? librarySections.find(
-														(section) =>
-															section.title ===
-															val
-												  ) || null
+														(section) => section.title === val
+													) || null
 												: null
 										);
 									}}
@@ -972,25 +820,19 @@ const UserSetPage = () => {
 										<Badge
 											key={section.title}
 											variant={
-												selectedLibrarySection?.title ===
-												section.title
+												selectedLibrarySection?.title === section.title
 													? "default"
 													: "outline"
 											}
 											onClick={() => {
 												setFilterOutInDB("all");
 												if (
-													selectedLibrarySection?.title ===
-													section.title
+													selectedLibrarySection?.title === section.title
 												) {
-													setSelectedLibrarySection(
-														null
-													);
+													setSelectedLibrarySection(null);
 													setCurrentPage(1);
 												} else {
-													setSelectedLibrarySection(
-														section
-													);
+													setSelectedLibrarySection(section);
 													setCurrentPage(1);
 												}
 											}}
@@ -1017,21 +859,17 @@ const UserSetPage = () => {
 										filterOutInDB === "inDB"
 											? "bg-green-600 text-white"
 											: filterOutInDB === "notInDB"
-											? "bg-red-600 text-white"
-											: ""
+												? "bg-red-600 text-white"
+												: ""
 									}`}
-									variant={
-										filterOutInDB !== "all"
-											? "default"
-											: "outline"
-									}
+									variant={filterOutInDB !== "all" ? "default" : "outline"}
 									onClick={() => {
 										const next =
 											filterOutInDB === "all"
 												? "inDB"
 												: filterOutInDB === "inDB"
-												? "notInDB"
-												: "all";
+													? "notInDB"
+													: "all";
 										setFilterOutInDB(next);
 										setCurrentPage(1);
 									}}
@@ -1039,8 +877,8 @@ const UserSetPage = () => {
 									{filterOutInDB === "all"
 										? "All Items"
 										: filterOutInDB === "inDB"
-										? "Items In DB"
-										: "Items Not in DB"}
+											? "Items In DB"
+											: "Items Not in DB"}
 								</Badge>
 							</div>
 						</div>
@@ -1067,9 +905,7 @@ const UserSetPage = () => {
 								<div className="flex flex-col items-center mt-4 mb-4">
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
-										<SelectItemsPerPage
-											setCurrentPage={setCurrentPage}
-										/>
+										<SelectItemsPerPage setCurrentPage={setCurrentPage} />
 									</div>
 									<Tabs
 										defaultValue="boxSets"
@@ -1086,8 +922,7 @@ const UserSetPage = () => {
 													value="showSets"
 													className="data-[state=active]:bg-background"
 												>
-													Show Sets ({showSets.length}
-													)
+													Show Sets ({showSets.length})
 												</TabsTrigger>
 											)}
 											{movieSets.length > 0 && (
@@ -1095,8 +930,7 @@ const UserSetPage = () => {
 													value="movieSets"
 													className="data-[state=active]:bg-background"
 												>
-													Movie Sets (
-													{movieSets.length})
+													Movie Sets ({movieSets.length})
 												</TabsTrigger>
 											)}
 											{collectionSets.length > 0 && (
@@ -1104,8 +938,7 @@ const UserSetPage = () => {
 													value="collectionSets"
 													className="data-[state=active]:bg-background"
 												>
-													Collection Sets (
-													{collectionSets.length})
+													Collection Sets ({collectionSets.length})
 												</TabsTrigger>
 											)}
 											{boxsets.length > 0 && (
@@ -1122,23 +955,17 @@ const UserSetPage = () => {
 											{paginatedShowSets.length > 0 && (
 												<TabsContent value="showSets">
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
-														{paginatedShowSets.map(
-															(showSet) => (
-																<div
-																	key={`${showSet.id}-showset`}
-																	className="pb-6"
-																>
-																	<RenderShowSetsCarousel
-																		key={
-																			showSet.id
-																		}
-																		showSet={
-																			showSet
-																		}
-																	/>
-																</div>
-															)
-														)}
+														{paginatedShowSets.map((showSet) => (
+															<div
+																key={`${showSet.id}-showset`}
+																className="pb-6"
+															>
+																<RenderShowSetsCarousel
+																	key={showSet.id}
+																	showSet={showSet}
+																/>
+															</div>
+														))}
 													</div>
 												</TabsContent>
 											)}
@@ -1146,29 +973,22 @@ const UserSetPage = () => {
 											{paginatedMovieSets.length > 0 && (
 												<TabsContent value="movieSets">
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
-														{paginatedMovieSets.map(
-															(movieSet) => (
-																<div
-																	key={`${movieSet.id}-movieset`}
-																	className="pb-6"
-																>
-																	<RenderMovieSetsCarousel
-																		key={
-																			movieSet.id
-																		}
-																		movieSet={
-																			movieSet
-																		}
-																	/>
-																</div>
-															)
-														)}
+														{paginatedMovieSets.map((movieSet) => (
+															<div
+																key={`${movieSet.id}-movieset`}
+																className="pb-6"
+															>
+																<RenderMovieSetsCarousel
+																	key={movieSet.id}
+																	movieSet={movieSet}
+																/>
+															</div>
+														))}
 													</div>
 												</TabsContent>
 											)}
 
-											{paginatedCollectionSets.length >
-												0 && (
+											{paginatedCollectionSets.length > 0 && (
 												<TabsContent value="collectionSets">
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
 														{paginatedCollectionSets.map(
@@ -1178,9 +998,7 @@ const UserSetPage = () => {
 																	className="pb-6"
 																>
 																	<RenderCollectionSetsCarousel
-																		key={
-																			collectionSet.id
-																		}
+																		key={collectionSet.id}
 																		collectionSet={
 																			collectionSet
 																		}
@@ -1195,26 +1013,20 @@ const UserSetPage = () => {
 											{paginatedBoxSets.length > 0 && (
 												<TabsContent value="boxSets">
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
-														{paginatedBoxSets.map(
-															(boxset) => (
-																<div
-																	key={`${boxset.id}-boxset`}
-																	className="pb-6"
-																>
-																	<RenderBoxsetsSection
-																		key={
-																			boxset.id
-																		}
-																		boxset={
-																			boxset
-																		}
-																		libraryType={
-																			selectedLibrarySection.type
-																		}
-																	/>
-																</div>
-															)
-														)}
+														{paginatedBoxSets.map((boxset) => (
+															<div
+																key={`${boxset.id}-boxset`}
+																className="pb-6"
+															>
+																<RenderBoxsetsSection
+																	key={boxset.id}
+																	boxset={boxset}
+																	libraryType={
+																		selectedLibrarySection.type
+																	}
+																/>
+															</div>
+														))}
 													</div>
 												</TabsContent>
 											)}
@@ -1238,11 +1050,7 @@ const UserSetPage = () => {
 
 export default UserSetPage;
 
-const RenderShowSetsCarousel = ({
-	showSet,
-}: {
-	showSet: MediuxUserShowSet;
-}) => {
+const RenderShowSetsCarousel = ({ showSet }: { showSet: MediuxUserShowSet }) => {
 	const router = useRouter();
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
@@ -1264,7 +1072,7 @@ const RenderShowSetsCarousel = ({
 						Type: "poster",
 						Modified: showSet.show_poster[0].modified_on,
 						FileSize: Number(showSet.show_poster[0].filesize),
-				  }
+					}
 				: undefined,
 		Backdrop:
 			showSet.show_backdrop && showSet.show_backdrop.length > 0
@@ -1273,7 +1081,7 @@ const RenderShowSetsCarousel = ({
 						Type: "backdrop",
 						Modified: showSet.show_backdrop[0].modified_on,
 						FileSize: Number(showSet.show_backdrop[0].filesize),
-				  }
+					}
 				: undefined,
 		SeasonPosters: showSet.season_posters.map((poster) => ({
 			ID: poster.id,
@@ -1321,10 +1129,7 @@ const RenderShowSetsCarousel = ({
 							{showSet.set_title}
 						</div>
 						{showSet.MediaItem.ExistInDatabase && (
-							<Checkmark
-								className="ml-2 text-green-500"
-								size={20}
-							/>
+							<Checkmark className="ml-2 text-green-500" size={20} />
 						)}
 					</div>
 					<div className="ml-auto flex space-x-2">
@@ -1339,11 +1144,7 @@ const RenderShowSetsCarousel = ({
 					</div>
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
-					Last Update:{" "}
-					{formatLastUpdatedDate(
-						showSet.date_updated,
-						showSet.date_created
-					)}
+					Last Update: {formatLastUpdatedDate(showSet.date_updated, showSet.date_created)}
 				</Lead>
 			</div>
 
@@ -1356,11 +1157,7 @@ const RenderShowSetsCarousel = ({
 	);
 };
 
-const RenderMovieSetsCarousel = ({
-	movieSet,
-}: {
-	movieSet: MediuxUserMovieSet;
-}) => {
+const RenderMovieSetsCarousel = ({ movieSet }: { movieSet: MediuxUserMovieSet }) => {
 	const router = useRouter();
 	const { setPosterSet } = usePosterSetStore();
 	const { setMediaItem } = useMediaStore();
@@ -1382,7 +1179,7 @@ const RenderMovieSetsCarousel = ({
 						Type: "poster",
 						Modified: movieSet.movie_poster[0].modified_on,
 						FileSize: Number(movieSet.movie_poster[0].filesize),
-				  }
+					}
 				: undefined,
 		Backdrop:
 			movieSet.movie_backdrop && movieSet.movie_backdrop.length > 0
@@ -1391,7 +1188,7 @@ const RenderMovieSetsCarousel = ({
 						Type: "backdrop",
 						Modified: movieSet.movie_backdrop[0].modified_on,
 						FileSize: Number(movieSet.movie_backdrop[0].filesize),
-				  }
+					}
 				: undefined,
 
 		Status: movieSet.movie_id.status,
@@ -1420,10 +1217,7 @@ const RenderMovieSetsCarousel = ({
 							{movieSet.set_title}
 						</div>
 						{movieSet.MediaItem.ExistInDatabase && (
-							<Checkmark
-								className="ml-2 text-green-500"
-								size={20}
-							/>
+							<Checkmark className="ml-2 text-green-500" size={20} />
 						)}
 					</div>
 					<div className="ml-auto flex space-x-2">
@@ -1441,10 +1235,7 @@ const RenderMovieSetsCarousel = ({
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
 					Last Update:{" "}
-					{formatLastUpdatedDate(
-						movieSet.date_updated,
-						movieSet.date_created
-					)}
+					{formatLastUpdatedDate(movieSet.date_updated, movieSet.date_created)}
 				</Lead>
 			</div>
 
@@ -1547,10 +1338,7 @@ const RenderCollectionSetsCarousel = ({
 							{
 								<DownloadModalMovie
 									posterSet={posterSet}
-									mediaItem={
-										collectionSet.movie_posters[0].movie
-											.MediaItem
-									}
+									mediaItem={collectionSet.movie_posters[0].movie.MediaItem}
 									open={isDownloadModalOpen}
 									onOpenChange={setIsDownloadModalOpen}
 								/>
@@ -1560,10 +1348,7 @@ const RenderCollectionSetsCarousel = ({
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
 					Last Update:{" "}
-					{formatLastUpdatedDate(
-						collectionSet.date_updated,
-						collectionSet.date_created
-					)}
+					{formatLastUpdatedDate(collectionSet.date_updated, collectionSet.date_created)}
 				</Lead>
 			</div>
 
@@ -1572,9 +1357,9 @@ const RenderCollectionSetsCarousel = ({
 					set={posterSet as PosterSet}
 					librarySection={(() => {
 						const sections =
-							posterSet.OtherPosters?.map(
-								(p) => p.Movie?.LibrarySection
-							).filter(Boolean) || [];
+							posterSet.OtherPosters?.map((p) => p.Movie?.LibrarySection).filter(
+								Boolean
+							) || [];
 						if (sections.length === 0) return "";
 						const freq: Record<string, number> = {};
 						sections.forEach((s) => {
@@ -1582,9 +1367,7 @@ const RenderCollectionSetsCarousel = ({
 								freq[s] = (freq[s] || 0) + 1;
 							}
 						});
-						return Object.entries(freq).sort(
-							(a, b) => b[1] - a[1]
-						)[0][0];
+						return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
 					})()}
 				/>
 			</CarouselContent>
@@ -1612,10 +1395,7 @@ const RenderBoxsetsSection = ({
 					</AccordionTrigger>
 					<AccordionContent>
 						<div className="flex flex-col space-y-4">
-							<BoxsetDisplay
-								boxset={boxset}
-								libraryType={libraryType}
-							/>
+							<BoxsetDisplay boxset={boxset} libraryType={libraryType} />
 						</div>
 					</AccordionContent>
 				</AccordionItem>

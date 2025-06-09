@@ -1,7 +1,4 @@
-export const formatLastUpdatedDate = (
-	lastUpdateString: string,
-	dateCreatedString: string
-) => {
+export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedString: string) => {
 	try {
 		if (!lastUpdateString && !dateCreatedString) {
 			return "Invalid Date";

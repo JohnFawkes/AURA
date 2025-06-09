@@ -1,15 +1,21 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
-import { MediaItem } from "@/types/mediaItem";
-import { H4 } from "../../../components/ui/typography";
-import { CheckCircle2 as Checkmark } from "lucide-react";
-import { useMediaStore } from "@/lib/mediaStore";
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { CheckCircle2 as Checkmark } from "lucide-react";
+
+import React from "react";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { useMediaStore } from "@/lib/mediaStore";
+
+import { MediaItem } from "@/types/mediaItem";
+
+import { H4 } from "../../../components/ui/typography";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;

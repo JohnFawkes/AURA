@@ -1,6 +1,7 @@
-import { PosterSet } from "@/types/posterSets";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
+import { PosterSet } from "@/types/posterSets";
 
 interface PosterSetStore {
 	posterSet: PosterSet | null;

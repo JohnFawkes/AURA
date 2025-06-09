@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -12,9 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function setCssVariable(variableName: string, value: string): void {
 	if (typeof document !== "undefined") {
-		const name = variableName.startsWith("--")
-			? variableName
-			: `--${variableName}`;
+		const name = variableName.startsWith("--") ? variableName : `--${variableName}`;
 		document.documentElement.style.setProperty(name, value);
 	}
 }
@@ -45,9 +43,7 @@ export function formatDateToReadable(dateString: string): string {
 
 	// Add ordinal suffix to day
 	const suffix =
-		["th", "st", "nd", "rd"][
-			day % 100 > 10 && day % 100 < 14 ? 0 : day % 10
-		] || "th";
+		["th", "st", "nd", "rd"][day % 100 > 10 && day % 100 < 14 ? 0 : day % 10] || "th";
 
 	return `${day}${suffix} ${month} ${year}`;
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { CarouselItem } from "@/components/ui/carousel";
 import { AssetImage } from "@/components/ui/asset-image";
+import { CarouselItem } from "@/components/ui/carousel";
+
 import { PosterFile, PosterSet } from "@/types/posterSets";
 
 export function CarouselShow({ set }: { set: PosterSet }) {
@@ -9,9 +10,7 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 		<>
 			{/* Show Posters with Backdrop */}
 			{(set.Poster || set.Backdrop) && (
-				<CarouselItem
-					key={`${set.ID}-${set.Poster?.ID || "no-poster"}`}
-				>
+				<CarouselItem key={`${set.ID}-${set.Poster?.ID || "no-poster"}`}>
 					<div className="space-y-2">
 						{set.Poster && (
 							<AssetImage
@@ -43,23 +42,19 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 					seasonPoster.Type === "specialSeasonPoster"
 			)
 				// Sort seasons descending by season number (high to low)
-				?.sort(
-					(a, b) => (b.Season?.Number ?? 0) - (a.Season?.Number ?? 0)
-				)
+				?.sort((a, b) => (b.Season?.Number ?? 0) - (a.Season?.Number ?? 0))
 				?.map((poster) => {
 					// For the matching titlecard, select the latest one based on UpdatedAt
 					const matchingTitlecards = set.TitleCards?.filter(
 						(titleCard) =>
 							titleCard.Type === "titlecard" &&
-							titleCard.Episode?.SeasonNumber ===
-								poster.Season?.Number
+							titleCard.Episode?.SeasonNumber === poster.Season?.Number
 					);
 					const latestTitlecard = matchingTitlecards
 						? matchingTitlecards.sort(
 								(a, b) =>
-									new Date(b.Modified).getTime() -
-									new Date(a.Modified).getTime()
-						  )[0]
+									new Date(b.Modified).getTime() - new Date(a.Modified).getTime()
+							)[0]
 						: null;
 
 					return (
@@ -75,9 +70,7 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 
 								{latestTitlecard && (
 									<AssetImage
-										image={
-											latestTitlecard as unknown as PosterFile
-										}
+										image={latestTitlecard as unknown as PosterFile}
 										displayUser={true}
 										displayMediaType={true}
 										aspect="titlecard"
@@ -91,9 +84,7 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 
 			{/* Standalone Titlecards if no Posters or Season Posters */}
 			{!set.SeasonPosters?.some(
-				(poster) =>
-					poster.Type === "seasonPoster" ||
-					poster.Type === "specialSeasonPoster"
+				(poster) => poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster"
 			) &&
 				!set.Poster &&
 				set.TitleCards && (
@@ -103,14 +94,17 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 								(titleCard) =>
 									titleCard.Type === "titlecard" &&
 									titleCard.Episode?.SeasonNumber != null
-							).reduce((acc, titleCard) => {
-								const season = titleCard.Episode!.SeasonNumber;
-								if (!acc[season]) {
-									acc[season] = [];
-								}
-								acc[season].push(titleCard);
-								return acc;
-							}, {} as Record<number, typeof set.TitleCards>)
+							).reduce(
+								(acc, titleCard) => {
+									const season = titleCard.Episode!.SeasonNumber;
+									if (!acc[season]) {
+										acc[season] = [];
+									}
+									acc[season].push(titleCard);
+									return acc;
+								},
+								{} as Record<number, typeof set.TitleCards>
+							)
 						)
 							.sort((a, b) => Number(b[0]) - Number(a[0]))
 							.map(([season, cards]) => {
@@ -119,25 +113,21 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 										new Date(b.Modified).getTime() -
 										new Date(a.Modified).getTime()
 								);
-								return sortedCards
-									.slice(0, 3)
-									.map((titleCard) => (
-										<CarouselItem
-											key={`${set.ID}-season-${season}-${titleCard.ID}`}
-										>
-											<div className="space-y-2">
-												<AssetImage
-													image={
-														titleCard as unknown as PosterFile
-													}
-													displayUser={true}
-													displayMediaType={true}
-													aspect="titlecard"
-													className="w-full"
-												/>
-											</div>
-										</CarouselItem>
-									));
+								return sortedCards.slice(0, 3).map((titleCard) => (
+									<CarouselItem
+										key={`${set.ID}-season-${season}-${titleCard.ID}`}
+									>
+										<div className="space-y-2">
+											<AssetImage
+												image={titleCard as unknown as PosterFile}
+												displayUser={true}
+												displayMediaType={true}
+												aspect="titlecard"
+												className="w-full"
+											/>
+										</div>
+									</CarouselItem>
+								));
 							})}
 					</>
 				)}

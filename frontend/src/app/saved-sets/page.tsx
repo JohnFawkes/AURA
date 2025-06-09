@@ -1,32 +1,32 @@
 "use client";
-import React, {
-	useCallback,
-	useEffect,
-	useState,
-	useRef,
-	useMemo,
-} from "react";
-import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
+
 import {
 	AutodownloadResult,
 	fetchAllItemsFromDB,
 	postForceRecheckDBItemForAutoDownload,
 } from "@/services/api.db";
-import Loader from "@/components/ui/loader";
-import { ErrorMessage } from "@/components/ui/error-message";
-import SavedSetsCard from "@/components/ui/saved-sets-cards";
-import { Button } from "@/components/ui/button";
 import { RefreshCcw as RefreshIcon, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
-import { searchMediaItems } from "@/hooks/searchMediaItems";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { log } from "@/lib/logger";
-import { SelectItemsPerPage } from "@/components/items-per-page-select";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { CustomPagination } from "@/components/custom-pagination";
+import { SelectItemsPerPage } from "@/components/items-per-page-select";
 import { RefreshButton } from "@/components/shared/buttons/refresh-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { Label } from "@/components/ui/label";
+import Loader from "@/components/ui/loader";
+import SavedSetsCard from "@/components/ui/saved-sets-cards";
+
+import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { log } from "@/lib/logger";
+import { cn } from "@/lib/utils";
+
+import { searchMediaItems } from "@/hooks/searchMediaItems";
+
+import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
@@ -36,9 +36,7 @@ const SavedSetsPage: React.FC = () => {
 	const isFetchingRef = useRef(false);
 	const { searchQuery } = useHomeSearchStore();
 	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
-	const [recheckStatus, setRecheckStatus] = useState<
-		Record<string, AutodownloadResult>
-	>({});
+	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
 	const { itemsPerPage } = useHomeSearchStore();
 	const [currentPage, setCurrentPage] = useState(1);
@@ -59,11 +57,7 @@ const SavedSetsPage: React.FC = () => {
 			setSavedSets(sets);
 		} catch (error) {
 			setError(true);
-			setErrorMessage(
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred"
-			);
+			setErrorMessage(error instanceof Error ? error.message : "An unknown error occurred");
 		} finally {
 			setLoading(false);
 			isFetchingRef.current = false;
@@ -89,30 +83,19 @@ const SavedSetsPage: React.FC = () => {
 
 		if (searchQuery.trim() !== "") {
 			const mediaItems = savedSets.map((set) => set.MediaItem);
-			const filteredMediaItems = searchMediaItems(
-				mediaItems,
-				searchQuery
-			);
-			const filteredKeys = new Set(
-				filteredMediaItems.map((item) => item.RatingKey)
-			);
-			filtered = savedSets.filter((set) =>
-				filteredKeys.has(set.MediaItem.RatingKey)
-			);
+			const filteredMediaItems = searchMediaItems(mediaItems, searchQuery);
+			const filteredKeys = new Set(filteredMediaItems.map((item) => item.RatingKey));
+			filtered = savedSets.filter((set) => filteredKeys.has(set.MediaItem.RatingKey));
 		}
 
 		if (filterAutoDownloadOnly) {
 			filtered = filtered.filter(
-				(set) =>
-					set.PosterSets &&
-					set.PosterSets.some((ps) => ps.AutoDownload === true)
+				(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload === true)
 			);
 		}
 
 		const sorted = filtered.slice().sort((a, b) => {
-			const getMaxDownloadTimestamp = (
-				set: DBMediaItemWithPosterSets
-			) => {
+			const getMaxDownloadTimestamp = (set: DBMediaItemWithPosterSets) => {
 				if (!set.PosterSets || set.PosterSets.length === 0) return 0;
 				return set.PosterSets.reduce((max, ps) => {
 					const time = new Date(ps.LastDownloaded).getTime();
@@ -134,9 +117,7 @@ const SavedSetsPage: React.FC = () => {
 		return filteredAndSortedSavedSets.slice(startIndex, endIndex);
 	}, [currentPage, itemsPerPage, filteredAndSortedSavedSets]);
 
-	const totalPages = Math.ceil(
-		filteredAndSortedSavedSets.length / itemsPerPage
-	);
+	const totalPages = Math.ceil(filteredAndSortedSavedSets.length / itemsPerPage);
 
 	if (loading) {
 		return <Loader className="mt-10" message="Loading saved sets..." />;
@@ -155,9 +136,7 @@ const SavedSetsPage: React.FC = () => {
 		item: DBMediaItemWithPosterSets
 	): Promise<void> => {
 		try {
-			const recheckResp = await postForceRecheckDBItemForAutoDownload(
-				item
-			);
+			const recheckResp = await postForceRecheckDBItemForAutoDownload(item);
 			if (recheckResp.status !== "success") {
 				throw new Error(recheckResp.message);
 			}
@@ -166,15 +145,10 @@ const SavedSetsPage: React.FC = () => {
 				[title]: recheckResp.data as AutodownloadResult,
 			}));
 		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: "An unknown error occurred",
-				{
-					id: "recheck-error",
-					duration: 2000,
-				}
-			);
+			toast.error(error instanceof Error ? error.message : "An unknown error occurred", {
+				id: "recheck-error",
+				duration: 2000,
+			});
 		}
 	};
 
@@ -186,8 +160,7 @@ const SavedSetsPage: React.FC = () => {
 
 		// Get all saved sets that have AutoDownload enabled
 		const setsToRecheck = savedSets.filter(
-			(set) =>
-				set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
+			(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
 		);
 
 		log("Sets to recheck:", setsToRecheck);
@@ -207,9 +180,7 @@ const SavedSetsPage: React.FC = () => {
 
 		for (const [index, set] of setsToRecheck.entries()) {
 			toast.loading(
-				`Rechecking ${index + 1} of ${setsToRecheck.length} - ${
-					set.MediaItem.Title
-				}`,
+				`Rechecking ${index + 1} of ${setsToRecheck.length} - ${set.MediaItem.Title}`,
 				{
 					id: "force-recheck",
 					duration: 0, // Keep it open until we manually close it
@@ -245,9 +216,7 @@ const SavedSetsPage: React.FC = () => {
 							setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
 						}}
 					>
-						{filterAutoDownloadOnly
-							? "AutoDownload Only"
-							: "All Items"}
+						{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
 					</Badge>
 				</div>
 				<Button
@@ -256,17 +225,14 @@ const SavedSetsPage: React.FC = () => {
 					onClick={() => forceRecheckAll()}
 					className="flex items-center gap-1 text-xs sm:text-sm"
 				>
-					<span className="hidden sm:inline">
-						Force Autodownload Recheck
-					</span>
+					<span className="hidden sm:inline">Force Autodownload Recheck</span>
 					<span className="sm:hidden">Recheck</span>
 					<span className="whitespace-nowrap">
 						(
 						{
 							savedSets.filter(
 								(set) =>
-									set.PosterSets &&
-									set.PosterSets.some((ps) => ps.AutoDownload)
+									set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
 							).length
 						}
 						)
@@ -282,9 +248,7 @@ const SavedSetsPage: React.FC = () => {
 
 			{Object.keys(recheckStatus).length > 0 && (
 				<div className="w-full mb-4">
-					<h3 className="text-lg font-semibold mb-2">
-						Recheck Status:
-					</h3>
+					<h3 className="text-lg font-semibold mb-2">Recheck Status:</h3>
 					<div className="rounded-md border">
 						<table className="w-full divide-y divide-border">
 							<thead className="bg-muted/50">
@@ -314,9 +278,7 @@ const SavedSetsPage: React.FC = () => {
 								{Object.entries(recheckStatus)
 									// Sort entries by MediaItemTitle
 									.sort(([, a], [, b]) =>
-										a.MediaItemTitle.localeCompare(
-											b.MediaItemTitle
-										)
+										a.MediaItemTitle.localeCompare(b.MediaItemTitle)
 									)
 									.map(([title, result]) => (
 										<tr key={title}>
@@ -329,17 +291,13 @@ const SavedSetsPage: React.FC = () => {
 														"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium",
 														{
 															"bg-green-100 text-green-700":
-																result.OverAllResult ===
-																"Success",
+																result.OverAllResult === "Success",
 															"bg-yellow-100 text-yellow-700":
-																result.OverAllResult ===
-																"Warning",
+																result.OverAllResult === "Warning",
 															"bg-red-100 text-red-700":
-																result.OverAllResult ===
-																"Error",
+																result.OverAllResult === "Error",
 															"bg-gray-100 text-gray-700":
-																result.OverAllResult ===
-																"Skipped",
+																result.OverAllResult === "Skipped",
 														}
 													)}
 												>
@@ -349,57 +307,36 @@ const SavedSetsPage: React.FC = () => {
 											<td className="px-3 py-2">
 												<div className="space-y-1">
 													<p className="text-md text-muted-foreground">
-														{
-															result.OverAllResultMessage
-														}
+														{result.OverAllResultMessage}
 													</p>
-													{result.Sets.map(
-														(set, index) => (
-															<div
-																key={`${set.PosterSetID}-${index}`}
-																className="text-xs text-muted-foreground pl-4"
-															>
-																• Set{" "}
-																{
-																	set.PosterSetID
-																}
-																: {set.Result} -{" "}
-																{set.Reason}
-															</div>
-														)
-													)}
+													{result.Sets.map((set, index) => (
+														<div
+															key={`${set.PosterSetID}-${index}`}
+															className="text-xs text-muted-foreground pl-4"
+														>
+															• Set {set.PosterSetID}: {set.Result} -{" "}
+															{set.Reason}
+														</div>
+													))}
 												</div>
 											</td>
 											<td className="px-3 py-2">
 												<RefreshIcon
 													className="h-4 w-4 cursor-pointer text-primary-dynamic hover:text-primary"
 													onClick={async () => {
-														const item =
-															savedSets.find(
-																(set) =>
-																	set
-																		.MediaItem
-																		.Title ===
-																	title
-															);
+														const item = savedSets.find(
+															(set) => set.MediaItem.Title === title
+														);
 														if (!item) return;
 														// Remove the item from the recheck status list
-														setRecheckStatus(
-															(prev) => {
-																const newStatus =
-																	{
-																		...prev,
-																	};
-																delete newStatus[
-																	title
-																];
-																return newStatus;
-															}
-														);
-														await handleRecheckItem(
-															title,
-															item
-														);
+														setRecheckStatus((prev) => {
+															const newStatus = {
+																...prev,
+															};
+															delete newStatus[title];
+															return newStatus;
+														});
+														await handleRecheckItem(title, item);
 													}}
 												/>
 											</td>
@@ -422,9 +359,7 @@ const SavedSetsPage: React.FC = () => {
 						/>
 					))
 				) : (
-					<p className="text-muted-foreground">
-						No saved sets found.
-					</p>
+					<p className="text-muted-foreground">No saved sets found.</p>
 				)}
 			</div>
 

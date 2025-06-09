@@ -1,6 +1,9 @@
 import React, { type PropsWithChildren } from "react";
-import { cn } from "@/lib/utils"; // Assuming you have a cn utility
+
+// Assuming you have a cn utility
 import Link from "next/link";
+
+import { cn } from "@/lib/utils";
 
 /**
  * Defines the props for the ResponsiveGrid component.
@@ -42,9 +45,13 @@ interface ResponsiveGridProps {
  * - 5xl: 10 columns
  * - 6xl: 12 columns
  */
-export const ResponsiveGrid: React.FC<
-	PropsWithChildren<ResponsiveGridProps>
-> = ({ className, title, link, maxItems, children }) => {
+export const ResponsiveGrid: React.FC<PropsWithChildren<ResponsiveGridProps>> = ({
+	className,
+	title,
+	link,
+	maxItems,
+	children,
+}) => {
 	const items = React.Children.toArray(children);
 	const displayedItems = maxItems ? items.slice(0, maxItems) : items;
 

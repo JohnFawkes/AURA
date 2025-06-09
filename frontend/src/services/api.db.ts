@@ -1,18 +1,15 @@
-import apiClient from "./apiClient";
-import { APIResponse } from "../types/apiResponse";
-import { ReturnErrorMessage } from "./api.shared";
-import { log } from "@/lib/logger";
-import {
-	DBMediaItemWithPosterSets,
-	DBSavedItem,
-} from "@/types/databaseSavedSet";
-import { MediaItem } from "@/types/mediaItem";
 import localforage from "localforage";
 
-const updateMediaItemStore = async (
-	ratingKey: string,
-	sectionTitle: string
-): Promise<void> => {
+import { log } from "@/lib/logger";
+
+import { DBMediaItemWithPosterSets, DBSavedItem } from "@/types/databaseSavedSet";
+import { MediaItem } from "@/types/mediaItem";
+
+import { APIResponse } from "../types/apiResponse";
+import { ReturnErrorMessage } from "./api.shared";
+import apiClient from "./apiClient";
+
+const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Promise<void> => {
 	try {
 		// Retrieve the library record from localforage
 		const librarySection = await localforage.getItem<{
@@ -22,19 +19,13 @@ const updateMediaItemStore = async (
 			timestamp: number;
 		}>(sectionTitle);
 
-		if (
-			!librarySection ||
-			!librarySection.data ||
-			!librarySection.data.MediaItems
-		) {
+		if (!librarySection || !librarySection.data || !librarySection.data.MediaItems) {
 			throw new Error("Library record not found or invalid structure");
 		}
 
 		// Find and update the media item with the matching ratingKey
 		const mediaItems: MediaItem[] = librarySection.data.MediaItems;
-		const index = mediaItems.findIndex(
-			(item) => item.RatingKey === ratingKey
-		);
+		const index = mediaItems.findIndex((item) => item.RatingKey === ratingKey);
 		if (index === -1) {
 			throw new Error("Media item not found in library section");
 		}
@@ -62,27 +53,21 @@ const updateMediaItemStore = async (
 	}
 };
 
-export const postAddItemToDB = async (
-	SaveItem: DBSavedItem
-): Promise<APIResponse<DBSavedItem>> => {
+export const postAddItemToDB = async (SaveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
 	log("api.db - Adding item to DB started");
 	try {
-		const response = await apiClient.post<APIResponse<DBSavedItem>>(
-			`/db/add/item`,
-			SaveItem
-		);
+		const response = await apiClient.post<APIResponse<DBSavedItem>>(`/db/add/item`, SaveItem);
 		log("api.db - Adding item to DB succeeded");
 		// Call updateMediaItemStore and swallow any errors if it fails.
-		updateMediaItemStore(
-			SaveItem.MediaItem.RatingKey,
-			SaveItem.MediaItem.LibraryTitle
-		).catch((e) => {
-			log(
-				`api.db - Updating media item cache failed: ${
-					e instanceof Error ? e.message : "Unknown error"
-				}`
-			);
-		});
+		updateMediaItemStore(SaveItem.MediaItem.RatingKey, SaveItem.MediaItem.LibraryTitle).catch(
+			(e) => {
+				log(
+					`api.db - Updating media item cache failed: ${
+						e instanceof Error ? e.message : "Unknown error"
+					}`
+				);
+			}
+		);
 		return response.data;
 	} catch (error) {
 		log(
@@ -94,14 +79,11 @@ export const postAddItemToDB = async (
 	}
 };
 
-export const fetchAllItemsFromDB = async (): Promise<
-	APIResponse<DBMediaItemWithPosterSets[]>
-> => {
+export const fetchAllItemsFromDB = async (): Promise<APIResponse<DBMediaItemWithPosterSets[]>> => {
 	log("api.db - Fetching all items from the database started");
 	try {
-		const response = await apiClient.get<
-			APIResponse<DBMediaItemWithPosterSets[]>
-		>(`/db/get/all`);
+		const response =
+			await apiClient.get<APIResponse<DBMediaItemWithPosterSets[]>>(`/db/get/all`);
 		log("api.db - Fetching all items from the database succeeded");
 		return response.data;
 	} catch (error) {
@@ -114,9 +96,7 @@ export const fetchAllItemsFromDB = async (): Promise<
 	}
 };
 
-export const deleteMediaItemFromDB = async (
-	ratingKey: string
-): Promise<APIResponse<string>> => {
+export const deleteMediaItemFromDB = async (ratingKey: string): Promise<APIResponse<string>> => {
 	log(`api.db - Deleting media item with ID ${ratingKey} started`);
 	try {
 		const response = await apiClient.delete<APIResponse<string>>(
@@ -141,9 +121,10 @@ export const patchSavedItemInDB = async (
 		`api.db - Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID} started.`
 	);
 	try {
-		const response = await apiClient.patch<
-			APIResponse<DBMediaItemWithPosterSets>
-		>(`/db/update/`, saveItem);
+		const response = await apiClient.patch<APIResponse<DBMediaItemWithPosterSets>>(
+			`/db/update/`,
+			saveItem
+		);
 		log(
 			`api.db - Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID} succeeded`
 		);
@@ -152,9 +133,7 @@ export const patchSavedItemInDB = async (
 		log(
 			`api.db - Patching DBMediaItemWithPosterSets for item with ID ${
 				saveItem.MediaItemID
-			} failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			} failed: ${error instanceof Error ? error.message : "Unknown error"}`
 		);
 		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);
 	}
@@ -176,9 +155,7 @@ export interface AutodownloadSetResult {
 export const postForceRecheckDBItemForAutoDownload = async (
 	item: DBMediaItemWithPosterSets
 ): Promise<APIResponse<AutodownloadResult>> => {
-	log(
-		`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} started`
-	);
+	log(`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} started`);
 	try {
 		const response = await apiClient.post<APIResponse<AutodownloadResult>>(
 			`/db/force/recheck`,
@@ -194,9 +171,7 @@ export const postForceRecheckDBItemForAutoDownload = async (
 		log(
 			`api.db - Forcing recheck for auto-download for item with ID ${
 				item.MediaItemID
-			} failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			} failed: ${error instanceof Error ? error.message : "Unknown error"}`
 		);
 		return ReturnErrorMessage<AutodownloadResult>(error);
 	}

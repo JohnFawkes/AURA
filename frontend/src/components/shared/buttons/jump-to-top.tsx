@@ -1,19 +1,21 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
+
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+
 import { usePathname } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+
+import { cn } from "@/lib/utils";
 
 export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);
 	const pathName = usePathname();
 
 	const isRefreshPage =
-		pathName === "/" ||
-		pathName === "/saved-sets" ||
-		pathName === "/saved-sets/";
+		pathName === "/" || pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {
