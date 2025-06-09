@@ -1,15 +1,22 @@
-import React from "react";
+import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const ErrorMessage: React.FC<{ message: string }> = ({ message }) => {
+interface ErrorMessageProps {
+	message: string;
+	className?: string;
+}
+
+export function ErrorMessage({ message, className }: ErrorMessageProps) {
+	if (!message) return null;
+
 	return (
-		<div className="flex flex-col items-center justify-center mt-10">
-			{message && (
-				<p className="text-red-500 text-lg font-semibold text-center">
-					{message}
-				</p>
-			)}
+		<div
+			className={cn("flex items-center justify-center mt-10", className)}
+		>
+			<div className="flex items-center gap-2 text-destructive">
+				<AlertCircle className="h-4 w-4" />
+				<p className="text-md font-medium">{message}</p>
+			</div>
 		</div>
 	);
-};
-
-export default ErrorMessage;
+}
