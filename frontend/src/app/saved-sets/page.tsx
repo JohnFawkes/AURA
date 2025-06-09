@@ -270,17 +270,24 @@ const SavedSetsPage: React.FC = () => {
 					variant="secondary"
 					size="sm"
 					onClick={() => forceRecheckAll()}
+					className="flex items-center gap-1 text-xs sm:text-sm"
 				>
-					Force Autodownload Recheck (
-					{
-						savedSets.filter(
-							(set) =>
-								set.PosterSets &&
-								set.PosterSets.some((ps) => ps.AutoDownload)
-						).length
-					}
-					)
-					<RefreshIcon className="h-3 w-3 ml-1" />
+					<span className="hidden sm:inline">
+						Force Autodownload Recheck
+					</span>
+					<span className="sm:hidden">Recheck</span>
+					<span className="whitespace-nowrap">
+						(
+						{
+							savedSets.filter(
+								(set) =>
+									set.PosterSets &&
+									set.PosterSets.some((ps) => ps.AutoDownload)
+							).length
+						}
+						)
+					</span>
+					<RefreshIcon className="h-3 w-3" />
 				</Button>
 			</div>
 
