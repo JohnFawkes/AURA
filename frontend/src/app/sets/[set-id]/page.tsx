@@ -20,13 +20,32 @@ import { SetFileCounts } from "@/components/set_file_counts";
 import DownloadModalShow from "@/components/download-modal-show";
 import DownloadModalMovie from "@/components/download-modal-movie";
 import { useRouter } from "next/navigation";
+import { fetchShowSetByID } from "@/services/api.mediux";
 
 const SetPage = () => {
-	const { posterSet } = usePosterSetStore();
+	const { posterSet, setPosterSet } = usePosterSetStore();
 	const { mediaItem } = useMediaStore();
 	const [backdropURL, setBackdropURL] = useState("");
 	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 	const router = useRouter();
+
+	// Update the Poster Set
+	useEffect(() => {
+		if (posterSet) {
+			const getShowSetByID = async () => {
+				const resp = await fetchShowSetByID(posterSet.ID);
+				if (resp.status !== "success") {
+					return;
+				}
+
+				// Update the posterSet state with the latest data
+				if (resp.data) {
+					setPosterSet(resp.data);
+				}
+			};
+			getShowSetByID();
+		}
+	}, [setPosterSet]);
 
 	// Construct the backdrop URL
 	// If the posterSet has a backdrop, use that
