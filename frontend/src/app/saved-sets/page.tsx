@@ -280,7 +280,7 @@ const SavedSetsPage: React.FC = () => {
 			<div className="w-full flex items-center mb-2">
 				<Label
 					htmlFor="items-per-page-trigger"
-					className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+					className="text-lg font-semibold mb-2 sm:mb-0 mr-2"
 				>
 					Items per page:
 				</Label>

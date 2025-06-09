@@ -377,7 +377,7 @@ export default function Home() {
 			<div className="flex items-center mb-4">
 				<Label
 					htmlFor="items-per-page-trigger"
-					className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4"
+					className="text-lg font-semibold mb-2 sm:mb-0 mr-2"
 				>
 					Items per page:
 				</Label>
