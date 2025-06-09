@@ -407,7 +407,7 @@ export default function Home() {
 			</div>
 
 			{/* Grid of Cards */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
 				{paginatedItems.length === 0 && searchQuery && fullyLoaded ? (
 					<div className="col-span-full text-center text-red-500">
 						No items found matching '{searchQuery}' in{" "}
