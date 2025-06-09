@@ -59,7 +59,7 @@ const SetPage = () => {
 			const backdropFile = posterSet.Backdrop;
 			if (backdropFile) {
 				setBackdropURL(
-					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}`
+					`/api/mediux/image/${backdropFile.ID}?modifiedDate=${backdropFile.Modified}&quality=full`
 				);
 			}
 		} else {
