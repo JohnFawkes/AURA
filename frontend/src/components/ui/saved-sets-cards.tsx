@@ -393,7 +393,6 @@ const SavedSetsCard: React.FC<{
 					</DropdownMenu>
 				</div>
 
-				{/* Add the modals at the bottom of the Card component */}
 				{isRedownloadModalOpen &&
 					savedSet.MediaItem.Type === "show" && (
 						<DownloadModalShow

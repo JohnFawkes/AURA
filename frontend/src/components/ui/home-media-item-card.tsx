@@ -50,6 +50,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 				/>
 			</div>
 
+			{/* Title */}
 			<H4 className="text-center font-semibold mb-2 px-2">
 				{mediaItem.Title.length > 55
 					? `${mediaItem.Title.slice(0, 55)}...`
