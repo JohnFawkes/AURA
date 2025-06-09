@@ -55,23 +55,13 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	warningMessages := CheckItemForAutodownload(dbSavedItem)
-
-	if len(warningMessages) > 0 {
-		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
-			Status:  "warning",
-			Message: "Force recheck completed with warnings",
-			Elapsed: utils.ElapsedTime(startTime),
-			Data:    warningMessages,
-		})
-		return
-	}
+	results := CheckItemForAutodownload(dbSavedItem)
 
 	// If no warnings, send a success response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
 		Message: "Force recheck completed successfully",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    "success",
+		Data:    results,
 	})
 }

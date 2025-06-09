@@ -160,14 +160,27 @@ export const patchSavedItemInDB = async (
 	}
 };
 
+export interface AutodownloadResult {
+	MediaItemTitle: string;
+	Sets: AutodownloadSetResult[];
+	OverAllResult: "Error" | "Warning" | "Success" | "Skipped";
+	OverAllResultMessage: string;
+}
+
+export interface AutodownloadSetResult {
+	PosterSetID: string;
+	Result: "Success" | "Skipped" | "Error";
+	Reason: string;
+}
+
 export const postForceRecheckDBItemForAutoDownload = async (
 	item: DBMediaItemWithPosterSets
-): Promise<APIResponse<string>> => {
+): Promise<APIResponse<AutodownloadResult>> => {
 	log(
 		`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} started`
 	);
 	try {
-		const response = await apiClient.post<APIResponse<string>>(
+		const response = await apiClient.post<APIResponse<AutodownloadResult>>(
 			`/db/force/recheck`,
 			{
 				Item: item,
@@ -185,6 +198,6 @@ export const postForceRecheckDBItemForAutoDownload = async (
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
-		return ReturnErrorMessage<string>(error);
+		return ReturnErrorMessage<AutodownloadResult>(error);
 	}
 };

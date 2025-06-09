@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 import {
+	AutodownloadResult,
 	fetchAllItemsFromDB,
 	postForceRecheckDBItemForAutoDownload,
 } from "@/services/api.db";
@@ -51,12 +52,10 @@ const SavedSetsPage: React.FC = () => {
 	const isFetchingRef = useRef(false);
 	const { searchQuery } = useHomeSearchStore();
 	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
-	const [recheckStatus, setRecheckStatus] = useState<{
-		[mediaID: string]: {
-			status: "error" | "warning" | "success";
-			messages: string[];
-		};
-	}>({});
+	const [recheckStatus, setRecheckStatus] = useState<
+		Record<string, AutodownloadResult>
+	>({});
+
 	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();
 	const [currentPage, setCurrentPage] = useState(1);
 
@@ -167,24 +166,40 @@ const SavedSetsPage: React.FC = () => {
 		);
 	}
 
-	// Helper function to ensure status is of correct type
-	type RecheckStatus = "error" | "warning" | "success";
-	const validateStatus = (status: string): RecheckStatus => {
-		if (
-			status === "error" ||
-			status === "warning" ||
-			status === "success"
-		) {
-			return status;
+	const handleRecheckItem = async (
+		title: string,
+		item: DBMediaItemWithPosterSets
+	): Promise<void> => {
+		try {
+			const recheckResp = await postForceRecheckDBItemForAutoDownload(
+				item
+			);
+			if (recheckResp.status !== "success") {
+				throw new Error(recheckResp.message);
+			}
+			setRecheckStatus((prev) => ({
+				...prev,
+				[title]: recheckResp.data as AutodownloadResult,
+			}));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred",
+				{
+					id: "recheck-error",
+					duration: 2000,
+				}
+			);
 		}
-		return "error"; // Default fallback
 	};
 
-	const forceRecheck = async () => {
+	const forceRecheckAll = async () => {
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
 
 		setRecheckStatus({}); // Reset recheck status
+
 		// Get all saved sets that have AutoDownload enabled
 		const setsToRecheck = savedSets.filter(
 			(set) =>
@@ -206,46 +221,8 @@ const SavedSetsPage: React.FC = () => {
 			duration: 0, // Keep it open until we manually close it
 		});
 
-		// Go through each set and recheck
 		for (const set of setsToRecheck) {
-			try {
-				const recheckResp = await postForceRecheckDBItemForAutoDownload(
-					set
-				);
-				if (
-					recheckResp.status !== "success" &&
-					recheckResp.status !== "warning"
-				) {
-					throw new Error(recheckResp.data || "Unknown error");
-				}
-
-				setRecheckStatus((prev) => ({
-					...prev,
-					[set.MediaItem.RatingKey]: {
-						status: validateStatus(recheckResp.status),
-						messages: Array.isArray(recheckResp.data)
-							? recheckResp.data
-							: typeof recheckResp.data === "string"
-							? recheckResp.data
-									.split(",")
-									.map((msg) => msg.trim())
-							: ["Recheck successful"],
-					},
-				}));
-			} catch (error) {
-				console.error("Recheck error:", error);
-				setRecheckStatus((prev) => ({
-					...prev,
-					[set.MediaItem.RatingKey]: {
-						status: "error" as const,
-						messages: [
-							error instanceof Error
-								? error.message
-								: "An unknown error occurred",
-						],
-					},
-				}));
-			}
+			await handleRecheckItem(set.MediaItem.Title, set);
 		}
 
 		// Close loading toast
@@ -284,7 +261,7 @@ const SavedSetsPage: React.FC = () => {
 				<Button
 					variant="secondary"
 					size="sm"
-					onClick={() => forceRecheck()}
+					onClick={() => forceRecheckAll()}
 				>
 					Force Autodownload Recheck (
 					{
@@ -348,110 +325,115 @@ const SavedSetsPage: React.FC = () => {
 										Status
 									</th>
 									<th className="px-3 py-2 text-left text-sm font-medium text-muted-foreground">
-										Messages
+										Details
 									</th>
-
-									<th
-										className="px-3 py-2 text-left text-sm font-medium text-muted-foreground"
-										onClick={() => setRecheckStatus({})}
-									>
+									<th className="px-3 py-2 text-right">
 										<Button
 											variant="ghost"
 											size="icon"
-											onClick={() => {
-												setRecheckStatus({});
-											}}
-											aria-label="Clear Recheck Status"
-											className="hover:bg-muted/50 active:bg-muted/70 disabled:opacity-50 disabled:pointer-events-none"
-											disabled={
-												Object.keys(recheckStatus)
-													.length === 0
-											}
+											onClick={() => setRecheckStatus({})}
+											className="h-8 w-8"
 										>
-											<XCircle className="h-4 w-4 text-muted-foreground" />
+											<XCircle className="h-4 w-4" />
 										</Button>
 									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-border">
-								{Object.entries(recheckStatus).map(
-									([ratingKey, status]) => (
-										<tr
-											key={ratingKey}
-											className={cn(
-												"hover:bg-muted/50",
-												status.status === "success" &&
-													"bg-green-50/50",
-												status.status === "warning" &&
-													"bg-yellow-50/50",
-												status.status === "error" &&
-													"bg-red-50/50"
-											)}
-										>
-											<td className="px-3 py-1.5 text-sm font-medium whitespace-nowrap">
-												{savedSets.find(
-													(set) =>
-														set.MediaItem
-															.RatingKey ===
-														ratingKey
-												)?.MediaItem.Title ||
-													"Unknown Title"}
+								{Object.entries(recheckStatus)
+									// Sort entries by MediaItemTitle
+									.sort(([, a], [, b]) =>
+										a.MediaItemTitle.localeCompare(
+											b.MediaItemTitle
+										)
+									)
+									.map(([title, result]) => (
+										<tr key={title}>
+											<td className="px-3 py-2 text-sm">
+												{result.MediaItemTitle}
 											</td>
-											<td className="px-3 py-1.5 text-sm whitespace-nowrap">
-												<span
+											<td className="px-3 py-2">
+												<Badge
 													className={cn(
-														"inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-														status.status ===
-															"success" &&
-															"bg-green-100 text-green-700",
-														status.status ===
-															"warning" &&
-															"bg-yellow-100 text-yellow-700",
-														status.status ===
-															"error" &&
-															"bg-red-100 text-red-700"
+														"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium",
+														{
+															"bg-green-100 text-green-700":
+																result.OverAllResult ===
+																"Success",
+															"bg-yellow-100 text-yellow-700":
+																result.OverAllResult ===
+																"Warning",
+															"bg-red-100 text-red-700":
+																result.OverAllResult ===
+																"Error",
+															"bg-gray-100 text-gray-700":
+																result.OverAllResult ===
+																"Skipped",
+														}
 													)}
 												>
-													{status.status
-														.charAt(0)
-														.toUpperCase() +
-														status.status.slice(1)}
-												</span>
+													{result.OverAllResult}
+												</Badge>
 											</td>
-											<td className="px-3 py-1.5 text-sm">
-												<div className="flex flex-col gap-1">
-													{status.messages.map(
-														(msg, index) => (
+											<td className="px-3 py-2">
+												<div className="space-y-1">
+													<p className="text-md text-muted-foreground">
+														{
+															result.OverAllResultMessage
+														}
+													</p>
+													{result.Sets.map(
+														(set, index) => (
 															<div
-																key={index}
-																className={cn(
-																	"flex items-start gap-2",
-																	status.status ===
-																		"success" &&
-																		"text-green-700",
-																	status.status ===
-																		"warning" &&
-																		"text-yellow-700",
-																	status.status ===
-																		"error" &&
-																		"text-red-700"
-																)}
+																key={`${set.PosterSetID}-${index}`}
+																className="text-xs text-muted-foreground pl-4"
 															>
-																<span className="mt-1">
-																	•
-																</span>
-																<span className="flex-1">
-																	{msg}
-																</span>
+																• Set{" "}
+																{
+																	set.PosterSetID
+																}
+																: {set.Result} -{" "}
+																{set.Reason}
 															</div>
 														)
 													)}
 												</div>
 											</td>
-											<td className="px-3 py-1.5 text-sm whitespace-nowrap"></td>
+											<td className="px-3 py-2">
+												<RefreshIcon
+													className="h-4 w-4 cursor-pointer text-primary-dynamic hover:text-primary"
+													onClick={async () => {
+														const item =
+															savedSets.find(
+																(set) =>
+																	set
+																		.MediaItem
+																		.Title ===
+																	title
+															);
+														if (!item) return;
+														// Remove the item from the recheck status list
+														setRecheckStatus(
+															(prev) => {
+																const newStatus =
+																	{
+																		...prev,
+																	};
+																delete newStatus[
+																	title
+																];
+																return newStatus;
+															}
+														);
+														await handleRecheckItem(
+															title,
+															item
+														);
+													}}
+												/>
+											</td>
 										</tr>
-									)
-								)}
+									))}
 							</tbody>
 						</table>
 					</div>

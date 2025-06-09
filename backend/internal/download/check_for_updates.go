@@ -28,10 +28,28 @@ func CheckForUpdatesToPosters() {
 	}
 }
 
-func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []string {
+type AutoDownloadResult struct {
+	MediaItemTitle       string
+	Sets                 []AutoDownloadSetResult
+	OverAllResult        string
+	OverAllResultMessage string
+}
+
+type AutoDownloadSetResult struct {
+	PosterSetID string
+	Result      string
+	Reason      string
+}
+
+func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) AutoDownloadResult {
+	var result AutoDownloadResult
+	result.MediaItemTitle = dbSavedItem.MediaItem.Title
+
 	// If the is not a show skip it
 	if dbSavedItem.MediaItem.Type != "show" {
-		return []string{fmt.Sprintf("Skipping '%s' - Not a show", dbSavedItem.MediaItem.Title)}
+		result.OverAllResult = "Skipped"
+		result.OverAllResultMessage = fmt.Sprintf("Skipping '%s' - Not a show", dbSavedItem.MediaItem.Title)
+		return result
 	}
 
 	var mediaServer mediaserver_shared.MediaServer
@@ -46,7 +64,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
 		}
 		logging.LOG.ErrorWithLog(logErr)
-		return []string{logErr.Log.Message}
+		result.OverAllResult = "Error"
+		result.OverAllResultMessage = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)
+		return result
 	}
 
 	logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s'", dbSavedItem.MediaItem.Title))
@@ -55,21 +75,29 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 	latestMediaItem, logErr := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
 	if logErr.Err != nil {
 		logging.LOG.ErrorWithLog(logErr)
-		return []string{logErr.Log.Message}
+		result.OverAllResult = "Error"
+		result.OverAllResultMessage = "Error fetching latest media item"
+		return result
 	}
 
-	warningMessages := []string{}
+	result.MediaItemTitle = dbSavedItem.MediaItem.Title
 
 	// Loop through each poster set for the item
 	for _, dbPosterSet := range dbSavedItem.PosterSets {
+		var setResult AutoDownloadSetResult
+		setResult.PosterSetID = dbPosterSet.PosterSetID
 		// If the poster set is not auto download, skip it
 		if !dbPosterSet.AutoDownload {
-			warningMessages = append(warningMessages, fmt.Sprintf("Skipping '%s' - Poster set '%s' is not set to auto download", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+			setResult.Result = "Skipped"
+			setResult.Reason = "Auto download is not selected"
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 		// If selected types are empty, skip it
 		if len(dbPosterSet.SelectedTypes) == 0 {
-			warningMessages = append(warningMessages, fmt.Sprintf("Skipping '%s' - Poster set '%s' has no selected types", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+			setResult.Result = "Skipped"
+			setResult.Reason = "No selected types"
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 
@@ -84,7 +112,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 		// If the TMDB ID is not found, skip the item
 		if tmdbID == "" {
 			logging.LOG.Error(fmt.Sprintf("TMDB ID not found for '%s'", dbSavedItem.MediaItem.Title))
-			warningMessages = append(warningMessages, fmt.Sprintf("Skipping '%s' - No TMDB ID found", dbSavedItem.MediaItem.Title))
+			setResult.Result = "Error"
+			setResult.Reason = "No TMDB ID found"
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 
@@ -94,7 +124,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 		updatedSet, logErr := mediux.FetchShowSetByID(dbPosterSet.PosterSetID)
 		if logErr.Err != nil {
 			logging.LOG.ErrorWithLog(logErr)
-			warningMessages = append(warningMessages, fmt.Sprintf("Error fetching updated set for '%s' - %s", dbSavedItem.MediaItem.Title, logErr.Log.Message))
+			setResult.Result = "Error"
+			setResult.Reason = fmt.Sprintf("Error fetching updated set - %s", logErr.Log.Message)
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 		posterSetUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, updatedSet.DateUpdated)
@@ -113,7 +145,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 				dbPosterSet.PosterSetID,
 				updatedSet.DateUpdated.Format("2006-01-02 15:04:05"),
 				formattedLastDownloaded))
-			warningMessages = append(warningMessages, fmt.Sprintf("Skipping '%s' - Set '%s' has no updates since last download on %s", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, formattedLastDownloaded))
+			setResult.Result = "Skipped"
+			setResult.Reason = fmt.Sprintf("No updates since last download on %s", formattedLastDownloaded)
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 		updateReasons := []string{}
@@ -186,7 +220,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 
 		if len(filesToDownload) == 0 {
 			logging.LOG.Debug(fmt.Sprintf("No files to download for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
-			warningMessages = append(warningMessages, fmt.Sprintf("No files to download for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
+			setResult.Result = "Skipped"
+			setResult.Reason = fmt.Sprintf("No files to download for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID)
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
 
@@ -196,7 +232,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 			logErr = mediaServer.DownloadAndUpdatePosters(latestMediaItem, file)
 			if logErr.Err != nil {
 				logging.LOG.ErrorWithLog(logErr)
-				warningMessages = append(warningMessages, fmt.Sprintf("Error downloading '%s' for '%s' in set '%s' - %s", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, logErr.Log.Message))
+				setResult.Result = "Error"
+				setResult.Reason = fmt.Sprintf("Error downloading '%s' for '%s' in set '%s' - %s", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, logErr.Log.Message)
+				result.Sets = append(result.Sets, setResult)
 				continue
 			}
 			logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' in set '%s' downloaded successfully", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
@@ -233,11 +271,54 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) []st
 		logErr = database.UpdateItemInDatabase(dbSaveItem)
 		if logErr.Err != nil {
 			logging.LOG.ErrorWithLog(logErr)
-			warningMessages = append(warningMessages, fmt.Sprintf("Error updating database for '%s' - %s", dbSavedItem.MediaItem.Title, logErr.Log.Message))
+			setResult.Result = "Error"
+			setResult.Reason = fmt.Sprintf("Error updating database for '%s' - %s", dbSavedItem.MediaItem.Title, logErr.Log.Message)
+			result.Sets = append(result.Sets, setResult)
 			continue
 		}
+		setResult.Result = "Success"
+		setResult.Reason = fmt.Sprintf("Successfully downloaded files for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID)
+		result.Sets = append(result.Sets, setResult)
 	}
-	return warningMessages
+
+	// Set overall result based on the results of the sets
+	if len(result.Sets) == 0 {
+		result.OverAllResult = "Skipped"
+		result.OverAllResultMessage = fmt.Sprintf("No sets to check for '%s'", dbSavedItem.MediaItem.Title)
+	} else {
+		successCount := 0
+		errorCount := 0
+		skippedCount := 0
+		totalCount := len(result.Sets)
+
+		for _, setResult := range result.Sets {
+			switch setResult.Result {
+			case "Success":
+				successCount++
+			case "Error":
+				errorCount++
+			case "Skipped":
+				skippedCount++
+			}
+		}
+
+		switch {
+		case errorCount == totalCount:
+			result.OverAllResult = "Error"
+			result.OverAllResultMessage = "All set downloads failed"
+		case errorCount > 0 && successCount > 0:
+			result.OverAllResult = "Warning"
+			result.OverAllResultMessage = fmt.Sprintf("Success %d | Error %d | Skipped %d",
+				successCount, errorCount, skippedCount)
+		case successCount == totalCount:
+			result.OverAllResult = "Success"
+			result.OverAllResultMessage = "All set downloads successful"
+		case skippedCount == totalCount:
+			result.OverAllResult = "Skipped"
+			result.OverAllResultMessage = "No set updates found"
+		}
+	}
+	return result
 }
 
 func shouldDownloadFile(dbPosterSet modals.DBPosterSetDetail, file modals.PosterFile, dbSavedItem, latestMediaItem modals.MediaItem) bool {
