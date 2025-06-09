@@ -180,6 +180,7 @@ func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason)
 	// Add query parameters
 	params := url.Values{}
 	params.Add("SeasonId", season.RatingKey)
+	params.Add("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks")
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Emby/Jellyfin server
@@ -209,11 +210,16 @@ func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason)
 			Title:         episode.Name,
 			SeasonNumber:  episode.ParentIndexNumber,
 			EpisodeNumber: episode.IndexNumber,
+			File: modals.MediaItemFile{
+				Path:     episode.Path,
+				Size:     episode.Size,
+				Duration: episode.RunTimeTicks / 10000,
+			},
 		}
 
 		// For Emby/Jellyfin, the file path is not directly available in the response.
 		// We need to fetch the base Item and then get the file path.
-		fetchEpisodeInfo(&episode)
+		//fetchEpisodeInfo(&episode)
 		season.Episodes = append(season.Episodes, episode)
 	}
 
