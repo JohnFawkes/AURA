@@ -23,6 +23,7 @@ import { LibrarySection, MediaItem } from "@/types/mediaItem";
 import { useMediaStore } from "@/lib/mediaStore";
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 import localforage from "localforage";
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 export default function Navbar() {
 	const {
@@ -152,10 +153,7 @@ export default function Navbar() {
 	// When clicking on a dropdown result (non-homepage), set the mediaStore and navigate
 	const handleResultClick = (result: MediaItem) => {
 		setMediaItem(result);
-		// Format title for URL (replace spaces with underscores, remove special characters)
-		const formattedTitle = result.Title.replace(/\s+/g, "_");
-		const sanitizedTitle = formattedTitle.replace(/[^a-zA-Z0-9_]/g, "");
-		router.push(`/media/${result.RatingKey}/${sanitizedTitle}`);
+		router.push(formatMediaItemUrl(result));
 	};
 
 	return (

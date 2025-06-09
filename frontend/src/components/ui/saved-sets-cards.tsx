@@ -39,6 +39,7 @@ import { useMediaStore } from "@/lib/mediaStore";
 import { useRouter } from "next/navigation";
 import { fetchShowSetByID } from "@/services/api.mediux";
 import { PosterSet } from "@/types/posterSets";
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -438,18 +439,7 @@ const SavedSetsCard: React.FC<{
 					className="text-lg font-semibold cursor-pointer hover:underline"
 					onClick={() => {
 						setMediaItem(savedSet.MediaItem);
-						// Format title for URL (replace spaces with underscores, remove special characters)
-						const formattedTitle = savedSet.MediaItem.Title.replace(
-							/\s+/g,
-							"_"
-						);
-						const sanitizedTitle = formattedTitle.replace(
-							/[^a-zA-Z0-9_]/g,
-							""
-						);
-						router.push(
-							`/media/${savedSet.MediaItem.RatingKey}/${sanitizedTitle}`
-						);
+						router.push(formatMediaItemUrl(savedSet.MediaItem));
 					}}
 				>
 					{savedSet.MediaItem.Title}

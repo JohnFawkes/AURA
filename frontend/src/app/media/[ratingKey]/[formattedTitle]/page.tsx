@@ -37,6 +37,7 @@ import {
 	getAdjacentMediaItemFromIDB,
 	searchIDBForTMDBID,
 } from "@/helper/searchIDBForTMDBID";
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -482,20 +483,10 @@ const MediaItemPage = () => {
 									useMediaStore.setState({
 										mediaItem: adjacentItems.previous,
 									});
-									const formattedTitle =
-										adjacentItems.previous!.Title.replace(
-											/\s+/g,
-											"_"
-										);
-									const sanitizedTitle =
-										formattedTitle.replace(
-											/[^a-zA-Z0-9_]/g,
-											""
-										);
 									router.push(
-										`/media/${
-											adjacentItems.previous!.RatingKey
-										}/${sanitizedTitle}`
+										formatMediaItemUrl(
+											adjacentItems.previous!
+										)
 									);
 								}}
 							/>
@@ -509,19 +500,8 @@ const MediaItemPage = () => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.next,
 								});
-								const formattedTitle =
-									adjacentItems.next!.Title.replace(
-										/\s+/g,
-										"_"
-									);
-								const sanitizedTitle = formattedTitle.replace(
-									/[^a-zA-Z0-9_]/g,
-									""
-								);
 								router.push(
-									`/media/${
-										adjacentItems.next!.RatingKey
-									}/${sanitizedTitle}`
+									formatMediaItemUrl(adjacentItems.next!)
 								);
 							}}
 						/>
