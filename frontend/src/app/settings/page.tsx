@@ -316,6 +316,7 @@ const SettingsPage: React.FC = () => {
 			Buttons: [
 				{
 					Label: "Clear Temp Images Folder",
+					Variant: "destructive",
 					onClick: clearTempImagesFolder,
 				},
 			],
@@ -441,11 +442,18 @@ const SettingsPage: React.FC = () => {
 												(
 													value.Buttons as {
 														onClick: () => void;
+														Variant?:
+															| "default"
+															| "destructive";
 														Label: string;
 													}[]
 												).map((button, index) => (
 													<Button
 														key={index}
+														variant={
+															button.Variant ||
+															"default"
+														}
 														onClick={button.onClick}
 														className="w-full"
 													>
