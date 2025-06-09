@@ -146,7 +146,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 				updatedSet.DateUpdated.Format("2006-01-02 15:04:05"),
 				formattedLastDownloaded))
 			setResult.Result = "Skipped"
-			setResult.Reason = fmt.Sprintf("No updates since last download on %s", formattedLastDownloaded)
+			setResult.Reason = fmt.Sprintf("No updates since last download on %s", lastDownloadedTime.Local().Format("1/2/2006 at 3:04:05 PM"))
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
