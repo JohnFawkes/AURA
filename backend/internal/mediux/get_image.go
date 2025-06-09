@@ -64,6 +64,28 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 	formatDate := modifiedDateTime.Format("20060102")
 
+	// Get Quality from the URL query parameters
+	qualityParam := r.URL.Query().Get("quality")
+	quality := false
+	if qualityParam == "" {
+		// Default to "thumb" if quality is not provided
+		qualityParam = "thumb"
+	}
+	// Check if the quality is valid
+	if qualityParam != "thumb" && qualityParam != "full" {
+		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
+			Err: errors.New("invalid quality parameter"),
+			Log: logging.Log{
+				Message: fmt.Sprintf("Invalid quality parameter: %s. Expected 'thumb' or 'full'.", qualityParam),
+				Elapsed: utils.ElapsedTime(startTime),
+			},
+		})
+		return
+	}
+	if qualityParam == "full" {
+		quality = true
+	}
+
 	// Check if the temporary folder has the image
 	fileName := fmt.Sprintf("%s_%s.jpg", assetID, formatDate)
 	filePath := path.Join(MediuxThumbsTempImageFolder, fileName)
@@ -77,7 +99,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from Mediux
-	imageData, imageType, logErr := FetchImage(assetID, formatDate, false)
+	imageData, imageType, logErr := FetchImage(assetID, formatDate, quality)
 	if logErr.Err != nil {
 		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
 		return
