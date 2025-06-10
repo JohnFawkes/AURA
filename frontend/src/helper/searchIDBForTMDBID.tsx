@@ -24,8 +24,6 @@ export const getAllLibrarySectionsFromIDB = async (): Promise<
 		return [];
 	}
 
-	console.log("Library sections found:", sections);
-
 	return sections.map((section) => ({
 		title: section!.data.Title,
 		type: section!.data.Type,

@@ -5,9 +5,9 @@ import { CheckCircle2 as Checkmark } from "lucide-react";
 
 import React from "react";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { AssetImage } from "@/components/shared/asset-image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -45,16 +45,10 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 			)}
 
 			{/* Poster Image */}
-			<div className="relative w-[150px] h-[220px] rounded-md overflow-hidden transform transition-transform duration-300 hover:scale-105">
-				<Image
-					src={`/api/mediaserver/image/${mediaItem.RatingKey}/poster`}
-					alt={mediaItem.Title}
-					fill
-					className="object-cover"
-					loading="lazy"
-					unoptimized
-				/>
-			</div>
+			<AssetImage
+				image={mediaItem}
+				className="w-[170px] h-auto transition-transform hover:scale-105"
+			/>
 
 			{/* Title */}
 			<H4 className="text-center font-semibold mb-2 px-2">

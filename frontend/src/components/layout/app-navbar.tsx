@@ -116,8 +116,7 @@ export default function Navbar() {
 					const query = localSearch.trim().toLowerCase();
 					const results = searchMediaItems(allMediaItems, query, 10);
 					setSearchResults(results);
-				} catch (error) {
-					console.error("Error fetching cached sections", error);
+				} catch {
 					setSearchResults([]);
 				}
 			}, 300);

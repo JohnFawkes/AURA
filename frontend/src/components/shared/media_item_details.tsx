@@ -14,9 +14,9 @@ import { log } from "@/lib/logger";
 
 import { Guid } from "@/types/mediaItem";
 
+import { Badge } from "../ui/badge";
+import { H1, Lead } from "../ui/typography";
 import { MediaItemRatings } from "./media_item_ratings";
-import { Badge } from "./ui/badge";
-import { H1, Lead } from "./ui/typography";
 
 type MediaItemDetailsProps = {
 	ratingKey: string;

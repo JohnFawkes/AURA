@@ -13,6 +13,14 @@ import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 
 import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
 	Dialog,
 	DialogClose,
 	DialogContent,
@@ -32,17 +40,13 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Progress } from "@/components/ui/progress";
 
 import { log } from "@/lib/logger";
 
 import { DBSavedItem } from "@/types/databaseSavedSet";
 import { MediaItem } from "@/types/mediaItem";
 import { PosterFile, PosterSet } from "@/types/posterSets";
-
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
-import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
-import { Progress } from "./ui/progress";
 
 const formSchema = z
 	.object({

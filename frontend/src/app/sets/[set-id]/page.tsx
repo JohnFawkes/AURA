@@ -6,20 +6,20 @@ import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { DimmedBackground } from "@/components/dimmed_backdrop";
-import DownloadModalMovie from "@/components/download-modal-movie";
-import DownloadModalShow from "@/components/download-modal-show";
-import { SetFileCounts } from "@/components/set_file_counts";
+import { AssetImage } from "@/components/shared/asset-image";
+import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
+import DownloadModalMovie from "@/components/shared/download-modal-movie";
+import DownloadModalShow from "@/components/shared/download-modal-show";
+import { ErrorMessage } from "@/components/shared/error-message";
+import { SetFileCounts } from "@/components/shared/set-file-counts";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { AssetImage } from "@/components/ui/asset-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ErrorMessage } from "@/components/ui/error-message";
 import { H1, Lead } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/mediaStore";
@@ -135,9 +135,7 @@ const SetPage = () => {
 					</div>
 					<div className="flex flex-wrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
 						{posterSet.User.Name && (
-							<>
-								<SetFileCounts mediaItem={mediaItem} set={posterSet} />
-							</>
+							<SetFileCounts mediaItem={mediaItem} set={posterSet} />
 						)}
 					</div>
 					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
@@ -175,8 +173,6 @@ const SetPage = () => {
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								<AssetImage
 									image={posterSet.Poster as unknown as PosterFile}
-									displayUser={true}
-									displayMediaType={true}
 									aspect="poster"
 									className="w-[200px] h-auto"
 								/>
@@ -191,8 +187,6 @@ const SetPage = () => {
 							<div className="flex flex-wrap justify-center lg:justify-start items-center gap-4">
 								<AssetImage
 									image={posterSet.Backdrop as unknown as PosterFile}
-									displayUser={true}
-									displayMediaType={true}
 									aspect="backdrop"
 									className="w-[200px] h-auto"
 								/>
@@ -214,8 +208,6 @@ const SetPage = () => {
 										<AssetImage
 											key={file.ID}
 											image={file as unknown as PosterFile}
-											displayUser={true}
-											displayMediaType={true}
 											aspect="poster"
 											className="w-[200px] h-auto"
 										/>
@@ -239,8 +231,6 @@ const SetPage = () => {
 										<AssetImage
 											key={file.ID}
 											image={file as unknown as PosterFile}
-											displayUser={true}
-											displayMediaType={true}
 											aspect="backdrop"
 											className="w-[200px] h-auto"
 										/>
@@ -267,8 +257,6 @@ const SetPage = () => {
 										<AssetImage
 											key={file.ID}
 											image={file as unknown as PosterFile}
-											displayUser={true}
-											displayMediaType={true}
 											aspect="poster"
 											className="w-[200px] h-auto"
 										/>
@@ -317,8 +305,6 @@ const SetPage = () => {
 														<AssetImage
 															key={file.ID}
 															image={file as unknown as PosterFile}
-															displayUser={true}
-															displayMediaType={true}
 															aspect="titlecard"
 															className="w-[200px] h-auto"
 														/>

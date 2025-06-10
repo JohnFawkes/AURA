@@ -4,8 +4,8 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 
 import AppFooter from "@/components/layout/app-footer";
-import Navbar from "@/components/layout/navbar";
-import { JumpToTop } from "@/components/shared/buttons/jump-to-top";
+import Navbar from "@/components/layout/app-navbar";
+import { JumpToTop } from "@/components/shared/jump-to-top";
 
 import { gabarito } from "../../public/fonts/Gabarito";
 import "./globals.css";

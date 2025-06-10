@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { AssetImage } from "@/components/ui/asset-image";
+import { AssetImage } from "@/components/shared/asset-image";
 import { CarouselItem } from "@/components/ui/carousel";
 
 import { PosterFile, PosterSet } from "@/types/posterSets";
 
-import { searchIDBForTMDBID } from "../helper/searchIDBForTMDBID";
+import { searchIDBForTMDBID } from "../../helper/searchIDBForTMDBID";
 
 export function CarouselMovie({ set, librarySection }: { set: PosterSet; librarySection: string }) {
 	const [idbResults, setIdbResults] = useState<{ [key: string]: boolean }>({});
@@ -53,20 +53,16 @@ export function CarouselMovie({ set, librarySection }: { set: PosterSet; library
 						{set.Poster && (
 							<AssetImage
 								image={set.Poster as unknown as PosterFile}
-								displayUser={true}
-								displayMediaType={true}
 								aspect="poster"
-								className={`w-full`}
+								imageClassName="w-full"
 							/>
 						)}
 
 						{set.Backdrop && (
 							<AssetImage
 								image={set.Backdrop as unknown as PosterFile}
-								displayUser={true}
-								displayMediaType={true}
 								aspect="backdrop"
-								className={`w-full`}
+								className="w-full"
 							/>
 						)}
 					</div>
@@ -88,10 +84,8 @@ export function CarouselMovie({ set, librarySection }: { set: PosterSet; library
 						<div className="space-y-2">
 							<AssetImage
 								image={poster as unknown as PosterFile}
-								displayUser={true}
-								displayMediaType={true}
 								aspect="poster"
-								className={`w-full ${
+								className={`w-full h-auto ${
 									!poster.Movie?.RatingKey && !isInIDB ? "opacity-35" : ""
 								}`}
 							/>
@@ -99,10 +93,8 @@ export function CarouselMovie({ set, librarySection }: { set: PosterSet; library
 							{matchingBackdrop && (
 								<AssetImage
 									image={matchingBackdrop as unknown as PosterFile}
-									displayUser={true}
-									displayMediaType={true}
 									aspect="backdrop"
-									className={`w-full ${
+									className={`w-full h-auto ${
 										!matchingBackdrop.Movie?.RatingKey ? "opacity-35" : ""
 									}`}
 								/>

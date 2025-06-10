@@ -17,13 +17,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { DimmedBackground } from "@/components/dimmed_backdrop";
-import { MediaItemDetails } from "@/components/media_item_details";
+import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
+import { ErrorMessage } from "@/components/shared/error-message";
+import Loader from "@/components/shared/loader";
+import { MediaCarousel } from "@/components/shared/media-carousel";
+import { MediaItemDetails } from "@/components/shared/media_item_details";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ErrorMessage } from "@/components/ui/error-message";
-import Loader from "@/components/ui/loader";
-import { MediaCarousel } from "@/components/ui/media-carousel";
 import {
 	Select,
 	SelectContent,
@@ -307,7 +307,6 @@ const MediaItemPage = () => {
 
 	useEffect(() => {
 		if (posterSets) {
-			console.log("Poster Sets:", posterSets);
 			// Filter out hidden users
 			const filtered = posterSets.filter((set) => {
 				if (showHiddenUsers) {
@@ -345,7 +344,6 @@ const MediaItemPage = () => {
 				return dateB.getTime() - dateA.getTime();
 			});
 
-			console.log("Filter & Sorted Poster Sets:", filtered);
 			setFilteredPosterSets(filtered);
 		}
 	}, [posterSets, showHiddenUsers, userHides, userFollows, sortOption, sortOrder]);

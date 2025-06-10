@@ -10,15 +10,15 @@ import { toast } from "sonner";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CustomPagination } from "@/components/custom-pagination";
-import { SelectItemsPerPage } from "@/components/items-per-page-select";
-import { RefreshButton } from "@/components/shared/buttons/refresh-button";
+import { CustomPagination } from "@/components/shared/custom-pagination";
+import { ErrorMessage } from "@/components/shared/error-message";
+import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
+import Loader from "@/components/shared/loader";
+import { RefreshButton } from "@/components/shared/refresh-button";
+import SavedSetsCard from "@/components/shared/saved-sets-cards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ErrorMessage } from "@/components/ui/error-message";
 import { Label } from "@/components/ui/label";
-import Loader from "@/components/ui/loader";
-import SavedSetsCard from "@/components/ui/saved-sets-cards";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";

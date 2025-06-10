@@ -1,4 +1,4 @@
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import {
 	Pagination,
 	PaginationContent,
@@ -7,7 +7,7 @@ import {
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
-} from "./ui/pagination";
+} from "@/components/ui/pagination";
 
 interface CustomPaginationProps {
 	currentPage: number;

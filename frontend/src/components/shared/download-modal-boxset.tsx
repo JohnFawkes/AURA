@@ -14,6 +14,14 @@ import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 
 import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
 	Dialog,
 	DialogClose,
 	DialogContent,
@@ -25,6 +33,16 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 
 import { log } from "@/lib/logger";
 
@@ -38,13 +56,6 @@ import {
 	MediuxUserShowSet,
 } from "@/types/mediuxUserAllSets";
 import { PosterFile } from "@/types/posterSets";
-
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
-import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Progress } from "./ui/progress";
 
 const formSchema = z
 	.object({
@@ -342,7 +353,6 @@ const DownloadModalBoxset: React.FC<{
 	});
 
 	useEffect(() => {
-		console.log("DownloadModalBoxset rendered with boxset:", boxset);
 		form.reset({
 			selectedTypesByItem: (() => {
 				// Initialize show sets
@@ -470,7 +480,6 @@ const DownloadModalBoxset: React.FC<{
 				};
 			})(),
 		});
-		console.log("Form reset with default values:", form.getValues());
 	}, [boxset, form]);
 
 	const watchSelectedTypesByItem = useWatch({
@@ -583,12 +592,6 @@ const DownloadModalBoxset: React.FC<{
 		);
 
 		setTotalSelectedSize(formatDownloadSize(totalSize));
-		console.log(
-			"Total selected size calculated:",
-			totalSize,
-			"Formatted size:",
-			formatDownloadSize(totalSize)
-		);
 	}, [watchSelectedTypesByItem, boxset]);
 
 	const resetProgressValues = () => {
@@ -616,7 +619,6 @@ const DownloadModalBoxset: React.FC<{
 		setTotalSelectedLabel("Total Download Size: ");
 		resetProgressValues();
 		form.reset();
-		console.log("Download modal closed and state reset.");
 	};
 
 	const downloadPosterFileAndUpdateMediaServer = async (
@@ -1290,7 +1292,6 @@ const DownloadModalBoxset: React.FC<{
 					progressValue: 100,
 				}));
 			} else if (libraryType === "movie") {
-				console.log("Selected items for movie library:", selectedItems);
 				// Get all selected movie items
 				const selectedMovies = selectedItems.filter(([itemKey]) =>
 					boxset.movie_sets.some((movie) => movie.MediaItem.RatingKey === itemKey)
@@ -1302,13 +1303,11 @@ const DownloadModalBoxset: React.FC<{
 						)
 					)
 				);
-				console.log("Selected movies:", selectedMovies);
-				console.log("Selected collections:", selectedCollections);
 
 				// Calculate steps for all selected movies and collections
 				const totalSteps = calculateMovieSteps(selectedItems);
 				const totalFileCount = calculateMovieTotalSteps(totalSteps);
-				console.log("Total file count:", totalFileCount);
+
 				// Reserve 1% for start and 1% for completion
 				const progressIncrement = totalFileCount > 0 ? 98 / totalFileCount : 0;
 				setProgressValues((prev) => ({

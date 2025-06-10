@@ -43,11 +43,11 @@ import { DBSavedItem } from "@/types/databaseSavedSet";
 import { MediaItem } from "@/types/mediaItem";
 import { PosterFile, PosterSet } from "@/types/posterSets";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
-import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Progress } from "./ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { Progress } from "../ui/progress";
 
 const formSchema = z.object({
 	selectedTypes: z.array(z.string()).refine((value) => value.length > 0, {

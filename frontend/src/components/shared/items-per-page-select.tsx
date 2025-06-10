@@ -2,7 +2,7 @@
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 
-import { Label } from "./ui/label";
+import { Label } from "../ui/label";
 import {
 	Select,
 	SelectContent,
@@ -11,7 +11,7 @@ import {
 	SelectScrollUpButton,
 	SelectTrigger,
 	SelectValue,
-} from "./ui/select";
+} from "../ui/select";
 
 export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: number) => void }) {
 	const { itemsPerPage, setItemsPerPage } = useHomeSearchStore();

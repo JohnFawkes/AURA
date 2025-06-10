@@ -7,16 +7,17 @@ import { CheckCircle2 as Checkmark } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
-import { BoxsetDisplay } from "@/components/boxset-display";
-import { CarouselMovie } from "@/components/carousel-movie";
-import { CarouselShow } from "@/components/carousel-show";
-import { CustomPagination } from "@/components/custom-pagination";
-import DownloadModalMovie from "@/components/download-modal-movie";
-import DownloadModalShow from "@/components/download-modal-show";
-import { SelectItemsPerPage } from "@/components/items-per-page-select";
+import { BoxsetDisplay } from "@/components/shared/boxset-display";
+import { CarouselMovie } from "@/components/shared/carousel-movie";
+import { CarouselShow } from "@/components/shared/carousel-show";
+import { CustomPagination } from "@/components/shared/custom-pagination";
+import DownloadModalMovie from "@/components/shared/download-modal-movie";
+import DownloadModalShow from "@/components/shared/download-modal-show";
+import { ErrorMessage } from "@/components/shared/error-message";
+import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
+import Loader from "@/components/shared/loader";
 import {
 	Accordion,
 	AccordionContent,
@@ -30,9 +31,7 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
-import { ErrorMessage } from "@/components/ui/error-message";
 import { Label } from "@/components/ui/label";
-import Loader from "@/components/ui/loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Lead } from "@/components/ui/typography";

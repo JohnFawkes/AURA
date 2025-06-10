@@ -7,25 +7,24 @@ import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { CarouselMovie } from "@/components/shared/carousel-movie";
+import { CarouselShow } from "@/components/shared/carousel-show";
+import DownloadModalMovie from "@/components/shared/download-modal-movie";
+import DownloadModalShow from "@/components/shared/download-modal-show";
+import { SetFileCounts } from "@/components/shared/set-file-counts";
 import {
 	Carousel,
 	CarouselContent,
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Lead } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/mediaStore";
 import { usePosterSetStore } from "@/lib/posterSetStore";
 
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
-
-import { CarouselMovie } from "../carousel-movie";
-import { CarouselShow } from "../carousel-show";
-import DownloadModalMovie from "../download-modal-movie";
-import DownloadModalShow from "../download-modal-show";
-import { SetFileCounts } from "../set_file_counts";
-import { Lead } from "./typography";
 
 type MediaCarouselProps = {
 	set: PosterSet;

@@ -15,12 +15,12 @@ import { FaDiscord } from "react-icons/fa";
 
 import { useRouter } from "next/navigation";
 
+import { ErrorMessage } from "@/components/shared/error-message";
+import Loader from "@/components/shared/loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
-import Loader from "@/components/ui/loader";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { AppConfig } from "@/types/config";

@@ -1,80 +1,61 @@
 "use client";
 
-import { FILE_TYPES } from "@/types";
-
 import { useState } from "react";
 
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
+import { type AspectRatio, getAspectRatioClass, getImageSizes } from "@/lib/utils/image-utils";
 
+import { MediaItem } from "@/types/mediaItem";
 import { PosterFile } from "@/types/posterSets";
 
-import { Skeleton } from "./skeleton";
+import { Skeleton } from "../ui/skeleton";
 
 interface AssetImageProps {
-	image: PosterFile;
-	displayUser?: boolean;
-	displayMediaType?: boolean;
-	displaySetLink?: boolean;
-	openInDialog?: boolean;
+	image: PosterFile | MediaItem | string;
+	aspect?: AspectRatio;
 	className?: string;
 	imageClassName?: string;
 	priority?: boolean;
-	aspect?: "poster" | "backdrop" | "titlecard" | "album" | "logo";
-	setId?: string;
 }
 
 export function AssetImage({
 	image,
+	aspect = "poster",
 	className,
 	imageClassName,
 	priority = false,
-	aspect = "poster",
 }: AssetImageProps) {
 	const [imageLoaded, setImageLoaded] = useState(false);
-
-	// Determine aspect ratio based on aspect prop
-	const getAspectRatioClass = () => {
-		switch (aspect) {
-			case "poster":
-				return "aspect-[2/3]";
-			case "backdrop":
-			case "titlecard":
-			case "logo":
-				return "aspect-video";
-			case "album":
-				return "aspect-square";
-			default:
-				return "aspect-[2/3]";
-		}
-	};
-
-	// Determine image sizes based on file type
-	const sizes =
-		image.Type === FILE_TYPES.BACKDROP || image.Type === FILE_TYPES.TITLECARD
-			? "(max-width: 640px) 50vw, 300px"
-			: "300px";
 
 	const imageContent = (
 		<>
 			{/* Skeleton Loader */}
 			{!imageLoaded && (
-				<>
-					<Skeleton
-						className={cn(
-							"absolute inset-0 rounded-md animate-pulse",
-							getAspectRatioClass()
-						)}
-					/>
-				</>
+				<Skeleton
+					className={cn(
+						"absolute inset-0 rounded-md animate-pulse",
+						getAspectRatioClass(aspect)
+					)}
+				/>
 			)}
 
 			<Image
-				src={`/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`}
-				alt={image.ID}
+				src={
+					typeof image === "string"
+						? image
+						: "ID" in image && "Modified" in image
+							? `/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`
+							: "RatingKey" in image
+								? `/api/mediaserver/image/${image.RatingKey}/${aspect}`
+								: ""
+				}
+				alt={
+					typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""
+				}
 				fill
-				sizes={sizes}
+				sizes={getImageSizes(aspect)}
 				className={cn(
 					"transition-opacity duration-500",
 					aspect === "logo" ? "object-contain" : "object-cover",
@@ -95,7 +76,7 @@ export function AssetImage({
 				<div
 					className={cn(
 						"relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
-						getAspectRatioClass()
+						getAspectRatioClass(aspect)
 					)}
 				>
 					{imageContent}

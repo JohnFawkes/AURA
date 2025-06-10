@@ -3,14 +3,14 @@
 import { fetchLogContents } from "@/services/api.settings";
 import { ArrowLeft, Download } from "lucide-react";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { ErrorMessage } from "@/components/shared/error-message";
+import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { ErrorMessage } from "@/components/ui/error-message";
-import Loader from "@/components/ui/loader";
 import { Textarea } from "@/components/ui/textarea";
 
 import { log } from "@/lib/logger";

@@ -15,22 +15,22 @@ import {
 
 import React, { useState } from "react";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import DownloadModalMovie from "@/components/download-modal-movie";
-import DownloadModalShow from "@/components/download-modal-show";
+import { AssetImage } from "@/components/shared/asset-image";
+import DownloadModalMovie from "@/components/shared/download-modal-movie";
+import DownloadModalShow from "@/components/shared/download-modal-show";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { DialogDescription } from "@/components/ui/dialog";
 import { H4, P, Small } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/mediaStore";
@@ -39,14 +39,14 @@ import { usePosterSetStore } from "@/lib/posterSetStore";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 import { PosterSet } from "@/types/posterSets";
 
-import { Badge } from "./badge";
+import { Badge } from "../ui/badge";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "./dropdown-menu";
-import { Separator } from "./separator";
+} from "../ui/dropdown-menu";
+import { Separator } from "../ui/separator";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -290,7 +290,6 @@ const SavedSetsCard: React.FC<{
 
 					// Skip updating state if response is not valid
 					if (resp.status !== "success" || !resp.data) {
-						console.error(`Failed to fetch poster set with ID: ${set.id}`);
 						return;
 					}
 
@@ -308,9 +307,7 @@ const SavedSetsCard: React.FC<{
 					);
 				})
 			);
-		} catch (error) {
-			console.error("Error refreshing poster sets:", error);
-		}
+		} catch {}
 	};
 
 	return (
@@ -391,14 +388,9 @@ const SavedSetsCard: React.FC<{
 
 				{/* Middle: Image */}
 				<div className="flex justify-center mt-6">
-					<Image
-						src={`/api/mediaserver/image/${savedSet.MediaItem.RatingKey}/poster`}
-						alt={savedSet.MediaItem.Title}
-						width={150}
-						height={225}
-						className="rounded-md"
-						unoptimized
-						loading="lazy"
+					<AssetImage
+						image={savedSet.MediaItem}
+						className="w-[170px] h-auto transition-transform hover:scale-105"
 					/>
 				</div>
 			</CardHeader>

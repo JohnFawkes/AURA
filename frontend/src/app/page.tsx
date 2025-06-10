@@ -1,6 +1,6 @@
 "use client";
 
-import HomeMediaItemCard from "@/app/_components/home/media-card";
+import HomeMediaItemCard from "@/app/_components/home/media-item-card";
 import {
 	fetchMediaServerLibrarySectionItems,
 	fetchMediaServerLibrarySections,
@@ -9,11 +9,11 @@ import localforage from "localforage";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CustomPagination } from "@/components/custom-pagination";
-import { SelectItemsPerPage } from "@/components/items-per-page-select";
-import { RefreshButton } from "@/components/shared/buttons/refresh-button";
+import { CustomPagination } from "@/components/shared/custom-pagination";
+import { ErrorMessage } from "@/components/shared/error-message";
+import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
+import { RefreshButton } from "@/components/shared/refresh-button";
 import { Badge } from "@/components/ui/badge";
-import { ErrorMessage } from "@/components/ui/error-message";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup } from "@/components/ui/toggle-group";
@@ -162,7 +162,6 @@ export default function Home() {
 							itemsFetched
 						);
 						if (itemsResponse.status !== "success") {
-							console.error(itemsResponse.message);
 							break;
 						}
 						const data = itemsResponse.data;

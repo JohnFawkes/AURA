@@ -1,12 +1,13 @@
 "use client";
 
+import { AssetImage } from "@/components/shared/asset-image";
+import DownloadModalBoxset from "@/components/shared/download-modal-boxset";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { AssetImage } from "@/components/ui/asset-image";
 
 import {
 	MediuxUserBoxset,
@@ -16,16 +17,15 @@ import {
 } from "@/types/mediuxUserAllSets";
 import { PosterFile } from "@/types/posterSets";
 
-import DownloadModalBoxset from "./download-modal-boxset";
-import { Badge } from "./ui/badge";
+import { Badge } from "../ui/badge";
 import {
 	Carousel,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
-} from "./ui/carousel";
-import { Lead } from "./ui/typography";
+} from "../ui/carousel";
+import { Lead } from "../ui/typography";
 
 export function BoxsetDisplay({
 	boxset,
@@ -239,8 +239,6 @@ export function BoxsetDisplay({
 											<div className="space-y-2">
 												<AssetImage
 													image={poster as unknown as PosterFile}
-													displayUser={true}
-													displayMediaType={true}
 													aspect="poster"
 													className="w-full h-auto"
 												/>
@@ -274,8 +272,6 @@ export function BoxsetDisplay({
 											<div className="space-y-2">
 												<AssetImage
 													image={backdrop as unknown as PosterFile}
-													displayUser={true}
-													displayMediaType={true}
 													aspect="backdrop"
 													className="w-full h-auto"
 												/>
@@ -317,8 +313,6 @@ export function BoxsetDisplay({
 															<AssetImage
 																key={poster.ID}
 																image={poster}
-																displayUser={true}
-																displayMediaType={true}
 																aspect="poster"
 																className="w-full h-auto"
 															/>
@@ -377,12 +371,6 @@ export function BoxsetDisplay({
 																				<AssetImage
 																					image={
 																						card as unknown as PosterFile
-																					}
-																					displayUser={
-																						true
-																					}
-																					displayMediaType={
-																						true
 																					}
 																					aspect="backdrop"
 																					className="w-full h-auto"

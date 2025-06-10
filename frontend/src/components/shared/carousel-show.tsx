@@ -1,6 +1,6 @@
 "use client";
 
-import { AssetImage } from "@/components/ui/asset-image";
+import { AssetImage } from "@/components/shared/asset-image";
 import { CarouselItem } from "@/components/ui/carousel";
 
 import { PosterFile, PosterSet } from "@/types/posterSets";
@@ -15,8 +15,6 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 						{set.Poster && (
 							<AssetImage
 								image={set.Poster as unknown as PosterFile}
-								displayUser={true}
-								displayMediaType={true}
 								aspect="poster"
 								className="w-full"
 							/>
@@ -25,8 +23,6 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 						{set.Backdrop && (
 							<AssetImage
 								image={set.Backdrop as unknown as PosterFile}
-								displayUser={true}
-								displayMediaType={true}
 								aspect="backdrop"
 								className="w-full"
 							/>
@@ -62,8 +58,6 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 							<div className="space-y-2">
 								<AssetImage
 									image={poster as unknown as PosterFile}
-									displayUser={true}
-									displayMediaType={true}
 									aspect="poster"
 									className="w-full"
 								/>
@@ -71,8 +65,6 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 								{latestTitlecard && (
 									<AssetImage
 										image={latestTitlecard as unknown as PosterFile}
-										displayUser={true}
-										displayMediaType={true}
 										aspect="titlecard"
 										className="w-full"
 									/>
@@ -120,8 +112,6 @@ export function CarouselShow({ set }: { set: PosterSet }) {
 										<div className="space-y-2">
 											<AssetImage
 												image={titleCard as unknown as PosterFile}
-												displayUser={true}
-												displayMediaType={true}
 												aspect="titlecard"
 												className="w-full"
 											/>

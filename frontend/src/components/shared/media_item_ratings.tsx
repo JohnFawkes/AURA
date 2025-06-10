@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { AssetImage } from "@/components/shared/asset-image";
 
 import { Guid } from "@/types/mediaItem";
 
@@ -87,14 +87,12 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 					) : (
 						<>
 							<a href={info.linkUrl!} target="_blank" rel="noopener noreferrer">
-								<div className="relative ml-1 w-[40px] h-[40px]">
-									<Image
-										src={info.logoUrl}
-										alt={`${provider} Logo`}
-										fill
-										className="object-contain"
-									/>
-								</div>
+								<AssetImage
+									image={info.logoUrl}
+									aspect="logo"
+									className="relative mt-1 ml-1 w-[40px] h-[30px]"
+									imageClassName="object-contain"
+								/>
 							</a>
 							{/* Only display rating if it exists */}
 							{info.rating && <span className="text-sm">{info.rating}</span>}
