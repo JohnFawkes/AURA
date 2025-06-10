@@ -134,9 +134,9 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 
 	// Check if the response is nil on all fields
 	if itemType == "movie" {
-		if responseBody.Data.Movie == nil {
+		if responseBody.Data.Movie.ID == "" {
 			return nil, logging.ErrorLog{
-				Err: errors.New("no movies found in the response"),
+				Err: fmt.Errorf("no movies found in the response for TMDB ID: %s", tmdbID),
 				Log: logging.Log{Message: "No movies found in the response"},
 			}
 		}
@@ -145,15 +145,15 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			responseBody.Data.Movie.Posters == nil &&
 			responseBody.Data.Movie.Backdrops == nil {
 			return nil, logging.ErrorLog{
-				Err: errors.New("no movie sets or collection found in the response"),
+				Err: fmt.Errorf("no movie sets or collection found in the response for TMDB ID: %s", tmdbID),
 				Log: logging.Log{Message: "No movie sets or collection found in the response"},
 			}
 		}
 
 	} else if itemType == "show" {
-		if responseBody.Data.Show == nil {
+		if responseBody.Data.Show.ID == "" {
 			return nil, logging.ErrorLog{
-				Err: errors.New("no shows found in the response"),
+				Err: fmt.Errorf("no shows found in the response for TMDB ID: %s", tmdbID),
 				Log: logging.Log{Message: "No shows found in the response"},
 			}
 		}
@@ -162,7 +162,7 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			responseBody.Data.Show.Backdrops == nil &&
 			responseBody.Data.Show.Seasons == nil {
 			return nil, logging.ErrorLog{
-				Err: errors.New("no show sets found in the response"),
+				Err: fmt.Errorf("no show sets found in the response for TMDB ID: %s", tmdbID),
 				Log: logging.Log{Message: "No show sets found in the response"},
 			}
 		}
