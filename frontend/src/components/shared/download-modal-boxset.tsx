@@ -64,7 +64,8 @@ const formSchema = z
 				types: z.array(z.string()),
 				autodownload: z.boolean().optional(),
 				futureUpdatesOnly: z.boolean().optional(),
-				source: z.enum(["movie", "collection"]).optional(), // Add this field
+				source: z.enum(["movie", "collection"]).optional(),
+				addToDBOnly: z.boolean().optional(),
 			})
 		),
 	})
@@ -236,12 +237,18 @@ const DownloadModalBoxset: React.FC<{
 							types,
 							autodownload: false,
 							futureUpdatesOnly: false,
+							addToDBOnly: false,
 						};
 						return acc;
 					},
 					{} as Record<
 						string,
-						{ types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }
+						{
+							types: string[];
+							autodownload: boolean;
+							futureUpdatesOnly: boolean;
+							addToDBOnly: boolean;
+						}
 					>
 				);
 
@@ -277,6 +284,7 @@ const DownloadModalBoxset: React.FC<{
 								autodownload: false,
 								futureUpdatesOnly: false,
 								source: "movie",
+								addToDBOnly: false,
 							};
 						} else {
 							acc[ratingKey] = {
@@ -284,6 +292,7 @@ const DownloadModalBoxset: React.FC<{
 								autodownload: false,
 								futureUpdatesOnly: false,
 								source: "movie",
+								addToDBOnly: false,
 							};
 						}
 						return acc;
@@ -295,6 +304,7 @@ const DownloadModalBoxset: React.FC<{
 							autodownload: boolean;
 							futureUpdatesOnly: boolean;
 							source: "movie" | "collection" | undefined;
+							addToDBOnly: boolean;
 						}
 					>
 				);
@@ -311,6 +321,7 @@ const DownloadModalBoxset: React.FC<{
 									autodownload: false,
 									futureUpdatesOnly: false,
 									source: "collection",
+									addToDBOnly: false,
 								};
 							} else {
 								const types: string[] = [];
@@ -327,6 +338,7 @@ const DownloadModalBoxset: React.FC<{
 									autodownload: false,
 									futureUpdatesOnly: false,
 									source: "collection",
+									addToDBOnly: false,
 								};
 							}
 						});
@@ -339,6 +351,7 @@ const DownloadModalBoxset: React.FC<{
 							autodownload: boolean;
 							futureUpdatesOnly: boolean;
 							source: "movie" | "collection" | undefined;
+							addToDBOnly: boolean;
 						}
 					>
 				);
@@ -374,12 +387,18 @@ const DownloadModalBoxset: React.FC<{
 							types,
 							autodownload: false,
 							futureUpdatesOnly: false,
+							addToDBOnly: false,
 						};
 						return acc;
 					},
 					{} as Record<
 						string,
-						{ types: string[]; autodownload: boolean; futureUpdatesOnly: boolean }
+						{
+							types: string[];
+							autodownload: boolean;
+							futureUpdatesOnly: boolean;
+							addToDBOnly: boolean;
+						}
 					>
 				);
 
@@ -414,6 +433,7 @@ const DownloadModalBoxset: React.FC<{
 							autodownload: false,
 							futureUpdatesOnly: false,
 							source: "movie",
+							addToDBOnly: false,
 						};
 						return acc;
 					},
@@ -424,6 +444,7 @@ const DownloadModalBoxset: React.FC<{
 							autodownload: boolean;
 							futureUpdatesOnly: boolean;
 							source: "movie" | "collection" | undefined;
+							addToDBOnly: boolean;
 						}
 					>
 				);
@@ -441,6 +462,7 @@ const DownloadModalBoxset: React.FC<{
 									autodownload: false,
 									futureUpdatesOnly: false,
 									source: "collection",
+									addToDBOnly: false,
 								};
 							} else {
 								const types: string[] = [];
@@ -457,6 +479,7 @@ const DownloadModalBoxset: React.FC<{
 									autodownload: false,
 									futureUpdatesOnly: false,
 									source: "collection",
+									addToDBOnly: false,
 								};
 							}
 						});
@@ -469,6 +492,7 @@ const DownloadModalBoxset: React.FC<{
 							autodownload: boolean;
 							futureUpdatesOnly: boolean;
 							source: "movie" | "collection" | undefined;
+							addToDBOnly: boolean;
 						}
 					>
 				);
@@ -1332,13 +1356,15 @@ const DownloadModalBoxset: React.FC<{
 						const order = ["poster", "backdrop"];
 						return order.indexOf(a) - order.indexOf(b);
 					});
-					if (selectedTypes.length === 0) {
+					if (selectedTypes.length === 0 && !itemData.addToDBOnly) {
 						// No types selected, skip this movie
 						continue;
 					}
 					for (const type of selectedTypes) {
 						switch (type) {
 							case "poster":
+								if (itemData.addToDBOnly) continue;
+
 								setProgressValues((prev) => ({
 									...prev,
 									progressText: {
@@ -1405,6 +1431,7 @@ const DownloadModalBoxset: React.FC<{
 								}));
 								break;
 							case "backdrop":
+								if (itemData.addToDBOnly) continue;
 								setProgressValues((prev) => ({
 									...prev,
 									progressText: {
@@ -1566,7 +1593,7 @@ const DownloadModalBoxset: React.FC<{
 						const order = ["poster", "backdrop"];
 						return order.indexOf(a) - order.indexOf(b);
 					});
-					if (selectedTypes.length === 0) {
+					if (selectedTypes.length === 0 && !itemData.addToDBOnly) {
 						// No types selected, skip this collection
 						continue;
 					}
@@ -1592,7 +1619,7 @@ const DownloadModalBoxset: React.FC<{
 					for (const type of selectedTypes) {
 						switch (type) {
 							case "poster":
-								if (!collectionPoster) {
+								if (!collectionPoster || itemData.addToDBOnly) {
 									continue; // Skip if no poster found
 								}
 								setProgressValues((prev) => ({
@@ -1660,7 +1687,7 @@ const DownloadModalBoxset: React.FC<{
 								}));
 								break;
 							case "backdrop":
-								if (!collectionBackdrop) {
+								if (!collectionBackdrop || itemData.addToDBOnly) {
 									continue; // Skip if no backdrop found
 								}
 								setProgressValues((prev) => ({
@@ -2246,6 +2273,48 @@ const DownloadModalBoxset: React.FC<{
 								</FormLabel>
 							</FormItem>
 						)}
+
+						{/* Add to Database Only Option */}
+						<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+							<FormControl>
+								<Checkbox
+									checked={
+										isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+											? false
+											: field.value.addToDBOnly || false
+									}
+									disabled={isSelectedInCollectionSet(movie.MediaItem.RatingKey)}
+									onCheckedChange={(checked) => {
+										// If checking this item, uncheck the collection version
+										if (checked) {
+											const collectionKey = movie.MediaItem.RatingKey;
+											form.setValue(`selectedTypesByItem.${collectionKey}`, {
+												types: [],
+												autodownload: false,
+												futureUpdatesOnly: false,
+												source: "collection",
+												addToDBOnly: false,
+											});
+										}
+										field.onChange({
+											...field.value,
+											addToDBOnly: checked,
+											source: "movie",
+										});
+									}}
+									className="h-5 w-5 sm:h-4 sm:w-4"
+								/>
+							</FormControl>
+							<FormLabel
+								className={`text-md font-normal ${
+									isSelectedInCollectionSet(movie.MediaItem.RatingKey)
+										? "text-muted-foreground"
+										: ""
+								}`}
+							>
+								Add to Database Only
+							</FormLabel>
+						</FormItem>
 					</div>
 				</div>
 			)}
@@ -2400,6 +2469,48 @@ const DownloadModalBoxset: React.FC<{
 										</FormLabel>
 									</FormItem>
 								)}
+
+								{/* Add to Database Only Option */}
+								<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+									<FormControl>
+										<Checkbox
+											checked={
+												isSelectedInMovieSet(movieKey)
+													? false
+													: field.value.addToDBOnly || false
+											}
+											disabled={isSelectedInMovieSet(movieKey)}
+											onCheckedChange={(checked) => {
+												// If checking this item, uncheck the movie version
+												if (checked) {
+													form.setValue(
+														`selectedTypesByItem.${movieKey}`,
+														{
+															types: [],
+															autodownload: false,
+															futureUpdatesOnly: false,
+															source: "movie",
+															addToDBOnly: false,
+														}
+													);
+												}
+												field.onChange({
+													...field.value,
+													addToDBOnly: checked,
+													source: "collection",
+												});
+											}}
+											className="h-5 w-5 sm:h-4 sm:w-4"
+										/>
+									</FormControl>
+									<FormLabel
+										className={`text-md font-normal ${
+											isMovieSetSelected ? "text-muted-foreground" : ""
+										}`}
+									>
+										Add to Database Only
+									</FormLabel>
+								</FormItem>
 							</div>
 						</div>
 					);

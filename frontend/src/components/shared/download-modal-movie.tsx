@@ -50,16 +50,21 @@ import { PosterFile, PosterSet } from "@/types/posterSets";
 
 const formSchema = z
 	.object({
-		selectedTypesByMovie: z.record(z.array(z.string())),
+		selectedTypesByItem: z.record(
+			z.object({
+				types: z.array(z.string()),
+				addToDBOnly: z.boolean().optional(),
+			})
+		),
 	})
 	.refine(
 		(data) =>
-			Object.values(data.selectedTypesByMovie).some(
-				(arr) => Array.isArray(arr) && arr.length > 0
+			Object.values(data.selectedTypesByItem).some(
+				(item) => Array.isArray(item.types) && item.types.length > 0
 			),
 		{
-			message: "Please select at least one poster or backdrop to download.",
-			path: ["selectedTypesByMovie"],
+			message: "Please select at least one image type to download.",
+			path: ["selectedTypesByItem"],
 		}
 	);
 
@@ -323,48 +328,54 @@ const DownloadModalMovie: React.FC<{
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			selectedTypesByMovie: moviesDisplay.reduce(
+			selectedTypesByItem: moviesDisplay.reduce(
 				(acc, movie) => {
 					const types: string[] = [];
 					if (movie.Poster) types.push("poster");
 					if (movie.Backdrop) types.push("backdrop");
-					acc[movie.MediaItemRatingKey] = types;
+					acc[movie.MediaItemRatingKey] = {
+						types: types,
+						addToDBOnly: false,
+					};
 					return acc;
 				},
-				{} as Record<string, string[]>
+				{} as Record<string, { types: string[]; addToDBOnly?: boolean }>
 			),
 		},
 	});
 
 	useEffect(() => {
 		form.reset({
-			selectedTypesByMovie: moviesDisplay.reduce(
+			selectedTypesByItem: moviesDisplay.reduce(
 				(acc, movie) => {
 					const types: string[] = [];
 					if (movie.Poster) types.push("poster");
 					if (movie.Backdrop) types.push("backdrop");
-					acc[movie.MediaItemRatingKey] = types;
+					acc[movie.MediaItemRatingKey] = {
+						types: types,
+						addToDBOnly: false,
+					};
 					return acc;
 				},
-				{} as Record<string, string[]>
+				{} as Record<string, { types: string[]; addToDBOnly?: boolean }>
 			),
 		});
 	}, [form, moviesDisplay]);
 
-	const watchSelectionsByMovie = useWatch({
+	const watchSelectionsByItem = useWatch({
 		control: form.control,
-		name: "selectedTypesByMovie",
+		name: "selectedTypesByItem",
 	});
 
 	// Calculate the total size of selected types for all movies
 	useEffect(() => {
-		const totalSize = Object.entries(watchSelectionsByMovie).reduce(
-			(acc, [movieKey, selectedTypes]) => {
+		const totalSize = Object.entries(watchSelectionsByItem).reduce(
+			(acc, [movieKey, selection]) => {
 				const movie = moviesDisplay.find((m) => m.MediaItemRatingKey === movieKey);
 				if (movie) {
 					const selectedPoster = movie.Poster?.FileSize || 0;
 					const selectedBackdrop = movie.Backdrop?.FileSize || 0;
-					const selectedSize = selectedTypes.reduce((size, type) => {
+					const selectedSize = selection.types.reduce((size, type) => {
 						switch (type) {
 							case "poster":
 								return size + selectedPoster;
@@ -381,7 +392,7 @@ const DownloadModalMovie: React.FC<{
 			0
 		);
 		setTotalSelectedSize(formatDownloadSize(totalSize));
-	}, [watchSelectionsByMovie, moviesDisplay]);
+	}, [watchSelectionsByItem, moviesDisplay]);
 
 	const handleClose = () => {
 		setCancelButtonText("Close");
@@ -449,7 +460,7 @@ const DownloadModalMovie: React.FC<{
 		try {
 			// Calculate the number of files to download based on selected types
 			// This will be used to update the progress bar in increments
-			const totalFilesToDownload = Object.entries(data.selectedTypesByMovie).reduce(
+			const totalFilesToDownload = Object.entries(data.selectedTypesByItem).reduce(
 				(acc, [movieKey]) => {
 					const movie = moviesDisplay.find((m) => m.MediaItemRatingKey === movieKey);
 					if (movie) {
@@ -473,13 +484,22 @@ const DownloadModalMovie: React.FC<{
 			];
 
 			for (const movie of orderedMovies) {
-				const selectedTypesByMovie = data.selectedTypesByMovie[movie.MediaItemRatingKey];
-				if (!selectedTypesByMovie || selectedTypesByMovie.length === 0) {
+				const selectedTypesByItem = data.selectedTypesByItem[movie.MediaItemRatingKey];
+
+				if (
+					!selectedTypesByItem ||
+					selectedTypesByItem.types === undefined ||
+					(selectedTypesByItem.types.length === 0 && !selectedTypesByItem.addToDBOnly)
+				) {
 					continue; // Skip if no types are selected
 				}
 				if (movie && movie.MediaItem && movie.MediaItem.RatingKey) {
 					if (movie && movie.MediaItem && movie.MediaItem.RatingKey) {
-						if (selectedTypesByMovie.includes("poster") && movie.Poster) {
+						if (
+							selectedTypesByItem.types.includes("poster") &&
+							movie.Poster &&
+							!selectedTypesByItem.addToDBOnly
+						) {
 							setProgressDownloads((prev) => ({
 								...prev,
 								[movie.Title]: {
@@ -511,7 +531,11 @@ const DownloadModalMovie: React.FC<{
 								setProgressValue((prev) => prev + progressIncrement);
 							}
 						}
-						if (selectedTypesByMovie.includes("backdrop") && movie.Backdrop) {
+						if (
+							selectedTypesByItem.types.includes("backdrop") &&
+							movie.Backdrop &&
+							!selectedTypesByItem.addToDBOnly
+						) {
 							setProgressDownloads((prev) => ({
 								...prev,
 								[movie.Title]: {
@@ -558,7 +582,7 @@ const DownloadModalMovie: React.FC<{
 							PosterSetID: posterSet.ID,
 							PosterSet: posterSet,
 							LastDownloaded: new Date().toISOString(),
-							SelectedTypes: selectedTypesByMovie,
+							SelectedTypes: selectedTypesByItem.types,
 							AutoDownload: false,
 						};
 						setProgressDownloads((prev) => ({
@@ -614,7 +638,7 @@ const DownloadModalMovie: React.FC<{
 		<FormField
 			key={movie.MediaItemRatingKey}
 			control={form.control}
-			name={`selectedTypesByMovie.${movie.MediaItemRatingKey}`}
+			name={`selectedTypesByItem.${movie.MediaItemRatingKey}`}
 			render={({ field }) => (
 				<div className="rounded-md border p-4 rounded mb-4">
 					<FormLabel className="text-md font-normal mb-4">
@@ -625,14 +649,20 @@ const DownloadModalMovie: React.FC<{
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
 									<Checkbox
-										checked={field.value.includes("poster")}
+										checked={field.value.types.includes("poster")}
 										onCheckedChange={(checked) => {
 											if (checked) {
-												field.onChange([...field.value, "poster"]);
+												field.onChange({
+													...field.value,
+													types: [...field.value.types, "poster"],
+												});
 											} else {
-												field.onChange(
-													field.value.filter((type) => type !== "poster")
-												);
+												field.onChange({
+													...field.value,
+													types: field.value.types.filter(
+														(type) => type !== "poster"
+													),
+												});
 											}
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
@@ -645,16 +675,20 @@ const DownloadModalMovie: React.FC<{
 							<FormItem className="flex flex-row items-start space-x-2 space-y-0">
 								<FormControl>
 									<Checkbox
-										checked={field.value.includes("backdrop")}
+										checked={field.value.types.includes("backdrop")}
 										onCheckedChange={(checked) => {
 											if (checked) {
-												field.onChange([...field.value, "backdrop"]);
+												field.onChange({
+													...field.value,
+													types: [...field.value.types, "backdrop"],
+												});
 											} else {
-												field.onChange(
-													field.value.filter(
+												field.onChange({
+													...field.value,
+													types: field.value.types.filter(
 														(type) => type !== "backdrop"
-													)
-												);
+													),
+												});
 											}
 										}}
 										className="h-5 w-5 sm:h-4 sm:w-4"
@@ -663,6 +697,23 @@ const DownloadModalMovie: React.FC<{
 								<FormLabel className="text-md font-normal">Backdrop</FormLabel>
 							</FormItem>
 						)}
+						<FormItem className="flex flex-row items-start space-x-2 space-y-0">
+							<FormControl>
+								<Checkbox
+									checked={field.value.addToDBOnly || false}
+									onCheckedChange={(checked) => {
+										field.onChange({
+											...field.value,
+											addToDBOnly: checked,
+										});
+									}}
+									className="h-5 w-5 sm:h-4 sm:w-4"
+								/>
+							</FormControl>
+							<FormLabel className="text-md font-normal">
+								Add to Database Only
+							</FormLabel>
+						</FormItem>
 					</div>
 				</div>
 			)}
@@ -861,8 +912,8 @@ const DownloadModalMovie: React.FC<{
 										onClick={() => {
 											onSubmit(form.getValues());
 										}}
-										disabled={Object.values(watchSelectionsByMovie).every(
-											(arr) => !arr || arr.length === 0
+										disabled={Object.values(watchSelectionsByItem).every(
+											(item) => !item.types || item.types.length === 0
 										)}
 									>
 										{downloadButtonText}
