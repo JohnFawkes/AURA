@@ -1,7 +1,6 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import localforage from "localforage";
 import {
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
@@ -26,6 +25,7 @@ import { Input } from "@/components/ui/input";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { useMediaStore } from "@/lib/mediaStore";
+import { storage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
@@ -81,10 +81,10 @@ export default function Navbar() {
 		if (!isHomePage && localSearch.trim() !== "") {
 			const handler = setTimeout(async () => {
 				try {
-					// Get all cached sections from localforage
-					const keys = await localforage.keys();
+					// Get all cached sections from storage
+					const keys = await storage.keys();
 					const cachedSectionsPromises = keys.map((key) =>
-						localforage.getItem<{
+						storage.getItem<{
 							data: LibrarySection;
 							timestamp: number;
 						}>(key)

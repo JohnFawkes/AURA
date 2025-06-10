@@ -3,7 +3,6 @@ import { searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
 import { postAddItemToDB } from "@/services/api.db";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/api.mediaserver";
 import { zodResolver } from "@hookform/resolvers/zod";
-import localforage from "localforage";
 import { Check, Download, LoaderIcon, X } from "lucide-react";
 import { z } from "zod";
 
@@ -43,6 +42,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 
 import { log } from "@/lib/logger";
+import { storage } from "@/lib/storage";
 
 import { DBSavedItem } from "@/types/databaseSavedSet";
 import { MediaItem } from "@/types/mediaItem";
@@ -419,8 +419,8 @@ const DownloadModalMovie: React.FC<{
 
 	// Replace the existing getMediaItemDetails function
 	async function getMediaItemDetails(key: string) {
-		// Get the library section details from localforage
-		const librarySection = await localforage.getItem<{
+		// Get the library section details from storage
+		const librarySection = await storage.getItem<{
 			data: {
 				MediaItems: MediaItem[];
 			};

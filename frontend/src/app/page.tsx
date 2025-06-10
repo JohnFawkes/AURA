@@ -5,7 +5,6 @@ import {
 	fetchMediaServerLibrarySectionItems,
 	fetchMediaServerLibrarySections,
 } from "@/services/api.mediaserver";
-import localforage from "localforage";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -20,19 +19,13 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
+import { storage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
-// Initialize localforage
-localforage.config({
-	name: "aura",
-	storeName: "LibrarySections",
-	version: 1.0,
-	description: "Library sections cache for Aura",
-});
 
 export default function Home() {
 	const isMounted = useRef(false);
@@ -83,7 +76,7 @@ export default function Home() {
 		try {
 			let sections: LibrarySection[] = [];
 
-			// If cache is allowed, try loading from localforage
+			// If cache is allowed, try loading from storage
 			if (useCache) {
 				log("Home Page - Attempting to load sections from cache");
 				// Get all cached sections
@@ -91,10 +84,10 @@ export default function Home() {
 					data: LibrarySection;
 					timestamp: number;
 				}[] = (
-					await localforage.keys().then((keys) =>
+					await storage.keys().then((keys) =>
 						Promise.all(
 							keys.map((key) =>
-								localforage.getItem<{
+								storage.getItem<{
 									data: LibrarySection;
 									timestamp: number;
 								}>(key)
@@ -123,14 +116,14 @@ export default function Home() {
 
 				// Clear invalid cache
 				if (sections.length === 0) {
-					await localforage.clear();
+					await storage.clear();
 				}
 			}
 
 			setFullyLoaded(false);
 
 			// Clear the cache
-			localforage.clear();
+			storage.clear();
 
 			// If sections were not loaded from cache, fetch them from the API.
 			if (sections.length === 0) {
@@ -191,8 +184,8 @@ export default function Home() {
 						return updated;
 					});
 
-					// Cache using localforage
-					await localforage.setItem(`${section.Title}`, {
+					// Cache using storage
+					await storage.setItem(`${section.Title}`, {
 						data: section,
 						timestamp: Date.now(),
 					});

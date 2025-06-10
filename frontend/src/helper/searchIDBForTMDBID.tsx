@@ -1,14 +1,14 @@
-import localforage from "localforage";
+import { storage } from "@/lib/storage";
 
 import { MediaItem } from "@/types/mediaItem";
 
 export const getAllLibrarySectionsFromIDB = async (): Promise<
 	{ title: string; type: string }[]
 > => {
-	// Get all cached sections from localforage
-	const keys = await localforage.keys();
+	// Get all cached sections from storage
+	const keys = await storage.keys();
 	const cachedSectionsPromises = keys.map((key) =>
-		localforage.getItem<{
+		storage.getItem<{
 			data: {
 				Title: string;
 				Type: string;
@@ -34,8 +34,8 @@ export const searchIDBForTMDBID = async (
 	tmdbID: string,
 	sectionTitle: string
 ): Promise<MediaItem | boolean> => {
-	// Get section from localforage
-	const librarySection = await localforage.getItem<{
+	// Get section from storage
+	const librarySection = await storage.getItem<{
 		data: {
 			MediaItems: MediaItem[];
 		};
@@ -55,9 +55,9 @@ export const searchIDBForTMDBID = async (
 
 export const searchIDBForTMDBIDNoLibrary = async (tmdbID: string): Promise<MediaItem | boolean> => {
 	// Get all cached sections
-	const keys = await localforage.keys();
+	const keys = await storage.keys();
 	const cachedSectionsPromises = keys.map((key) =>
-		localforage.getItem<{
+		storage.getItem<{
 			data: {
 				MediaItems: MediaItem[];
 			};
@@ -94,7 +94,7 @@ export const getAdjacentMediaItemFromIDB = async (
 	currentRatingKey: string,
 	direction: Direction
 ): Promise<MediaItem | null> => {
-	const librarySection = await localforage.getItem<{
+	const librarySection = await storage.getItem<{
 		data: {
 			MediaItems: MediaItem[];
 		};
