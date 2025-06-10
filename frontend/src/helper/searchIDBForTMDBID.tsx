@@ -46,8 +46,9 @@ export const searchIDBForTMDBID = async (
 	}
 
 	// Find media item with matching TMDB ID
-	const mediaItem = librarySection.data.MediaItems.find((item) =>
-		item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
+	const mediaItem = librarySection.data.MediaItems.find(
+		(item) =>
+			item.Guids && item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
 	);
 
 	return mediaItem || false;
