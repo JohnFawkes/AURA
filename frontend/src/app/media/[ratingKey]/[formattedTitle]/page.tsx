@@ -287,6 +287,7 @@ const MediaItemPage = () => {
 	// Compute hiddenCount based on posterSets and userHides
 	const hiddenCount = useMemo(() => {
 		if (!posterSets) return 0;
+		if (!userHides || userHides.length === 0) return 0;
 		const uniqueHiddenUsers = new Set<string>();
 		posterSets.forEach((set) => {
 			if (userHides.some((hide) => hide.Username === set.User.Name)) {
