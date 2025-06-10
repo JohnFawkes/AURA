@@ -226,7 +226,7 @@ const MediaItemPage = () => {
 				log("Media Item Page - Error fetching poster sets:", error);
 				setHasError(true);
 				if (error instanceof Error) {
-					if (error.message.startsWith("No sets found for the provided TMDB ID")) {
+					if (error.message.startsWith("No sets found")) {
 						setErrorMessage(`No Poster Sets found for ${responseItem.Title}`);
 					} else {
 						setErrorMessage(error.message);
