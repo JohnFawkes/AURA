@@ -1,6 +1,5 @@
 "use client";
 
-import HomeMediaItemCard from "@/app/_components/home/media-item-card";
 import {
 	fetchMediaServerLibrarySectionItems,
 	fetchMediaServerLibrarySections,
@@ -11,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
 import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
+import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
