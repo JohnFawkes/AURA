@@ -10,12 +10,11 @@ import { useRouter } from "next/navigation";
 import { AssetImage } from "@/components/shared/asset-image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/mediaStore";
 
 import { MediaItem } from "@/types/mediaItem";
-
-import { H4 } from "../../../components/ui/typography";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;
