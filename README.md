@@ -1,78 +1,40 @@
-# AURA
-
-[![Discord](https://img.shields.io/discord/1077169076113248307?logo=discord&label=Discord)](https://discord.gg/HP9TpTmfcp)
+# Welcome to AURA
 
 [![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/aura/master/version.json)](https://github.com/mediux-team/aura/pkgs/container/aura)
 
-## Description
-
-**AURA** stands for Automated Utility for Retrieval of Assets. It is a tool designed to use Mediux images for your media server content. It provides a simple and intuitive web interface to browse and select image sets for your library. While there are many tools available for this purpose, AURA stands out by offering a visual web interface to preview images before selection.
+**AURA** (Automated Utility for Retrieval of Assets) is a visual tool for managing Mediux image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
 
 > **Note:** This tool is currently in beta. While it has been tested locally, please use it at your own risk.
 
-## Features
+---
 
--   **Supports Multiple Media Servers**: Compatible with Plex, Emby, and Jellyfin for seamless integration.
--   **Mediux API Integration**: Seamlessly fetch and use Mediux images.
--   **Web GUI**: Preview and select image sets through an easy-to-use web interface.
--   **Automatic Updates**: Save sets to a local SQLite database for periodic updates.
--   **Local Image Storage**: Option to save downloaded images next to your content
+## Key Features
 
-## Installation
+-   🧩 **Cross-Server Compatibility**: Works with Plex, Emby, and Jellyfin.
+-   🖼 **Visual Browsing**: Preview artwork in a clean, organized interface.
+-   🔁 **Automated Updates**: Save selected image sets and keep them synced automatically.
+-   🗄 **Local Storage**: Option to store images next to your media files for easy access.
+-   📦 **Docker Support**: Easily deploy using Docker or docker-compose.
 
-AURA is designed to run in Docker for easy setup and deployment.
+---
 
-### Using docker-compose
+## Getting Started
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/mediux-team/aura.git
-    ```
-2. Navigate to the project directory:
-    ```sh
-    cd aura
-    ```
-3. Tweak the docker-compose file to match your settings
-4. Log in to ghcr.io (if required):
-    ```sh
-    docker login ghcr.io
-    ```
-5. Run the application with:
-    ```sh
-     docker-compose up --build
-    ```
-    The web interface will now be available at `http://localhost:3000`.
+To get started with AURA:
 
-### Using Dockerfile
+1. Install using Docker or docker-compose.
+2. Visit the web UI at `http://localhost:3000`.
+3. Browse your media server's contents.
+4. Choose and apply Mediux image sets.
+5. Optionally save selections for automatic updates.
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/mediux-team/aura.git
-    ```
-2. Navigate to the project directory:
-    ```sh
-    cd aura
-    ```
-3. Build the Docker image:
-    ```sh
-    docker build -t aura .
-    ```
-4. Run the Docker Container (adjust the volume paths and ports as needed):
-    ```sh
-    docker run -d -p 3000:3000 -p 8888:8888 -v '/mnt/user/appdata/aura/':'/config':'rw' -v '/mnt/user/data/media/':'/data/media':'rw' aura
-    ```
+> Visit the Installation and Usage sections in the sidebar for detailed steps.
 
-## Usage
+---
 
-Before running the application, set up a `config.yml` file. You can use [config.yml.sample](config.yml.sample) as a template and place the file in the container’s `/config` directory.
+## Join the Community
 
-1. Access the web interface by navigating to `http://localhost:3000` in your browser.
-2. Browse all of your media server content and choose what you want to search Mediux for.
-3. Browse and preview Mediux image sets for that item.
-4. Select the set you want to use for your content.
-5. Choose what you want to download from that set (eg: Poster, Backdrop, Season Posters, Titlecards)
-6. Save sets for automatic updates (optional)
+-   💬 [Join our Discord](https://discord.gg/Sv6wzqfK)
+-   🛠 [View Source on GitHub](https://github.com/mediux-team/aura)
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+---
