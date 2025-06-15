@@ -70,5 +70,7 @@ TMDB:
 
 # Mediux - Configuration for Mediux
 #   Token - The token for Mediux. This can be obtained by creating an account on Mediux and generating a static token.
+# !!!! NOTE: This is not yet available to the public. It is currently in development and will be available in the future.
+#       If you would like to test this feature, please contact us on Discord.
 Mediux:
     Token: <YOUR_MEDIUX_TOKEN> # Replace with your Mediux token
