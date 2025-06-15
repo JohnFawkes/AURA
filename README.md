@@ -28,7 +28,7 @@ To get started with AURA:
 4. Choose and apply Mediux image sets.
 5. Optionally save selections for automatic updates.
 
-> Visit the Installation and Usage sections in the sidebar for detailed steps.
+> Visit the [Docs](https://mediux-team.github.io/AURA/) for detailed steps.
 
 ---
 
