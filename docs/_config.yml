@@ -1,0 +1,5 @@
+baseurl: ""
+title: Aura Docs
+# Build settings
+theme: just-the-docs
+color_scheme: "dark"
