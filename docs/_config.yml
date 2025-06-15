@@ -1,5 +1,6 @@
 baseurl: ""
 title: Aura Docs
+baseurl: "/AURA"
 # Build settings
 theme: just-the-docs
 color_scheme: "dark"
