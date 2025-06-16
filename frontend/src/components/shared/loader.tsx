@@ -15,11 +15,7 @@ const Loader: React.FC<LoaderProps> = ({ message, className, iconClassName, mess
 	return (
 		<div className={cn("flex flex-col items-center justify-center", className)}>
 			<LoaderIcon className={cn("animate-spin h-6 w-6 text-gray-500", iconClassName)} />
-			{message && (
-				<span className={cn("mt-2 text-gray-500 text-center", messageClassName)}>
-					{message}
-				</span>
-			)}
+			{message && <span className={cn("mt-2 text-gray-500 text-center", messageClassName)}>{message}</span>}
 		</div>
 	);
 };
