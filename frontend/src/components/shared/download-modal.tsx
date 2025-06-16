@@ -90,7 +90,17 @@ type DownloadProgress = {
 	itemProgress: Record<string, AssetProgress>;
 
 	// Shared warning messages
-	warningMessages: string[];
+	//warningMessages: string[];
+	warningMessages: Record<
+		string,
+		{
+			posterFile: PosterFile | null;
+			posterFileType: keyof AssetProgress | null;
+			fileName: string | null;
+			mediaItem: MediaItem | null;
+			message: string;
+		}
+	>;
 };
 
 const formSchema = z
@@ -173,7 +183,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		value: 0,
 		color: "",
 		itemProgress: {},
-		warningMessages: [],
+		warningMessages: {},
 	});
 	// Add this with your other state declarations
 	const progressRef = useRef(0);
@@ -201,7 +211,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			value: 0,
 			color: "",
 			itemProgress: {},
-			warningMessages: [],
+			warningMessages: {},
 		});
 	};
 
@@ -419,8 +429,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		calculateSizes();
 	}, [formItems, watchSelectedOptions]);
 
-	// TODO: Remove this
-	const getProps = () => {
+	const LOG_VALUES = () => {
 		log("Props:", {
 			setType,
 			setTitle,
@@ -699,10 +708,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				setProgressValues((prev) => ({
 					...prev,
 					progressColor: "yellow",
-					warningMessages: [
+					// warningMessages: [
+					// 	...prev.warningMessages,
+					// 	`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
+					// ],
+					warningMessages: {
 						...prev.warningMessages,
-						`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-					],
+						[mediaItem.Title]: {
+							posterFile: posterFile,
+							posterFileType: posterFileType,
+							fileName: fileName,
+							mediaItem: mediaItem,
+							message: `${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
+						},
+					},
 					itemProgress: {
 						...prev.itemProgress,
 						[mediaItem.RatingKey]: {
@@ -724,10 +743,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				setProgressValues((prev) => ({
 					...prev,
 					progressColor: "yellow",
-					warningMessages: [
+					// warningMessages: [
+					// 	...prev.warningMessages,
+					// 	`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
+					// ],
+					warningMessages: {
 						...prev.warningMessages,
-						`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-					],
+						[mediaItem.Title]: {
+							posterFile: posterFile,
+							posterFileType: posterFileType,
+							fileName: fileName,
+							mediaItem: mediaItem,
+							message: `${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
+						},
+					},
 				}));
 			}
 
@@ -812,10 +841,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					setProgressValues((prev) => ({
 						...prev,
 						progressColor: "red",
-						warningMessages: [
+						// warningMessages: [
+						// 	...prev.warningMessages,
+						// 	`Error fetching latest media item for ${item.MediaItemTitle}. Skipping.`,
+						// ],
+						warningMessages: {
 							...prev.warningMessages,
-							`Error fetching latest media item for ${item.MediaItemTitle}. Skipping.`,
-						],
+							[item.MediaItemTitle]: {
+								posterFile: null,
+								posterFileType: null,
+								fileName: null,
+								mediaItem: null,
+								message: `Error fetching latest media item for ${item.MediaItemTitle}: ${latestMediaItemResp.error}`,
+							},
+						},
 					}));
 					continue;
 				}
@@ -823,10 +862,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					setProgressValues((prev) => ({
 						...prev,
 						progressColor: "red",
-						warningMessages: [
+						// warningMessages: [
+						// 	...prev.warningMessages,
+						// 	`No media item found for ${item.MediaItemTitle}. Skipping.`,
+						// ],
+						warningMessages: {
 							...prev.warningMessages,
-							`No media item found for ${item.MediaItemTitle}. Skipping.`,
-						],
+							[item.MediaItemTitle]: {
+								posterFile: null,
+								posterFileType: null,
+								fileName: null,
+								mediaItem: null,
+								message: `No media item found for ${item.MediaItemTitle}. Skipping.`,
+							},
+						},
 					}));
 					continue;
 				}
@@ -844,7 +893,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						setProgressValues((prev) => ({
 							...prev,
 							progressColor: "red",
-							warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
+							// warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
+							warningMessages: {
+								...prev.warningMessages,
+								[item.MediaItemTitle]: {
+									posterFile: null,
+									posterFileType: null,
+									fileName: null,
+									mediaItem: null,
+									message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error}`,
+								},
+							},
 						}));
 						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 					} else {
@@ -1005,7 +1064,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					setProgressValues((prev) => ({
 						...prev,
 						progressColor: "red",
-						warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
+						// warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
+						warningMessages: {
+							...prev.warningMessages,
+							[item.MediaItemTitle]: {
+								posterFile: null,
+								posterFileType: null,
+								fileName: null,
+								mediaItem: null,
+								message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error}`,
+							},
+						},
 					}));
 					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 				} else {
@@ -1027,7 +1096,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			setProgressValues((prev) => ({
 				...prev,
 				progressColor: "red",
-				warningMessages: [...prev.warningMessages, "An error occurred while downloading."],
+				// warningMessages: [...prev.warningMessages, "An error occurred while downloading."],
+				warningMessages: {
+					...prev.warningMessages,
+					general: {
+						posterFile: null,
+						posterFileType: null,
+						fileName: null,
+						mediaItem: null,
+						message: error instanceof Error ? error.message : "An unknown error occurred",
+					},
+				},
 			}));
 			setButtonTexts({
 				cancel: "Close",
@@ -1053,7 +1132,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				<DialogOverlay />
 				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
 					<DialogHeader>
-						<DialogTitle onClick={getProps}>{setTitle}</DialogTitle>
+						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
 						<DialogDescription>{setAuthor}</DialogDescription>
 						<DialogDescription>
 							<Link
@@ -1218,24 +1297,67 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									</div>
 								)}
 								{/* Warning Messages */}
-								{progressValues.warningMessages.length > 0 && (
+								{Object.keys(progressValues.warningMessages).length > 0 && (
 									<div className="my-2">
-										<Accordion type="single" collapsible>
+										<Accordion type="single" collapsible defaultValue="warnings">
 											<AccordionItem value="warnings">
 												<AccordionTrigger className="text-destructive">
-													Failed Downloads ({progressValues.warningMessages.length})
+													Failed Downloads (
+													{Object.keys(progressValues.warningMessages).length})
 												</AccordionTrigger>
 												<AccordionContent>
 													<div className="flex flex-col space-y-2">
-														{progressValues.warningMessages.map((message) => (
-															<div
-																key={`warning-${message}-${Math.random()}`}
-																className="flex items-center text-destructive"
-															>
-																<X className="mr-1 h-4 w-4" />
-																<span>{message}</span>
-															</div>
-														))}
+														{Object.entries(progressValues.warningMessages).map(
+															([key, item]) => (
+																<div
+																	key={`warning-${key}-${Math.random()}`}
+																	className="flex items-center text-destructive"
+																>
+																	<X
+																		className="mr-1 h-4 w-4"
+																		onClick={() => {
+																			// Retry Download if there is a posterFile, posterFileType, fileName and mediaItem
+																			if (
+																				item.posterFile &&
+																				item.posterFileType &&
+																				item.fileName &&
+																				item.mediaItem
+																			) {
+																				log(
+																					"Retrying Download for:",
+																					item.posterFile,
+																					item.posterFileType,
+																					item.fileName,
+																					item.mediaItem
+																				);
+																				// Remove this warningMessage
+																				setProgressValues((prev) => {
+																					const { [key]: _, ...rest } =
+																						prev.warningMessages;
+																					return {
+																						...prev,
+																						warningMessages: rest,
+																					};
+																				});
+																				progressDownloadRef.current -= 1;
+																				// Retry the download
+																				downloadPosterFileAndUpdateMediaServer(
+																					item.posterFile,
+																					item.posterFileType,
+																					item.fileName,
+																					item.mediaItem
+																				);
+																				setButtonTexts((prev) => ({
+																					...prev,
+																					download: `Download Again`,
+																				}));
+																			}
+																		}}
+																	/>
+																	<span>{item.message}</span>
+																</div>
+															)
+														)}
 													</div>
 												</AccordionContent>
 											</AccordionItem>
@@ -1311,7 +1433,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														value: 0,
 														color: "blue",
 														itemProgress: {},
-														warningMessages: [],
+														warningMessages: {},
 													});
 													setDuplicates({});
 												}}
