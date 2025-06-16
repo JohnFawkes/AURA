@@ -22,32 +22,29 @@ func validNotificationProvider() bool {
 func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	if !validNotificationProvider() {
 		logging.LOG.Warn(fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider))
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("invalid notification provider"),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
+		Err.HelpText = "Ensure the notification provider is set to a valid value in the configuration."
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	message := "This is a test notification from MediUX AURA"
 	title := "Test Notification"
 	imageURL := ""
-	logErr := SendDiscordNotification(message, imageURL, title)
-	if logErr.Err != nil {
-		logging.LOG.Warn(logErr.Log.Message)
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	Err = SendDiscordNotification(message, imageURL, title)
+	if Err.Message != "" {
+		logging.LOG.Warn(Err.Message)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Test notification sent successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    "success",
 	})

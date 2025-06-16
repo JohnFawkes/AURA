@@ -9,24 +9,23 @@ import (
 	"net/http"
 )
 
-func SendDiscordNotification(message string, imageURL string, title string) logging.ErrorLog {
+func SendDiscordNotification(message string, imageURL string, title string) logging.StandardError {
+	Err := logging.NewStandardError()
 
 	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
-		return logging.ErrorLog{
-			Err: fmt.Errorf("invalid notification provider"),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider),
-			}}
+
+		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
+		Err.HelpText = "Ensure the notification provider is set to 'Discord' in the configuration."
+		return Err
 	}
 
 	webhookURL := config.Global.Notification.Webhook
 
 	if webhookURL == "" {
-		return logging.ErrorLog{
-			Err: fmt.Errorf("webhook url is empty"),
-			Log: logging.Log{
-				Message: "Webhook URL is empty",
-			}}
+
+		Err.Message = "Discord webhook URL is not configured"
+		Err.HelpText = "Please set the Discord webhook URL in the configuration."
+		return Err
 	}
 
 	embed := map[string]any{
@@ -53,41 +52,41 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 
 	bodyBytes, err := json.Marshal(webhookBody)
 	if err != nil {
-		return logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{
-				Message: "Failed to marshal webhook body",
-			}}
+
+		Err.Message = "Failed to marshal webhook body"
+		Err.HelpText = "Ensure the webhook body is correctly formatted."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return Err
 	}
 
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{
-				Message: "Failed to send webhook request",
-			}}
+
+		Err.Message = "Failed to send webhook request"
+		Err.HelpText = "Ensure the Discord webhook URL is correct and accessible."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return Err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return logging.ErrorLog{
-			Err: fmt.Errorf("failed to send webhook request"),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Failed to send webhook request, status code: %d", resp.StatusCode),
-			}}
+
+		Err.Message = fmt.Sprintf("Failed to send Discord notification, received status code: %d", resp.StatusCode)
+		Err.HelpText = "Ensure the Discord webhook URL is correct and the bot has permission to send messages."
+		Err.Details = fmt.Sprintf("Response status: %s", resp.Status)
+		return Err
 	}
 
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }
 
-func SendDiscordAppStartNotification() logging.ErrorLog {
+func SendDiscordAppStartNotification() logging.StandardError {
 	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
-		return logging.ErrorLog{
-			Err: fmt.Errorf("invalid notification provider"),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider),
-			}}
+		Err := logging.NewStandardError()
+
+		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
+		Err.HelpText = "Ensure the notification provider is set to 'Discord' in the configuration."
+		return Err
 	}
 
 	message := "MediUX AURA has started successfully!"
