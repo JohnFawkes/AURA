@@ -81,13 +81,11 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 					Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 					Err.Details = fmt.Sprintf("Error parsing XML response for rating key: %s", ratingKey)
 				} else {
-
 					Err.Message = fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)
 					Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
 					Err.Details = fmt.Sprintf("Received status code '%d' for rating key: %s", response.StatusCode, ratingKey)
 				}
 			} else {
-
 				Err.Message = "Invalid XML response from Plex server"
 				Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 				Err.Details = fmt.Sprintf("Response from Plex server: %s", string(body))
