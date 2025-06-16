@@ -31,10 +31,11 @@ permalink: /
 To get started with AURA:
 
 1. Install using Docker or docker-compose.
-2. Visit the web UI at `http://localhost:3000`.
-3. Browse your media server's contents.
-4. Choose and apply Mediux image sets.
-5. Optionally save selections for automatic updates.
+2. Configure your `config.yml` file. You can use [sample configuration](/config.md) as a reference.
+3. Visit the web UI at `http://localhost:3000`.
+4. Browse your media server's contents.
+5. Choose and apply Mediux image sets.
+6. Optionally save selections for automatic updates.
 
 > Visit the Installation and Usage sections in the sidebar for detailed steps.
 
