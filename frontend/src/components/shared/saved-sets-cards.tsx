@@ -2,6 +2,7 @@
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
+import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
 import { fetchSetByID } from "@/services/api.mediux";
 import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
@@ -288,6 +289,22 @@ const SavedSetsCard: React.FC<{
 
 			await Promise.all(
 				editSets.map(async (set) => {
+					// Update the media item in the backend store by calling fetchMediaServerItemContent
+					const resp = await fetchMediaServerItemContent(
+						savedSet.MediaItem.RatingKey,
+						savedSet.MediaItem.LibraryTitle
+					);
+
+					if (!resp || resp.status === "error") {
+						log("Error fetching media item content:", resp.error?.Message || "Unknown error");
+						// Store the first error we encounter
+						if (!hasError) {
+							hasError = true;
+							errorResponse = resp;
+						}
+						return;
+					}
+
 					const response = await fetchSetByID(
 						savedSet.MediaItem.LibraryTitle,
 						savedSet.MediaItem.RatingKey,
