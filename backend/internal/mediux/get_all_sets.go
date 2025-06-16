@@ -1,11 +1,11 @@
 package mediux
 
 import (
+	"aura/internal/cache"
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/modals"
 	"aura/internal/utils"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -39,50 +39,61 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
 
+	// Create a new StandardError with details about the error
+	Err := logging.NewStandardError()
+
 	// Get the TMDB ID from the URL
 	tmdbID := chi.URLParam(r, "tmdbID")
 	itemType := chi.URLParam(r, "itemType")
 	librarySection := chi.URLParam(r, "librarySection")
 	itemRatingKey := chi.URLParam(r, "ratingKey")
 	if tmdbID == "" || itemType == "" || librarySection == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing tmdbID or itemType in URL"),
-			Log: logging.Log{
-				Message: "Missing TMDB ID, item type, or library section in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Missing TMDB ID, Item Type or Library Section in URL Parameters"
+		Err.HelpText = "Ensure the TMDB ID, Item Type and Library Section are provided in path parameters."
+		Err.Details = fmt.Sprintf("Params: tmdbID=%s, itemType=%s, librarySection=%s", tmdbID, itemType, librarySection)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+		return
+	}
+
+	// If cache is empty, return false
+	if cache.LibraryCacheStore.IsEmpty() {
+
+		Err.Message = "Backend cache is empty"
+		Err.HelpText = "Try refreshing the cache from the Home Page"
+		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	logging.LOG.Debug(fmt.Sprintf("Fetching all sets for TMDB ID: %s, item type: %s, library section: %s", tmdbID, itemType, librarySection))
 
-	posterSets, logErr := fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	posterSets, Err := fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	if len(posterSets) == 0 {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: errors.New("no sets found"),
-			Log: logging.Log{
-				Message: "No sets found for the provided TMDB ID and item type",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+		Err.Message = "No sets found for the provided TMDB ID and item type"
+		Err.HelpText = "Ensure the TMDB ID and item type are correct and that sets exist for this item."
+		Err.Details = fmt.Sprintf("TMDB ID: %s, Item Type: %s", tmdbID, itemType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Retrieved all sets from Mediux",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    posterSets,
 	})
 }
 
-func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]modals.PosterSet, logging.ErrorLog) {
+func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]modals.PosterSet, logging.StandardError) {
+	Err := logging.NewStandardError()
+	Err.Function = utils.GetFunctionName()
+
 	// Generate the request body
 	var requestBody map[string]any
 	if itemType == "movie" {
@@ -90,10 +101,11 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	} else if itemType == "show" {
 		requestBody = generateShowRequestBody(tmdbID)
 	} else {
-		return nil, logging.ErrorLog{
-			Err: errors.New("invalid item type"),
-			Log: logging.Log{Message: "Invalid item type provided"},
-		}
+
+		Err.Message = "Invalid item type provided"
+		Err.HelpText = "Ensure the item type is either 'movie' or 'show'."
+		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
+		return nil, Err
 	}
 
 	// Create a new Resty client
@@ -106,10 +118,10 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-		return nil, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to send request to Mediux API"},
-		}
+
+		Err.Message = "Failed to make request to Mediux API"
+		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
 	}
 
 	// Parse the response body into the appropriate struct based on itemType
@@ -117,54 +129,50 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Response error: %s", response.Body()))
-		return nil, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse response from Mediux API"},
-		}
-	}
 
-	// Check if the response status is OK
-	if response.StatusCode() != http.StatusOK {
-		return nil, logging.ErrorLog{
-			Err: errors.New("received non-200 response from Mediux API"),
-			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
-		}
+		Err.Message = "Failed to parse Mediux API response"
+		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return nil, Err
 	}
 
 	// Check if the response is nil on all fields
 	if itemType == "movie" {
 		if responseBody.Data.Movie.ID == "" {
-			return nil, logging.ErrorLog{
-				Err: fmt.Errorf("movie not found in the response for TMDB ID: %s", tmdbID),
-				Log: logging.Log{Message: "No sets found"},
-			}
+
+			Err.Message = "Movie not found in the response"
+			Err.HelpText = "Ensure the TMDB ID is correct and the movie exists in the Mediux database."
+			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			return nil, Err
 		}
 
 		if responseBody.Data.Movie.CollectionID == nil &&
 			responseBody.Data.Movie.Posters == nil &&
 			responseBody.Data.Movie.Backdrops == nil {
-			return nil, logging.ErrorLog{
-				Err: fmt.Errorf("movie sets or collection not found in the response for TMDB ID: %s", tmdbID),
-				Log: logging.Log{Message: "No sets found"},
-			}
+
+			Err.Message = "Movie sets not found in the response"
+			Err.HelpText = "Ensure the TMDB ID is correct and the movie has sets in the Mediux database."
+			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			return nil, Err
 		}
 
 	} else if itemType == "show" {
 		if responseBody.Data.Show.ID == "" {
-			return nil, logging.ErrorLog{
-				Err: fmt.Errorf("show not found in the response for TMDB ID: %s", tmdbID),
-				Log: logging.Log{Message: "No sets found"},
-			}
+
+			Err.Message = "Show not found in the response"
+			Err.HelpText = "Ensure the TMDB ID is correct and the show exists in the Mediux database."
+			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			return nil, Err
 		}
 
 		if responseBody.Data.Show.Posters == nil &&
 			responseBody.Data.Show.Backdrops == nil &&
 			responseBody.Data.Show.Seasons == nil {
-			return nil, logging.ErrorLog{
-				Err: fmt.Errorf("show sets not found in the response for TMDB ID: %s", tmdbID),
-				Log: logging.Log{Message: "No sets found"},
-			}
+
+			Err.Message = "Show sets not found in the response"
+			Err.HelpText = "Ensure the TMDB ID is correct and the show has sets in the Mediux database."
+			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			return nil, Err
 		}
 
 	}
@@ -173,18 +181,24 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	if itemType == "movie" {
 		posterSets = processMovieResponse(librarySection, itemRatingKey, (*responseBody.Data.Movie))
 	} else if itemType == "show" {
-		posterSets = processShowResponse((*responseBody.Data.Show))
+		posterSets = processShowResponse(librarySection, itemRatingKey, (*responseBody.Data.Show))
 	}
 
-	return posterSets, logging.ErrorLog{}
+	return posterSets, logging.StandardError{}
 }
 
-func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
-	logging.LOG.Trace(fmt.Sprintf("Processing show: %s", show.Title))
+func processShowResponse(librarySection, itemRatingKey string, show modals.MediuxShowByID) []modals.PosterSet {
+	logging.LOG.Trace(fmt.Sprintf("Processing Show Set for - %s", show.Title))
 	showSetMap := make(map[string]*modals.PosterSet)
 
+	cachedItem, exists := cache.LibraryCacheStore.GetMediaItemFromSection(librarySection, itemRatingKey)
+	if !exists {
+		logging.LOG.Error(fmt.Sprintf("\tCould not find '%s' in cache", show.Title))
+		return nil
+	}
+
 	if len(show.Posters) > 0 {
-		logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(show.Posters)))
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d posters", len(show.Posters)))
 		for _, poster := range show.Posters {
 			if poster.ShowSet != nil && poster.ShowSet.ID != "" {
 				setInfo := poster.ShowSet
@@ -193,6 +207,13 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 					Type:     "poster",
 					Modified: poster.ModifiedOn,
 					FileSize: parseFileSize(poster.FileSize),
+					Show: &modals.PosterFileShow{
+						ID:             show.ID,
+						Title:          show.Title,
+						RatingKey:      itemRatingKey,
+						LibrarySection: librarySection,
+						MediaItem:      *cachedItem,
+					},
 				}
 
 				if ps, exists := showSetMap[setInfo.ID]; exists {
@@ -214,7 +235,7 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 		}
 	}
 	if len(show.Backdrops) > 0 {
-		logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(show.Backdrops)))
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d backdrops", len(show.Backdrops)))
 		for _, backdrop := range show.Backdrops {
 			if backdrop.ShowSet != nil && backdrop.ShowSet.ID != "" {
 				setInfo := backdrop.ShowSet
@@ -223,6 +244,13 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 					Type:     "backdrop",
 					Modified: backdrop.ModifiedOn,
 					FileSize: parseFileSize(backdrop.FileSize),
+					Show: &modals.PosterFileShow{
+						ID:             show.ID,
+						Title:          show.Title,
+						RatingKey:      itemRatingKey,
+						LibrarySection: librarySection,
+						MediaItem:      *cachedItem,
+					},
 				}
 				if ps, exists := showSetMap[setInfo.ID]; exists {
 					ps.Backdrop = &newBackdrop
@@ -243,7 +271,15 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 		}
 	}
 	if len(show.Seasons) > 0 {
-		logging.LOG.Trace(fmt.Sprintf("Found %d seasons", len(show.Seasons)))
+		var totalSeasonPosters, totalTitlecards int
+		for _, season := range show.Seasons {
+			totalSeasonPosters += len(season.Posters)
+			for _, episode := range season.Episodes {
+				totalTitlecards += len(episode.Titlecards)
+			}
+		}
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d season posters", totalSeasonPosters))
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d titlecards", totalTitlecards))
 		for _, season := range show.Seasons {
 			for _, poster := range season.Posters {
 				if poster.ShowSet != nil && poster.ShowSet.ID != "" {
@@ -254,11 +290,32 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 					} else {
 						seasonType = "seasonPoster"
 					}
+					// Check if the Season exists in the cachedItem
+					seasonExists := false
+					for _, cachedSeason := range cachedItem.Series.Seasons {
+						if cachedSeason.SeasonNumber == season.SeasonNumber {
+							seasonExists = true
+							break
+						}
+					}
+					var seasonItem *modals.MediaItem
+					if !seasonExists {
+						seasonItem = &modals.MediaItem{} // Create a new empty MediaItem
+					} else {
+						seasonItem = cachedItem // Use existing cached item
+					}
 					newPoster := modals.PosterFile{
 						ID:       poster.ID,
 						Type:     seasonType,
 						Modified: poster.ModifiedOn,
 						FileSize: parseFileSize(poster.FileSize),
+						Show: &modals.PosterFileShow{
+							ID:             show.ID,
+							Title:          show.Title,
+							RatingKey:      itemRatingKey,
+							LibrarySection: librarySection,
+							MediaItem:      *seasonItem,
+						},
 						Season: &modals.PosterFileSeason{
 							Number: season.SeasonNumber,
 						},
@@ -284,11 +341,37 @@ func processShowResponse(show modals.MediuxShowByID) []modals.PosterSet {
 				for _, titlecard := range episode.Titlecards {
 					if titlecard.ShowSet != nil && titlecard.ShowSet.ID != "" {
 						setInfo := titlecard.ShowSet
+
+						// Check if the Episode exists in the cachedItem
+						episodeExists := false
+						for _, cachedSeason := range cachedItem.Series.Seasons {
+							for _, cachedEpisode := range cachedSeason.Episodes {
+								if cachedEpisode.SeasonNumber == episode.Season.SeasonNumber &&
+									cachedEpisode.EpisodeNumber == episode.EpisodeNumber {
+									episodeExists = true
+									break
+								}
+							}
+						}
+						var episodeItem *modals.MediaItem
+						if !episodeExists {
+							episodeItem = &modals.MediaItem{} // Create a new empty MediaItem
+						} else {
+							episodeItem = cachedItem // Use existing cached item
+						}
+
 						newTitlecard := modals.PosterFile{
 							ID:       titlecard.ID,
 							Type:     "titlecard",
 							Modified: titlecard.ModifiedOn,
 							FileSize: parseFileSize(titlecard.FileSize),
+							Show: &modals.PosterFileShow{
+								ID:             show.ID,
+								Title:          show.Title,
+								RatingKey:      itemRatingKey,
+								LibrarySection: librarySection,
+								MediaItem:      *episodeItem,
+							},
 							Episode: &modals.PosterFileEpisode{
 								Title:         episode.EpisodeTitle,
 								EpisodeNumber: episode.EpisodeNumber,
@@ -332,7 +415,7 @@ func processMovieResponse(librarySection, itemRatingKey string, movie modals.Med
 	var posterSets []modals.PosterSet
 
 	if movie.CollectionID != nil {
-		posterSets = append(posterSets, processMovieCollection(librarySection, movie.ID, movie.CollectionID.Movies)...)
+		posterSets = append(posterSets, processMovieCollection(itemRatingKey, librarySection, movie.ID, *movie.CollectionID)...)
 	}
 	posterSets = append(posterSets, processMovieSetPostersAndBackdrops(librarySection, itemRatingKey, movie)...)
 
@@ -344,8 +427,14 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 	var posterSets []modals.PosterSet
 	movieSetMap := make(map[string]*modals.PosterSet)
 
+	cachedItem, exists := cache.LibraryCacheStore.GetMediaItemFromSection(librarySection, itemRatingKey)
+	if !exists {
+		logging.LOG.Error(fmt.Sprintf("\tCould not find '%s' in cache", movie.Title))
+		return nil
+	}
+
 	if len(movie.Posters) > 0 {
-		logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(movie.Posters)))
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d posters", len(movie.Posters)))
 		for _, poster := range movie.Posters {
 			if poster.MovieSet != nil && poster.MovieSet.ID != "" {
 				setInfo := poster.MovieSet
@@ -355,18 +444,17 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 					Modified: poster.ModifiedOn,
 					FileSize: parseFileSize(poster.FileSize),
 					Movie: &modals.PosterFileMovie{
-						ID:             movie.ID,
-						Title:          movie.Title,
-						Status:         movie.Status,
-						Tagline:        movie.Tagline,
-						Slug:           movie.Slug,
-						DateUpdated:    movie.DateUpdated,
-						TvdbID:         movie.TvdbID,
-						ImdbID:         movie.ImdbID,
-						TraktID:        movie.TraktID,
-						ReleaseDate:    movie.ReleaseDate,
-						RatingKey:      itemRatingKey,
-						LibrarySection: librarySection,
+						ID:          movie.ID,
+						Title:       movie.Title,
+						Status:      movie.Status,
+						Tagline:     movie.Tagline,
+						Slug:        movie.Slug,
+						DateUpdated: movie.DateUpdated,
+						TvdbID:      movie.TvdbID,
+						ImdbID:      movie.ImdbID,
+						TraktID:     movie.TraktID,
+						ReleaseDate: movie.ReleaseDate,
+						MediaItem:   *cachedItem,
 					},
 				}
 
@@ -391,7 +479,7 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 	}
 
 	if len(movie.Backdrops) > 0 {
-		logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(movie.Backdrops)))
+		logging.LOG.Trace(fmt.Sprintf("\tFound %d backdrops", len(movie.Backdrops)))
 		for _, backdrop := range movie.Backdrops {
 			if backdrop.MovieSet != nil && backdrop.MovieSet.ID != "" {
 				setInfo := backdrop.MovieSet
@@ -401,18 +489,17 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 					Modified: backdrop.ModifiedOn,
 					FileSize: parseFileSize(backdrop.FileSize),
 					Movie: &modals.PosterFileMovie{
-						ID:             movie.ID,
-						Title:          movie.Title,
-						Status:         movie.Status,
-						Tagline:        movie.Tagline,
-						Slug:           movie.Slug,
-						DateUpdated:    movie.DateUpdated,
-						TvdbID:         movie.TvdbID,
-						ImdbID:         movie.ImdbID,
-						TraktID:        movie.TraktID,
-						ReleaseDate:    movie.ReleaseDate,
-						RatingKey:      itemRatingKey,
-						LibrarySection: librarySection,
+						ID:          movie.ID,
+						Title:       movie.Title,
+						Status:      movie.Status,
+						Tagline:     movie.Tagline,
+						Slug:        movie.Slug,
+						DateUpdated: movie.DateUpdated,
+						TvdbID:      movie.TvdbID,
+						ImdbID:      movie.ImdbID,
+						TraktID:     movie.TraktID,
+						ReleaseDate: movie.ReleaseDate,
+						MediaItem:   *cachedItem,
 					},
 				}
 				if ps, exists := movieSetMap[setInfo.ID]; exists {
@@ -442,19 +529,23 @@ func processMovieSetPostersAndBackdrops(librarySection string, itemRatingKey str
 	return posterSets
 }
 
-func processMovieCollection(librarySection, mainMovieID string, movies []modals.MediuxMovieCollectionMovie) []modals.PosterSet {
+func processMovieCollection(itemRatingKey, librarySection, mainMovieID string, collection modals.MediuxMovieCollectionID) []modals.PosterSet {
+	movies := collection.Movies
 	if len(movies) == 0 {
 		return nil
 	}
-	logging.LOG.Trace("Processing movie collection")
+	logging.LOG.Trace(fmt.Sprintf("Processing %d movies in '%s' collection", len(movies), collection.CollectionName))
 	collectionSetMap := make(map[string]*modals.PosterSet)
 	for _, movie := range movies {
-		// fetchedRatingKey, _ := SearchForItemAndGetRatingKey(
-		// 	movie.ID, "movie",
-		// 	movie.Title, librarySection)
-		logging.LOG.Trace(fmt.Sprintf("Processing movie: %s", movie.Title))
+		logging.LOG.Trace(fmt.Sprintf("\tProcessing movie: %s", movie.Title))
+
+		cachedItem, _ := cache.LibraryCacheStore.GetMediaItemFromSectionByTMDBID(librarySection, movie.ID)
+		if cachedItem == nil {
+			logging.LOG.Error(fmt.Sprintf("\t\tCould not find '%s' in cache", movie.Title))
+		}
+
 		if len(movie.Posters) > 0 {
-			logging.LOG.Trace(fmt.Sprintf("Found %d posters", len(movie.Posters)))
+			logging.LOG.Trace(fmt.Sprintf("\t\tFound %d posters", len(movie.Posters)))
 			for _, poster := range movie.Posters {
 				if poster.CollectionSet.ID != "" {
 					setInfo := poster.CollectionSet
@@ -475,14 +566,14 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							ImdbID:      movie.ImdbID,
 							TraktID:     movie.TraktID,
 							ReleaseDate: movie.ReleaseDate,
-							//RatingKey:      fetchedRatingKey,
-							LibrarySection: librarySection,
+							MediaItem:   *cachedItem,
 						},
 					}
 
 					// Check to see this set already exists in the map
 					if cs, exists := collectionSetMap[setInfo.ID]; exists {
 						if mainMovieID == movie.ID {
+							newPoster.Movie.RatingKey = itemRatingKey
 							cs.Poster = &newPoster
 						} else {
 							cs.OtherPosters = append(cs.OtherPosters, newPoster)
@@ -499,6 +590,7 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							Status:      movie.Status,
 						}
 						if mainMovieID == movie.ID {
+							newPoster.Movie.RatingKey = itemRatingKey
 							newPosterSet.Poster = &newPoster
 						} else {
 							newPosterSet.OtherPosters = append(newPosterSet.OtherPosters, newPoster)
@@ -510,7 +602,7 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 			}
 		}
 		if len(movie.Backdrops) > 0 {
-			logging.LOG.Trace(fmt.Sprintf("Found %d backdrops", len(movie.Backdrops)))
+			logging.LOG.Trace(fmt.Sprintf("\t\tFound %d backdrops", len(movie.Backdrops)))
 			for _, backdrop := range movie.Backdrops {
 				if backdrop.CollectionSet.ID != "" {
 					setInfo := backdrop.CollectionSet
@@ -531,13 +623,13 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							ImdbID:      movie.ImdbID,
 							TraktID:     movie.TraktID,
 							ReleaseDate: movie.ReleaseDate,
-							//RatingKey:      fetchedRatingKey,
-							LibrarySection: librarySection,
+							MediaItem:   *cachedItem,
 						},
 					}
 
 					if cs, exists := collectionSetMap[setInfo.ID]; exists {
 						if mainMovieID == movie.ID {
+							newBackdrop.Movie.RatingKey = itemRatingKey
 							cs.Backdrop = &newBackdrop
 						} else {
 							cs.OtherBackdrops = append(cs.OtherBackdrops, newBackdrop)
@@ -553,6 +645,7 @@ func processMovieCollection(librarySection, mainMovieID string, movies []modals.
 							Status:      movie.Status,
 						}
 						if mainMovieID == movie.ID {
+							newBackdrop.Movie.RatingKey = itemRatingKey
 							newPosterSet.Backdrop = &newBackdrop
 						} else {
 							newPosterSet.OtherBackdrops = append(newPosterSet.OtherBackdrops, newBackdrop)
@@ -582,53 +675,115 @@ func parseFileSize(fileSize string) int64 {
 	return int64(size)
 }
 
-func GetShowSetByID(w http.ResponseWriter, r *http.Request) {
+func GetSetByID(w http.ResponseWriter, r *http.Request) {
+
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	// Get the set ID from the URL
 	setID := chi.URLParam(r, "setID")
 	if setID == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: errors.New("missing setID in URL"),
-			Log: logging.Log{
-				Message: "Missing setID in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Missing setID in URL"
+		Err.HelpText = "Ensure the setID is provided in the URL path."
+		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	logging.LOG.Debug(fmt.Sprintf("Fetching show set by ID: %s", setID))
+	// Get the librarySection and itemRatingKey from the query parameters
+	librarySection := r.URL.Query().Get("librarySection")
+	itemRatingKey := r.URL.Query().Get("itemRatingKey")
+	itemType := r.URL.Query().Get("itemType")
+	if librarySection == "" || itemRatingKey == "" || itemType == "" {
+		Err.Function = utils.GetFunctionName()
 
-	showSet, logErr := FetchShowSetByID(setID)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		Err.Message = "Missing librarySection, itemRatingKey or itemType in query parameters"
+		Err.HelpText = "Ensure the librarySection, itemRatingKey and itemType are provided in query parameters."
+		Err.Details = fmt.Sprintf("Query Params: librarySection=%s, itemRatingKey=%s, itemType=%s", librarySection, itemRatingKey, itemType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	if showSet.ID == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: errors.New("no show set found"),
-			Log: logging.Log{
-				Message: "No show set found for the provided ID",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+	var updatedSet modals.PosterSet
+
+	if itemType == "show" {
+		updatedSet, Err = FetchShowSetByID(librarySection, itemRatingKey, setID)
+		if Err.Message != "" {
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+		if updatedSet.ID == "" {
+			Err.Function = utils.GetFunctionName()
+
+			Err.Message = "No show set found for the provided ID"
+			Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
+			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+	} else if itemType == "movie" {
+		updatedSet, Err = FetchMovieSetByID(librarySection, itemRatingKey, setID)
+		if Err.Message != "" {
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+		if updatedSet.ID == "" {
+			Err.Function = utils.GetFunctionName()
+
+			Err.Message = "No movie set found for the provided ID"
+			Err.HelpText = "Ensure the set ID is correct and the movie set exists in the Mediux database."
+			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+	} else if itemType == "collection" {
+		updatedSet, Err = FetchCollectionSetByID(librarySection, itemRatingKey, setID)
+		if Err.Message != "" {
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+		if updatedSet.ID == "" {
+			Err.Function = utils.GetFunctionName()
+
+			Err.Message = "No collection set found for the provided ID"
+			Err.HelpText = "Ensure the set ID is correct and the collection set exists in the Mediux database."
+			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+			return
+		}
+	} else {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Invalid item type provided"
+		Err.HelpText = "Ensure the item type is either 'movie', 'show' or 'collection'."
+		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Retrieved show set from Mediux",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    showSet,
+		Data:    updatedSet,
 	})
 }
 
-func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
+func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
 
+	Err := logging.NewStandardError()
+	Err.Function = utils.GetFunctionName()
 	requestBody := generateShowSetByIDRequestBody(setID)
+
+	// If cache is empty, return false
+	if cache.LibraryCacheStore.IsEmpty() {
+
+		Err.Message = "Backend cache is empty"
+		Err.HelpText = "Try refreshing the cache from the Home Page"
+		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
+		return modals.PosterSet{}, Err
+	}
 
 	// Create a new Resty client
 	client := resty.New()
@@ -640,28 +795,24 @@ func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-		return modals.PosterSet{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to send request to Mediux API"},
-		}
-	}
+		Err.Function = utils.GetFunctionName()
 
-	// Check if the response status is OK
-	if response.StatusCode() != http.StatusOK {
-		return modals.PosterSet{}, logging.ErrorLog{
-			Err: errors.New("received non-200 response from Mediux API"),
-			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
-		}
+		Err.Message = "Failed to make request to Mediux API"
+		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
 	}
 
 	// Parse the response body into a MediuxShowSetResponse struct
 	var responseBody modals.MediuxShowSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		return modals.PosterSet{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse response from Mediux API"},
-		}
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Failed to parse Mediux API response"
+		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
 	}
 
 	showSet := responseBody.Data.ShowSetID
@@ -671,7 +822,7 @@ func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", showSet.DateUpdated))
 
 	// Process the response and return the poster sets
-	posterSets := processShowResponse(showSet.Show)
+	posterSets := processShowResponse(librarySection, itemRatingKey, showSet.Show)
 	posterSet := posterSets[0]
 
 	posterSet.ID = showSet.ID
@@ -681,5 +832,166 @@ func FetchShowSetByID(setID string) (modals.PosterSet, logging.ErrorLog) {
 	posterSet.DateCreated = showSet.DateCreated
 	posterSet.DateUpdated = showSet.DateUpdated
 
-	return posterSet, logging.ErrorLog{}
+	return posterSet, logging.StandardError{}
+}
+
+func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
+	Err := logging.NewStandardError()
+	Err.Function = utils.GetFunctionName()
+	requestBody := generateMovieSetByIDRequestBody(setID)
+
+	// If cache is empty, return false
+	if cache.LibraryCacheStore.IsEmpty() {
+
+		Err.Message = "Backend cache is empty"
+		Err.HelpText = "Try refreshing the cache from the Home Page"
+		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
+		return modals.PosterSet{}, Err
+	}
+
+	// Create a new Resty client
+	client := resty.New()
+
+	// Send the GraphQL request to the Mediux API as a POST request
+	response, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
+		SetBody(requestBody).
+		Post("https://staged.mediux.io/graphql")
+	if err != nil {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Failed to make request to Mediux API"
+		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
+	}
+
+	// Parse the response body into a MediuxMovieSetResponse struct
+	var responseBody modals.MediuxMovieSetResponse
+	err = json.Unmarshal(response.Body(), &responseBody)
+	if err != nil {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Failed to parse Mediux API response"
+		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
+	}
+
+	movieSet := responseBody.Data.MovieSetID
+	logging.LOG.Trace(fmt.Sprintf("Processing movie set: %s", movieSet.SetTitle))
+	logging.LOG.Trace(fmt.Sprintf("Date Created: %s", movieSet.DateCreated))
+	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", movieSet.DateUpdated))
+
+	// Process the response and return the poster sets
+	posterSets := processMovieSetPostersAndBackdrops(librarySection, itemRatingKey, movieSet.Movie)
+	if len(posterSets) == 0 {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "No poster sets found for the provided movie set ID"
+		Err.HelpText = "Ensure the movie set ID is correct and the movie set exists in the Mediux database."
+		Err.Details = fmt.Sprintf("Movie Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		return modals.PosterSet{}, Err
+	}
+	posterSet := posterSets[0]
+
+	posterSet.ID = movieSet.ID
+	posterSet.Title = movieSet.SetTitle
+	posterSet.User.Name = movieSet.UserCreated.Username
+	posterSet.Type = "movie"
+	posterSet.DateCreated = movieSet.DateCreated
+	posterSet.DateUpdated = movieSet.DateUpdated
+	posterSet.Status = movieSet.Movie.Status
+
+	return posterSet, logging.StandardError{}
+}
+
+func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
+	Err := logging.NewStandardError()
+	Err.Function = utils.GetFunctionName()
+
+	// If cache is empty, return false
+	if cache.LibraryCacheStore.IsEmpty() {
+
+		Err.Message = "Backend cache is empty"
+		Err.HelpText = "Try refreshing the cache from the Home Page"
+		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
+		return modals.PosterSet{}, Err
+	}
+
+	tmdbID, exists := cache.LibraryCacheStore.GetTMDBIDFromMediaItemRatingKey(librarySection, itemRatingKey)
+	if !exists {
+
+		Err.Message = "TMDB ID not found in cache"
+		Err.HelpText = "Ensure the itemRatingKey is valid and the TMDB ID exists in the cache."
+		Err.Details = fmt.Sprintf("Item Rating Key: %s, Library Section: %s", itemRatingKey, librarySection)
+		return modals.PosterSet{}, Err
+	}
+
+	requestBody := generateCollectionSetByIDRequestBody(setID, tmdbID)
+	// Create a new Resty client
+	client := resty.New()
+
+	// Send the GraphQL request to the Mediux API as a POST request
+	response, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
+		SetBody(requestBody).
+		Post("https://staged.mediux.io/graphql")
+	if err != nil {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Failed to make request to Mediux API"
+		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
+	}
+
+	// Parse the response body into a MediuxMovieSetResponse struct
+	var responseBody modals.MediuxCollectionSetResponse
+	err = json.Unmarshal(response.Body(), &responseBody)
+	if err != nil {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "Failed to parse Mediux API response"
+		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		return modals.PosterSet{}, Err
+	}
+
+	collectionSet := responseBody.Data.CollectionSetID
+	logging.LOG.Trace(fmt.Sprintf("Processing collection set: %s", collectionSet.SetTitle))
+	logging.LOG.Trace(fmt.Sprintf("Date Created: %s", collectionSet.DateCreated))
+	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", collectionSet.DateUpdated))
+	if collectionSet.ID == "" {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "No collection set found for the provided ID"
+		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
+		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		return modals.PosterSet{}, Err
+	}
+
+	// Process the response and return the poster sets
+	posterSets := processMovieCollection(itemRatingKey, librarySection, itemRatingKey, collectionSet.Collection)
+	if len(posterSets) == 0 {
+		Err.Function = utils.GetFunctionName()
+
+		Err.Message = "No poster sets found for the provided collection set ID"
+		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
+		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		return modals.PosterSet{}, logging.StandardError{}
+	}
+
+	posterSet := posterSets[0]
+	posterSet.ID = collectionSet.ID
+	posterSet.Title = collectionSet.SetTitle
+	posterSet.User.Name = collectionSet.UserCreated.Username
+	posterSet.Type = "collection"
+	posterSet.DateCreated = collectionSet.DateCreated
+	posterSet.DateUpdated = collectionSet.DateUpdated
+
+	return posterSet, logging.StandardError{}
+
 }
