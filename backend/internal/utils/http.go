@@ -107,12 +107,12 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	}
 
 	// Make sure response status is OK
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		Err.Message = fmt.Sprintf("Received non-OK HTTP response: %d", resp.StatusCode)
-		Err.HelpText = fmt.Sprintf("Ensure the server is running and accessible at the configured URL (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		Err.Details = fmt.Sprintf("Response Status Code: %d, Response Body: %s", resp.StatusCode, string(respBody))
-		return nil, nil, Err
-	}
+	// if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+	// 	Err.Message = fmt.Sprintf("Received non-OK HTTP response: %d", resp.StatusCode)
+	// 	Err.HelpText = fmt.Sprintf("Ensure the server is running and accessible at the configured URL (%s) [%s]", urlTitle, ElapsedTime(startTime))
+	// 	Err.Details = fmt.Sprintf("Response Status Code: %d, Response Body: %s", resp.StatusCode, string(respBody))
+	// 	return nil, nil, Err
+	// }
 
 	// Defer closing the response body
 	defer resp.Body.Close()
