@@ -16,8 +16,9 @@ import (
 )
 
 // MakeHTTPRequest function to handle HTTP requests
-func MakeHTTPRequest(url, method string, headers map[string]string, timeout int, body []byte, tokenType string) (*http.Response, []byte, logging.ErrorLog) {
+func MakeHTTPRequest(url, method string, headers map[string]string, timeout int, body []byte, tokenType string) (*http.Response, []byte, logging.StandardError) {
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 	var urlTitle string
 	if tokenType == "MediaServer" {
 		urlTitle = config.Global.MediaServer.Type
@@ -33,8 +34,10 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	// Create a new request with context
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {
-		errorMsg := fmt.Sprintf("Error creating HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
+		Err.Message = "Failed to create HTTP request"
+		Err.HelpText = fmt.Sprintf("Error creating HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
+		Err.Details = fmt.Sprintf("Error creating request: %v", err)
+		return nil, nil, Err
 	}
 
 	// Add a User-Agent header to the request
@@ -87,40 +90,51 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	// Send the HTTP request
 	resp, err := client.Do(req)
 	if err != nil {
-		errorMsg := fmt.Sprintf("Error sending HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
+		Err.Message = "Failed to send HTTP request"
+		Err.HelpText = fmt.Sprintf("Error sending HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
+		Err.Details = fmt.Sprintf("Error sending request: %v", err)
+		return nil, nil, Err
 	}
 
 	// Read the response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		resp.Body.Close()
-		errorMsg := fmt.Sprintf("Error reading HTTP response body (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		return nil, nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
+		Err.Message = "Failed to read HTTP response body"
+		Err.HelpText = fmt.Sprintf("Error reading HTTP response body (%s) [%s]", urlTitle, ElapsedTime(startTime))
+		Err.Details = fmt.Sprintf("Error reading response body: %v", err)
+		return nil, nil, Err
+	}
+
+	// Make sure response status is OK
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		Err.Message = fmt.Sprintf("Received non-OK HTTP response: %d", resp.StatusCode)
+		Err.HelpText = fmt.Sprintf("Ensure the server is running and accessible at the configured URL (%s) [%s]", urlTitle, ElapsedTime(startTime))
+		Err.Details = fmt.Sprintf("Response Status Code: %d, Response Body: %s", resp.StatusCode, string(respBody))
+		return nil, nil, Err
 	}
 
 	// Defer closing the response body
 	defer resp.Body.Close()
 	logging.LOG.Trace(fmt.Sprintf("Sent HTTP request to %s [%s]", urlTitle, ElapsedTime(startTime)))
 	// Return the response
-	return resp, respBody, logging.ErrorLog{}
+	return resp, respBody, logging.StandardError{}
 }
 
-func DecodeJSONBody(w http.ResponseWriter, r *http.Request, v any, structName string, startTime time.Time) logging.ErrorLog {
+func DecodeJSONBody(w http.ResponseWriter, r *http.Request, v any, structName string, startTime time.Time) logging.StandardError {
+	Err := logging.NewStandardError()
 	logging.LOG.Debug(fmt.Sprintf("Decoding the request body into the `%s` struct", structName))
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(v)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Failed to decode the request body into the `%s` struct --- `%s`", structName, err.Error())
-		SendJsonResponse(w, http.StatusBadRequest, JSONResponse{
-			Status:  "error",
-			Message: errorMsg,
-			Elapsed: ElapsedTime(startTime),
-		})
-		return logging.ErrorLog{Err: err, Log: logging.Log{Message: errorMsg}}
+		Err.Message = errorMsg
+		Err.HelpText = fmt.Sprintf("Ensure the request body is a valid JSON object matching the expected structure for `%s` [%s]", structName, ElapsedTime(startTime))
+		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		return Err
 	}
 	logging.LOG.Trace(fmt.Sprintf("Decoded the request body into the `%s` struct", structName))
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }
 
 func getURLTitle(rawURL string) string {
