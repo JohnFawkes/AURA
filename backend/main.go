@@ -50,9 +50,9 @@ func main() {
 		return
 	}
 
-	logErr := mediaserver_shared.InitUserID()
-	if logErr.Err != nil {
-		logging.LOG.ErrorWithLog(logErr)
+	Err := mediaserver_shared.InitUserID()
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
 		return
 	}
 
