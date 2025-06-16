@@ -2,9 +2,7 @@ import { storage } from "@/lib/storage";
 
 import { MediaItem } from "@/types/mediaItem";
 
-export const getAllLibrarySectionsFromIDB = async (): Promise<
-	{ title: string; type: string }[]
-> => {
+export const getAllLibrarySectionsFromIDB = async (): Promise<{ title: string; type: string }[]> => {
 	// Get all cached sections from storage
 	const keys = await storage.keys();
 	const cachedSectionsPromises = keys.map((key) =>
@@ -16,9 +14,7 @@ export const getAllLibrarySectionsFromIDB = async (): Promise<
 		}>(key)
 	);
 
-	const sections = (await Promise.all(cachedSectionsPromises)).filter(
-		(section) => section !== null
-	);
+	const sections = (await Promise.all(cachedSectionsPromises)).filter((section) => section !== null);
 
 	if (sections.length === 0) {
 		return [];
@@ -30,66 +26,7 @@ export const getAllLibrarySectionsFromIDB = async (): Promise<
 	}));
 };
 
-export const searchIDBForTMDBID = async (
-	tmdbID: string,
-	sectionTitle: string
-): Promise<MediaItem | boolean> => {
-	// Get section from storage
-	const librarySection = await storage.getItem<{
-		data: {
-			MediaItems: MediaItem[];
-		};
-	}>(sectionTitle);
-
-	if (!librarySection?.data?.MediaItems) {
-		return false;
-	}
-
-	// Find media item with matching TMDB ID
-	const mediaItem = librarySection.data.MediaItems.find(
-		(item) =>
-			item.Guids && item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
-	);
-
-	return mediaItem || false;
-};
-
-export const searchIDBForTMDBIDNoLibrary = async (tmdbID: string): Promise<MediaItem | boolean> => {
-	// Get all cached sections
-	const keys = await storage.keys();
-	const cachedSectionsPromises = keys.map((key) =>
-		storage.getItem<{
-			data: {
-				MediaItems: MediaItem[];
-			};
-		}>(key)
-	);
-
-	const sections = (await Promise.all(cachedSectionsPromises)).filter(
-		(section) => section !== null
-	);
-
-	if (sections.length === 0) {
-		return false;
-	}
-
-	// Search through all sections for matching TMDB ID
-	for (const section of sections) {
-		if (section?.data?.MediaItems) {
-			const mediaItem = section.data.MediaItems.find((item) =>
-				item.Guids.some((guid) => guid.ID === tmdbID && guid.Provider === "tmdb")
-			);
-			if (mediaItem) {
-				return mediaItem;
-			}
-		}
-	}
-
-	return false;
-};
-
 type Direction = "next" | "previous";
-
 export const getAdjacentMediaItemFromIDB = async (
 	libraryTitle: string,
 	currentRatingKey: string,
@@ -122,4 +59,24 @@ export const getAdjacentMediaItemFromIDB = async (
 	}
 
 	return mediaItems[nextIndex];
+};
+
+export interface TMDBLookupMap {
+	[tmdbId: string]: MediaItem;
+}
+
+// Utility function to create lookup map
+export const createTMDBLookupMap = (mediaItems: MediaItem[]): TMDBLookupMap => {
+	return mediaItems.reduce((map: TMDBLookupMap, item) => {
+		const tmdbGuid = item.Guids?.find((g) => g.Provider === "tmdb");
+		if (tmdbGuid?.ID) {
+			map[tmdbGuid.ID] = item;
+		}
+		return map;
+	}, {});
+};
+
+// Optimized search function using lookup map
+export const searchWithLookupMap = (tmdbID: string, lookupMap: TMDBLookupMap): MediaItem | boolean => {
+	return lookupMap[tmdbID] || false;
 };
