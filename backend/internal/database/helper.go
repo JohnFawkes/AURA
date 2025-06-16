@@ -6,22 +6,29 @@ import (
 	"encoding/json"
 )
 
-func UnmarshalPosterSet(posterSetJSON string, posterSet *modals.PosterSet) logging.ErrorLog {
+func UnmarshalPosterSet(posterSetJSON string, posterSet *modals.PosterSet) logging.StandardError {
+
 	err := json.Unmarshal([]byte(posterSetJSON), posterSet)
 	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to unmarshal PosterSet JSON",
-		}}
+		Err := logging.NewStandardError()
+		Err.Message = "Failed to unmarshal PosterSet JSON"
+
+		Err.HelpText = "Ensure the JSON structure matches the PosterSet model."
+		Err.Details = "PosterSet JSON: " + posterSetJSON
+		return Err
 	}
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }
 
-func UnmarshalMediaItem(mediaItemJSON string, mediaItem *modals.MediaItem) logging.ErrorLog {
+func UnmarshalMediaItem(mediaItemJSON string, mediaItem *modals.MediaItem) logging.StandardError {
 	err := json.Unmarshal([]byte(mediaItemJSON), mediaItem)
 	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to unmarshal MediaItem JSON",
-		}}
+		Err := logging.NewStandardError()
+		Err.Message = "Failed to unmarshal MediaItem JSON"
+
+		Err.HelpText = "Ensure the JSON structure matches the MediaItem model."
+		Err.Details = "MediaItem JSON: " + mediaItemJSON
+		return Err
 	}
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }

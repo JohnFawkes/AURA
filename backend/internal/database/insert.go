@@ -8,50 +8,56 @@ import (
 	"time"
 )
 
-func SaveItemInDB(saveItem modals.DBSavedItem) logging.ErrorLog {
-
+func SaveItemInDB(saveItem modals.DBSavedItem) logging.StandardError {
+	Err := logging.NewStandardError()
 	// Check if the item already exists in the database
 	// Check Media Item Rating Key and Poster Set ID
 	// If it exists, update the item
-	itemExists, errLog := CheckIfItemExistsInDatabase(saveItem.MediaItemID, saveItem.PosterSetID)
-	if errLog.Err != nil {
-		return errLog
+	itemExists, Err := CheckIfItemExistsInDatabase(saveItem.MediaItemID, saveItem.PosterSetID)
+	if Err.Message != "" {
+		return Err
 	}
 
 	if itemExists {
 		logging.LOG.Trace("Item already exists in database, updating it")
 		// Update the media item in the database
-		errLog = UpdateItemInDatabase(saveItem)
-		if errLog.Err != nil {
-			return errLog
+		Err = UpdateItemInDatabase(saveItem)
+		if Err.Message != "" {
+			return Err
 		}
 	} else {
 		logging.LOG.Trace("Item does not exist in database, inserting it")
 		// Insert the item into the database
-		errLog = InsertItemIntoDatabase(saveItem)
-		if errLog.Err != nil {
-			return errLog
+		Err = InsertItemIntoDatabase(saveItem)
+		if Err.Message != "" {
+			return Err
 		}
 	}
 
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }
 
-func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
+func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.StandardError {
+	Err := logging.NewStandardError()
+
 	// Marshal the MediaItem into JSON
 	mediaItemJSON, err := json.Marshal(saveItem.MediaItem)
 	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to marshal MediaItem data",
-		}}
+
+		Err.Message = "Failed to marshal MediaItem data"
+		Err.HelpText = "Ensure the MediaItem struct is correctly defined and contains valid data."
+		Err.Details = "MediaItem: " + saveItem.MediaItem.RatingKey
+		return Err
 	}
 
 	// Marshal the PosterSet into JSON
 	posterSetJSON, err := json.Marshal(saveItem.PosterSet)
 	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to marshal PosterSet data",
-		}}
+
+		Err.Message = "Failed to marshal PosterSet data"
+		Err.HelpText = "Ensure the PosterSet struct is correctly defined and contains valid data."
+		Err.Details = "PosterSet: " + saveItem.PosterSet.ID
+		return Err
 	}
 
 	// Convert SelectedTypes (slice of strings) to a comma-separated string
@@ -71,10 +77,12 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.ErrorLog {
 		saveItem.PosterSet.DateUpdated.UTC().Format(time.RFC3339),
 	)
 	if err != nil {
-		return logging.ErrorLog{Err: err, Log: logging.Log{
-			Message: "Failed to insert Item into database",
-		}}
+
+		Err.Message = "Failed to insert item into database"
+		Err.HelpText = "Ensure the database connection is established and the query is correct."
+		Err.Details = "Query: " + query + ", MediaItemID: " + saveItem.MediaItem.RatingKey + ", PosterSetID: " + saveItem.PosterSet.ID
+		return Err
 	}
 	logging.LOG.Info("Item inserted successfully into the database")
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }

@@ -13,28 +13,33 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Debug(r.URL.Path)
 	startTime := time.Now()
 
-	items, logErr := GetAllItemsFromDatabase()
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	items, Err := GetAllItemsFromDatabase()
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Fetched all items",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    items,
 	})
 }
 
-func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.ErrorLog) {
+func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.StandardError) {
+	Err := logging.NewStandardError()
+
 	// Query all rows from SavedItems.
 	query := `
     SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
     FROM SavedItems`
 	rows, err := db.Query(query)
 	if err != nil {
-		return nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: "Failed to query all item from database"}}
+
+		Err.Message = "Failed to query all items from database"
+		Err.HelpText = "Ensure the database connection is established and the query is correct."
+		Err.Details = "Query: " + query
+		return nil, Err
 	}
 	defer rows.Close()
 
@@ -54,17 +59,21 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Erro
 			&savedItem.LastDownloaded,
 		)
 		if err != nil {
-			return nil, logging.ErrorLog{Err: err, Log: logging.Log{Message: "Failed to scan row"}}
+
+			Err.Message = "Failed to scan row from SavedItems"
+			Err.HelpText = "Ensure the database schema matches the query and the data types are correct."
+			Err.Details = "Query: " + query
+			return nil, Err
 		}
 
 		// Unmarshal MediaItem and PosterSet from JSON if necessary.
 		var mediaItem modals.MediaItem
 		var posterSet modals.PosterSet
-		if err := UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); err.Err != nil {
-			return nil, err
+		if Err = UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); Err.Message != "" {
+			return nil, Err
 		}
-		if err := UnmarshalPosterSet(savedItem.PosterSetJSON, &posterSet); err.Err != nil {
-			return nil, err
+		if Err = UnmarshalPosterSet(savedItem.PosterSetJSON, &posterSet); Err.Message != "" {
+			return nil, Err
 		}
 
 		// Convert selectedTypesStr to a slice of strings.
@@ -99,5 +108,5 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Erro
 		result = append(result, *v)
 	}
 
-	return result, logging.ErrorLog{}
+	return result, logging.StandardError{}
 }
