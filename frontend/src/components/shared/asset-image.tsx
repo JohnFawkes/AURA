@@ -20,25 +20,14 @@ interface AssetImageProps {
 	priority?: boolean;
 }
 
-export function AssetImage({
-	image,
-	aspect = "poster",
-	className,
-	imageClassName,
-	priority = false,
-}: AssetImageProps) {
+export function AssetImage({ image, aspect = "poster", className, imageClassName, priority = false }: AssetImageProps) {
 	const [imageLoaded, setImageLoaded] = useState(false);
 
 	const imageContent = (
 		<>
 			{/* Skeleton Loader */}
 			{!imageLoaded && (
-				<Skeleton
-					className={cn(
-						"absolute inset-0 rounded-md animate-pulse",
-						getAspectRatioClass(aspect)
-					)}
-				/>
+				<Skeleton className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))} />
 			)}
 
 			<Image
@@ -51,9 +40,7 @@ export function AssetImage({
 								? `/api/mediaserver/image/${image.RatingKey}/${aspect}`
 								: ""
 				}
-				alt={
-					typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""
-				}
+				alt={typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""}
 				fill
 				sizes={getImageSizes(aspect)}
 				className={cn(
