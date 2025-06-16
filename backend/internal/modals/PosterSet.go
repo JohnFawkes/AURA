@@ -15,6 +15,36 @@ type MediuxShowSetResponse struct {
 	} `json:"data"`
 }
 
+type MediuxMovieSetResponse struct {
+	Data struct {
+		MovieSetID MediuxMovieSetByID `json:"movie_sets_by_id,omitempty"`
+	} `json:"data"`
+}
+
+type MediuxCollectionSetResponse struct {
+	Data struct {
+		CollectionSetID MediuxCollectionSetByID `json:"collection_sets_by_id,omitempty"`
+	} `json:"data"`
+}
+
+type MediuxMovieSetByID struct {
+	ID          string            `json:"id"`
+	SetTitle    string            `json:"set_title,omitempty"`
+	UserCreated MediuxUserCreated `json:"user_created"`
+	DateCreated time.Time         `json:"date_created"`
+	DateUpdated time.Time         `json:"date_updated"`
+	Movie       MediuxMovieByID   `json:"movie_id,omitempty"`
+}
+
+type MediuxCollectionSetByID struct {
+	ID          string                  `json:"id"`
+	SetTitle    string                  `json:"set_title,omitempty"`
+	UserCreated MediuxUserCreated       `json:"user_created"`
+	DateCreated time.Time               `json:"date_created"`
+	DateUpdated time.Time               `json:"date_updated"`
+	Collection  MediuxMovieCollectionID `json:"collection_id,omitempty"`
+}
+
 type MediuxShowSetByID struct {
 	ID          string            `json:"id"`
 	SetTitle    string            `json:"set_title,omitempty"`
@@ -151,10 +181,18 @@ type PosterFile struct {
 	Modified time.Time          `json:"Modified"`
 	FileSize int64              `json:"FileSize"`
 	Movie    *PosterFileMovie   `json:"Movie,omitempty"`
+	Show     *PosterFileShow    `json:"Show,omitempty"`
 	Season   *PosterFileSeason  `json:"Season,omitempty"`
 	Episode  *PosterFileEpisode `json:"Episode,omitempty"`
 }
 
+type PosterFileShow struct {
+	ID             string    `json:"ID"`
+	Title          string    `json:"Title"`
+	RatingKey      string    `json:"RatingKey,omitempty"`
+	LibrarySection string    `json:"LibrarySection,omitempty"`
+	MediaItem      MediaItem `json:"MediaItem"`
+}
 type PosterFileMovie struct {
 	ID             string    `json:"ID"`
 	Title          string    `json:"Title"`
@@ -168,6 +206,7 @@ type PosterFileMovie struct {
 	ReleaseDate    string    `json:"ReleaseDate,omitempty"`
 	RatingKey      string    `json:"RatingKey,omitempty"`
 	LibrarySection string    `json:"LibrarySection,omitempty"`
+	MediaItem      MediaItem `json:"MediaItem"`
 }
 
 type PosterFileSeason struct {
