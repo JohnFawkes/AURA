@@ -69,7 +69,7 @@ func AddRoutes(r *chi.Mux) {
 
 		// Mediux Routes
 		r.Get("/mediux/sets/get/{itemType}/{librarySection}/{ratingKey}/{tmdbID}", mediux.GetAllSets)
-		r.Get("/mediux/sets/get_set/{setID}", mediux.GetShowSetByID)
+		r.Get("/mediux/sets/get_set/{setID}", mediux.GetSetByID)
 		r.Get("/mediux/image/{assetID}", mediux.GetMediuxImage)
 		r.Get("/mediux/user/following_hiding", mediux.GetUserFollowingAndHiding)
 		r.Get("/mediux/sets/get_user/sets/{username}", mediux.GetAllUserSets)
