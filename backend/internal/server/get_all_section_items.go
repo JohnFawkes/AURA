@@ -1,6 +1,7 @@
 package mediaserver
 
 import (
+	"aura/internal/cache"
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/modals"
@@ -14,6 +15,7 @@ import (
 func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	// Get the following information from the URL
 	// Section ID
@@ -27,16 +29,36 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the section ID, title, type, and start index
 	if sectionID == "" || sectionTitle == "" || sectionType == "" || sectionStartIndex == "" {
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("missing section ID, title, type, or start index"),
-			Log: logging.Log{
-				Message: "Missing section ID, title, type, or start index",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
+
+		Err.Message = "Missing required query parameters"
+		Err.HelpText = "Ensure the URL contains sectionID, sectionTitle, sectionType, and sectionStartIndex query parameters."
+		Err.Details = fmt.Sprintf("Received sectionID: %s, sectionTitle: %s, sectionType: %s, sectionStartIndex: %s",
+			sectionID, sectionTitle, sectionType, sectionStartIndex)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
+
+	// Fetch the section items from the media server
+	section, Err := CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType, sectionStartIndex)
+	if Err.Message != "" {
+		logging.LOG.Error(Err.Message)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+		return
+	}
+
+	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+		Status:  "success",
+		Elapsed: utils.ElapsedTime(startTime),
+		Data:    section,
+	})
+}
+
+func CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType string, sectionStartIndex string) (modals.LibrarySection, logging.StandardError) {
+
+	var section modals.LibrarySection
+	section.ID = sectionID
+	section.Title = sectionTitle
+	section.Type = sectionType
 
 	var mediaServer mediaserver_shared.MediaServer
 	switch config.Global.MediaServer.Type {
@@ -45,48 +67,30 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-		logErr := logging.ErrorLog{Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
-		return
+		Err := logging.NewStandardError()
+
+		Err.Message = "Unsupported media server type"
+		Err.HelpText = "Ensure the media server type is either Plex, Emby, or Jellyfin."
+		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		return section, Err
 	}
 
-	var section modals.LibrarySection
-	section.ID = sectionID
-	section.Title = sectionTitle
-	section.Type = sectionType
-
 	// Fetch the section items from the media server
-	// starting from the specified index
-	mediaItems, totalSize, logErr := mediaServer.FetchLibrarySectionItems(section, sectionStartIndex)
-	if logErr.Err != nil {
-		logging.LOG.Warn(logErr.Log.Message)
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-		return
+	mediaItems, totalSize, Err := mediaServer.FetchLibrarySectionItems(section, sectionStartIndex)
+	if Err.Message != "" {
+		logging.LOG.Warn(Err.Message)
+		return section, Err
 	}
 	if len(mediaItems) == 0 {
 		logging.LOG.Warn(fmt.Sprintf("Library section '%s' is empty", section.Title))
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("library section '%s' is empty", section.Title),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Library section '%s' is empty", section.Title),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
-		return
-	}
 
+		Err.Message = "No items found in the library section"
+		Err.HelpText = fmt.Sprintf("Ensure the section '%s' has items.", section.Title)
+		Err.Details = fmt.Sprintf("No items found for section ID '%s' with title '%s'.", section.ID, section.Title)
+		return section, Err
+	}
 	section.MediaItems = mediaItems
 	section.TotalSize = totalSize
-
-	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
-		Status:  "success",
-		Message: "Fetched all section items successfully",
-		Elapsed: utils.ElapsedTime(startTime),
-		Data:    section,
-	})
+	cache.LibraryCacheStore.Update(&section)
+	return section, logging.StandardError{}
 }

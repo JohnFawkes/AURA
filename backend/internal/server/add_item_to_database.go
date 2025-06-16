@@ -14,37 +14,39 @@ import (
 func AddItemToDatabase(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	// Parse the request body to get posterFile & mediaItem
 	var SaveItem modals.DBSavedItem
 
 	if err := json.NewDecoder(r.Body).Decode(&SaveItem); err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse request body",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "Failed to decode request body"
+		Err.HelpText = "Ensure the request body is a valid JSON object."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Validate the request body
 	if SaveItem.MediaItemID == "" || SaveItem.PosterSet.ID == "" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("invalid request body"),
-			Log: logging.Log{Message: "Invalid request body",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "Missing required fields"
+		Err.HelpText = "Ensure the request body contains both MediaItemID and PosterSet.ID."
+		Err.Details = fmt.Sprintf("Received MediaItemID: %s, PosterSet.ID: %s", SaveItem.MediaItemID, SaveItem.PosterSet.ID)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	logErr := database.SaveItemInDB(SaveItem)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	Err = database.SaveItemInDB(SaveItem)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Item added to database successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    fmt.Sprintf("Item with ID %s added successfully", SaveItem.MediaItemID),
 	})

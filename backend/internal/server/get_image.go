@@ -18,26 +18,23 @@ import (
 
 func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
 	if ratingKey == "" || imageType == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("missing rating key or image type"),
-			Log: logging.Log{
-				Message: "Missing rating key or image type in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Missing rating key or image type in URL"
+		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
+		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("invalid image type in URL"),
-			Log: logging.Log{
-				Message: "Invalid image type in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Invalid image type"
+		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
+		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -51,13 +48,11 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 		tmpFolder = emby_jellyfin.EmbyJellyTempImageFolder
 	default:
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
+
+		Err.Message = "Unsupported media server type"
+		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
+		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -73,29 +68,27 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from the media server
-	imageData, logErr := mediaServer.FetchImageFromMediaServer(ratingKey, imageType)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	imageData, Err := mediaServer.FetchImageFromMediaServer(ratingKey, imageType)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// If the user has enabled caching, then save the image to the temporary folder
 	if config.Global.CacheImages {
-		logErr = utils.CheckFolderExists(tmpFolder)
-		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		Err = utils.CheckFolderExists(tmpFolder)
+		if Err.Message != "" {
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 		imagePath := path.Join(tmpFolder, fileName)
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-				Err: err,
-				Log: logging.Log{
-					Message: "Failed to write image to temporary folder",
-					Elapsed: utils.ElapsedTime(startTime),
-				},
-			})
+
+			Err.Message = "Failed to write image to temporary folder"
+			Err.HelpText = fmt.Sprintf("Ensure the temporary folder %s is writable.", tmpFolder)
+			Err.Details = fmt.Sprintf("Error writing image to %s: %v", imagePath, err)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 	}

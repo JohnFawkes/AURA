@@ -18,6 +18,7 @@ import (
 func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	// Parse the request body to get posterFile & mediaItem
 	var requestBody struct {
@@ -26,10 +27,11 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse request body",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "Failed to decode request body"
+		Err.HelpText = "Ensure the request body is a valid JSON object."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -39,10 +41,11 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	// Make sure that the mediaItem has the following fields set
 	// 1. MediaItem.RatingKey
 	if mediaItem.RatingKey == "" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("mediaItem.RatingKey is required"),
-			Log: logging.Log{Message: "MediaItem.RatingKey is required",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "mediaItem.RatingKey is required"
+		Err.HelpText = "Ensure the mediaItem.RatingKey is provided in the request body."
+		Err.Details = "mediaItem.RatingKey is required to identify the media item."
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -50,10 +53,11 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	// 1. PosterFile.ID
 	// 2. PosterFile.Type
 	if posterFile.ID == "" || posterFile.Type == "" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: fmt.Errorf("posterFile.ID and posterFile.Type are required"),
-			Log: logging.Log{Message: "PosterFile.ID and PosterFile.Type are required",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "PosterFile.ID and PosterFile.Type are required"
+		Err.HelpText = "Ensure the PosterFile.ID and PosterFile.Type are provided in the request body."
+		Err.Details = fmt.Sprintf("Received PosterFile.ID: %s, PosterFile.Type: %s", posterFile.ID, posterFile.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -65,22 +69,29 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
+
+		Err.Message = "Unsupported media server type"
+		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
+		Err.Details = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	downloadFileName := GetFileDownloadName(posterFile)
 	logging.LOG.Debug(fmt.Sprintf("Downloading %s", downloadFileName))
 
-	logErr := mediaServer.DownloadAndUpdatePosters(mediaItem, posterFile)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	// Respond with a success message
+	// time.Sleep(150 * time.Millisecond) // Simulate a delay for the download process
+	// utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+	// 	Status:  "success",
+	// 	Elapsed: utils.ElapsedTime(startTime),
+	// 	Data:    fmt.Sprintf("Downloaded %s successfully", downloadFileName),
+	// })
+	// return
+
+	Err = mediaServer.DownloadAndUpdatePosters(mediaItem, posterFile)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -89,7 +100,6 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Downloaded and Updated successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    fmt.Sprintf("Downloaded %s successfully", downloadFileName),
 	})

@@ -13,6 +13,7 @@ import (
 func GetMediaServerStatus(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	var mediaServer mediaserver_shared.MediaServer
 	switch config.Global.MediaServer.Type {
@@ -21,26 +22,24 @@ func GetMediaServerStatus(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-		logErr := logging.ErrorLog{Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
+
+		Err.Message = "Unsupported media server type"
+		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
+		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	status, logErr := mediaServer.GetMediaServerStatus()
-	if logErr.Err != nil {
-		logging.LOG.Warn(logErr.Log.Message)
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	status, Err := mediaServer.GetMediaServerStatus()
+	if Err.Message != "" {
+		logging.LOG.Warn(Err.Message)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Media server status retrieved successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    status,
 	})

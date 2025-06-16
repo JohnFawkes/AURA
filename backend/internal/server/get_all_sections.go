@@ -14,6 +14,7 @@ import (
 func GetAllSections(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	var mediaServer mediaserver_shared.MediaServer
 	switch config.Global.MediaServer.Type {
@@ -22,20 +23,19 @@ func GetAllSections(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-		logErr := logging.ErrorLog{Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		}
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logErr)
+
+		Err.Message = "Unsupported media server type"
+		Err.HelpText = "Ensure the media server type is either Plex, Emby, or Jellyfin."
+		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	var allSections []modals.LibrarySection
 	for _, library := range config.Global.MediaServer.Libraries {
-		found, logErr := mediaServer.FetchLibrarySectionInfo(&library)
-		if logErr.Err != nil {
-			logging.LOG.Warn(logErr.Log.Message)
+		found, Err := mediaServer.FetchLibrarySectionInfo(&library)
+		if Err.Message != "" {
+			logging.LOG.Warn(Err.Message)
 			continue
 		}
 		if !found {
@@ -55,20 +55,17 @@ func GetAllSections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allSections) == 0 {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("no sections found in %s", config.Global.MediaServer.Type),
-			Log: logging.Log{
-				Message: fmt.Sprintf("No sections found in %s", config.Global.MediaServer.Type),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "No sections found"
+		Err.HelpText = fmt.Sprintf("Ensure that the media server has sections configured for %s.", config.Global.MediaServer.Type)
+		Err.Details = fmt.Sprintf("No sections found in %s for the configured libraries", config.Global.MediaServer.Type)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: fmt.Sprintf("Fetched all sections from %s", config.Global.MediaServer.Type),
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    allSections,
 	})
