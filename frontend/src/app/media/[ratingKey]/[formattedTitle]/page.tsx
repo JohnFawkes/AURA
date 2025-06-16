@@ -1,9 +1,10 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { getAdjacentMediaItemFromIDB, searchIDBForTMDBID } from "@/helper/searchIDBForTMDBID";
+import { getAdjacentMediaItemFromIDB } from "@/helper/searchIDBForTMDBID";
 import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
 import { fetchMediuxSets, fetchMediuxUserFollowHides } from "@/services/api.mediux";
+import { ReturnErrorMessage } from "@/services/api.shared";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
@@ -24,17 +25,12 @@ import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaItemDetails } from "@/components/shared/media_item_details";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 
+import { APIResponse } from "@/types/apiResponse";
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
 
@@ -60,11 +56,12 @@ const MediaItemPage = () => {
 
 	// Error Handling
 	const [hasError, setHasError] = useState(false);
-	const [errorMessage, setErrorMessage] = useState("");
+	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 
 	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
 	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
 	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
+	const [showSetsWithTitleCardsOnly, setShowSetsWithTitleCardsOnly] = useState(false);
 
 	const [adjacentItems, setAdjacentItems] = useState<{
 		previous: MediaItem | null;
@@ -73,6 +70,16 @@ const MediaItemPage = () => {
 		previous: null,
 		next: null,
 	});
+
+	const handleShowSetsWithTitleCardsOnly = () => {
+		setShowSetsWithTitleCardsOnly((prev) => {
+			// If the checkbox is checked, set it to false
+			if (prev) {
+				return false;
+			}
+			return true;
+		});
+	};
 
 	const handleShowHiddenUsers = () => {
 		setShowHiddenUsers((prev) => {
@@ -92,191 +99,92 @@ const MediaItemPage = () => {
 		const fetchUserFollowHides = async () => {
 			try {
 				setLoadingMessage("Loading User Follows/Hides");
-				const resp = await fetchMediuxUserFollowHides();
-				if (!resp) {
-					throw new Error("No response from Mediux API");
+				const response = await fetchMediuxUserFollowHides();
+
+				if (response.status === "error") {
+					setError(response);
+					setHasError(true);
+					return;
 				}
-				const follows = resp.data?.Follows || [];
-				const hides = resp.data?.Hides || [];
-				log(
-					"Media Item Page - Fetched user follows/hides:",
-					"Follows:",
-					follows,
-					"Hides:",
-					hides
-				);
-				setUserFollows(follows);
-				setUserHides(hides);
+
+				setUserFollows(response.data?.Follows || []);
+				setUserHides(response.data?.Hides || []);
 			} catch (error) {
-				log("Media Item Page - Error fetching user follows/hides:", error);
+				setError(ReturnErrorMessage<unknown>(error));
 				setHasError(true);
-				if (error instanceof Error) {
-					setErrorMessage(error.message);
-				}
-				// Fallback to empty follows/hides
 				setUserFollows([]);
 				setUserHides([]);
-			} finally {
-				setIsLoading(false);
 			}
 		};
 
 		const fetchPosterSets = async (responseItem: MediaItem) => {
-			// Check if the item has GUIDs
 			try {
-				if (!responseItem.Guids || responseItem.Guids.length === 0) {
+				if (!responseItem.Guids?.length) {
 					return;
 				}
+
 				const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
-				if (tmdbID) {
-					setLoadingMessage("Loading Poster Sets");
-					const resp = await fetchMediuxSets(
-						tmdbID,
-						responseItem.Type,
-						responseItem.LibraryTitle,
-						responseItem.RatingKey
-					);
-					if (!resp || resp.status !== "success" || !resp.data) {
-						throw new Error(resp?.message || "No response from Mediux API");
-					}
-
-					// Check if there are any OtherPosters or OtherBackdrops that need processing
-					const hasOtherMedia = resp.data.some(
-						(set) =>
-							(set.OtherPosters && set.OtherPosters.length > 0) ||
-							(set.OtherBackdrops && set.OtherBackdrops.length > 0)
-					);
-
-					if (hasOtherMedia) {
-						// Get all unique TMDB IDs from other posters and backdrops
-						const uniqueTMDBIds = new Map<string, string>();
-						resp.data.forEach((set) => {
-							set.OtherPosters?.forEach((poster) => {
-								if (poster.Movie?.ID) {
-									uniqueTMDBIds.set(poster.Movie.ID, poster.Movie.Title);
-								}
-							});
-							set.OtherBackdrops?.forEach((backdrop) => {
-								if (backdrop.Movie?.ID) {
-									uniqueTMDBIds.set(backdrop.Movie.ID, backdrop.Movie.Title);
-								}
-							});
-						});
-
-						if (uniqueTMDBIds.size > 0) {
-							// Fetch all rating keys at once
-							const tmdbToRatingKey = new Map<string, string>();
-							await Promise.all(
-								Array.from(uniqueTMDBIds).map(async ([id, title]) => {
-									const item = await searchIDBForTMDBID(
-										id,
-										responseItem.LibraryTitle
-									);
-									if (item && typeof item !== "boolean") {
-										tmdbToRatingKey.set(id, item.RatingKey);
-										log(
-											`Found Rating Key for ${title} (${id}): ${item.RatingKey}`
-										);
-									}
-								})
-							);
-
-							const processedSets = resp.data.map((set) => {
-								if (set.OtherPosters) {
-									set.OtherPosters = set.OtherPosters.map((poster) => ({
-										...poster,
-										Movie: poster.Movie
-											? {
-													...poster.Movie,
-													RatingKey:
-														tmdbToRatingKey.get(
-															poster.Movie.ID ?? ""
-														) || "",
-												}
-											: undefined,
-									}));
-								}
-								if (set.OtherBackdrops) {
-									set.OtherBackdrops = set.OtherBackdrops.map((backdrop) => ({
-										...backdrop,
-										Movie: backdrop.Movie
-											? {
-													...backdrop.Movie,
-													RatingKey:
-														tmdbToRatingKey.get(
-															backdrop.Movie.ID ?? ""
-														) || "",
-												}
-											: undefined, // Changed from null to undefined
-									}));
-								}
-								return set;
-							});
-							setPosterSets(processedSets);
-						} else {
-							setPosterSets(resp.data);
-						}
-					} else {
-						// No other posters or backdrops, set directly
-						setPosterSets(resp.data);
-					}
-					fetchUserFollowHides();
+				if (!tmdbID) {
+					setError(ReturnErrorMessage<unknown>(new Error("No TMDB ID found")));
+					setHasError(true);
+					return;
 				}
+
+				setLoadingMessage("Loading Poster Sets");
+				const response = await fetchMediuxSets(
+					tmdbID,
+					responseItem.Type,
+					responseItem.LibraryTitle,
+					responseItem.RatingKey
+				);
+
+				if (response.status === "error") {
+					setError(response);
+					setHasError(true);
+					return;
+				}
+
+				setPosterSets(response.data || []);
 			} catch (error) {
-				log("Media Item Page - Error fetching poster sets:", error);
+				setError(ReturnErrorMessage<unknown>(error));
 				setHasError(true);
-				if (error instanceof Error) {
-					if (error.message.startsWith("No sets found")) {
-						setErrorMessage(`No Poster Sets found for ${responseItem.Title}`);
-					} else {
-						setErrorMessage(error.message);
-					}
-				}
-				// Fallback to empty sets
 				setPosterSets([]);
+			} finally {
 				setIsLoading(false);
 			}
 		};
 
 		const fetchAllInfo = async () => {
 			try {
-				// Use local state, fallback to Zustand if needed.
-				let currentMediaItem = mediaItem;
+				const currentMediaItem = mediaItem || useMediaStore.getState().mediaItem;
 				if (!currentMediaItem) {
-					const storedMediaItem = useMediaStore.getState().mediaItem;
-					if (storedMediaItem) {
-						currentMediaItem = storedMediaItem;
-						setMediaItem(storedMediaItem);
-					} else {
-						throw new Error("No media item found");
-					}
+					throw new Error("No media item found");
 				}
+				setMediaItem(currentMediaItem);
 				setLoadingMessage(`Loading Details for ${currentMediaItem.Title}...`);
-				// Now safely use currentMediaItem
+
 				const resp = await fetchMediaServerItemContent(
 					currentMediaItem.RatingKey,
 					currentMediaItem.LibraryTitle
 				);
-				if (!resp) {
-					throw new Error("No response from Plex API");
+
+				if (resp.status === "error") {
+					setError(resp);
+					setHasError(true);
+					return;
 				}
-				if (resp.status !== "success") {
-					throw new Error(resp.message);
-				}
+
 				const responseItem = resp.data;
 				if (!responseItem) {
-					throw new Error("No item found in response");
+					throw new Error("No media item found in response");
 				}
-				log(`Media Item Page - Fetched item: ${responseItem.Title}`, responseItem);
 				setMediaItem(responseItem);
-				fetchPosterSets(responseItem);
+
+				await fetchUserFollowHides();
+				await fetchPosterSets(responseItem);
 			} catch (error) {
 				setHasError(true);
-				if (error instanceof Error) {
-					setErrorMessage(error.message);
-				} else {
-					setErrorMessage("An unknown error occurred, check logs.");
-				}
+				setError(ReturnErrorMessage<unknown>(error));
 				setIsLoading(false);
 			}
 		};
@@ -308,8 +216,9 @@ const MediaItemPage = () => {
 
 	useEffect(() => {
 		if (posterSets) {
+			log("Media Item Page - Poster Sets updated:", posterSets);
 			// Filter out hidden users
-			const filtered = posterSets.filter((set) => {
+			let filtered = posterSets.filter((set) => {
 				if (showHiddenUsers) {
 					return true; // Show all if the checkbox is checked
 				}
@@ -317,6 +226,11 @@ const MediaItemPage = () => {
 				const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
 				return !isHidden; // Show only if not hidden
 			});
+
+			if (mediaItem && mediaItem.Type === "show" && showSetsWithTitleCardsOnly) {
+				// If it's a show and the checkbox is checked, filter for sets with title cards
+				filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
+			}
 
 			// Sort the filtered poster sets
 			// Follows should always be at the top
@@ -347,18 +261,23 @@ const MediaItemPage = () => {
 
 			setFilteredPosterSets(filtered);
 		}
-	}, [posterSets, showHiddenUsers, userHides, userFollows, sortOption, sortOrder]);
+	}, [
+		posterSets,
+		showHiddenUsers,
+		userHides,
+		userFollows,
+		sortOption,
+		sortOrder,
+		mediaItem,
+		showSetsWithTitleCardsOnly,
+	]);
 
 	useEffect(() => {
 		const fetchAdjacentItems = async () => {
 			if (!mediaItem?.LibraryTitle || !mediaItem?.RatingKey) return;
 
 			const [previousItem, nextItem] = await Promise.all([
-				getAdjacentMediaItemFromIDB(
-					mediaItem.LibraryTitle,
-					mediaItem.RatingKey,
-					"previous"
-				),
+				getAdjacentMediaItemFromIDB(mediaItem.LibraryTitle, mediaItem.RatingKey, "previous"),
 				getAdjacentMediaItemFromIDB(mediaItem.LibraryTitle, mediaItem.RatingKey, "next"),
 			]);
 
@@ -374,7 +293,7 @@ const MediaItemPage = () => {
 	if (!mediaItem) {
 		return (
 			<div className="flex flex-col items-center">
-				<ErrorMessage message="No media item found." />
+				<ErrorMessage error={error} />
 				<Button
 					className="mt-4"
 					variant="secondary"
@@ -403,9 +322,7 @@ const MediaItemPage = () => {
 	return (
 		<>
 			{/* Backdrop Background */}
-			<DimmedBackground
-				backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`}
-			/>
+			<DimmedBackground backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`} />
 
 			{/* Navigation Buttons */}
 			<div className="flex justify-between mt-2 mx-2">
@@ -447,12 +364,8 @@ const MediaItemPage = () => {
 						summary={mediaItem.Summary || ""}
 						year={mediaItem.Year}
 						contentRating={mediaItem.ContentRating || ""}
-						seasonCount={
-							mediaItem.Type === "show" ? mediaItem.Series?.SeasonCount || 0 : 0
-						}
-						episodeCount={
-							mediaItem.Type === "show" ? mediaItem.Series?.EpisodeCount || 0 : 0
-						}
+						seasonCount={mediaItem.Type === "show" ? mediaItem.Series?.SeasonCount || 0 : 0}
+						episodeCount={mediaItem.Type === "show" ? mediaItem.Series?.EpisodeCount || 0 : 0}
 						moviePath={mediaItem.Movie?.File?.Path || "N/A"}
 						movieSize={mediaItem.Movie?.File?.Size || 0}
 						movieDuration={mediaItem.Movie?.File?.Duration || 0}
@@ -469,19 +382,15 @@ const MediaItemPage = () => {
 					)}
 					{hasError && (
 						<div className="flex justify-center">
-							<ErrorMessage message={errorMessage} />
+							<ErrorMessage error={error} />
 						</div>
 					)}
 
 					{/* Check if all poster sets are hidden */}
 					{posterSets && !showHiddenUsers && allSetsHidden && (
 						<div className="flex flex-col items-center">
-							<ErrorMessage message="All poster sets are hidden." />
-							<Button
-								className="mt-4"
-								variant="secondary"
-								onClick={handleShowHiddenUsers}
-							>
+							<ErrorMessage error={ReturnErrorMessage<string>("All poster sets are hidden.")} />
+							<Button className="mt-4" variant="secondary" onClick={handleShowHiddenUsers}>
 								Show Hidden Users
 							</Button>
 						</div>
@@ -499,9 +408,7 @@ const MediaItemPage = () => {
 								}}
 							>
 								{hiddenCount === 0 ? (
-									<span className="text-sm text-muted-foreground ml-2">
-										No hidden users
-									</span>
+									<span className="text-sm text-muted-foreground ml-2">No hidden users</span>
 								) : (
 									<div className="flex items-center space-x-2">
 										<Checkbox
@@ -521,6 +428,25 @@ const MediaItemPage = () => {
 									</div>
 								)}
 
+								{mediaItem.Type === "show" &&
+									filteredPosterSets.length > 0 &&
+									filteredPosterSets.some(
+										(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+									) && (
+										<div className="flex items-center space-x-2">
+											<Checkbox
+												checked={showSetsWithTitleCardsOnly}
+												onCheckedChange={handleShowSetsWithTitleCardsOnly}
+												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
+											/>
+											{showSetsWithTitleCardsOnly ? (
+												<span className="text-sm ml-2">Showing Titlecard Sets Only</span>
+											) : (
+												<span className="text-sm ml-2">Filter Titlecard Only Sets</span>
+											)}
+										</div>
+									)}
+
 								{/* Sorting controls */}
 								<div className="flex flex-row gap-2 items-center">
 									{sortOption !== "" && (
@@ -528,22 +454,12 @@ const MediaItemPage = () => {
 											variant="ghost"
 											size="icon"
 											className="p-2"
-											onClick={() =>
-												setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-											}
+											onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
 										>
 											{sortOption === "name" &&
-												(sortOrder === "desc" ? (
-													<ArrowDownZA />
-												) : (
-													<ArrowDownAZ />
-												))}
+												(sortOrder === "desc" ? <ArrowDownZA /> : <ArrowDownAZ />)}
 											{sortOption === "date" &&
-												(sortOrder === "desc" ? (
-													<CalendarArrowDown />
-												) : (
-													<CalendarArrowUp />
-												))}
+												(sortOrder === "desc" ? <CalendarArrowDown /> : <CalendarArrowUp />)}
 										</Button>
 									)}
 									<Select
@@ -570,9 +486,7 @@ const MediaItemPage = () => {
 							</div>
 
 							{filteredPosterSets.length > 2 && (
-								<div className="text-center mb-5">
-									{filteredPosterSets.length} Poster Sets
-								</div>
+								<div className="text-center mb-5">{filteredPosterSets.length} Poster Sets</div>
 							)}
 
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
