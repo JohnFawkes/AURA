@@ -259,6 +259,111 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 	}
 }
 
+func generateMovieSetByIDRequestBody(setIDString string) map[string]any {
+	return map[string]any{
+		"query": `
+query movie_sets_by_id($movieSetID: ID!, $movieSetIDString: GraphQLStringOrFloat) {
+	movie_sets_by_id(id: $movieSetID) {
+		id
+		set_title
+		user_created {
+			username
+		}
+		date_created
+		date_updated
+		movie_id {
+			id
+			date_updated
+			status
+			title
+			tagline
+			release_date
+			tvdb_id
+			imdb_id
+			trakt_id
+			slug
+			posters(filter: { movie_set: { id: { _eq: $movieSetIDString } } }) {
+				id
+				modified_on	
+				filesize
+				movie_set {
+					id
+				}
+			}
+			backdrops(filter: { movie_set: { id: { _eq: $movieSetIDString } } }) {
+				id
+				modified_on
+				filesize
+				movie_set {
+					id
+				}
+			}
+		}
+	}
+}
+`,
+		"variables": map[string]string{
+			"movieSetID":       setIDString,
+			"movieSetIDString": setIDString,
+		},
+	}
+}
+
+func generateCollectionSetByIDRequestBody(setIDString string, movieIDString string) map[string]any {
+	return map[string]any{
+		"query": `
+query collection_sets_by_id($collectionSetID: ID!, $collectionSetIDString: GraphQLStringOrFloat!, $movieIDString: String!) {
+	collection_sets_by_id(id: $collectionSetID) {
+		id
+		set_title
+		user_created {
+			username
+		}
+		date_created
+		date_updated
+		collection_id {
+			id
+			collection_name
+			movies (filter: { id: { _eq: $movieIDString } }) {
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+				posters (filter: { collection_set: { id: { _eq: $collectionSetIDString } } }) {
+					id
+					modified_on
+					filesize
+					collection_set {
+						id
+					}
+				}
+				backdrops (filter: { collection_set: { id: { _eq: $collectionSetIDString } } }) {
+					id
+					modified_on
+					filesize
+					collection_set {
+						id
+					}
+				}
+			}
+		}
+	}
+}
+`,
+		"variables": map[string]string{
+			"collectionSetID":       setIDString,
+			"collectionSetIDString": setIDString,
+			"movieIDString":         movieIDString,
+		},
+	}
+}
+
 func generateUserFollowingAndHidingBody() map[string]any {
 	return map[string]any{
 		"query": `
