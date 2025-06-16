@@ -13,7 +13,6 @@ func GetMediaServerType(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Server is online",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    map[string]any{"serverType": config.Global.MediaServer.Type},
 	})

@@ -13,31 +13,26 @@ import (
 func GetCurrentLogFile(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	filePath := logging.GetTodayLogFile()
 
 	if filePath == "" {
-		logging.LOG.Error("Failed to get the current log file path")
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: fmt.Errorf("failed to get the current log file path"),
-			Log: logging.Log{
-				Message: "Failed to get the current log file path",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Failed to get the current log file path"
+		Err.HelpText = "Ensure the logging system is properly configured and the log file path is valid."
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Read the log file using os
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{
-				Message: "Failed to read the log file",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = fmt.Sprintf("Failed to read the log file: %s", err.Error())
+		Err.HelpText = "Ensure the log file exists and is accessible."
+		Err.Details = fmt.Sprintf("Log File Path: %s", filePath)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -49,7 +44,6 @@ func GetCurrentLogFile(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Current log file content retrieved successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    logContent,
 	})

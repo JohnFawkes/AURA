@@ -12,11 +12,12 @@ import (
 func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	// Check if the log folder exists
-	logErr := utils.CheckFolderExists(logging.LogFolder)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	Err = utils.CheckFolderExists(logging.LogFolder)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -26,8 +27,8 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 		logging.LOG.Warn(fmt.Sprintf("No log files found in %s", logging.LogFolder))
 		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 			Status:  "success",
-			Message: "No old log files to clear",
 			Elapsed: utils.ElapsedTime(startTime),
+			Data:    "No log files to clear",
 		})
 		return
 	}
@@ -58,8 +59,8 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 	if clearCount == 0 {
 		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 			Status:  "success",
-			Message: "No old log files to clear",
 			Elapsed: utils.ElapsedTime(startTime),
+			Data:    "No old log files to clear",
 		})
 		return
 	}
@@ -67,7 +68,7 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 	// Return a JSON response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: fmt.Sprintf("Cleared %d old log files successfully", clearCount),
 		Elapsed: utils.ElapsedTime(startTime),
+		Data:    fmt.Sprintf("Cleared %d old log files successfully", clearCount),
 	})
 }

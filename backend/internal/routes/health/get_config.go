@@ -28,7 +28,6 @@ func GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Config data retrieved successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    safeConfigData,
 	})

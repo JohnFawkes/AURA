@@ -13,7 +13,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJsonResponse(w, http.StatusInternalServerError, utils.JSONResponse{
 		Status:  "error",
-		Message: "Route not found",
 		Elapsed: utils.ElapsedTime(startTime),
+		Data:    "Route not found",
 	})
 }
