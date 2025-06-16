@@ -7,6 +7,7 @@ import {
 	postClearTempImagesFolder,
 	postSendTestNotification,
 } from "@/services/api.settings";
+import { ReturnErrorMessage } from "@/services/api.shared";
 import { CircleX, HeartPulseIcon, Logs } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,15 +23,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
+import { APIResponse } from "@/types/apiResponse";
 import { AppConfig } from "@/types/config";
+
+type LOGGING_VALUES = "DEBUG" | "INFO" | "WARN" | "ERROR";
+const LOGGING_OPTIONS: LOGGING_VALUES[] = ["DEBUG", "INFO", "WARN", "ERROR"];
 
 const SettingsPage: React.FC = () => {
 	const router = useRouter();
 	const isMounted = useRef(false);
 	const [config, setConfig] = useState<AppConfig | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<APIResponse<unknown> | null>(null);
+
+	// State - Debug Mode
+	const [debugEnabled, setDebugEnabled] = useState(false);
+
+	useEffect(() => {
+		const savedMode = localStorage.getItem("debugMode") === "true";
+		setDebugEnabled(savedMode);
+	}, []);
+
+	const toggleDebugMode = (checked: boolean) => {
+		setDebugEnabled(checked);
+		localStorage.setItem("debugMode", checked.toString());
+	};
 
 	// Fetch configuration data
 	useEffect(() => {
@@ -39,30 +58,26 @@ const SettingsPage: React.FC = () => {
 		if (typeof window === "undefined") {
 			document.title = "Aura | Settings";
 		}
-
 		const fetchConfigFromAPI = async () => {
 			try {
-				const resp = await fetchConfig();
-				if (!resp) {
-					throw new Error("No response from API");
+				setLoading(true);
+				const response = await fetchConfig();
+
+				if (response.status === "error") {
+					setError(response);
+					setConfig(null);
+					return;
 				}
-				if (resp.status !== "success") {
-					throw new Error(resp.message);
-				}
-				const appConfig = resp.data;
-				if (!appConfig) {
-					throw new Error("No config found in response");
-				}
-				setConfig(appConfig);
+				setConfig(response.data ?? null);
 				setError(null);
-				setLoading(false);
 			} catch (error) {
+				setError(ReturnErrorMessage<AppConfig>(error));
 				setConfig(null);
-				setError(error instanceof Error ? error.message : String(error));
 			} finally {
 				setLoading(false);
 			}
 		};
+
 		fetchConfigFromAPI();
 	}, []);
 
@@ -72,64 +87,70 @@ const SettingsPage: React.FC = () => {
 
 	const handleClearOldLogs = async () => {
 		try {
-			const clearOldLogsResp = await postClearOldLogs();
-			if (!clearOldLogsResp) {
-				throw new Error("No response from API");
+			const response = await postClearOldLogs();
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to clear old logs");
+				return;
 			}
-			if (clearOldLogsResp.status !== "success") {
-				throw new Error(clearOldLogsResp.message);
-			}
-			toast.success(clearOldLogsResp.message || "Success");
+
+			toast.success(response.data || "Successfully cleared old logs");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : String(error));
+			const errorResponse = ReturnErrorMessage<void>(error);
+			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
 		}
 	};
 
 	const clearTempImagesFolder = async () => {
 		try {
-			const clearTempResp = await postClearTempImagesFolder();
-			if (!clearTempResp) {
-				throw new Error("No response from API");
+			const response = await postClearTempImagesFolder();
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to clear temp images folder");
+				return;
 			}
-			toast.success("Temp images folder cleared successfully");
+
+			toast.success(response.data || "Temp images folder cleared successfully");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : String(error));
+			const errorResponse = ReturnErrorMessage<void>(error);
+			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
 		}
 	};
 
 	const checkMediaServerConnectionStatus = async () => {
 		try {
-			const mediaServerResp = await fetchMediaServerConnectionStatus();
-			if (!mediaServerResp) {
-				throw new Error("No response from API");
+			const response = await fetchMediaServerConnectionStatus();
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to check media server status");
+				return;
 			}
-			if (mediaServerResp.status !== "success") {
-				throw new Error(mediaServerResp.message);
-			}
-			toast.success(`Running with version: ${mediaServerResp.data}`);
+
+			toast.success(`Running with version: ${response.data}`);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : String(error));
+			const errorResponse = ReturnErrorMessage<string>(error);
+			toast.error(errorResponse.error?.Message || "Failed to check media server status");
 		}
 	};
 
 	const sendTestNotification = async () => {
 		try {
-			const notificationResp = await postSendTestNotification();
-			if (!notificationResp) {
-				throw new Error("No response from API");
+			const response = await postSendTestNotification();
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to send test notification");
+				return;
 			}
-			if (notificationResp.status !== "success") {
-				throw new Error(notificationResp.message);
+
+			if (!response.data) {
+				toast.error("No response from notification service");
+				return;
 			}
-			if (!notificationResp.data) {
-				throw new Error("No data in response");
-			}
-			if (notificationResp.data !== "success") {
-				throw new Error(notificationResp.data);
-			}
+
 			toast.success("Test notification sent successfully. Check your Discord channel.");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : String(error));
+			const errorResponse = ReturnErrorMessage<string>(error);
+			toast.error(errorResponse.error?.Message || "Failed to send test notification");
 		}
 	};
 
@@ -143,8 +164,7 @@ const SettingsPage: React.FC = () => {
 		const hourText = hour === "*" ? "every hour" : `hour ${hour}`;
 		const dayOfMonthText = dayOfMonth === "*" ? "every day" : `on day ${dayOfMonth}`;
 		const monthText = month === "*" ? "every month" : `in month ${month}`;
-		const dayOfWeekText =
-			dayOfWeek === "*" ? "every day of the week" : `on day ${dayOfWeek} of the week`;
+		const dayOfWeekText = dayOfWeek === "*" ? "every day of the week" : `on day ${dayOfWeek} of the week`;
 
 		return `Currently runs ${minuteText} ${hourText}, ${dayOfMonthText}, ${monthText}, and ${dayOfWeekText}.`;
 	};
@@ -157,21 +177,30 @@ const SettingsPage: React.FC = () => {
 					Label: "Server Type",
 					Value: config?.MediaServer.Type,
 					Tooltip: "The type of media server (e.g., Plex, Emby, Jellyfin).",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Plex", "Emby", "Jellyfin"],
 				},
 				{
 					Label: "Server URL",
 					Value: config?.MediaServer.URL,
 					Tooltip: "The base URL of the media server.",
+					Editable: true,
+					EditType: "text",
 				},
 				{
 					Label: "Authentication Token",
 					Value: config?.MediaServer.Token,
 					Tooltip: "The authentication token for accessing the media server.",
+					Editable: true,
+					EditType: "text",
 				},
 				{
 					Label: "Libraries",
 					Value: config?.MediaServer.Libraries.map((library) => library.Name).join(", "),
 					Tooltip: "",
+					Editable: true,
+					EditType: "text",
 				},
 			],
 			Buttons: [
@@ -188,13 +217,16 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "TMDB API Key",
 					Value: config?.TMDB.ApiKey,
-					Tooltip:
-						"The API key for accessing TMDB services. This is not used in this version.",
+					Tooltip: "The API key for accessing TMDB services. This is not used in this version.",
+					Editable: true,
+					EditType: "text",
 				},
 				{
 					Label: "Mediux Token",
 					Value: config?.Mediux.Token,
 					Tooltip: "The authentication token for accessing Mediux services.",
+					Editable: true,
+					EditType: "text",
 				},
 			],
 		},
@@ -205,21 +237,32 @@ const SettingsPage: React.FC = () => {
 					Label: "Cache Images",
 					Value: config?.CacheImages ? "Enabled" : "Disabled",
 					Tooltip: "Whether to cache images locally.",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Enabled", "Disabled"],
 				},
 				{
 					Label: "Save Images Next to Content",
 					Value: config?.SaveImageNextToContent ? "Enabled" : "Disabled",
 					Tooltip: "Whether to save images next to the associated content.",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Enabled", "Disabled"],
 				},
 				{
 					Label: "Auto Download",
 					Value: config?.AutoDownload?.Enabled ? "Enabled" : "Disabled",
 					Tooltip: "Whether auto-download is enabled.",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Enabled", "Disabled"],
 				},
 				{
 					Label: "Auto Download Cron",
 					Value: config?.AutoDownload?.Cron,
 					Tooltip: parseCronToHumanReadable(config?.AutoDownload?.Cron || ""),
+					Editable: true,
+					EditType: "text",
 				},
 			],
 		},
@@ -230,6 +273,9 @@ const SettingsPage: React.FC = () => {
 					Label: "Remove Labels",
 					Value: config?.Kometa?.RemoveLabels ? "Enabled" : "Disabled",
 					Tooltip: "Whether to remove labels from media items.",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Enabled", "Disabled"],
 				},
 				{
 					Label: "Labels",
@@ -238,6 +284,8 @@ const SettingsPage: React.FC = () => {
 							? config?.Kometa?.Labels.join(", ")
 							: config?.Kometa?.Labels?.[0] || "",
 					Tooltip: "The list of labels to apply to media items.",
+					Editable: true,
+					EditType: "text",
 				},
 			],
 		},
@@ -247,14 +295,17 @@ const SettingsPage: React.FC = () => {
 				{
 					Label: "Provider",
 					Value: config?.Notification?.Provider,
-					Tooltip:
-						"The provider for notifications. Currently, the only provider is Discord.",
+					Tooltip: "The provider for notifications. Currently, the only provider is Discord.",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["Discord"],
 				},
 				{
 					Label: "Webhook",
 					Value: config?.Notification?.Webhook,
-					Tooltip:
-						"he webhook URL for the provider. This can be obtained by creating a webhook in Discord.",
+					Tooltip: "The webhook URL for the provider. This can be obtained by creating a webhook in Discord.",
+					Editable: true,
+					EditType: "text",
 				},
 			],
 			Buttons: [
@@ -272,11 +323,15 @@ const SettingsPage: React.FC = () => {
 					Label: "Logging Level",
 					Value: config?.Logging?.Level,
 					Tooltip: "The logging level (e.g., DEBUG, INFO, WARN, ERROR).",
+					Editable: true,
+					EditType: "select",
+					EditOptions: LOGGING_OPTIONS,
 				},
 				{
 					Label: "Log File Path",
 					Value: config?.Logging?.File,
 					Tooltip: "The file path where logs are stored.",
+					Editable: false,
 				},
 			],
 			Buttons: [
@@ -312,18 +367,36 @@ const SettingsPage: React.FC = () => {
 			{loading ? (
 				<Loader message="Loading configuration..." />
 			) : error ? (
-				<ErrorMessage message={error} />
+				<ErrorMessage error={error} />
 			) : (
 				<>
-					<h1 className="text-3xl font-bold mb-4">Settings</h1>
+					<div className="flex items-center justify-between mb-6">
+						<h1
+							className="text-3xl font-bold mb-4"
+							onDoubleClick={() => {
+								if (debugEnabled) {
+									toggleDebugMode(false);
+									toast.info("Debug mode disabled");
+								} else {
+									toggleDebugMode(true);
+									toast.info("Debug mode enabled");
+								}
+								localStorage.setItem("debugMode", (!debugEnabled).toString());
+							}}
+						>
+							Settings
+						</h1>
+					</div>
+					<p className="mb-6 text-gray-600 dark:text-gray-400">
+						Manage your application settings and configurations here
+					</p>
 					{AppConfig &&
 						Object.entries(AppConfig).map(([key, value]) => {
 							// Filter out fields with empty values (after trimming)
 							const fieldsToShow =
 								"Fields" in value
 									? value.Fields.filter(
-											(field) =>
-												field.Value && field.Value.toString().trim() !== ""
+											(field) => field.Value && field.Value.toString().trim() !== ""
 										)
 									: [];
 							// Check if there are any buttons
@@ -352,28 +425,16 @@ const SettingsPage: React.FC = () => {
 														<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
 															{field.Label}
 														</label>
-														{field.Label === "Libraries" ||
-														field.Label === "Labels" ? (
+														{field.Label === "Libraries" || field.Label === "Labels" ? (
 															<>
 																{(field.Value ?? "")
 																	.split(", ")
-																	.filter(
-																		(item: string) =>
-																			item.trim() !== ""
-																	)
-																	.map(
-																		(
-																			item: string,
-																			idx: number
-																		) => (
-																			<Badge
-																				key={idx}
-																				className="mr-2 mt-1 text-sm"
-																			>
-																				{item}
-																			</Badge>
-																		)
-																	)}
+																	.filter((item: string) => item.trim() !== "")
+																	.map((item: string, idx: number) => (
+																		<Badge key={idx} className="mr-2 mt-1 text-sm">
+																			{item}
+																		</Badge>
+																	))}
 															</>
 														) : (
 															<div className="flex items-center gap-2 mt-1">
@@ -419,6 +480,24 @@ const SettingsPage: React.FC = () => {
 								</Card>
 							);
 						})}
+					{/* Debug Mode Toggle */}
+					<ToggleGroup
+						type="single"
+						variant={debugEnabled ? "default" : "outline"}
+						value={debugEnabled ? "enabled" : "disabled"}
+						onValueChange={(value) => toggleDebugMode(value === "enabled")}
+					>
+						<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
+							<span className="flex items-center gap-2">
+								Debug Mode:
+								{debugEnabled ? (
+									<span className="text-green-500">Enabled</span>
+								) : (
+									<span className="text-destructive">Disabled</span>
+								)}
+							</span>
+						</ToggleGroupItem>
+					</ToggleGroup>
 				</>
 			)}
 		</div>
