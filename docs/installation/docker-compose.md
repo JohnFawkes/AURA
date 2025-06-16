@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Docker Compose Installation"
-nav_order: 2
+nav_order: 1
 description: "Instructions for installing and running AURA using Docker Compose."
 parent: Installation
 ---
