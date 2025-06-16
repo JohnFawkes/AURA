@@ -8,17 +8,20 @@ import (
 	"aura/internal/utils"
 	"encoding/base64"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 )
 
-func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) logging.ErrorLog {
+func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) logging.StandardError {
+	Err := logging.NewStandardError()
 
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
-		return logging.ErrorLog{Err: fmt.Errorf("media not found"),
-			Log: logging.Log{Message: "Media not found"}}
+
+		Err.Message = "Media not found"
+		Err.HelpText = "Ensure the item exists in the Emby/Jellyfin library."
+		Err.Details = fmt.Sprintf("Item Title: %s, Rating Key: %s, File ID: %s", item.Title, itemRatingKey, file.ID)
+		return Err
 	}
 
 	// Check if the temporary folder has the image
@@ -32,19 +35,23 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 	var imageData []byte
 	if !exists {
 		// Check if the temporary folder exists
-		logErr := utils.CheckFolderExists(mediux.MediuxFullTempImageFolder)
-		if logErr.Err != nil {
-			return logErr
+		Err := utils.CheckFolderExists(mediux.MediuxFullTempImageFolder)
+		if Err.Message != "" {
+			return Err
 		}
 		// Download the image from Mediux
-		imageData, _, logErr = mediux.FetchImage(file.ID, formatDate, true)
-		if logErr.Err != nil {
-			return logErr
+		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, true)
+		if Err.Message != "" {
+			return Err
 		}
 		// Add the image to the temporary folder
 		err := os.WriteFile(filePath, imageData, 0644)
 		if err != nil {
-			return logging.ErrorLog{Err: err, Log: logging.Log{Message: fmt.Sprintf("Failed to write image to %s: %v", filePath, err)}}
+
+			Err.Message = "Failed to write image to temporary folder"
+			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", mediux.MediuxFullTempImageFolder)
+			Err.Details = fmt.Sprintf("Error writing image: %v", err)
+			return Err
 		}
 		logging.LOG.Trace(fmt.Sprintf("Image %s downloaded and saved to temporary folder", file.ID))
 	} else {
@@ -52,7 +59,11 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		var err error
 		imageData, err = os.ReadFile(filePath)
 		if err != nil {
-			return logging.ErrorLog{Err: err, Log: logging.Log{Message: fmt.Sprintf("Failed to read image from %s: %v", filePath, err)}}
+
+			Err.Message = "Failed to read image from temporary folder"
+			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and readable.", mediux.MediuxFullTempImageFolder)
+			Err.Details = fmt.Sprintf("Error reading image: %v", err)
+			return Err
 		}
 	}
 
@@ -63,9 +74,9 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		posterType = "Primary"
 	}
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Items/%s/Images/%s", itemRatingKey, posterType), config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Items/%s/Images/%s", itemRatingKey, posterType), config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return Err
 	}
 
 	// Encode the image data as Base64
@@ -75,17 +86,11 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 	headers := map[string]string{
 		"Content-Type": "image/jpeg",
 	}
-	response, _, logErr := utils.MakeHTTPRequest(baseURL.String(), "POST", headers, 60, []byte(base64ImageData), "MediaServer")
-	if logErr.Err != nil {
-		return logErr
+	response, _, Err := utils.MakeHTTPRequest(baseURL.String(), "POST", headers, 60, []byte(base64ImageData), "MediaServer")
+	if Err.Message != "" {
+		return Err
 	}
 	defer response.Body.Close()
 
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNoContent {
-		return logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
-
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }

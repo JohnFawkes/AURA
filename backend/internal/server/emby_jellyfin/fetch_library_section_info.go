@@ -11,32 +11,31 @@ import (
 	"github.com/goccy/go-json"
 )
 
-func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.ErrorLog) {
+func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.StandardError) {
 
-	url, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items", config.Global.MediaServer.UserID), config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return false, logErr
+	url, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items", config.Global.MediaServer.UserID), config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return false, Err
 	}
 
 	// Make a GET request to the Emby server
-	response, body, logErr := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		logging.LOG.Error(logErr.Log.Message)
-		return false, logErr
+	response, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		logging.LOG.Error(Err.Message)
+		return false, Err
 	}
 	defer response.Body.Close()
 
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return false, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
+	Err = logging.NewStandardError()
 
 	var responseSection modals.EmbyJellyLibrarySectionsResponse
 	err := json.Unmarshal(body, &responseSection)
 	if err != nil {
-		logging.LOG.Error("Failed to parse JSON response")
-		return false, logging.ErrorLog{Err: err, Log: logging.Log{Message: "Failed to parse JSON response"}}
+
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return false, Err
 	}
 
 	found := false
@@ -53,9 +52,12 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	}
 
 	if !found {
-		return false, logging.ErrorLog{Err: fmt.Errorf("library section '%s' not found", library.Name),
-			Log: logging.Log{Message: fmt.Sprintf("Library section '%s' not found", library.Name)}}
+
+		Err.Message = "Library section not found"
+		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' exists on the media server.", library.Name)
+		Err.Details = fmt.Sprintf("No section with name '%s' found in the media server response.", library.Name)
+		return false, Err
 	}
 
-	return true, logging.ErrorLog{}
+	return true, logging.StandardError{}
 }

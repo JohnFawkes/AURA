@@ -8,18 +8,17 @@ import (
 	"aura/internal/utils"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 )
 
-func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.ErrorLog) {
-
+func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching item content for rating key: %s", ratingKey))
+	Err := logging.NewStandardError()
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", config.Global.MediaServer.UserID, ratingKey),
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", config.Global.MediaServer.UserID, ratingKey),
 		config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return modals.MediaItem{}, logErr
+	if Err.Message != "" {
+		return modals.MediaItem{}, Err
 	}
 
 	// Add query parameters
@@ -29,25 +28,20 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Emby/Jellyfin server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return modals.MediaItem{}, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return modals.MediaItem{}, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return modals.MediaItem{}, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
 
 	var resp modals.EmbyJellyItemContentResponse
 	err := json.Unmarshal(body, &resp)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to parse JSON response: %v", err))
-		return modals.MediaItem{}, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse JSON response"},
-		}
+
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return modals.MediaItem{}, Err
 	}
 
 	var itemInfo modals.MediaItem
@@ -89,9 +83,9 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	}
 	if resp.Type == "Series" {
 		itemInfo.Type = "show"
-		itemInfo, logErr = fetchSeasonsForShow(&itemInfo)
-		if logErr.Err != nil {
-			return itemInfo, logErr
+		itemInfo, Err = fetchSeasonsForShow(&itemInfo)
+		if Err.Message != "" {
+			return itemInfo, Err
 		}
 		itemInfo.Series.Location = resp.Path
 		itemInfo.Series.SeasonCount = resp.ChildCount
@@ -109,17 +103,18 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 		itemInfo.ExistInDatabase = false
 	}
 
-	return itemInfo, logging.ErrorLog{}
+	return itemInfo, logging.StandardError{}
 
 }
 
-func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.ErrorLog) {
+func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching seasons for show: %s", itemInfo.Title))
+	Err := logging.NewStandardError()
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Seasons", itemInfo.RatingKey),
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Seasons", itemInfo.RatingKey),
 		config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return *itemInfo, logErr
+	if Err.Message != "" {
+		return *itemInfo, Err
 	}
 
 	// Add query parameters
@@ -128,24 +123,20 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Emby/Jellyfin server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return *itemInfo, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return *itemInfo, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return *itemInfo, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
 
 	var resp modals.EmbyJellyItemContentChildResponse
 	err := json.Unmarshal(body, &resp)
 	if err != nil {
-		return *itemInfo, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse JSON response"},
-		}
+
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return *itemInfo, Err
 	}
 
 	var seasons []modals.MediaItemSeason
@@ -156,25 +147,26 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 			Title:        season.Name,
 			Episodes:     []modals.MediaItemEpisode{},
 		}
-		season, logErr = fetchEpisodesForSeason(itemInfo.RatingKey, season)
-		if logErr.Err != nil {
-			return *itemInfo, logErr
+		season, Err = fetchEpisodesForSeason(itemInfo.RatingKey, season)
+		if Err.Message != "" {
+			return *itemInfo, Err
 		}
 		seasons = append(seasons, season)
 	}
 
 	itemInfo.Series = &modals.MediaItemSeries{Seasons: seasons}
 
-	return *itemInfo, logging.ErrorLog{}
+	return *itemInfo, logging.StandardError{}
 }
 
-func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason) (modals.MediaItemSeason, logging.ErrorLog) {
+func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason) (modals.MediaItemSeason, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching episodes for season: %s", season.Title))
+	Err := logging.NewStandardError()
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Episodes", showRatingKey),
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Episodes", showRatingKey),
 		config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return season, logErr
+	if Err.Message != "" {
+		return season, Err
 	}
 
 	// Add query parameters
@@ -184,24 +176,20 @@ func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason)
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Emby/Jellyfin server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return season, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return season, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return season, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
 
 	var resp modals.EmbyJellyItemContentChildResponse
 	err := json.Unmarshal(body, &resp)
 	if err != nil {
-		return season, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse JSON response"},
-		}
+
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return season, Err
 	}
 
 	for _, episode := range resp.Items {
@@ -223,42 +211,39 @@ func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason)
 		season.Episodes = append(season.Episodes, episode)
 	}
 
-	return season, logging.ErrorLog{}
+	return season, logging.StandardError{}
 }
 
-func fetchEpisodeInfo(episode *modals.MediaItemEpisode) (modals.MediaItemEpisode, logging.ErrorLog) {
+func fetchEpisodeInfo(episode *modals.MediaItemEpisode) (modals.MediaItemEpisode, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching episode info for episode: %s", episode.Title))
+	Err := logging.NewStandardError()
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", config.Global.MediaServer.UserID, episode.RatingKey),
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", config.Global.MediaServer.UserID, episode.RatingKey),
 		config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return *episode, logErr
+	if Err.Message != "" {
+		return *episode, Err
 	}
 
 	// Make a GET request to the Emby/Jellyfin server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return *episode, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return *episode, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return *episode, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
 
 	var resp modals.EmbyJellyItemContentResponse
 	err := json.Unmarshal(body, &resp)
 	if err != nil {
-		return *episode, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse JSON response"},
-		}
+
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return *episode, Err
 	}
 
 	episode.File.Path = resp.Path
 	episode.File.Size = resp.Size
 	episode.File.Duration = resp.RunTimeTicks / 10000
 
-	return *episode, logging.ErrorLog{}
+	return *episode, logging.StandardError{}
 }

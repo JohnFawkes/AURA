@@ -4,7 +4,6 @@ import (
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/utils"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -28,31 +27,30 @@ func init() {
 func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
 	if ratingKey == "" || imageType == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing rating key or image type"),
-			Log: logging.Log{
-				Message: "Missing rating key or image type in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Missing rating key or image type"
+		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
+		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("invalid image type"),
-			Log: logging.Log{
-				Message: "Invalid image type in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Invalid image type"
+		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
+		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// If the image does not exist, then get it from Plex
-	imageData, logErr := FetchImageFromMediaServer(ratingKey, imageType)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	imageData, Err := FetchImageFromMediaServer(ratingKey, imageType)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -62,7 +60,9 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.ErrorLog) {
+func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.StandardError) {
+	Err := logging.NewStandardError()
+
 	// Construct the URL for the Plex server API request
 	if imageType == "backdrop" {
 		imageType = "art"
@@ -75,25 +75,21 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 		plexURL = fmt.Sprintf("%s/photo/:/transcode?width=1920&height=1080&url=%s", config.Global.MediaServer.URL, encodedPhotoUrl)
 	}
 
-	response, body, logErr := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return nil, logErr
+	response, body, Err := utils.MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return nil, Err
 	}
 	defer response.Body.Close()
 
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return nil, logging.ErrorLog{Err: errors.New("plex server error"),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
-		}
-	}
 	// Check if the response body is empty
 	if len(body) == 0 {
-		return nil, logging.ErrorLog{Err: errors.New("empty response body"),
-			Log: logging.Log{Message: "Plex returned an empty response body"},
-		}
+
+		Err.Message = "Received empty response from Plex server"
+		Err.HelpText = fmt.Sprintf("Ensure the Plex server is running and the item with rating key %s exists.", ratingKey)
+		Err.Details = "The Plex server returned an empty response for the requested image."
+		return nil, Err
 	}
 
 	// Return the image data
-	return body, logging.ErrorLog{}
+	return body, logging.StandardError{}
 }

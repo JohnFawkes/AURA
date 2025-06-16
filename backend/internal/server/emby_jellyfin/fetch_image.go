@@ -20,35 +20,40 @@ func init() {
 	EmbyJellyTempImageFolder = path.Join(configPath, "temp-images", "emby-jellyfin")
 }
 
-func FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.ErrorLog) {
+func FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.StandardError) {
+	Err := logging.NewStandardError()
 	if imageType == "poster" {
 		imageType = "Primary"
 	} else if imageType == "backdrop" {
 		imageType = "Backdrop"
+	} else {
+
+		Err.Message = "Invalid image type"
+		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
+		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
+		return nil, Err
 	}
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("Items/%s/Images/%s", ratingKey, imageType), config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return nil, logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("Items/%s/Images/%s", ratingKey, imageType), config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return nil, Err
 	}
 
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return nil, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return nil, Err
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
-		return nil, logging.ErrorLog{Err: fmt.Errorf("received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from %s server", response.StatusCode, config.Global.MediaServer.Type)}}
-	}
-
 	// Check if the response is empty
 	if len(body) == 0 {
-		return nil, logging.ErrorLog{Err: fmt.Errorf("received empty response from %s server", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Received empty response from %s server", config.Global.MediaServer.Type)}}
+
+		Err.Message = "Received empty response from media server"
+		Err.HelpText = fmt.Sprintf("Ensure the media server is running and the item with rating key %s exists.", ratingKey)
+		Err.Details = "The media server returned an empty response for the requested image."
+		return nil, Err
 	}
 
 	// Return the image data
-	return body, logging.ErrorLog{}
+	return body, logging.StandardError{}
 }

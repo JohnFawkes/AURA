@@ -7,42 +7,37 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 )
 
-func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
+func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError) {
+	Err := logging.NewStandardError()
 
-	url, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", ratingKey), config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return modals.MediaItem{}, logErr
+	url, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", ratingKey), config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return modals.MediaItem{}, Err
 	}
 	var itemInfo modals.MediaItem
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return itemInfo, logErr
+	response, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return itemInfo, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return itemInfo, logging.ErrorLog{Err: logErr.Err,
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
-		}
-	}
 
 	// Parse the response body into a PlexResponse struct
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return itemInfo, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse XML response"},
-		}
+
+		Err.Message = "Failed to parse XML response"
+		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return itemInfo, Err
 	}
 
 	// Get GUIDs and Ratings from the response body
@@ -87,9 +82,9 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.ContentRating = responseSection.Directory[0].ContentRating
 		itemInfo.Summary = responseSection.Directory[0].Summary
 		itemInfo.UpdatedAt = responseSection.Directory[0].UpdatedAt
-		itemInfo, logErr = fetchSeasonsForShow(&itemInfo)
-		if logErr.Err != nil {
-			return itemInfo, logErr
+		itemInfo, Err = fetchSeasonsForShow(&itemInfo)
+		if Err.Message != "" {
+			return itemInfo, Err
 		}
 		itemInfo.Series.SeasonCount = responseSection.Directory[0].ChildCount
 		itemInfo.Series.EpisodeCount = responseSection.Directory[0].LeafCount
@@ -107,38 +102,32 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.ErrorLog) {
 		itemInfo.ExistInDatabase = false
 	}
 
-	return itemInfo, logging.ErrorLog{}
+	return itemInfo, logging.StandardError{}
 }
 
-func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.ErrorLog) {
+func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching seasons for show: %s", itemInfo.Title))
+	Err := logging.NewStandardError()
 
 	url := fmt.Sprintf("%s/library/metadata/%s/children",
 		config.Global.MediaServer.URL, itemInfo.RatingKey)
 
 	// Make a GET request to fetch children content
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return *itemInfo, logErr
+	response, body, Err := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return *itemInfo, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return *itemInfo, logging.ErrorLog{
-			Err: errors.New("received non-200 response from Plex server"),
-			Log: logging.Log{Message: "Received non-200 response from Plex server"},
-		}
-	}
 
 	// Parse the response body into a PlexResponse struct
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return *itemInfo, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse XML response for seasons"},
-		}
+
+		Err.Message = "Failed to parse XML response for seasons"
+		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return *itemInfo, Err
 	}
 
 	if responseSection.ViewGroup == "season" {
@@ -155,9 +144,9 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 			}
 
 			// Fetch episodes for the season
-			season, logErr = fetchEpisodesForSeason(season)
-			if logErr.Err != nil {
-				return *itemInfo, logErr
+			season, Err = fetchEpisodesForSeason(season)
+			if Err.Message != "" {
+				return *itemInfo, Err
 			}
 
 			seasons = append(seasons, season)
@@ -165,38 +154,32 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 		itemInfo.Series = &modals.MediaItemSeries{Seasons: seasons}
 	}
 
-	return *itemInfo, logging.ErrorLog{}
+	return *itemInfo, logging.StandardError{}
 }
 
-func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeason, logging.ErrorLog) {
+func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeason, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Fetching episodes for season: %s", season.Title))
+	Err := logging.NewStandardError()
 
 	url := fmt.Sprintf("%s/library/metadata/%s/children",
 		config.Global.MediaServer.URL, season.RatingKey)
 
 	// Make a GET request to fetch episodes
-	response, body, logErr := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return season, logErr
+	response, body, Err := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return season, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return season, logging.ErrorLog{
-			Err: fmt.Errorf("received status code '%d' from Plex server", response.StatusCode),
-			Log: logging.Log{Message: "Received non-200 response from Plex server"},
-		}
-	}
 
 	// Parse the response body into a PlexResponse struct
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return season, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse XML response for episodes"},
-		}
+
+		Err.Message = "Failed to parse XML response for episodes"
+		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return season, Err
 	}
 
 	// Populate episodes for the season
@@ -215,7 +198,7 @@ func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeas
 		season.Episodes = append(season.Episodes, episode)
 	}
 
-	return season, logging.ErrorLog{}
+	return season, logging.StandardError{}
 }
 
 func getGUIDsAndRatingsFromBody(body []byte) ([]modals.Guid, error) {

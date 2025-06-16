@@ -5,32 +5,22 @@ import (
 	"aura/internal/logging"
 	"aura/internal/utils"
 	"encoding/json"
-	"net/http"
 )
 
-func GetMediaServerStatus() (string, logging.ErrorLog) {
+func GetMediaServerStatus() (string, logging.StandardError) {
 	logging.LOG.Trace("Checking Emby/Jellyfin server status")
+	Err := logging.NewStandardError()
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL("/System/Info", config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return "", logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL("/System/Info", config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return "", Err
 	}
 
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return "", logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return "", Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return "", logging.ErrorLog{
-			Err: logErr.Err,
-			Log: logging.Log{
-				Message: "Failed to get Emby/Jellyfin server status",
-			},
-		}
-	}
 
 	var statusResponse struct {
 		Version string `json:"Version"`
@@ -38,24 +28,22 @@ func GetMediaServerStatus() (string, logging.ErrorLog) {
 
 	err := json.Unmarshal(body, &statusResponse)
 	if err != nil {
-		return "", logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{
-				Message: "Failed to unmarshal Emby/Jellyfin server response",
-			},
-		}
+
+		Err.Message = "Failed to parse JSON response from media server"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = "Error: " + err.Error()
+		return "", Err
 	}
 
 	status := statusResponse.Version
 
 	if status == "" {
-		return "", logging.ErrorLog{
-			Err: logErr.Err,
-			Log: logging.Log{
-				Message: "Emby/Jellyfin server returned an empty version",
-			},
-		}
+
+		Err.Message = "Received empty status from media server"
+		Err.HelpText = "Ensure the media server is running and accessible."
+		Err.Details = "The media server returned an empty status response."
+		return "", Err
 	}
 
-	return status, logging.ErrorLog{}
+	return status, logging.StandardError{}
 }

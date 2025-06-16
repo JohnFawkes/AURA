@@ -7,13 +7,16 @@ import (
 	"fmt"
 )
 
-func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.ErrorLog {
+func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.StandardError {
 
 	// Determine the itemRatingKey
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
-		return logging.ErrorLog{Err: fmt.Errorf("media not found"),
-			Log: logging.Log{Message: "Media not found"}}
+		Err := logging.NewStandardError()
+
+		Err.Message = "Failed to determine item rating key"
+		Err.HelpText = "Ensure the item and file types are correctly set."
+		return Err
 	}
 	mediuxURL := fmt.Sprintf("%s/%s", "https://staged.mediux.io/assets", file.ID)
 	refreshPlexItem(itemRatingKey)
@@ -22,12 +25,12 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.ErrorL
 	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
 	if config.Global.Kometa.RemoveLabels {
 		for _, label := range config.Global.Kometa.Labels {
-			logErr := removeLabel(itemRatingKey, label)
-			if logErr.Err != nil {
-				logging.LOG.Warn(fmt.Sprintf("Failed to remove label '%s': %v", label, logErr.Err))
+			Err := removeLabel(itemRatingKey, label)
+			if Err.Message != "" {
+				logging.LOG.Warn(fmt.Sprintf("Failed to remove label '%s': %v", label, Err.Message))
 			}
 		}
 	}
 
-	return logging.ErrorLog{}
+	return logging.StandardError{}
 }

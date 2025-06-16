@@ -7,7 +7,6 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -15,43 +14,43 @@ import (
 )
 
 // Get all items/metadata for a specific item in a specific library section
-func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.ErrorLog) {
+func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string, limit string) ([]modals.MediaItem, int, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s and title: %s", section.ID, section.Title))
 
 	// Construct Base URL
-	baseURL, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/sections/%s/all", section.ID), config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return nil, 0, logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/sections/%s/all", section.ID), config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return nil, 0, Err
+	}
+
+	// If limit is not provided, set it to 500
+	if limit == "" {
+		limit = "500" // Default limit if not provided
 	}
 
 	// Add parameters to the URL
 	params := url.Values{}
 	params.Add("X-Plex-Container-Start", sectionStartIndex)
-	params.Add("X-Plex-Container-Size", "500")
+	params.Add("X-Plex-Container-Size", limit)
 	params.Add("includeGuids", "1")
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 180, nil, "MediaServer")
-	if logErr.Err != nil {
-		return nil, 0, logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 180, nil, "MediaServer")
+	if Err.Message != "" {
+		return nil, 0, Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return nil, 0, logging.ErrorLog{Err: errors.New("plex server error"),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
-		}
-	}
 
 	// Parse the response body into a PlexResponse struct
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return nil, 0, logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse XML response"},
-		}
+
+		Err.Message = "Failed to parse XML response"
+		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return nil, 0, Err
 	}
 
 	// If the item is a movie section/library
@@ -142,5 +141,5 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 		}
 	}
 
-	return items, responseSection.TotalSize, logging.ErrorLog{}
+	return items, responseSection.TotalSize, logging.StandardError{}
 }
