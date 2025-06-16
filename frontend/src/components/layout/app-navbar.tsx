@@ -32,8 +32,7 @@ import { searchMediaItems } from "@/hooks/searchMediaItems";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
 export default function Navbar() {
-	const { setSearchQuery, setCurrentPage, setFilteredLibraries, setFilterOutInDB } =
-		useHomeSearchStore();
+	const { setSearchQuery, setCurrentPage, setFilteredLibraries, setFilterOutInDB } = useHomeSearchStore();
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
@@ -192,9 +191,7 @@ export default function Navbar() {
 									/>
 								</div>
 								<div>
-									<p className="font-medium text-sm md:text-base">
-										{result.Title}
-									</p>
+									<p className="font-medium text-sm md:text-base">{result.Title}</p>
 									<p className="text-xs text-muted-foreground">
 										{result.LibraryTitle} · {result.Year}
 									</p>
