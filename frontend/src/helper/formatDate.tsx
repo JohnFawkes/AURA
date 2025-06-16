@@ -17,8 +17,7 @@ export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedStrin
 		const diffMonths = Math.floor(diffDays / 30);
 		const diffYears = Math.floor(diffDays / 365);
 
-		const pluralize = (value: number, unit: string) =>
-			`${value} ${unit}${value !== 1 ? "s" : ""}`;
+		const pluralize = (value: number, unit: string) => `${value} ${unit}${value !== 1 ? "s" : ""}`;
 
 		if (diffYears >= 1) {
 			return `Over ${pluralize(diffYears, "year")} ago`;

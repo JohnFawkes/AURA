@@ -1,6 +1,6 @@
 export const formatDownloadSize = (downloadSizeBytes: number) => {
 	if (downloadSizeBytes === 0) {
-		return "";
+		return "0 B";
 	}
 	const units = ["B", "KB", "MB", "GB", "TB"];
 	const factor = 1024;
