@@ -389,7 +389,7 @@ func generateAllUserSetsBody(username string) map[string]any {
 	return map[string]any{
 		"query": `
 query user_sets($username: String!) {
-	show_sets( filter: { user_created: { username: { _eq: $username } } }) {
+	show_sets(limit: 10000, filter: { user_created: { username: { _eq: $username } } }) {
 		id
 		user_created {
 			username
@@ -440,7 +440,7 @@ query user_sets($username: String!) {
 			}
 		}
 	}
-	movie_sets( filter: { user_created: { username: { _eq: $username } } }) {
+	movie_sets(limit: 10000, filter: { user_created: { username: { _eq: $username } } }) {
 		id
 		user_created {
 			username
@@ -471,7 +471,7 @@ query user_sets($username: String!) {
 			filesize
 		}
 	}
-	collection_sets( filter: { user_created: { username: { _eq: $username } } }) {
+	collection_sets(limit: 10000, filter: { user_created: { username: { _eq: $username } } }) {
 		id
 		user_created {
 			username
@@ -515,7 +515,7 @@ query user_sets($username: String!) {
 		}
 	}
 	boxsets(
-		 
+		limit: 10000,
 		filter: { 
 			user_created: { username: { _eq: $username } },
 			_or: [
