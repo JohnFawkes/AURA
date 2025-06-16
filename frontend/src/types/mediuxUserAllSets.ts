@@ -18,7 +18,7 @@ export interface MediuxUserShowSet {
 	show_backdrop: MediuxUserImage[];
 	season_posters: MediuxUserSeasonPoster[];
 	titlecards: MediuxUserTitlecard[];
-	MediaItem: MediaItem;
+	//MediaItem: MediaItem;
 }
 
 export interface MediuxUserMovieSet {
@@ -30,7 +30,7 @@ export interface MediuxUserMovieSet {
 	movie_id: MediuxUserMovie;
 	movie_poster: MediuxUserImage[];
 	movie_backdrop: MediuxUserImage[];
-	MediaItem: MediaItem;
+	//MediaItem: MediaItem;
 }
 
 export interface MediuxUserCollectionSet {
@@ -71,6 +71,7 @@ export interface MediuxUserShow {
 	imdb_id: string;
 	trakt_id: string;
 	slug: string;
+	MediaItem: MediaItem;
 }
 
 export interface MediuxUserMovie {
@@ -84,6 +85,8 @@ export interface MediuxUserMovie {
 	imdb_id: string;
 	trakt_id: string;
 	slug: string;
+	MediaItem: MediaItem;
+	//LibrarySection: string;
 }
 
 export interface MediuxUserImage {
@@ -118,18 +121,5 @@ export interface MediuxUserCollectionMovie {
 	id: string;
 	modified_on: string;
 	filesize: string;
-	movie: {
-		id: string;
-		date_updated: string;
-		status: string;
-		title: string;
-		tagline: string;
-		release_date: string;
-		tvdb_id: string;
-		imdb_id: string;
-		trakt_id: string;
-		slug: string;
-		MediaItem: MediaItem;
-		LibrarySection: string;
-	};
+	movie: MediuxUserMovie;
 }

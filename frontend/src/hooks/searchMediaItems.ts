@@ -50,9 +50,7 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 	) {
 		const rawQuery = partialQuery.slice(1, partialQuery.length - 1);
 		const normalizedQuery = normalizeString(rawQuery);
-		filteredItems = filteredItems.filter(
-			(item) => normalizeString(item.Title) === normalizedQuery
-		);
+		filteredItems = filteredItems.filter((item) => normalizeString(item.Title) === normalizedQuery);
 	} else if (partialQuery !== "") {
 		// Normalize remaining query and split into words
 		const normalizedQuery = normalizeString(partialQuery);
@@ -71,9 +69,7 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 
 	// Apply library filter if present
 	if (libraryFilter) {
-		filteredItems = filteredItems.filter((item) =>
-			normalizeString(item.LibraryTitle).includes(libraryFilter)
-		);
+		filteredItems = filteredItems.filter((item) => normalizeString(item.LibraryTitle).includes(libraryFilter));
 	}
 
 	// Apply rating key filter if present (exact match)

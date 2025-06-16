@@ -38,9 +38,7 @@ export const fetchMediuxSets = async (
 export const fetchMediuxUserFollowHides = async (): Promise<APIResponse<MediuxUserFollowHide>> => {
 	log(`api.mediux - Fetching Mediux user follow/hide data started`);
 	try {
-		const response = await apiClient.get<APIResponse<MediuxUserFollowHide>>(
-			`/mediux/user/following_hiding`
-		);
+		const response = await apiClient.get<APIResponse<MediuxUserFollowHide>>(`/mediux/user/following_hiding`);
 		log(`api.mediux - Fetching Mediux user follow/hide data completed`);
 		return response.data;
 	} catch (error) {
@@ -53,9 +51,7 @@ export const fetchMediuxUserFollowHides = async (): Promise<APIResponse<MediuxUs
 	}
 };
 
-export const fetchAllUserSets = async (
-	username: string
-): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
+export const fetchAllUserSets = async (username: string): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
 	log(`api.mediux - Fetching all user sets for ${username} started`);
 	try {
 		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>(
@@ -73,17 +69,26 @@ export const fetchAllUserSets = async (
 	}
 };
 
-export const fetchShowSetByID = async (setID: string): Promise<APIResponse<PosterSet>> => {
-	log(`api.mediux - Fetching show set by ID: ${setID} started`);
+export const fetchSetByID = async (
+	librarySection: string,
+	itemRatingKey: string,
+	setID: string,
+	itemType: "movie" | "show" | "collection"
+): Promise<APIResponse<PosterSet>> => {
+	log(`api.mediux - Fetching set by ID: ${setID} started`);
 	try {
-		const response = await apiClient.get<APIResponse<PosterSet>>(
-			`/mediux/sets/get_set/${setID}`
-		);
-		log(`api.mediux - Fetching show set by ID: ${setID} completed`);
+		const response = await apiClient.get<APIResponse<PosterSet>>(`/mediux/sets/get_set/${setID}`, {
+			params: {
+				itemType: itemType,
+				librarySection: librarySection,
+				itemRatingKey: itemRatingKey,
+			},
+		});
+		log(`api.mediux - Fetching set by ID: ${setID} completed`);
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediux - Fetching show set by ID: ${setID} failed with error: ${
+			`api.mediux - Fetching set by ID: ${setID} failed with error: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);

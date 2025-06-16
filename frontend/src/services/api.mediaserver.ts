@@ -10,15 +10,12 @@ import apiClient from "./apiClient";
 export const fetchMediaServerType = async (): Promise<APIResponse<{ serverType: string }>> => {
 	log("api.mediaserver - Fetching server type started");
 	try {
-		const response =
-			await apiClient.get<APIResponse<{ serverType: string }>>(`/mediaserver/type`);
+		const response = await apiClient.get<APIResponse<{ serverType: string }>>(`/mediaserver/type`);
 		log("api.mediaserver - Fetching server type succeeded");
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Fetching server type failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			`api.mediaserver - Fetching server type failed: ${error instanceof Error ? error.message : "Unknown error"}`
 		);
 		return ReturnErrorMessage<{ serverType: string }>(error);
 	}
@@ -27,8 +24,7 @@ export const fetchMediaServerType = async (): Promise<APIResponse<{ serverType: 
 export const fetchMediaServerLibrarySections = async (): Promise<APIResponse<LibrarySection[]>> => {
 	log("api.mediaserver - Fetching all library sections started");
 	try {
-		const response =
-			await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/sections/`);
+		const response = await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/sections/`);
 		log("api.mediaserver - Fetching all library sections succeeded");
 		return response.data;
 	} catch (error) {
@@ -50,17 +46,14 @@ export const fetchMediaServerLibrarySectionItems = async (
 			: `Fetching items for '${librarySection.Title}' (index: ${sectionStartIndex})`;
 	log(`api.mediaserver - ${logMessage}`);
 	try {
-		const response = await apiClient.get<APIResponse<LibrarySection>>(
-			`/mediaserver/sections/items`,
-			{
-				params: {
-					sectionID: librarySection.ID,
-					sectionTitle: librarySection.Title,
-					sectionType: librarySection.Type,
-					sectionStartIndex: sectionStartIndex,
-				},
-			}
-		);
+		const response = await apiClient.get<APIResponse<LibrarySection>>(`/mediaserver/sections/items`, {
+			params: {
+				sectionID: librarySection.ID,
+				sectionTitle: librarySection.Title,
+				sectionType: librarySection.Type,
+				sectionStartIndex: sectionStartIndex,
+			},
+		});
 		log(`api.mediaserver - Fetched items for '${librarySection.Title}' successfully.`);
 		return response.data;
 	} catch (error) {
@@ -99,15 +92,13 @@ export const fetchMediaServerItemContent = async (
 
 export const patchDownloadPosterFileAndUpdateMediaServer = async (
 	posterFile: PosterFile,
-	mediaItem: MediaItem
+	mediaItem: MediaItem,
+	fileName: string
 ): Promise<APIResponse<string>> => {
-	log(
-		`api.mediaserver - Downloading poster file and updating media server for ratingKey ${mediaItem.RatingKey} started`,
-		{
-			posterFile: posterFile,
-			mediaItem: mediaItem,
-		}
-	);
+	log(`api.mediaserver - Downloading ${fileName}`, {
+		posterFile: posterFile,
+		mediaItem: mediaItem,
+	});
 	try {
 		const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/download/file`, {
 			PosterFile: posterFile,
@@ -116,9 +107,7 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Download and update failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			`api.mediaserver - Download and update failed: ${error instanceof Error ? error.message : "Unknown error"}`
 		);
 		return ReturnErrorMessage<string>(error);
 	}

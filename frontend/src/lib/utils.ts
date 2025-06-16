@@ -42,8 +42,7 @@ export function formatDateToReadable(dateString: string): string {
 	const year = date.getFullYear();
 
 	// Add ordinal suffix to day
-	const suffix =
-		["th", "st", "nd", "rd"][day % 100 > 10 && day % 100 < 14 ? 0 : day % 10] || "th";
+	const suffix = ["th", "st", "nd", "rd"][day % 100 > 10 && day % 100 < 14 ? 0 : day % 10] || "th";
 
 	return `${day}${suffix} ${month} ${year}`;
 }

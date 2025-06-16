@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 		],
 	},
 	allowedDevOrigins: ["localhost", "10.1.1.30"],
-	reactStrictMode: true,
+	reactStrictMode: false,
 	env: {
 		NEXT_PUBLIC_APP_VERSION: APP_VERSION,
 	},

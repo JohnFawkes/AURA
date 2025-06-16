@@ -28,11 +28,7 @@ export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 		log("api.settings - Fetching log contents succeeded");
 		return response.data;
 	} catch (error) {
-		log(
-			`api.settings - Fetching log contents failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
-		);
+		log(`api.settings - Fetching log contents failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 		return ReturnErrorMessage<string>(error);
 	}
 };
@@ -44,11 +40,7 @@ export const postClearOldLogs = async (): Promise<APIResponse<void>> => {
 		log("api.settings - Clearing old logs succeeded");
 		return response.data;
 	} catch (error) {
-		log(
-			`api.settings - Clearing old logs failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
-		);
+		log(`api.settings - Clearing old logs failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 		return ReturnErrorMessage<void>(error);
 	}
 };
@@ -98,5 +90,21 @@ export const postSendTestNotification = async (): Promise<APIResponse<string>> =
 			}`
 		);
 		return ReturnErrorMessage<string>(error);
+	}
+};
+
+export const postUpdateConfig = async (config: AppConfig): Promise<APIResponse<AppConfig>> => {
+	log("api.settings - Updating app configuration started");
+	try {
+		const response = await apiClient.post<APIResponse<AppConfig>>(`/config`, config);
+		log("api.settings - Updating app configuration succeeded");
+		return response.data;
+	} catch (error) {
+		log(
+			`api.settings - Updating app configuration failed: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+		return ReturnErrorMessage<AppConfig>(error);
 	}
 };

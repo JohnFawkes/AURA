@@ -227,10 +227,8 @@ export const ASPECT_RATIOS: Record<FileUploadType, string> = {
 
 export const FILE_TYPE_ERRORS: Record<FileUploadType, string> = {
 	poster: "Only PNG, JPG, and WEBP files are allowed with 2:3 aspect ratio (1000x1500px - 2000x3000px)",
-	backdrop:
-		"Only PNG, JPG, and WEBP files are allowed with 16:9 aspect ratio (1920x1080px - 3840x2160px)",
-	titlecard:
-		"Only PNG, JPG, and WEBP files are allowed with 16:9 aspect ratio (1280x720px - 2560x1440px)",
+	backdrop: "Only PNG, JPG, and WEBP files are allowed with 16:9 aspect ratio (1920x1080px - 3840x2160px)",
+	titlecard: "Only PNG, JPG, and WEBP files are allowed with 16:9 aspect ratio (1280x720px - 2560x1440px)",
 	album: "Only PNG, JPG, and WEBP files are allowed with 1:1 aspect ratio (720x720px - 3000x3000px)",
 	logo: "Only SVG and PNG files are allowed (up to 5MB, any dimensions)",
 };

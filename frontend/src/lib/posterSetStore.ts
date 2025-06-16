@@ -3,20 +3,36 @@ import { persist } from "zustand/middleware";
 
 import { PosterSet } from "@/types/posterSets";
 
-interface PosterSetStore {
-	posterSet: PosterSet | null;
-	setPosterSet: (posterSet: PosterSet) => void;
+interface PosterSetsStore {
+	setType: "set" | "show" | "movie" | "collection" | "boxset";
+	setTitle: string;
+	setAuthor: string;
+	setID: string;
+	posterSets: PosterSet[];
+	setPosterSets: (posterSets: PosterSet[]) => void;
+	setSetType: (setType: "show" | "movie" | "collection" | "boxset") => void;
+	setSetTitle: (setTitle: string) => void;
+	setSetAuthor: (setAuthor: string) => void;
+	setSetID: (setID: string) => void;
 	clear: () => void;
 }
-export const usePosterSetStore = create<PosterSetStore>()(
+export const usePosterSetsStore = create<PosterSetsStore>()(
 	persist(
-		(set) => ({
-			posterSet: null,
-			setPosterSet: (posterSet) => set({ posterSet }),
-			clear: () => set({ posterSet: null }),
+		(sets) => ({
+			setType: "set",
+			setTitle: "",
+			setAuthor: "",
+			setID: "",
+			setSetType: (setType) => sets({ setType }),
+			setSetTitle: (setTitle) => sets({ setTitle }),
+			setSetAuthor: (setAuthor) => sets({ setAuthor }),
+			setSetID: (setID) => sets({ setID }),
+			posterSets: [],
+			setPosterSets: (posterSets) => sets({ posterSets: posterSets }),
+			clear: () => sets({ posterSets: [] }),
 		}),
 		{
-			name: "poster-set-storage", // key in localStorage
+			name: "poster-sets-storage", // key in localStorage
 		}
 	)
 );

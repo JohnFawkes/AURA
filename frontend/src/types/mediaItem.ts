@@ -8,7 +8,7 @@ export interface LibrarySection {
 
 export interface MediaItem {
 	RatingKey: string;
-	Type: string; // "movie" or "show"
+	Type: "show" | "movie";
 	LibraryTitle: string;
 	Title: string;
 	Year: number;

@@ -25,7 +25,5 @@ export function getAspectRatioClass(aspect: AspectRatio): string {
  * Returns the appropriate sizes attribute for image elements
  */
 export function getImageSizes(type: string): string {
-	return ["backdrop", "titlecard"].includes(type.toLowerCase())
-		? "(max-width: 640px) 50vw, 300px"
-		: "300px";
+	return ["backdrop", "titlecard"].includes(type.toLowerCase()) ? "(max-width: 640px) 50vw, 300px" : "300px";
 }

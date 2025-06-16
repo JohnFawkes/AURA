@@ -1,7 +1,9 @@
+import { MediaItem } from "@/types/mediaItem";
+
 export interface PosterSet {
 	ID: string;
 	Title: string;
-	Type: string;
+	Type: "show" | "movie" | "collection";
 	User: {
 		Name: string;
 	};
@@ -22,8 +24,17 @@ export interface PosterFile {
 	Modified: string;
 	FileSize: number;
 	Movie?: PosterFileMovie;
+	Show?: PosterFileShow;
 	Season?: PosterFileSeason;
 	Episode?: PosterFileEpisode;
+}
+
+export interface PosterFileShow {
+	ID: string;
+	Title: string;
+	//RatingKey?: string;
+	//LibrarySection: string;
+	MediaItem: MediaItem;
 }
 
 export interface PosterFileMovie {
@@ -37,8 +48,9 @@ export interface PosterFileMovie {
 	ImdbID: string;
 	TraktID: string;
 	ReleaseDate: string;
-	RatingKey?: string;
-	LibrarySection: string;
+	//RatingKey?: string;
+	//LibrarySection: string;
+	MediaItem: MediaItem;
 }
 
 export interface PosterFileSeason {
