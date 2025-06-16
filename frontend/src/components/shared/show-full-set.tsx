@@ -330,7 +330,20 @@ const ShowFullSetDetails: React.FC<{
 
 			{/* Title */}
 			<div className="flex flex-col pt-40 justify-end items-center text-center lg:items-start lg:text-left">
-				<H1 className="mb-1">{setTitle}</H1>
+				<H1
+					className="mb-1"
+					onClick={() => {
+						log("INFO", {
+							setType,
+							setTitle,
+							setAuthor,
+							setID,
+							posterSets,
+						});
+					}}
+				>
+					{setTitle}
+				</H1>
 			</div>
 
 			{/* Set Author */}
@@ -353,33 +366,66 @@ const ShowFullSetDetails: React.FC<{
 					>
 						View on Mediux
 					</Badge>
-
-					{/* Season/Episode Information */}
-					{setType === "show" &&
-						posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length > 0 && (
-							<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
-								<Lead className="flex items-center text-md text-primary-dynamic">
-									{
-										posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || [])
-											.length
-									}{" "}
-									{posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || [])
-										.length === 1
-										? "Season"
-										: "Seasons"}
-									{posterSets.flatMap((set) => set.TitleCards || []).length > 0 && (
-										<>
-											{" with "}
-											{posterSets.flatMap((set) => set.TitleCards || []).length}{" "}
-											{posterSets.flatMap((set) => set.TitleCards || []).length === 1
-												? "Title Card"
-												: "Title Cards"}
-										</>
-									)}
-								</Lead>
-							</div>
-						)}
 				</div>
+
+				{/* Season/Episode Information */}
+				{setType === "show" &&
+					posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length > 0 && (
+						<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
+							<Lead className="flex items-center text-md text-primary-dynamic">
+								{posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length}{" "}
+								{posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length ===
+								1
+									? "Season"
+									: "Seasons"}
+								{posterSets.flatMap((set) => set.TitleCards || []).length > 0 && (
+									<>
+										{" with "}
+										{posterSets.flatMap((set) => set.TitleCards || []).length}{" "}
+										{posterSets.flatMap((set) => set.TitleCards || []).length === 1
+											? "Title Card"
+											: "Title Cards"}
+									</>
+								)}
+							</Lead>
+						</div>
+					)}
+
+				{/* Movies Information 
+				Get a count of total number of posters and backdrops for movies in the set
+				Only display if posters or backdrops exist
+				*/}
+				{setType === "movie" &&
+					(() => {
+						// Collect all posters and backdrops (including "other" ones)
+						const allPosters = posterSets.flatMap((set) => [
+							...(set.Poster ? [set.Poster] : []),
+							...(set.OtherPosters || []),
+						]);
+						const allBackdrops = posterSets.flatMap((set) => [
+							...(set.Backdrop ? [set.Backdrop] : []),
+							...(set.OtherBackdrops || []),
+						]);
+						// Use a Set to ensure uniqueness by ID
+						const uniquePosters = Array.from(new Map(allPosters.map((p) => [p.ID, p])).values());
+						const uniqueBackdrops = Array.from(new Map(allBackdrops.map((b) => [b.ID, b])).values());
+
+						const posterCount = uniquePosters.length;
+						const backdropCount = uniqueBackdrops.length;
+
+						if (posterCount === 0 && backdropCount === 0) return null;
+
+						let text = "";
+						if (posterCount > 0 && backdropCount > 0) {
+							text = `${posterCount} ${posterCount === 1 ? "Poster" : "Posters"} and ${backdropCount} ${backdropCount === 1 ? "Backdrop" : "Backdrops"}`;
+						} else if (posterCount > 0) {
+							text = `${posterCount} ${posterCount === 1 ? "Poster" : "Posters"}`;
+						} else if (backdropCount > 0) {
+							text = `${backdropCount} ${backdropCount === 1 ? "Backdrop" : "Backdrops"}`;
+						}
+
+						return <Lead className="flex items-center text-md text-primary-dynamic">{text}</Lead>;
+					})()}
 
 				{/* Download Button */}
 				<div className="ml-auto">
