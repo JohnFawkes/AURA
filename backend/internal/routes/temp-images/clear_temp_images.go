@@ -22,29 +22,29 @@ func init() {
 func ClearTempImages(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	// Check if the temporary folder exists
-	logErr := utils.CheckFolderExists(TempImageFolder)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	Err = utils.CheckFolderExists(TempImageFolder)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	err := os.RemoveAll(TempImageFolder)
 	if err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
-			Log: logging.Log{
-				Message: "Failed to clear temporary images folder",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Failed to clear temporary images folder"
+		Err.HelpText = "Ensure the temporary images folder is accessible and not in use by any process."
+		Err.Details = err.Error()
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Return a JSON response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Temporary images folder cleared successfully",
 		Elapsed: utils.ElapsedTime(startTime),
+		Data:    "Temporary images folder cleared successfully",
 	})
 }
