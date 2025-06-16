@@ -77,12 +77,13 @@ func (cle *LogEntry) WarnWithLog(log Log) {
 }
 
 func (cle *LogEntry) Error(message string) {
-	cle.ErrorWithLog(ErrorLog{Log: Log{Message: message}})
+	cle.ErrorWithLog(StandardError{Message: message})
 }
-func (cle *LogEntry) ErrorWithLog(err ErrorLog) {
-	cle.Log(err.Log, "ERROR", err.Err)
-}
+func (cle *LogEntry) ErrorWithLog(err StandardError) {
+	// Create a log entry for the error
+	cle.Log(Log{Message: err.Message}, "ERROR")
 
+}
 func (cle *LogEntry) Panic(v any, stack []byte) {
 	// Handle panic logging here as ERROR message
 	cle.Log(Log{Message: "Panic"}, "ERROR", stack)

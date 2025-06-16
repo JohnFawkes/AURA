@@ -30,11 +30,30 @@ type Log struct {
 // It includes an error instance and a Log object to provide additional context for the error.
 type ErrorLog struct {
 	Err error
-	Log Log
+	Log Log // Log details associated with the error
 }
 
 type LogFormatter struct{}
 
 type LogEntry struct {
 	Request *http.Request
+}
+
+// StandardError represents error details for API responses
+type StandardError struct {
+	Message    string `json:"Message"`    // User-facing error message
+	HelpText   string `json:"HelpText"`   // Helpful suggestion for the user
+	Details    any    `json:"Details"`    // Additional details about the error
+	Function   string `json:"Function"`   // Function where error occurred
+	LineNumber int    `json:"LineNumber"` // Line number where error occurred
+}
+
+// Create a blank StandardError
+func NewStandardError() StandardError {
+	return StandardError{
+		Message:    "",
+		HelpText:   "",
+		Function:   "",
+		LineNumber: 0,
+	}
 }
