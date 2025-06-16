@@ -137,11 +137,7 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
 			<div
-				className={cn(
-					"flex",
-					orientation === "horizontal" ? "-ml-2" : "-mt-4 flex-col",
-					className
-				)}
+				className={cn("flex", orientation === "horizontal" ? "-ml-2" : "-mt-4 flex-col", className)}
 				{...props}
 			/>
 		</div>
@@ -181,9 +177,7 @@ function CarouselPrevious({
 			size={size}
 			className={cn(
 				"absolute size-5",
-				orientation === "horizontal"
-					? "translate-y-4"
-					: "-top-12 left-1/2 -translate-x-1/2 rotate-90",
+				orientation === "horizontal" ? "translate-y-4" : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
 				className
 			)}
 			disabled={!canScrollPrev}
@@ -211,9 +205,7 @@ function CarouselNext({
 			size={size}
 			className={cn(
 				"absolute size-5",
-				orientation === "horizontal"
-					? "translate-y-4"
-					: "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
+				orientation === "horizontal" ? "translate-y-4" : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
 				className
 			)}
 			disabled={!canScrollNext}
@@ -226,11 +218,4 @@ function CarouselNext({
 	);
 }
 
-export {
-	Carousel,
-	CarouselContent,
-	CarouselItem,
-	CarouselNext,
-	CarouselPrevious,
-	type CarouselApi,
-};
+export { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi };
