@@ -14,26 +14,29 @@ import (
 func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	startTime := time.Now()
+	Err := logging.NewStandardError()
 
 	var requestBody struct {
 		Item modals.DBMediaItemWithPosterSets
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse request body",
-				Elapsed: utils.ElapsedTime(startTime)}})
+
+		Err.Message = "Failed to decode request body"
+		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
+		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		logging.LOG.ErrorWithLog(Err)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	item := requestBody.Item
 
 	// Get the latest item from DB incase it has been updated
-	allItems, logErr := database.GetAllItemsFromDatabase()
-	if logErr.Err != nil {
-		logging.LOG.ErrorWithLog(logErr)
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	allItems, Err := database.GetAllItemsFromDatabase()
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -46,12 +49,12 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if dbSavedItem.MediaItemID == "" {
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("item with ID %s not found in database", item.MediaItemID),
-			Log: logging.Log{Message: "Item not found in database", Elapsed: utils.ElapsedTime(startTime)},
-		}
-		logging.LOG.ErrorWithLog(logErr)
-		utils.SendErrorJSONResponse(w, http.StatusNotFound, logErr)
+
+		Err.Message = "Item not found in database"
+		Err.HelpText = "Ensure the item exists in the database before attempting a force recheck."
+		Err.Details = fmt.Sprintf("Item ID: %s", item.MediaItemID)
+		logging.LOG.ErrorWithLog(Err)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -60,7 +63,6 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	// If no warnings, send a success response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Force recheck completed successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    results,
 	})

@@ -16,9 +16,9 @@ import (
 
 func CheckForUpdatesToPosters() {
 	// Get all items from the database
-	dbSavedItems, logErr := database.GetAllItemsFromDatabase()
-	if logErr.Err != nil {
-		logging.LOG.ErrorWithLog(logErr)
+	dbSavedItems, Err := database.GetAllItemsFromDatabase()
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
 		return
 	}
 
@@ -59,11 +59,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-		logErr := logging.ErrorLog{
-			Err: fmt.Errorf("unsupported media server type: %s", config.Global.MediaServer.Type),
-			Log: logging.Log{Message: fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)},
-		}
-		logging.LOG.ErrorWithLog(logErr)
+		logging.LOG.Error(fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type))
 		result.OverAllResult = "Error"
 		result.OverAllResultMessage = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)
 		return result
@@ -72,9 +68,9 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 	logging.LOG.Debug(fmt.Sprintf("Checking for updates to posters for '%s'", dbSavedItem.MediaItem.Title))
 
 	// Get the latest media item from the media server using the rating key
-	latestMediaItem, logErr := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
-	if logErr.Err != nil {
-		logging.LOG.ErrorWithLog(logErr)
+	latestMediaItem, Err := mediaServer.FetchItemContent(dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
 		result.OverAllResult = "Error"
 		result.OverAllResultMessage = "Error fetching latest media item"
 		return result
@@ -121,11 +117,11 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 		logging.LOG.Trace(fmt.Sprintf("Checking poster set '%s' for '%s' with TMDB ID '%s'", dbPosterSet.PosterSetID, dbSavedItem.MediaItem.Title, tmdbID))
 
 		// Fetch the updated set from Mediux using the TMDB ID
-		updatedSet, logErr := mediux.FetchShowSetByID(dbPosterSet.PosterSetID)
-		if logErr.Err != nil {
-			logging.LOG.ErrorWithLog(logErr)
+		updatedSet, Err := mediux.FetchShowSetByID(dbSavedItem.MediaItem.LibraryTitle, dbSavedItem.MediaItemID, dbPosterSet.PosterSetID)
+		if Err.Message != "" {
+			logging.LOG.ErrorWithLog(Err)
 			setResult.Result = "Error"
-			setResult.Reason = fmt.Sprintf("Error fetching updated set - %s", logErr.Log.Message)
+			setResult.Reason = fmt.Sprintf("Error fetching updated set - %s", Err.Message)
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
@@ -229,11 +225,11 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 		for _, file := range filesToDownload {
 			logging.LOG.Info(fmt.Sprintf("Downloading new '%s' for '%s' in set '%s'", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
 
-			logErr = mediaServer.DownloadAndUpdatePosters(latestMediaItem, file)
-			if logErr.Err != nil {
-				logging.LOG.ErrorWithLog(logErr)
+			Err = mediaServer.DownloadAndUpdatePosters(latestMediaItem, file)
+			if Err.Message != "" {
+				logging.LOG.ErrorWithLog(Err)
 				setResult.Result = "Error"
-				setResult.Reason = fmt.Sprintf("Error downloading '%s' for '%s' in set '%s' - %s", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, logErr.Log.Message)
+				setResult.Reason = fmt.Sprintf("Error downloading '%s' for '%s' in set '%s' - %s", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, Err.Message)
 				result.Sets = append(result.Sets, setResult)
 				continue
 			}
@@ -267,11 +263,11 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			SelectedTypes: dbPosterSet.SelectedTypes,
 			AutoDownload:  dbPosterSet.AutoDownload,
 		}
-		logErr = database.UpdateItemInDatabase(dbSaveItem)
-		if logErr.Err != nil {
-			logging.LOG.ErrorWithLog(logErr)
+		Err = database.UpdateItemInDatabase(dbSaveItem)
+		if Err.Message != "" {
+			logging.LOG.ErrorWithLog(Err)
 			setResult.Result = "Error"
-			setResult.Reason = fmt.Sprintf("Error updating database for '%s' - %s", dbSavedItem.MediaItem.Title, logErr.Log.Message)
+			setResult.Reason = fmt.Sprintf("Error updating database for '%s' - %s", dbSavedItem.MediaItem.Title, Err.Message)
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
