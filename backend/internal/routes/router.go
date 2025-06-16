@@ -74,5 +74,9 @@ func AddRoutes(r *chi.Mux) {
 		r.Get("/mediux/user/following_hiding", mediux.GetUserFollowingAndHiding)
 		r.Get("/mediux/sets/get_user/sets/{username}", mediux.GetAllUserSets)
 
+		// Test Route
+		r.Get("/test/good", health.TestRoute)
+		r.Get("/test/error", health.TestRouteError)
+
 	})
 }
