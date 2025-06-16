@@ -583,7 +583,7 @@ func processMovieCollection(itemRatingKey, librarySection, mainMovieID string, c
 						newPosterSet := &modals.PosterSet{
 							ID:          setInfo.ID,
 							Title:       setInfo.SetTitle,
-							Type:        "movie",
+							Type:        "collection",
 							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 							DateCreated: setInfo.DateCreated,
 							DateUpdated: setInfo.DateUpdated,
@@ -638,7 +638,7 @@ func processMovieCollection(itemRatingKey, librarySection, mainMovieID string, c
 						newPosterSet := &modals.PosterSet{
 							ID:          setInfo.ID,
 							Title:       setInfo.SetTitle,
-							Type:        "movie",
+							Type:        "collection",
 							User:        modals.SetUser{Name: setInfo.UserCreated.Username},
 							DateCreated: setInfo.DateCreated,
 							DateUpdated: setInfo.DateUpdated,
@@ -966,7 +966,6 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", collectionSet.DateUpdated))
 	if collectionSet.ID == "" {
 		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "No collection set found for the provided ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
 		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -974,7 +973,7 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	}
 
 	// Process the response and return the poster sets
-	posterSets := processMovieCollection(itemRatingKey, librarySection, itemRatingKey, collectionSet.Collection)
+	posterSets := processMovieCollection(itemRatingKey, librarySection, tmdbID, collectionSet.Collection)
 	if len(posterSets) == 0 {
 		Err.Function = utils.GetFunctionName()
 
