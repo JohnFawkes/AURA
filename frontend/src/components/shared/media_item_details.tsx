@@ -1,14 +1,9 @@
 import { fetchMediaServerType } from "@/services/api.mediaserver";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { Database } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { log } from "@/lib/logger";
 
@@ -86,9 +81,7 @@ export function MediaItemDetails({
 				{year && <Badge className="flex items-center text-sm">{year}</Badge>}
 
 				{/* Content Rating */}
-				{contentRating && (
-					<Badge className="flex items-center text-sm">{contentRating}</Badge>
-				)}
+				{contentRating && <Badge className="flex items-center text-sm">{contentRating}</Badge>}
 
 				{/* Status */}
 				{status && (
@@ -121,21 +114,13 @@ export function MediaItemDetails({
 			)}
 
 			{/* Show Existence in Database */}
-			{existsInDB ? (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="text-md text-green-500">
-						<CheckCircle2 className="inline mr-1" /> Already in Database
-					</Lead>
-				</div>
-			) : (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="text-md text-red-500">
-						<XCircle className="inline mr-1" /> Not in Database
-					</Lead>
-				</div>
-			)}
+			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+				<Lead className={`text-md ${existsInDB ? "text-green-500" : "text-red-500"}`}>
+					<Database className="inline mr-1" /> {existsInDB ? "Already in Database" : "Not in Database"}
+				</Lead>
+			</div>
 
-			{/* Show Information for TV Shows */}
+			{/* Season/Episode Information */}
 			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 && (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 					<Lead className="flex items-center text-md text-primary-dynamic">
@@ -158,8 +143,7 @@ export function MediaItemDetails({
 									{/* Show the Movie File Path */}
 									{moviePath && (
 										<p>
-											<span className="font-semibold">File Path:</span>{" "}
-											{moviePath}
+											<span className="font-semibold">File Path:</span> {moviePath}
 										</p>
 									)}
 
@@ -168,9 +152,7 @@ export function MediaItemDetails({
 										<p>
 											<span className="font-semibold">File Size:</span>{" "}
 											{movieSize >= 1024 * 1024 * 1024
-												? `${(movieSize / (1024 * 1024 * 1024)).toFixed(
-														2
-													)} GB`
+												? `${(movieSize / (1024 * 1024 * 1024)).toFixed(2)} GB`
 												: `${(movieSize / (1024 * 1024)).toFixed(2)} MB`}
 										</p>
 									)}
@@ -181,9 +163,7 @@ export function MediaItemDetails({
 											<span className="font-semibold">Duration:</span>{" "}
 											{movieDuration < 3600000
 												? `${Math.floor(movieDuration / 60000)} minutes`
-												: `${Math.floor(
-														movieDuration / 3600000
-													)}hr ${Math.floor(
+												: `${Math.floor(movieDuration / 3600000)}hr ${Math.floor(
 														(movieDuration % 3600000) / 60000
 													)}min`}
 										</p>

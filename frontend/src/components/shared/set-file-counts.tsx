@@ -19,11 +19,11 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 
 		// Primary line logic
 		if (set.Poster && set.Backdrop) {
-			primary = "For This Movie: Poster & Backdrop";
+			primary = "Poster & Backdrop";
 		} else if (set.Poster) {
-			primary = "For This Movie: Poster Only";
+			primary = "Poster Only";
 		} else if (set.Backdrop) {
-			primary = "For This Movie: Backdrop Only";
+			primary = "Backdrop Only";
 		}
 
 		// Secondary line logic
@@ -50,9 +50,8 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 		if (set.Backdrop) parts.push("1 Backdrop");
 
 		const seasonPosterCount =
-			set.SeasonPosters?.filter(
-				(file) => file.Type === "seasonPoster" || file.Type === "specialSeasonPoster"
-			).length ?? 0;
+			set.SeasonPosters?.filter((file) => file.Type === "seasonPoster" || file.Type === "specialSeasonPoster")
+				.length ?? 0;
 		if (seasonPosterCount > 0) {
 			parts.push(`${seasonPosterCount} Season Poster${seasonPosterCount > 1 ? "s" : ""}`);
 		}
@@ -77,8 +76,7 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 		return { primary, secondary };
 	};
 
-	const { primary, secondary } =
-		mediaItem.Type === "movie" ? getMovieFileCounts() : getShowFileCounts();
+	const { primary, secondary } = mediaItem.Type === "movie" ? getMovieFileCounts() : getShowFileCounts();
 
 	const secondaryLineClass = cn("text-sm", {
 		"text-yellow-500": secondary.toLowerCase().includes("server is missing"),

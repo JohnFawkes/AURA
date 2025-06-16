@@ -2,16 +2,8 @@
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
-import { fetchShowSetByID } from "@/services/api.mediux";
-import {
-	CheckCircle2 as Checkmark,
-	Delete,
-	Download,
-	Edit,
-	MoreHorizontal,
-	RefreshCcw,
-	X,
-} from "lucide-react";
+import { fetchSetByID } from "@/services/api.mediux";
+import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
 import React, { useState } from "react";
 
@@ -19,8 +11,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
-import DownloadModalMovie from "@/components/shared/download-modal-movie";
-import DownloadModalShow from "@/components/shared/download-modal-show";
+import DownloadModal from "@/components/shared/download-modal";
+import { ErrorMessage } from "@/components/shared/error-message";
+import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -31,21 +24,18 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { H4, P, Small } from "@/components/ui/typography";
+import { H4, P } from "@/components/ui/typography";
 
+import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
-import { usePosterSetStore } from "@/lib/posterSetStore";
+import { usePosterSetsStore } from "@/lib/posterSetStore";
 
+import { APIResponse } from "@/types/apiResponse";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 import { PosterSet } from "@/types/posterSets";
 
 import { Badge } from "../ui/badge";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Separator } from "../ui/separator";
 
 const SavedSetsCard: React.FC<{
@@ -66,21 +56,20 @@ const SavedSetsCard: React.FC<{
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-	const [isRedownloadModalOpen, setIsRedownloadModalOpen] = useState(false);
 	// State to track any error messages during updates.
-	const [updateError, setUpdateError] = useState("");
+	const [updateError, setUpdateError] = useState<APIResponse<unknown> | null>(null);
 	const [isMounted, setIsMounted] = useState(false);
-	const { setPosterSet } = usePosterSetStore();
+	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
 	const router = useRouter();
+	const [isRefreshing, setIsRefreshing] = useState(false);
 
 	const allToDelete = editSets.every((set) => set.toDelete);
 
 	const onClose = () => {
 		setIsEditModalOpen(false);
 		setIsDeleteModalOpen(false);
-
-		setUpdateError("");
+		setUpdateError(null);
 		setIsMounted(false);
 	};
 
@@ -91,7 +80,7 @@ const SavedSetsCard: React.FC<{
 		if (allToDelete) {
 			setIsEditModalOpen(false);
 			setIsDeleteModalOpen(true);
-			setUpdateError("");
+			setUpdateError(null);
 			setIsMounted(false);
 			return;
 		}
@@ -114,14 +103,16 @@ const SavedSetsCard: React.FC<{
 		};
 
 		const response = await patchSavedItemInDB(updatedSavedSet);
-
-		if (response.status !== "success") {
-			setUpdateError(response.message);
-		} else {
-			setUpdateError("");
-			setIsEditModalOpen(false);
-			onUpdate();
+		if (!response || response.status === "error") {
+			log("Error updating saved set:", response?.error?.Message || "Unknown error");
+			setUpdateError(response);
+			setIsMounted(false);
+			return;
 		}
+
+		setUpdateError(null);
+		setIsEditModalOpen(false);
+		onUpdate();
 
 		setIsMounted(false);
 	};
@@ -130,20 +121,27 @@ const SavedSetsCard: React.FC<{
 		if (isMounted) return;
 		setIsMounted(true);
 		const resp = await deleteMediaItemFromDB(savedSet.MediaItemID);
-		if (resp.status !== "success") {
-			setUpdateError(resp.message);
-		} else {
-			setIsDeleteModalOpen(false);
-			setUpdateError("");
-			onUpdate();
+		if (!resp || resp.status === "error") {
+			log("Error deleting saved set:", resp?.error?.Message || "Unknown error");
+			setUpdateError(resp);
+			setIsMounted(false);
+			return;
 		}
+		setUpdateError(null);
+		setIsDeleteModalOpen(false);
+		onUpdate();
 		setIsMounted(false);
 	};
 
 	const renderSetList = () => {
 		return (
 			<div className="w-full">
-				<span className="text-sm text-muted-foreground mb-1 block">
+				<span
+					className="text-sm text-muted-foreground mb-1 block"
+					onClick={() => {
+						log("SET: ", savedSet);
+					}}
+				>
 					{savedSet.PosterSets.length > 1 ? "Sets:" : "Set:"}
 				</span>
 				<table className="w-full text-sm">
@@ -155,7 +153,11 @@ const SavedSetsCard: React.FC<{
 										href={`/sets/${set.PosterSetID}`}
 										className="text-primary hover:underline"
 										onClick={() => {
-											setPosterSet(set.PosterSet);
+											setPosterSets([set.PosterSet]);
+											setSetType(set.PosterSet.Type);
+											setSetTitle(set.PosterSet.Title);
+											setSetAuthor(set.PosterSet.User.Name);
+											setSetID(set.PosterSetID);
 										}}
 									>
 										{set.PosterSetID}
@@ -167,7 +169,7 @@ const SavedSetsCard: React.FC<{
 										href={`/user/${set.PosterSet.User.Name}`}
 										className="text-primary hover:underline"
 									>
-										{set.PosterSet.User.Name || "Unknown User"}
+										{set.PosterSet.User.Name || ""}
 									</Link>
 								</td>
 							</tr>
@@ -189,16 +191,12 @@ const SavedSetsCard: React.FC<{
 		}
 		if (editSet.set && editSet.set.SeasonPosters && editSet.set.SeasonPosters.length > 0) {
 			// Check to see if any of the Season Posters are Season 0
-			const hasSeason0 = editSet.set.SeasonPosters.some(
-				(season) => season.Season?.Number === 0
-			);
+			const hasSeason0 = editSet.set.SeasonPosters.some((season) => season.Season?.Number === 0);
 			if (hasSeason0) {
 				availableTypes.push("specialSeasonPoster");
 			}
 			// Check to see if any of the Season Posters are not Season 0
-			const hasNonSeason0 = editSet.set.SeasonPosters.some(
-				(season) => season.Season?.Number !== 0
-			);
+			const hasNonSeason0 = editSet.set.SeasonPosters.some((season) => season.Season?.Number !== 0);
 			if (hasNonSeason0) {
 				availableTypes.push("seasonPoster");
 			}
@@ -213,8 +211,7 @@ const SavedSetsCard: React.FC<{
 			// or if it's not selected here, but found in any other set.
 			const isTypeDisabled =
 				editSet.toDelete ||
-				(!isSelected &&
-					editSets.some((item, j) => j !== index && item.selectedTypes.includes(type)));
+				(!isSelected && editSets.some((item, j) => j !== index && item.selectedTypes.includes(type)));
 			return (
 				<Badge
 					key={type}
@@ -284,17 +281,33 @@ const SavedSetsCard: React.FC<{
 
 	const refreshPosterSet = async () => {
 		try {
+			setIsRefreshing(true);
+			// Track if any requests failed
+			let hasError = false;
+			let errorResponse: APIResponse<unknown> | null = null;
+
 			await Promise.all(
 				editSets.map(async (set) => {
-					const resp = await fetchShowSetByID(set.id);
-
-					// Skip updating state if response is not valid
-					if (resp.status !== "success" || !resp.data) {
+					const response = await fetchSetByID(
+						savedSet.MediaItem.LibraryTitle,
+						savedSet.MediaItem.RatingKey,
+						set.id,
+						set.set.Type
+					);
+					if (!response || response.status === "error") {
+						log("Error fetching set by ID:", response?.error?.Message || "Unknown error");
+						// Store the first error we encounter
+						if (!hasError) {
+							hasError = true;
+							errorResponse = response;
+						}
 						return;
 					}
-
-					const posterSet: PosterSet = resp.data;
-
+					if (!response.data) {
+						log("No PosterSet found in response:", response);
+						return;
+					}
+					const posterSet: PosterSet = response.data;
 					setEditSets((prev) =>
 						prev.map((item) =>
 							item.id === set.id
@@ -307,23 +320,51 @@ const SavedSetsCard: React.FC<{
 					);
 				})
 			);
-		} catch {}
+
+			// Update error state based on API calls results
+			if (hasError) {
+				setUpdateError(errorResponse);
+			} else {
+				setUpdateError(null);
+			}
+		} catch (error) {
+			// Handle unexpected errors
+			setUpdateError({
+				status: "error",
+				elapsed: "0",
+				error: {
+					Message: "Unexpected error refreshing poster sets",
+					HelpText: "Please try again later",
+					Function: "refreshPosterSet",
+					LineNumber: 0,
+					Details: error instanceof Error ? error.message : String(error),
+				},
+			});
+		} finally {
+			setIsRefreshing(false);
+		}
 	};
 
 	return (
 		<Card className="relative w-full max-w-md mx-auto mb-4">
 			<CardHeader>
+				{isRefreshing && (
+					<div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+						<Loader className="animate-spin h-8 w-8 text-primary" />
+						<span className="ml-2 text-white">Refreshing sets...</span>
+					</div>
+				)}
+
 				{/* Top Left: Auto Download Icon */}
 				{savedSet.MediaItem.Type === "show" && (
 					<div className="absolute top-2 left-2">
 						{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
-							<Checkmark className="text-green-500" size={24} />
+							<RefreshCcw className="text-green-500" size={24} />
 						) : (
-							<X className="text-red-500" size={24} />
+							<RefreshCwOff className="text-red-500" size={24} />
 						)}
 					</div>
 				)}
-
 				{/* Top Right: Dropdown Menu */}
 				<div className="absolute top-2 right-2">
 					<DropdownMenu>
@@ -334,19 +375,15 @@ const SavedSetsCard: React.FC<{
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
-								onClick={() => {
-									refreshPosterSet();
+								onClick={async () => {
+									await refreshPosterSet();
 									setIsEditModalOpen(true);
 								}}
 							>
 								<Edit className="ml-2" />
-								Edit
+								{isRefreshing ? "Refreshing..." : "Edit"}
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => setIsRedownloadModalOpen(true)}>
-								<Download className="ml-2" />
-								Redownload{" "}
-								{savedSet.MediaItem.Type === "movie" ? "Movie Set" : "Show Set"}
-							</DropdownMenuItem>
+
 							<DropdownMenuItem
 								onClick={() => {
 									handleRecheckItem(savedSet.MediaItem.Title, savedSet);
@@ -355,37 +392,13 @@ const SavedSetsCard: React.FC<{
 								<RefreshCcw className="ml-2" />
 								Force Autodownload Recheck
 							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => setIsDeleteModalOpen(true)}
-								className="text-destructive"
-							>
+							<DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive">
 								<Delete className="ml-2" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
-
-				{isRedownloadModalOpen && savedSet.MediaItem.Type === "show" && (
-					<DownloadModalShow
-						open={isRedownloadModalOpen}
-						onOpenChange={setIsRedownloadModalOpen}
-						posterSet={savedSet.PosterSets[0].PosterSet}
-						mediaItem={savedSet.MediaItem}
-						autoDownloadDefault={savedSet.PosterSets[0].AutoDownload}
-						forceSetRefresh={true}
-					/>
-				)}
-
-				{isRedownloadModalOpen && savedSet.MediaItem.Type === "movie" && (
-					<DownloadModalMovie
-						open={isRedownloadModalOpen}
-						onOpenChange={setIsRedownloadModalOpen}
-						posterSet={savedSet.PosterSets[0].PosterSet}
-						mediaItem={savedSet.MediaItem}
-					/>
-				)}
-
 				{/* Middle: Image */}
 				<div className="flex justify-center mt-6">
 					<AssetImage
@@ -412,23 +425,17 @@ const SavedSetsCard: React.FC<{
 				<P className="text-sm text-muted-foreground">Year: {savedSet.MediaItem.Year}</P>
 
 				{/* Library Title */}
-				<P className="text-sm text-muted-foreground">
-					Library: {savedSet.MediaItem.LibraryTitle}
-				</P>
+				<P className="text-sm text-muted-foreground">Library: {savedSet.MediaItem.LibraryTitle}</P>
 
 				{/* Last Updated */}
 				<P className="text-sm text-muted-foreground">
 					Last Updated:{" "}
 					{(() => {
 						const latestTimestamp = Math.max(
-							...savedSet.PosterSets.map((ps) =>
-								new Date(ps.LastDownloaded).getTime()
-							)
+							...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())
 						);
 						const latestDate = new Date(latestTimestamp);
-						return `${latestDate.toLocaleDateString(
-							"en-US"
-						)} at ${latestDate.toLocaleTimeString("en-US", {
+						return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString("en-US", {
 							hour: "numeric",
 							minute: "numeric",
 							second: "numeric",
@@ -442,9 +449,7 @@ const SavedSetsCard: React.FC<{
 				<Separator className="my-4" />
 
 				{savedSet.PosterSets.some(
-					(set) =>
-						Array.isArray(set.SelectedTypes) &&
-						set.SelectedTypes.some((type) => type.trim() !== "")
+					(set) => Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
 				) ? (
 					<div className="flex flex-wrap gap-2">{renderTypeBadges()}</div>
 				) : (
@@ -454,29 +459,30 @@ const SavedSetsCard: React.FC<{
 
 			{/* Edit Modal */}
 			<Dialog open={isEditModalOpen} onOpenChange={onClose}>
-				<DialogContent>
+				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
 					<DialogHeader>
 						<DialogTitle>Edit Saved Set</DialogTitle>
 						<DialogDescription>
-							Edit each set individually. Toggle type badges to update selected types.
-							Use the delete option to mark a set for deletion.
+							Edit each set individually. Toggle type badges to update selected types. Use the delete
+							option to mark a set for deletion.
 						</DialogDescription>
 					</DialogHeader>
+
 					<div className="space-y-4">
 						{editSets.map((editSet, index) => (
 							<div key={editSet.id} className="border p-2 rounded-md">
 								<div className="flex items-center justify-between">
 									<span className="font-semibold">
-										Set ID:{" "}
 										<Link
 											href={`https://mediux.pro/sets/${editSet.id}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											className="hover:underline"
 										>
-											{editSet.id}
+											{editSet.set.Title}
 										</Link>
 									</span>
+
 									<Button
 										variant={editSet.toDelete ? "destructive" : "outline"}
 										size="sm"
@@ -488,9 +494,7 @@ const SavedSetsCard: React.FC<{
 																...item,
 																toDelete: !item.toDelete,
 																// Clear the selected types when marking for deletion.
-																selectedTypes: !item.toDelete
-																	? []
-																	: item.selectedTypes,
+																selectedTypes: !item.toDelete ? [] : item.selectedTypes,
 															}
 														: item
 												)
@@ -500,9 +504,31 @@ const SavedSetsCard: React.FC<{
 										{editSet.toDelete ? "Undo Delete" : "Delete Set"}
 									</Button>
 								</div>
-								<div className="flex flex-wrap gap-2 mt-2">
-									{renderEditTypeBadges(editSet, index)}
-								</div>
+
+								{editSet.set.User.Name && (
+									<DialogDescription>
+										<span className="text-sm text-muted-foreground">
+											By:{" "}
+											<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
+												{editSet.set.User.Name}
+											</Link>
+										</span>
+									</DialogDescription>
+								)}
+
+								<DialogDescription>
+									Set ID:{" "}
+									<Link
+										href={`https://mediux.pro/sets/${editSet.id}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="hover:underline"
+									>
+										{editSet.id}
+									</Link>
+								</DialogDescription>
+
+								<div className="flex flex-wrap gap-2 mt-2">{renderEditTypeBadges(editSet, index)}</div>
 								{savedSet.MediaItem.Type === "show" && (
 									<div className="flex flex-wrap gap-2 mt-2">
 										<Badge
@@ -517,24 +543,33 @@ const SavedSetsCard: React.FC<{
 														i === index
 															? {
 																	...item,
-																	autoDownload:
-																		!item.autoDownload,
+																	autoDownload: !item.autoDownload,
 																}
 															: item
 													)
 												);
 											}}
 										>
-											{editSet.autoDownload
-												? "Autodownload"
-												: "No Autodownload"}
+											{editSet.autoDownload ? "Autodownload" : "No Autodownload"}
 										</Badge>
 									</div>
 								)}
+								<div className="flex items-center justify-end">
+									<span className="text-md text-muted-foreground mt-2 mr-2">Redownload</span>
+									<DownloadModal
+										setID={editSet.id}
+										setTitle={editSet.set.Title}
+										setType={editSet.set.Type}
+										setAuthor={editSet.set.User.Name}
+										posterSets={[editSet.set]}
+										autoDownloadDefault={editSet.autoDownload}
+									/>
+								</div>
 							</div>
 						))}
 					</div>
-					{updateError && <Small className="text-destructive mt-2">{updateError}</Small>}
+
+					{updateError && <ErrorMessage error={updateError} />}
 					<DialogFooter>
 						<Button
 							variant="outline"
@@ -553,15 +588,8 @@ const SavedSetsCard: React.FC<{
 						>
 							Cancel
 						</Button>
-						<Button
-							variant={allToDelete ? "destructive" : "default"}
-							onClick={confirmEdit}
-						>
-							{allToDelete
-								? editSets.length === 1
-									? "Delete Set"
-									: "Delete All"
-								: "Save"}
+						<Button variant={allToDelete ? "destructive" : "default"} onClick={confirmEdit}>
+							{allToDelete ? (editSets.length === 1 ? "Delete Set" : "Delete All") : "Save"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -569,7 +597,7 @@ const SavedSetsCard: React.FC<{
 
 			{/* Delete Confirmation Modal */}
 			<Dialog open={isDeleteModalOpen} onOpenChange={onClose}>
-				<DialogContent>
+				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
 					<DialogHeader>
 						<DialogTitle>Confirm Delete</DialogTitle>
 						<DialogDescription>

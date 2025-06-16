@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { CheckCircle2 as Checkmark } from "lucide-react";
+import { Database } from "lucide-react";
 
 import React from "react";
 
@@ -39,21 +39,16 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 		>
 			{mediaItem.ExistInDatabase && (
 				<div className="absolute top-2 left-2 z-10">
-					<Checkmark className="text-green-500" size={20} />
+					<Database className="text-green-500" size={20} />
 				</div>
 			)}
 
 			{/* Poster Image */}
-			<AssetImage
-				image={mediaItem}
-				className="w-[170px] h-auto transition-transform hover:scale-105"
-			/>
+			<AssetImage image={mediaItem} className="w-[170px] h-auto transition-transform hover:scale-105" />
 
 			{/* Title */}
 			<H4 className="text-center font-semibold mb-2 px-2">
-				{mediaItem.Title.length > 55
-					? `${mediaItem.Title.slice(0, 55)}...`
-					: mediaItem.Title}
+				{mediaItem.Title.length > 55 ? `${mediaItem.Title.slice(0, 55)}...` : mediaItem.Title}
 			</H4>
 
 			{/* Badges */}

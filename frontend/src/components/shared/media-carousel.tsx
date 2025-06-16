@@ -1,27 +1,16 @@
-"use client";
-
 import { formatLastUpdatedDate } from "@/helper/formatDate";
 import { ZoomInIcon } from "lucide-react";
 
-import { useState } from "react";
-
 import { useRouter } from "next/navigation";
 
-import { CarouselMovie } from "@/components/shared/carousel-movie";
-import { CarouselShow } from "@/components/shared/carousel-show";
-import DownloadModalMovie from "@/components/shared/download-modal-movie";
-import DownloadModalShow from "@/components/shared/download-modal-show";
+import { CarouselDisplay } from "@/components/shared/carousel-display";
+import DownloadModal from "@/components/shared/download-modal";
 import { SetFileCounts } from "@/components/shared/set-file-counts";
-import {
-	Carousel,
-	CarouselContent,
-	CarouselNext,
-	CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Lead } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/mediaStore";
-import { usePosterSetStore } from "@/lib/posterSetStore";
+import { usePosterSetsStore } from "@/lib/posterSetStore";
 
 import { MediaItem } from "@/types/mediaItem";
 import { PosterSet } from "@/types/posterSets";
@@ -34,12 +23,14 @@ type MediaCarouselProps = {
 export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 	const router = useRouter();
 
-	const { setPosterSet } = usePosterSetStore();
+	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
-	const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-
 	const goToSetPage = () => {
-		setPosterSet(set);
+		setPosterSets([set]);
+		setSetType(set.Type);
+		setSetTitle(set.Title);
+		setSetAuthor(set.User.Name);
+		setSetID(set.ID);
 		setMediaItem(mediaItem);
 		router.push(`/sets/${set.ID}`);
 	};
@@ -78,25 +69,13 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 						>
 							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
 						</button>
-						{mediaItem.Type === "show" ? (
-							<button className="btn">
-								<DownloadModalShow
-									posterSet={set}
-									mediaItem={mediaItem}
-									open={isDownloadModalOpen}
-									onOpenChange={setIsDownloadModalOpen}
-								/>
-							</button>
-						) : mediaItem.Type === "movie" ? (
-							<button className="btn">
-								<DownloadModalMovie
-									posterSet={set}
-									mediaItem={mediaItem}
-									open={isDownloadModalOpen}
-									onOpenChange={setIsDownloadModalOpen}
-								/>
-							</button>
-						) : null}
+						<DownloadModal
+							setType={set.Type}
+							setTitle={set.Title}
+							setID={set.ID}
+							setAuthor={set.User.Name}
+							posterSets={[set]}
+						/>
 					</div>
 				</div>
 				<div className="text-md text-muted-foreground  mb-1">
@@ -119,11 +98,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 			</div>
 
 			<CarouselContent>
-				{mediaItem.Type === "show" ? (
-					<CarouselShow set={set as PosterSet} />
-				) : mediaItem.Type === "movie" ? (
-					<CarouselMovie set={set as PosterSet} librarySection={mediaItem.LibraryTitle} />
-				) : null}
+				<CarouselDisplay sets={[set] as PosterSet[]} />
 			</CarouselContent>
 			<CarouselNext className="right-2 bottom-0" />
 			<CarouselPrevious className="right-8 bottom-0" />
