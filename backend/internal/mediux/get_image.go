@@ -4,7 +4,6 @@ import (
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/utils"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -29,16 +28,16 @@ func init() {
 func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	// Get the asset ID from the URL
 	assetID := chi.URLParam(r, "assetID")
 	if assetID == "" {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: errors.New("missing asset ID"),
-			Log: logging.Log{
-				Message: "Missing asset ID in URL",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Missing asset ID in URL"
+		Err.HelpText = "Ensure the asset ID is provided in the URL path."
+		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -53,12 +52,11 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		// Try to parse the modified date as an ISO 8601 timestamp
 		modifiedDateTime, err = time.Parse(time.RFC3339, modifiedDate)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
-				Log: logging.Log{
-					Message: "Invalid modified date format. Expected ISO 8601.",
-					Elapsed: utils.ElapsedTime(startTime),
-				},
-			})
+
+			Err.Message = "Invalid modified date format"
+			Err.HelpText = "Ensure the modified date is in ISO 8601 format (e.g., 2023-10-01T12:00:00Z)."
+			Err.Details = fmt.Sprintf("Modified Date: %s", modifiedDate)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 	}
@@ -73,13 +71,11 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 	// Check if the quality is valid
 	if qualityParam != "thumb" && qualityParam != "full" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Err: errors.New("invalid quality parameter"),
-			Log: logging.Log{
-				Message: fmt.Sprintf("Invalid quality parameter: %s. Expected 'thumb' or 'full'.", qualityParam),
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-		})
+
+		Err.Message = "Invalid quality parameter"
+		Err.HelpText = "Ensure the quality parameter is either 'thumb' or 'full'."
+		Err.Details = fmt.Sprintf("Quality Parameter: %s", qualityParam)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 	if qualityParam == "full" {
@@ -91,7 +87,6 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	filePath := path.Join(MediuxThumbsTempImageFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
 	if exists {
-		logging.LOG.Trace(fmt.Sprintf("Image %s already exists in temporary folder", fileName))
 		// Serve the image from the temporary folder
 		imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
 		http.ServeFile(w, r, imagePath)
@@ -99,28 +94,27 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from Mediux
-	imageData, imageType, logErr := FetchImage(assetID, formatDate, quality)
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	imageData, imageType, Err := FetchImage(assetID, formatDate, quality)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	if config.Global.CacheImages {
 		// Add the image to the temporary folder
 		imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
-		logErr = utils.CheckFolderExists(MediuxThumbsTempImageFolder)
-		if logErr.Err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+		Err = utils.CheckFolderExists(MediuxThumbsTempImageFolder)
+		if Err.Message != "" {
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-			utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logging.ErrorLog{Err: err,
-				Log: logging.Log{
-					Message: "Failed to write image to temporary folder",
-					Elapsed: utils.ElapsedTime(startTime),
-				},
-			})
+
+			Err.Message = "Failed to write image to temporary folder"
+			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", MediuxThumbsTempImageFolder)
+			Err.Details = fmt.Sprintf("Error writing image: %v", err)
+			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 	}
@@ -130,8 +124,9 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, logging.ErrorLog) {
+func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Getting image for asset ID: %s", assetID))
+	Err := logging.NewStandardError()
 
 	// Construct the URL for the Mediux API request
 	getThumb := ""
@@ -141,36 +136,31 @@ func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, l
 	}
 	url := fmt.Sprintf("%s/%s?%s%s", "https://staged.mediux.io/assets", assetID, formatDate, getThumb)
 
-	response, body, logErr := utils.MakeHTTPRequest(url, "GET", nil, 60, nil, "Mediux")
-	if logErr.Err != nil {
-		return nil, "", logErr
+	response, body, Err := utils.MakeHTTPRequest(url, "GET", nil, 60, nil, "Mediux")
+	if Err.Message != "" {
+		return nil, "", Err
 	}
 	defer response.Body.Close()
 
 	// Check if the response body is empty
 	if len(body) == 0 {
-		return nil, "", logging.ErrorLog{
-			Err: errors.New("empty response body"),
-			Log: logging.Log{Message: "Mediux returned an empty response body"},
-		}
+
+		Err.Message = "Empty response body from Mediux"
+		Err.HelpText = "Ensure the asset ID is valid and the Mediux service is operational."
+		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
+		return nil, "", Err
 	}
 
 	// Get the image type from the response headers
 	imageType := response.Header.Get("Content-Type")
 	if imageType == "" {
-		return nil, "", logging.ErrorLog{
-			Err: errors.New("missing content type in response headers"),
-			Log: logging.Log{Message: "Mediux did not return a content type in the response headers"},
-		}
-	}
 
-	if response.StatusCode != http.StatusOK {
-		return nil, "", logging.ErrorLog{
-			Err: errors.New("failed to fetch image from Mediux"),
-			Log: logging.Log{Message: fmt.Sprintf("Mediux returned status code %d", response.StatusCode)},
-		}
+		Err.Message = "Missing Content-Type header in Mediux response"
+		Err.HelpText = "Ensure the Mediux service is returning a valid image type."
+		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
+		return nil, "", Err
 	}
 
 	// Return the image data
-	return body, imageType, logging.ErrorLog{}
+	return body, imageType, logging.StandardError{}
 }

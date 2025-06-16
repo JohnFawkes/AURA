@@ -8,36 +8,47 @@ import (
 	"aura/internal/utils"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
 )
 
-func SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog) {
+func SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
+
 	// Check if the media server is Plex or Emby/Jellyfin
 	if config.Global.MediaServer.Type == "Plex" {
 		return PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
 	} else if config.Global.MediaServer.Type == "Emby" || config.Global.MediaServer.Type == "Jellyfin" {
 		return EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
 	}
-	return "", logging.ErrorLog{Err: nil,
-		Log: logging.Log{Message: "Invalid media server type"}}
+	Err := logging.NewStandardError()
+
+	Err.Message = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)
+	Err.Details = fmt.Sprintf("Media server type must be either 'Plex', 'Emby', or 'Jellyfin', but got '%s'", config.Global.MediaServer.Type)
+	return "", Err
 }
 
-func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog) {
+func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Searching for %s in %s", itemTitle, librarySection))
+	Err := logging.NewStandardError()
+
 	// If any of the parameters are empty, return an error
 	if tmdbID == "" || itemType == "" || itemTitle == "" || librarySection == "" {
-		return "", logging.ErrorLog{Err: nil,
-			Log: logging.Log{Message: "Missing parameters"}}
+
+		Err.Message = "Missing parameters for Plex search"
+		Err.HelpText = "Ensure that tmdbID, itemType, itemTitle, and librarySection are provided."
+		Err.Details = fmt.Sprintf("tmdbID: %s, itemType: %s, itemTitle: %s, librarySection: %s", tmdbID, itemType, itemTitle, librarySection)
+		return "", Err
 	}
 
 	// If the itemType is not "movie" or "show", return an error
 	if itemType != "movie" && itemType != "show" {
-		return "", logging.ErrorLog{Err: nil,
-			Log: logging.Log{Message: "Invalid item type"}}
+
+		Err.Message = "Invalid itemType for Plex search"
+		Err.HelpText = "itemType must be either 'movie' or 'show'."
+		Err.Details = fmt.Sprintf("Received itemType: %s", itemType)
+		return "", Err
 	}
 
 	// If the itemType is "movie", change it to "movies" for the search
@@ -50,9 +61,9 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	}
 
 	// Construct the URL for the Plex server API request
-	baseURL, logErr := utils.MakeMediaServerAPIURL("/library/search", config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return "", logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL("/library/search", config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return "", Err
 	}
 
 	// Add Query Parameters to the URL
@@ -62,18 +73,11 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Plex server
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return "", logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return "", Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return "", logging.ErrorLog{Err: errors.New("plex server error"),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)},
-		}
-	}
 
 	// Parse the response body into a PlexSearchResponse struct
 	var responseSection modals.PlexSearchResponse
@@ -81,9 +85,11 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	// Output the response body
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-		return "", logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse XML response"},
-		}
+
+		Err.Message = "Failed to parse Plex search response"
+		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return "", Err
 	}
 
 	// If the item is a movie section/library
@@ -128,9 +134,11 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	// If no items were found, return an error
 	if len(items) == 0 {
 		logging.LOG.Warn(fmt.Sprintf("No items found for %s", itemTitle))
-		return "", logging.ErrorLog{Err: nil,
-			Log: logging.Log{Message: "No items found"},
-		}
+
+		Err.Message = "No items found for the given search criteria"
+		Err.HelpText = fmt.Sprintf("No items found for %s in %s library section", itemTitle, librarySection)
+		Err.Details = fmt.Sprintf("Search criteria: tmdbID: %s, itemType: %s, itemTitle: %s, librarySection: %s", tmdbID, itemType, itemTitle, librarySection)
+		return "", Err
 	}
 
 	// For each item, grab the full info using the rating key
@@ -139,21 +147,16 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	logging.LOG.Trace(fmt.Sprintf("Found %d items for %s", len(items), itemTitle))
 	for _, item := range items {
 		logging.LOG.Trace(fmt.Sprintf("Checking to see if %s is a match for %s", item.Title, itemTitle))
-		url, logErr := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", item.RatingKey), config.Global.MediaServer.URL)
-		if logErr.Err != nil {
+		url, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", item.RatingKey), config.Global.MediaServer.URL)
+		if Err.Message != "" {
 			continue
 		}
 		// Make a GET request to the Plex server
-		fullResponse, fullBody, logErr := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-		if logErr.Err != nil {
+		fullResponse, fullBody, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+		if Err.Message != "" {
 			continue
 		}
 		defer fullResponse.Body.Close()
-
-		// Check if the response status is OK
-		if fullResponse.StatusCode != http.StatusOK {
-			continue
-		}
 
 		// Parse the response body into a PlexResponse struct
 		var fullResponseSection modals.PlexResponse
@@ -171,22 +174,22 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 				if len(match) > 1 && match[1] == tmdbID {
 					logging.LOG.Debug(fmt.Sprintf("Found TMDB ID match for %s: %s", itemTitle, match[1]))
 					// If the TMDB ID matches, return the rating key
-					return item.RatingKey, logging.ErrorLog{}
+					return item.RatingKey, logging.StandardError{}
 				}
 			}
 		}
 	}
 
 	logging.LOG.Warn(fmt.Sprintf("No TMDB ID match found for %s", itemTitle))
-	return "", logging.ErrorLog{}
+	return "", logging.StandardError{}
 }
 
-func EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.ErrorLog) {
+func EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Searching for '%s' in %s", itemTitle, librarySection))
 
-	baseURL, logErr := utils.MakeMediaServerAPIURL("/Items", config.Global.MediaServer.URL)
-	if logErr.Err != nil {
-		return "", logErr
+	baseURL, Err := utils.MakeMediaServerAPIURL("/Items", config.Global.MediaServer.URL)
+	if Err.Message != "" {
+		return "", Err
 	}
 
 	// Add Query Parameters to the URL
@@ -199,26 +202,21 @@ func EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, libraryS
 	params.Add("Fields", "ProviderIds")
 	baseURL.RawQuery = params.Encode()
 
-	response, body, logErr := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if logErr.Err != nil {
-		return "", logErr
+	response, body, Err := utils.MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return "", Err
 	}
 	defer response.Body.Close()
-
-	// Check if the response status is OK
-	if response.StatusCode != http.StatusOK {
-		return "", logging.ErrorLog{Err: errors.New("emby/jellyfin server error"),
-			Log: logging.Log{Message: fmt.Sprintf("Received status code '%d' from Emby/Jellyfin server", response.StatusCode)},
-		}
-	}
 
 	var resp modals.EmbyJellyLibraryItemsResponse
 	err := json.Unmarshal(body, &resp)
 	if err != nil {
 		logging.LOG.Error(fmt.Sprintf("Failed to parse JSON response: %v", err))
-		return "", logging.ErrorLog{Err: err,
-			Log: logging.Log{Message: "Failed to parse JSON response"},
-		}
+
+		Err.Message = "Failed to parse Emby/Jellyfin search response"
+		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return "", Err
 	}
 
 	for _, item := range resp.Items {
@@ -227,10 +225,10 @@ func EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, libraryS
 		}
 		if tmdbID == item.ProviderIds.Tmdb {
 			logging.LOG.Debug(fmt.Sprintf("Found TMDB ID match for '%s': %s", itemTitle, item.ProviderIds.Tmdb))
-			return item.ID, logging.ErrorLog{}
+			return item.ID, logging.StandardError{}
 		}
 	}
 
 	logging.LOG.Warn(fmt.Sprintf("No TMDB ID match found for '%s'", itemTitle))
-	return "", logging.ErrorLog{}
+	return "", logging.StandardError{}
 }

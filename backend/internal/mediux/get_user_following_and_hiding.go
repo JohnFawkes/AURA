@@ -6,7 +6,6 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -19,9 +18,9 @@ func GetUserFollowingAndHiding(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 
 	// Fetch user following and hiding data from the Mediux API
-	responseBody, logErr := fetchUserFollowingAndHiding()
-	if logErr.Err != nil {
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	responseBody, Err := fetchUserFollowingAndHiding()
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
@@ -29,7 +28,6 @@ func GetUserFollowingAndHiding(w http.ResponseWriter, r *http.Request) {
 	if data.Follows == nil && data.Hides == nil {
 		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 			Status:  "success",
-			Message: "No user following and hiding data found",
 			Elapsed: utils.ElapsedTime(startTime),
 			Data:    nil,
 		})
@@ -63,14 +61,14 @@ func GetUserFollowingAndHiding(w http.ResponseWriter, r *http.Request) {
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: "Retrieved user following and hiding data successfully",
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    userFollowHide,
 	})
 }
 
-func fetchUserFollowingAndHiding() (modals.MediuxUserFollowHideResponse, logging.ErrorLog) {
+func fetchUserFollowingAndHiding() (modals.MediuxUserFollowHideResponse, logging.StandardError) {
 	requestBody := generateUserFollowingAndHidingBody()
+	Err := logging.NewStandardError()
 
 	// Create a new Resty client
 	client := resty.New()
@@ -82,26 +80,22 @@ func fetchUserFollowingAndHiding() (modals.MediuxUserFollowHideResponse, logging
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-		return modals.MediuxUserFollowHideResponse{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to send request to Mediux API"},
-		}
+
+		Err.Message = "Failed to send request to Mediux API"
+		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return modals.MediuxUserFollowHideResponse{}, Err
 	}
 
 	var responseBody modals.MediuxUserFollowHideResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		return modals.MediuxUserFollowHideResponse{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to unmarshal response from Mediux API"},
-		}
-	}
-	if response.StatusCode() != http.StatusOK {
-		return modals.MediuxUserFollowHideResponse{}, logging.ErrorLog{
-			Err: errors.New("received non-200 response from Mediux API"),
-			Log: logging.Log{Message: fmt.Sprintf("Received non-200 response from Mediux API: %s", response.String())},
-		}
+
+		Err.Message = "Failed to unmarshal response from Mediux API"
+		Err.HelpText = "Ensure the response format matches the expected structure."
+		Err.Details = fmt.Sprintf("Error: %s, Response Body: %s", err.Error(), string(response.Body()))
+		return modals.MediuxUserFollowHideResponse{}, Err
 	}
 
-	return responseBody, logging.ErrorLog{}
+	return responseBody, logging.StandardError{}
 }

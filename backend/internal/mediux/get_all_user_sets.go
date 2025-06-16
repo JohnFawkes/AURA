@@ -5,7 +5,6 @@ import (
 	"aura/internal/logging"
 	"aura/internal/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,38 +16,37 @@ import (
 func GetAllUserSets(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	logging.LOG.Trace(r.URL.Path)
+	Err := logging.NewStandardError()
 
 	// Get the username from the URL
 	username := chi.URLParam(r, "username")
 	if username == "" {
-		utils.SendErrorJSONResponse(w, http.StatusBadRequest, logging.ErrorLog{
-			Log: logging.Log{
-				Message: "Username is required",
-				Elapsed: utils.ElapsedTime(startTime),
-			},
-			Err: errors.New("username is required"),
-		})
+
+		Err.Message = "Missing username in URL"
+		Err.HelpText = "Ensure the username is provided in the URL path."
+		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	allSetsResponse, logErr := fetchAllUserSets(username)
-	if logErr.Err != nil {
-		logging.LOG.Error(logErr.Log.Message)
-		utils.SendErrorJSONResponse(w, http.StatusInternalServerError, logErr)
+	allSetsResponse, Err := fetchAllUserSets(username)
+	if Err.Message != "" {
+		logging.LOG.Error(Err.Message)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
-		Message: fmt.Sprintf("Fetched all sets for '%s'", username),
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    allSetsResponse.Data,
 	})
 }
 
-func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.ErrorLog) {
+func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.StandardError) {
 	requestBody := generateAllUserSetsBody(username)
+	Err := logging.NewStandardError()
 
 	// Create a new Resty client
 	client := resty.New()
@@ -60,10 +58,11 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Error
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-		return MediuxUserAllSetsResponse{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to send request to Mediux API"},
-		}
+
+		Err.Message = "Failed to send request to Mediux API"
+		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		return MediuxUserAllSetsResponse{}, Err
 	}
 
 	// Parse the response body into the appropriate struct based on itemType
@@ -71,14 +70,14 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Error
 
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Response error: %s", response.Body()))
-		return MediuxUserAllSetsResponse{}, logging.ErrorLog{
-			Err: err,
-			Log: logging.Log{Message: "Failed to parse response from Mediux API"},
-		}
+
+		Err.Message = "Failed to unmarshal response from Mediux API"
+		Err.HelpText = "Ensure the response format matches the expected structure."
+		Err.Details = fmt.Sprintf("Error: %s, Response Body: %s", err.Error(), string(response.Body()))
+		return MediuxUserAllSetsResponse{}, Err
 	}
 
-	return responseBody, logging.ErrorLog{}
+	return responseBody, logging.StandardError{}
 }
 
 type MediuxUserAllSetsResponse struct {
