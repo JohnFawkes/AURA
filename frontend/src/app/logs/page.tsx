@@ -1,6 +1,7 @@
 "use client";
 
 import { fetchLogContents } from "@/services/api.settings";
+import { ReturnErrorMessage } from "@/services/api.shared";
 import { ArrowLeft, Download } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -15,39 +16,38 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { log } from "@/lib/logger";
 
+import { APIResponse } from "@/types/apiResponse";
+
 export default function LogsPage() {
 	const router = useRouter();
 	const [logs, setLogs] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(true);
-	const [error, setError] = useState<string>("");
+	const [error, setError] = useState<APIResponse<string> | null>(null);
 	const [isMounted, setIsMounted] = useState(false);
 
 	useEffect(() => {
 		if (isMounted) return;
 		setIsMounted(true);
 		if (typeof window !== "undefined") {
-			// Safe to use document here.
 			document.title = "Aura | Logs";
 		}
+
 		const fetchLogs = async () => {
 			try {
-				const resp = await fetchLogContents();
+				setLoading(true);
+				const response = await fetchLogContents();
 
-				if (!resp) {
-					throw new Error("Failed to fetch logs");
-				}
-				if (resp.status !== "success") {
-					throw new Error(resp.message);
-				}
-
-				const logContents = resp.data;
-				if (!logContents) {
-					throw new Error("No log contents found");
+				if (response.status === "error") {
+					setError(response);
+					setLogs("");
+					return;
 				}
 
-				setLogs(logContents);
+				setLogs(response.data || "");
+				setError(null);
 			} catch (error) {
-				setError(error instanceof Error ? error.message : "An unknown error occurred");
+				setError(ReturnErrorMessage<string>(error));
+				setLogs("");
 			} finally {
 				log("LogsPage - Fetching logs completed");
 				setLoading(false);
@@ -77,7 +77,7 @@ export default function LogsPage() {
 				</div>
 			) : error ? (
 				<div className="mt-8">
-					<ErrorMessage message={error} />
+					<ErrorMessage error={error} />
 				</div>
 			) : (
 				<Card className="shadow-lg">
@@ -92,18 +92,10 @@ export default function LogsPage() {
 						/>
 					</CardContent>
 					<CardFooter className="flex flex-col sm:flex-row justify-center gap-3">
-						<Button
-							variant="outline"
-							className="w-full sm:w-auto"
-							onClick={() => router.push("/settings")}
-						>
+						<Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push("/settings")}>
 							<ArrowLeft className="mr-2 h-4 w-4" /> Back to Settings
 						</Button>
-						<Button
-							variant="default"
-							className="w-full sm:w-auto"
-							onClick={handleDownloadLogs}
-						>
+						<Button variant="default" className="w-full sm:w-auto" onClick={handleDownloadLogs}>
 							<Download className="mr-2 h-4 w-4" /> Download Logs
 						</Button>
 					</CardFooter>
