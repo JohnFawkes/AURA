@@ -2,6 +2,7 @@
 
 import { fetchMediaServerLibrarySectionItems, fetchMediaServerLibrarySections } from "@/services/api.mediaserver";
 import { ReturnErrorMessage } from "@/services/api.shared";
+import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -11,8 +12,10 @@ import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
@@ -54,6 +57,10 @@ export default function Home() {
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
 	const { currentPage, setCurrentPage } = useHomeSearchStore();
 	const { itemsPerPage } = useHomeSearchStore();
+
+	// State to track the selected sorting option
+	const [sortOption, setSortOption] = useState<"title" | "date" | "">("title");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
 	// -------------------------------
 	// Derived values
@@ -211,6 +218,21 @@ export default function Home() {
 	useEffect(() => {
 		let items = librarySections.flatMap((section) => section.MediaItems || []);
 
+		// Sort items by Title
+		if (sortOption === "title") {
+			if (sortOrder === "asc") {
+				items.sort((a, b) => a.Title.localeCompare(b.Title));
+			} else if (sortOrder === "desc") {
+				items.sort((a, b) => b.Title.localeCompare(a.Title));
+			}
+		} else if (sortOption === "date") {
+			if (sortOrder === "asc") {
+				items.sort((a, b) => (a.UpdatedAt ?? 0) - (b.UpdatedAt ?? 0));
+			} else if (sortOrder === "desc") {
+				items.sort((a, b) => (b.UpdatedAt ?? 0) - (a.UpdatedAt ?? 0));
+			}
+		}
+
 		// Filter by selected libraries
 		if (filteredLibraries.length > 0) {
 			items = items.filter((item) => filteredLibraries.includes(item.LibraryTitle));
@@ -223,7 +245,7 @@ export default function Home() {
 
 		// Filter out items by search
 		setFilteredItems(searchMediaItems(items, searchQuery));
-	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB]);
+	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB, sortOption, sortOrder]);
 
 	if (error) {
 		return <ErrorMessage error={error} />;
@@ -304,6 +326,44 @@ export default function Home() {
 						{filterOutInDB ? "Items Not in DB" : "All Items"}
 					</Badge>
 				</ToggleGroup>
+			</div>
+
+			{/* Sorting controls */}
+			<div className="flex flex-row gap-2 items-center mb-2">
+				<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
+					Sort:
+				</Label>
+				<Select
+					onValueChange={(value) => {
+						setSortOption(value as "" | "title" | "date");
+						// Auto-set sortOrder based on sort option
+						if (value === "title") {
+							setSortOrder("asc");
+						} else if (value === "date") {
+							setSortOrder("desc");
+						}
+					}}
+					defaultValue="title"
+				>
+					<SelectTrigger className="w-[140px] sm:w-[180px]">
+						<SelectValue placeholder="Sort By" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="date">Date Updated</SelectItem>
+						<SelectItem value="title">Title</SelectItem>
+					</SelectContent>
+				</Select>
+				{sortOption !== "" && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="p-2"
+						onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+					>
+						{sortOption === "title" && (sortOrder === "desc" ? <ArrowDownZA /> : <ArrowDownAZ />)}
+						{sortOption === "date" && (sortOrder === "desc" ? <ClockArrowDown /> : <ClockArrowUp />)}
+					</Button>
+				)}
 			</div>
 
 			{/* Items Per Page Selection */}
