@@ -126,6 +126,9 @@ const UserSetPage = () => {
 	const [collectionSets, setCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
 	const [boxsets, setBoxSets] = useState<MediuxUserBoxset[]>([]);
 
+	const { searchQuery, setSearchQuery } = useHomeSearchStore();
+	const prevSearchQuery = useRef(searchQuery);
+
 	// Pagination and Active Tab state
 	const [activeTab, setActiveTab] = useState("boxSets");
 	const [currentPage, setCurrentPage] = useState(1);
@@ -191,6 +194,7 @@ const UserSetPage = () => {
 		setIdbMovieSets([]);
 		setIdbCollectionSets([]);
 		setIdbBoxsets([]);
+		setFilterOutInDB("all");
 
 		if (!respShowSets || !respMovieSets || !respCollectionSets || !respBoxsets) {
 			log("No sets found in response");
@@ -331,6 +335,73 @@ const UserSetPage = () => {
 		filterOutItems();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedLibrarySection]);
+
+	useEffect(() => {
+		if (searchQuery !== prevSearchQuery.current) {
+			setCurrentPage(1);
+			prevSearchQuery.current = searchQuery;
+
+			if (!selectedLibrarySection) {
+				return;
+			}
+			// Filter out the Show Sets on set title and mediaItem.Title
+			const filteredShowSets = idbShowSets.filter(
+				(showSet) =>
+					showSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					showSet.show_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+			setShowSets(filteredShowSets);
+
+			// Filter out the Movie Sets on set title and mediaItem.Title
+			const filteredMovieSets = idbMovieSets.filter(
+				(movieSet) =>
+					movieSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					movieSet.movie_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+			);
+			setMovieSets(filteredMovieSets);
+
+			// Filter out the Collection Sets on set title and mediaItem.Title
+			const filteredCollectionSets = idbCollectionSets.filter(
+				(collectionSet) =>
+					collectionSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+					collectionSet.movie_posters.some((poster) =>
+						poster.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+					) ||
+					collectionSet.movie_backdrops.some((backdrop) =>
+						backdrop.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+					)
+			);
+			setCollectionSets(filteredCollectionSets);
+
+			// Filter out the Box Sets on set title and mediaItem.Title
+			const filteredBoxSets = idbBoxsets.filter((boxset) => {
+				const boxsetTitleMatch = boxset.boxset_title.toLowerCase().includes(searchQuery.toLowerCase());
+				const showSetsMatch = boxset.show_sets.some(
+					(showSet) =>
+						showSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						showSet.show_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+				);
+				const movieSetsMatch = boxset.movie_sets.some(
+					(movieSet) =>
+						movieSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						movieSet.movie_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+				);
+				const collectionSetsMatch = boxset.collection_sets.some(
+					(collectionSet) =>
+						collectionSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+						collectionSet.movie_posters.some((poster) =>
+							poster.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+						) ||
+						collectionSet.movie_backdrops.some((backdrop) =>
+							backdrop.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
+						)
+				);
+				const boxsetMatches = boxsetTitleMatch || showSetsMatch || movieSetsMatch || collectionSetsMatch;
+				return boxsetMatches;
+			});
+			setBoxSets(filteredBoxSets);
+		}
+	}, [searchQuery, setCurrentPage]);
 
 	// Add this effect to handle filterOutInDB changes
 	useEffect(() => {
@@ -478,29 +549,46 @@ const UserSetPage = () => {
 					respMovieSets.length > 0 ||
 					respCollectionSets.length > 0 ||
 					respBoxsets.length > 0) && (
-					<div className="min-h-screen px-8 pb-20 sm:px-20">
+					<div className="min-h-screen px-4 sm:px-8 pb-20">
 						{/* User Sets Header */}
-						<div className="flex flex-col items-center mt-4 mb-4">
-							<h1 className="text-3xl font-bold text-center mb-2">Sets by {username}</h1>
+						<div className="flex flex-col items-center mt-8 mb-6">
+							<h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight text-primary">
+								<span className="text-white opacity-80">Sets by</span>{" "}
+								<span className="text-primary">{username}</span>
+							</h1>
 							{!selectedLibrarySection && (
-								<div>
+								<div className="flex flex-wrap gap-3 mt-2 justify-center">
 									{respShowSets.length > 0 && (
-										<p className="text-muted-foreground text-sm">
-											Show Sets: {respShowSets.length}
-										</p>
+										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+											<span className="font-semibold text-primary">Show Sets</span>
+											<Badge variant="secondary" className="text-xs px-2 py-1">
+												{respShowSets.length}
+											</Badge>
+										</div>
 									)}
 									{respMovieSets.length > 0 && (
-										<p className="text-muted-foreground text-sm">
-											Movie Sets: {respMovieSets.length}
-										</p>
+										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+											<span className="font-semibold text-primary">Movie Sets</span>
+											<Badge variant="secondary" className="text-xs px-2 py-1">
+												{respMovieSets.length}
+											</Badge>
+										</div>
 									)}
 									{respCollectionSets.length > 0 && (
-										<p className="text-muted-foreground text-sm">
-											Collection Sets: {respCollectionSets.length}
-										</p>
+										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+											<span className="font-semibold text-primary">Collection Sets</span>
+											<Badge variant="secondary" className="text-xs px-2 py-1">
+												{respCollectionSets.length}
+											</Badge>
+										</div>
 									)}
 									{respBoxsets.length > 0 && (
-										<p className="text-muted-foreground text-sm">Box Sets: {respBoxsets.length}</p>
+										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+											<span className="font-semibold text-primary">Box Sets</span>
+											<Badge variant="secondary" className="text-xs px-2 py-1">
+												{respBoxsets.length}
+											</Badge>
+										</div>
 									)}
 								</div>
 							)}
@@ -536,56 +624,23 @@ const UserSetPage = () => {
 												selectedLibrarySection?.title === section.title ? "default" : "outline"
 											}
 											onClick={() => {
-												setFilterOutInDB("all");
 												if (selectedLibrarySection?.title === section.title) {
 													setSelectedLibrarySection(null);
 													setCurrentPage(1);
+													setFilterOutInDB("all");
 												} else {
 													setSelectedLibrarySection(section);
 													setCurrentPage(1);
+													setFilterOutInDB("all");
 												}
+												setSearchQuery("");
 											}}
+											className="cursor-pointer text-sm"
 										>
 											{section.title}
 										</Badge>
 									))}
 								</ToggleGroup>
-							</div>
-
-							{/* Filter Out In DB Selection */}
-							<div className="w-full flex items-center mb-2">
-								<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
-									Filter:
-								</Label>
-								{/* Filter Out In DB Toggle */}
-
-								<Badge
-									key="filter-out-in-db"
-									className={`cursor-pointer ${
-										filterOutInDB === "inDB"
-											? "bg-green-600 text-white"
-											: filterOutInDB === "notInDB"
-												? "bg-red-600 text-white"
-												: ""
-									}`}
-									variant={filterOutInDB !== "all" ? "default" : "outline"}
-									onClick={() => {
-										const next =
-											filterOutInDB === "all"
-												? "inDB"
-												: filterOutInDB === "inDB"
-													? "notInDB"
-													: "all";
-										setFilterOutInDB(next);
-										setCurrentPage(1);
-									}}
-								>
-									{filterOutInDB === "all"
-										? "All Items"
-										: filterOutInDB === "inDB"
-											? "Items In DB"
-											: "Items Not in DB"}
-								</Badge>
 							</div>
 						</div>
 
@@ -611,6 +666,42 @@ const UserSetPage = () => {
 								</div>
 							) : (
 								<div className="flex flex-col items-center mt-4 mb-4">
+									{/* Filter Out In DB Selection */}
+									<div className="w-full flex items-center mb-2">
+										<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
+											Filter:
+										</Label>
+										{/* Filter Out In DB Toggle */}
+
+										<Badge
+											key="filter-out-in-db"
+											className={`cursor-pointer text-sm ${
+												filterOutInDB === "inDB"
+													? "bg-green-600 text-white"
+													: filterOutInDB === "notInDB"
+														? "bg-red-600 text-white"
+														: ""
+											}`}
+											variant={filterOutInDB !== "all" ? "default" : "outline"}
+											onClick={() => {
+												const next =
+													filterOutInDB === "all"
+														? "inDB"
+														: filterOutInDB === "inDB"
+															? "notInDB"
+															: "all";
+												setFilterOutInDB(next);
+												setCurrentPage(1);
+											}}
+										>
+											{filterOutInDB === "all"
+												? "All Items"
+												: filterOutInDB === "inDB"
+													? "Items In DB"
+													: "Items Not in DB"}
+										</Badge>
+									</div>
+
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
 										<SelectItemsPerPage setCurrentPage={setCurrentPage} />

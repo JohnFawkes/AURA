@@ -37,6 +37,7 @@ export default function Navbar() {
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
+	const isUserPage = pathName.startsWith("/user/");
 
 	// Local state for search input
 	const [localSearch, setLocalSearch] = useState("");
@@ -67,13 +68,13 @@ export default function Navbar() {
 
 	// Debounce updating the zustand store when on the homepage
 	useEffect(() => {
-		if (isHomePage || isSavedSetsPage) {
+		if (isHomePage || isSavedSetsPage || isUserPage) {
 			const handler = setTimeout(() => {
 				setSearchQuery(localSearch);
 			}, 300);
 			return () => clearTimeout(handler);
 		}
-	}, [localSearch, setSearchQuery, isHomePage, isSavedSetsPage]);
+	}, [localSearch, setSearchQuery, isHomePage, isSavedSetsPage, isUserPage]);
 
 	// When not on homepage, search the IDB (cache) for matching MediaItems
 	useEffect(() => {
@@ -131,6 +132,8 @@ export default function Navbar() {
 			setCurrentPage(1);
 			setFilteredLibraries([]);
 			setFilterOutInDB(false);
+			setLocalSearch("");
+			setSearchResults([]);
 		}
 		router.push("/");
 	};
@@ -161,7 +164,7 @@ export default function Navbar() {
 			</div>
 
 			{/* Search Section */}
-			<div className="relative w-full max-w-2xl ml-1 mr-1">
+			<div className="relative w-full max-w-2xl ml-1 mr-3">
 				<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="search"
@@ -172,7 +175,7 @@ export default function Navbar() {
 					onBlur={() => setShowDropdown(false)}
 				/>
 				{/* If not on homepage, display dropdown results */}
-				{!isHomePage && !isSavedSetsPage && showDropdown && searchResults.length > 0 && (
+				{!isHomePage && !isSavedSetsPage && !isUserPage && showDropdown && searchResults.length > 0 && (
 					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
 						{searchResults.map((result) => (
 							<div
