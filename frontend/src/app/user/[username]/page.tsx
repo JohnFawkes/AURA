@@ -635,7 +635,12 @@ const UserSetPage = () => {
 												}
 												setSearchQuery("");
 											}}
-											className="cursor-pointer text-sm"
+											className={`cursor-pointer text-sm ${
+												!!selectedLibrarySection &&
+												selectedLibrarySection.title !== section.title
+													? "opacity-50 pointer-events-none"
+													: ""
+											}`}
 										>
 											{section.title}
 										</Badge>
