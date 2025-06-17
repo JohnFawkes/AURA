@@ -229,9 +229,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// Function - Handle Link Click
 	const getMediuxBaseUrl = () => {
 		if (setType === "boxset") {
-			return `https://mediux.pro/boxsets/${setID}`;
+			return `https://janeway.mediux.io/boxset/${setID}`;
 		} else {
-			return `https://mediux.pro/sets/${setID}`;
+			return `https://janeway.mediux.io/${setType}-set/${setID}`;
 		}
 	};
 

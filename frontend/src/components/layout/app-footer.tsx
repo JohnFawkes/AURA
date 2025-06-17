@@ -21,7 +21,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				{/* Links row - Line 2 on mobile */}
 				<div className="flex justify-center space-x-4 items-center">
 					<Link
-						href="https://mediux.pro"
+						href="https://janeway.mediux.io"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="group flex items-center hover:text-primary transition-colors"

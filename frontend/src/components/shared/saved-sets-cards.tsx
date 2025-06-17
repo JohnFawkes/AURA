@@ -485,13 +485,18 @@ const SavedSetsCard: React.FC<{
 						</DialogDescription>
 					</DialogHeader>
 
-					<div className="space-y-4">
+					<div
+						className="space-y-4"
+						onDoubleClick={() => {
+							log("Edit Sets: ", editSets);
+						}}
+					>
 						{editSets.map((editSet, index) => (
 							<div key={editSet.id} className="border p-2 rounded-md">
 								<div className="flex items-center justify-between">
 									<span className="font-semibold">
 										<Link
-											href={`https://mediux.pro/sets/${editSet.id}`}
+											href={`https://janeway.mediux.io/${editSet.set.Type}-set/${editSet.id}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											className="hover:underline"
@@ -536,7 +541,7 @@ const SavedSetsCard: React.FC<{
 								<DialogDescription>
 									Set ID:{" "}
 									<Link
-										href={`https://mediux.pro/sets/${editSet.id}`}
+										href={`https://janeway.mediux.io/${editSet.set.Type}-set/${editSet.id}`}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="hover:underline"

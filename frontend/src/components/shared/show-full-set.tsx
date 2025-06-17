@@ -361,7 +361,7 @@ const ShowFullSetDetails: React.FC<{
 						className="flex items-center text-sm hover:text-white transition-colors"
 						onClick={(e) => {
 							e.stopPropagation();
-							window.open(`https://mediux.pro/sets/${setID}`, "_blank");
+							window.open(`https://janeway.mediux.io/${setType}-set/${setID}`, "_blank");
 						}}
 					>
 						View on Mediux
