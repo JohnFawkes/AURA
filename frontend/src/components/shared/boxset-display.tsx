@@ -5,7 +5,7 @@ import {
 	BoxsetToPosterSet,
 } from "@/helper/boxsetToPosterSet";
 import { formatLastUpdatedDate } from "@/helper/formatDate";
-import { CheckCircle2 as Checkmark } from "lucide-react";
+import { Database } from "lucide-react";
 
 import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
@@ -102,10 +102,10 @@ export const RenderBoxSetDisplay = ({
 								: (set as MediuxUserShowSet | MediuxUserMovieSet).set_title}
 						</div>
 						{type === "movie" && (set as MediuxUserMovieSet).movie_id.MediaItem?.ExistInDatabase && (
-							<Checkmark className="ml-2 text-green-500" size={20} />
+							<Database className="ml-2 text-green-500" size={20} />
 						)}
 						{type === "show" && (set as MediuxUserShowSet).show_id.MediaItem?.ExistInDatabase && (
-							<Checkmark className="ml-2 text-green-500" size={20} />
+							<Database className="ml-2 text-green-500" size={20} />
 						)}
 					</div>
 					<div className="ml-auto flex space-x-2">
