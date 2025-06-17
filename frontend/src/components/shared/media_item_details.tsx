@@ -1,13 +1,20 @@
+"use client";
+
+import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 import { fetchMediaServerType } from "@/services/api.mediaserver";
 import { Database } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { log } from "@/lib/logger";
+import { useMediaStore } from "@/lib/mediaStore";
 
-import { Guid } from "@/types/mediaItem";
+import { Guid, MediaItem } from "@/types/mediaItem";
 
 import { Badge } from "../ui/badge";
 import { H1, Lead } from "../ui/typography";
@@ -29,6 +36,7 @@ type MediaItemDetailsProps = {
 	existsInDB: boolean;
 	status: string;
 	libraryTitle: string;
+	otherMediaItem: MediaItem | null;
 };
 
 export function MediaItemDetails({
@@ -46,8 +54,11 @@ export function MediaItemDetails({
 	existsInDB,
 	status,
 	libraryTitle,
+	otherMediaItem,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
+	const router = useRouter();
+	const { setMediaItem } = useMediaStore();
 
 	useEffect(() => {
 		const fetchServerType = async () => {
@@ -109,6 +120,26 @@ export function MediaItemDetails({
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 					<Lead className="text-md text-primary-dynamic">
 						<span className="font-semibold">{libraryTitle} Library</span>{" "}
+					</Lead>
+				</div>
+			)}
+
+			{/* Other Media Item Information */}
+			{otherMediaItem && (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+					<Lead className="text-md text-primary-dynamic">
+						Also available in{" "}
+						<Link
+							href={formatMediaItemUrl(otherMediaItem)}
+							onClick={() => {
+								setMediaItem(otherMediaItem);
+								router.push(formatMediaItemUrl(otherMediaItem));
+							}}
+							className="text-primary-dynamic hover:underline"
+						>
+							{otherMediaItem.LibraryTitle}
+						</Link>{" "}
+						Library
 					</Lead>
 				</div>
 			)}
