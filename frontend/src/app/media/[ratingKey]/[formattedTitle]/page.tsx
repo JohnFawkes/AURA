@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { getAdjacentMediaItemFromIDB } from "@/helper/searchIDBForTMDBID";
+import { getAdjacentMediaItemFromIDB, getAllLibrarySectionsFromIDB } from "@/helper/searchIDBForTMDBID";
 import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
 import { fetchMediuxSets, fetchMediuxUserFollowHides } from "@/services/api.mediux";
 import { ReturnErrorMessage } from "@/services/api.shared";
@@ -14,7 +14,7 @@ import {
 	CalendarArrowUp,
 } from "lucide-react";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
+import { storage } from "@/lib/storage";
 
 import { APIResponse } from "@/types/apiResponse";
 import { MediaItem } from "@/types/mediaItem";
@@ -41,7 +42,7 @@ const MediaItemPage = () => {
 
 	const partialMediaItem = useMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
 
-	const [mediaItem, setMediaItem] = React.useState<MediaItem | null>(partialMediaItem);
+	const [mediaItem, setMediaItem] = useState<MediaItem | null>(partialMediaItem);
 
 	const [posterSets, setPosterSets] = useState<PosterSet[] | null>(null);
 	const [filteredPosterSets, setFilteredPosterSets] = useState<PosterSet[] | null>(null);
@@ -62,6 +63,8 @@ const MediaItemPage = () => {
 	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
 	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
 	const [showSetsWithTitleCardsOnly, setShowSetsWithTitleCardsOnly] = useState(false);
+
+	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
 
 	const [adjacentItems, setAdjacentItems] = useState<{
 		previous: MediaItem | null;
@@ -139,6 +142,9 @@ const MediaItemPage = () => {
 				);
 
 				if (response.status === "error") {
+					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
+						response.error.Message = `No Poster Sets found for ${responseItem.Title}`;
+					}
 					setError(response);
 					setHasError(true);
 					return;
@@ -179,6 +185,49 @@ const MediaItemPage = () => {
 					throw new Error("No media item found in response");
 				}
 				setMediaItem(responseItem);
+
+				// Fetch all sections in parallel, then check for existence in other sections
+				const sections = await getAllLibrarySectionsFromIDB();
+				log("Media Item Page - Media Item fetched:", responseItem);
+				log("Library Sections:", sections);
+
+				if (sections.length > 0) {
+					const otherSections = sections.filter(
+						(s) => s.type === responseItem.Type && s.title !== responseItem.LibraryTitle
+					);
+
+					// Fetch all section data in parallel
+					const sectionDataArr = await Promise.all(
+						otherSections.map((section) =>
+							storage
+								.getItem<{
+									data: {
+										MediaItems: MediaItem[];
+									};
+								}>(section.title)
+								.then((data) => ({ section, data }))
+						)
+					);
+
+					const tmdbId = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
+
+					for (const { section, data } of sectionDataArr) {
+						log("SECTION:", section);
+						log("Library Section Data:", data);
+
+						if (data && data.data && data.data.MediaItems) {
+							const otherMediaItem = data.data.MediaItems.find(
+								(item) => item.Guids.find((guid) => guid.Provider === "tmdb")?.ID === tmdbId
+							);
+							log(`Checking section: ${section.title}, found item: ${otherMediaItem ? "Yes" : "No"}`);
+							if (otherMediaItem) {
+								log(`Media Item ${responseItem.RatingKey} exists in section: ${section.title}`);
+								setExistsInOtherSections(otherMediaItem);
+								break;
+							}
+						}
+					}
+				}
 
 				await fetchUserFollowHides();
 				await fetchPosterSets(responseItem);
@@ -373,6 +422,7 @@ const MediaItemPage = () => {
 						existsInDB={mediaItem.ExistInDatabase || false}
 						status={posterSets ? posterSets[0]?.Status : ""}
 						libraryTitle={mediaItem.LibraryTitle || ""}
+						otherMediaItem={existsInOtherSections}
 					/>
 
 					{isLoading && (
