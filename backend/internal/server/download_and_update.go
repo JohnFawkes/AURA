@@ -80,6 +80,14 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	downloadFileName := GetFileDownloadName(posterFile)
 	logging.LOG.Debug(fmt.Sprintf("Downloading %s", downloadFileName))
 
+	// Respond with a success message
+	// utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+	// 	Status:  "success",
+	// 	Elapsed: utils.ElapsedTime(startTime),
+	// 	Data:    fmt.Sprintf("Downloaded %s successfully", downloadFileName),
+	// })
+	// return
+
 	Err = mediaServer.DownloadAndUpdatePosters(mediaItem, posterFile)
 	if Err.Message != "" {
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
