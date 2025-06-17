@@ -202,7 +202,7 @@ const SavedSetsPage: React.FC = () => {
 					</Label>
 					<Badge
 						key={"filter-auto-download-only"}
-						className="cursor-pointer mb-2 sm:mb-0 sm:mr-4"
+						className="cursor-pointer text-sm mb-2 sm:mb-0 sm:mr-4"
 						variant={filterAutoDownloadOnly ? "default" : "outline"}
 						onClick={() => {
 							setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
