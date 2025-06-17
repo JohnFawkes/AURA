@@ -4,6 +4,7 @@ title: "Dockerfile Installation"
 nav_order: 2
 description: "Instructions for installing and running AURA using a Dockerfile."
 parent: Installation
+permalink: /installation/docker-file
 ---
 
 # Dockerfile Installation

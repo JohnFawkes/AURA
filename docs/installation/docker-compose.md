@@ -4,6 +4,7 @@ title: "Docker Compose Installation"
 nav_order: 1
 description: "Instructions for installing and running AURA using Docker Compose."
 parent: Installation
+permalink: /installation/docker-compose
 ---
 
 # Docker Compose Installation

@@ -4,6 +4,7 @@ title: "Unraid Installation"
 nav_order: 3
 description: "Instructions for installing and running AURA on Unraid."
 parent: Installation
+permalink: /installation/unraid
 ---
 
 # Unraid Installation
