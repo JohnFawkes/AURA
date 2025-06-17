@@ -75,9 +75,13 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(posterSets) == 0 {
-		Err.Message = "No sets found for the provided TMDB ID and item type"
-		Err.HelpText = "Ensure the TMDB ID and item type are correct and that sets exist for this item."
-		Err.Details = fmt.Sprintf("TMDB ID: %s, Item Type: %s", tmdbID, itemType)
+		Err.Message = "No sets found for the provided TMDB ID and Item Type"
+		Err.HelpText = "Ensure the TMDB ID and Item Type are correct and that sets exist for this item."
+		Err.Details = map[string]any{
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"librarySection": librarySection,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
