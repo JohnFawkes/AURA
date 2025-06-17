@@ -401,7 +401,7 @@ const UserSetPage = () => {
 			});
 			setBoxSets(filteredBoxSets);
 		}
-	}, [searchQuery, setCurrentPage]);
+	}, [idbBoxsets, idbCollectionSets, idbMovieSets, idbShowSets, searchQuery, selectedLibrarySection, setCurrentPage]);
 
 	// Add this effect to handle filterOutInDB changes
 	useEffect(() => {
@@ -649,6 +649,38 @@ const UserSetPage = () => {
 							</div>
 						</div>
 
+						{/* Filter Out In DB Selection */}
+						<div className="w-full flex items-center mb-2">
+							<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
+								Filter:
+							</Label>
+							{/* Filter Out In DB Toggle */}
+
+							<Badge
+								key="filter-out-in-db"
+								className={`cursor-pointer text-sm ${
+									filterOutInDB === "inDB"
+										? "bg-green-600 text-white"
+										: filterOutInDB === "notInDB"
+											? "bg-red-600 text-white"
+											: ""
+								}`}
+								variant={filterOutInDB !== "all" ? "default" : "outline"}
+								onClick={() => {
+									const next =
+										filterOutInDB === "all" ? "inDB" : filterOutInDB === "inDB" ? "notInDB" : "all";
+									setFilterOutInDB(next);
+									setCurrentPage(1);
+								}}
+							>
+								{filterOutInDB === "all"
+									? "All Items"
+									: filterOutInDB === "inDB"
+										? "Items In DB"
+										: "Items Not in DB"}
+							</Badge>
+						</div>
+
 						{/* No library selected message */}
 						{!selectedLibrarySection && (
 							<div className="flex justify-center mt-8">
@@ -665,48 +697,18 @@ const UserSetPage = () => {
 								<div className="flex justify-center mt-8">
 									<ErrorMessage
 										error={ReturnErrorMessage<string>(
-											`No sets found in ${selectedLibrarySection.title} library`
+											`No Sets found in ${selectedLibrarySection.title} library${
+												filterOutInDB === "inDB"
+													? " that exist in your database"
+													: filterOutInDB === "notInDB"
+														? " that are missing from your database"
+														: ""
+											}${searchQuery ? ` for search query "${searchQuery}"` : ""}`
 										)}
 									/>
 								</div>
 							) : (
 								<div className="flex flex-col items-center mt-4 mb-4">
-									{/* Filter Out In DB Selection */}
-									<div className="w-full flex items-center mb-2">
-										<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
-											Filter:
-										</Label>
-										{/* Filter Out In DB Toggle */}
-
-										<Badge
-											key="filter-out-in-db"
-											className={`cursor-pointer text-sm ${
-												filterOutInDB === "inDB"
-													? "bg-green-600 text-white"
-													: filterOutInDB === "notInDB"
-														? "bg-red-600 text-white"
-														: ""
-											}`}
-											variant={filterOutInDB !== "all" ? "default" : "outline"}
-											onClick={() => {
-												const next =
-													filterOutInDB === "all"
-														? "inDB"
-														: filterOutInDB === "inDB"
-															? "notInDB"
-															: "all";
-												setFilterOutInDB(next);
-												setCurrentPage(1);
-											}}
-										>
-											{filterOutInDB === "all"
-												? "All Items"
-												: filterOutInDB === "inDB"
-													? "Items In DB"
-													: "Items Not in DB"}
-										</Badge>
-									</div>
-
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
 										<SelectItemsPerPage setCurrentPage={setCurrentPage} />
