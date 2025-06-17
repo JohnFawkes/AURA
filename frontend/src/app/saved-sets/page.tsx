@@ -2,7 +2,14 @@
 
 import { AutodownloadResult, fetchAllItemsFromDB, postForceRecheckDBItemForAutoDownload } from "@/services/api.db";
 import { ReturnErrorMessage } from "@/services/api.shared";
-import { RefreshCcw as RefreshIcon, XCircle } from "lucide-react";
+import {
+	ArrowDownAZ,
+	ArrowDownZA,
+	ClockArrowDown,
+	ClockArrowUp,
+	RefreshCcw as RefreshIcon,
+	XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,6 +20,7 @@ import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
+import { SortControl } from "@/components/shared/sort-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,6 +45,10 @@ const SavedSetsPage: React.FC = () => {
 
 	const { itemsPerPage } = useHomeSearchStore();
 	const [currentPage, setCurrentPage] = useState(1);
+
+	// State to track the selected sorting option
+	const [sortOption, setSortOption] = useState<"title" | "date" | "">("date");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;
@@ -96,7 +108,15 @@ const SavedSetsPage: React.FC = () => {
 			);
 		}
 
-		const sorted = filtered.slice().sort((a, b) => {
+		// Sort the filtered sets based on the selected sort option and order
+		const sorted = filtered.slice();
+		if (sortOption === "title") {
+			if (sortOrder === "asc") {
+				sorted.sort((a, b) => a.MediaItem.Title.localeCompare(b.MediaItem.Title));
+			} else {
+				sorted.sort((a, b) => b.MediaItem.Title.localeCompare(a.MediaItem.Title));
+			}
+		} else if (sortOption === "date") {
 			const getMaxDownloadTimestamp = (set: DBMediaItemWithPosterSets) => {
 				if (!set.PosterSets || set.PosterSets.length === 0) return 0;
 				return set.PosterSets.reduce((max, ps) => {
@@ -105,13 +125,15 @@ const SavedSetsPage: React.FC = () => {
 				}, 0);
 			};
 
-			const aMax = getMaxDownloadTimestamp(a);
-			const bMax = getMaxDownloadTimestamp(b);
-			return bMax - aMax;
-		});
+			sorted.sort((a, b) => {
+				const aMax = getMaxDownloadTimestamp(a);
+				const bMax = getMaxDownloadTimestamp(b);
+				return sortOrder === "asc" ? aMax - bMax : bMax - aMax;
+			});
+		}
 
 		return sorted;
-	}, [savedSets, searchQuery, filterAutoDownloadOnly]);
+	}, [savedSets, searchQuery, filterAutoDownloadOnly, sortOption, sortOrder]);
 
 	const paginatedSets = useMemo(() => {
 		const startIndex = (currentPage - 1) * itemsPerPage;
@@ -237,6 +259,28 @@ const SavedSetsPage: React.FC = () => {
 				}
 			</div>
 
+			{/* Sorting controls */}
+			<div className="w-full flex items-center mb-2">
+				<SortControl
+					options={[
+						{
+							value: "date",
+							label: "Date Updated",
+							ascIcon: <ClockArrowUp />,
+							descIcon: <ClockArrowDown />,
+						},
+						{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+					]}
+					sortOption={sortOption}
+					sortOrder={sortOrder}
+					setSortOption={(value) => {
+						setSortOption(value as "title" | "date" | "");
+						if (value === "title") setSortOrder("asc");
+						else if (value === "date") setSortOrder("desc");
+					}}
+					setSortOrder={setSortOrder}
+				/>
+			</div>
 			{/* Items Per Page Selection */}
 			{
 				// Only show the items per page selection if there are more than 10 sets

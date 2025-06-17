@@ -23,9 +23,9 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaItemDetails } from "@/components/shared/media_item_details";
+import { SortControl } from "@/components/shared/sort-control";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
@@ -289,7 +289,7 @@ const MediaItemPage = () => {
 				if (isAFollow && !isBFollow) return -1;
 				if (!isAFollow && isBFollow) return 1;
 
-				if (sortOption === "name") {
+				if (sortOption === "user") {
 					return sortOrder === "asc"
 						? a.User.Name.localeCompare(b.User.Name)
 						: b.User.Name.localeCompare(a.User.Name);
@@ -498,41 +498,31 @@ const MediaItemPage = () => {
 									)}
 
 								{/* Sorting controls */}
-								<div className="flex flex-row gap-2 items-center">
-									{sortOption !== "" && (
-										<Button
-											variant="ghost"
-											size="icon"
-											className="p-2"
-											onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-										>
-											{sortOption === "name" &&
-												(sortOrder === "desc" ? <ArrowDownZA /> : <ArrowDownAZ />)}
-											{sortOption === "date" &&
-												(sortOrder === "desc" ? <CalendarArrowDown /> : <CalendarArrowUp />)}
-										</Button>
-									)}
-									<Select
-										onValueChange={(value) => {
-											setSortOption(value);
-											// Auto-set sortOrder based on sort option
-											if (value === "name") {
-												setSortOrder("asc");
-											} else if (value === "date") {
-												setSortOrder("desc");
-											}
-										}}
-										defaultValue="date"
-									>
-										<SelectTrigger className="w-[140px] sm:w-[180px]">
-											<SelectValue placeholder="Sort By" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="date">Date</SelectItem>
-											<SelectItem value="name">User Name</SelectItem>
-										</SelectContent>
-									</Select>
-								</div>
+								<SortControl
+									options={[
+										{
+											value: "date",
+											label: "Date Updated",
+											ascIcon: <CalendarArrowUp />,
+											descIcon: <CalendarArrowDown />,
+										},
+										{
+											value: "user",
+											label: "User Name",
+											ascIcon: <ArrowDownAZ />,
+											descIcon: <ArrowDownZA />,
+										},
+									]}
+									sortOption={sortOption}
+									sortOrder={sortOrder}
+									setSortOption={(value) => {
+										setSortOption(value as "user" | "date" | "");
+										if (value === "user") setSortOrder("asc");
+										else if (value === "date") setSortOrder("desc");
+									}}
+									setSortOrder={setSortOrder}
+									showLabel={false}
+								/>
 							</div>
 
 							{filteredPosterSets.length > 2 && (

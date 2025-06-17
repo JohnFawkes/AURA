@@ -11,11 +11,10 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { RefreshButton } from "@/components/shared/refresh-button";
+import { SortControl } from "@/components/shared/sort-control";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { useHomeSearchStore } from "@/lib/homeSearchStore";
@@ -59,8 +58,8 @@ export default function Home() {
 	const { itemsPerPage } = useHomeSearchStore();
 
 	// State to track the selected sorting option
-	const [sortOption, setSortOption] = useState<"title" | "date" | "">("title");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+	const [sortOption, setSortOption] = useState<"title" | "date" | "">("date");
+	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
 	// -------------------------------
 	// Derived values
@@ -329,42 +328,20 @@ export default function Home() {
 			</div>
 
 			{/* Sorting controls */}
-			<div className="flex flex-row gap-2 items-center mb-2">
-				<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
-					Sort:
-				</Label>
-				<Select
-					onValueChange={(value) => {
-						setSortOption(value as "" | "title" | "date");
-						// Auto-set sortOrder based on sort option
-						if (value === "title") {
-							setSortOrder("asc");
-						} else if (value === "date") {
-							setSortOrder("desc");
-						}
-					}}
-					defaultValue="title"
-				>
-					<SelectTrigger className="w-[140px] sm:w-[180px]">
-						<SelectValue placeholder="Sort By" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="date">Date Updated</SelectItem>
-						<SelectItem value="title">Title</SelectItem>
-					</SelectContent>
-				</Select>
-				{sortOption !== "" && (
-					<Button
-						variant="ghost"
-						size="icon"
-						className="p-2"
-						onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-					>
-						{sortOption === "title" && (sortOrder === "desc" ? <ArrowDownZA /> : <ArrowDownAZ />)}
-						{sortOption === "date" && (sortOrder === "desc" ? <ClockArrowDown /> : <ClockArrowUp />)}
-					</Button>
-				)}
-			</div>
+			<SortControl
+				options={[
+					{ value: "date", label: "Date Updated", ascIcon: <ClockArrowUp />, descIcon: <ClockArrowDown /> },
+					{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+				]}
+				sortOption={sortOption}
+				sortOrder={sortOrder}
+				setSortOption={(value) => {
+					setSortOption(value as "title" | "date" | "");
+					if (value === "title") setSortOrder("asc");
+					else if (value === "date") setSortOrder("desc");
+				}}
+				setSortOrder={setSortOrder}
+			/>
 
 			{/* Items Per Page Selection */}
 			<div className="flex items-center mb-4">
