@@ -1332,6 +1332,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																				);
 																				// Remove this warningMessage
 																				setProgressValues((prev) => {
+																					//es-lint-disable-next-line @typescript-eslint/no-unused-vars
 																					const { [key]: _, ...rest } =
 																						prev.warningMessages;
 																					return {
