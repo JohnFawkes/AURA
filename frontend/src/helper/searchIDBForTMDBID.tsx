@@ -77,6 +77,6 @@ export const createTMDBLookupMap = (mediaItems: MediaItem[]): TMDBLookupMap => {
 };
 
 // Optimized search function using lookup map
-export const searchWithLookupMap = (tmdbID: string, lookupMap: TMDBLookupMap): MediaItem | boolean => {
-	return lookupMap[tmdbID] || false;
+export const searchWithLookupMap = (id: string, lookupMap: TMDBLookupMap): MediaItem | boolean => {
+	return lookupMap[id] || false;
 };
