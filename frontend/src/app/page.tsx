@@ -274,7 +274,7 @@ export default function Home() {
 					{librarySections.map((section) => (
 						<Badge
 							key={section.ID}
-							className="cursor-pointer"
+							className="cursor-pointer text-sm"
 							variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
 							onClick={() => {
 								if (filteredLibraries.includes(section.Title)) {
@@ -294,7 +294,7 @@ export default function Home() {
 
 					<Badge
 						key={"filter-out-in-db"}
-						className="cursor-pointer"
+						className="cursor-pointer text-sm"
 						variant={filterOutInDB ? "default" : "outline"}
 						onClick={() => {
 							setFilterOutInDB(!filterOutInDB);
