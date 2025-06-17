@@ -1,6 +1,7 @@
 package plex
 
 import (
+	"aura/internal/cache"
 	"aura/internal/config"
 	"aura/internal/database"
 	"aura/internal/logging"
@@ -101,6 +102,9 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	} else {
 		itemInfo.ExistInDatabase = false
 	}
+
+	// Update item in cache
+	cache.LibraryCacheStore.UpdateMediaItem(itemInfo.LibraryTitle, &itemInfo)
 
 	return itemInfo, logging.StandardError{}
 }
