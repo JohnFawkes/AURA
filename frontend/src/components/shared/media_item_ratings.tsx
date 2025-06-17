@@ -100,6 +100,22 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 					)}
 				</div>
 			))}
+
+			{/* On Janeway it is Movie and show so we can get rid of the mediaItemType check */}
+			{guids.some((g) => g.Provider === "tmdb") && (
+				<a
+					href={`https://janeway.mediux.io/${mediaItemType}/${guids.find((g) => g.Provider === "tmdb")?.ID}`}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<AssetImage
+						image={"/mediux_logo.svg"}
+						aspect="logo"
+						className="relative mt-1 ml-1 w-[50px] h-[35px]"
+						imageClassName="object-contain"
+					/>
+				</a>
+			)}
 		</div>
 	);
 }
