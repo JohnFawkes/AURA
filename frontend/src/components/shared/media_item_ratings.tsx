@@ -91,7 +91,7 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 								<AssetImage
 									image={info.logoUrl}
 									aspect="logo"
-									className="relative mt-1 ml-1 w-[40px] h-[30px]"
+									className="relative mt-1 w-[40px] h-[30px]"
 									imageClassName="object-contain"
 								/>
 							</a>

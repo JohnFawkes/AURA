@@ -122,8 +122,11 @@ export function MediaItemDetails({
 								{status.toLowerCase().startsWith("returning") ? "Continuing" : status}
 							</Badge>
 						)}
+					</div>
 
-						{/* External Ratings/Links from GUIDs */}
+					{/* External Ratings/Links from GUIDs */}
+					{/* Year, Content Rating And External Ratings/Links */}
+					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 						<MediaItemRatings guids={guids} mediaItemType={mediaItemType} />
 					</div>
 				</div>
@@ -132,7 +135,7 @@ export function MediaItemDetails({
 			{/* Library Information */}
 			{libraryTitle && (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="text-md text-primary-dynamic">
+					<Lead className="text-md text-primary-dynamic ml-1">
 						<span className="font-semibold">{libraryTitle} Library</span>{" "}
 					</Lead>
 				</div>
@@ -141,7 +144,7 @@ export function MediaItemDetails({
 			{/* Other Media Item Information */}
 			{otherMediaItem && (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="text-md text-primary-dynamic">
+					<Lead className="text-md text-primary-dynamic ml-1">
 						Also available in{" "}
 						<Link
 							href={formatMediaItemUrl(otherMediaItem)}
@@ -161,14 +164,14 @@ export function MediaItemDetails({
 			{/* Show Existence in Database */}
 			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 				<Lead className={`text-md ${existsInDB ? "text-green-500" : "text-red-500"}`}>
-					<Database className="inline mr-1" /> {existsInDB ? "Already in Database" : "Not in Database"}
+					<Database className="inline ml-1 mr-1" /> {existsInDB ? "Already in Database" : "Not in Database"}
 				</Lead>
 			</div>
 
 			{/* Season/Episode Information */}
 			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 && (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-					<Lead className="flex items-center text-md text-primary-dynamic">
+					<Lead className="flex items-center text-md text-primary-dynamic ml-1">
 						{seasonCount} {seasonCount > 1 ? "Seasons" : "Season"} with {episodeCount}{" "}
 						{episodeCount > 1 ? "Episodes" : "Episode"} in {serverType}
 					</Lead>
