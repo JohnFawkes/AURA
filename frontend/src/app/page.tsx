@@ -277,7 +277,6 @@ export default function Home() {
 					})}
 				</div>
 			)}
-
 			{/* Filter Section*/}
 			<div className="flex flex-col sm:flex-row mb-4 mt-2">
 				{/* Label */}
@@ -326,7 +325,6 @@ export default function Home() {
 					</Badge>
 				</ToggleGroup>
 			</div>
-
 			{/* Sorting controls */}
 			<SortControl
 				options={[
@@ -342,12 +340,10 @@ export default function Home() {
 				}}
 				setSortOrder={setSortOrder}
 			/>
-
 			{/* Items Per Page Selection */}
 			<div className="flex items-center mb-4">
 				<SelectItemsPerPage setCurrentPage={setCurrentPage} />
 			</div>
-
 			{/* Grid of Cards */}
 			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
 				{paginatedItems.length === 0 && searchQuery && fullyLoaded ? (
@@ -365,6 +361,14 @@ export default function Home() {
 				)}
 			</div>
 
+			{/* Showing XX of XXX */}
+			<div className="w-full flex justify-center items-center text-sm mt-4 text-muted-foreground">
+				<span>
+					Showing {currentPage * itemsPerPage - itemsPerPage + 1} -{" "}
+					{Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length}
+				</span>
+			</div>
+
 			{/* Pagination */}
 			<CustomPagination
 				currentPage={currentPage}
@@ -372,7 +376,6 @@ export default function Home() {
 				setCurrentPage={setCurrentPage}
 				scrollToTop={true}
 			/>
-
 			{/* Refresh Button */}
 			<RefreshButton onClick={() => getMediaItems(false)} />
 		</div>
