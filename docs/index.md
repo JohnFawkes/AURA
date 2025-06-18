@@ -43,7 +43,7 @@ To get started with AURA:
 
 ## Join the Community
 
--   💬 [Join our Discord](https://discord.gg/Sv6wzqfK)
+-   💬 [Join our Discord](https://discord.gg/YAKzwKPwyw)
 -   🛠 [View Source on GitHub](https://github.com/mediux-team/aura)
 
 ---

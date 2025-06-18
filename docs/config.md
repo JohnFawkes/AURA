@@ -228,4 +228,4 @@ Mediux:
 -   **Description**: The API key for Mediux.
 -   **Details**: This option specifies the API key required to access Mediux's API. This can be obtained by creating an account on [Mediux](https://mediux.io/) and generating an API key in your account settings.
 -   **Note**: This is not yet available to the public, but will be in the future.
-    If you would like to test out AURA, please contact us on [Discord](https://discord.gg/Sv6wzqfK) to get access to the API key.
+    If you would like to test out AURA, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
