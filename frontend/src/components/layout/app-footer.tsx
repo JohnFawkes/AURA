@@ -33,7 +33,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					</Link>
 
 					<Link
-						href="https://discord.gg/HP9TpTmfcp"
+						href="https://discord.gg/YAKzwKPwyw"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="flex items-center hover:text-primary transition-colors"
