@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { AssetImage } from "@/components/shared/asset-image";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { log } from "@/lib/logger";
@@ -40,6 +41,7 @@ type MediaItemDetailsProps = {
 };
 
 export function MediaItemDetails({
+	ratingKey,
 	mediaItemType,
 	title,
 	summary,
@@ -79,40 +81,52 @@ export function MediaItemDetails({
 
 	return (
 		<div>
-			{/* Title and Summary */}
-			<div className="flex flex-col pt-40 justify-end items-center text-center lg:items-start lg:text-left">
-				<H1 className="mb-1">{title}</H1>
-				{/* Hide summary on mobile */}
-				<Lead className="text-primary-dynamic max-w-4xl hidden md:block">{summary}</Lead>
-			</div>
-
-			{/* Year, Content Rating And External Ratings/Links */}
-			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-				{/* Year */}
-				{year && <Badge className="flex items-center text-sm">{year}</Badge>}
-
-				{/* Content Rating */}
-				{contentRating && <Badge className="flex items-center text-sm">{contentRating}</Badge>}
-
-				{/* Status */}
-				{status && (
-					<Badge
-						className={`flex items-center text-sm ${
-							status.toLowerCase() === "ended" ||
-							status.toLowerCase() === "cancelled" ||
-							status.toLowerCase() === "canceled"
-								? "bg-red-700 text-white"
-								: status.toLowerCase().startsWith("returning")
-									? "bg-green-700 text-white"
-									: ""
-						}`}
-					>
-						{status.toLowerCase().startsWith("returning") ? "Continuing" : status}
-					</Badge>
+			<div className="flex flex-col lg:flex-row pt-40 items-center lg:items-start text-center lg:text-left">
+				{/* Poster Image */}
+				{ratingKey && (
+					<div className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-8 flex justify-center">
+						<AssetImage
+							image={`/api/mediaserver/image/${ratingKey}/poster`}
+							className="w-[200px] h-auto transition-transform hover:scale-105"
+						/>
+					</div>
 				)}
 
-				{/* External Ratings/Links from GUIDs */}
-				<MediaItemRatings guids={guids} mediaItemType={mediaItemType} />
+				{/* Title and Summary */}
+				<div className="flex flex-col items-center lg:items-start">
+					<H1 className="mb-1">{title}</H1>
+					{/* Hide summary on mobile */}
+					<Lead className="text-primary-dynamic max-w-xl hidden lg:block">{summary}</Lead>
+
+					{/* Year, Content Rating And External Ratings/Links */}
+					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+						{/* Year */}
+						{year && <Badge className="flex items-center text-sm">{year}</Badge>}
+
+						{/* Content Rating */}
+						{contentRating && <Badge className="flex items-center text-sm">{contentRating}</Badge>}
+
+						{/* Status */}
+						{status && (
+							<Badge
+								className={`flex items-center text-sm ${
+									status.toLowerCase() === "ended" ||
+									status.toLowerCase() === "cancelled" ||
+									status.toLowerCase() === "canceled"
+										? "bg-red-700 text-white"
+										: status.toLowerCase().startsWith("returning")
+											? "bg-green-700 text-white"
+											: ""
+								}`}
+							>
+								{status.toLowerCase().startsWith("returning") ? "Continuing" : status}
+							</Badge>
+						)}
+
+						{/* External Ratings/Links from GUIDs */}
+						<MediaItemRatings guids={guids} mediaItemType={mediaItemType} />
+					</div>
+				</div>
 			</div>
 
 			{/* Library Information */}
