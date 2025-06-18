@@ -27,6 +27,7 @@ import { SortControl } from "@/components/shared/sort-control";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { useMediaPageStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 import { storage } from "@/lib/storage";
@@ -48,8 +49,8 @@ const MediaItemPage = () => {
 	const [filteredPosterSets, setFilteredPosterSets] = useState<PosterSet[] | null>(null);
 
 	// State to track the selected sorting option
-	const [sortOption, setSortOption] = useState<string>("date");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+	const { sortOption, setSortOption } = useMediaPageStore();
+	const { sortOrder, setSortOrder } = useMediaPageStore();
 
 	// Loading State
 	const [isLoading, setIsLoading] = useState(true);
@@ -61,8 +62,8 @@ const MediaItemPage = () => {
 
 	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
 	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
-	const [showHiddenUsers, setShowHiddenUsers] = useState(false);
-	const [showSetsWithTitleCardsOnly, setShowSetsWithTitleCardsOnly] = useState(false);
+	const { showHiddenUsers, setShowHiddenUsers } = useMediaPageStore();
+	const { showOnlyTitlecardSets, setShowOnlyTitlecardSets } = useMediaPageStore();
 
 	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
 
@@ -75,24 +76,11 @@ const MediaItemPage = () => {
 	});
 
 	const handleShowSetsWithTitleCardsOnly = () => {
-		setShowSetsWithTitleCardsOnly((prev) => {
-			// If the checkbox is checked, set it to false
-			if (prev) {
-				return false;
-			}
-			return true;
-		});
+		setShowOnlyTitlecardSets(!showOnlyTitlecardSets);
 	};
 
 	const handleShowHiddenUsers = () => {
-		setShowHiddenUsers((prev) => {
-			// If the checkbox is checked, set it to false
-			if (prev) {
-				return false;
-			}
-			// If the checkbox is unchecked, set it to true
-			return true;
-		});
+		setShowHiddenUsers(!showHiddenUsers);
 	};
 
 	useEffect(() => {
@@ -280,7 +268,7 @@ const MediaItemPage = () => {
 				return !isHidden; // Show only if not hidden
 			});
 
-			if (mediaItem && mediaItem.Type === "show" && showSetsWithTitleCardsOnly) {
+			if (mediaItem && mediaItem.Type === "show" && showOnlyTitlecardSets) {
 				// If it's a show and the checkbox is checked, filter for sets with title cards
 				filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
 			}
@@ -314,16 +302,7 @@ const MediaItemPage = () => {
 
 			setFilteredPosterSets(filtered);
 		}
-	}, [
-		posterSets,
-		showHiddenUsers,
-		userHides,
-		userFollows,
-		sortOption,
-		sortOrder,
-		mediaItem,
-		showSetsWithTitleCardsOnly,
-	]);
+	}, [posterSets, showHiddenUsers, userHides, userFollows, sortOption, sortOrder, mediaItem, showOnlyTitlecardSets]);
 
 	useEffect(() => {
 		const fetchAdjacentItems = async () => {
@@ -489,11 +468,11 @@ const MediaItemPage = () => {
 									) && (
 										<div className="flex items-center space-x-2">
 											<Checkbox
-												checked={showSetsWithTitleCardsOnly}
+												checked={showOnlyTitlecardSets}
 												onCheckedChange={handleShowSetsWithTitleCardsOnly}
 												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
 											/>
-											{showSetsWithTitleCardsOnly ? (
+											{showOnlyTitlecardSets ? (
 												<span className="text-sm ml-2">Showing Titlecard Sets Only</span>
 											) : (
 												<span className="text-sm ml-2">Filter Titlecard Only Sets</span>

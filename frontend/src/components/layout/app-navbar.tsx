@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { useHomePageStore, usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { useMediaStore } from "@/lib/mediaStore";
 import { storage } from "@/lib/storage";
 
@@ -32,7 +32,9 @@ import { searchMediaItems } from "@/hooks/searchMediaItems";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
 export default function Navbar() {
-	const { setSearchQuery, setCurrentPage, setFilteredLibraries, setFilterOutInDB } = useHomeSearchStore();
+	const { setSearchQuery } = useSearchQueryStore();
+	const { setCurrentPage } = usePageStore();
+	const { setFilteredLibraries, setFilterOutInDB } = useHomePageStore();
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";

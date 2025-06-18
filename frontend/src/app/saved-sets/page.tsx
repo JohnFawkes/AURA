@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { usePageStore, useSavedSetsPageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
@@ -39,16 +39,21 @@ const SavedSetsPage: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const isFetchingRef = useRef(false);
-	const { searchQuery } = useHomeSearchStore();
+	const { searchQuery } = useSearchQueryStore();
 	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
-	const { itemsPerPage } = useHomeSearchStore();
+	const { itemsPerPage } = usePageStore();
 	const [currentPage, setCurrentPage] = useState(1);
 
 	// State to track the selected sorting option
-	const [sortOption, setSortOption] = useState<"title" | "date" | "">("date");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+	const { sortOption, setSortOption } = useSavedSetsPageStore();
+	const { sortOrder, setSortOrder } = useSavedSetsPageStore();
+
+	// Set sortOption to "date" if its not title or date
+	if (sortOption !== "title" && sortOption !== "date") {
+		setSortOption("date");
+	}
 
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;

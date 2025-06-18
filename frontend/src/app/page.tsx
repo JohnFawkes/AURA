@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { useHomePageStore, usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { storage } from "@/lib/storage";
 
@@ -38,7 +38,7 @@ export default function Home() {
 	// States
 	// -------------------------------
 	// Search
-	const { searchQuery } = useHomeSearchStore();
+	const { searchQuery } = useSearchQueryStore();
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Loading & Error
@@ -52,20 +52,25 @@ export default function Home() {
 	}>({});
 
 	// Filtering & Pagination
-	const { filteredLibraries, setFilteredLibraries, filterOutInDB, setFilterOutInDB } = useHomeSearchStore();
+	const { filteredLibraries, setFilteredLibraries, filterOutInDB, setFilterOutInDB } = useHomePageStore();
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
-	const { currentPage, setCurrentPage } = useHomeSearchStore();
-	const { itemsPerPage } = useHomeSearchStore();
+	const { currentPage, setCurrentPage } = usePageStore();
+	const { itemsPerPage } = usePageStore();
 
 	// State to track the selected sorting option
-	const [sortOption, setSortOption] = useState<"title" | "date" | "">("date");
-	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+	const { sortOption, setSortOption } = useHomePageStore();
+	const { sortOrder, setSortOrder } = useHomePageStore();
 
 	// -------------------------------
 	// Derived values
 	// -------------------------------
 	const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+	// Set sortOption to "date" if its not title or date
+	if (sortOption !== "title" && sortOption !== "date") {
+		setSortOption("date");
+	}
 
 	// Fetch data from cache or API
 	const getMediaItems = useCallback(async (useCache: boolean) => {

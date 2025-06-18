@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
-import { useHomeSearchStore } from "@/lib/homeSearchStore";
+import { usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { storage } from "@/lib/storage";
 
@@ -103,7 +103,7 @@ const UserSetPage = () => {
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
-	const { itemsPerPage } = useHomeSearchStore();
+	const { itemsPerPage } = usePageStore();
 
 	// Add state to track progress
 	const [, setProgressCount] = useState<{
@@ -126,7 +126,7 @@ const UserSetPage = () => {
 	const [collectionSets, setCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
 	const [boxsets, setBoxSets] = useState<MediuxUserBoxset[]>([]);
 
-	const { searchQuery, setSearchQuery } = useHomeSearchStore();
+	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Pagination and Active Tab state
