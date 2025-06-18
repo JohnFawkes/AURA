@@ -209,15 +209,22 @@ const MediaItemPage = () => {
 						)
 					);
 
-					const tmdbId = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
+					await fetchUserFollowHides();
+					await fetchPosterSets(responseItem);
 
+					const tmdbId = Array.isArray(responseItem.Guids)
+						? responseItem.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID
+						: currentMediaItem.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID;
+					if (!tmdbId) {
+						return;
+					}
 					for (const { section, data } of sectionDataArr) {
 						log("SECTION:", section);
 						log("Library Section Data:", data);
 
 						if (data && data.data && data.data.MediaItems) {
-							const otherMediaItem = data.data.MediaItems.find(
-								(item) => item.Guids.find((guid) => guid.Provider === "tmdb")?.ID === tmdbId
+							const otherMediaItem = data.data.MediaItems?.find?.(
+								(item) => item.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID === tmdbId
 							);
 							log(`Checking section: ${section.title}, found item: ${otherMediaItem ? "Yes" : "No"}`);
 							if (otherMediaItem) {
@@ -228,9 +235,6 @@ const MediaItemPage = () => {
 						}
 					}
 				}
-
-				await fetchUserFollowHides();
-				await fetchPosterSets(responseItem);
 			} catch (error) {
 				setHasError(true);
 				setError(ReturnErrorMessage<unknown>(error));

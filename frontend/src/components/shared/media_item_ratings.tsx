@@ -63,6 +63,7 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 			}
 		}
 	});
+	const tmdbID = guids?.find((g) => g.Provider === "tmdb")?.ID;
 
 	return (
 		<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
@@ -102,9 +103,9 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 			))}
 
 			{/* On Janeway it is Movie and show so we can get rid of the mediaItemType check */}
-			{guids.some((g) => g.Provider === "tmdb") && (
+			{tmdbID && (
 				<a
-					href={`https://janeway.mediux.io/${mediaItemType}/${guids.find((g) => g.Provider === "tmdb")?.ID}`}
+					href={`https://janeway.mediux.io/${mediaItemType}/${tmdbID}`}
 					target="_blank"
 					rel="noopener noreferrer"
 				>
