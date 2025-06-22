@@ -62,10 +62,19 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Stand
 		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
 			"error":        err.Error(),
-			"requestBody":  requestBody,
 			"username":     username,
 			"responseBody": string(response.Body()),
 			"statusCode":   response.StatusCode(),
+		}
+		return MediuxUserAllSetsResponse{}, Err
+	}
+	// Check if the response status code is not 200 OK
+	if response.StatusCode() != http.StatusOK {
+		Err.Message = "Unexpected response from Mediux API"
+		Err.HelpText = "Check if the Mediux API endpoint is correct and the token is valid."
+		Err.Details = map[string]any{
+			"statusCode":   response.StatusCode(),
+			"responseBody": string(response.Body()),
 		}
 		return MediuxUserAllSetsResponse{}, Err
 	}

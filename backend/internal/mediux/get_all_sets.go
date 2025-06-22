@@ -111,7 +111,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
 		return nil, Err
 	}
-
 	// Create a new Resty client
 	client := resty.New()
 
@@ -126,7 +125,19 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
 			"error":          err.Error(),
-			"requestBody":    requestBody,
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
+		return nil, Err
+	}
+	if response.StatusCode() != http.StatusOK {
+		Err.Message = "Mediux API returned non-OK status"
+		Err.HelpText = "Check the Mediux API status or your request parameters."
+		Err.Details = map[string]any{
 			"tmdbID":         tmdbID,
 			"itemType":       itemType,
 			"librarySection": librarySection,
@@ -809,12 +820,23 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
 			"error":          err.Error(),
-			"requestBody":    requestBody,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
 			"librarySection": librarySection,
 			"itemRatingKey":  itemRatingKey,
 			"setID":          setID,
+		}
+		return modals.PosterSet{}, Err
+	}
+	if response.StatusCode() != http.StatusOK {
+		Err.Message = "Mediux API returned non-OK status"
+		Err.HelpText = "Check the Mediux API status or your request parameters."
+		Err.Details = map[string]any{
 			"responseBody":   string(response.Body()),
 			"statusCode":     response.StatusCode(),
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -880,12 +902,23 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
 			"error":          err.Error(),
-			"requestBody":    requestBody,
 			"librarySection": librarySection,
 			"itemRatingKey":  itemRatingKey,
 			"setID":          setID,
 			"responseBody":   string(response.Body()),
 			"statusCode":     response.StatusCode(),
+		}
+		return modals.PosterSet{}, Err
+	}
+	if response.StatusCode() != http.StatusOK {
+		Err.Message = "Mediux API returned non-OK status"
+		Err.HelpText = "Check the Mediux API status or your request parameters."
+		Err.Details = map[string]any{
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -968,12 +1001,24 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
 			"error":          err.Error(),
-			"requestBody":    requestBody,
 			"tmdbID":         tmdbID,
 			"librarySection": librarySection,
 			"itemRatingKey":  itemRatingKey,
 			"responseBody":   string(response.Body()),
 			"statusCode":     response.StatusCode(),
+		}
+		return modals.PosterSet{}, Err
+	}
+	if response.StatusCode() != http.StatusOK {
+		Err.Message = "Mediux API returned non-OK status"
+		Err.HelpText = "Check the Mediux API status or your request parameters."
+		Err.Details = map[string]any{
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+			"tmdbID":         tmdbID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
 		}
 		return modals.PosterSet{}, Err
 	}
