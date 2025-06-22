@@ -63,6 +63,7 @@ func GetMediuxImageURL(assetID, dateTimeString, quality string) (string, logging
 
 	// Construct the Mediux URL
 	mediuxURL := fmt.Sprintf("%s/%s?v=%s%s", "https://staged.mediux.io/assets", assetID, dateTimeFormatted, qualityParam)
+	logging.LOG.Trace(fmt.Sprintf("Asset ID: %s, DateTime: %s, Quality: %s", assetID, dateTimeFormatted, quality))
 
 	return mediuxURL, logging.StandardError{}
 }
