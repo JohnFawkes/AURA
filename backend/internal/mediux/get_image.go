@@ -121,7 +121,6 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func FetchImage(assetID string, formatDate string, qualityParam string) ([]byte, string, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Getting image for asset ID: %s", assetID))
 	Err := logging.NewStandardError()
 
 	// Construct the URL for the Mediux API request
