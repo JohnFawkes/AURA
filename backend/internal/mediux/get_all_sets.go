@@ -100,12 +100,12 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 
 	// Generate the request body
 	var requestBody map[string]any
-	if itemType == "movie" {
+	switch itemType {
+	case "movie":
 		requestBody = generateMovieRequestBody(tmdbID)
-	} else if itemType == "show" {
+	case "show":
 		requestBody = generateShowRequestBody(tmdbID)
-	} else {
-
+	default:
 		Err.Message = "Invalid item type provided"
 		Err.HelpText = "Ensure the item type is either 'movie' or 'show'."
 		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
@@ -141,7 +141,8 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	}
 
 	// Check if the response is nil on all fields
-	if itemType == "movie" {
+	switch itemType {
+	case "movie":
 		if responseBody.Data.Movie.ID == "" {
 
 			Err.Message = "Movie not found in the response"
@@ -160,7 +161,7 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			return nil, Err
 		}
 
-	} else if itemType == "show" {
+	case "show":
 		if responseBody.Data.Show.ID == "" {
 
 			Err.Message = "Show not found in the response"
@@ -178,13 +179,13 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
 			return nil, Err
 		}
-
 	}
 
 	var posterSets []modals.PosterSet
-	if itemType == "movie" {
+	switch itemType {
+	case "movie":
 		posterSets = processMovieResponse(librarySection, itemRatingKey, (*responseBody.Data.Movie))
-	} else if itemType == "show" {
+	case "show":
 		posterSets = processShowResponse(librarySection, itemRatingKey, (*responseBody.Data.Show))
 	}
 
