@@ -38,7 +38,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			return Err
 		}
 		// Download the image from Mediux
-		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, "full")
+		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, "original")
 		if Err.Message != "" {
 			return Err
 		}

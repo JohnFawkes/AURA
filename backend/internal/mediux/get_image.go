@@ -70,9 +70,9 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		qualityParam = "thumb"
 	}
 	// Check if the quality is valid
-	if qualityParam != "thumb" && qualityParam != "full" && qualityParam != "optimized" {
+	if qualityParam != "thumb" && qualityParam != "original" && qualityParam != "optimized" {
 		Err.Message = "Invalid quality parameter"
-		Err.HelpText = "Ensure the quality parameter is either 'thumb', 'full', or 'optimized'."
+		Err.HelpText = "Ensure the quality parameter is either 'thumb', 'original', or 'optimized'."
 		Err.Details = fmt.Sprintf("Quality Parameter: %s", qualityParam)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return

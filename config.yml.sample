@@ -76,7 +76,7 @@ TMDB:
 #   Token - The token for Mediux. This can be obtained by creating an account on Mediux and generating a static token.
 # !!!! NOTE: This is not yet available to the public. It is currently in development and will be available in the future.
 #       If you would like to test this app, you will need a MedUX. You can contact us on Discord to get access.
-    DownloadQuality: The quality of the images to download. Options are: "full" or "optimized"
+    DownloadQuality: The quality of the images to download. Options are: "original" or "optimized"
 Mediux:
-    Token: <YOUR_MEDIUX_TOKEN> # Replace with your Mediux token 
-    DownloadQuality: "optimized" # The quality of the images to download. Options are: "full" or "optimized"
+    Token: <YOUR_MEDIUX_TOKEN> # Replace with your Mediux token
+    DownloadQuality: "optimized" # The quality of the images to download. Options are: "original" or "optimized"

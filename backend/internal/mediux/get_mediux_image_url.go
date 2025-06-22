@@ -42,10 +42,10 @@ func GetMediuxImageURL(assetID, dateTimeString, quality string) (string, logging
 		}
 	}
 
-	// Check quality is set to "full" or "thumb"
-	if quality != "full" && quality != "thumb" && quality != "optimized" {
+	// Check quality is set to "original" or "thumb"
+	if quality != "original" && quality != "thumb" && quality != "optimized" {
 		Err.Message = "Invalid quality parameter"
-		Err.HelpText = "Quality must be either 'full', 'thumb', or 'optimized'."
+		Err.HelpText = "Quality must be either 'original', 'thumb', or 'optimized'."
 		Err.Details = fmt.Sprintf("Provided quality: %s", quality)
 		return "", Err
 	}
@@ -57,7 +57,7 @@ func GetMediuxImageURL(assetID, dateTimeString, quality string) (string, logging
 	if quality == "thumb" {
 		qualityParam = "&key=thumb"
 	} else if config.Global.Mediux.DownloadQuality == "optimized" || quality == "optimized" {
-		// If quality is "full" and optimized is set, use "jpg"
+		// If quality is "optimized" or configured as such, use optimized quality
 		qualityParam = "&key=jpg"
 	}
 

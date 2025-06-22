@@ -20,7 +20,7 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.Standa
 		return Err
 	}
 
-	mediuxImageUrl, Err := mediux.GetMediuxImageURL(file.ID, file.Modified.String(), "full")
+	mediuxImageUrl, Err := mediux.GetMediuxImageURL(file.ID, file.Modified.String(), "original")
 	if Err.Message != "" {
 		return Err
 	}

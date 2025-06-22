@@ -221,6 +221,7 @@ TMDB:
 ```yaml
 Mediux:
     APIKey: your_mediux_api_key_here
+    DownloadQuality: optimized
 ```
 
 ### APIKey
@@ -229,3 +230,12 @@ Mediux:
 -   **Details**: This option specifies the API key required to access Mediux's API. This can be obtained by creating an account on [Mediux](https://mediux.io/) and generating an API key in your account settings.
 -   **Note**: This is not yet available to the public, but will be in the future.
     If you would like to test out AURA, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
+
+### DownloadQuality
+
+-   **Default**: `optimized`
+-   **Options**: `optimized`, `original`
+-   **Description**: The quality of images to download from Mediux.
+-   **Details**: This option specifies the quality of images to download from Mediux.
+    -   `optimized`: Downloads images that are optimized for space savings and performance.
+    -   `original`: Downloads the original images without any optimization.
