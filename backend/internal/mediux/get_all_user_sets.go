@@ -58,10 +58,15 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Stand
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-
 		Err.Message = "Failed to send request to Mediux API"
 		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":        err.Error(),
+			"requestBody":  requestBody,
+			"username":     username,
+			"responseBody": string(response.Body()),
+			"statusCode":   response.StatusCode(),
+		}
 		return MediuxUserAllSetsResponse{}, Err
 	}
 

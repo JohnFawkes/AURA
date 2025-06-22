@@ -36,7 +36,11 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	if err != nil {
 		Err.Message = "Failed to create HTTP request"
 		Err.HelpText = fmt.Sprintf("Error creating HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		Err.Details = fmt.Sprintf("Error creating request: %v", err)
+		Err.Details = map[string]any{
+			"method": method,
+			"url":    url,
+			"error":  err.Error(),
+		}
 		return nil, nil, Err
 	}
 
@@ -92,7 +96,11 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	if err != nil {
 		Err.Message = "Failed to send HTTP request"
 		Err.HelpText = fmt.Sprintf("Error sending HTTP request (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		Err.Details = fmt.Sprintf("Error sending request: %v", err)
+		Err.Details = map[string]any{
+			"method": method,
+			"url":    url,
+			"error":  err.Error(),
+		}
 		return nil, nil, Err
 	}
 
@@ -102,7 +110,12 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 		resp.Body.Close()
 		Err.Message = "Failed to read HTTP response body"
 		Err.HelpText = fmt.Sprintf("Error reading HTTP response body (%s) [%s]", urlTitle, ElapsedTime(startTime))
-		Err.Details = fmt.Sprintf("Error reading response body: %v", err)
+		Err.Details = map[string]any{
+			"method":       method,
+			"url":          url,
+			"error":        err.Error(),
+			"responseBody": string(respBody),
+		}
 		return nil, nil, Err
 	}
 

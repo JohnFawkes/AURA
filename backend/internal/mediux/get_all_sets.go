@@ -122,10 +122,19 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		SetBody(requestBody).
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
-
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"requestBody":    requestBody,
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
+		return nil, Err
 	}
 
 	// Parse the response body into the appropriate struct based on itemType
@@ -133,7 +142,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
@@ -144,7 +152,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	switch itemType {
 	case "movie":
 		if responseBody.Data.Movie.ID == "" {
-
 			Err.Message = "Movie not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the movie exists in the Mediux database."
 			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
@@ -154,7 +161,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		if responseBody.Data.Movie.CollectionID == nil &&
 			responseBody.Data.Movie.Posters == nil &&
 			responseBody.Data.Movie.Backdrops == nil {
-
 			Err.Message = "Movie sets not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the movie has sets in the Mediux database."
 			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
@@ -163,7 +169,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 
 	case "show":
 		if responseBody.Data.Show.ID == "" {
-
 			Err.Message = "Show not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the show exists in the Mediux database."
 			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
@@ -173,7 +178,6 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		if responseBody.Data.Show.Posters == nil &&
 			responseBody.Data.Show.Backdrops == nil &&
 			responseBody.Data.Show.Seasons == nil {
-
 			Err.Message = "Show sets not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the show has sets in the Mediux database."
 			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
@@ -801,10 +805,17 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"requestBody":    requestBody,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -865,10 +876,17 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"requestBody":    requestBody,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -946,10 +964,17 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		Post("https://staged.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"requestBody":    requestBody,
+			"tmdbID":         tmdbID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
 		return modals.PosterSet{}, Err
 	}
 
