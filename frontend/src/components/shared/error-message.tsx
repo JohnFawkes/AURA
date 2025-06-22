@@ -5,6 +5,7 @@ import { AlertCircle, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { H4, Lead } from "@/components/ui/typography";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +21,31 @@ export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	if (!error?.error) return null;
+
+	// Helper for pretty JSON
+	const getPrettyDetails = () => {
+		return JSON.stringify(
+			Object.fromEntries(
+				error?.error && typeof error.error.Details === "object" && error.error.Details !== null
+					? Object.entries(error.error.Details).map(([key, value]) => {
+							if (
+								typeof value === "string" &&
+								(value.trim().startsWith("{") || value.trim().startsWith("["))
+							) {
+								try {
+									return [key, JSON.parse(value)];
+								} catch {
+									return [key, value];
+								}
+							}
+							return [key, value];
+						})
+					: []
+			),
+			null,
+			2
+		);
+	};
 
 	return (
 		<div className={cn("flex flex-col items-center justify-center mt-10 w-full max-w-md mx-auto", className)}>
@@ -71,12 +97,23 @@ export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
 							)}
 
 							{error.error.Details && (
-								<Lead className="text-sm text-muted-foreground">
-									Details:{" "}
-									{typeof error.error.Details === "string"
-										? error.error.Details
-										: JSON.stringify(error.error.Details, null, 2)}
-								</Lead>
+								<>
+									<Lead className="text-sm text-muted-foreground">Details: </Lead>
+									{typeof error.error.Details === "string" ? (
+										<pre className="bg-muted/30 rounded p-2 mt-1 whitespace-pre-wrap break-words overflow-x-auto max-h-64 text-xs">
+											{error.error.Details}
+										</pre>
+									) : (
+										<>
+											<Textarea
+												rows={Math.max(6, getPrettyDetails().split("\n").length)}
+												className="mt-2 w-full resize-none font-mono bg-muted/30"
+												value={getPrettyDetails()}
+												readOnly
+											/>
+										</>
+									)}
+								</>
 							)}
 						</div>
 						<Button
