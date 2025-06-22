@@ -26,7 +26,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	// If it does, we don't need to download it again
 	// If it doesn't, we need to download it
 	// The image is saved in the temp-images/mediux/full folder with the file ID as the name
-	formatDate := file.Modified.Format("20060102")
+	formatDate := file.Modified.Format("20060102150405")
 	fileName := fmt.Sprintf("%s_%s.jpg", file.ID, formatDate)
 	filePath := path.Join(mediux.MediuxFullTempImageFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
@@ -38,7 +38,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			return Err
 		}
 		// Download the image from Mediux
-		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, true)
+		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, "full")
 		if Err.Message != "" {
 			return Err
 		}
@@ -71,7 +71,8 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	newFilePath := ""
 	newFileName := ""
 
-	if plex.Type == "movie" {
+	switch plex.Type {
+	case "movie":
 		// If item.Movie is nil, get the movie from the library
 		if plex.Movie == nil {
 			logging.LOG.Debug(fmt.Sprintf("Fetching full movie details for '%s'", plex.Title))
@@ -83,19 +84,21 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 
 		// Handle movie-specific logic
 		newFilePath = path.Dir(plex.Movie.File.Path)
-		if file.Type == "poster" {
+		switch file.Type {
+		case "poster":
 			newFileName = "poster.jpg"
-		} else if file.Type == "backdrop" {
+		case "backdrop":
 			newFileName = "backdrop.jpg"
 		}
-	} else if plex.Type == "show" {
+	case "show":
 		// Handle show-specific logic
 		newFilePath = plex.Series.Location
-		if file.Type == "poster" {
+		switch file.Type {
+		case "poster":
 			newFileName = "poster.jpg"
-		} else if file.Type == "backdrop" {
+		case "backdrop":
 			newFileName = "backdrop.jpg"
-		} else if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
+		case "seasonPoster", "specialSeasonPoster":
 			seasonNumberConvention := config.Global.MediaServer.SeasonNamingConvention
 			var seasonNumber string
 			if seasonNumberConvention == "1" {
@@ -105,7 +108,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			}
 			newFilePath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
 			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
-		} else if file.Type == "titlecard" {
+		case "titlecard":
 			// For titlecards, get the file path from Plex
 			episodePath := getEpisodePathFromPlex(plex, file)
 			if episodePath != "" {

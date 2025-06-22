@@ -280,7 +280,7 @@ const ShowFullSetDetails: React.FC<{
 			const backdropSet = posterSets.find((set) => set.Backdrop);
 			if (backdropSet && backdropSet.Backdrop) {
 				setBackdropURL(
-					`/api/mediux/image/${backdropSet.Backdrop.ID}?modifiedDate=${backdropSet.Backdrop.Modified}&quality=full`
+					`/api/mediux/image/${backdropSet.Backdrop.ID}?modifiedDate=${backdropSet.Backdrop.Modified}&quality=optimized`
 				);
 			}
 		} else {

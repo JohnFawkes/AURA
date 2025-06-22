@@ -245,10 +245,10 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 					dbSavedItem.MediaItem.Title,
 					dbPosterSet.PosterSetID,
 				),
-				fmt.Sprintf("%s/%s?%s",
+				fmt.Sprintf("%s/%s?v=%s&key=jpg",
 					"https://staged.mediux.io/assets",
 					file.ID,
-					file.Modified.Format("20060102"),
+					file.Modified.Format("20060102150405"),
 				),
 				"Image Updated",
 			)

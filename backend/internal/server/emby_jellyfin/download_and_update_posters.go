@@ -28,7 +28,7 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 	// If it does, we don't need to download it again
 	// If it doesn't, we need to download it
 	// The image is saved in the temp-images/mediux/full folder with the file ID as the name
-	formatDate := file.Modified.Format("20060102")
+	formatDate := file.Modified.Format("20060102150405")
 	fileName := fmt.Sprintf("%s_%s.jpg", file.ID, formatDate)
 	filePath := path.Join(mediux.MediuxFullTempImageFolder, fileName)
 	exists := utils.CheckIfImageExists(filePath)
@@ -40,7 +40,7 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 			return Err
 		}
 		// Download the image from Mediux
-		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, true)
+		imageData, _, Err = mediux.FetchImage(file.ID, formatDate, "full")
 		if Err.Message != "" {
 			return Err
 		}
@@ -59,7 +59,6 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		var err error
 		imageData, err = os.ReadFile(filePath)
 		if err != nil {
-
 			Err.Message = "Failed to read image from temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and readable.", mediux.MediuxFullTempImageFolder)
 			Err.Details = fmt.Sprintf("Error reading image: %v", err)

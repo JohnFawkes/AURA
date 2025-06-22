@@ -3,6 +3,7 @@ package plex
 import (
 	"aura/internal/config"
 	"aura/internal/logging"
+	"aura/internal/mediux"
 	"aura/internal/modals"
 	"fmt"
 )
@@ -18,9 +19,14 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.Standa
 		Err.HelpText = "Ensure the item and file types are correctly set."
 		return Err
 	}
-	mediuxURL := fmt.Sprintf("%s/%s", "https://staged.mediux.io/assets", file.ID)
+
+	mediuxImageUrl, Err := mediux.GetMediuxImageURL(file.ID, file.Modified.String(), "full")
+	if Err.Message != "" {
+		return Err
+	}
+
 	refreshPlexItem(itemRatingKey)
-	setPoster(itemRatingKey, mediuxURL, file.Type)
+	setPoster(itemRatingKey, mediuxImageUrl, file.Type)
 
 	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
 	if config.Global.Kometa.RemoveLabels {

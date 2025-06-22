@@ -51,7 +51,8 @@ type Config_TMDB struct {
 
 // Config_Mediux represents the configuration for Mediux integration.
 type Config_Mediux struct {
-	Token string `yaml:"Token"` // Authentication token for accessing Mediux services.
+	Token           string `yaml:"Token"`           // Authentication token for accessing Mediux services.
+	DownloadQuality string `yaml:"DownloadQuality"` // Quality of the media to download from Mediux (Options: "original", "optimized") Defaults to "optimized".
 }
 
 // Config_AutoDownload represents the configuration for auto-download settings.
@@ -85,5 +86,9 @@ func (c *Config) SetDefaults() {
 
 	if c.MediaServer.SeasonNamingConvention == "" {
 		c.MediaServer.SeasonNamingConvention = "2" // Default to 2-digit season naming convention
+	}
+
+	if c.Mediux.DownloadQuality == "" {
+		c.Mediux.DownloadQuality = "optimized" // Default to optimized download quality
 	}
 }

@@ -35,6 +35,7 @@ export interface AppConfigTMDB {
 
 export interface AppConfigMediux {
 	Token: string; // Authentication token for accessing Mediux services
+	DownloadQuality: string; // Preferred download quality (e.g., "original", "optimized")
 }
 
 export interface AppConfigAutoDownload {

@@ -53,11 +53,12 @@ const SettingsPage: React.FC = () => {
 
 	// Fetch configuration data
 	useEffect(() => {
-		if (isMounted.current) return;
-		isMounted.current = true;
-		if (typeof window === "undefined") {
+		if (typeof window !== "undefined") {
 			document.title = "Aura | Settings";
 		}
+		if (isMounted.current) return;
+		isMounted.current = true;
+
 		const fetchConfigFromAPI = async () => {
 			try {
 				setLoading(true);
@@ -211,6 +212,26 @@ const SettingsPage: React.FC = () => {
 				},
 			],
 		},
+		"MediUX Settings": {
+			Title: "MediUX Settings",
+			Fields: [
+				{
+					Label: "Mediux Token",
+					Value: config?.Mediux.Token,
+					Tooltip: "The authentication token for accessing Mediux services.",
+					Editable: true,
+					EditType: "text",
+				},
+				{
+					Label: "Download Quality",
+					Value: config?.Mediux.DownloadQuality,
+					Tooltip: "The quality of media to download (e.g., original, optimized).",
+					Editable: true,
+					EditType: "select",
+					EditOptions: ["original", "optimized"],
+				},
+			],
+		},
 		"Other API": {
 			Title: "Other API Information",
 			Fields: [
@@ -218,13 +239,6 @@ const SettingsPage: React.FC = () => {
 					Label: "TMDB API Key",
 					Value: config?.TMDB.ApiKey,
 					Tooltip: "The API key for accessing TMDB services. This is not used in this version.",
-					Editable: true,
-					EditType: "text",
-				},
-				{
-					Label: "Mediux Token",
-					Value: config?.Mediux.Token,
-					Tooltip: "The authentication token for accessing Mediux services.",
 					Editable: true,
 					EditType: "text",
 				},

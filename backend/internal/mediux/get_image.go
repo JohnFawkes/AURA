@@ -52,7 +52,6 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		// Try to parse the modified date as an ISO 8601 timestamp
 		modifiedDateTime, err = time.Parse(time.RFC3339, modifiedDate)
 		if err != nil {
-
 			Err.Message = "Invalid modified date format"
 			Err.HelpText = "Ensure the modified date is in ISO 8601 format (e.g., 2023-10-01T12:00:00Z)."
 			Err.Details = fmt.Sprintf("Modified Date: %s", modifiedDate)
@@ -60,26 +59,23 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	formatDate := modifiedDateTime.Format("20060102")
+	// Format the date to be YYYYMMDDHHMMSS
+	// Example: 2025-06-20T10:20:30Z -> 20250620102030
+	formatDate := modifiedDateTime.Format("20060102150405")
 
 	// Get Quality from the URL query parameters
 	qualityParam := r.URL.Query().Get("quality")
-	quality := false
 	if qualityParam == "" {
 		// Default to "thumb" if quality is not provided
 		qualityParam = "thumb"
 	}
 	// Check if the quality is valid
-	if qualityParam != "thumb" && qualityParam != "full" {
-
+	if qualityParam != "thumb" && qualityParam != "full" && qualityParam != "optimized" {
 		Err.Message = "Invalid quality parameter"
-		Err.HelpText = "Ensure the quality parameter is either 'thumb' or 'full'."
+		Err.HelpText = "Ensure the quality parameter is either 'thumb', 'full', or 'optimized'."
 		Err.Details = fmt.Sprintf("Quality Parameter: %s", qualityParam)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
-	}
-	if qualityParam == "full" {
-		quality = true
 	}
 
 	// Check if the temporary folder has the image
@@ -94,7 +90,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the image does not exist, then get it from Mediux
-	imageData, imageType, Err := FetchImage(assetID, formatDate, quality)
+	imageData, imageType, Err := FetchImage(assetID, formatDate, qualityParam)
 	if Err.Message != "" {
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
@@ -124,19 +120,17 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
-func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, logging.StandardError) {
+func FetchImage(assetID string, formatDate string, qualityParam string) ([]byte, string, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Getting image for asset ID: %s", assetID))
 	Err := logging.NewStandardError()
 
 	// Construct the URL for the Mediux API request
-	getThumb := ""
-	//Add this in the future if needed to reduce load times
-	if !full {
-		getThumb = "&key=thumb"
+	mediuxURL, Err := GetMediuxImageURL(assetID, formatDate, qualityParam)
+	if Err.Message != "" {
+		return nil, "", Err
 	}
-	url := fmt.Sprintf("%s/%s?%s%s", "https://staged.mediux.io/assets", assetID, formatDate, getThumb)
 
-	response, body, Err := utils.MakeHTTPRequest(url, "GET", nil, 60, nil, "Mediux")
+	response, body, Err := utils.MakeHTTPRequest(mediuxURL, "GET", nil, 60, nil, "Mediux")
 	if Err.Message != "" {
 		return nil, "", Err
 	}
@@ -144,7 +138,6 @@ func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, l
 
 	// Check if the response body is empty
 	if len(body) == 0 {
-
 		Err.Message = "Empty response body from Mediux"
 		Err.HelpText = "Ensure the asset ID is valid and the Mediux service is operational."
 		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
@@ -154,7 +147,6 @@ func FetchImage(assetID string, formatDate string, full bool) ([]byte, string, l
 	// Get the image type from the response headers
 	imageType := response.Header.Get("Content-Type")
 	if imageType == "" {
-
 		Err.Message = "Missing Content-Type header in Mediux response"
 		Err.HelpText = "Ensure the Mediux service is returning a valid image type."
 		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
