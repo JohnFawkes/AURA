@@ -144,3 +144,37 @@ func getURLTitle(rawURL string) string {
 	}
 	return parsedURL.Host
 }
+
+func ValidateMediUXToken(token string) logging.StandardError {
+	// Create a new StandardError instance
+	Err := logging.NewStandardError()
+	logging.LOG.Trace("Validating MediUX token")
+	if token == "" {
+		Err.Message = "MediUX token is empty"
+		Err.HelpText = "Please provide a valid MediUX token in the configuration file"
+		return Err
+	}
+
+	// Make a GET request to the MediUX API to validate the token
+	url := "https://staged.mediux.io/users/me"
+	response, body, err := MakeHTTPRequest(url, "GET", nil, 10, nil, "Mediux")
+	if err.Message != "" {
+		Err.Message = "Failed to validate MediUX token"
+		Err.HelpText = "Ensure the MediUX service is reachable and the token is valid."
+		Err.Details = fmt.Sprintf("Error making request to MediUX API: %s", err.Message)
+		return Err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		Err.Message = "Invalid MediUX token"
+		Err.HelpText = "Ensure the MediUX token is correct and has not expired."
+		Err.Details = map[string]any{
+			"status_code": response.StatusCode,
+			"response":    string(body),
+		}
+		return Err
+	}
+
+	logging.LOG.Debug("Successfully validated MediUX token")
+	return logging.StandardError{}
+}

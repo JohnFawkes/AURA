@@ -56,6 +56,13 @@ func main() {
 		return
 	}
 
+	// Validate Mediux Token
+	Err = utils.ValidateMediUXToken(config.Global.Mediux.Token)
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
+		return
+	}
+
 	// Create a new router
 	r := routes.NewRouter()
 
