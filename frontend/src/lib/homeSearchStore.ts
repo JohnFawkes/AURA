@@ -110,11 +110,11 @@ export const useHomePageStore = create<HomePageStore>()(
 			filterOutInDB: false,
 			setFilterOutInDB: (filter) => set({ filterOutInDB: filter }),
 			sortOption: "date",
-			sortOrder: "asc",
+			sortOrder: "desc",
 			setSortOption: (option) => set({ sortOption: option }),
 			setSortOrder: (order) => set({ sortOrder: order }),
 
-			clear: () => set({ sortOption: "date", sortOrder: "asc" }),
+			clear: () => set({ sortOption: "date", sortOrder: "desc" }),
 		}),
 		{
 			name: "home-page-storage", // key in localStorage
