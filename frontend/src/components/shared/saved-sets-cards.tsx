@@ -48,6 +48,7 @@ const SavedSetsCard: React.FC<{
 	const [editSets, setEditSets] = useState(() =>
 		savedSet.PosterSets.map((set) => ({
 			id: set.PosterSetID,
+			previousDateUpdated: set.PosterSet.DateUpdated,
 			set: set.PosterSet || "Unknown",
 			selectedTypes: set.SelectedTypes,
 			autoDownload: set.AutoDownload,
@@ -330,6 +331,7 @@ const SavedSetsCard: React.FC<{
 							item.id === set.id
 								? {
 										...item,
+										previousDateUpdated: item.set.DateUpdated,
 										set: posterSet,
 									}
 								: item
@@ -401,14 +403,16 @@ const SavedSetsCard: React.FC<{
 								{isRefreshing ? "Refreshing..." : "Edit"}
 							</DropdownMenuItem>
 
-							<DropdownMenuItem
-								onClick={() => {
-									handleRecheckItem(savedSet.MediaItem.Title, savedSet);
-								}}
-							>
-								<RefreshCcw className="ml-2" />
-								Force Autodownload Recheck
-							</DropdownMenuItem>
+							{savedSet.PosterSets.some((set) => set.AutoDownload) && (
+								<DropdownMenuItem
+									onClick={() => {
+										handleRecheckItem(savedSet.MediaItem.Title, savedSet);
+									}}
+								>
+									<RefreshCcw className="ml-2" />
+									Force Autodownload Recheck
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive">
 								<Delete className="ml-2" />
 								Delete
@@ -526,7 +530,6 @@ const SavedSetsCard: React.FC<{
 										{editSet.toDelete ? "Undo Delete" : "Delete Set"}
 									</Button>
 								</div>
-
 								{editSet.set.User.Name && (
 									<DialogDescription>
 										<span className="text-sm text-muted-foreground">
@@ -537,7 +540,6 @@ const SavedSetsCard: React.FC<{
 										</span>
 									</DialogDescription>
 								)}
-
 								<DialogDescription>
 									Set ID:{" "}
 									<Link
@@ -549,7 +551,6 @@ const SavedSetsCard: React.FC<{
 										{editSet.id}
 									</Link>
 								</DialogDescription>
-
 								<div className="flex flex-wrap gap-2 mt-2">{renderEditTypeBadges(editSet, index)}</div>
 								{savedSet.MediaItem.Type === "show" && (
 									<div className="flex flex-wrap gap-2 mt-2">
@@ -576,16 +577,25 @@ const SavedSetsCard: React.FC<{
 										</Badge>
 									</div>
 								)}
-								<div className="flex items-center justify-end">
-									<span className="text-md text-muted-foreground mt-2 mr-2">Redownload</span>
-									<DownloadModal
-										setID={editSet.id}
-										setTitle={editSet.set.Title}
-										setType={editSet.set.Type}
-										setAuthor={editSet.set.User.Name}
-										posterSets={[editSet.set]}
-										autoDownloadDefault={editSet.autoDownload}
-									/>
+								<div className="flex items-center justify-between">
+									<div>
+										{editSet.previousDateUpdated &&
+											editSet.set.DateUpdated &&
+											editSet.previousDateUpdated !== editSet.set.DateUpdated && (
+												<div className="text-green-600 text-xs mt-1">Set has updates</div>
+											)}
+									</div>
+									<div className="flex items-center">
+										<span className="text-md text-muted-foreground mt-2 mr-2">Redownload</span>
+										<DownloadModal
+											setID={editSet.id}
+											setTitle={editSet.set.Title}
+											setType={editSet.set.Type}
+											setAuthor={editSet.set.User.Name}
+											posterSets={[editSet.set]}
+											autoDownloadDefault={editSet.autoDownload}
+										/>
+									</div>
 								</div>
 							</div>
 						))}
@@ -600,6 +610,7 @@ const SavedSetsCard: React.FC<{
 									savedSet.PosterSets.map((set) => ({
 										id: set.PosterSetID,
 										set: set.PosterSet,
+										previousDateUpdated: set.PosterSet.DateUpdated,
 										selectedTypes: set.SelectedTypes,
 										autoDownload: set.AutoDownload,
 										toDelete: false,
