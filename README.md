@@ -1,4 +1,4 @@
-# Welcome to AURA
+# <img src="https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_word_logo.svg" alt="AURA Logo" width="130" />
 
 [![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/aura/master/version.json)](https://github.com/mediux-team/aura/pkgs/container/aura)
 
