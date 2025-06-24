@@ -312,7 +312,17 @@ const MediaItemPage = () => {
 
 			setFilteredPosterSets(filtered);
 		}
-	}, [posterSets, showHiddenUsers, userHides, userFollows, sortOption, sortOrder, mediaItem, showOnlyTitlecardSets]);
+	}, [
+		posterSets,
+		showHiddenUsers,
+		userHides,
+		userFollows,
+		sortOption,
+		sortOrder,
+		mediaItem,
+		showOnlyTitlecardSets,
+		setShowOnlyTitlecardSets,
+	]);
 
 	useEffect(() => {
 		const fetchAdjacentItems = async () => {
