@@ -161,7 +161,7 @@ export default function Navbar() {
 						height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
 					}}
 				>
-					<Image src={logoSrc} alt="Logo" fill className="object-contain filter" />
+					<Image src={logoSrc} alt="Logo" fill className="object-contain filter" priority />
 				</div>
 			</div>
 
