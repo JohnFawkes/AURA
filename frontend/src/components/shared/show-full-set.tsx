@@ -353,6 +353,7 @@ const ShowFullSetDetails: React.FC<{
 						className="flex items-center text-sm hover:text-white transition-colors"
 						onClick={(e) => {
 							e.stopPropagation();
+							window.location.href = `/user/${setAuthor}`;
 						}}
 					>
 						Set Author: {setAuthor}
