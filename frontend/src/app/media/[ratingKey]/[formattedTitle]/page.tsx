@@ -268,6 +268,16 @@ const MediaItemPage = () => {
 				return !isHidden; // Show only if not hidden
 			});
 
+			// If there is no titlecard sets, then showOnlyTitlecardSets should be false
+			if (mediaItem && mediaItem.Type === "show") {
+				const hasTitlecardSets = posterSets.some(
+					(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+				);
+				if (!hasTitlecardSets) {
+					setShowOnlyTitlecardSets(false);
+				}
+			}
+
 			if (mediaItem && mediaItem.Type === "show" && showOnlyTitlecardSets) {
 				// If it's a show and the checkbox is checked, filter for sets with title cards
 				filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
@@ -430,7 +440,7 @@ const MediaItemPage = () => {
 					)}
 
 					{/* Render filtered poster sets */}
-					{filteredPosterSets && filteredPosterSets.length > 0 && (
+					{posterSets && posterSets.length > 0 && (
 						<>
 							<div
 								className="flex flex-col sm:flex-row sm:justify-end mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
@@ -462,8 +472,7 @@ const MediaItemPage = () => {
 								)}
 
 								{mediaItem.Type === "show" &&
-									filteredPosterSets.length > 0 &&
-									filteredPosterSets.some(
+									posterSets.some(
 										(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
 									) && (
 										<div className="flex items-center space-x-2">
@@ -508,7 +517,19 @@ const MediaItemPage = () => {
 								/>
 							</div>
 
-							{filteredPosterSets.length > 2 && (
+							{/* If all poster sets are filtered out, show a message 
+							This can happen if all users are hidden or the titlecard filter is applied
+							*/}
+							{filteredPosterSets && filteredPosterSets.length === 0 && posterSets.length > 0 && (
+								<div className="text-center text-muted-foreground mb-5">
+									{showHiddenUsers
+										? "No poster sets available for this media item."
+										: "All poster sets are hidden."}
+									{showOnlyTitlecardSets && " No Titlecard Sets available."}
+								</div>
+							)}
+
+							{filteredPosterSets && filteredPosterSets.length > 2 && (
 								<div className="text-center mb-5">{filteredPosterSets.length} Poster Sets</div>
 							)}
 
