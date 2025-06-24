@@ -9,7 +9,6 @@ import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-r
 import React, { useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import DownloadModal from "@/components/shared/download-modal";
@@ -63,7 +62,6 @@ const SavedSetsCard: React.FC<{
 	const [isMounted, setIsMounted] = useState(false);
 	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
-	const router = useRouter();
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
 	const allToDelete = editSets.every((set) => set.toDelete);
@@ -442,7 +440,13 @@ const SavedSetsCard: React.FC<{
 			<CardContent>
 				{/* Title */}
 				<H4>
-					<Link href={formatMediaItemUrl(savedSet.MediaItem)} className="text-primary hover:underline">
+					<Link
+						href={formatMediaItemUrl(savedSet.MediaItem)}
+						className="text-primary hover:underline"
+						onClick={() => {
+							setMediaItem(savedSet.MediaItem);
+						}}
+					>
 						{savedSet.MediaItem.Title}
 					</Link>
 				</H4>
