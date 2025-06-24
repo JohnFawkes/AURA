@@ -153,7 +153,7 @@ const SavedSetsCard: React.FC<{
 								<td className="py-1.5" style={{ width: "80%" }}>
 									<Link
 										href={`/sets/${set.PosterSetID}`}
-										className="text-primary hover:underline"
+										className="text-primary hover:underline cursor-pointer"
 										onClick={() => {
 											setPosterSets([set.PosterSet]);
 											setSetType(set.PosterSet.Type);
@@ -388,12 +388,17 @@ const SavedSetsCard: React.FC<{
 				<div className="absolute top-2 right-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="ghost" size="icon">
+							<Button
+								variant="ghost"
+								className="cursor-pointer p-1 hover:bg-muted/50 focus:bg-muted/50"
+								size="icon"
+							>
 								<MoreHorizontal />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
+								className="cursor-pointer"
 								onClick={async () => {
 									await refreshPosterSet();
 									setIsEditModalOpen(true);
@@ -405,6 +410,7 @@ const SavedSetsCard: React.FC<{
 
 							{savedSet.PosterSets.some((set) => set.AutoDownload) && (
 								<DropdownMenuItem
+									className="cursor-pointer"
 									onClick={() => {
 										handleRecheckItem(savedSet.MediaItem.Title, savedSet);
 									}}
@@ -413,7 +419,10 @@ const SavedSetsCard: React.FC<{
 									Force Autodownload Recheck
 								</DropdownMenuItem>
 							)}
-							<DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-destructive">
+							<DropdownMenuItem
+								onClick={() => setIsDeleteModalOpen(true)}
+								className="text-destructive cursor-pointer"
+							>
 								<Delete className="ml-2" />
 								Delete
 							</DropdownMenuItem>
@@ -432,14 +441,10 @@ const SavedSetsCard: React.FC<{
 			{/* Content */}
 			<CardContent>
 				{/* Title */}
-				<H4
-					className="text-lg font-semibold cursor-pointer hover:underline"
-					onClick={() => {
-						setMediaItem(savedSet.MediaItem);
-						router.push(formatMediaItemUrl(savedSet.MediaItem));
-					}}
-				>
-					{savedSet.MediaItem.Title}
+				<H4>
+					<Link href={formatMediaItemUrl(savedSet.MediaItem)} className="text-primary hover:underline">
+						{savedSet.MediaItem.Title}
+					</Link>
 				</H4>
 
 				{/* Year */}
@@ -512,6 +517,7 @@ const SavedSetsCard: React.FC<{
 									<Button
 										variant={editSet.toDelete ? "destructive" : "outline"}
 										size="sm"
+										className="cursor-pointer"
 										onClick={() => {
 											setEditSets((prev) =>
 												prev.map((item, i) =>
@@ -605,6 +611,7 @@ const SavedSetsCard: React.FC<{
 					<DialogFooter>
 						<Button
 							variant="outline"
+							className="cursor-pointer"
 							onClick={() => {
 								setEditSets(
 									savedSet.PosterSets.map((set) => ({
@@ -621,7 +628,11 @@ const SavedSetsCard: React.FC<{
 						>
 							Cancel
 						</Button>
-						<Button variant={allToDelete ? "destructive" : "default"} onClick={confirmEdit}>
+						<Button
+							className="cursor-pointer"
+							variant={allToDelete ? "destructive" : "default"}
+							onClick={confirmEdit}
+						>
 							{allToDelete ? (editSets.length === 1 ? "Delete Set" : "Delete All") : "Save"}
 						</Button>
 					</DialogFooter>
@@ -639,10 +650,10 @@ const SavedSetsCard: React.FC<{
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button variant="outline" onClick={onClose}>
+						<Button className="cursor-pointer" variant="outline" onClick={onClose}>
 							Cancel
 						</Button>
-						<Button variant="destructive" onClick={confirmDelete}>
+						<Button variant="destructive" className="cursor-pointer" onClick={confirmDelete}>
 							Delete
 						</Button>
 					</DialogFooter>

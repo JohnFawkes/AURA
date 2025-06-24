@@ -208,18 +208,24 @@ export default function Navbar() {
 			</div>
 			{/* Settings */}
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
+				<DropdownMenuTrigger asChild className="cursor-pointer">
 					<Button>
 						<SettingsIcon className="w-5 h-5" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent className="w-56">
-					<DropdownMenuItem onClick={() => router.push("/saved-sets")}>
+					<DropdownMenuItem
+						className="cursor-pointer flex items-center hover:bg-primary/10"
+						onClick={() => router.push("/saved-sets")}
+					>
 						<BookmarkIcon className="w-4 h-4 mr-2" />
 						Saved Sets
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onClick={() => router.push("/settings")}>
+					<DropdownMenuItem
+						className="cursor-pointer flex items-center hover:bg-primary/10"
+						onClick={() => router.push("/settings")}
+					>
 						<FileCogIcon className="w-4 h-4 mr-2" />
 						Settings
 					</DropdownMenuItem>

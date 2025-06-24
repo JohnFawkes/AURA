@@ -47,7 +47,7 @@ export const SortControl: React.FC<SortControlProps> = ({
 				</SelectTrigger>
 				<SelectContent>
 					{options.map((opt) => (
-						<SelectItem key={opt.value} value={opt.value}>
+						<SelectItem className="cursor-pointer" key={opt.value} value={opt.value}>
 							{opt.label}
 						</SelectItem>
 					))}
@@ -57,7 +57,7 @@ export const SortControl: React.FC<SortControlProps> = ({
 				<Button
 					variant="ghost"
 					size="icon"
-					className="p-2"
+					className="p-2 cursor-pointer"
 					onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
 				>
 					{sortOrder === "asc" ? selected.ascIcon : selected.descIcon}

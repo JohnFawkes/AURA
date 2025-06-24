@@ -371,7 +371,7 @@ const MediaItemPage = () => {
 				<div>
 					{adjacentItems.previous && adjacentItems.previous.RatingKey && (
 						<ArrowLeftCircle
-							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors cursor-pointer"
 							onClick={() => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.previous,
@@ -384,7 +384,7 @@ const MediaItemPage = () => {
 				<div>
 					{adjacentItems.next && (
 						<ArrowRightCircle
-							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors"
+							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors cursor-pointer"
 							onClick={() => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.next,
@@ -458,7 +458,7 @@ const MediaItemPage = () => {
 											checked={showHiddenUsers}
 											onCheckedChange={handleShowHiddenUsers}
 											disabled={hiddenCount === 0}
-											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
+											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
 										/>
 										{showHiddenUsers ? (
 											<span className="text-sm ml-2">Showing all users</span>
@@ -479,7 +479,7 @@ const MediaItemPage = () => {
 											<Checkbox
 												checked={showOnlyTitlecardSets}
 												onCheckedChange={handleShowSetsWithTitleCardsOnly}
-												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0"
+												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
 											/>
 											{showOnlyTitlecardSets ? (
 												<span className="text-sm ml-2">Showing Titlecard Sets Only</span>

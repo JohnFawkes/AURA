@@ -245,7 +245,7 @@ const SavedSetsPage: React.FC = () => {
 							variant="secondary"
 							size="sm"
 							onClick={() => forceRecheckAll()}
-							className="flex items-center gap-1 text-xs sm:text-sm"
+							className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
 						>
 							<span className="hidden sm:inline">Force Autodownload Recheck</span>
 							<span className="sm:hidden">Recheck</span>
@@ -317,7 +317,7 @@ const SavedSetsPage: React.FC = () => {
 											variant="ghost"
 											size="icon"
 											onClick={() => setRecheckStatus({})}
-											className="h-8 w-8"
+											className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-red-500"
 										>
 											<XCircle className="h-4 w-4" />
 										</Button>

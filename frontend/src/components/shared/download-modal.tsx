@@ -504,10 +504,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										: undefined,
 							});
 						}}
-						className="h-5 w-5 sm:h-4 sm:w-4"
+						className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
 					/>
 				</FormControl>
-				<FormLabel className="text-md font-normal">
+				<FormLabel className="text-md font-normal cursor-pointer">
 					{assetType.charAt(0).toUpperCase() + assetType.slice(1).replace(/([A-Z])/g, " $1")}
 				</FormLabel>
 			</FormItem>
@@ -588,10 +588,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													addToDBOnly: checked,
 												});
 											}}
-											className="h-5 w-5 sm:h-4 sm:w-4"
+											className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
 										/>
 									</FormControl>
-									<FormLabel className="text-md font-normal">Add to Database Only</FormLabel>
+									<FormLabel className="text-md font-normal cursor-pointer">
+										Add to Database Only
+									</FormLabel>
 									<DownloadModalPopover type="add-to-db-only" />
 								</FormItem>
 							)}
@@ -607,10 +609,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														autodownload: checked,
 													});
 												}}
-												className="h-5 w-5 sm:h-4 sm:w-4"
+												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
 											/>
 										</FormControl>
-										<FormLabel className="text-md font-normal">Auto Download</FormLabel>
+										<FormLabel className="text-md font-normal cursor-pointer">
+											Auto Download
+										</FormLabel>
 										<DownloadModalPopover type="autodownload" />
 									</FormItem>
 									<FormItem className="flex items-center space-x-2">
@@ -623,10 +627,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														addToDBOnly: checked,
 													});
 												}}
-												className="h-5 w-5 sm:h-4 sm:w-4"
+												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
 											/>
 										</FormControl>
-										<FormLabel className="text-md font-normal">Future Updates Only</FormLabel>
+										<FormLabel className="text-md font-normal cursor-pointer">
+											Future Updates Only
+										</FormLabel>
 										<DownloadModalPopover type="future-updated-only" />
 									</FormItem>
 								</>
@@ -1125,7 +1131,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			}}
 		>
 			<DialogTrigger asChild>
-				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
+				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
 			</DialogTrigger>
 
 			<DialogPortal>
@@ -1370,6 +1376,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										{/* Cancel button to close the modal */}
 										<DialogClose asChild>
 											<Button
+												className="cursor-pointer hover:bg-destructive/90"
 												variant="destructive"
 												onClick={() => {
 													handleClose();
@@ -1388,6 +1395,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly
 											) && (
 												<Button
+													className="cursor-pointer hover:text-white"
 													disabled={
 														// Disable if no items are selected and nothing is set to "Add to DB Only"
 														(selectedSizes.fileCount === 0 &&
@@ -1423,6 +1431,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 										) && (
 											<Button
+												className="cursor-pointer"
 												variant="secondary"
 												onClick={() => {
 													form.reset();

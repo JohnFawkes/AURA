@@ -37,7 +37,7 @@ export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: 
 				</SelectTrigger>
 				<SelectContent>
 					{itemsPerPageOptions.map((option) => (
-						<SelectItem key={option} value={option.toString()}>
+						<SelectItem className="cursor-pointer" key={option} value={option.toString()}>
 							{option}
 						</SelectItem>
 					))}

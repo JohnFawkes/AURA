@@ -484,7 +484,7 @@ const SettingsPage: React.FC = () => {
 														key={index}
 														variant={button.Variant || "default"}
 														onClick={button.onClick}
-														className="w-full"
+														className="w-full hover:text-white cursor-pointer"
 													>
 														{button.Label} {button.Icon && button.Icon}
 													</Button>
@@ -502,7 +502,7 @@ const SettingsPage: React.FC = () => {
 						onValueChange={(value) => toggleDebugMode(value === "enabled")}
 					>
 						<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
-							<span className="flex items-center gap-2">
+							<span className="flex items-center gap-2 cursor-pointer">
 								Debug Mode:
 								{debugEnabled ? (
 									<span className="text-green-500">Enabled</span>

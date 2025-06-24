@@ -72,6 +72,7 @@ export function CustomPagination({
 						{totalPages > 1 && currentPage < totalPages && (
 							<PaginationItem>
 								<PaginationNext
+									className="cursor-pointer"
 									onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
 								/>
 							</PaginationItem>
@@ -84,7 +85,10 @@ export function CustomPagination({
 									<PaginationEllipsis />
 								</PaginationItem>
 								<PaginationItem>
-									<PaginationLink onClick={() => handlePageChange(totalPages)}>
+									<PaginationLink
+										className="cursor-pointer"
+										onClick={() => handlePageChange(totalPages)}
+									>
 										{totalPages}
 									</PaginationLink>
 								</PaginationItem>
