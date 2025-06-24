@@ -1,6 +1,7 @@
 import { formatLastUpdatedDate } from "@/helper/formatDate";
 import { ZoomInIcon } from "lucide-react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { CarouselDisplay } from "@/components/shared/carousel-display";
@@ -51,24 +52,28 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 			<div className="flex flex-col">
 				<div className="flex flex-row items-center">
 					<div className="flex flex-row items-center">
-						<div
-							onClick={() => {
+						<Link
+							href={`/sets/${set.ID}`}
+							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
+							onClick={(e) => {
+								e.stopPropagation();
 								goToSetPage();
 							}}
-							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
 						>
 							{set.Title}
-						</div>
+						</Link>
 					</div>
 					<div className="ml-auto flex space-x-2">
-						<button
+						<Link
+							href={`/sets/${set.ID}`}
 							className="btn"
-							onClick={() => {
+							onClick={(e) => {
+								e.stopPropagation();
 								goToSetPage();
 							}}
 						>
-							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7" />
-						</button>
+							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
+						</Link>
 						<DownloadModal
 							setType={set.Type}
 							setTitle={set.Title}
@@ -80,15 +85,9 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 				</div>
 				<div className="text-md text-muted-foreground  mb-1">
 					By:{" "}
-					<span
-						onClick={(e) => {
-							e.stopPropagation();
-							goToUserPage();
-						}}
-						className="hover:text-primary cursor-pointer"
-					>
+					<Link href={`/user/${set.User.Name}`} className="hover:text-primary cursor-pointer">
 						{set.User.Name}
-					</span>
+					</Link>
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
 					Last Update: {formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
