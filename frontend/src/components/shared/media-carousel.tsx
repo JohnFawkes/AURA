@@ -36,10 +36,6 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 		router.push(`/sets/${set.ID}`);
 	};
 
-	const goToUserPage = () => {
-		router.push(`/user/${set.User.Name}`);
-	};
-
 	return (
 		<Carousel
 			opts={{
