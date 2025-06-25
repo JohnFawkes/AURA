@@ -173,6 +173,8 @@ func InitUserID() logging.StandardError {
 		return logging.StandardError{}
 	}
 
+	logging.LOG.Debug(fmt.Sprintf("Initializing UserID for %s Media Server", config.Global.MediaServer.Type))
+
 	Err := logging.NewStandardError()
 
 	// Parse the base URL
