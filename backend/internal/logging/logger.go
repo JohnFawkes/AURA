@@ -166,7 +166,7 @@ func (cle *LogEntry) Log(log Log, level string, params ...any) {
 		defer f.Close()
 
 		// Write the log message to the log file
-		if _, err := f.WriteString(fmt.Sprintf("%s\n", fileString)); err != nil {
+		if _, err := fmt.Fprintf(f, "%s\n", fileString); err != nil {
 			return
 		}
 	}
@@ -237,14 +237,14 @@ func (cle *LogEntry) Write(status, bytes int, header http.Header, elapsed time.D
 	defer f.Close()
 
 	// Write the log message to the log file
-	if _, err := f.WriteString(fmt.Sprintf("%s %s %s %s %s %s %s\n",
+	if _, err := fmt.Fprintf(f, "%s %s %s %s %s %s %s\n",
 		msg.Time,
 		msg.Method,
 		msg.Path,
 		msg.Status,
 		msg.Bytes,
 		msg.Elapsed,
-		msg.IP)); err != nil {
+		msg.IP); err != nil {
 		return
 	}
 
