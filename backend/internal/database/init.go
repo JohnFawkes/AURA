@@ -14,6 +14,7 @@ import (
 var db *sql.DB
 
 func InitDB() bool {
+	logging.LOG.Debug("Initializing database...")
 	var err error
 
 	// Use an environment variable to determine the config path
@@ -58,6 +59,6 @@ CREATE TABLE IF NOT EXISTS SavedItems (
 		return false
 	}
 
-	logging.LOG.Debug("Database initialized successfully")
+	logging.LOG.Info("Database initialized successfully")
 	return true
 }
