@@ -1,16 +1,20 @@
 package utils
 
-import "fmt"
+import (
+	"aura/internal/logging"
+	"fmt"
+)
 
-func PrintBanner(Version string, Author string, License string, port int, logLevel string) {
-	fmt.Printf(("┌────────────────────────────────┐\n"))
-	fmt.Print(formatBanner("AURA"))
-	fmt.Print(formatBanner("App Version: " + Version))
-	fmt.Print(formatBanner("Author: " + Author))
-	fmt.Print(formatBanner("License: " + License))
-	fmt.Print(formatBanner(fmt.Sprintf("Port: %d", port)))
-	fmt.Print(formatBanner(fmt.Sprintf("Log Level: %s", logLevel)))
-	fmt.Print(("└────────────────────────────────┘\n"))
+func PrintBanner(Version string, Author string, License string, port int) {
+
+	logging.LOG.NoTime("┌────────────────────────────────┐\n")
+	logging.LOG.NoTime(formatBanner("AURA"))
+	logging.LOG.NoTime(formatBanner("App Version: " + Version))
+	logging.LOG.NoTime(formatBanner("Author: " + Author))
+	logging.LOG.NoTime(formatBanner("License: " + License))
+	logging.LOG.NoTime(formatBanner(fmt.Sprintf("API Port: %d", port)))
+	logging.LOG.NoTime("└────────────────────────────────┘\n")
+
 }
 
 func formatBanner(text string) string {
