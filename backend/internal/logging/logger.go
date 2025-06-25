@@ -191,7 +191,7 @@ func (cle *LogEntry) Log(log Log, level string, params ...any) {
 	}
 }
 
-func (cle *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
+func (cle *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra any) {
 
 	// Extract the Path of request
 	// If the Path is *.js, *.css, or manifest.json, skip logging
