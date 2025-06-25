@@ -17,47 +17,54 @@ import (
 )
 
 var (
+	APP_VERSION = "dev"
 	Author      = "xmoosex"
 	License     = "MIT"
-	APP_VERSION = "dev"
 	APP_PORT    = 8888
 )
 
 func main() {
 
-	// Load the configuration file
-	// If the config file is not found, exit the program
-	_, err := config.LoadYamlConfig()
-	if err != nil {
-		// Exit the program if the config file is not found
-		fmt.Printf("Error: %s\n", err.Error())
-		return
-	}
-
+	// Print the banner with application details on startup
 	utils.PrintBanner(
 		APP_VERSION,
 		Author,
 		License,
 		APP_PORT,
-		config.Global.Logging.Level,
 	)
 
-	logging.SetLogLevel(config.Global.Logging.Level)
-
-	init := database.InitDB()
-	if !init {
-		fmt.Println("Database initialization failed. Exiting...")
-		return
-	}
-
-	Err := mediaserver_shared.InitUserID()
+	// Load the configuration file
+	// If the config file is not found, exit the program
+	Err := config.LoadYamlConfig()
 	if Err.Message != "" {
 		logging.LOG.ErrorWithLog(Err)
 		return
 	}
 
+	// Check if the config file is valid
+	valid := config.ValidateConfig()
+	if !valid {
+		return
+	}
+
+	// Print the configuration settings
+	config.PrintConfig()
+
 	// Validate Mediux Token
 	Err = utils.ValidateMediUXToken(config.Global.Mediux.Token)
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(Err)
+		return
+	}
+
+	// Initialize the database
+	init := database.InitDB()
+	if !init {
+		return
+	}
+
+	// For Jellyfin/Emby, we need to get the User ID for the Admin user
+	Err = mediaserver_shared.InitUserID()
 	if Err.Message != "" {
 		logging.LOG.ErrorWithLog(Err)
 		return
@@ -69,6 +76,7 @@ func main() {
 	// Create a new cron instance
 	c := cron.New()
 
+	// Add a cron job for auto-downloading posters
 	c.AddFunc(config.Global.AutoDownload.Cron, func() {
 		// Call the auto download function if enabled
 		if config.Global.AutoDownload.Enabled {
@@ -82,6 +90,7 @@ func main() {
 		c.Start()
 	}
 
+	// Send a notification to Discord when the application starts if not in development mode
 	if !strings.Contains(APP_VERSION, "dev") {
 		notifications.SendDiscordAppStartNotification()
 	}
