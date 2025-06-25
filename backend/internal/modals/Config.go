@@ -70,25 +70,3 @@ type Config_Notification struct {
 	Provider string `yaml:"Provider"` // Notification provider (currently only Discord)
 	Webhook  string `yaml:"Webhook"`  // Webhook URL for the notification provider.
 }
-
-// SetDefaults sets default values for the Config struct.
-func (c *Config) SetDefaults() {
-
-	// Default logging level
-	if c.Logging.Level == "" {
-		c.Logging.Level = "INFO"
-	}
-
-	// Default auto-download settings
-	if c.AutoDownload.Cron == "" {
-		c.AutoDownload.Cron = "0 0 * * *" // Default to daily at midnight
-	}
-
-	if c.MediaServer.SeasonNamingConvention == "" {
-		c.MediaServer.SeasonNamingConvention = "2" // Default to 2-digit season naming convention
-	}
-
-	if c.Mediux.DownloadQuality == "" {
-		c.Mediux.DownloadQuality = "optimized" // Default to optimized download quality
-	}
-}
