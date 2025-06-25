@@ -89,6 +89,25 @@ func (cle *LogEntry) Panic(v any, stack []byte) {
 	cle.Log(Log{Message: "Panic"}, "ERROR", stack)
 }
 
+func (cle *LogEntry) NoTime(message string) {
+	logger.Printf("%s", message)
+
+	// Check to see if a log exists for today's date
+	// If not, create a new log file for today's date
+	// Otherwise, append to the existing log file
+	logFile := GetTodayLogFile()
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	// Write the log message to the log file
+	if _, err := fmt.Fprintf(f, "%s", message); err != nil {
+		return
+	}
+}
+
 func (cle *LogEntry) Log(log Log, level string, params ...any) {
 
 	// Convert level to uppercase
