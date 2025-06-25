@@ -161,7 +161,7 @@ func getURLTitle(rawURL string) string {
 func ValidateMediUXToken(token string) logging.StandardError {
 	// Create a new StandardError instance
 	Err := logging.NewStandardError()
-	logging.LOG.Trace("Validating MediUX token")
+	logging.LOG.Debug("Validating MediUX token")
 	if token == "" {
 		Err.Message = "MediUX token is empty"
 		Err.HelpText = "Please provide a valid MediUX token in the configuration file"
@@ -188,6 +188,6 @@ func ValidateMediUXToken(token string) logging.StandardError {
 		return Err
 	}
 
-	logging.LOG.Debug("Successfully validated MediUX token")
+	logging.LOG.Info("Successfully validated MediUX token")
 	return logging.StandardError{}
 }
