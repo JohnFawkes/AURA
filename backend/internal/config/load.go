@@ -106,7 +106,7 @@ func PrintConfig() {
 	logging.LOG.NoTime(fmt.Sprintf("\t\tDownload Quality: %s\n", Global.Mediux.DownloadQuality))
 
 	// TMDB Configuration
-	if Global.TMDB.ApiKey == "" {
+	if Global.TMDB.ApiKey != "" {
 		logging.LOG.NoTime("\tTMDB\n")
 		logging.LOG.NoTime(fmt.Sprintf("\t\tAPI Key: %s\n", "***"+Global.TMDB.ApiKey[len(Global.TMDB.ApiKey)-4:]))
 	}
