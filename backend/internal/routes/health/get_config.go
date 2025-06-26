@@ -16,9 +16,9 @@ func GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	// Remove by masking sensitive information with "***"
 	// Keep the last 4 characters of the data
-	safeConfigData.Mediux.Token = "***" + safeConfigData.Mediux.Token[len(safeConfigData.Mediux.Token)-4:]
-	safeConfigData.TMDB.ApiKey = "***" + safeConfigData.TMDB.ApiKey[len(safeConfigData.TMDB.ApiKey)-4:]
-	safeConfigData.MediaServer.Token = "***" + safeConfigData.MediaServer.Token[len(safeConfigData.MediaServer.Token)-4:]
+	safeConfigData.Mediux.Token = maskToken(safeConfigData.Mediux.Token)
+	safeConfigData.TMDB.ApiKey = maskToken(safeConfigData.TMDB.ApiKey)
+	safeConfigData.MediaServer.Token = maskToken(safeConfigData.MediaServer.Token)
 
 	// Mask the Notification Webhook URL
 	safeConfigData.Notification.Webhook = config.MaskWebhookURL(safeConfigData.Notification.Webhook)
@@ -30,4 +30,14 @@ func GetConfig(w http.ResponseWriter, r *http.Request) {
 		Elapsed: utils.ElapsedTime(startTime),
 		Data:    safeConfigData,
 	})
+}
+
+func maskToken(token string) string {
+	if token == "" {
+		return "N/A"
+	}
+	if len(token) < 4 {
+		return "***" + token[len(token)-1:]
+	}
+	return "***" + token[len(token)-4:]
 }
