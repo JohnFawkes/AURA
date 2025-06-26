@@ -26,6 +26,20 @@ permalink: /
 
 ---
 
+## Demo
+
+#### Check out the demo of AURA in action! You can see how it looks and works before installing.
+
+Movie being processed and the results in Plex
+
+![AURA Movie Demo](assets/demo_movie.gif)
+
+Series being processed and the results in Plex
+
+![AURA Show Demo](assets/demo_show.gif)
+
+---
+
 ## Getting Started
 
 To get started with AURA:
