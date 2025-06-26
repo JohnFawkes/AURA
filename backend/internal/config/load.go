@@ -156,14 +156,15 @@ func ValidateLoggingConfig() bool {
 	if Global.Logging.Level == "" {
 		logging.LOG.Warn("\tLogging.Level is not set in the configuration file, using default level: INFO")
 		Global.Logging.Level = "INFO"
-		logging.SetLogLevel("INFO")
 	}
 
 	if Global.Logging.Level != "TRACE" && Global.Logging.Level != "DEBUG" && Global.Logging.Level != "INFO" && Global.Logging.Level != "WARNING" && Global.Logging.Level != "ERROR" {
 		logging.LOG.Warn(fmt.Sprintf("\tLogging.Level: '%s'. Must be one of: TRACE, DEBUG, INFO, WARNING, ERROR", Global.Logging.Level))
 		Global.Logging.Level = "INFO"
-		logging.SetLogLevel("INFO")
 	}
+
+	logging.SetLogLevel(Global.Logging.Level)
+
 	return isValid
 }
 
