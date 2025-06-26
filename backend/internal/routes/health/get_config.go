@@ -32,6 +32,9 @@ func GetConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// maskToken masks the token by keeping only the last 4 characters visible.
+// If the token is shorter than 4 characters, it masks all but the last character.
+// If the token is empty, it returns "N/A".
 func maskToken(token string) string {
 	if token == "" {
 		return "N/A"
