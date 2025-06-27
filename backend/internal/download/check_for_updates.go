@@ -87,6 +87,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			setResult.Result = "Skipped"
 			setResult.Reason = "Auto download is not selected"
 			result.Sets = append(result.Sets, setResult)
+			logging.LOG.Trace(fmt.Sprintf("Skipping poster set '%s' for '%s' - Auto download is not selected", dbPosterSet.PosterSetID, dbSavedItem.MediaItem.Title))
 			continue
 		}
 		// If selected types are empty, skip it
@@ -94,6 +95,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			setResult.Result = "Skipped"
 			setResult.Reason = "No selected types"
 			result.Sets = append(result.Sets, setResult)
+			logging.LOG.Trace(fmt.Sprintf("Skipping poster set '%s' for '%s' - No selected types", dbPosterSet.PosterSetID, dbSavedItem.MediaItem.Title))
 			continue
 		}
 
