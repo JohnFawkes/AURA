@@ -32,7 +32,7 @@ import { searchMediaItems } from "@/hooks/searchMediaItems";
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
 export default function Navbar() {
-	const { setSearchQuery } = useSearchQueryStore();
+	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const { setCurrentPage } = usePageStore();
 	const { setFilteredLibraries, setFilterOutInDB } = useHomePageStore();
 	const router = useRouter();
@@ -41,8 +41,6 @@ export default function Navbar() {
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
 
-	// Local state for search input
-	const [localSearch, setLocalSearch] = useState("");
 	// State for placeholder (optional)
 	const [placeholderText, setPlaceholderText] = useState("Search for movies or shows");
 	// State for search dropdown results (for non-homepage)
@@ -72,15 +70,15 @@ export default function Navbar() {
 	useEffect(() => {
 		if (isHomePage || isSavedSetsPage || isUserPage) {
 			const handler = setTimeout(() => {
-				setSearchQuery(localSearch);
+				setSearchQuery(searchQuery);
 			}, 300);
 			return () => clearTimeout(handler);
 		}
-	}, [localSearch, setSearchQuery, isHomePage, isSavedSetsPage, isUserPage]);
+	}, [searchQuery, setSearchQuery, isHomePage, isSavedSetsPage, isUserPage]);
 
 	// When not on homepage, search the IDB (cache) for matching MediaItems
 	useEffect(() => {
-		if (!isHomePage && localSearch.trim() !== "") {
+		if (!isHomePage && searchQuery.trim() !== "") {
 			const handler = setTimeout(async () => {
 				try {
 					// Get all cached sections from storage
@@ -114,8 +112,8 @@ export default function Navbar() {
 						}
 					});
 
-					// Filter items based on the localSearch (case-insensitive)
-					const query = localSearch.trim().toLowerCase();
+					// Filter items based on the searchQuery (case-insensitive)
+					const query = searchQuery.trim().toLowerCase();
 					const results = searchMediaItems(allMediaItems, query, 10);
 					setSearchResults(results);
 				} catch {
@@ -126,7 +124,7 @@ export default function Navbar() {
 		} else {
 			setSearchResults([]);
 		}
-	}, [localSearch, isHomePage]);
+	}, [searchQuery, isHomePage]);
 
 	const handleHomeClick = () => {
 		if (isHomePage) {
@@ -134,7 +132,6 @@ export default function Navbar() {
 			setCurrentPage(1);
 			setFilteredLibraries([]);
 			setFilterOutInDB(false);
-			setLocalSearch("");
 			setSearchResults([]);
 		}
 		router.push("/");
@@ -172,7 +169,8 @@ export default function Navbar() {
 					type="search"
 					placeholder={placeholderText}
 					className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
-					onChange={(e) => setLocalSearch(e.target.value)}
+					onChange={(e) => setSearchQuery(e.target.value)}
+					value={searchQuery}
 					onFocus={() => setShowDropdown(true)}
 					onBlur={() => setShowDropdown(false)}
 				/>
