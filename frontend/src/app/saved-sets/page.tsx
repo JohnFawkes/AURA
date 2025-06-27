@@ -427,6 +427,7 @@ const SavedSetsPage: React.FC = () => {
 				totalPages={totalPages}
 				setCurrentPage={setCurrentPage}
 				scrollToTop={true}
+				filterItemsLength={filteredAndSortedSavedSets.length}
 			/>
 
 			{/* Refresh Button */}

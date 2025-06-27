@@ -833,6 +833,15 @@ const UserSetPage = () => {
 										totalPages={totalPages}
 										setCurrentPage={setCurrentPage}
 										scrollToTop={true}
+										filterItemsLength={
+											activeTab === "boxSets"
+												? boxsets.length
+												: activeTab === "showSets"
+													? showSets.length
+													: activeTab === "movieSets"
+														? movieSets.length
+														: collectionSets.length
+										}
 									/>
 								</div>
 							))}

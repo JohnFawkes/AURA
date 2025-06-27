@@ -366,20 +366,13 @@ export default function Home() {
 				)}
 			</div>
 
-			{/* Showing XX of XXX */}
-			<div className="w-full flex justify-center items-center text-sm mt-4 text-muted-foreground">
-				<span>
-					Showing {currentPage * itemsPerPage - itemsPerPage + 1} -{" "}
-					{Math.min(currentPage * itemsPerPage, filteredItems.length)} of {filteredItems.length}
-				</span>
-			</div>
-
 			{/* Pagination */}
 			<CustomPagination
 				currentPage={currentPage}
 				totalPages={totalPages}
 				setCurrentPage={setCurrentPage}
 				scrollToTop={true}
+				filterItemsLength={filteredItems.length}
 			/>
 			{/* Refresh Button */}
 			<RefreshButton onClick={() => getMediaItems(false)} />

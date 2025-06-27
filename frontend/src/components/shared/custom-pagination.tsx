@@ -9,11 +9,14 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 
+import { usePageStore } from "@/lib/homeSearchStore";
+
 interface CustomPaginationProps {
 	currentPage: number;
 	totalPages: number;
 	setCurrentPage: (page: number) => void;
 	scrollToTop?: boolean;
+	filterItemsLength?: number; // Optional prop to filter items length
 }
 
 export function CustomPagination({
@@ -21,7 +24,10 @@ export function CustomPagination({
 	totalPages,
 	setCurrentPage,
 	scrollToTop = true,
+	filterItemsLength,
 }: CustomPaginationProps) {
+	const { itemsPerPage } = usePageStore();
+
 	const handlePageChange = (newPage: number) => {
 		setCurrentPage(newPage);
 		if (scrollToTop) {
@@ -30,73 +36,96 @@ export function CustomPagination({
 	};
 
 	return (
-		<div className="flex justify-center mt-8">
-			{totalPages > 1 && (
-				<Pagination>
-					<PaginationContent>
-						{/* Previous Page Button */}
-						{totalPages > 1 && currentPage > 1 && (
-							<PaginationItem>
-								<PaginationPrevious onClick={() => handlePageChange(Math.max(currentPage - 1, 1))} />
-							</PaginationItem>
-						)}
+		<>
+			<div className="w-full flex justify-center items-center text-sm mt-4 text-muted-foreground">
+				<span>
+					{(() => {
+						const start = currentPage * itemsPerPage - itemsPerPage + 1;
+						const end = filterItemsLength
+							? Math.min(currentPage * itemsPerPage, filterItemsLength)
+							: currentPage * itemsPerPage;
+						if (filterItemsLength && end === filterItemsLength) {
+							return `Showing ${start} - ${end}`;
+						}
+						if (filterItemsLength) {
+							return `Showing ${start} - ${end} of ${filterItemsLength}`;
+						}
+						return `Showing ${start} - ${end}`;
+					})()}
+				</span>
+			</div>
+			<div className="flex justify-center mt-8">
+				{/* Showing XX of XXX */}
 
-						{/* Page Input */}
-						<PaginationItem>
-							<div className="flex items-center gap-2">
-								<Input
-									type="number"
-									min={1}
-									max={totalPages}
-									value={currentPage}
-									onChange={(e) => {
-										const value = parseInt(e.target.value);
-										if (!isNaN(value) && value >= 1 && value <= totalPages) {
-											handlePageChange(value);
-										}
-									}}
-									className="w-16 h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-									onBlur={(e) => {
-										const value = parseInt(e.target.value);
-										if (isNaN(value) || value < 1) {
-											handlePageChange(1);
-										} else if (value > totalPages) {
-											handlePageChange(totalPages);
-										}
-									}}
-								/>
-							</div>
-						</PaginationItem>
-
-						{/* Next Page Button */}
-						{totalPages > 1 && currentPage < totalPages && (
-							<PaginationItem>
-								<PaginationNext
-									className="cursor-pointer"
-									onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-								/>
-							</PaginationItem>
-						)}
-
-						{/* Ellipsis and End Page */}
-						{totalPages > 3 && currentPage < totalPages - 1 && (
-							<>
+				{totalPages > 1 && (
+					<Pagination>
+						<PaginationContent>
+							{/* Previous Page Button */}
+							{totalPages > 1 && currentPage > 1 && (
 								<PaginationItem>
-									<PaginationEllipsis />
+									<PaginationPrevious
+										onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+									/>
 								</PaginationItem>
+							)}
+
+							{/* Page Input */}
+							<PaginationItem>
+								<div className="flex items-center gap-2">
+									<Input
+										type="number"
+										min={1}
+										max={totalPages}
+										value={currentPage}
+										onChange={(e) => {
+											const value = parseInt(e.target.value);
+											if (!isNaN(value) && value >= 1 && value <= totalPages) {
+												handlePageChange(value);
+											}
+										}}
+										className="w-16 h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+										onBlur={(e) => {
+											const value = parseInt(e.target.value);
+											if (isNaN(value) || value < 1) {
+												handlePageChange(1);
+											} else if (value > totalPages) {
+												handlePageChange(totalPages);
+											}
+										}}
+									/>
+								</div>
+							</PaginationItem>
+
+							{/* Next Page Button */}
+							{totalPages > 1 && currentPage < totalPages && (
 								<PaginationItem>
-									<PaginationLink
+									<PaginationNext
 										className="cursor-pointer"
-										onClick={() => handlePageChange(totalPages)}
-									>
-										{totalPages}
-									</PaginationLink>
+										onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+									/>
 								</PaginationItem>
-							</>
-						)}
-					</PaginationContent>
-				</Pagination>
-			)}
-		</div>
+							)}
+
+							{/* Ellipsis and End Page */}
+							{totalPages > 3 && currentPage < totalPages - 1 && (
+								<>
+									<PaginationItem>
+										<PaginationEllipsis />
+									</PaginationItem>
+									<PaginationItem>
+										<PaginationLink
+											className="cursor-pointer"
+											onClick={() => handlePageChange(totalPages)}
+										>
+											{totalPages}
+										</PaginationLink>
+									</PaginationItem>
+								</>
+							)}
+						</PaginationContent>
+					</Pagination>
+				)}
+			</div>
+		</>
 	);
 }
