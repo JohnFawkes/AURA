@@ -7,6 +7,7 @@ import (
 	"aura/internal/logging"
 	"aura/internal/notifications"
 	"aura/internal/routes"
+	mediaserver "aura/internal/server"
 	mediaserver_shared "aura/internal/server/shared"
 	"aura/internal/utils"
 	"fmt"
@@ -94,6 +95,12 @@ func main() {
 	if !strings.Contains(APP_VERSION, "dev") {
 		notifications.SendDiscordAppStartNotification()
 	}
+
+	go func() {
+		// On boot, we will fetch all sections and items from the media server
+		logging.LOG.Info("Fetching all items from the media server")
+		mediaserver.GetAllSectionsAndItems()
+	}()
 
 	go func() {
 		// Start the API server
