@@ -248,15 +248,6 @@ const MediaItemPage = () => {
 		return uniqueHiddenUsers.size;
 	}, [posterSets, userHides]);
 
-	// Check if all sets are hidden
-	const allSetsHidden = useMemo(() => {
-		if (!posterSets) return false;
-		return (
-			posterSets.length > 0 &&
-			posterSets.every((set) => userHides.some((hide) => hide.Username === set.User.Name))
-		);
-	}, [posterSets, userHides]);
-
 	useEffect(() => {
 		if (posterSets) {
 			log("Media Item Page - Poster Sets updated:", posterSets);
