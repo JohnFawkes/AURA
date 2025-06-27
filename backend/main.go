@@ -57,16 +57,16 @@ func main() {
 		return
 	}
 
-	// Initialize the database
-	init := database.InitDB()
-	if !init {
-		return
-	}
-
 	// For Jellyfin/Emby, we need to get the User ID for the Admin user
 	Err = mediaserver_shared.InitUserID()
 	if Err.Message != "" {
 		logging.LOG.ErrorWithLog(Err)
+		return
+	}
+
+	// Initialize the database
+	init := database.InitDB()
+	if !init {
 		return
 	}
 
