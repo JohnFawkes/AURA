@@ -24,11 +24,11 @@
 
 Movie being processed and the results in Plex
 
-![AURA Movie Demo](assets/demo_movie.gif)
+![AURA Movie Demo](docs/assets/demo/demo_movie.gif)
 
 Series being processed and the results in Plex
 
-![AURA Show Demo](assets/demo_show.gif)
+![AURA Show Demo](docs/assets/demo/demo_show.gif)
 
 ---
 

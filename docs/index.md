@@ -32,11 +32,11 @@ permalink: /
 
 Movie being processed and the results in Plex
 
-![AURA Movie Demo](https://raw.githubusercontent.com/mediux-team/AURA/master/assets/demo_movie.gif)
+![AURA Movie Demo](assets/demo/demo_movie.gif)
 
 Series being processed and the results in Plex
 
-![AURA Show Demo](https://raw.githubusercontent.com/mediux-team/AURA/master/assets/demo_show.gif)
+![AURA Show Demo](assets/demo/demo_show.gif)
 
 ---
 
