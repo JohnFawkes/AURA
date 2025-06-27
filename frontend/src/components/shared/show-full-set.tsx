@@ -91,7 +91,11 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 						/>
 					)}
 
-					<Accordion type="multiple" className="w-full" defaultValue={["posters", "backdrops"]}>
+					<Accordion
+						type="multiple"
+						className="w-full"
+						defaultValue={["posters", "backdrops", "season-posters", "title-cards"]}
+					>
 						{/* All Posters */}
 						{(allPosters.length > 0 || allBackdrops.length > 0) && (
 							<AccordionItem value="posters">
