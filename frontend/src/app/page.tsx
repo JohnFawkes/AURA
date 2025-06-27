@@ -184,6 +184,7 @@ export default function Home() {
 					}
 					// Update section with fetched media items.
 					section.MediaItems = allItems;
+					section.TotalSize = totalSize;
 					setLibrarySections((prev) => {
 						const updated = [...prev];
 						updated[idx] = section;
