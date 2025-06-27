@@ -1,8 +1,9 @@
 "use client";
 
-import { fetchLogContents } from "@/services/api.settings";
+import { fetchLogContents, postClearOldLogs } from "@/services/api.settings";
 import { ReturnErrorMessage } from "@/services/api.shared";
 import { ArrowLeft, Download } from "lucide-react";
+import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 
@@ -69,6 +70,23 @@ export default function LogsPage() {
 		URL.revokeObjectURL(url);
 	};
 
+	const clearLogsFromToday = async () => {
+		try {
+			const response = await postClearOldLogs(true);
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to clear old logs");
+				return;
+			}
+
+			toast.success(response.data || "Successfully cleared old logs");
+			setIsMounted(false); // Reset the component to refetch logs
+		} catch (error) {
+			const errorResponse = ReturnErrorMessage<void>(error);
+			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
+		}
+	};
+
 	return (
 		<div className="container mx-auto p-6 max-w-6xl">
 			{loading ? (
@@ -97,6 +115,9 @@ export default function LogsPage() {
 						</Button>
 						<Button variant="default" className="w-full sm:w-auto" onClick={handleDownloadLogs}>
 							<Download className="mr-2 h-4 w-4" /> Download Logs
+						</Button>
+						<Button variant="destructive" className="w-full sm:w-auto" onClick={clearLogsFromToday}>
+							Clear Logs from Today
 						</Button>
 					</CardFooter>
 				</Card>
