@@ -15,7 +15,7 @@ import (
 
 // Get all items/metadata for a specific item in a specific library section
 func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string, limit string) ([]modals.MediaItem, int, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s and title: %s", section.ID, section.Title))
+	logging.LOG.Trace(fmt.Sprintf("Getting all content for section ID: %s and title: %s (starting index %s)", section.ID, section.Title, sectionStartIndex))
 
 	// Construct Base URL
 	baseURL, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/sections/%s/all", section.ID), config.Global.MediaServer.URL)
