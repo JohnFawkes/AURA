@@ -37,10 +37,19 @@ const providerLogoMap: {
 type MediaItemRatingsProps = {
 	guids: Guid[];
 	mediaItemType: string;
+	title: string;
 };
 
-export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps) {
+export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatingsProps) {
 	const guidMap: { [provider: string]: ProviderInfo } = {};
+
+	const convertTitleToSlug = (title: string): string => {
+		return title
+			.toLowerCase()
+			.replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+			.replace(/\s+/g, "_"); // Replace spaces with underscores
+	};
+
 	guids.forEach((guid: Guid) => {
 		if (guid.Provider) {
 			const providerInfo = providerLogoMap[guid.Provider];
@@ -58,7 +67,14 @@ export function MediaItemRatings({ guids, mediaItemType }: MediaItemRatingsProps
 								? mediaItemType === "show"
 									? `https://www.themoviedb.org/tv/${guid.ID}`
 									: `https://www.themoviedb.org/movie/${guid.ID}`
-								: `${providerInfo.urlPrefix}${guid.ID}`,
+								: guid.Provider === "rottentomatoes"
+									? `https://www.rottentomatoes.com/${mediaItemType === "show" ? "tv" : "m"}/${convertTitleToSlug(title)}`
+									: guid.Provider === "imdb"
+										? `https://www.imdb.com/title/${guid.ID}`
+										: guid.Provider === "community"
+											? ""
+											: // Default case for any other provider
+												`${providerInfo.urlPrefix}${guid.ID}`,
 				};
 			}
 		}
