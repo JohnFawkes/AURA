@@ -12,9 +12,9 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 		return items.slice(0, limit);
 	}
 
-	// Extract year filter (e.g., Y:2023 or y:2023)
+	// Extract year filter (e.g., Y:2023: or y:2023:)
 	let yearFilter: number | null = null;
-	const yearMatch = trimmedQuery.match(/[Yy]:(\d{4})/);
+	const yearMatch = trimmedQuery.match(/[Yy]:(\d{4}):/);
 	if (yearMatch) {
 		yearFilter = parseInt(yearMatch[1], 10);
 	}
@@ -36,7 +36,7 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 
 	// Remove year, library, and rating tokens from the query before further processing
 	const partialQuery = trimmedQuery
-		.replace(/[Yy]:(\d{4})/, "")
+		.replace(/[Yy]:(\d{4}):/, "")
 		.replace(/[Ll]:(.+?):/, "")
 		.replace(/[Ii][Dd]:(.+?):/, "")
 		.trim();
