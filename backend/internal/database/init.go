@@ -59,6 +59,6 @@ CREATE TABLE IF NOT EXISTS SavedItems (
 		return false
 	}
 
-	logging.LOG.Info("Database initialized successfully")
+	logging.LOG.Info("Successfully initialized the database at: " + dbPath)
 	return true
 }
