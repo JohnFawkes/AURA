@@ -69,7 +69,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 					Duration: item.Media[0].Part[0].Duration,
 				},
 			}
-			itemInfo.UpdatedAt = item.UpdatedAt
+			itemInfo.UpdatedAt = item.AddedAt
 
 			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
@@ -111,7 +111,7 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-			itemInfo.UpdatedAt = item.UpdatedAt
+			itemInfo.UpdatedAt = item.AddedAt
 
 			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
