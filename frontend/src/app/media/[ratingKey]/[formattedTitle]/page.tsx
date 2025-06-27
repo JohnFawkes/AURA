@@ -67,6 +67,7 @@ const MediaItemPage = () => {
 	const { showOnlyTitlecardSets, setShowOnlyTitlecardSets } = useMediaPageStore();
 
 	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
+	const [imageVersion, setImageVersion] = useState(Date.now());
 
 	const [adjacentItems, setAdjacentItems] = useState<{
 		previous: MediaItem | null;
@@ -360,6 +361,11 @@ const MediaItemPage = () => {
 		);
 	}
 
+	const handleMediaItemChange = (item: MediaItem) => {
+		setMediaItem(item);
+		setImageVersion(Date.now());
+	};
+
 	if (hasError) {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
@@ -375,7 +381,9 @@ const MediaItemPage = () => {
 	return (
 		<>
 			{/* Backdrop Background */}
-			<DimmedBackground backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop`} />
+			<DimmedBackground
+				backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop?cb=${imageVersion}`}
+			/>
 
 			{/* Navigation Buttons */}
 			<div className="flex justify-between mt-2 mx-2">
@@ -562,7 +570,11 @@ const MediaItemPage = () => {
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
 									<div key={set.ID} className="pb-6">
-										<MediaCarousel set={set} mediaItem={mediaItem} />
+										<MediaCarousel
+											set={set}
+											mediaItem={mediaItem}
+											onMediaItemChange={handleMediaItemChange}
+										/>
 									</div>
 								))}
 							</div>

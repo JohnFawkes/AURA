@@ -133,6 +133,7 @@ export interface DownloadModalProps {
 	setID: string;
 	posterSets: PosterSet[];
 	autoDownloadDefault?: boolean;
+	onMediaItemChange?: (item: MediaItem) => void;
 }
 interface DuplicateMap {
 	[mediaItemKey: string]: {
@@ -175,6 +176,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	setID,
 	posterSets,
 	autoDownloadDefault = true, // Default to false if not provided
+	onMediaItemChange,
 }) => {
 	const [isMounted, setIsMounted] = useState(false);
 
@@ -1089,6 +1091,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				}
 				updateProgressValue(progressRef.current + progressIncrementRef.current);
 				updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
+				if (onMediaItemChange) {
+					latestMediaItem.ExistInDatabase = true;
+					onMediaItemChange(latestMediaItem);
+				}
 			}
 
 			setButtonTexts({

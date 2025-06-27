@@ -19,9 +19,10 @@ import { PosterSet } from "@/types/posterSets";
 type MediaCarouselProps = {
 	set: PosterSet;
 	mediaItem: MediaItem;
+	onMediaItemChange?: (item: MediaItem) => void;
 };
 
-export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
+export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarouselProps) {
 	const router = useRouter();
 
 	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
@@ -76,6 +77,7 @@ export function MediaCarousel({ set, mediaItem }: MediaCarouselProps) {
 							setID={set.ID}
 							setAuthor={set.User.Name}
 							posterSets={[set]}
+							onMediaItemChange={onMediaItemChange}
 						/>
 					</div>
 				</div>
