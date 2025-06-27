@@ -95,7 +95,7 @@ export function MediaItemDetails({
 				{ratingKey && (
 					<div className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-8 flex justify-center">
 						<AssetImage
-							image={`/api/mediaserver/image/${ratingKey}/poster`}
+							image={`/api/mediaserver/image/${ratingKey}/poster?cb=${Date.now()}`}
 							className="w-[200px] h-auto transition-transform hover:scale-105"
 						/>
 					</div>
