@@ -333,7 +333,7 @@ export default function Home() {
 			{/* Sorting controls */}
 			<SortControl
 				options={[
-					{ value: "date", label: "Date Updated", ascIcon: <ClockArrowUp />, descIcon: <ClockArrowDown /> },
+					{ value: "date", label: "Date Added", ascIcon: <ClockArrowUp />, descIcon: <ClockArrowDown /> },
 					{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
 				]}
 				sortOption={sortOption}
