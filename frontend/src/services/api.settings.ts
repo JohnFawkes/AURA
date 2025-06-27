@@ -33,10 +33,10 @@ export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 	}
 };
 
-export const postClearOldLogs = async (): Promise<APIResponse<void>> => {
+export const postClearOldLogs = async (clearToday: boolean = false): Promise<APIResponse<void>> => {
 	log("api.settings - Clearing old logs started");
 	try {
-		const response = await apiClient.post<APIResponse<void>>(`/logs/clear`);
+		const response = await apiClient.post<APIResponse<void>>(`/logs/clear`, { clearToday });
 		log("api.settings - Clearing old logs succeeded");
 		return response.data;
 	} catch (error) {
