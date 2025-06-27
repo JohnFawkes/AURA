@@ -3,6 +3,7 @@ package tempimages
 import (
 	"aura/internal/logging"
 	"aura/internal/utils"
+	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -17,6 +18,7 @@ func init() {
 		configPath = "/config"
 	}
 	TempImageFolder = path.Join(configPath, "temp-images")
+
 }
 
 func ClearTempImages(w http.ResponseWriter, r *http.Request) {
@@ -31,20 +33,27 @@ func ClearTempImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := os.RemoveAll(TempImageFolder)
-	if err != nil {
-
-		Err.Message = "Failed to clear temporary images folder"
-		Err.HelpText = "Ensure the temporary images folder is accessible and not in use by any process."
-		Err.Details = err.Error()
+	clearCount, Err := utils.ClearFilesFromFolder(TempImageFolder, 0)
+	if Err.Message != "" {
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
+
+	if clearCount == 0 {
+		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
+			Status:  "success",
+			Elapsed: utils.ElapsedTime(startTime),
+			Data:    "No temporary images to clear",
+		})
+		return
+	}
+
+	logging.LOG.Info(fmt.Sprintf("Cleared %d temporary images from %s", clearCount, TempImageFolder))
 
 	// Return a JSON response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",
 		Elapsed: utils.ElapsedTime(startTime),
-		Data:    "Temporary images folder cleared successfully",
+		Data:    fmt.Sprintf("Cleared %d temporary images", clearCount),
 	})
 }

@@ -3,6 +3,7 @@ package health
 import (
 	"aura/internal/logging"
 	"aura/internal/utils"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,39 +22,64 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Go through the log files and remove those older than 7 days
-	files, _ := os.ReadDir(logging.LogFolder)
-	if len(files) == 0 {
-		logging.LOG.Warn(fmt.Sprintf("No log files found in %s", logging.LogFolder))
+	// Get the request body
+	var ClearToday struct {
+		ClearToday bool `json:"clearToday"`
+	}
+
+	// Decode the request body into the struct
+	err := json.NewDecoder(r.Body).Decode(&ClearToday)
+	if err != nil {
+		Err := logging.NewStandardError()
+		Err.Message = "Failed to decode request body"
+		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
+		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+		return
+	}
+
+	if ClearToday.ClearToday {
+		logging.LOG.Trace("Clearing today's log files")
+
+		// Get today's log file
+		todaysLogFile := logging.GetTodayLogFile()
+
+		// If the log file does not exist, create it
+		// If the log file exists, clear it out
+		if _, err := os.Stat(todaysLogFile); os.IsNotExist(err) {
+			// Create the log file if it does not exist
+			file, err := os.Create(todaysLogFile)
+			if err != nil {
+				Err.Message = "Failed to create today's log file"
+				Err.HelpText = "Check file permissions and ensure the log directory is writable."
+				utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+				return
+			}
+			defer file.Close()
+			logging.LOG.Info(fmt.Sprintf("Created today's log file: %s", todaysLogFile))
+		} else {
+			// Clear the log file if it exists
+			err := os.Truncate(todaysLogFile, 0)
+			if err != nil {
+				Err.Message = "Failed to clear today's log file"
+				Err.HelpText = "Check file permissions and ensure the log directory is writable."
+				utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+				return
+			}
+			logging.LOG.Info(fmt.Sprintf("Cleared today's log file: %s", todaysLogFile))
+		}
 		utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 			Status:  "success",
 			Elapsed: utils.ElapsedTime(startTime),
-			Data:    "No log files to clear",
+			Data:    "Today's log file cleared successfully",
 		})
 		return
 	}
 
-	clearCount := 0
-	for _, file := range files {
-		if file.IsDir() {
-			continue // Skip directories
-		}
-		filePath := fmt.Sprintf("%s/%s", logging.LogFolder, file.Name())
-		logging.LOG.Debug(fmt.Sprintf("Checking file: %s", filePath))
-		fileInfo, err := os.Stat(filePath)
-		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Error getting file info for %s: %v", filePath, err))
-			continue // Skip this file if there's an error
-		}
-		// Check if the file is older than 7 days
-		if time.Since(fileInfo.ModTime()) > 7*24*time.Hour {
-			logging.LOG.Debug(fmt.Sprintf("Removing old log file: %s", filePath))
-			if err := os.Remove(filePath); err != nil {
-				logging.LOG.Error(fmt.Sprintf("Error removing file %s: %v", filePath, err))
-				continue // Skip incrementing clearCount if there's an error
-			}
-			clearCount++
-		}
+	clearCount, Err := utils.ClearFilesFromFolder(logging.LogFolder, 3)
+	if Err.Message != "" {
+		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
+		return
 	}
 
 	if clearCount == 0 {
@@ -64,6 +90,8 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	logging.LOG.Info(fmt.Sprintf("Cleared %d old log files from %s", clearCount, logging.LogFolder))
 
 	// Return a JSON response
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
