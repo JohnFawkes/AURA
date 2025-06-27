@@ -127,7 +127,7 @@ const SettingsPage: React.FC = () => {
 				return;
 			}
 
-			toast.success(`Running with version: ${response.data}`);
+			toast.success(`${config?.MediaServer.Type} running with version: ${response.data}`);
 		} catch (error) {
 			const errorResponse = ReturnErrorMessage<string>(error);
 			toast.error(errorResponse.error?.Message || "Failed to check media server status");
