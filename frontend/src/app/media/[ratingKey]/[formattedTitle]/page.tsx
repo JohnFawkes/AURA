@@ -41,7 +41,8 @@ const MediaItemPage = () => {
 
 	const hasFetchedInfo = useRef(false);
 
-	const partialMediaItem = useMediaStore((state) => state.mediaItem); // Retrieve partial mediaItem from Zustand
+	const mediaStore = useMediaStore();
+	const partialMediaItem = mediaStore.mediaItem;
 
 	const [mediaItem, setMediaItem] = useState<MediaItem | null>(partialMediaItem);
 
