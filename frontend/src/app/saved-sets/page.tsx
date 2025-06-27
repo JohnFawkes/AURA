@@ -39,7 +39,7 @@ const SavedSetsPage: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const isFetchingRef = useRef(false);
-	const { searchQuery } = useSearchQueryStore();
+	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
@@ -77,7 +77,7 @@ const SavedSetsPage: React.FC = () => {
 			setSavedSets(response.data);
 			setError(null);
 
-			toast.success("Saved sets fetched successfully");
+			toast.success("Saved sets fetched successfully", { duration: 1000 });
 		} catch (error) {
 			setError(ReturnErrorMessage<unknown>(error));
 			setSavedSets([]);
@@ -395,7 +395,17 @@ const SavedSetsPage: React.FC = () => {
 			{/* If there are no saved sets, show a message */}
 			{filteredAndSortedSavedSets.length === 0 && !loading && !error && !Object.keys(recheckStatus).length && (
 				<div className="w-full">
-					<ErrorMessage error={ReturnErrorMessage<string>("No saved sets found")} />
+					<ErrorMessage
+						error={ReturnErrorMessage<string>(
+							`No saved sets found${searchQuery ? ` for "${searchQuery}"` : ""}`
+						)}
+					/>
+					<div className="text-center text-muted-foreground mt-4">
+						<Button variant="outline" size="sm" onClick={() => setSearchQuery("")} className="text-sm">
+							<XCircle className="inline mr-1" />
+							Clear Search Query
+						</Button>
+					</div>
 				</div>
 			)}
 
