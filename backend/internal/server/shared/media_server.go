@@ -170,7 +170,7 @@ func (e *EmbyJellyServer) SearchForItemAndGetRatingKey(tmdbID, itemType, itemTit
 
 func InitUserID() logging.StandardError {
 	if config.Global.MediaServer.Type == "Plex" {
-		return logging.StandardError{}
+		return CheckPlexConnection()
 	}
 
 	logging.LOG.Debug(fmt.Sprintf("Initializing UserID for %s Media Server", config.Global.MediaServer.Type))
@@ -224,4 +224,36 @@ func InitUserID() logging.StandardError {
 	Err.Details = "No Admin user found in the Emby/Jellyfin user list"
 	return Err
 
+}
+
+func CheckPlexConnection() logging.StandardError {
+	if config.Global.MediaServer.Type != "Plex" {
+		return logging.StandardError{}
+	}
+
+	logging.LOG.Debug("Checking connection to Plex Media Server")
+
+	Err := logging.NewStandardError()
+
+	version, Err := plex.GetMediaServerStatus()
+	if Err.Message != "" {
+		return Err
+	}
+	logging.LOG.Trace(fmt.Sprintf("Plex Media Server Version: %s", version))
+
+	// Make a GET request to the Plex server
+	response, _, Err := utils.MakeHTTPRequest(config.Global.MediaServer.URL, http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return Err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		Err.Message = fmt.Sprintf("Failed to connect to Plex Media Server. Status code: '%d'. Possibly a bad token", response.StatusCode)
+		return Err
+	}
+
+	logging.LOG.Info(fmt.Sprintf("Successfully connected to Plex Media Server (Version: %s)", version))
+
+	return logging.StandardError{}
 }
