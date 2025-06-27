@@ -136,7 +136,7 @@ export function MediaItemDetails({
 					{/* External Ratings/Links from GUIDs */}
 					{/* Year, Content Rating And External Ratings/Links */}
 					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-						<MediaItemRatings guids={guids} mediaItemType={mediaItemType} />
+						<MediaItemRatings guids={guids} mediaItemType={mediaItemType} title={title} />
 					</div>
 				</div>
 			</div>
