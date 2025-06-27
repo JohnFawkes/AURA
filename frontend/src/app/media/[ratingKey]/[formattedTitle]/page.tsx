@@ -440,16 +440,6 @@ const MediaItemPage = () => {
 						</div>
 					)}
 
-					{/* Check if all poster sets are hidden */}
-					{posterSets && !showHiddenUsers && allSetsHidden && (
-						<div className="flex flex-col items-center">
-							<ErrorMessage error={ReturnErrorMessage<string>("All poster sets are hidden.")} />
-							<Button className="mt-4" variant="secondary" onClick={handleShowHiddenUsers}>
-								Show Hidden Users
-							</Button>
-						</div>
-					)}
-
 					{/* Render filtered poster sets */}
 					{posterSets && posterSets.length > 0 && (
 						<>
@@ -528,20 +518,45 @@ const MediaItemPage = () => {
 								/>
 							</div>
 
-							{/* If all poster sets are filtered out, show a message 
+							<div className="text-center">
+								{filteredPosterSets && filteredPosterSets.length !== posterSets.length ? (
+									<p className="text-sm text-muted-foreground">
+										Showing {filteredPosterSets.length} of {posterSets.length} Poster Set
+										{posterSets.length > 1 ? "s" : ""}
+									</p>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										{posterSets.length} Poster Set{posterSets.length > 1 ? "s" : ""}
+									</p>
+								)}
+							</div>
+
+							{/* 
+							If all poster sets are filtered out, show a message 
 							This can happen if all users are hidden or the titlecard filter is applied
 							*/}
 							{filteredPosterSets && filteredPosterSets.length === 0 && posterSets.length > 0 && (
-								<div className="text-center text-muted-foreground mb-5">
-									{showHiddenUsers
-										? "No poster sets available for this media item."
-										: "All poster sets are hidden."}
-									{showOnlyTitlecardSets && " No Titlecard Sets available."}
+								<div className="flex flex-col items-center">
+									<ErrorMessage
+										error={ReturnErrorMessage<string>(
+											"All sets are hidden. Check your filters or hidden users."
+										)}
+									/>
+									{!showHiddenUsers && (
+										<Button className="mt-4" variant="secondary" onClick={handleShowHiddenUsers}>
+											Show Hidden Users
+										</Button>
+									)}
+									{mediaItem.Type === "show" && (
+										<Button
+											className="mt-4"
+											variant="secondary"
+											onClick={handleShowSetsWithTitleCardsOnly}
+										>
+											Show Non-Titlecard Sets
+										</Button>
+									)}
 								</div>
-							)}
-
-							{filteredPosterSets && filteredPosterSets.length > 2 && (
-								<div className="text-center mb-5">{filteredPosterSets.length} Poster Sets</div>
 							)}
 
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
