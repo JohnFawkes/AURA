@@ -45,7 +45,7 @@ Series being processed and the results in Plex
 To get started with aura:
 
 1. Install using Docker or docker-compose.
-2. Configure your `config.yml` file. You can use [sample configuration](/config.md) as a reference.
+2. Configure your `config.yml` file. You can use [configuration guide](/config.md) as a reference.
 3. Visit the web UI at `http://localhost:3000`.
 4. Browse your media server's contents.
 5. Choose and apply Mediux image sets.
