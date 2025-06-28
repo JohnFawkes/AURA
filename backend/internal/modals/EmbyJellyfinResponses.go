@@ -108,7 +108,7 @@ type EmbyJellyLibraryItemsResponse struct {
 		RunTimeTicks   int64     `json:"RunTimeTicks"`
 		ProductionYear int       `json:"ProductionYear"`
 		DateCreated    time.Time `json:"DateCreated"`
-		DateAdded      time.Time `json:"DateAdded"`
+		PremiereDate   time.Time `json:"PremiereDate"`
 		IsFolder       bool      `json:"IsFolder"`
 		ProviderIds    struct {
 			Tvdb            string `json:"Tvdb"`
@@ -151,6 +151,7 @@ type EmbyJellyItemContentResponse struct {
 	ID                    string    `json:"Id"`
 	Etag                  string    `json:"Etag"`
 	DateCreated           time.Time `json:"DateCreated"`
+	PremiereDate          time.Time `json:"PremiereDate"`
 	CanDelete             bool      `json:"CanDelete"`
 	CanDownload           bool      `json:"CanDownload"`
 	PresentationUniqueKey string    `json:"PresentationUniqueKey"`
@@ -158,7 +159,6 @@ type EmbyJellyItemContentResponse struct {
 	Container             string    `json:"Container"`
 	SortName              string    `json:"SortName"`
 	ForcedSortName        string    `json:"ForcedSortName"`
-	PremiereDate          time.Time `json:"PremiereDate"`
 	ExternalUrls          []struct {
 		Name string `json:"Name"`
 		URL  string `json:"Url"`

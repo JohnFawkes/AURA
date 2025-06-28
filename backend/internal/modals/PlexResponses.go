@@ -39,7 +39,8 @@ type PlexVideoItem struct {
 	ParentIndex         int             `xml:"parentIndex,attr,omitempty"` // Season Number
 	LibrarySectionTitle string          `xml:"librarySectionTitle,attr"`
 	Guids               []PlexGuidItem  `xml:"Guid"`
-	AddedAt             int64           `xml:"addedAt,attr,omitempty"` // Timestamp when the item was added to the library
+	AddedAt             int64           `xml:"addedAt,attr,omitempty"`               // Timestamp when the item was added to the library
+	ReleasedAt          string          `xml:"originallyAvailableAt,attr,omitempty"` // Timestamp when the item was released
 }
 
 // Guid represents the GUID element inside a Video
@@ -84,8 +85,9 @@ type PlexDirectoryItem struct {
 	Location            struct {
 		Path string `xml:"path,attr"`
 	} `xml:"Location"`
-	Guids   []PlexGuidItem `xml:"Guid"`
-	AddedAt int64          `xml:"addedAt,attr,omitempty"` // Timestamp when the item was added to the library
+	Guids      []PlexGuidItem `xml:"Guid"`
+	AddedAt    int64          `xml:"addedAt,attr,omitempty"`               // Timestamp when the item was added to the library
+	ReleasedAt string         `xml:"originallyAvailableAt,attr,omitempty"` // Timestamp when the item was released
 }
 
 type PlexPhotosResponse struct {

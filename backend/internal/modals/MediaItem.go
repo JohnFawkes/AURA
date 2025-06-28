@@ -19,6 +19,8 @@ type MediaItem struct {
 	ContentRating   string `json:"ContentRating,omitempty"`
 	Summary         string `json:"Summary,omitempty"`
 	UpdatedAt       int64  `json:"UpdatedAt,omitempty"`
+	AddedAt         int64  `json:"AddedAt,omitempty"`
+	ReleasedAt      int64  `json:"ReleasedAt,omitempty"`
 	Guids           []Guid `json:"Guids,omitempty"`
 
 	Movie  *MediaItemMovie  `json:"Movie,omitempty"`
