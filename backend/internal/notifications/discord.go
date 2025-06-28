@@ -30,7 +30,7 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 
 	embed := map[string]any{
 		"author": map[string]any{
-			"name":     "MediUX AURA Bot",
+			"name":     "MediUX Bot | aura",
 			"url":      "https://github.com/mediux-team/aura",
 			"icon_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
 		},
@@ -45,7 +45,7 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 	}
 
 	webhookBody := map[string]any{
-		"username":   "MediUX AURA Bot",
+		"username":   "MediUX Bot | aura",
 		"avatar_url": "https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_logo.png",
 		"embeds":     []map[string]any{embed},
 	}
@@ -89,6 +89,6 @@ func SendDiscordAppStartNotification() logging.StandardError {
 		return Err
 	}
 
-	message := "MediUX AURA has started successfully!"
-	return SendDiscordNotification(message, "", "MediUX AURA Notification")
+	message := "aura has started successfully!"
+	return SendDiscordNotification(message, "", "Notification | aura")
 }

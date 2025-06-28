@@ -487,9 +487,9 @@ const UserSetPage = () => {
 	// Update document title accordingly.
 	useEffect(() => {
 		if (error) {
-			if (typeof window !== "undefined") document.title = "Aura | Error";
+			if (typeof window !== "undefined") document.title = "aura | Error";
 		} else {
-			if (typeof window !== "undefined") document.title = `AURA | ${username} Sets`;
+			if (typeof window !== "undefined") document.title = `aura | ${username} Sets`;
 		}
 	}, [error, username]);
 

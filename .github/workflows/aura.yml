@@ -1,4 +1,4 @@
-name: Docker Image CI and Release for AURA
+name: Docker Image CI and Release for aura
 
 on:
     push:

@@ -30,7 +30,7 @@ export default function LogsPage() {
 		if (isMounted) return;
 		setIsMounted(true);
 		if (typeof window !== "undefined") {
-			document.title = "Aura | Logs";
+			document.title = "aura | Logs";
 		}
 
 		const fetchLogs = async () => {

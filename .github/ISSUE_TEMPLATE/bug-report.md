@@ -1,13 +1,12 @@
 ---
 name: Bug Report
-about: Report Bugs that are found within Aura
+about: Report Bugs that are found within aura
 title: "[BUG]"
-labels: ''
-assignees: ''
-
+labels: ""
+assignees: ""
 ---
 
-# Bug Report 
+# Bug Report
 
 **App Version:**  
 (e.g., 1.2.3)
@@ -22,6 +21,7 @@ assignees: ''
 (e.g., 123.0.4567.89)
 
 ---
+
 ## Bug Description
 
 (Describe the bug in detail.)
@@ -30,9 +30,9 @@ assignees: ''
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ---
 

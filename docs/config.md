@@ -2,17 +2,17 @@
 layout: default
 title: "Configuration"
 nav_order: 2
-description: "Configuration instructions for AURA."
+description: "Configuration instructions for aura."
 permalink: /config
 ---
 
 # Configuration
 
-AURA uses a `config.yml` file for configuration. This file is essential for setting up the application according to your preferences and environment. Below are the steps to create and modify the `config.yml` file:
+aura uses a `config.yml` file for configuration. This file is essential for setting up the application according to your preferences and environment. Below are the steps to create and modify the `config.yml` file:
 
 1. **Create the `config.yml` File**:
 
-    - You can create a new file named `config.yml` in the root directory of your AURA installation.
+    - You can create a new file named `config.yml` in the root directory of your aura installation.
     - Alternatively, you can use the sample configuration file provided in the repository as a starting point. You can find it [here](https://raw.githubusercontent.com/mediux-team/aura/master/config.yml.sample).
 
 2. **Edit the `config.yml` File**:
@@ -28,7 +28,7 @@ AURA uses a `config.yml` file for configuration. This file is essential for sett
 -   **Default**: `false`
 -   **Options**: `true` or `false`
 -   **Description**: Whether to cache images locally.
--   **Details**: If set to `true`, AURA will cache images to reduce load times and improve performance. This is particularly useful for frequently accessed images.Keep in mind that enabling this option will increase disk space usage as images will be stored locally.
+-   **Details**: If set to `true`, aura will cache images to reduce load times and improve performance. This is particularly useful for frequently accessed images.Keep in mind that enabling this option will increase disk space usage as images will be stored locally.
 
 ---
 
@@ -58,7 +58,7 @@ Logging:
 
 -   **Default**: `TRACE`
 -   **Options**: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`
--   **Description**: The logging level for AURA.
+-   **Description**: The logging level for aura.
 -   **Details**:
     -   `TRACE`: Most detailed logging, useful for debugging.
     -   `DEBUG`: Less detailed than TRACE, but still provides useful information for debugging.
@@ -84,15 +84,15 @@ AutoDownload:
 -   **Default**: `false`
 -   **Options**: `true` or `false`
 -   **Description**: Whether to automatically download images from updated sets.
--   **Details**: When downloading images, you have the option to saved sets for "Automatic Downloads". If this option is enabled, AURA will automatically download images from sets that have been updated. This is useful for keeping your media library up-to-date with the latest images without manual intervention.
--   **Note**: Enabling this option may result in increased network usage as AURA will periodically check for updates and download new images.
+-   **Details**: When downloading images, you have the option to saved sets for "Automatic Downloads". If this option is enabled, aura will automatically download images from sets that have been updated. This is useful for keeping your media library up-to-date with the latest images without manual intervention.
+-   **Note**: Enabling this option may result in increased network usage as aura will periodically check for updates and download new images.
 
 ### Cron
 
 -   **Default**: `0 0 * * *`
 -   **Options**: Cron expression
 -   **Description**: The cron expression for scheduling automatic downloads.
--   **Details**: This cron expression determines how often AURA checks for updates and downloads images. The default value `0 0 * * *` means that AURA will check for updates every day at midnight. You can modify this expression to change the frequency of automatic downloads according to your needs.
+-   **Details**: This cron expression determines how often aura checks for updates and downloads images. The default value `0 0 * * *` means that aura will check for updates every day at midnight. You can modify this expression to change the frequency of automatic downloads according to your needs.
     **Note**: Make sure to use a valid cron expression. You can use online tools like [crontab.guru](https://crontab.guru/) to help you create and validate cron expressions.
 
 ---
@@ -111,7 +111,7 @@ Notification:
 
 -   **Options**: `Discord`
 -   **Description**: The notification provider to use for sending notifications.
--   **Details**: Currently, AURA supports Discord as a notification provider. Setting this option is helpful for receiving notifications about the status of automatic downloads and other important events in AURA. If you do not wish to receive notifications, you can leave this option set to `none`.
+-   **Details**: Currently, aura supports Discord as a notification provider. Setting this option is helpful for receiving notifications about the status of automatic downloads and other important events in aura. If you do not wish to receive notifications, you can leave this option set to `none`.
 
 ### Webhook
 
@@ -139,12 +139,12 @@ MediaServer:
 
 -   **Options**: `Plex`, `Emby`, `Jellyfin`
 -   **Description**: The type of media server you are using.
--   **Details**: This option specifies the type of media server that AURA will interact with. Depending on your choice, AURA will use the appropriate API and methods to manage images and metadata.
+-   **Details**: This option specifies the type of media server that aura will interact with. Depending on your choice, aura will use the appropriate API and methods to manage images and metadata.
 
 ### URL
 
 -   **Description**: The URL of the media server.
--   **Details**: This option specifies the URL of the media server that AURA will interact with.
+-   **Details**: This option specifies the URL of the media server that aura will interact with.
 -   **Note**: Make sure to include the protocol (e.g., `http://` or `https://`) in the URL.
 -   **Example**: `http://localhost:32400`, `https://my-emby-server.com`, or `http://jellyfin.example.com`.
 
@@ -152,12 +152,12 @@ MediaServer:
 
 -   **Description**: The authentication token for the media server.
 -   **Details**: This option specifies the authentication token required to access the media server's API. You can obtain this token from your media server's settings or API documentation.
--   **Note**: The token is necessary for AURA to authenticate and perform actions on your media server. Make sure to keep this token secure and do not share it publicly.
+-   **Note**: The token is necessary for aura to authenticate and perform actions on your media server. Make sure to keep this token secure and do not share it publicly.
 
 ### Libraries
 
 -   **Description**: The name of the media server library to use.
--   **Details**: This option specifies the name of the library on your media server that AURA will interact with. AURA will use this library to manage images and metadata.
+-   **Details**: This option specifies the name of the library on your media server that aura will interact with. aura will use this library to manage images and metadata.
 -   **Note**: Ensure that the library name matches exactly with the name on your media server, including case sensitivity. Only show and movies libraries are supported.
 
 ### SeasonNamingConvention
@@ -188,12 +188,12 @@ Kometa:
 -   **Default**: `false`
 -   **Options**: `true` or `false`
 -   **Description**: Whether to remove labels from Plex items.
--   **Details**: If set to `true`, AURA will remove labels from Plex items after processing them. This is useful for keeping your media library clean and organized, especially if you use labels for temporary categorization during image processing.
+-   **Details**: If set to `true`, aura will remove labels from Plex items after processing them. This is useful for keeping your media library clean and organized, especially if you use labels for temporary categorization during image processing.
 
 ### Labels
 
 -   **Description**: The labels to remove from Plex items.
--   **Details**: This option specifies the labels that AURA will remove from Plex items. Each label should be a new line in the configuration file.
+-   **Details**: This option specifies the labels that aura will remove from Plex items. Each label should be a new line in the configuration file.
 
 ---
 
@@ -229,7 +229,7 @@ Mediux:
 -   **Description**: The API key for Mediux.
 -   **Details**: This option specifies the API key required to access Mediux's API. This can be obtained by creating an account on [Mediux](https://mediux.io/) and generating an API key in your account settings.
 -   **Note**: This is not yet available to the public, but will be in the future.
-    If you would like to test out AURA, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
+    If you would like to test out aura, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
 
 ### DownloadQuality
 

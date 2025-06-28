@@ -32,7 +32,7 @@ export default function Home() {
 	const isMounted = useRef(false);
 	if (typeof window !== "undefined") {
 		// Safe to use document here.
-		document.title = "Aura | Home";
+		document.title = "aura | Home";
 	}
 	// -------------------------------
 	// States

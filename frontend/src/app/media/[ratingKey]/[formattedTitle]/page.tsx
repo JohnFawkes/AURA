@@ -360,12 +360,12 @@ const MediaItemPage = () => {
 	if (hasError) {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
-			document.title = "Aura | Error";
+			document.title = "aura | Error";
 		}
 	} else {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
-			document.title = `AURA | ${mediaItem?.Title}`;
+			document.title = `aura | ${mediaItem?.Title}`;
 		}
 	}
 

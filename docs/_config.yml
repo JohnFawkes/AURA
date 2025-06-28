@@ -1,6 +1,6 @@
 baseurl: ""
-title: Aura Docs
-baseurl: "/AURA"
+title: Docs | aura
+baseurl: "/aura"
 # Build settings
 remote_theme: just-the-docs/just-the-docs
 color_scheme: "dark"

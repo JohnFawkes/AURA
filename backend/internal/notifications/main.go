@@ -33,7 +33,7 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := "This is a test notification from MediUX AURA"
+	message := "This is a test notification from aura"
 	title := "Test Notification"
 	imageURL := ""
 	Err = SendDiscordNotification(message, imageURL, title)

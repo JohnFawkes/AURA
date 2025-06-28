@@ -90,7 +90,7 @@ const SavedSetsPage: React.FC = () => {
 	useEffect(() => {
 		if (typeof window !== "undefined") {
 			// Safe to use document here.
-			document.title = "Aura | Saved Sets";
+			document.title = "aura | Saved Sets";
 		}
 		fetchSavedSets();
 	}, [fetchSavedSets]);

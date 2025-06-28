@@ -8,7 +8,7 @@ import (
 func PrintBanner(Version string, Author string, License string, port int) {
 
 	logging.LOG.NoTime("┌────────────────────────────────┐\n")
-	logging.LOG.NoTime(formatBanner("AURA"))
+	logging.LOG.NoTime(formatBanner("aura"))
 	logging.LOG.NoTime(formatBanner("App Version: " + Version))
 	logging.LOG.NoTime(formatBanner("Author: " + Author))
 	logging.LOG.NoTime(formatBanner("License: " + License))

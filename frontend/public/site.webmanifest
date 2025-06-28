@@ -1,6 +1,6 @@
 {
-	"name": "Aura",
-	"short_name": "Aura",
+	"name": "aura",
+	"short_name": "aura",
 	"icons": [
 		{
 			"src": "/web-app-manifest-192x192.png",

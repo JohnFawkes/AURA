@@ -45,7 +45,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	}
 
 	// Add a User-Agent header to the request
-	req.Header.Set("User-Agent", "AURA/1.0")
+	req.Header.Set("User-Agent", "aura/1.0")
 	req.Header.Set("X-Request", "mediux-aura")
 
 	// Add headers to the request

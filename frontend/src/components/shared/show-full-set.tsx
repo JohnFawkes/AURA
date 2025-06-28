@@ -277,7 +277,7 @@ const ShowFullSetDetails: React.FC<{
 	// Otherwise, use the mediaItem's backdrop
 	useEffect(() => {
 		if (typeof window !== "undefined") {
-			document.title = "Aura | Poster Set";
+			document.title = "aura | Poster Set";
 		}
 
 		if (posterSets.length > 0 && posterSets.some((set) => set.Backdrop)) {
