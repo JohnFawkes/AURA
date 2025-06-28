@@ -88,18 +88,18 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 					{provider === "community" ? (
 						<>
 							{/* Display a star icon with the rating */}
-							<span className="text-sm flex items-center gap-1">
+							<span className="text-sm flex items-center gap-2">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
+									width="17"
+									height="17"
 									fill="currentColor"
 									viewBox="0 0 16 16"
 								>
 									<path d="M3.612 15.443c-.396.198-.86-.106-.746-.592l.83-4.73L.173 6.765c-.329-.32-.158-.888.283-.95l4.898-.696 2.189-4.327c.197-.39.73-.39.927 0l2.189 4.327 4.898.696c.441.062.612.63.282.95l-3.522 3.356.83 4.73c.114.486-.35.79-.746.592L8 13.187l-4.389 2.256z" />
 								</svg>
-								{info.rating}
 							</span>
+							{info.rating}
 						</>
 					) : (
 						<>
@@ -107,7 +107,7 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 								<AssetImage
 									image={info.logoUrl}
 									aspect="logo"
-									className="relative mt-1 w-[40px] h-[30px]"
+									className="relative mt-2 w-[40px] h-[30px]"
 									imageClassName="object-contain"
 								/>
 							</a>
@@ -124,12 +124,13 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 					href={`https://janeway.mediux.io/${mediaItemType}/${tmdbID}`}
 					target="_blank"
 					rel="noopener noreferrer"
+					className="border-none"
 				>
 					<AssetImage
 						image={"/mediux_logo.svg"}
 						aspect="logo"
-						className="relative mt-1 ml-1 w-[50px] h-[35px]"
-						imageClassName="object-contain"
+						className="relative mt-5 w-[50px] h-[45px]"
+						imageClassName="object-contain border-none"
 					/>
 				</a>
 			)}
