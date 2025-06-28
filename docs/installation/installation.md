@@ -10,6 +10,6 @@ has_toc: false
 
 # Installation Types
 
--   [Dockerfile Installation](/aura/installation/docker-file)
--   [Docker Compose Installation](/aura/installation/docker-compose)
--   [Unraid Installation](/aura/installation/unraid)
+-   [Dockerfile Installation](/AURA/installation/docker-file)
+-   [Docker Compose Installation](/AURA/installation/docker-compose)
+-   [Unraid Installation](/AURA/installation/unraid)
