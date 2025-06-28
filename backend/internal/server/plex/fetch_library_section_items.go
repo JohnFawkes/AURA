@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Get all items/metadata for a specific item in a specific library section
@@ -69,7 +70,13 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 					Duration: item.Media[0].Part[0].Duration,
 				},
 			}
-			itemInfo.UpdatedAt = item.AddedAt
+			itemInfo.UpdatedAt = item.UpdatedAt
+			itemInfo.AddedAt = item.AddedAt
+			if t, err := time.Parse("2006-01-02", item.ReleasedAt); err == nil {
+				itemInfo.ReleasedAt = t.Unix()
+			} else {
+				itemInfo.ReleasedAt = 0
+			}
 
 			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {
@@ -111,7 +118,13 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 			itemInfo.Title = item.Title
 			itemInfo.Year = item.Year
 			itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-			itemInfo.UpdatedAt = item.AddedAt
+			itemInfo.UpdatedAt = item.UpdatedAt
+			itemInfo.AddedAt = item.AddedAt
+			if t, err := time.Parse("2006-01-02", item.ReleasedAt); err == nil {
+				itemInfo.ReleasedAt = t.Unix()
+			} else {
+				itemInfo.ReleasedAt = 0
+			}
 
 			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 			if existsInDB {

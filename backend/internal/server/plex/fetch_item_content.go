@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError) {
@@ -58,6 +59,12 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 		itemInfo.ContentRating = responseSection.Videos[0].ContentRating
 		itemInfo.Summary = responseSection.Videos[0].Summary
 		itemInfo.UpdatedAt = responseSection.Videos[0].UpdatedAt
+		itemInfo.AddedAt = responseSection.Videos[0].AddedAt
+		if t, err := time.Parse("2006-01-02", responseSection.Videos[0].ReleasedAt); err == nil {
+			itemInfo.ReleasedAt = t.Unix()
+		} else {
+			itemInfo.ReleasedAt = 0
+		}
 		itemInfo.Movie = &modals.MediaItemMovie{
 			File: modals.MediaItemFile{
 				Path:     responseSection.Videos[0].Media[0].Part[0].File,
@@ -83,6 +90,12 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 		itemInfo.ContentRating = responseSection.Directory[0].ContentRating
 		itemInfo.Summary = responseSection.Directory[0].Summary
 		itemInfo.UpdatedAt = responseSection.Directory[0].UpdatedAt
+		itemInfo.AddedAt = responseSection.Directory[0].AddedAt
+		if t, err := time.Parse("2006-01-02", responseSection.Directory[0].ReleasedAt); err == nil {
+			itemInfo.ReleasedAt = t.Unix()
+		} else {
+			itemInfo.ReleasedAt = 0
+		}
 		itemInfo, Err = fetchSeasonsForShow(&itemInfo)
 		if Err.Message != "" {
 			return itemInfo, Err

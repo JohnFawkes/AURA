@@ -17,6 +17,8 @@ export interface MediaItem {
 	ContentRating?: string;
 	Summary?: string;
 	UpdatedAt?: number;
+	AddedAt?: number;
+	ReleasedAt?: number;
 	Guids: Guid[];
 	Movie?: MediaItemMovie;
 	Series?: MediaItemSeries;

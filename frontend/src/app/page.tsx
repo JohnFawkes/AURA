@@ -67,9 +67,14 @@ export default function Home() {
 	const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 	const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
-	// Set sortOption to "date" if its not title or date
-	if (sortOption !== "title" && sortOption !== "date") {
-		setSortOption("date");
+	// Set sortOption to "dateAdded" if its not title or dateUpdated or dateAdded or dateReleased
+	if (
+		sortOption !== "title" &&
+		sortOption !== "dateUpdated" &&
+		sortOption !== "dateAdded" &&
+		sortOption !== "dateReleased"
+	) {
+		setSortOption("dateAdded");
 	}
 
 	// Fetch data from cache or API
@@ -230,11 +235,23 @@ export default function Home() {
 			} else if (sortOrder === "desc") {
 				items.sort((a, b) => b.Title.localeCompare(a.Title));
 			}
-		} else if (sortOption === "date") {
+		} else if (sortOption === "dateUpdated") {
 			if (sortOrder === "asc") {
 				items.sort((a, b) => (a.UpdatedAt ?? 0) - (b.UpdatedAt ?? 0));
 			} else if (sortOrder === "desc") {
 				items.sort((a, b) => (b.UpdatedAt ?? 0) - (a.UpdatedAt ?? 0));
+			}
+		} else if (sortOption === "dateAdded") {
+			if (sortOrder === "asc") {
+				items.sort((a, b) => (a.AddedAt ?? 0) - (b.AddedAt ?? 0));
+			} else if (sortOrder === "desc") {
+				items.sort((a, b) => (b.AddedAt ?? 0) - (a.AddedAt ?? 0));
+			}
+		} else if (sortOption === "dateReleased") {
+			if (sortOrder === "asc") {
+				items.sort((a, b) => (a.ReleasedAt ?? 0) - (b.ReleasedAt ?? 0));
+			} else if (sortOrder === "desc") {
+				items.sort((a, b) => (b.ReleasedAt ?? 0) - (a.ReleasedAt ?? 0));
 			}
 		}
 
@@ -255,6 +272,8 @@ export default function Home() {
 	if (error) {
 		return <ErrorMessage error={error} />;
 	}
+
+	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
 
 	return (
 		<div className="min-h-screen px-8 pb-20 sm:px-20">
@@ -334,15 +353,39 @@ export default function Home() {
 			{/* Sorting controls */}
 			<SortControl
 				options={[
-					{ value: "date", label: "Date Added", ascIcon: <ClockArrowUp />, descIcon: <ClockArrowDown /> },
+					{
+						value: "dateAdded",
+						label: "Date Added",
+						ascIcon: <ClockArrowUp />,
+						descIcon: <ClockArrowDown />,
+					},
+					// Conditionally include "dateUpdated"
+					...(hasUpdatedAt
+						? [
+								{
+									value: "dateUpdated",
+									label: "Date Updated",
+									ascIcon: <ClockArrowUp />,
+									descIcon: <ClockArrowDown />,
+								},
+							]
+						: []),
+					{
+						value: "dateReleased",
+						label: "Date Released",
+						ascIcon: <ClockArrowUp />,
+						descIcon: <ClockArrowDown />,
+					},
 					{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
 				]}
 				sortOption={sortOption}
 				sortOrder={sortOrder}
 				setSortOption={(value) => {
-					setSortOption(value as "title" | "date" | "");
+					setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
 					if (value === "title") setSortOrder("asc");
-					else if (value === "date") setSortOrder("desc");
+					else if (value === "dateUpdated") setSortOrder("desc");
+					else if (value === "dateAdded") setSortOrder("desc");
+					else if (value === "dateReleased") setSortOrder("desc");
 				}}
 				setSortOrder={setSortOrder}
 			/>

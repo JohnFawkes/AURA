@@ -26,6 +26,7 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	params := url.Values{}
 	params.Add("fields", "ShareLevel")
 	params.Add("ExcludeFields", "VideoChapters,VideoMediaSources,MediaStreams")
+	params.Add("Fields", "DateLastContentAdded,PremiereDate,DateCreated,ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Emby/Jellyfin server
@@ -53,6 +54,8 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	itemInfo.LibraryTitle = sectionTitle
 	itemInfo.Thumb = resp.ImageTags.Thumb
 	itemInfo.ContentRating = resp.OfficialRating
+	itemInfo.UpdatedAt = resp.DateCreated.UnixMilli()
+	itemInfo.ReleasedAt = resp.PremiereDate.UnixMilli()
 	itemInfo.Summary = resp.Overview
 	if resp.ProviderIds.Imdb != "" {
 		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{Provider: "imdb", ID: resp.ProviderIds.Imdb})
