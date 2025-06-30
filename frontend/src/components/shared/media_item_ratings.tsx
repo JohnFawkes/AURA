@@ -118,10 +118,9 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 				</div>
 			))}
 
-			{/* On Janeway it is Movie and show so we can get rid of the mediaItemType check */}
 			{tmdbID && (
 				<a
-					href={`https://janeway.mediux.io/${mediaItemType}/${tmdbID}`}
+					href={`https://mediux.io/${mediaItemType}/${tmdbID}`}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="border-none"
