@@ -3,21 +3,22 @@ import { persist } from "zustand/middleware";
 
 import { SortOptionsStore } from "@/lib/sortOptionsStore";
 
-interface SavedSetsPageStore extends SortOptionsStore {
+interface UserPageStore extends SortOptionsStore {
 	clear: () => void;
 }
-export const useSavedSetsPageStore = create<SavedSetsPageStore>()(
+
+export const useUserPageStore = create<UserPageStore>()(
 	persist(
 		(set) => ({
 			sortOption: "date",
-			sortOrder: "asc",
+			sortOrder: "desc",
 			setSortOption: (option) => set({ sortOption: option }),
 			setSortOrder: (order) => set({ sortOrder: order }),
 
-			clear: () => set({ sortOption: "date", sortOrder: "asc" }),
+			clear: () => set({ sortOption: "date", sortOrder: "desc" }),
 		}),
 		{
-			name: "saved-sets-page-storage", // key in localStorage
+			name: "user-page-storage", // key in localStorage
 		}
 	)
 );

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { SortOptionsStore } from "@/lib/sortOptionsStore";
+
 interface HomePageStore extends SortOptionsStore {
 	filteredLibraries: string[];
 	setFilteredLibraries: (libraries: string[]) => void;

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { SortOptionsStore } from "@/lib/sortOptionsStore";
+
 interface MediaPageStore extends SortOptionsStore {
 	showHiddenUsers: boolean;
 	setShowHiddenUsers: (show: boolean) => void;

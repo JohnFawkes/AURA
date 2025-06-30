@@ -1,4 +1,4 @@
-interface SortOptionsStore {
+export interface SortOptionsStore {
 	sortOption: string;
 	setSortOption: (option: string) => void;
 
