@@ -397,13 +397,13 @@ export default function Home() {
 			</div>
 			{/* Grid of Cards */}
 			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-				{paginatedItems.length === 0 && searchQuery && fullyLoaded ? (
+				{paginatedItems.length === 0 && fullyLoaded && (searchQuery || filteredLibraries.length > 0) ? (
 					<div className="col-span-full text-center text-red-500">
 						<ErrorMessage
 							error={ReturnErrorMessage<string>(
-								`No items found matching '${searchQuery}' in 
-								${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"}
-								${filterOutInDB ? " that are not in the database." : ""}`
+								`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
+								${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
+								${filterOutInDB ? "that are not in the database." : ""}`
 							)}
 						/>
 					</div>
