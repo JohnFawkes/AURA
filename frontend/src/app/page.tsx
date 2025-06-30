@@ -21,7 +21,7 @@ import { log } from "@/lib/logger";
 import { useHomePageStore } from "@/lib/pageHomeStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { storage } from "@/lib/storage";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
@@ -89,7 +89,7 @@ export default function Home() {
 		try {
 			let sections: LibrarySection[] = [];
 
-			// If cache is allowed, try loading from storage
+			// If cache is allowed, try loading from librarySectionsStorage
 			if (useCache) {
 				log("Home Page - Attempting to load sections from cache");
 				// Get all cached sections
@@ -97,10 +97,10 @@ export default function Home() {
 					data: LibrarySection;
 					timestamp: number;
 				}[] = (
-					await storage.keys().then((keys) =>
+					await librarySectionsStorage.keys().then((keys) =>
 						Promise.all(
 							keys.map((key) =>
-								storage.getItem<{
+								librarySectionsStorage.getItem<{
 									data: LibrarySection;
 									timestamp: number;
 								}>(key)
@@ -126,14 +126,14 @@ export default function Home() {
 
 				// Clear invalid cache
 				if (sections.length === 0) {
-					await storage.clear();
+					await librarySectionsStorage.clear();
 				}
 			}
 
 			setFullyLoaded(false);
 
 			// Clear the cache
-			storage.clear();
+			librarySectionsStorage.clear();
 
 			// If sections were not loaded from cache, fetch them from the API.
 			if (sections.length === 0) {
@@ -199,7 +199,7 @@ export default function Home() {
 					});
 
 					// Cache using storage
-					await storage.setItem(`${section.Title}`, {
+					await librarySectionsStorage.setItem(`${section.Title}`, {
 						data: section,
 						timestamp: Date.now(),
 					});

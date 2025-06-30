@@ -1,11 +1,9 @@
 import localforage from "localforage";
 
-// Initialize localforage
-localforage.config({
+// Library Sections storage
+export const librarySectionsStorage = localforage.createInstance({
 	name: "aura",
 	storeName: "LibrarySections",
 	version: 1.0,
-	description: "Library sections cache for aura",
+	description: "Stores all of the Library Sections and their MediaItems",
 });
-
-export const storage = localforage;

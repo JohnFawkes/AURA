@@ -1,12 +1,12 @@
-import { storage } from "@/lib/storage";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { MediaItem } from "@/types/mediaItem";
 
 export const getAllLibrarySectionsFromIDB = async (): Promise<{ title: string; type: string }[]> => {
-	// Get all cached sections from storage
-	const keys = await storage.keys();
+	// Get all cached sections from librarySectionsStorage
+	const keys = await librarySectionsStorage.keys();
 	const cachedSectionsPromises = keys.map((key) =>
-		storage.getItem<{
+		librarySectionsStorage.getItem<{
 			data: {
 				Title: string;
 				Type: string;
@@ -28,21 +28,16 @@ export const getAllLibrarySectionsFromIDB = async (): Promise<{ title: string; t
 
 type Direction = "next" | "previous";
 export const getAdjacentMediaItemFromIDB = async (
-	libraryTitle: string,
 	currentRatingKey: string,
 	direction: Direction
 ): Promise<MediaItem | null> => {
-	const librarySection = await storage.getItem<{
-		data: {
-			MediaItems: MediaItem[];
-		};
-	}>(libraryTitle);
+	// Get the sorted & filtered items from librarySectionsStorage
+	const mediaItems = await librarySectionsStorage.getItem<MediaItem[]>("Home Page - Sorted and Filtered Items");
 
-	if (!librarySection?.data?.MediaItems) {
+	if (!mediaItems || mediaItems.length === 0) {
 		return null;
 	}
 
-	const mediaItems = librarySection.data.MediaItems;
 	const currentIndex = mediaItems.findIndex((item) => item.RatingKey === currentRatingKey);
 
 	if (currentIndex === -1) {
@@ -51,10 +46,8 @@ export const getAdjacentMediaItemFromIDB = async (
 
 	let nextIndex: number;
 	if (direction === "next") {
-		// If at the end, wrap to beginning, otherwise move forward
 		nextIndex = currentIndex === mediaItems.length - 1 ? 0 : currentIndex + 1;
 	} else {
-		// If at the beginning, wrap to end, otherwise move backward
 		nextIndex = currentIndex === 0 ? mediaItems.length - 1 : currentIndex - 1;
 	}
 

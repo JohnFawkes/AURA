@@ -30,7 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 import { useMediaPageStore } from "@/lib/pageMediaStore";
-import { storage } from "@/lib/storage";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { APIResponse } from "@/types/apiResponse";
 import { MediaItem } from "@/types/mediaItem";
@@ -189,7 +189,7 @@ const MediaItemPage = () => {
 					// Fetch all section data in parallel
 					const sectionDataArr = await Promise.all(
 						otherSections.map((section) =>
-							storage
+							librarySectionsStorage
 								.getItem<{
 									data: {
 										MediaItems: MediaItem[];

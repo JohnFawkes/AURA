@@ -29,7 +29,7 @@ import { log } from "@/lib/logger";
 import { useUserPageStore } from "@/lib/pageUserStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { storage } from "@/lib/storage";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { APIResponse } from "@/types/apiResponse";
 import { MediaItem } from "@/types/mediaItem";
@@ -259,7 +259,7 @@ const UserSetPage = () => {
 			setIsLoading(true);
 
 			// Get the library section data once
-			const librarySection = await storage.getItem<{
+			const librarySection = await librarySectionsStorage.getItem<{
 				data: {
 					MediaItems: MediaItem[];
 				};

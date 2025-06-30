@@ -27,7 +27,7 @@ import { useMediaStore } from "@/lib/mediaStore";
 import { useHomePageStore } from "@/lib/pageHomeStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { storage } from "@/lib/storage";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
@@ -119,10 +119,10 @@ export default function Navbar() {
 		if (!isHomePage && searchQuery.trim() !== "") {
 			const handler = setTimeout(async () => {
 				try {
-					// Get all cached sections from storage
-					const keys = await storage.keys();
+					// Get all cached sections from librarySectionsStorage
+					const keys = await librarySectionsStorage.keys();
 					const cachedSectionsPromises = keys.map((key) =>
-						storage.getItem<{
+						librarySectionsStorage.getItem<{
 							data: LibrarySection;
 							timestamp: number;
 						}>(key)
