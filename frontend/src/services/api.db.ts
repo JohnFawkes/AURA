@@ -1,6 +1,5 @@
-import localforage from "localforage";
-
 import { log } from "@/lib/logger";
+import { librarySectionsStorage } from "@/lib/storage";
 
 import { DBMediaItemWithPosterSets, DBSavedItem } from "@/types/databaseSavedSet";
 import { MediaItem } from "@/types/mediaItem";
@@ -11,8 +10,8 @@ import apiClient from "./apiClient";
 
 const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Promise<void> => {
 	try {
-		// Retrieve the library record from localforage
-		const librarySection = await localforage.getItem<{
+		// Retrieve the library record from librarySectionsStorage
+		const librarySection = await librarySectionsStorage.getItem<{
 			data: {
 				MediaItems: MediaItem[];
 			};
@@ -33,8 +32,8 @@ const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Pr
 		// Update the ExistInDatabase flag
 		mediaItems[index].ExistInDatabase = true;
 
-		// Write the updated record back to localforage
-		await localforage.setItem(sectionTitle, {
+		// Write the updated record back to librarySectionsStorage
+		await librarySectionsStorage.setItem(sectionTitle, {
 			...librarySection,
 			data: {
 				...librarySection.data,
