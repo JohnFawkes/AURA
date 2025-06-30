@@ -31,6 +31,21 @@ import { searchMediaItems } from "@/hooks/searchMediaItems";
 
 import { LibrarySection, MediaItem } from "@/types/mediaItem";
 
+const placeholderTexts = {
+	home: {
+		desktop: "Search for Movies or Shows",
+		mobile: "Search Media",
+	},
+	savedSets: {
+		desktop: "Search Saved Sets",
+		mobile: "Search Sets",
+	},
+	user: {
+		desktop: "Search Sets by",
+		mobile: "Search",
+	},
+};
+
 export default function Navbar() {
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const { setCurrentPage } = usePageStore();
@@ -41,8 +56,8 @@ export default function Navbar() {
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
 
-	// State for placeholder (optional)
-	const [placeholderText, setPlaceholderText] = useState("Search for movies or shows");
+	const [placeholderText, setPlaceholderText] = useState("");
+
 	// State for search dropdown results (for non-homepage)
 	// This will be populated with results from the IDB
 	// when the user types in the search input
@@ -51,13 +66,34 @@ export default function Navbar() {
 	const { setMediaItem } = useMediaStore();
 	const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
 
+	// Set the placeholder text based on the current page
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(max-width: 768px)");
+		let username = "";
+		if (isUserPage) {
+			const parts = pathName.split("/");
+			username = parts[parts.length - 1] || parts[parts.length - 2] || "";
+		}
+		if (isSavedSetsPage) {
+			setPlaceholderText(
+				mediaQuery.matches ? placeholderTexts.savedSets.mobile : placeholderTexts.savedSets.desktop
+			);
+		} else if (isUserPage) {
+			setPlaceholderText(
+				mediaQuery.matches
+					? `${placeholderTexts.user.mobile} ${username}`
+					: `${placeholderTexts.user.desktop} ${username}`
+			);
+		} else {
+			setPlaceholderText(mediaQuery.matches ? placeholderTexts.home.mobile : placeholderTexts.home.desktop);
+		}
+	}, [isHomePage, isSavedSetsPage, isUserPage, pathName]);
+
 	// Use matchMedia to update placeholder based on screen width
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(max-width: 768px)");
-		setPlaceholderText(mediaQuery.matches ? "Search Media" : "Search for movies or shows");
 		setLogoSrc(mediaQuery.matches ? "/aura_logo.svg" : "/aura_word_logo.svg");
 		const handleMediaQueryChange = (event: MediaQueryListEvent) => {
-			setPlaceholderText(event.matches ? "Search Media" : "Search for movies or shows");
 			setLogoSrc(event.matches ? "/aura_logo.svg" : "/aura_word_logo.svg");
 		};
 		mediaQuery.addEventListener("change", handleMediaQueryChange);
