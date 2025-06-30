@@ -8,6 +8,7 @@ import {
 } from "@/helper/searchIDBForTMDBID";
 import { fetchAllUserSets } from "@/services/api.mediux";
 import { ReturnErrorMessage } from "@/services/api.shared";
+import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -18,12 +19,14 @@ import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
 import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import Loader from "@/components/shared/loader";
+import { SortControl } from "@/components/shared/sort-control";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { log } from "@/lib/logger";
+import { useUserPageStore } from "@/lib/pageUserStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { storage } from "@/lib/storage";
@@ -96,6 +99,40 @@ const processCollectionSetItems = async (
 	}
 };
 
+function sortSets<T extends object>(
+	sets: T[],
+	sortOption: "title" | "dateLastUpdate",
+	sortOrder: "asc" | "desc",
+	titleKey: keyof T = "set_title" as keyof T // default to set_title, but can be boxset_title
+): T[] {
+	if (sortOption === "title") {
+		return sets.slice().sort((a, b) => {
+			const aTitle = (a[titleKey] as string) || "";
+			const bTitle = (b[titleKey] as string) || "";
+			return sortOrder === "asc" ? aTitle.localeCompare(bTitle) : bTitle.localeCompare(aTitle);
+		});
+	} else if (sortOption === "dateLastUpdate") {
+		return sets.slice().sort((a, b) => {
+			const aDate =
+				"date_updated" in a &&
+				(typeof a.date_updated === "string" ||
+					typeof a.date_updated === "number" ||
+					a.date_updated instanceof Date)
+					? new Date(a.date_updated).getTime()
+					: 0;
+			const bDate =
+				"date_updated" in b &&
+				(typeof b.date_updated === "string" ||
+					typeof b.date_updated === "number" ||
+					b.date_updated instanceof Date)
+					? new Date(b.date_updated).getTime()
+					: 0;
+			return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
+		});
+	}
+	return sets;
+}
+
 const UserSetPage = () => {
 	// Get the username from the URL
 	const { username } = useParams();
@@ -143,6 +180,10 @@ const UserSetPage = () => {
 	} | null>(null);
 	const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB">("all");
 
+	// State to track the selected sorting option
+	const { sortOption, setSortOption } = useUserPageStore();
+	const { sortOrder, setSortOrder } = useUserPageStore();
+
 	// Get all the library sections from the IDB
 	useEffect(() => {
 		const fetchLibrarySections = async () => {
@@ -153,6 +194,12 @@ const UserSetPage = () => {
 		};
 		fetchLibrarySections();
 	}, []);
+
+	// Set sortOption to "dateLastUpdate" if it's not title or dateLastUpdate
+	if (sortOption !== "title" && sortOption !== "dateLastUpdate") {
+		setSortOption("dateLastUpdate");
+		setSortOrder("desc");
+	}
 
 	// Get all of the sets for the user
 	useEffect(() => {
@@ -231,84 +278,116 @@ const UserSetPage = () => {
 
 			// Process Boxsets
 			if (respBoxsets && respBoxsets.length > 0) {
-				const userBoxsets: MediuxUserBoxset[] = [];
-				respBoxsets.map(async (origBoxset) => {
-					const boxset = { ...origBoxset };
-					if (selectedLibrarySection.type === "show") {
-						boxset.movie_sets = []; // Clear movie sets since its not needed
-						boxset.collection_sets = []; // Clear collection sets since its not needed
-						if (boxset.show_sets && boxset.show_sets.length > 0) {
-							const processedShowSets = await processBatch(
-								boxset.show_sets,
-								tmdbLookupMap,
-								"show",
-								(current) => setProgressCount((prev) => ({ ...prev, current }))
-							);
-							boxset.show_sets = processedShowSets as MediuxUserShowSet[];
-						}
-					} else if (selectedLibrarySection.type === "movie") {
-						boxset.show_sets = []; // Clear show sets since its not needed
-						if (boxset.movie_sets && boxset.movie_sets.length > 0) {
-							const processedMovieSets = await processBatch(
-								boxset.movie_sets,
-								tmdbLookupMap,
-								"movie",
-								(current) => setProgressCount((prev) => ({ ...prev, current }))
-							);
-							boxset.movie_sets = processedMovieSets as MediuxUserMovieSet[];
-						}
-						if (boxset.collection_sets && boxset.collection_sets.length > 0) {
-							const processedCollectionSets = await Promise.all(
-								boxset.collection_sets.map(async (set) => {
-									return await processCollectionSetItems(set, tmdbLookupMap, (current) =>
-										setProgressCount((prev) => ({ ...prev, current }))
-									);
-								})
-							);
-							if (processedCollectionSets && processedCollectionSets.length > 0) {
-								const filteredCollectionSets = processedCollectionSets.filter(
-									(set): set is MediuxUserCollectionSet => set !== undefined
+				const userBoxsets: MediuxUserBoxset[] = await Promise.all(
+					respBoxsets.map(async (origBoxset) => {
+						const boxset = { ...origBoxset };
+						if (selectedLibrarySection.type === "show") {
+							boxset.movie_sets = [];
+							boxset.collection_sets = [];
+							if (boxset.show_sets && boxset.show_sets.length > 0) {
+								const processedShowSets = await processBatch(
+									boxset.show_sets,
+									tmdbLookupMap,
+									"show",
+									(current) => setProgressCount((prev) => ({ ...prev, current }))
 								);
-								boxset.collection_sets = filteredCollectionSets;
-							} else {
-								boxset.collection_sets = [];
+								boxset.show_sets = processedShowSets as MediuxUserShowSet[];
+							}
+						} else if (selectedLibrarySection.type === "movie") {
+							boxset.show_sets = [];
+							if (boxset.movie_sets && boxset.movie_sets.length > 0) {
+								const processedMovieSets = await processBatch(
+									boxset.movie_sets,
+									tmdbLookupMap,
+									"movie",
+									(current) => setProgressCount((prev) => ({ ...prev, current }))
+								);
+								boxset.movie_sets = processedMovieSets as MediuxUserMovieSet[];
+							}
+							if (boxset.collection_sets && boxset.collection_sets.length > 0) {
+								const processedCollectionSets = await Promise.all(
+									boxset.collection_sets.map(async (set) => {
+										return await processCollectionSetItems(set, tmdbLookupMap, (current) =>
+											setProgressCount((prev) => ({ ...prev, current }))
+										);
+									})
+								);
+								if (processedCollectionSets && processedCollectionSets.length > 0) {
+									const filteredCollectionSets = processedCollectionSets.filter(
+										(set): set is MediuxUserCollectionSet => set !== undefined
+									);
+									boxset.collection_sets = filteredCollectionSets;
+								} else {
+									boxset.collection_sets = [];
+								}
 							}
 						}
-					}
 
-					if (
-						boxset.show_sets.length > 0 ||
-						boxset.movie_sets.length > 0 ||
-						boxset.collection_sets.length > 0
-					) {
-						userBoxsets.push(boxset);
-					}
-				});
-				log("Processed Boxsets", userBoxsets);
-				setBoxSets(userBoxsets);
-				setIdbBoxsets(userBoxsets);
+						return boxset;
+					})
+				);
+
+				// Only keep boxsets with at least one set
+				const filteredBoxsets = userBoxsets.filter(
+					(boxset) =>
+						boxset.show_sets.length > 0 || boxset.movie_sets.length > 0 || boxset.collection_sets.length > 0
+				);
+
+				// Sort Boxsets
+				const sortedBoxsets = sortSets(
+					filteredBoxsets,
+					sortOption as "title" | "dateLastUpdate",
+					sortOrder,
+					"boxset_title"
+				) as MediuxUserBoxset[];
+
+				log("Processed Boxsets", sortedBoxsets);
+				setBoxSets(sortedBoxsets);
+				setIdbBoxsets(sortedBoxsets);
 			}
 
 			// Process Show Sets
 			if (selectedLibrarySection.type === "show" && respShowSets && respShowSets.length > 0) {
 				log("Processing Show Sets");
-				const processedShowSets = await processBatch(respShowSets, tmdbLookupMap, "show", (current) =>
-					setProgressCount((prev) => ({ ...prev, current }))
+				const processedShowSets = await processBatch<MediuxUserShowSet>(
+					respShowSets,
+					tmdbLookupMap,
+					"show",
+					(current) => setProgressCount((prev) => ({ ...prev, current }))
 				);
-				log("Processed Show Sets", processedShowSets);
-				setShowSets(processedShowSets as MediuxUserShowSet[]);
-				setIdbShowSets(processedShowSets as MediuxUserShowSet[]);
+
+				// Sort Show Sets
+				const sortedShowSets = sortSets(
+					processedShowSets,
+					sortOption as "title" | "dateLastUpdate",
+					sortOrder as "asc" | "desc"
+				);
+
+				log("Processed Show Sets", sortedShowSets);
+				setShowSets(sortedShowSets);
+				setIdbShowSets(sortedShowSets);
 			}
 
 			// Process Movie Sets
 			if (selectedLibrarySection.type === "movie" && respMovieSets && respMovieSets.length > 0) {
 				log("Processing Movie Sets");
-				const processedMovieSets = await processBatch(respMovieSets, tmdbLookupMap, "movie", (current) =>
-					setProgressCount((prev) => ({ ...prev, current }))
+				const processedMovieSets = await processBatch<MediuxUserMovieSet>(
+					respMovieSets,
+					tmdbLookupMap,
+					"movie",
+					(current) => setProgressCount((prev) => ({ ...prev, current }))
 				);
-				log("Processed Movie Sets", processedMovieSets);
-				setMovieSets(processedMovieSets as MediuxUserMovieSet[]);
-				setIdbMovieSets(processedMovieSets as MediuxUserMovieSet[]);
+
+				// Sort Movie Sets
+				const sortedMovieSets = sortSets(
+					processedMovieSets,
+					sortOption as "title" | "dateLastUpdate",
+					sortOrder as "asc" | "desc"
+				);
+
+				log("Processed Movie Sets", sortedMovieSets);
+				setMovieSets(sortedMovieSets);
+				setIdbMovieSets(sortedMovieSets);
 			}
 
 			// Process Collection Sets
@@ -324,9 +403,17 @@ const UserSetPage = () => {
 					const filteredCollectionSets = processedCollectionSets.filter(
 						(set): set is MediuxUserCollectionSet => set !== undefined
 					);
-					log("Processed Collection Sets", filteredCollectionSets);
-					setCollectionSets(filteredCollectionSets);
-					setIdbCollectionSets(filteredCollectionSets);
+
+					// Sort Collection Sets
+					const sortedCollectionSets = sortSets(
+						filteredCollectionSets,
+						sortOption as "title" | "dateLastUpdate",
+						sortOrder as "asc" | "desc"
+					);
+
+					log("Processed Collection Sets", sortedCollectionSets);
+					setCollectionSets(sortedCollectionSets);
+					setIdbCollectionSets(sortedCollectionSets);
 				}
 			}
 
@@ -449,14 +536,26 @@ const UserSetPage = () => {
 						boxset.collection_sets?.length > 0
 				);
 
-			setBoxSets(filteredBoxsets);
+			const sortedBoxsets = sortSets(
+				filteredBoxsets,
+				sortOption as "title" | "dateLastUpdate",
+				sortOrder,
+				"boxset_title"
+			);
+
+			setBoxSets(sortedBoxsets);
 		}
 
 		// Filter show sets
 		if (idbShowSets.length > 0) {
 			log("Filtering Show Sets by Database Status", idbShowSets);
 			const filteredShowSets = idbShowSets.filter((idbShowSets) => filterByDatabaseStatus(idbShowSets.show_id));
-			setShowSets(filteredShowSets);
+			const sortedShowSets = sortSets<MediuxUserShowSet>(
+				filteredShowSets,
+				sortOption as "dateLastUpdate" | "title",
+				sortOrder
+			);
+			setShowSets(sortedShowSets);
 		}
 
 		// Filter movie sets
@@ -465,7 +564,12 @@ const UserSetPage = () => {
 			const filteredMovieSets = idbMovieSets.filter((idbMovieSet) =>
 				filterByDatabaseStatus(idbMovieSet.movie_id)
 			);
-			setMovieSets(filteredMovieSets);
+			const sortedMovieSets = sortSets<MediuxUserMovieSet>(
+				filteredMovieSets,
+				sortOption as "dateLastUpdate" | "title",
+				sortOrder
+			);
+			setMovieSets(sortedMovieSets);
 		}
 
 		// Filter collection sets
@@ -479,11 +583,15 @@ const UserSetPage = () => {
 					),
 				}))
 				.filter((set) => set.movie_posters.length > 0 || set.movie_backdrops.length > 0);
-
-			setCollectionSets(filteredCollectionSets);
+			const sortedCollectionSets = sortSets<MediuxUserCollectionSet>(
+				filteredCollectionSets,
+				sortOption as "dateLastUpdate" | "title",
+				sortOrder
+			);
+			setCollectionSets(sortedCollectionSets);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filterOutInDB]);
+	}, [filterOutInDB, sortOrder, sortOption]);
 
 	// Update document title accordingly.
 	useEffect(() => {
@@ -650,38 +758,6 @@ const UserSetPage = () => {
 							</div>
 						</div>
 
-						{/* Filter Out In DB Selection */}
-						<div className="w-full flex items-center mb-2">
-							<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
-								Filter:
-							</Label>
-							{/* Filter Out In DB Toggle */}
-
-							<Badge
-								key="filter-out-in-db"
-								className={`cursor-pointer text-sm ${
-									filterOutInDB === "inDB"
-										? "bg-green-600 text-white"
-										: filterOutInDB === "notInDB"
-											? "bg-red-600 text-white"
-											: ""
-								}`}
-								variant={filterOutInDB !== "all" ? "default" : "outline"}
-								onClick={() => {
-									const next =
-										filterOutInDB === "all" ? "inDB" : filterOutInDB === "inDB" ? "notInDB" : "all";
-									setFilterOutInDB(next);
-									setCurrentPage(1);
-								}}
-							>
-								{filterOutInDB === "all"
-									? "All Items"
-									: filterOutInDB === "inDB"
-										? "Items In DB"
-										: "Items Not in DB"}
-							</Badge>
-						</div>
-
 						{/* No library selected message */}
 						{!selectedLibrarySection && (
 							<div className="flex justify-center mt-8">
@@ -695,25 +771,132 @@ const UserSetPage = () => {
 							movieSets.length === 0 &&
 							collectionSets.length === 0 &&
 							boxsets.length === 0 ? (
-								<div className="flex justify-center mt-8">
-									<ErrorMessage
-										error={ReturnErrorMessage<string>(
-											`No Sets found in ${selectedLibrarySection.title} library${
-												filterOutInDB === "inDB"
-													? " that exist in your database"
-													: filterOutInDB === "notInDB"
-														? " that are missing from your database"
-														: ""
-											}${searchQuery ? ` for search query "${searchQuery}"` : ""}`
-										)}
-									/>
-								</div>
+								<>
+									{/* If the filterOutInDB is selected, show an option to unselect it */}
+									<div className="flex justify-center">
+										{/* Filter Out In DB Selection */}
+										<div className="w-full flex items-center mb-2">
+											<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
+												Filter:
+											</Label>
+											{/* Filter Out In DB Toggle */}
+
+											<Badge
+												key="filter-out-in-db"
+												className={`cursor-pointer text-sm ${
+													filterOutInDB === "inDB"
+														? "bg-green-600 text-white"
+														: filterOutInDB === "notInDB"
+															? "bg-red-600 text-white"
+															: ""
+												}`}
+												variant={filterOutInDB !== "all" ? "default" : "outline"}
+												onClick={() => {
+													const next =
+														filterOutInDB === "all"
+															? "inDB"
+															: filterOutInDB === "inDB"
+																? "notInDB"
+																: "all";
+													setFilterOutInDB(next);
+													setCurrentPage(1);
+												}}
+											>
+												{filterOutInDB === "all"
+													? "All Items"
+													: filterOutInDB === "inDB"
+														? "Items In DB"
+														: "Items Not in DB"}
+											</Badge>
+										</div>
+									</div>
+									<div className="flex justify-center mt-8">
+										<ErrorMessage
+											error={ReturnErrorMessage<string>(
+												`No Sets found in ${selectedLibrarySection.title} library${
+													filterOutInDB === "inDB"
+														? " that exist in your database"
+														: filterOutInDB === "notInDB"
+															? " that are missing from your database"
+															: ""
+												}${searchQuery ? ` for search query "${searchQuery}"` : ""}`
+											)}
+										/>
+									</div>
+								</>
 							) : (
 								<div className="flex flex-col items-center mt-4 mb-4">
+									{/* Filter Out In DB Selection */}
+									<div className="w-full flex items-center mb-2">
+										<Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
+											Filter:
+										</Label>
+										{/* Filter Out In DB Toggle */}
+
+										<Badge
+											key="filter-out-in-db"
+											className={`cursor-pointer text-sm ${
+												filterOutInDB === "inDB"
+													? "bg-green-600 text-white"
+													: filterOutInDB === "notInDB"
+														? "bg-red-600 text-white"
+														: ""
+											}`}
+											variant={filterOutInDB !== "all" ? "default" : "outline"}
+											onClick={() => {
+												const next =
+													filterOutInDB === "all"
+														? "inDB"
+														: filterOutInDB === "inDB"
+															? "notInDB"
+															: "all";
+												setFilterOutInDB(next);
+												setCurrentPage(1);
+											}}
+										>
+											{filterOutInDB === "all"
+												? "All Items"
+												: filterOutInDB === "inDB"
+													? "Items In DB"
+													: "Items Not in DB"}
+										</Badge>
+									</div>
+
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
 										<SelectItemsPerPage setCurrentPage={setCurrentPage} />
 									</div>
+
+									{/* Sort Control */}
+									<div className="w-full flex items-center mb-4">
+										{/* Sort Control */}
+										<SortControl
+											options={[
+												{
+													value: "dateLastUpdate",
+													label: "Date Updated",
+													ascIcon: <ClockArrowUp />,
+													descIcon: <ClockArrowDown />,
+												},
+
+												{
+													value: "title",
+													label: "Title",
+													ascIcon: <ArrowDownAZ />,
+													descIcon: <ArrowDownZA />,
+												},
+											]}
+											sortOption={sortOption}
+											sortOrder={sortOrder}
+											setSortOption={(value) => {
+												setSortOption(value as "title" | "dateLastUpdate");
+												if (value === "title") setSortOrder("asc");
+												else if (value === "dateLastUpdate") setSortOrder("desc");
+											}}
+											setSortOrder={setSortOrder}
+										/>
+									</div>
+
 									<Tabs
 										defaultValue="boxSets"
 										value={activeTab}
