@@ -25,8 +25,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import { usePageStore, useSavedSetsPageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
+import { useSavedSetsPageStore } from "@/lib/pageSavedSets";
+import { usePaginationStore } from "@/lib/paginationStore";
+import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { cn } from "@/lib/utils";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
@@ -43,7 +45,7 @@ const SavedSetsPage: React.FC = () => {
 	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
-	const { itemsPerPage } = usePageStore();
+	const { itemsPerPage } = usePaginationStore();
 	const [currentPage, setCurrentPage] = useState(1);
 
 	// State to track the selected sorting option

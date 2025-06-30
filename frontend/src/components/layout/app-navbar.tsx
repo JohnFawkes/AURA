@@ -23,8 +23,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-import { useHomePageStore, usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { useMediaStore } from "@/lib/mediaStore";
+import { useHomePageStore } from "@/lib/pageHomeStore";
+import { usePaginationStore } from "@/lib/paginationStore";
+import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { storage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
@@ -48,7 +50,7 @@ const placeholderTexts = {
 
 export default function Navbar() {
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
-	const { setCurrentPage } = usePageStore();
+	const { setCurrentPage } = usePaginationStore();
 	const { setFilteredLibraries, setFilterOutInDB } = useHomePageStore();
 	const router = useRouter();
 	const pathName = usePathname();

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePageStore } from "@/lib/homeSearchStore";
+import { usePaginationStore } from "@/lib/paginationStore";
 
 import { Label } from "../ui/label";
 import {
@@ -14,7 +14,7 @@ import {
 } from "../ui/select";
 
 export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: number) => void }) {
-	const { itemsPerPage, setItemsPerPage } = usePageStore();
+	const { itemsPerPage, setItemsPerPage } = usePaginationStore();
 	const itemsPerPageOptions = [10, 20, 30, 50, 100];
 
 	return (

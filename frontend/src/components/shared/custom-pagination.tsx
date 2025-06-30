@@ -9,7 +9,7 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 
-import { usePageStore } from "@/lib/homeSearchStore";
+import { usePaginationStore } from "@/lib/paginationStore";
 
 interface CustomPaginationProps {
 	currentPage: number;
@@ -26,7 +26,7 @@ export function CustomPagination({
 	scrollToTop = true,
 	filterItemsLength,
 }: CustomPaginationProps) {
-	const { itemsPerPage } = usePageStore();
+	const { itemsPerPage } = usePaginationStore();
 
 	const handlePageChange = (newPage: number) => {
 		setCurrentPage(newPage);

@@ -23,8 +23,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
-import { usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
+import { usePaginationStore } from "@/lib/paginationStore";
+import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { storage } from "@/lib/storage";
 
 import { APIResponse } from "@/types/apiResponse";
@@ -103,7 +104,7 @@ const UserSetPage = () => {
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
-	const { itemsPerPage } = usePageStore();
+	const { itemsPerPage } = usePaginationStore();
 
 	// Add state to track progress
 	const [, setProgressCount] = useState<{

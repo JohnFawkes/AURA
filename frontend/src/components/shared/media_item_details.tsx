@@ -12,9 +12,9 @@ import { useRouter } from "next/navigation";
 import { AssetImage } from "@/components/shared/asset-image";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-import { useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
+import { useSearchQueryStore } from "@/lib/searchQueryStore";
 
 import { Guid, MediaItem } from "@/types/mediaItem";
 

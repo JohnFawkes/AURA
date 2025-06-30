@@ -17,8 +17,10 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
-import { useHomePageStore, usePageStore, useSearchQueryStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
+import { useHomePageStore } from "@/lib/pageHomeStore";
+import { usePaginationStore } from "@/lib/paginationStore";
+import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { storage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
@@ -54,8 +56,8 @@ export default function Home() {
 	// Filtering & Pagination
 	const { filteredLibraries, setFilteredLibraries, filterOutInDB, setFilterOutInDB } = useHomePageStore();
 	const [filteredItems, setFilteredItems] = useState<MediaItem[]>([]);
-	const { currentPage, setCurrentPage } = usePageStore();
-	const { itemsPerPage } = usePageStore();
+	const { currentPage, setCurrentPage } = usePaginationStore();
+	const { itemsPerPage } = usePaginationStore();
 
 	// State to track the selected sorting option
 	const { sortOption, setSortOption } = useHomePageStore();

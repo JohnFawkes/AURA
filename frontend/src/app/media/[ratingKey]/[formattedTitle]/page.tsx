@@ -27,9 +27,9 @@ import { SortControl } from "@/components/shared/sort-control";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { useMediaPageStore } from "@/lib/homeSearchStore";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
+import { useMediaPageStore } from "@/lib/pageMediaStore";
 import { storage } from "@/lib/storage";
 
 import { APIResponse } from "@/types/apiResponse";
