@@ -268,7 +268,17 @@ export default function Home() {
 		}
 
 		// Filter out items by search
-		setFilteredItems(searchMediaItems(items, searchQuery));
+		const filteredItems = searchMediaItems(items, searchQuery);
+		setFilteredItems(filteredItems);
+
+		// Store the filtered items in local storage
+		localStorage.setItem(
+			"home-page-filtered-sorted-items",
+			JSON.stringify({
+				data: filteredItems,
+				timestamp: Date.now(),
+			})
+		);
 	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB, sortOption, sortOrder]);
 
 	if (error) {

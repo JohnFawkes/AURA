@@ -319,11 +319,11 @@ const MediaItemPage = () => {
 
 	useEffect(() => {
 		const fetchAdjacentItems = async () => {
-			if (!mediaItem?.LibraryTitle || !mediaItem?.RatingKey) return;
+			if (!mediaItem?.RatingKey) return;
 
 			const [previousItem, nextItem] = await Promise.all([
-				getAdjacentMediaItemFromIDB(mediaItem.LibraryTitle, mediaItem.RatingKey, "previous"),
-				getAdjacentMediaItemFromIDB(mediaItem.LibraryTitle, mediaItem.RatingKey, "next"),
+				getAdjacentMediaItemFromIDB(mediaItem.RatingKey, "previous"),
+				getAdjacentMediaItemFromIDB(mediaItem.RatingKey, "next"),
 			]);
 
 			setAdjacentItems({
@@ -333,7 +333,7 @@ const MediaItemPage = () => {
 		};
 
 		fetchAdjacentItems();
-	}, [mediaItem?.LibraryTitle, mediaItem?.RatingKey]);
+	}, [mediaItem?.RatingKey]);
 
 	if (!mediaItem) {
 		return (

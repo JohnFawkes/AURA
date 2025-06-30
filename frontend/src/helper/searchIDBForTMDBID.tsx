@@ -31,8 +31,9 @@ export const getAdjacentMediaItemFromIDB = async (
 	currentRatingKey: string,
 	direction: Direction
 ): Promise<MediaItem | null> => {
-	// Get the sorted & filtered items from librarySectionsStorage
-	const mediaItems = await librarySectionsStorage.getItem<MediaItem[]>("Home Page - Sorted and Filtered Items");
+	const mediaItemsString = localStorage.getItem("home-page-filtered-sorted-items");
+	const parsed = mediaItemsString ? JSON.parse(mediaItemsString) : { data: [] };
+	const mediaItems: MediaItem[] = Array.isArray(parsed) ? parsed : parsed.data || [];
 
 	if (!mediaItems || mediaItems.length === 0) {
 		return null;
