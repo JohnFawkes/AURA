@@ -22,6 +22,7 @@ import { useHomePageStore } from "@/lib/pageHomeStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
 import { librarySectionsStorage } from "@/lib/storage";
+import { homePageStorage } from "@/lib/storage";
 
 import { searchMediaItems } from "@/hooks/searchMediaItems";
 
@@ -272,13 +273,7 @@ export default function Home() {
 		setFilteredItems(filteredItems);
 
 		// Store the filtered items in local storage
-		localStorage.setItem(
-			"home-page-filtered-sorted-items",
-			JSON.stringify({
-				data: filteredItems,
-				timestamp: Date.now(),
-			})
-		);
+		homePageStorage.setItem("filtered-sorted-items", { data: filteredItems });
 	}, [librarySections, filteredLibraries, searchQuery, filterOutInDB, sortOption, sortOrder]);
 
 	if (error) {
