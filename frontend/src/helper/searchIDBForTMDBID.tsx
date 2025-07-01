@@ -1,4 +1,5 @@
 import { librarySectionsStorage } from "@/lib/storage";
+import { homePageStorage } from "@/lib/storage";
 
 import { MediaItem } from "@/types/mediaItem";
 
@@ -31,9 +32,8 @@ export const getAdjacentMediaItemFromIDB = async (
 	currentRatingKey: string,
 	direction: Direction
 ): Promise<MediaItem | null> => {
-	const mediaItemsString = localStorage.getItem("home-page-filtered-sorted-items");
-	const parsed = mediaItemsString ? JSON.parse(mediaItemsString) : { data: [] };
-	const mediaItems: MediaItem[] = Array.isArray(parsed) ? parsed : parsed.data || [];
+	const stored = await homePageStorage.getItem<{ data: MediaItem[] }>("filtered-sorted-items");
+	const mediaItems = stored?.data || [];
 
 	if (!mediaItems || mediaItems.length === 0) {
 		return null;
