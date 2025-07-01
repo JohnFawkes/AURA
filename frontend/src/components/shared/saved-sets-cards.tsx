@@ -4,7 +4,7 @@ import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
 import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
 import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
 import { fetchSetByID } from "@/services/api.mediux";
-import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
+import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff, User } from "lucide-react";
 
 import React, { useState } from "react";
 
@@ -512,7 +512,7 @@ const SavedSetsCard: React.FC<{
 											href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="hover:underline"
+											className="hover:underline ml-1"
 										>
 											{editSet.set.Title}
 										</Link>
@@ -541,16 +541,14 @@ const SavedSetsCard: React.FC<{
 									</Button>
 								</div>
 								{editSet.set.User.Name && (
-									<DialogDescription>
-										<span className="text-sm text-muted-foreground">
-											By:{" "}
-											<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
-												{editSet.set.User.Name}
-											</Link>
-										</span>
+									<DialogDescription className="text-md text-muted-foreground mb-1 flex items-center">
+										<User className="text-sm text-muted-foreground" />
+										<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
+											{editSet.set.User.Name}
+										</Link>
 									</DialogDescription>
 								)}
-								<DialogDescription>
+								<DialogDescription className="ml-1">
 									Set ID:{" "}
 									<Link
 										href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}

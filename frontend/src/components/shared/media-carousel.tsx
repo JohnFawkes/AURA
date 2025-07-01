@@ -1,5 +1,5 @@
 import { formatLastUpdatedDate } from "@/helper/formatDate";
-import { ZoomInIcon } from "lucide-react";
+import { User, ZoomInIcon } from "lucide-react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -51,7 +51,7 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 					<div className="flex flex-row items-center">
 						<Link
 							href={`/sets/${set.ID}`}
-							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold"
+							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1"
 							onClick={(e) => {
 								e.stopPropagation();
 								goToSetPage();
@@ -81,13 +81,13 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 						/>
 					</div>
 				</div>
-				<div className="text-md text-muted-foreground  mb-1">
-					By:{" "}
-					<Link href={`/user/${set.User.Name}`} className="hover:text-primary cursor-pointer">
+				<div className="text-md text-muted-foreground mb-1 flex items-center">
+					<User />
+					<Link href={`/user/${set.User.Name}`} className="hover:text-primary cursor-pointer underline">
 						{set.User.Name}
 					</Link>
 				</div>
-				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
+				<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
 					Last Update: {formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
 				</Lead>
 

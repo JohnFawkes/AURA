@@ -78,7 +78,7 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 
 	const { primary, secondary } = mediaItem.Type === "movie" ? getMovieFileCounts() : getShowFileCounts();
 
-	const secondaryLineClass = cn("text-sm", {
+	const secondaryLineClass = cn("text-sm ml-1", {
 		"text-yellow-500": secondary.toLowerCase().includes("server is missing"),
 		"text-orange-500": secondary.toLowerCase().includes("set is missing"),
 		"text-muted-foreground": !secondary.toLowerCase().includes("missing"),
@@ -86,7 +86,7 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 
 	return (
 		<div>
-			{primary && <Lead className="text-sm text-muted-foreground">{primary}</Lead>}
+			{primary && <Lead className="text-sm text-muted-foreground ml-1">{primary}</Lead>}
 			{secondary && <Lead className={secondaryLineClass}>{secondary}</Lead>}
 		</div>
 	);
