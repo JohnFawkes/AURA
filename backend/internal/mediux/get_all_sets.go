@@ -728,7 +728,8 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 
 	var updatedSet modals.PosterSet
 
-	if itemType == "show" {
+	switch itemType {
+	case "show":
 		updatedSet, Err = FetchShowSetByID(librarySection, itemRatingKey, setID)
 		if Err.Message != "" {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -743,7 +744,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
-	} else if itemType == "movie" {
+	case "movie":
 		updatedSet, Err = FetchMovieSetByID(librarySection, itemRatingKey, setID)
 		if Err.Message != "" {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -758,7 +759,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
-	} else if itemType == "collection" {
+	case "collection":
 		updatedSet, Err = FetchCollectionSetByID(librarySection, itemRatingKey, setID)
 		if Err.Message != "" {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -773,7 +774,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
-	} else {
+	default:
 		Err.Function = utils.GetFunctionName()
 
 		Err.Message = "Invalid item type provided"

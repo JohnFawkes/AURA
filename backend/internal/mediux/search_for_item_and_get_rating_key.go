@@ -17,9 +17,10 @@ import (
 func SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
 
 	// Check if the media server is Plex or Emby/Jellyfin
-	if config.Global.MediaServer.Type == "Plex" {
+	switch config.Global.MediaServer.Type {
+	case "Plex":
 		return PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
-	} else if config.Global.MediaServer.Type == "Emby" || config.Global.MediaServer.Type == "Jellyfin" {
+	case "Emby", "Jellyfin":
 		return EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
 	}
 	Err := logging.NewStandardError()
