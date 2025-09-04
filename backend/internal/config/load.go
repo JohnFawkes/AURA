@@ -64,6 +64,13 @@ func LoadYamlConfig() logging.StandardError {
 func PrintConfig() {
 	logging.LOG.NoTime("Current Configuration Settings\n")
 
+	// Auth Mode
+	logging.LOG.NoTime("\tAuth Mode:\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Auth.Enable))
+	if Global.Auth.Enable {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tPassword: %s\n", "***"+Global.Auth.Password[len(Global.Auth.Password)-4:]))
+	}
+
 	// Development Mode
 	if Global.Dev.Enable {
 		logging.LOG.NoTime("\tDevelopment Mode:\n")
@@ -130,6 +137,9 @@ func ValidateConfig() bool {
 		return false
 	}
 
+	// Validate Auth configuration
+	isAuthValid := ValidateAuthConfig()
+
 	// Validate Logging configuration
 	isLoggingValid := ValidateLoggingConfig()
 
@@ -142,12 +152,25 @@ func ValidateConfig() bool {
 	// Validate Mediux configuration
 	isMediuxValid := ValidateMediuxConfig()
 
-	if !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid {
-		logging.LOG.Error("Invalid configuration file. See errors above.")
+	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid {
+		logging.LOG.Error("\tInvalid configuration file. See errors above.")
 		return false
 	}
 
 	return true
+}
+
+func ValidateAuthConfig() bool {
+	isValid := true
+
+	if Global.Auth.Enable {
+		if Global.Auth.Password == "" {
+			logging.LOG.Error("\tAuth.Password is not set in the configuration file")
+			isValid = false
+		}
+	}
+
+	return isValid
 }
 
 func ValidateLoggingConfig() bool {
