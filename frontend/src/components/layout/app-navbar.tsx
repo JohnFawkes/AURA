@@ -1,9 +1,11 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { getAuthToken } from "@/services/api.auth";
 import {
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
+	LogOutIcon,
 	Search as SearchIcon,
 	Settings as SettingsIcon,
 } from "lucide-react";
@@ -57,6 +59,7 @@ export default function Navbar() {
 	const isHomePage = pathName === "/";
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
+	const [isAuthed, setIsAuthed] = useState(false);
 
 	const [placeholderText, setPlaceholderText] = useState("");
 
@@ -164,6 +167,12 @@ export default function Navbar() {
 		}
 	}, [searchQuery, isHomePage]);
 
+	useEffect(() => {
+		// Track the auth status
+		const token = getAuthToken();
+		setIsAuthed(!!token && token !== "null" && token !== "undefined");
+	}, []);
+
 	const handleHomeClick = () => {
 		if (isHomePage) {
 			setSearchQuery("");
@@ -179,6 +188,12 @@ export default function Navbar() {
 	const handleResultClick = (result: MediaItem) => {
 		setMediaItem(result);
 		router.push(formatMediaItemUrl(result));
+	};
+
+	const handleLogout = () => {
+		// added
+		localStorage.removeItem("aura-auth-token");
+		router.replace("/login");
 	};
 
 	return (
@@ -265,6 +280,18 @@ export default function Navbar() {
 						<FileCogIcon className="w-4 h-4 mr-2" />
 						Settings
 					</DropdownMenuItem>
+					{isAuthed && (
+						<>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								className="cursor-pointer flex items-center hover:bg-primary/10 text-red-600 focus:text-red-700"
+								onClick={handleLogout}
+							>
+								<LogOutIcon className="w-4 h-4 mr-2" />
+								Logout
+							</DropdownMenuItem>
+						</>
+					)}
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</nav>
