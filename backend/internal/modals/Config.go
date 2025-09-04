@@ -4,6 +4,7 @@ package modals
 // It includes options for server setup, caching, data storage, logging,
 // and integration with external services such as Plex, TMDB, and Mediux.
 type Config struct {
+	Auth                   Config_Auth         `yaml:"Auth"`                   // Authentication settings.
 	Dev                    Config_Dev          `yaml:"Dev"`                    // Development mode settings.
 	CacheImages            bool                `yaml:"CacheImages"`            // Whether to cache images locally.
 	SaveImageNextToContent bool                `yaml:"SaveImageNextToContent"` // Whether to save images next to the associated content.
@@ -14,6 +15,11 @@ type Config struct {
 	AutoDownload           Config_AutoDownload `yaml:"AutoDownload"`           // Auto-download settings.
 	Kometa                 Config_Kometa       `yaml:"Kometa"`                 // Kometa settings.
 	Notification           Config_Notification `yaml:"Notification"`           // Notification settings.
+}
+
+type Config_Auth struct {
+	Enable   bool   `yaml:"Enable"`   // Whether to enable authentication.
+	Password string `yaml:"Password"` // Password for authentication.
 }
 
 type Config_Dev struct {
