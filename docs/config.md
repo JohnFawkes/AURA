@@ -23,6 +23,36 @@ aura uses a `config.yml` file for configuration. This file is essential for sett
 
 # Configuration Options
 
+## Authentication
+
+-   **Example**:
+
+```yaml
+Auth:
+    Enable: true
+    Password: $argon2id$v=19$m=16,t=2,p=1$Wlp5RGd4dTNkdmVGVDRkMg$2QEi6FDa4BWDxuGrzhjuVw
+```
+
+While this password authentication method is effective, it is important to keep your password secure and not share it with others. For enhanced security, consider using solutions like [Authentik](https://goauthentik.io/) or [Authelia](https://www.authelia.com/).  
+**I am not a security expert** 😅
+
+### Enable
+
+-   **Default**: `false`
+-   **Options**: `true` or `false`
+-   **Description**: Whether to enable authentication.
+-   **Details**: If set to `true`, you will be required to authenticate before accessing the application.
+
+### Password
+
+-   **Default**: `null`
+-   **Options**: Any valid Argon2id hash
+-   **Description**: The password hash used to authenticate user.
+-   **Details**: This password is used to authenticate user when they log in to the application. It is recommended to use a strong, unique password for this purpose. You can generate a new Argon2id hash using tools like [Argon2 Online](https://argon2.online/). You can use the default settings.
+    ![Argon2 Online](assets/argon2-online.png)
+
+---
+
 ## CacheImages
 
 -   **Default**: `false`
