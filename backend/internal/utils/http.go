@@ -169,7 +169,7 @@ func ValidateMediUXToken(token string) logging.StandardError {
 	}
 
 	// Make a GET request to the MediUX API to validate the token
-	url := "https://staged.mediux.io/users/me"
+	url := "https://images.mediux.io/users/me"
 	response, body, err := MakeHTTPRequest(url, "GET", nil, 10, nil, "Mediux")
 	if err.Message != "" {
 		Err.Message = "Failed to validate MediUX token"

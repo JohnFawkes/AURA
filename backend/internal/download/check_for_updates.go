@@ -248,7 +248,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 					dbPosterSet.PosterSetID,
 				),
 				fmt.Sprintf("%s/%s?v=%s&key=jpg",
-					"https://staged.mediux.io/assets",
+					"https://images.mediux.io/assets",
 					file.ID,
 					file.Modified.Format("20060102150405"),
 				),

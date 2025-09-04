@@ -119,7 +119,7 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
 		SetBody(requestBody).
-		Post("https://staged.mediux.io/graphql")
+		Post("https://images.mediux.io/graphql")
 	if err != nil {
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
@@ -813,7 +813,7 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
 		SetBody(requestBody).
-		Post("https://staged.mediux.io/graphql")
+		Post("https://images.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
 		Err.Message = "Failed to make request to Mediux API"
@@ -895,7 +895,7 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
 		SetBody(requestBody).
-		Post("https://staged.mediux.io/graphql")
+		Post("https://images.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
 		Err.Message = "Failed to make request to Mediux API"
@@ -994,7 +994,7 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
 		SetBody(requestBody).
-		Post("https://staged.mediux.io/graphql")
+		Post("https://images.mediux.io/graphql")
 	if err != nil {
 		Err.Function = utils.GetFunctionName()
 		Err.Message = "Failed to make request to Mediux API"

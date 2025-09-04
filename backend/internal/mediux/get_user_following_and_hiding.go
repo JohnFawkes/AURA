@@ -78,7 +78,7 @@ func fetchUserFollowingAndHiding() (modals.MediuxUserFollowHideResponse, logging
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", config.Global.Mediux.Token)).
 		SetBody(requestBody).
-		Post("https://staged.mediux.io/graphql")
+		Post("https://images.mediux.io/graphql")
 	if err != nil {
 		Err.Message = "Failed to send request to Mediux API"
 		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
