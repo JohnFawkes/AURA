@@ -156,7 +156,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			updateReasons = append(updateReasons, "New seasons or episodes added")
 		}
 		updateReason := strings.Join(updateReasons, " and ")
-		logging.LOG.Trace(fmt.Sprintf("'%s' - Set '%s' updated. %s", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, updateReason))
+		logging.LOG.Debug(fmt.Sprintf("'%s' - Set '%s' updated. %s", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, updateReason))
 
 		// Check if selectedTypes contains "poster"
 		posterSet := false
@@ -321,6 +321,21 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 func shouldDownloadFile(dbPosterSet modals.DBPosterSetDetail, file modals.PosterFile, dbSavedItem, latestMediaItem modals.MediaItem) bool {
 	// Check if file was modified after last download
 	fileUpdated := compareLastUpdateToUpdateSetDateUpdated(dbPosterSet.LastDownloaded, file.Modified)
+
+	logging.LOG.Debug(fmt.Sprintf("Checking if should download file '%s' (Type: %s) for '%s' in set '%s' - File modified: %s | Last download: %s | File updated: %t",
+		mediaserver.GetFileDownloadName(file),
+		file.Type,
+		dbSavedItem.Title,
+		dbPosterSet.PosterSetID,
+		file.Modified.Format("2006-01-02 15:04:05"),
+		dbPosterSet.LastDownloaded,
+		fileUpdated,
+	))
+
+	// If the file was updated, download it
+	if fileUpdated {
+		return true
+	}
 
 	// For season posters and titlecards, also check if new seasons/episodes were added
 	switch file.Type {
