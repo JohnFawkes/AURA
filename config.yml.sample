@@ -3,6 +3,14 @@
 
 # This file should be located in /config on the docker container
 
+# Auth - Configuration for authentication
+# This is used to configure the authentication for the application.
+#   Enable - Whether to enable authentication or not.
+#   Password - The Argon2id hashed password for the user.
+Auth:
+    Enable: true
+    Password: $argon2id$v=19$m=12,t=3,p=1$Z3k1YnkwZzh5OTAwMDAwMA$lJDoyKZy1BMifB1Mb2SWFQ
+    
 # CacheImages - Whether to cache images or not. Caching images can improve performance but will use more disk space.
 CacheImages: true
 
