@@ -33,7 +33,9 @@ func Authenticator(next http.Handler) http.Handler {
 		}
 
 		// Public login route
-		if r.URL.Path == "/api/login" || strings.HasPrefix(r.URL.Path, "/api/mediaserver/image/") {
+		if r.URL.Path == "/api/login" ||
+			strings.HasPrefix(r.URL.Path, "/api/mediaserver/image/") ||
+			strings.HasPrefix(r.URL.Path, "/api/mediux/image/") {
 			next.ServeHTTP(w, r)
 			return
 		}
