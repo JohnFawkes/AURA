@@ -127,26 +127,43 @@ AutoDownload:
 
 ---
 
-## Notification
+## Notifications
 
--   **Example**:
+Configure one or more providers. Notifications can be disabled globally or per provider.
+
+Example:
 
 ```yaml
-Notification:
-    Provider: Discord
-    Webhook: https://discord.com/api/webhooks/your_webhook_url
+Notifications:
+    Enabled: true # Master switch (false = ignore all providers)
+    Providers:
+        - Provider: "Discord"
+          Enabled: true
+          Discord:
+              Webhook: "https://discord.com/api/webhooks/123456789/abcdefghijklmnopqrstuvwxyz"
+        - Provider: "Pushover"
+          Enabled: true
+          Pushover:
+              Token: YOUR_PUSHOVER_APP_TOKEN
+              UserKey: YOUR_PUSHOVER_USER_KEY
 ```
 
-### Provider
+### Structure
 
--   **Options**: `Discord`
--   **Description**: The notification provider to use for sending notifications.
--   **Details**: Currently, aura supports Discord as a notification provider. Setting this option is helpful for receiving notifications about the status of automatic downloads and other important events in aura. If you do not wish to receive notifications, you can leave this option set to `none`.
+-   Notifications.Enabled  
+    Global on/off. If false, Providers are loaded but not used.
+-   Notifications.Providers[]  
+    Array of provider entries.
 
-### Webhook
+### Provider Entry Fields
 
--   **Description**: The URL of the notifications provider webhook.
--   **Details**: If you choose to use Notification, you must provide the URL of the webhook for the notification provider.
+| Field            | Required                               | Notes                                        |
+| ---------------- | -------------------------------------- | -------------------------------------------- |
+| Provider         | yes                                    | Case-sensitive. Supported: Discord, Pushover |
+| Enabled          | yes                                    | If false, entry kept but skipped             |
+| Discord.Webhook  | yes (when Provider=Discord & Enabled)  | Full Discord webhook URL                     |
+| Pushover.Token   | yes (when Provider=Pushover & Enabled) | Your app token                               |
+| Pushover.UserKey | yes (when Provider=Pushover & Enabled) | Your user key                                |
 
 ---
 

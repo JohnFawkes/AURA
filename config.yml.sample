@@ -37,13 +37,36 @@ AutoDownload:
     Enabled: true
     Cron: "0 0 * * *"
 
-# Notification - Configuration for notifications
-#   Provider - The provider for notifications. Currently, the only provider is Discord.
-#   Webhook - The webhook URL for the provider. This can be obtained by creating a webhook in Discord.
-Notification:
-    Provider: "Discord" 
-    Webhook: "https://discord.com/api/webhooks/123456789/abcdefghijklmnopqrstuvwxyz" # Replace with your Discord webhook URL
-
+# Notifications - Configuration for notifications
+#   Enabled - Whether to enable notifications or not.
+#   Providers - A list of notification providers to use. Currently supported providers are:
+#     - Discord
+#     - Pushover
+# You can set multiple providers at the same time. aura will send notifications to all. You also have the option to enable each provider. This gives you flexability to turn off the ones that you don't want to use. 
+# When provider is Discord, you must set the Webhook URL
+# When provider is Pushover, you must set the Token and UserKey
+# Sample: 
+#   - Provider: "Pushover"
+#     Enabled: true
+#     Pushover:
+#         Token: your_pushover_token
+#         UserKey: your_pushover_user_key
+#   - Provider: "Discord"
+#     Enabled: true
+#     Discord:
+#         Webhook: your_discord_webhook_url
+Notifications:
+    Enabled: true
+    Providers: 
+      - Provider: "Discord"
+        Enabled: true
+        Discord:
+            Webhook: "https://discord.com/api/webhooks/123456789/abcdefghijklmnopqrstuvwxyz" # Replace with your Discord webhook URL
+      - Provider: "Pushover"
+        Enabled: true
+        Pushover:
+            Token: your_pushover_api_token
+            UserKey: your_pushover_user_key
 
 # MediaServer - Configuration for your Media Server
 #   Type - The type of Media Server. This can be one of: Plex, Jellyfin, Emby
