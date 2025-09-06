@@ -4,19 +4,40 @@ import (
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/utils"
-	"fmt"
 	"net/http"
-	"slices"
 	"time"
 )
 
-// Valid NotificationProviders is a list of valid notification providers
-var ValidNotificationProviders = []string{
-	"Discord",
-}
+func SendAppStartNotification() logging.StandardError {
+	startMessage := "aura has started successfully!"
+	imageURL := ""
+	title := "Notification | aura"
 
-func validNotificationProvider() bool {
-	return slices.Contains(ValidNotificationProviders, config.Global.Notification.Provider)
+	if !config.Global.Notifications.Enabled {
+		logging.LOG.Debug("Notifications are disabled, not sending app start notification")
+		return logging.StandardError{}
+	}
+
+	logging.LOG.Debug("Sending app start notification to all providers")
+
+	for _, provider := range config.Global.Notifications.Providers {
+		if provider.Enabled {
+			switch provider.Provider {
+			case "Discord":
+				Err := SendDiscordNotification(provider.Discord, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.ErrorWithLog(Err)
+				}
+			case "Pushover":
+				Err := SendPushoverNotification(provider.Pushover, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.ErrorWithLog(Err)
+				}
+			}
+		}
+	}
+
+	return logging.StandardError{}
 }
 
 func SendTestNotification(w http.ResponseWriter, r *http.Request) {
@@ -24,24 +45,40 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 	logging.LOG.Trace(r.URL.Path)
 	Err := logging.NewStandardError()
 
-	if !validNotificationProvider() {
-		logging.LOG.Warn(fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider))
-
-		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
-		Err.HelpText = "Ensure the notification provider is set to a valid value in the configuration."
-		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
-		return
-	}
-
-	message := "This is a test notification from aura"
-	title := "Test Notification"
+	startMessage := "This is a test notification from aura"
 	imageURL := ""
-	Err = SendDiscordNotification(message, imageURL, title)
-	if Err.Message != "" {
-		logging.LOG.Warn(Err.Message)
+	title := "Notification | aura"
+
+	if !config.Global.Notifications.Enabled {
+		return
+	}
+
+	errorSending := false
+	for _, provider := range config.Global.Notifications.Providers {
+		if provider.Enabled {
+			switch provider.Provider {
+			case "Discord":
+				Err := SendDiscordNotification(provider.Discord, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.Warn(Err.Message)
+					errorSending = true
+				}
+			case "Pushover":
+				Err := SendPushoverNotification(provider.Pushover, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.Warn(Err.Message)
+					errorSending = true
+				}
+			}
+		}
+	}
+
+	// If there was an error sending notifications, respond with the error
+	if errorSending {
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
+
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 		Status:  "success",

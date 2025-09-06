@@ -21,7 +21,15 @@ func GetConfig(w http.ResponseWriter, r *http.Request) {
 	safeConfigData.MediaServer.Token = maskToken(safeConfigData.MediaServer.Token)
 
 	// Mask the Notification Webhook URL
-	safeConfigData.Notification.Webhook = config.MaskWebhookURL(safeConfigData.Notification.Webhook)
+	for _, provider := range safeConfigData.Notifications.Providers {
+		switch provider.Provider {
+		case "Discord":
+			provider.Discord.Webhook = config.MaskWebhookURL(provider.Discord.Webhook)
+		case "Pushover":
+			provider.Pushover.Token = config.MaskToken(provider.Pushover.Token)
+			provider.Pushover.UserKey = config.MaskToken(provider.Pushover.UserKey)
+		}
+	}
 
 	safeConfigData.Logging.File = logging.GetTodayLogFile()
 

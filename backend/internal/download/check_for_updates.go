@@ -237,23 +237,48 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			}
 			logging.LOG.Debug(fmt.Sprintf("File '%s' for '%s' in set '%s' downloaded successfully", file.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID))
 
-			// Send a notification with the following information:
-			// - 'File Type' has been updated for 'Media Item' in 'Set'
-			// - Image URL
-			notifications.SendDiscordNotification(
-				fmt.Sprintf(
-					"%s has been updated for %s in set %s",
-					mediaserver.GetFileDownloadName(file),
-					dbSavedItem.MediaItem.Title,
-					dbPosterSet.PosterSetID,
-				),
-				fmt.Sprintf("%s/%s?v=%s&key=jpg",
-					"https://images.mediux.io/assets",
-					file.ID,
-					file.Modified.Format("20060102150405"),
-				),
-				"Image Updated",
-			)
+			// Send a notification to all configured providers
+			// Do this using go func so that it runs asynchronously
+			go func() {
+				for _, provider := range config.Global.Notifications.Providers {
+					if provider.Enabled {
+						switch provider.Provider {
+						case "Discord":
+							notifications.SendDiscordNotification(
+								provider.Discord,
+								fmt.Sprintf(
+									"%s has been updated for %s in set %s",
+									mediaserver.GetFileDownloadName(file),
+									dbSavedItem.MediaItem.Title,
+									dbPosterSet.PosterSetID,
+								),
+								fmt.Sprintf("%s/%s?v=%s&key=jpg",
+									"https://images.mediux.io/assets",
+									file.ID,
+									file.Modified.Format("20060102150405"),
+								),
+								"Image Updated",
+							)
+						case "Pushover":
+							notifications.SendPushoverNotification(
+								provider.Pushover,
+								fmt.Sprintf(
+									"%s has been updated for %s in set %s",
+									mediaserver.GetFileDownloadName(file),
+									dbSavedItem.MediaItem.Title,
+									dbPosterSet.PosterSetID,
+								),
+								fmt.Sprintf("%s/%s?v=%s&key=jpg",
+									"https://images.mediux.io/assets",
+									file.ID,
+									file.Modified.Format("20060102150405"),
+								),
+								"Image Updated",
+							)
+						}
+					}
+				}
+			}()
 		}
 
 		// Update the item in the database with the new info

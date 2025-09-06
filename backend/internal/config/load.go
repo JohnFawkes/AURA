@@ -103,9 +103,20 @@ func PrintConfig() {
 	logging.LOG.NoTime(fmt.Sprintf("\t\tCron: %s\n", Global.AutoDownload.Cron))
 
 	// Notification Configuration
-	logging.LOG.NoTime("\tNotification\n")
-	logging.LOG.NoTime(fmt.Sprintf("\t\tProvider: %s\n", Global.Notification.Provider))
-	logging.LOG.NoTime(fmt.Sprintf("\t\tWebhook: %s\n", MaskWebhookURL(Global.Notification.Webhook)))
+	logging.LOG.NoTime("\tNotifications\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Notifications.Enabled))
+	for _, notification := range Global.Notifications.Providers {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tProvider: %s\n", notification.Provider))
+		switch notification.Provider {
+		case "Discord":
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tWebhook: %s\n", MaskWebhookURL(notification.Discord.Webhook)))
+		case "Pushover":
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tToken: %s\n", "***"+notification.Pushover.Token[len(notification.Pushover.Token)-4:]))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tUserKey: %s\n", "***"+notification.Pushover.UserKey[len(notification.Pushover.UserKey)-4:]))
+		}
+	}
 
 	// Mediux Configuration
 	logging.LOG.NoTime("\tMediux\n")
@@ -152,12 +163,25 @@ func ValidateConfig() bool {
 	// Validate Mediux configuration
 	isMediuxValid := ValidateMediuxConfig()
 
-	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid {
+	// Validate Notifications configuration
+	isNotificationsValid := ValidateNotificationsConfig()
+
+	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid || !isNotificationsValid {
 		logging.LOG.Error("\tInvalid configuration file. See errors above.")
 		return false
 	}
 
 	return true
+}
+
+// contains checks if a string is present in a slice of strings.
+func contains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
 
 func ValidateAuthConfig() bool {
@@ -245,11 +269,6 @@ func ValidateMediaServerConfig() bool {
 	// Trim the trailing slash from the URL
 	Global.MediaServer.URL = strings.TrimSuffix(Global.MediaServer.URL, "/")
 
-	// Set the Global.Notification.Provider to Title Case
-	if Global.Notification.Provider != "" {
-		Global.Notification.Provider = cases.Title(language.English).String(Global.Notification.Provider)
-	}
-
 	return true
 }
 
@@ -287,4 +306,61 @@ func ValidateAutoDownloadConfig() bool {
 	}
 
 	return isValid
+}
+
+func ValidateNotificationsConfig() bool {
+
+	// If the notifications are not enabled, skip validation
+	if !Global.Notifications.Enabled {
+		logging.LOG.Warn("\tNotifications is disabled in the configuration file")
+		return true
+	}
+
+	// If notifications are enabled, validate each provider
+	for i, provider := range Global.Notifications.Providers {
+
+		// Set the provider name to Title Case
+		provider.Provider = cases.Title(language.English).String(provider.Provider)
+
+		// If the provider name is not set, return an error
+		if provider.Provider == "" {
+			logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Provider is not set in the configuration file", i))
+			return false
+		}
+
+		// If the provider is not enabled, log a warning and continue to the next provider
+		if !provider.Enabled {
+			logging.LOG.Warn(fmt.Sprintf("\tNotifications for %s are disabled in the configuration file", provider.Provider))
+			continue
+		}
+
+		validProviders := []string{"Discord", "Pushover"}
+
+		// If the provider is not in the list of valid providers, return an error
+		if !contains(validProviders, provider.Provider) {
+			logging.LOG.Error(fmt.Sprintf("\tBad Notifications[%d].Provider: '%s'. Must be one of: %v", i, provider.Provider, validProviders))
+			return false
+		}
+
+		switch provider.Provider {
+		case "Discord":
+			if provider.Discord.Webhook == "" {
+				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Webhook URL is not set in the configuration file", i))
+				return false
+			}
+
+		case "Pushover":
+			if provider.Pushover.UserKey == "" {
+				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].UserKey is not set in the configuration file", i))
+				return false
+			}
+			if provider.Pushover.Token == "" {
+				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Token is not set in the configuration file", i))
+				return false
+			}
+		}
+
+	}
+
+	return true
 }

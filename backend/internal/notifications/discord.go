@@ -1,28 +1,20 @@
 package notifications
 
 import (
-	"aura/internal/config"
 	"aura/internal/logging"
+	"aura/internal/modals"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-func SendDiscordNotification(message string, imageURL string, title string) logging.StandardError {
+func SendDiscordNotification(provider *modals.Config_Notification_Discord, message string, imageURL string, title string) logging.StandardError {
+	logging.LOG.Trace("Sending Discord Notification")
 	Err := logging.NewStandardError()
 
-	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
-
-		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
-		Err.HelpText = "Ensure the notification provider is set to 'Discord' in the configuration."
-		return Err
-	}
-
-	webhookURL := config.Global.Notification.Webhook
-
+	webhookURL := provider.Webhook
 	if webhookURL == "" {
-
 		Err.Message = "Discord webhook URL is not configured"
 		Err.HelpText = "Please set the Discord webhook URL in the configuration."
 		return Err
@@ -52,7 +44,6 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 
 	bodyBytes, err := json.Marshal(webhookBody)
 	if err != nil {
-
 		Err.Message = "Failed to marshal webhook body"
 		Err.HelpText = "Ensure the webhook body is correctly formatted."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -78,17 +69,4 @@ func SendDiscordNotification(message string, imageURL string, title string) logg
 	}
 
 	return logging.StandardError{}
-}
-
-func SendDiscordAppStartNotification() logging.StandardError {
-	if !validNotificationProvider() || config.Global.Notification.Provider != "Discord" {
-		Err := logging.NewStandardError()
-
-		Err.Message = fmt.Sprintf("Invalid notification provider: %s", config.Global.Notification.Provider)
-		Err.HelpText = "Ensure the notification provider is set to 'Discord' in the configuration."
-		return Err
-	}
-
-	message := "aura has started successfully!"
-	return SendDiscordNotification(message, "", "Notification | aura")
 }

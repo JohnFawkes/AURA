@@ -93,7 +93,13 @@ func main() {
 
 	// Send a notification to Discord when the application starts if not in development mode
 	if !strings.Contains(APP_VERSION, "dev") {
-		notifications.SendDiscordAppStartNotification()
+		// If notifications are enabled
+		if config.Global.Notifications.Enabled {
+			Err := notifications.SendAppStartNotification()
+			if Err.Message != "" {
+				logging.LOG.ErrorWithLog(Err)
+			}
+		}
 	}
 
 	go func() {
