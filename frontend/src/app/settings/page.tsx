@@ -12,7 +12,6 @@ import { CircleX, HeartPulseIcon, Logs } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef, useState } from "react";
-import { FaDiscord } from "react-icons/fa";
 
 import { useRouter } from "next/navigation";
 
@@ -307,25 +306,34 @@ const SettingsPage: React.FC = () => {
 			Title: "Notifications",
 			Fields: [
 				{
-					Label: "Provider",
-					Value: config?.Notification?.Provider,
-					Tooltip: "The provider for notifications. Currently, the only provider is Discord.",
+					Label: "Enabled",
+					Value: config?.Notifications?.Enabled ? "Enabled" : "Disabled",
+					Tooltip: "Whether notifications are enabled.",
 					Editable: true,
 					EditType: "select",
-					EditOptions: ["Discord"],
+					EditOptions: ["Enabled", "Disabled"],
 				},
 				{
-					Label: "Webhook",
-					Value: config?.Notification?.Webhook,
-					Tooltip: "The webhook URL for the provider. This can be obtained by creating a webhook in Discord.",
+					Label:
+						config?.Notifications?.Providers && config?.Notifications?.Providers.length > 1
+							? "Notification Providers"
+							: "Provider",
+					Value: config?.Notifications?.Providers.map((provider) => provider.Provider).join(", "),
+					Tooltip:
+						config?.Notifications?.Providers && config?.Notifications?.Providers.length > 1
+							? "The providers for notifications. Multiple providers are configured."
+							: "The provider for notifications.",
 					Editable: true,
-					EditType: "text",
+					EditType: "select",
+					EditOptions: ["Discord", "Pushover"],
 				},
 			],
 			Buttons: [
 				{
-					Label: "Send Test Notification",
-					Icon: config?.Notification?.Provider === "Discord" ? <FaDiscord /> : null,
+					Label:
+						config?.Notifications.Providers && config?.Notifications?.Providers.length > 1
+							? "Send Test Notifications"
+							: "Send Test Notification",
 					onClick: sendTestNotification,
 				},
 			],

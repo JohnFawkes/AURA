@@ -7,7 +7,7 @@ export interface AppConfig {
 	Mediux: AppConfigMediux; // Mediux integration settings
 	AutoDownload: AppConfigAutoDownload; // Auto-download settings
 	Kometa: AppConfigKometa; // Kometa integration settings
-	Notification: AppConfigNotification; // Notification settings
+	Notifications: AppConfigNotifications; // Notification settings
 }
 
 export interface AppConfigLogging {
@@ -49,7 +49,25 @@ export interface AppConfigKometa {
 	Labels: string[]; // List of labels to apply to media items
 }
 
-export interface AppConfigNotification {
-	Provider: string; // Notification provider (Discord only for now)
-	Webhook: string; // Webhook URL for the notification provider
+export interface AppConfigNotifications {
+	Enabled: boolean;
+	Providers: AppConfigNotificationProviders[];
+}
+
+export interface AppConfigNotificationProviders {
+	Provider: string;
+	Enabled: boolean;
+	Discord?: AppConfigNotificationDiscord;
+	Pushover?: AppConfigNotificationPushover;
+}
+
+export interface AppConfigNotificationDiscord {
+	Enabled: boolean;
+	Webhook: string;
+}
+
+export interface AppConfigNotificationPushover {
+	Enabled: boolean;
+	UserKey: string;
+	Token: string;
 }
