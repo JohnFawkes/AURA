@@ -41,12 +41,9 @@ export default function LoginPage() {
 			setLoading(true);
 			const resp = await postLogin(password);
 
-			// If APIResponse pattern: Status === "success"
-			// Adjust keys if your APIResponse differs.
 			const token =
 				// support either wrapped or flat
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				(resp as any)?.data?.token || (resp as any)?.token;
+				(resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
 
 			if (!token) {
 				throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
