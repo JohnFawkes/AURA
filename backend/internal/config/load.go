@@ -3,27 +3,25 @@ package config
 import (
 	"aura/internal/logging"
 	"aura/internal/modals"
+	"aura/internal/utils/masking"
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
+	"github.com/alexedwards/argon2id"
+	"github.com/robfig/cron/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
 
-// Global is a pointer to the global configuration instance.
-// It is used throughout the application to access configuration settings.
-var Global *modals.Config
-
 // LoadYamlConfig loads the application configuration from a YAML file.
 //
 // Returns:
 //   - An error if the configuration file is missing, unreadable, or invalid.
-func LoadYamlConfig() logging.StandardError {
-	Err := logging.NewStandardError()
-
+func LoadYamlConfig() {
 	// Use an environment variable to determine the config path
 	// By default, it will use /config
 	// This is useful for testing and local development
@@ -38,49 +36,111 @@ func LoadYamlConfig() logging.StandardError {
 	if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
 		yamlFile = path.Join(configPath, "config.yaml")
 		if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
-			Err.Message = fmt.Sprintf("config.yml or config.yaml file not found in %s", configPath)
-			return Err
+			logging.LOG.Error(fmt.Sprintf("Config file not found in '%s'", configPath))
+			return
 		}
 	}
 
 	// Read the YAML file
 	data, err := os.ReadFile(yamlFile)
 	if err != nil {
-		Err.Message = fmt.Sprintf("failed to read config.yml file: %s", err.Error())
-		return Err
+		logging.LOG.Error(fmt.Sprintf("failed to read config.yml file: %s", err.Error()))
+		return
 	}
 
 	// Parse the YAML file into a Config struct
 	var config modals.Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		Err.Message = fmt.Sprintf("failed to parse config.yml file: %s", err.Error())
-		return Err
+		logging.LOG.Error(fmt.Sprintf("failed to parse config.yml file: %s", err.Error()))
+		return
 	}
 
 	Global = &config
-	return logging.StandardError{}
+	ConfigLoaded = true
+}
+
+func ValidateConfig(config *modals.Config) {
+
+	logging.LOG.Info("Validating configuration file...")
+
+	// Check if config is nil
+	if config == nil {
+		logging.LOG.Error("\tConfig is nil")
+		return
+	}
+
+	// Validate Auth configuration
+	isAuthValid, _ := ValidateAuthConfig(config.Auth)
+
+	// Validate Logging configuration
+	isLoggingValid, _, loggingConfig := ValidateLoggingConfig(config.Logging)
+	logging.SetLogLevel(loggingConfig.Level)
+
+	// Check MediaServer configuration
+	isMediaServerValid, _, mediaServerConfig := ValidateMediaServerConfig(config.MediaServer)
+	config.MediaServer = mediaServerConfig
+
+	// Validate Mediux configuration
+	isMediuxValid, _, mediuxConfig := ValidateMediuxConfig(config.Mediux)
+	config.Mediux = mediuxConfig
+
+	// Validate AutoDownload configuration
+	isAutoDownloadValid, _, autodownloadConfig := ValidateAutoDownloadConfig(config.AutoDownload)
+	config.AutoDownload = autodownloadConfig
+
+	// Validate Notifications configuration
+	isNotificationsValid, _, notificationsConfig := ValidateNotificationsConfig(config.Notifications)
+	config.Notifications = notificationsConfig
+
+	if isAuthValid {
+		Global.Auth = config.Auth
+	}
+
+	if isLoggingValid {
+		Global.Logging = config.Logging
+	}
+
+	if isMediaServerValid {
+		Global.MediaServer = config.MediaServer
+	}
+
+	if isAutoDownloadValid {
+		Global.AutoDownload = config.AutoDownload
+	}
+
+	if isMediuxValid {
+		Global.Mediux = config.Mediux
+	}
+
+	if isNotificationsValid {
+		Global.Notifications = config.Notifications
+	}
+
+	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid || !isNotificationsValid {
+		logging.LOG.Error("Invalid configuration file. See errors above.")
+		ConfigValid = false
+		return
+	}
+
+	ConfigValid = true
 }
 
 func PrintConfig() {
 	logging.LOG.NoTime("Current Configuration Settings\n")
 
-	// Auth Mode
-	logging.LOG.NoTime("\tAuth Mode:\n")
-	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Auth.Enable))
-	if Global.Auth.Enable {
-		logging.LOG.NoTime(fmt.Sprintf("\t\tPassword: %s\n", "***"+Global.Auth.Password[len(Global.Auth.Password)-4:]))
-	}
-
 	// Development Mode
-	if Global.Dev.Enable {
+	if Global.Dev.Enabled {
 		logging.LOG.NoTime("\tDevelopment Mode:\n")
 		logging.LOG.NoTime("\t\tEnabled\n")
 		logging.LOG.NoTime(fmt.Sprintf("\t\tDevelopment Local Path: %s\n", Global.Dev.LocalPath))
 	}
 
-	// Cache Images and Save Image Next To Content
-	logging.LOG.NoTime(fmt.Sprintf("\tCache Images: %t\n", Global.CacheImages))
-	logging.LOG.NoTime(fmt.Sprintf("\tSave Image Next To Content: %t\n", Global.SaveImageNextToContent))
+	// Auth Mode
+	logging.LOG.NoTime("\tAuth Mode:\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Auth.Enabled))
+	if Global.Auth.Enabled {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tPassword: %s\n", "***"+Global.Auth.Password[len(Global.Auth.Password)-4:]))
+	}
 
 	// Logging Configuration
 	logging.LOG.NoTime(fmt.Sprintf("\tLogging Level: %s\n", Global.Logging.Level))
@@ -95,33 +155,24 @@ func PrintConfig() {
 	for _, library := range Global.MediaServer.Libraries {
 		logging.LOG.NoTime(fmt.Sprintf("\t\t\tName: %s\n", library.Name))
 	}
-	logging.LOG.NoTime(fmt.Sprintf("\t\tSeason Naming Convention: %s\n", Global.MediaServer.SeasonNamingConvention))
-
-	// Auto Download Configuration
-	logging.LOG.NoTime("\tAuto Download\n")
-	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.AutoDownload.Enabled))
-	logging.LOG.NoTime(fmt.Sprintf("\t\tCron: %s\n", Global.AutoDownload.Cron))
-
-	// Notification Configuration
-	logging.LOG.NoTime("\tNotifications\n")
-	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Notifications.Enabled))
-	for _, notification := range Global.Notifications.Providers {
-		logging.LOG.NoTime(fmt.Sprintf("\t\tProvider: %s\n", notification.Provider))
-		switch notification.Provider {
-		case "Discord":
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\tWebhook: %s\n", MaskWebhookURL(notification.Discord.Webhook)))
-		case "Pushover":
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\tToken: %s\n", "***"+notification.Pushover.Token[len(notification.Pushover.Token)-4:]))
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\tUserKey: %s\n", "***"+notification.Pushover.UserKey[len(notification.Pushover.UserKey)-4:]))
-		}
+	if Global.MediaServer.Type == "Plex" {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tSeason Naming Convention: %s\n", Global.MediaServer.SeasonNamingConvention))
 	}
 
 	// Mediux Configuration
 	logging.LOG.NoTime("\tMediux\n")
 	logging.LOG.NoTime(fmt.Sprintf("\t\tToken: %s\n", "***"+Global.Mediux.Token[len(Global.Mediux.Token)-4:]))
 	logging.LOG.NoTime(fmt.Sprintf("\t\tDownload Quality: %s\n", Global.Mediux.DownloadQuality))
+
+	// Auto Download Configuration
+	logging.LOG.NoTime("\tAuto Download\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.AutoDownload.Enabled))
+	logging.LOG.NoTime(fmt.Sprintf("\t\tCron: %s\n", Global.AutoDownload.Cron))
+
+	// Cache Images and Save Image Next To Content
+	logging.LOG.NoTime("\tImages Options\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tCache Images: %t\n", Global.Images.CacheImages))
+	logging.LOG.NoTime(fmt.Sprintf("\t\tSave Image Next To Content: %t\n", Global.Images.SaveImageNextToContent))
 
 	// TMDB Configuration
 	if Global.TMDB.ApiKey != "" {
@@ -139,198 +190,229 @@ func PrintConfig() {
 		}
 	}
 
-}
-
-func ValidateConfig() bool {
-
-	// Check if Global is nil
-	if Global == nil {
-		return false
+	// Notification Configuration
+	logging.LOG.NoTime("\tNotifications\n")
+	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Notifications.Enabled))
+	for _, notification := range Global.Notifications.Providers {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tProvider: %s\n", notification.Provider))
+		switch notification.Provider {
+		case "Discord":
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tWebhook: %s\n", masking.MaskWebhookURL(notification.Discord.Webhook)))
+		case "Pushover":
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tToken: %s\n", "***"+notification.Pushover.Token[len(notification.Pushover.Token)-4:]))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tUserKey: %s\n", "***"+notification.Pushover.UserKey[len(notification.Pushover.UserKey)-4:]))
+		}
 	}
 
-	// Validate Auth configuration
-	isAuthValid := ValidateAuthConfig()
-
-	// Validate Logging configuration
-	isLoggingValid := ValidateLoggingConfig()
-
-	// Check MediaServer configuration
-	isMediaServerValid := ValidateMediaServerConfig()
-
-	// Validate AutoDownload configuration
-	isAutoDownloadValid := ValidateAutoDownloadConfig()
-
-	// Validate Mediux configuration
-	isMediuxValid := ValidateMediuxConfig()
-
-	// Validate Notifications configuration
-	isNotificationsValid := ValidateNotificationsConfig()
-
-	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid || !isNotificationsValid {
-		logging.LOG.Error("\tInvalid configuration file. See errors above.")
-		return false
-	}
-
-	return true
 }
 
 // contains checks if a string is present in a slice of strings.
 func contains(slice []string, item string) bool {
-	for _, v := range slice {
-		if v == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }
 
-func ValidateAuthConfig() bool {
+func ValidateAuthConfig(Auth modals.Config_Auth) (bool, string) {
 	isValid := true
+	var errorMsg string
 
-	if Global.Auth.Enable {
-		if Global.Auth.Password == "" {
-			logging.LOG.Error("\tAuth.Password is not set in the configuration file")
+	if Auth.Enabled {
+		if Auth.Password == "" {
+			errorMsg = "Auth.Password is not set"
+			logging.LOG.Error(errorMsg)
 			isValid = false
+		} else {
+			// Check if Password is a valid Argon2id hash
+			_, _, _, err := argon2id.DecodeHash(Auth.Password)
+			if err != nil {
+				errorMsg = "Auth.Password is not a valid Argon2id hash"
+				logging.LOG.Error(errorMsg)
+				isValid = false
+			}
 		}
 	}
 
-	return isValid
+	return isValid, errorMsg
 }
 
-func ValidateLoggingConfig() bool {
+func ValidateLoggingConfig(Logging modals.Config_Logging) (bool, string, modals.Config_Logging) {
 	isValid := true
+	var errorMsg string
 
-	if Global.Logging.Level == "" {
-		logging.LOG.Warn("\tLogging.Level is not set in the configuration file, using default level: INFO")
-		Global.Logging.Level = "INFO"
+	if Logging.Level == "" {
+		errorMsg = "Logging.Level is not set, using default level: INFO"
+		logging.LOG.Warn(errorMsg)
+		Logging.Level = "INFO"
 	}
 
-	if Global.Logging.Level != "TRACE" && Global.Logging.Level != "DEBUG" && Global.Logging.Level != "INFO" && Global.Logging.Level != "WARNING" && Global.Logging.Level != "ERROR" {
-		logging.LOG.Warn(fmt.Sprintf("\tLogging.Level: '%s'. Must be one of: TRACE, DEBUG, INFO, WARNING, ERROR", Global.Logging.Level))
-		Global.Logging.Level = "INFO"
+	if Logging.Level != "TRACE" && Logging.Level != "DEBUG" && Logging.Level != "INFO" && Logging.Level != "WARN" && Logging.Level != "ERROR" {
+		errorMsg = fmt.Sprintf("\tLogging.Level: '%s'. Must be one of: TRACE, DEBUG, INFO, WARN, ERROR", Logging.Level)
+		logging.LOG.Warn(errorMsg)
+		Logging.Level = "INFO"
 	}
 
-	logging.SetLogLevel(Global.Logging.Level)
+	return isValid, errorMsg, Logging
 
-	return isValid
 }
 
-func ValidateMediaServerConfig() bool {
+func ValidateMediaServerConfig(MediaServer modals.Config_MediaServer) (bool, []string, modals.Config_MediaServer) {
 	isValid := true
+	var errorMsgs []string
+	var errorMsg string
 
-	if Global.MediaServer.Type == "" {
-		logging.LOG.Warn("\tMediaServer.Type is not set in the configuration file")
+	if MediaServer.Type == "" {
+		errorMsg = "MediaServer.Type is not set"
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
 	}
 
-	if Global.MediaServer.URL == "" {
-		logging.LOG.Warn("\tMediaServer.URL is not set in the configuration file")
+	if MediaServer.URL == "" {
+		errorMsg = "MediaServer.URL is not set"
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
-	} else if !strings.HasPrefix(Global.MediaServer.URL, "http") {
-		logging.LOG.Warn(fmt.Sprintf("\tMediaServer.URL: '%s' must start with http:// or https:// ", Global.MediaServer.URL))
+	} else if !strings.HasPrefix(MediaServer.URL, "http") {
+		errorMsg = fmt.Sprintf("MediaServer.URL: '%s' must start with http:// or https:// ", MediaServer.URL)
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
 	}
 
-	if Global.MediaServer.Token == "" {
-		logging.LOG.Warn("\tMediaServer.Token is not set in the configuration file")
+	if MediaServer.Token == "" {
+		errorMsg = "MediaServer.Token is not set"
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
 	}
 
-	if len(Global.MediaServer.Libraries) == 0 {
-		logging.LOG.Warn("\tMediaServer.Libraries are not set in the configuration file")
+	if len(MediaServer.Libraries) == 0 {
+		errorMsg = "MediaServer.Libraries are not set"
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
 	}
 
 	if !isValid {
-		logging.LOG.Error("MediaServer configuration is invalid. Fix the errors above.")
-		return false
+		logging.LOG.Error("\tMediaServer configuration is invalid. Fix the errors above.")
+		return false, errorMsgs, MediaServer
 	}
 
 	// Set the MediaServer Type to Title Case
-	Global.MediaServer.Type = cases.Title(language.English).String(Global.MediaServer.Type)
+	MediaServer.Type = cases.Title(language.English).String(MediaServer.Type)
 
 	// If the MediaServer type is not Plex, Emby, or Jellyfin, return an error
-	if Global.MediaServer.Type != "Plex" && Global.MediaServer.Type != "Emby" && Global.MediaServer.Type != "Jellyfin" {
-		logging.LOG.Error(fmt.Sprintf("\tMediaServer.Type: '%s'. Must be one of: Plex, Emby, Jellyfin", Global.MediaServer.Type))
-		return false
+	if MediaServer.Type != "Plex" && MediaServer.Type != "Emby" && MediaServer.Type != "Jellyfin" {
+		errorMsg = fmt.Sprintf("\tMediaServer.Type: '%s'. Must be one of: Plex, Emby, Jellyfin", MediaServer.Type)
+		logging.LOG.Error(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
+		return false, errorMsgs, MediaServer
 	}
 
 	// If the MediaServer type is Plex, set the SeasonNamingConvention to 2 if not set
-	if Global.MediaServer.Type == "Plex" && Global.MediaServer.SeasonNamingConvention == "" {
-		logging.LOG.Warn("\tMediaServer.SeasonNamingConvention is not set in the configuration file, using default value: 2")
-		Global.MediaServer.SeasonNamingConvention = "2"
+	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention == "" {
+		logging.LOG.Warn("\tMediaServer.SeasonNamingConvention is not set, using default value: 2")
+		MediaServer.SeasonNamingConvention = "2"
 	}
 	// If the SeasonNamingConvention is not 1 or 2, return an error
-	if Global.MediaServer.Type == "Plex" && Global.MediaServer.SeasonNamingConvention != "1" && Global.MediaServer.SeasonNamingConvention != "2" {
-		logging.LOG.Error(fmt.Sprintf("\tBad MediaServer.SeasonNamingConvention: '%s'. Must be one of: 1, 2", Global.MediaServer.SeasonNamingConvention))
-		return false
+	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention != "1" && MediaServer.SeasonNamingConvention != "2" {
+		errorMsg = fmt.Sprintf("\tBad MediaServer.SeasonNamingConvention: '%s'. Must be one of: 1, 2", MediaServer.SeasonNamingConvention)
+		logging.LOG.Error(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
+		return false, errorMsgs, MediaServer
 	}
 
 	// Trim the trailing slash from the URL
-	Global.MediaServer.URL = strings.TrimSuffix(Global.MediaServer.URL, "/")
+	MediaServer.URL = strings.TrimSuffix(MediaServer.URL, "/")
 
-	return true
+	logging.LOG.Info(fmt.Sprintf("MediaServer: %v", MediaServer))
+
+	return true, errorMsgs, MediaServer
 }
 
-func ValidateMediuxConfig() bool {
+func ValidateMediuxConfig(Mediux modals.Config_Mediux) (bool, []string, modals.Config_Mediux) {
 	isValid := true
+	var errorMsgs []string
+	var errorMsg string
 
-	if Global.Mediux.Token == "" {
-		logging.LOG.Warn("\tMediux.Token is not set in the configuration file")
-		return false
-	}
-
-	if Global.Mediux.DownloadQuality == "" {
-		logging.LOG.Warn("\tMediux.DownloadQuality is not set in the configuration file, using default value: optimized")
-		Global.Mediux.DownloadQuality = "optimized"
-	}
-
-	if Global.Mediux.DownloadQuality != "original" && Global.Mediux.DownloadQuality != "optimized" {
-		logging.LOG.Error(fmt.Sprintf("\tBad Mediux.DownloadQuality: '%s'. Must be one of: original, optimized", Global.Mediux.DownloadQuality))
+	if Mediux.Token == "" {
+		errorMsg = "\tMediux.Token is not set"
+		logging.LOG.Warn(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
 		isValid = false
 	}
 
-	return isValid
+	if Mediux.DownloadQuality == "" {
+		logging.LOG.Warn("\tMediux.DownloadQuality is not set, using default value: optimized")
+		Mediux.DownloadQuality = "optimized"
+	}
+
+	if Mediux.DownloadQuality != "original" && Mediux.DownloadQuality != "optimized" {
+		errorMsg = fmt.Sprintf("\tBad Mediux.DownloadQuality: '%s'. Must be one of: original, optimized", Mediux.DownloadQuality)
+		logging.LOG.Error(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
+		isValid = false
+	}
+
+	return isValid, errorMsgs, Mediux
 }
 
-func ValidateAutoDownloadConfig() bool {
+func ValidateAutoDownloadConfig(Autodownload modals.Config_AutoDownload) (bool, []string, modals.Config_AutoDownload) {
 	isValid := true
+	var errorMsgs []string
 
-	if Global.AutoDownload.Cron == "" {
-		logging.LOG.Warn("\tAutoDownload.Cron is not set in the configuration file, using default value: 0 0 * * *")
-		Global.AutoDownload.Cron = "0 0 * * *" // Default to daily at midnight
+	if !Autodownload.Enabled {
+		return isValid, errorMsgs, Autodownload
 	}
 
-	if !Global.AutoDownload.Enabled {
-		logging.LOG.Warn("\tAutoDownload is disabled in the configuration file")
+	if Autodownload.Cron == "" {
+		logging.LOG.Warn("\tAutoDownload.Cron is not set, using default value: 0 0 * * *")
+		Autodownload.Cron = "0 0 * * *" // Default to daily at midnight
 	}
 
-	return isValid
+	if !validateCronExpression(Autodownload.Cron) {
+		errorMsg := fmt.Sprintf("\tBad AutoDownload.Cron: '%s'. Must be a valid cron expression. Use something like https://crontab.guru to help you.", Autodownload.Cron)
+		logging.LOG.Error(errorMsg)
+		errorMsgs = append(errorMsgs, errorMsg)
+		isValid = false
+	}
+
+	return isValid, errorMsgs, Autodownload
 }
 
-func ValidateNotificationsConfig() bool {
+func validateCronExpression(cronExpression string) bool {
+	_, err := cron.ParseStandard(cronExpression)
+	return err == nil
+}
+
+func ValidateNotificationsConfig(Notifications modals.Config_Notifications) (bool, []string, modals.Config_Notifications) {
+	isValid := true
+	var errorMsgs []string
+	var errorMsg string
 
 	// If the notifications are not enabled, skip validation
-	if !Global.Notifications.Enabled {
-		logging.LOG.Warn("\tNotifications is disabled in the configuration file")
-		return true
+	if !Notifications.Enabled {
+		return isValid, errorMsgs, Notifications
 	}
 
 	// If notifications are enabled, validate each provider
-	for i, provider := range Global.Notifications.Providers {
+	for i, provider := range Notifications.Providers {
 
 		// Set the provider name to Title Case
 		provider.Provider = cases.Title(language.English).String(provider.Provider)
 
 		// If the provider name is not set, return an error
 		if provider.Provider == "" {
-			logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Provider is not set in the configuration file", i))
-			return false
+			errorMsg = fmt.Sprintf("\tNotifications[%d].Provider is not set", i)
+			logging.LOG.Warn(errorMsg)
+			errorMsgs = append(errorMsgs, errorMsg)
+			return false, errorMsgs, Notifications
 		}
 
 		// If the provider is not enabled, log a warning and continue to the next provider
 		if !provider.Enabled {
-			logging.LOG.Warn(fmt.Sprintf("\tNotifications for %s are disabled in the configuration file", provider.Provider))
+			logging.LOG.Warn(fmt.Sprintf("\tNotifications for %s are disabled", provider.Provider))
 			continue
 		}
 
@@ -338,29 +420,39 @@ func ValidateNotificationsConfig() bool {
 
 		// If the provider is not in the list of valid providers, return an error
 		if !contains(validProviders, provider.Provider) {
-			logging.LOG.Error(fmt.Sprintf("\tBad Notifications[%d].Provider: '%s'. Must be one of: %v", i, provider.Provider, validProviders))
-			return false
+			errorMsg = fmt.Sprintf("\tBad Notifications[%d].Provider: '%s'. Must be one of: %v", i, provider.Provider, validProviders)
+			logging.LOG.Error(errorMsg)
+			errorMsgs = append(errorMsgs, errorMsg)
+			return false, errorMsgs, Notifications
 		}
 
 		switch provider.Provider {
 		case "Discord":
 			if provider.Discord.Webhook == "" {
-				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Webhook URL is not set in the configuration file", i))
-				return false
+				errorMsg = fmt.Sprintf("\tNotifications[%d].Webhook URL is not set", i)
+				logging.LOG.Warn(errorMsg)
+				errorMsgs = append(errorMsgs, errorMsg)
+				return false, errorMsgs, Notifications
 			}
 
 		case "Pushover":
 			if provider.Pushover.UserKey == "" {
-				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].UserKey is not set in the configuration file", i))
-				return false
+				errorMsg = fmt.Sprintf("\tNotifications[%d].UserKey is not set", i)
+				logging.LOG.Warn(errorMsg)
+				errorMsgs = append(errorMsgs, errorMsg)
+				return false, errorMsgs, Notifications
 			}
 			if provider.Pushover.Token == "" {
-				logging.LOG.Warn(fmt.Sprintf("\tNotifications[%d].Token is not set in the configuration file", i))
-				return false
+				errorMsg = fmt.Sprintf("\tNotifications[%d].Token is not set", i)
+				logging.LOG.Warn(errorMsg)
+				errorMsgs = append(errorMsgs, errorMsg)
+				return false, errorMsgs, Notifications
 			}
 		}
 
+		Notifications.Providers[i] = provider
+
 	}
 
-	return true
+	return isValid, errorMsgs, Notifications
 }
