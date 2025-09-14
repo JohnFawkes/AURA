@@ -1,8 +1,10 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { postAddItemToDB } from "@/services/api.db";
 import { fetchMediaServerType } from "@/services/api.mediaserver";
 import { Database } from "lucide-react";
+import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 
@@ -11,11 +13,13 @@ import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
 
+import { DBSavedItem } from "@/types/databaseSavedSet";
 import { Guid, MediaItem } from "@/types/mediaItem";
 
 import { Badge } from "../ui/badge";
@@ -85,6 +89,45 @@ export function MediaItemDetails({
 		if (existsInDB) {
 			setSearchQuery(`${title} y:${year}: id:${ratingKey}:`);
 			router.push("/saved-sets");
+		}
+	};
+
+	const handleAddToIgnoredClick = async () => {
+		// Create a DBSavedItem
+		const ignoreDBItem: DBSavedItem = {
+			MediaItemID: ratingKey,
+			MediaItem: {
+				Title: title,
+				Year: year,
+				LibraryTitle: libraryTitle,
+				RatingKey: ratingKey,
+				Type: "show",
+				ExistInDatabase: false,
+				Guids: [],
+			},
+			PosterSetID: "",
+			PosterSet: {
+				Title: "",
+				ID: "ignore",
+				Type: "show",
+				User: {
+					Name: "",
+				},
+				DateCreated: new Date().toISOString(),
+				DateUpdated: new Date().toISOString(),
+				Status: "",
+			},
+			LastDownloaded: new Date().toISOString(),
+			SelectedTypes: [],
+			AutoDownload: false,
+		};
+		const addToDBResp = await postAddItemToDB(ignoreDBItem);
+		if (addToDBResp.status === "error") {
+			log(`Error adding ${title} to DB:`, addToDBResp.error);
+			toast.error(`Failed to add ${title} to DB`);
+		} else {
+			log(`Successfully added ${title} to DB for ignoring`);
+			toast.success(`Will successfully ignore ${title} in the future`);
 		}
 	};
 
@@ -183,6 +226,17 @@ export function MediaItemDetails({
 					<Database className="inline ml-1 mr-1" /> {existsInDB ? "Already in Database" : "Not in Database"}
 				</Lead>
 			</div>
+
+			{/* Add Item to DB to Ignore it */}
+			{!existsInDB && (
+				<Button
+					onClick={handleAddToIgnoredClick}
+					variant="destructive"
+					className="text-primary-dynamic hover:underline mt-2"
+				>
+					Mark as Ignored
+				</Button>
+			)}
 
 			{/* Season/Episode Information */}
 			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 && (

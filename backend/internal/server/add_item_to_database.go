@@ -20,7 +20,6 @@ func AddItemToDatabase(w http.ResponseWriter, r *http.Request) {
 	var SaveItem modals.DBSavedItem
 
 	if err := json.NewDecoder(r.Body).Decode(&SaveItem); err != nil {
-
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -30,7 +29,6 @@ func AddItemToDatabase(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the request body
 	if SaveItem.MediaItemID == "" || SaveItem.PosterSet.ID == "" {
-
 		Err.Message = "Missing required fields"
 		Err.HelpText = "Ensure the request body contains both MediaItemID and PosterSet.ID."
 		Err.Details = fmt.Sprintf("Received MediaItemID: %s, PosterSet.ID: %s", SaveItem.MediaItemID, SaveItem.PosterSet.ID)

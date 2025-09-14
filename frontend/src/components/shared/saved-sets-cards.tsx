@@ -66,6 +66,9 @@ const SavedSetsCard: React.FC<{
 
 	const allToDelete = editSets.every((set) => set.toDelete);
 
+	const [unignoreLoading, setUnignoreLoading] = useState(false); // NEW
+	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
+
 	const onClose = () => {
 		setIsEditModalOpen(false);
 		setIsDeleteModalOpen(false);
@@ -117,6 +120,22 @@ const SavedSetsCard: React.FC<{
 		setIsMounted(false);
 	};
 
+	const handleStopIgnoring = async () => {
+		if (unignoreLoading) return;
+		setUnignoreLoading(true);
+		// Removing the lone 'ignore' placeholder == delete the saved record so it no longer shows as ignored.
+		const resp = await deleteMediaItemFromDB(savedSet.MediaItemID);
+		if (!resp || resp.status === "error") {
+			log("Error removing ignore placeholder:", resp?.error?.Message || "Unknown error");
+			setUpdateError(resp);
+			setUnignoreLoading(false);
+			return;
+		}
+		setUpdateError(null);
+		onUpdate();
+		setUnignoreLoading(false);
+	};
+
 	const confirmDelete = async () => {
 		if (isMounted) return;
 		setIsMounted(true);
@@ -134,6 +153,32 @@ const SavedSetsCard: React.FC<{
 	};
 
 	const renderSetList = () => {
+		const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
+
+		if (onlyIgnore) {
+			return (
+				<div className="w-full flex flex-col gap-2 border rounded-md p-3 bg-muted/40">
+					<span className="text-sm text-muted-foreground">
+						This item is currently <span className="font-medium">ignored</span>.
+					</span>
+					<div>
+						<Button
+							size="sm"
+							variant="outline"
+							className="cursor-pointer"
+							disabled={unignoreLoading}
+							onClick={handleStopIgnoring}
+						>
+							{unignoreLoading ? "Updating..." : "Stop Ignoring"}
+						</Button>
+					</div>
+				</div>
+			);
+		}
+
+		const hasNonIgnore = savedSet.PosterSets.some((ps) => ps.PosterSetID !== "ignore");
+		if (!hasNonIgnore) return null;
+
 		return (
 			<div className="w-full">
 				<span
@@ -142,12 +187,12 @@ const SavedSetsCard: React.FC<{
 						log("SET: ", savedSet);
 					}}
 				>
-					{savedSet.PosterSets.length > 1 ? "Sets:" : "Set:"}
+					{savedSet.PosterSets.filter((s) => s.PosterSetID !== "ignore").length > 1 ? "Sets:" : "Set:"}
 				</span>
 				<table className="w-full text-sm">
 					<tbody>
-						{savedSet.PosterSets.map((set) => (
-							<tr key={set.PosterSetID} className={`hover:bg-muted/50 rounded-sm`}>
+						{savedSet.PosterSets.filter((s) => s.PosterSetID !== "ignore").map((set) => (
+							<tr key={set.PosterSetID} className="hover:bg-muted/50 rounded-sm">
 								<td className="py-1.5" style={{ width: "80%" }}>
 									<Link
 										href={`/sets/${set.PosterSetID}`}
@@ -163,7 +208,6 @@ const SavedSetsCard: React.FC<{
 										{set.PosterSetID}
 									</Link>
 								</td>
-
 								<td className="py-1.5" style={{ width: "50%" }}>
 									<Link
 										href={`/user/${set.PosterSet.User.Name}`}
@@ -288,6 +332,10 @@ const SavedSetsCard: React.FC<{
 
 			await Promise.all(
 				editSets.map(async (set) => {
+					if (set.id === "ignore") {
+						return;
+					}
+
 					// Update the media item in the backend store by calling fetchMediaServerItemContent
 					const resp = await fetchMediaServerItemContent(
 						savedSet.MediaItem.RatingKey,
@@ -491,125 +539,142 @@ const SavedSetsCard: React.FC<{
 			<Dialog open={isEditModalOpen} onOpenChange={onClose}>
 				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
 					<DialogHeader>
-						<DialogTitle>Edit Saved Set</DialogTitle>
+						<DialogTitle>{onlyIgnore ? "Ignored Item" : "Edit Saved Set"}</DialogTitle>
 						<DialogDescription>
-							Edit each set individually. Toggle type badges to update selected types. Use the delete
-							option to mark a set for deletion.
+							{onlyIgnore
+								? "This item is currently ignored. You can stop ignoring it to allow poster sets to be added again."
+								: "Edit each set individually. Toggle type badges to update selected types. Use the delete option to mark a set for deletion."}
 						</DialogDescription>
 					</DialogHeader>
 
-					<div
-						className="space-y-4"
-						onDoubleClick={() => {
-							log("Edit Sets: ", editSets);
-						}}
-					>
-						{editSets.map((editSet, index) => (
-							<div key={editSet.id} className="border p-2 rounded-md">
-								<div className="flex items-center justify-between">
-									<span className="font-semibold">
-										<Link
-											href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="hover:underline ml-1"
-										>
-											{editSet.set.Title}
-										</Link>
-									</span>
+					{onlyIgnore ? (
+						<div className="space-y-4">
+							<div className="border rounded-md p-4 bg-muted/40">
+								<p className="text-sm text-muted-foreground">
+									No poster sets are associated with this media item because it has been marked as
+									ignored. Stopping ignore will remove the placeholder and allow you to add sets in
+									the future.
+								</p>
+							</div>
+						</div>
+					) : (
+						<div
+							className="space-y-4"
+							onDoubleClick={() => {
+								log("Edit Sets: ", editSets);
+							}}
+						>
+							{editSets.map((editSet, index) => (
+								<div key={editSet.id} className="border p-2 rounded-md">
+									<div className="flex items-center justify-between">
+										<span className="font-semibold">
+											<Link
+												href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="hover:underline ml-1"
+											>
+												{editSet.set.Title}
+											</Link>
+										</span>
 
-									<Button
-										variant={editSet.toDelete ? "destructive" : "outline"}
-										size="sm"
-										className="cursor-pointer"
-										onClick={() => {
-											setEditSets((prev) =>
-												prev.map((item, i) =>
-													i === index
-														? {
-																...item,
-																toDelete: !item.toDelete,
-																// Clear the selected types when marking for deletion.
-																selectedTypes: !item.toDelete ? [] : item.selectedTypes,
-															}
-														: item
-												)
-											);
-										}}
-									>
-										{editSet.toDelete ? "Undo Delete" : "Delete Set"}
-									</Button>
-								</div>
-								{editSet.set.User.Name && (
-									<DialogDescription className="text-md text-muted-foreground mb-1 flex items-center">
-										<User className="text-sm text-muted-foreground" />
-										<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
-											{editSet.set.User.Name}
-										</Link>
-									</DialogDescription>
-								)}
-								<DialogDescription className="ml-1">
-									Set ID:{" "}
-									<Link
-										href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="hover:underline"
-									>
-										{editSet.id}
-									</Link>
-								</DialogDescription>
-								<div className="flex flex-wrap gap-2 mt-2">{renderEditTypeBadges(editSet, index)}</div>
-								{savedSet.MediaItem.Type === "show" && (
-									<div className="flex flex-wrap gap-2 mt-2">
-										<Badge
-											className={`cursor-pointer transition duration-200 ${
-												editSet.autoDownload
-													? "bg-primary text-primary-foreground hover:bg-red-500"
-													: "bg-secondary text-secondary-foreground"
-											}`}
+										<Button
+											variant={editSet.toDelete ? "destructive" : "outline"}
+											size="sm"
+											className="cursor-pointer"
 											onClick={() => {
 												setEditSets((prev) =>
 													prev.map((item, i) =>
 														i === index
 															? {
 																	...item,
-																	autoDownload: !item.autoDownload,
+																	toDelete: !item.toDelete,
+																	selectedTypes: !item.toDelete
+																		? []
+																		: item.selectedTypes,
 																}
 															: item
 													)
 												);
 											}}
 										>
-											{editSet.autoDownload ? "Autodownload" : "No Autodownload"}
-										</Badge>
+											{editSet.toDelete ? "Undo Delete" : "Delete Set"}
+										</Button>
 									</div>
-								)}
-								<div className="flex items-center justify-between">
-									<div>
-										{editSet.previousDateUpdated &&
-											editSet.set.DateUpdated &&
-											editSet.previousDateUpdated !== editSet.set.DateUpdated && (
-												<div className="text-green-600 text-xs mt-1">Set has updates</div>
-											)}
+									{editSet.set.User.Name && (
+										<DialogDescription className="text-md text-muted-foreground mb-1 flex items-center">
+											<User className="text-sm text-muted-foreground" />
+											<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
+												{editSet.set.User.Name}
+											</Link>
+										</DialogDescription>
+									)}
+									<DialogDescription className="ml-1">
+										Set ID:{" "}
+										<Link
+											href={`https://mediux.io/${editSet.set.Type}-set/${editSet.id}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="hover:underline"
+										>
+											{editSet.id}
+										</Link>
+									</DialogDescription>
+									<div className="flex flex-wrap gap-2 mt-2">
+										{renderEditTypeBadges(editSet, index)}
 									</div>
-									<div className="flex items-center">
-										<span className="text-md text-muted-foreground mt-2 mr-2">Redownload</span>
-										<DownloadModal
-											setID={editSet.id}
-											setTitle={editSet.set.Title}
-											setType={editSet.set.Type}
-											setAuthor={editSet.set.User.Name}
-											posterSets={[editSet.set]}
-											autoDownloadDefault={editSet.autoDownload}
-										/>
+									{savedSet.MediaItem.Type === "show" && (
+										<div className="flex flex-wrap gap-2 mt-2">
+											<Badge
+												className={`cursor-pointer transition duration-200 ${
+													editSet.autoDownload
+														? "bg-primary text-primary-foreground hover:bg-red-500"
+														: "bg-secondary text-secondary-foreground"
+												}`}
+												onClick={() => {
+													setEditSets((prev) =>
+														prev.map((item, i) =>
+															i === index
+																? {
+																		...item,
+																		autoDownload: !item.autoDownload,
+																	}
+																: item
+														)
+													);
+												}}
+											>
+												{editSet.autoDownload ? "Autodownload" : "No Autodownload"}
+											</Badge>
+										</div>
+									)}
+									<div className="flex items-center justify-between">
+										<div>
+											{editSet.previousDateUpdated &&
+												editSet.set.DateUpdated &&
+												editSet.previousDateUpdated !== editSet.set.DateUpdated && (
+													<div className="text-green-600 text-xs mt-1">Set has updates</div>
+												)}
+										</div>
+										<div className="flex items-center">
+											<span className="text-md text-muted-foreground mt-2 mr-2">Redownload</span>
+											<DownloadModal
+												setID={editSet.id}
+												setTitle={editSet.set.Title}
+												setType={editSet.set.Type}
+												setAuthor={editSet.set.User.Name}
+												posterSets={[editSet.set]}
+												autoDownloadDefault={editSet.autoDownload}
+											/>
+										</div>
 									</div>
 								</div>
-							</div>
-						))}
-					</div>
+							))}
+						</div>
+					)}
 
 					{updateError && <ErrorMessage error={updateError} />}
+
 					<DialogFooter>
 						<Button
 							variant="outline"
@@ -631,6 +696,7 @@ const SavedSetsCard: React.FC<{
 							Cancel
 						</Button>
 						<Button
+							hidden={onlyIgnore}
 							className="cursor-pointer"
 							variant={allToDelete ? "destructive" : "default"}
 							onClick={confirmEdit}
