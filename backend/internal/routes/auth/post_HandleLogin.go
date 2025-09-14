@@ -1,6 +1,7 @@
-package auth
+package route_auth
 
 import (
+	"aura/internal/auth"
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/utils"
@@ -20,14 +21,14 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	Err := logging.NewStandardError()
 
-	if !config.Global.Auth.Enable {
+	if !config.Global.Auth.Enabled {
 		Err.Message = "Authentication disabled"
 		Err.HelpText = "Enable Auth in the server config."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
 
-	if tokenAuth == nil {
+	if auth.TokenAuth() == nil {
 		Err.Message = "Auth not initialized"
 		Err.HelpText = "SetTokenAuth was not called at startup."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -67,7 +68,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use jwtauth to create token (consistent with verifier)
-	_, signedToken, err := tokenAuth.Encode(claims)
+	_, signedToken, err := auth.TokenAuth().Encode(claims)
 	if err != nil {
 		Err.Message = "Failed to generate token"
 		Err.HelpText = "Check JWT secret configuration."
