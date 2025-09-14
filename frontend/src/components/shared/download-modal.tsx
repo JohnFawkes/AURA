@@ -106,6 +106,7 @@ type DownloadProgress = {
 const formSchema = z
 	.object({
 		selectedOptionsByItem: z.record(
+			z.string(),
 			z.object({
 				types: z.array(z.enum(Object.keys(AssetTypes) as [AssetType, ...AssetType[]])),
 				autodownload: z.boolean().optional(),
