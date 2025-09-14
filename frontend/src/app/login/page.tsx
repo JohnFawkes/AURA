@@ -90,15 +90,15 @@ export default function LoginPage() {
 									disabled={loading}
 									className="pr-10" // add padding so text doesn't run under the icon
 								/>
-								<button
-									type="button"
+								<Button
+									variant="ghost"
 									onClick={() => setShowPw(!showPw)}
 									aria-label={showPw ? "Hide password" : "Show password"}
 									className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
 									disabled={loading}
 								>
 									{showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-								</button>
+								</Button>
 							</div>
 						</div>
 					</CardContent>
