@@ -96,7 +96,7 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if config.Global.CacheImages {
+	if config.Global.Images.CacheImages.Enabled {
 		// Add the image to the temporary folder
 		imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
 		Err = utils.CheckFolderExists(MediuxThumbsTempImageFolder)
