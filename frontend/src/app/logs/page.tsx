@@ -1,6 +1,6 @@
 "use client";
 
-import { fetchLogContents, postClearOldLogs } from "@/services/api.settings";
+import { fetchLogContents, postClearOldLogs } from "@/app/settings/services/update_config";
 import { ReturnErrorMessage } from "@/services/api.shared";
 import { ArrowLeft, Download } from "lucide-react";
 import { toast } from "sonner";
