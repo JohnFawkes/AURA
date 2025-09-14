@@ -1,5 +1,8 @@
+"use client";
+
+import { getMediaServerLibraryOptions } from "@/app/settings/services/library_options";
 import { checkMediaServerNewInfoConnectionStatus } from "@/app/settings/services/media_server_check_connection";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
@@ -37,20 +40,16 @@ const USER_ID_REQUIRED_TYPES = new Set<string>(["Emby", "Jellyfin"]);
 const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
 const SEASON_NAMING_CONVENTION_REQUIRED_TYPES = new Set<string>(["Plex"]);
 
-// Basic URL validation rules:
-// 1. Must start with http:// or https://
-// 2. Host may be a domain, IPv4 address or docker name
-// 3. If host is an IPv4 address, a port MUST be present
-// 4. Domain must contain at least one dot and a 2+ char TLD
-const domainHostRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/; // multi-label domain
-const singleLabelHostRegex = /^[a-zA-Z0-9-]+$/; // docker / single label
+// Domain / host validation
+const domainHostRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const singleLabelHostRegex = /^[a-zA-Z0-9-]+$/;
 
 function isValidIPv4(host: string): boolean {
 	if (!/^[0-9.]+$/.test(host)) return false;
 	const parts = host.split(".");
 	if (parts.length !== 4) return false;
 	return parts.every((p) => {
-		if (p.length === 0 || (p.length > 1 && p.startsWith("0"))) return false; // no empty / leading zeros
+		if (p.length === 0 || (p.length > 1 && p.startsWith("0"))) return false;
 		const n = Number(p);
 		return Number.isInteger(n) && n >= 0 && n <= 255;
 	});
@@ -59,51 +58,39 @@ function isValidIPv4(host: string): boolean {
 export function ValidateURL(raw: string): string | null {
 	const value = raw.trim();
 	if (!/^https?:\/\//i.test(value)) return "Must start with http:// or https://";
-
 	let parsed: URL;
 	try {
 		parsed = new URL(value);
 	} catch {
 		return "Invalid URL format.";
 	}
-
 	const protocol = parsed.protocol.toLowerCase();
 	if (protocol !== "http:" && protocol !== "https:") return "Only http and https are allowed.";
-
 	const host = parsed.hostname;
 	const isIPv4 = isValidIPv4(host);
 	const looksNumeric = /^[0-9.]+$/.test(host);
-
-	// Reject numeric-but-not-IPv4 like 999.10.1
 	if (looksNumeric && !isIPv4) return "Invalid IPv4 address (must have 4 octets).";
-
-	// Port validation helper
 	const validatePort = () => {
 		if (!parsed.port) return "Port is required.";
 		const portNum = Number(parsed.port);
 		if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
 		return "";
 	};
-
 	if (isIPv4) {
 		if (!parsed.port) return "IP address requires a port number.";
 		const msg = validatePort();
-		if (msg != "") return msg;
+		if (msg) return msg;
 	} else if (host.includes(".")) {
-		// Domain form (plex.domain.com). Port optional.
 		if (!domainHostRegex.test(host)) return "Invalid domain.";
 		if (parsed.port) {
 			const portNum = Number(parsed.port);
 			if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
 		}
 	} else {
-		// Single-label docker hostname (e.g. plex)
 		if (!singleLabelHostRegex.test(host)) return "Invalid host.";
-		// Require a port for single-label hosts
 		const msg = validatePort();
-		if (msg != "") return msg;
+		if (msg) return msg;
 	}
-
 	return null;
 }
 
@@ -117,10 +104,30 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 }) => {
 	const prevErrorsRef = useRef<string>("");
 
+	// Normalize libraries to array (avoid null errors)
+	const libraries: AppConfigMediaServerLibrary[] = React.useMemo(
+		() => (Array.isArray(value.Libraries) ? value.Libraries : []),
+		[value.Libraries]
+	);
+
+	useEffect(() => {
+		if (!Array.isArray(value.Libraries)) {
+			onChange("Libraries", [] as AppConfigMediaServerLibrary[]);
+		}
+	}, [onChange, value.Libraries]);
+
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
 
-	const typeNormalized = value.Type.trim(); // normalize once
+	const valueRef = React.useRef(value);
+	React.useEffect(() => {
+		valueRef.current = value;
+	}, [value]);
+
+	const [libraryFetchLoading, setLibraryFetchLoading] = useState(false);
+
+	const typeNormalized = value.Type.trim();
+	const newLibRef = useRef<HTMLInputElement | null>(null);
 
 	const errors = React.useMemo<Partial<Record<keyof AppConfigMediaServer, string>>>(() => {
 		const errs: Partial<Record<keyof AppConfigMediaServer, string>> = {};
@@ -140,11 +147,12 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 		if (!value.Token.trim()) errs.Token = "Token is required.";
 		if (remoteTokenError) errs.Token = remoteTokenError;
 
-		// UserID (conditional)
-		if (USER_ID_REQUIRED_TYPES.has(typeNormalized) && !value.UserID?.trim())
+		// User ID requirement
+		if (USER_ID_REQUIRED_TYPES.has(typeNormalized) && !value.UserID?.trim()) {
 			errs.UserID = "User ID is required for this server type.";
+		}
 
-		// Season Naming Convention (conditional)
+		// Season naming
 		if (
 			SEASON_NAMING_CONVENTION_REQUIRED_TYPES.has(typeNormalized) &&
 			!SEASON_NAMING_CONVENTION_OPTIONS.includes((value.SeasonNamingConvention ?? "").trim())
@@ -153,21 +161,21 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 		}
 
 		// Libraries
-		if (value.Libraries.length === 0) {
+		if (libraries.length === 0) {
 			errs.Libraries = "Add at least one library.";
 		} else {
-			if (value.Libraries.some((l) => !l.Name.trim())) errs.Libraries = "Library names cannot be empty.";
-
-			// Duplicate names
-			const seen = new Set<string>();
-			for (const l of value.Libraries) {
-				const n = l.Name.trim().toLowerCase();
-				if (!n) continue;
-				if (seen.has(n)) {
-					errs.Libraries = "Duplicate library names are not allowed.";
-					break;
+			if (libraries.some((l) => !l.Name?.trim())) errs.Libraries = "Library names cannot be empty.";
+			if (!errs.Libraries) {
+				const seen = new Set<string>();
+				for (const l of libraries) {
+					const n = (l.Name || "").trim().toLowerCase();
+					if (!n) continue;
+					if (seen.has(n)) {
+						errs.Libraries = "Duplicate library names are not allowed.";
+						break;
+					}
+					seen.add(n);
 				}
-				seen.add(n);
 			}
 		}
 
@@ -178,7 +186,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 		value.Token,
 		value.UserID,
 		value.SeasonNamingConvention,
-		value.Libraries,
+		libraries,
 		remoteTokenError,
 	]);
 
@@ -191,68 +199,74 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 		errorsUpdate(errors);
 	}, [errors, errorsUpdate]);
 
-	// Reset remote error when URL or Token changes
+	// Reset remote token error when URL or Token changes
 	useEffect(() => {
 		setRemoteTokenError(null);
 	}, [value.Token, value.URL]);
 
 	const runRemoteValidation = React.useCallback(async () => {
-		if (!value.Token.trim()) {
+		const current = valueRef.current; // latest value
+		if (!current.Token.trim()) {
 			setRemoteTokenError("Token is required.");
 			return;
 		}
+		if (!current.URL.trim()) {
+			setRemoteTokenError("URL is required.");
+			return;
+		}
+
 		setTestingToken(true);
-		const { ok, message } = await checkMediaServerNewInfoConnectionStatus(value);
+		const { ok, message, data } = await checkMediaServerNewInfoConnectionStatus(current);
 		setTestingToken(false);
+
 		if (ok) {
 			setRemoteTokenError(null);
+
+			// Set UserID only if server provided one and we don't already have it (or it changed)
+			if (data?.UserID && data.UserID !== current.UserID) {
+				onChange("UserID", data.UserID);
+			}
 		} else {
 			setRemoteTokenError(message || "Token invalid");
 		}
-	}, [value, setRemoteTokenError, setTestingToken]);
+	}, [onChange]);
 
-	// If the config is already loaded, we can run validation
 	useEffect(() => {
-		if (configAlreadyLoaded) {
-			runRemoteValidation();
-		}
+		if (configAlreadyLoaded) runRemoteValidation();
 	}, [configAlreadyLoaded, runRemoteValidation]);
 
-	const duplicateNames = (() => {
-		const seen = new Set<string>();
-		for (const l of value.Libraries) {
-			const n = l.Name.trim().toLowerCase();
-			if (n) {
-				if (seen.has(n)) return true;
-				seen.add(n);
-			}
-		}
-		return false;
-	})();
-	if (!errors.Libraries && duplicateNames) {
-		errors.Libraries = "Duplicate library names are not allowed.";
-	}
-
-	// ...existing effects & helpers (updateLibrary, addLibrary, removeLibrary) can be simplified:
+	// Helpers
 	const addLibraryByName = (name: string) => {
 		const trimmed = name.trim();
 		if (!trimmed) return;
-		// Prevent duplicates
-		if (value.Libraries.some((l) => l.Name.trim().toLowerCase() === trimmed.toLowerCase())) return;
-		onChange("Libraries", [
-			...value.Libraries,
-			{ Name: trimmed, SectionID: "", Type: "" } as AppConfigMediaServerLibrary,
-		]);
+		if (libraries.some((l) => l.Name.trim().toLowerCase() === trimmed.toLowerCase())) return;
+		onChange("Libraries", [...libraries, { Name: trimmed, SectionID: "", Type: "" }]);
 	};
 
 	const removeLibraryByIndex = (index: number) => {
-		const libs = value.Libraries.slice();
-		libs.splice(index, 1);
-		onChange("Libraries", libs);
+		onChange(
+			"Libraries",
+			libraries.filter((_, i) => i !== index)
+		);
 	};
 
-	// Local input state for new library name
-	const newLibRef = useRef<HTMLInputElement | null>(null);
+	const replaceLibraries = (names: string[]) => {
+		onChange(
+			"Libraries",
+			names.map((n) => ({ Name: n, SectionID: "", Type: "" }))
+		);
+	};
+
+	const fetchServerLibraries = async () => {
+		if (!editing || libraryFetchLoading) return;
+		setLibraryFetchLoading(true);
+		const { ok, data } = await getMediaServerLibraryOptions(value);
+		setLibraryFetchLoading(false);
+		if (!ok || !Array.isArray(data)) {
+			return;
+		}
+		replaceLibraries(data);
+	};
 
 	return (
 		<Card className="p-5 space-y-1">
@@ -358,9 +372,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 					placeholder="https://server.example.com"
 					value={value.URL}
 					onChange={(e) => onChange("URL", e.target.value)}
-					onBlur={() => {
-						runRemoteValidation();
-					}}
+					onBlur={() => runRemoteValidation()}
 				/>
 				{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
 			</div>
@@ -403,14 +415,12 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 					placeholder="API token"
 					value={value.Token}
 					onChange={(e) => onChange("Token", e.target.value)}
-					onBlur={() => {
-						runRemoteValidation();
-					}}
+					onBlur={() => runRemoteValidation()}
 				/>
 				{errors.Token && <p className="text-xs text-red-500">{errors.Token}</p>}
 			</div>
 
-			{/* User ID */}
+			{/* User ID (Emby / Jellyfin) */}
 			{USER_ID_REQUIRED_TYPES.has(value.Type) && (
 				<div
 					className={cn(
@@ -440,18 +450,14 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 									sideOffset={8}
 									className="w-64 text-xs leading-snug"
 								>
-									<p>
-										Required for Emby / Jellyfin. The internal user identifier (not the display
-										name).
-									</p>
+									<p>Required for Emby / Jellyfin. The internal user identifier.</p>
 								</PopoverContent>
 							</Popover>
 						)}
 					</div>
 					<Input
-						disabled={!editing}
+						disabled={true}
 						value={value.UserID ?? ""}
-						onChange={(e) => onChange("UserID", e.target.value)}
 						placeholder="Emby/Jellyfin user id"
 						aria-invalid={!!errors.UserID}
 					/>
@@ -459,7 +465,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 				</div>
 			)}
 
-			{/* Season Naming Convention */}
+			{/* Season Naming Convention (Plex) */}
 			{SEASON_NAMING_CONVENTION_REQUIRED_TYPES.has(value.Type) && (
 				<div
 					className={cn(
@@ -493,7 +499,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 										<div>
 											<p className="font-medium mb-1">Season Naming Convention</p>
 											<p className="text-[11px] text-muted-foreground">
-												Select how Plex season folders / labels are formatted.
+												How Plex season folders / labels are formatted.
 											</p>
 										</div>
 										<ul className="space-y-1">
@@ -511,7 +517,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 											</li>
 										</ul>
 										<p className="text-[10px] text-muted-foreground">
-											This affects display / folder naming rules applied by the backend.
+											Used for display / folder naming logic.
 										</p>
 									</div>
 								</PopoverContent>
@@ -552,16 +558,35 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 						: dirtyFields.Libraries && "border border-amber-500 p-3"
 				)}
 			>
-				<div className="flex items-center justify-between">
+				<div className="flex items-center">
 					<Label>Libraries</Label>
+					{editing && (
+						<span className="flex items-center gap-2 ml-3">
+							<Button
+								onClick={fetchServerLibraries}
+								variant="outline"
+								size="icon"
+								className="h-7 w-7"
+								title="Refresh libraries from server"
+								disabled={libraryFetchLoading}
+							>
+								{libraryFetchLoading ? (
+									<RefreshCcw className="h-4 w-4 animate-spin" />
+								) : (
+									<RefreshCcw className="h-4 w-4" />
+								)}
+							</Button>
+						</span>
+					)}
 				</div>
+
 				<div className="flex flex-wrap gap-2">
-					{value.Libraries.length === 0 && (
+					{libraries.length === 0 && (
 						<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-[11px] text-muted-foreground">
 							No libraries added
 						</span>
-					)}{" "}
-					{value.Libraries.map((lib, i) => (
+					)}
+					{libraries.map((lib, i) => (
 						<Badge
 							key={i}
 							className={cn(
@@ -579,6 +604,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 							{lib.Name}
 						</Badge>
 					))}
+
 					{editing && (
 						<form
 							onSubmit={(e) => {
