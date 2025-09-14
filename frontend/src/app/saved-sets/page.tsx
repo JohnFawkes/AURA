@@ -341,7 +341,7 @@ const SavedSetsPage: React.FC = () => {
 															"bg-green-100 text-green-700":
 																result.OverAllResult === "Success",
 															"bg-yellow-100 text-yellow-700":
-																result.OverAllResult === "Warning",
+																result.OverAllResult === "Warn",
 															"bg-red-100 text-red-700": result.OverAllResult === "Error",
 															"bg-gray-100 text-gray-700":
 																result.OverAllResult === "Skipped",
