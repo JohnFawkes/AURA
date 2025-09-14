@@ -36,8 +36,10 @@ func SaveConfigToFile(newConfig modals.Config) logging.StandardError {
 		configPath = "/config"
 	}
 
-	// Check for a config.yml or config.yaml file
-	yamlFile := path.Join(configPath, "config.yml")
+	// Create the config.yaml file in the specified directory
+	yamlFile := path.Join(configPath, "config.yaml")
+
+	newConfig.Logging.File = ""
 
 	// Save the new config to a file
 	data, marshalErr := yaml.Marshal(newConfig)
