@@ -214,7 +214,16 @@ func processShowResponse(librarySection, itemRatingKey string, show modals.Mediu
 	cachedItem, exists := cache.LibraryCacheStore.GetMediaItemFromSection(librarySection, itemRatingKey)
 	if !exists {
 		logging.LOG.Error(fmt.Sprintf("\tCould not find '%s' in cache", show.Title))
-		return nil
+		return []modals.PosterSet{}
+	}
+
+	// If the show struct is basically empty, short-circuit
+	if show.ID == "" &&
+		len(show.Posters) == 0 &&
+		len(show.Backdrops) == 0 &&
+		len(show.Seasons) == 0 {
+		logging.LOG.Trace("\tShow response contained no assets")
+		return []modals.PosterSet{}
 	}
 
 	if len(show.Posters) > 0 {
