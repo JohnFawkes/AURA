@@ -1,4 +1,4 @@
-package health
+package route_health
 
 import (
 	"aura/internal/utils"
