@@ -6,7 +6,7 @@
 		"dev": "export NEXT_PUBLIC_APP_VERSION=$(cat ../VERSION.txt)-dev && next dev --turbopack",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint",
+		"lint": "eslint .",
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"format:check": "prettier --check \"**/*.{ts,tsx,md,json,js,jsx}\""
 	},
