@@ -62,7 +62,8 @@ export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
 				{(!!error.error.Details ||
 					(!!error.error.Function && error.error.Function !== "" && error.error.Function !== "Unknown") ||
 					(!!error.error.LineNumber && error.error.LineNumber !== 0)) && (
-					<button
+					<Button
+						variant="outline"
 						onClick={() => setIsExpanded(!isExpanded)}
 						className="flex items-center gap-1 mx-auto mt-3 text-xs text-muted-foreground/80 hover:text-muted-foreground transition-colors"
 					>
@@ -70,7 +71,7 @@ export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
 							className={cn("h-4 w-4 transition-transform duration-200", isExpanded ? "rotate-180" : "")}
 						/>
 						{isExpanded ? "Hide details" : "Show details"}
-					</button>
+					</Button>
 				)}
 
 				{isExpanded && (
