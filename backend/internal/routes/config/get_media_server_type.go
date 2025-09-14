@@ -1,4 +1,4 @@
-package health
+package route_config
 
 import (
 	"aura/internal/config"
