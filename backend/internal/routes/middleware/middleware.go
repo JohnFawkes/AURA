@@ -43,7 +43,7 @@ func Configure_Middlewares(r *chi.Mux) {
 
 func removeExtraSlashes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = strings.Replace(r.URL.Path, "//", "/", -1)
+		r.URL.Path = strings.ReplaceAll(r.URL.Path, "//", "/")
 		next.ServeHTTP(w, r)
 	})
 }
