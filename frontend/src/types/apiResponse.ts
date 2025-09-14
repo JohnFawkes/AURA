@@ -9,7 +9,7 @@ interface StandardError {
 
 // Define the main API response structure
 export interface APIResponse<T> {
-	status: string; // 'success' | 'error' | 'warning'
+	status: string; // 'success' | 'error' | 'warn'
 	elapsed: string; // Time taken to process request
 	data?: T; // Optional response data
 	error?: StandardError; // Optional error information
