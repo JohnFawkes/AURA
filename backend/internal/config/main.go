@@ -9,3 +9,6 @@ var Global *modals.Config = &modals.Config{}
 // By default, the configuration is invalid until it is validated.
 var ConfigLoaded bool = false
 var ConfigValid bool = false
+
+var ConfigMediuxValid bool = true
+var ConfigMediaServerValid bool = true

@@ -12,6 +12,7 @@ import (
 	"aura/internal/utils"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
 
@@ -36,8 +37,6 @@ func main() {
 	// Print the banner with application details on startup
 	utils.PrintBanner(APP_VERSION, Author, License, APP_PORT)
 
-	Err := logging.StandardError{}
-
 	// Load (if exists) + validate
 	config.LoadYamlConfig()
 	if config.ConfigLoaded {
@@ -47,9 +46,9 @@ func main() {
 	// Set onboarding completion hook (called by /onboarding/apply success)
 	routes.OnboardingComplete = func() {
 		logging.LOG.Info("Onboarding Complete: Running Preflight")
-		e := logging.StandardError{}
-		if !finishPreflight(&e) {
-			logging.LOG.Error("Preflight failed after onboarding: " + e.Message)
+		preFlightAfterOnboardErr := finishPreflight()
+		if preFlightAfterOnboardErr.Message != "" {
+			logging.LOG.Error("Preflight failed after onboarding: " + preFlightAfterOnboardErr.Message)
 			return
 		}
 		startRuntimeServices()
@@ -64,10 +63,17 @@ func main() {
 
 	// If already valid at startup, run preflight + runtime services
 	if config.ConfigLoaded && config.ConfigValid {
-		if finishPreflight(&Err) {
-			startRuntimeServices()
+		preFlightErr := finishPreflight()
+		if preFlightErr.Message != "" {
+			// Preflight failed: mark invalid and FALL BACK to onboarding routes
+			config.ConfigValid = false
+			logging.LOG.Error("Preflight failed on startup: " + preFlightErr.Message)
+			// Swap router so only onboarding endpoints are exposed
+			activeHandler.Store(routes.NewRouter())
 		} else {
-			logging.LOG.Error("Preflight failed on startup: " + Err.Message)
+			startRuntimeServices()
+			// Ensure full router (in case initial was onboarding)
+			activeHandler.Store(routes.NewRouter())
 		}
 	}
 
@@ -86,10 +92,11 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 // Called once config becomes valid (either at boot or after onboarding)
 func startRuntimeServices() {
-	// Init DB
+
 	if ok := database.InitDB(); !ok {
 		logging.LOG.Error("Database initialization failed; application not fully started.")
-		return
+		// Kill Application
+		os.Exit(1)
 	}
 
 	// Schedule auto-download if enabled
@@ -123,16 +130,26 @@ func startRuntimeServices() {
 }
 
 // Perform token/userID preflight
-func finishPreflight(Err *logging.StandardError) bool {
-	*Err = utils.ValidateMediuxToken(config.Global.Mediux.Token)
-	if Err.Message != "" {
-		logging.LOG.ErrorWithLog(*Err)
-		return false
+func finishPreflight() logging.StandardError {
+	Err := logging.NewStandardError()
+
+	validateMediuxTokenErr := utils.ValidateMediuxToken(config.Global.Mediux.Token)
+	if validateMediuxTokenErr.Message != "" {
+		config.ConfigMediuxValid = false
+		logging.LOG.ErrorWithLog(validateMediuxTokenErr)
 	}
-	*Err = mediaserver_shared.InitUserID()
-	if Err.Message != "" {
-		logging.LOG.ErrorWithLog(*Err)
-		return false
+
+	initUserIDErr := mediaserver_shared.InitUserID()
+	if initUserIDErr.Message != "" {
+		config.ConfigMediaServerValid = false
+		logging.LOG.ErrorWithLog(initUserIDErr)
 	}
-	return true
+
+	// If any errors in preflight, mark config as invalid
+	if !config.ConfigMediuxValid || !config.ConfigMediaServerValid {
+		logging.LOG.Warn("Configuration invalid after preflight checks")
+		Err.Message = validateMediuxTokenErr.Message + " " + initUserIDErr.Message
+	}
+
+	return Err
 }

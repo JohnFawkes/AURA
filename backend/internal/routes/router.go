@@ -58,6 +58,8 @@ func AddRoutes(r *chi.Mux) {
 		logging.LOG.Warn("Configuration not valid - only onboarding routes available")
 		addOnboardingRoutes(r)
 		return
+	} else {
+		logging.LOG.Info("Configuration valid - all routes available")
 	}
 
 	auth.SetTokenAuth(jwtauth.New("HS256", []byte(config.Global.Mediux.Token), nil))

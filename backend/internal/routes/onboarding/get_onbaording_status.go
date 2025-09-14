@@ -24,8 +24,8 @@ func GetOnboardingStatus(w http.ResponseWriter, r *http.Request) {
 
 	status := onboardingStatus{
 		ConfigLoaded: config.ConfigLoaded,
-		ConfigValid:  config.ConfigValid,
-		NeedsSetup:   !(config.ConfigLoaded && config.ConfigValid),
+		ConfigValid:  (config.ConfigValid && config.ConfigMediuxValid && config.ConfigMediaServerValid),
+		NeedsSetup:   !(config.ConfigLoaded && config.ConfigValid && config.ConfigMediuxValid && config.ConfigMediaServerValid),
 		CurrentSetup: utils.SanitizedCopy(),
 	}
 

@@ -22,6 +22,9 @@ func UpdateConfig(newConfig modals.Config) logging.StandardError {
 
 	ConfigLoaded = true
 	ConfigValid = true
+	ConfigMediuxValid = true
+	ConfigMediaServerValid = true
+
 	return Err
 }
 
