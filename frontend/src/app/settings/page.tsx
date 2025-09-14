@@ -1,41 +1,63 @@
 "use client";
 
-import {
-	fetchConfig,
-	fetchMediaServerConnectionStatus,
-	postClearOldLogs,
-	postClearTempImagesFolder,
-	postSendTestNotification,
-} from "@/services/api.settings";
+import { AuthSection } from "@/app/settings/components/settings_auth";
+import { AutoDownloadSection } from "@/app/settings/components/settings_autodownload";
+import { ImagesSection } from "@/app/settings/components/settings_images";
+import { KometaSection } from "@/app/settings/components/settings_kometa";
+import { LoggingSection } from "@/app/settings/components/settings_logging";
+import { MediaServerSection } from "@/app/settings/components/settings_media_server";
+import { MediuxSection } from "@/app/settings/components/settings_mediux";
+import { NotificationsSection } from "@/app/settings/components/settings_notifications";
+import { TMDBSection } from "@/app/settings/components/settings_tmdb";
+import { defaultAppConfig, fetchConfig } from "@/app/settings/services/fetch_config";
+import { updateConfig } from "@/app/settings/services/update_config";
 import { ReturnErrorMessage } from "@/services/api.shared";
-import { CircleX, HeartPulseIcon, Logs } from "lucide-react";
 import { toast } from "sonner";
 
-import React, { useEffect, useRef, useState } from "react";
-
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { APIResponse } from "@/types/apiResponse";
 import { AppConfig } from "@/types/config";
 
-type LOGGING_VALUES = "DEBUG" | "INFO" | "WARN" | "ERROR";
-const LOGGING_OPTIONS: LOGGING_VALUES[] = ["DEBUG", "INFO", "WARN", "ERROR"];
+type ObjectSectionKeys = {
+	[K in keyof AppConfig]-?: NonNullable<AppConfig[K]> extends object ? K : never;
+}[keyof AppConfig];
+
+type SectionDirty<S extends ObjectSectionKeys = ObjectSectionKeys> = Partial<
+	Record<keyof NonNullable<AppConfig[S]>, boolean>
+>;
+
+interface ImagesDirty {
+	CacheImages?: { Enabled?: boolean };
+	SaveImageNextToContent?: { Enabled?: boolean };
+}
+
+type DirtyState = {
+	[K in ObjectSectionKeys]?: K extends "Images" ? ImagesDirty : SectionDirty<K>;
+};
+
+type ValidationErrors = {
+	[K in ObjectSectionKeys]?: Record<string, string>; // field -> message
+};
 
 const SettingsPage: React.FC = () => {
-	const router = useRouter();
 	const isMounted = useRef(false);
-	const [config, setConfig] = useState<AppConfig | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
+
+	const [editing, setEditing] = useState(false);
+	const [saving, setSaving] = useState(false);
+
+	const [initialConfig, setInitialConfig] = useState<AppConfig>(() => defaultAppConfig());
+	const [newConfig, setNewConfig] = useState<AppConfig>(() => defaultAppConfig());
+	const [dirty, setDirty] = useState<DirtyState>({});
+
+	const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
 	// State - Debug Mode
 	const [debugEnabled, setDebugEnabled] = useState(false);
@@ -62,17 +84,21 @@ const SettingsPage: React.FC = () => {
 			try {
 				setLoading(true);
 				const response = await fetchConfig();
-
 				if (response.status === "error") {
 					setError(response);
-					setConfig(null);
+					setInitialConfig(defaultAppConfig());
+					setNewConfig(defaultAppConfig());
 					return;
 				}
-				setConfig(response.data ?? null);
+
+				const cfg = response.data ?? defaultAppConfig();
+				setInitialConfig(cfg);
+				setNewConfig(cfg);
 				setError(null);
 			} catch (error) {
 				setError(ReturnErrorMessage<AppConfig>(error));
-				setConfig(null);
+				setInitialConfig(defaultAppConfig());
+				setNewConfig(defaultAppConfig());
 			} finally {
 				setLoading(false);
 			}
@@ -81,447 +107,358 @@ const SettingsPage: React.FC = () => {
 		fetchConfigFromAPI();
 	}, []);
 
-	const handleViewLogs = () => {
-		router.push("/logs");
+	const handleCancel = () => {
+		setEditing(false);
+		setSaving(false);
+		setDirty({});
+		setNewConfig(initialConfig); // <- reset edits
 	};
 
-	const handleClearOldLogs = async () => {
+	const handleSaveAll = async () => {
+		if (!newConfig) return;
+
+		setSaving(true);
+
+		setEditing(false);
+
 		try {
-			const response = await postClearOldLogs();
+			const resp = await updateConfig(newConfig);
 
-			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to clear old logs");
-				return;
+			if (resp.status === "error") {
+				setError(resp);
+			} else if (resp.status === "warn") {
+				toast.warning("No changes detected.");
+			} else {
+				toast.success("Configuration updated successfully.");
+				window.location.reload();
 			}
-
-			toast.success(response.data || "Successfully cleared old logs");
 		} catch (error) {
-			const errorResponse = ReturnErrorMessage<void>(error);
-			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
+			toast.error(
+				typeof error === "object" && error !== null && "message" in error
+					? (error as { message?: string }).message || "Unknown error"
+					: "Unknown error"
+			);
 		}
+		setSaving(false);
+		setDirty({});
 	};
 
-	const clearTempImagesFolder = async () => {
-		try {
-			const response = await postClearTempImagesFolder();
+	const structuralEqual = (a: unknown, b: unknown): boolean => {
+		if (a === b) return true;
+		if (Array.isArray(a) && Array.isArray(b)) {
+			if (a.length !== b.length) return false;
+			for (let i = 0; i < a.length; i++) {
+				if (!structuralEqual(a[i], b[i])) return false;
+			}
+			return true;
+		}
+		if (a && b && typeof a === "object" && typeof b === "object") {
+			const keysA = Object.keys(a as object);
+			const keysB = Object.keys(b as object);
+			if (keysA.length !== keysB.length) return false;
+			for (const k of keysA) {
+				if (!structuralEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]))
+					return false;
+			}
+			return true;
+		}
+		return false;
+	};
 
-			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to clear temp images folder");
-				return;
+	const updateConfigField = <S extends ObjectSectionKeys, F extends keyof NonNullable<AppConfig[S]>>(
+		section: S,
+		field: F,
+		value: NonNullable<AppConfig[S]>[F]
+	) => {
+		setNewConfig((prev) => {
+			const prevSection = (prev[section] ?? {}) as NonNullable<AppConfig[S]>;
+			return {
+				...prev,
+				[section]: {
+					...prevSection,
+					[field]: value,
+				},
+			};
+		});
+
+		setDirty((prev) => {
+			const originalValue = initialConfig[section]?.[field];
+
+			// Choose comparison strategy
+			let reverted: boolean;
+			if (section === "MediaServer" && field === "Libraries") {
+				reverted = structuralEqual(originalValue, value); // (order-sensitive alternative)
+			} else {
+				reverted = structuralEqual(originalValue, value);
 			}
 
-			toast.success(response.data || "Temp images folder cleared successfully");
-		} catch (error) {
-			const errorResponse = ReturnErrorMessage<void>(error);
-			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
-		}
-	};
+			const prevSectionDirty = (prev[section] ?? {}) as SectionDirty<S>;
+			let nextSectionDirty = prevSectionDirty;
 
-	const checkMediaServerConnectionStatus = async () => {
-		try {
-			const response = await fetchMediaServerConnectionStatus();
-
-			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to check media server status");
-				return;
+			if (reverted) {
+				if (prevSectionDirty[field]) {
+					const clone = { ...prevSectionDirty };
+					delete clone[field];
+					nextSectionDirty = clone;
+				}
+			} else if (!prevSectionDirty[field]) {
+				nextSectionDirty = { ...prevSectionDirty, [field]: true };
 			}
 
-			toast.success(`${config?.MediaServer.Type} running with version: ${response.data}`);
-		} catch (error) {
-			const errorResponse = ReturnErrorMessage<string>(error);
-			toast.error(errorResponse.error?.Message || "Failed to check media server status");
-		}
+			const nextState: DirtyState = { ...prev };
+			if (Object.keys(nextSectionDirty).length === 0) {
+				delete nextState[section];
+			} else {
+				nextState[section] = nextSectionDirty;
+			}
+			return nextState;
+		});
 	};
 
-	const sendTestNotification = async () => {
-		try {
-			const response = await postSendTestNotification();
+	const updateImagesField = <G extends keyof AppConfig["Images"], F extends keyof AppConfig["Images"][G]>(
+		group: G,
+		field: F,
+		value: AppConfig["Images"][G][F]
+	) => {
+		setNewConfig((prev) => {
+			const nextGroup = {
+				...prev.Images[group],
+				[field]: value,
+			};
+			return {
+				...prev,
+				Images: {
+					...prev.Images,
+					[group]: nextGroup,
+				},
+			};
+		});
 
-			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to send test notification");
-				return;
+		setDirty((prev) => {
+			const originalVal = initialConfig.Images[group][field];
+			const reverted = originalVal === value;
+
+			const prevImagesDirty = (prev.Images ?? {}) as ImagesDirty;
+			const prevGroupDirty = (prevImagesDirty[group] ?? {}) as { [k in F]?: boolean };
+
+			let nextGroupDirty = prevGroupDirty;
+
+			if (reverted) {
+				if (prevGroupDirty[field]) {
+					const clone = { ...prevGroupDirty };
+					delete clone[field];
+					nextGroupDirty = clone;
+				}
+			} else if (!prevGroupDirty[field]) {
+				nextGroupDirty = { ...prevGroupDirty, [field]: true };
 			}
 
-			if (!response.data) {
-				toast.error("No response from notification service");
-				return;
+			const nextImagesDirty: ImagesDirty = { ...prevImagesDirty };
+			if (Object.keys(nextGroupDirty).length === 0) {
+				delete nextImagesDirty[group];
+			} else {
+				nextImagesDirty[group] = nextGroupDirty;
 			}
 
-			toast.success("Test notification sent successfully. Check your Discord channel.");
-		} catch (error) {
-			const errorResponse = ReturnErrorMessage<string>(error);
-			toast.error(errorResponse.error?.Message || "Failed to send test notification");
-		}
+			const nextState: DirtyState = { ...prev };
+			if (Object.keys(nextImagesDirty).length === 0) {
+				delete nextState.Images;
+			} else {
+				nextState.Images = nextImagesDirty;
+			}
+			return nextState;
+		});
 	};
 
-	const parseCronToHumanReadable = (cronExpression: string): string => {
-		const parts = cronExpression.split(" ");
-		if (parts.length !== 5) return "Current cron expression is invalid";
+	const anyDirty =
+		Object.values(dirty).some((section) => section && Object.values(section).some(Boolean)) ||
+		JSON.stringify(initialConfig) !== JSON.stringify(newConfig);
 
-		const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-
-		const minuteText = minute === "0" ? "at the start of" : `at minute ${minute}`;
-		const hourText = hour === "*" ? "every hour" : `hour ${hour}`;
-		const dayOfMonthText = dayOfMonth === "*" ? "every day" : `on day ${dayOfMonth}`;
-		const monthText = month === "*" ? "every month" : `in month ${month}`;
-		const dayOfWeekText = dayOfWeek === "*" ? "every day of the week" : `on day ${dayOfWeek} of the week`;
-
-		return `Currently runs ${minuteText} ${hourText}, ${dayOfMonthText}, ${monthText}, and ${dayOfWeekText}.`;
+	const updateSectionErrors = <S extends ObjectSectionKeys>(
+		section: S,
+		errs: Record<string, string> | Partial<Record<string, string>>
+	) => {
+		setValidationErrors((prev) => {
+			if (!errs || Object.keys(errs).length === 0) {
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { [section]: _, ...rest } = prev;
+				return rest;
+			}
+			return { ...prev, [section]: errs as Record<string, string> };
+		});
 	};
 
-	const AppConfig = {
-		"Media Server": {
-			Title: "Media Server Information",
-			Fields: [
-				{
-					Label: "Server Type",
-					Value: config?.MediaServer.Type,
-					Tooltip: "The type of media server (e.g., Plex, Emby, Jellyfin).",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Plex", "Emby", "Jellyfin"],
-				},
-				{
-					Label: "Server URL",
-					Value: config?.MediaServer.URL,
-					Tooltip: "The base URL of the media server.",
-					Editable: true,
-					EditType: "text",
-				},
-				{
-					Label: "Authentication Token",
-					Value: config?.MediaServer.Token,
-					Tooltip: "The authentication token for accessing the media server.",
-					Editable: true,
-					EditType: "text",
-				},
-				{
-					Label: "Libraries",
-					Value: config?.MediaServer.Libraries.map((library) => library.Name).join(", "),
-					Tooltip: "",
-					Editable: true,
-					EditType: "text",
-				},
-			],
-			Buttons: [
-				{
-					Label: "Check Connection Status",
-					Icon: <HeartPulseIcon />,
-					onClick: checkMediaServerConnectionStatus,
-				},
-			],
-		},
-		"MediUX Settings": {
-			Title: "MediUX Settings",
-			Fields: [
-				{
-					Label: "Mediux Token",
-					Value: config?.Mediux.Token,
-					Tooltip: "The authentication token for accessing Mediux services.",
-					Editable: true,
-					EditType: "text",
-				},
-				{
-					Label: "Download Quality",
-					Value: config?.Mediux.DownloadQuality,
-					Tooltip: "The quality of media to download (e.g., original, optimized).",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["original", "optimized"],
-				},
-			],
-		},
-		"Other API": {
-			Title: "Other API Information",
-			Fields: [
-				{
-					Label: "TMDB API Key",
-					Value: config?.TMDB.ApiKey,
-					Tooltip: "The API key for accessing TMDB services. This is not used in this version.",
-					Editable: true,
-					EditType: "text",
-				},
-			],
-		},
-		"Other Settings": {
-			Title: "Other Settings",
-			Fields: [
-				{
-					Label: "Cache Images",
-					Value: config?.CacheImages ? "Enabled" : "Disabled",
-					Tooltip: "Whether to cache images locally.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Enabled", "Disabled"],
-				},
-				{
-					Label: "Save Images Next to Content",
-					Value: config?.SaveImageNextToContent ? "Enabled" : "Disabled",
-					Tooltip: "Whether to save images next to the associated content.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Enabled", "Disabled"],
-				},
-				{
-					Label: "Auto Download",
-					Value: config?.AutoDownload?.Enabled ? "Enabled" : "Disabled",
-					Tooltip: "Whether auto-download is enabled.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Enabled", "Disabled"],
-				},
-				{
-					Label: "Auto Download Cron",
-					Value: config?.AutoDownload?.Cron,
-					Tooltip: parseCronToHumanReadable(config?.AutoDownload?.Cron || ""),
-					Editable: true,
-					EditType: "text",
-				},
-			],
-		},
-		Kometa: {
-			Title: "Kometa",
-			Fields: [
-				{
-					Label: "Remove Labels",
-					Value: config?.Kometa?.RemoveLabels ? "Enabled" : "Disabled",
-					Tooltip: "Whether to remove labels from media items.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Enabled", "Disabled"],
-				},
-				{
-					Label: "Labels",
-					Value:
-						Array.isArray(config?.Kometa?.Labels) && config?.Kometa?.Labels.length > 1
-							? config?.Kometa?.Labels.join(", ")
-							: config?.Kometa?.Labels?.[0] || "",
-					Tooltip: "The list of labels to apply to media items.",
-					Editable: true,
-					EditType: "text",
-				},
-			],
-		},
-		Notifications: {
-			Title: "Notifications",
-			Fields: [
-				{
-					Label: "Enabled",
-					Value: config?.Notifications?.Enabled ? "Enabled" : "Disabled",
-					Tooltip: "Whether notifications are enabled.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Enabled", "Disabled"],
-				},
-				{
-					Label:
-						config?.Notifications?.Providers && config?.Notifications?.Providers.length > 1
-							? "Notification Providers"
-							: "Provider",
-					Value: config?.Notifications?.Providers.map((provider) => provider.Provider).join(", "),
-					Tooltip:
-						config?.Notifications?.Providers && config?.Notifications?.Providers.length > 1
-							? "The providers for notifications. Multiple providers are configured."
-							: "The provider for notifications.",
-					Editable: true,
-					EditType: "select",
-					EditOptions: ["Discord", "Pushover"],
-				},
-			],
-			Buttons: [
-				{
-					Label:
-						config?.Notifications.Providers && config?.Notifications?.Providers.length > 1
-							? "Send Test Notifications"
-							: "Send Test Notification",
-					onClick: sendTestNotification,
-				},
-			],
-		},
-		Logging: {
-			Title: "Logging",
-			Fields: [
-				{
-					Label: "Logging Level",
-					Value: config?.Logging?.Level,
-					Tooltip: "The logging level (e.g., DEBUG, INFO, WARN, ERROR).",
-					Editable: true,
-					EditType: "select",
-					EditOptions: LOGGING_OPTIONS,
-				},
-				{
-					Label: "Log File Path",
-					Value: config?.Logging?.File,
-					Tooltip: "The file path where logs are stored.",
-					Editable: false,
-				},
-			],
-			Buttons: [
-				{
-					Label: "View Logs",
-					Icon: <Logs />,
-					onClick: handleViewLogs,
-				},
-				{
-					Label: "Clear Old Logs",
-					Variant: "destructive",
-					Icon: <CircleX />,
-					onClick: handleClearOldLogs,
-				},
-			],
-		},
-		"Admin Tools": {
-			Title: "Admin Tools",
-			Buttons: [
-				{
-					Label: "Clear Temp Images Folder",
-					Variant: "destructive",
-					Icon: <CircleX />,
-					onClick: clearTempImagesFolder,
-				},
-			],
-		},
-	};
+	const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
 	return (
 		<div className="container mx-auto p-6">
-			{/* Conditional Rendering */}
 			{loading ? (
 				<Loader message="Loading configuration..." />
 			) : error ? (
 				<ErrorMessage error={error} />
 			) : (
 				<>
-					<div className="flex items-center justify-between mb-6">
-						<h1
-							className="text-3xl font-bold mb-4"
-							onDoubleClick={() => {
-								if (debugEnabled) {
-									toggleDebugMode(false);
-									toast.info("Debug mode disabled");
-								} else {
-									toggleDebugMode(true);
-									toast.info("Debug mode enabled");
-								}
-								localStorage.setItem("debugMode", (!debugEnabled).toString());
-							}}
-						>
-							Settings
-						</h1>
+					<div className="flex items-center justify-between mb-4">
+						<div>
+							<h1 className="text-3xl font-bold">Settings</h1>
+							<p className="text-gray-600 dark:text-gray-400">Manage your application settings</p>
+						</div>
+
+						<div className="flex gap-2">
+							{!editing && (
+								<Button variant="outline" onClick={() => setEditing(true)}>
+									Edit
+								</Button>
+							)}
+							{editing && (
+								<>
+									<Button variant="outline" onClick={handleCancel} disabled={saving}>
+										Cancel
+									</Button>
+									<Button
+										onClick={handleSaveAll}
+										disabled={!anyDirty || saving || hasValidationErrors}
+									>
+										{saving ? "Saving..." : "Save All"}
+									</Button>
+								</>
+							)}
+						</div>
 					</div>
-					<p className="mb-6 text-gray-600 dark:text-gray-400">
-						Manage your application settings and configurations here
-					</p>
-					{AppConfig &&
-						Object.entries(AppConfig).map(([key, value]) => {
-							// Filter out fields with empty values (after trimming)
-							const fieldsToShow =
-								"Fields" in value
-									? value.Fields.filter(
-											(field) => field.Value && field.Value.toString().trim() !== ""
-										)
-									: [];
-							// Check if there are any buttons
-							const hasButtons =
-								"Buttons" in value &&
-								(
-									value.Buttons as {
-										onClick: () => void;
-										Label: string;
-									}[]
-								).length > 0;
 
-							// If there are no non-empty fields and no buttons, skip the card
-							if (!fieldsToShow.length && !hasButtons) return null;
+					{editing && hasValidationErrors && (
+						<p className="mb-2 text-red-500">Fix validation errors before saving.</p>
+					)}
 
-							return (
-								<Card className="mb-4" key={key}>
-									<CardHeader>
-										<h2 className="text-xl font-semibold">{value.Title}</h2>
-									</CardHeader>
-									<CardContent>
-										<div className="space-y-2">
-											{"Fields" in value &&
-												fieldsToShow.map((field, index) => (
-													<div key={index}>
-														<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-															{field.Label}
-														</label>
-														{field.Label === "Libraries" || field.Label === "Labels" ? (
-															<>
-																{(field.Value ?? "")
-																	.split(", ")
-																	.filter((item: string) => item.trim() !== "")
-																	.map((item: string, idx: number) => (
-																		<Badge key={idx} className="mr-2 mt-1 text-sm">
-																			{item}
-																		</Badge>
-																	))}
-															</>
-														) : (
-															<div className="flex items-center gap-2 mt-1">
-																<Input
-																	value={field.Value}
-																	disabled
-																	className="w-full"
-																/>
-																<Popover>
-																	<PopoverTrigger className="cursor-pointer">
-																		<span className="text-gray-500 dark:text-gray-400 cursor-pointer">
-																			?
-																		</span>
-																	</PopoverTrigger>
-																	<PopoverContent className="w-60">
-																		{field.Tooltip}
-																	</PopoverContent>
-																</Popover>
-															</div>
-														)}
-													</div>
-												))}
-											{"Buttons" in value &&
-												(
-													value.Buttons as {
-														onClick: () => void;
-														Variant?: "default" | "destructive";
-														Label: string;
-														Icon?: React.ReactNode;
-													}[]
-												).map((button, index) => (
-													<Button
-														key={index}
-														variant={button.Variant || "default"}
-														onClick={button.onClick}
-														className="w-full hover:text-white cursor-pointer"
-													>
-														{button.Label} {button.Icon && button.Icon}
-													</Button>
-												))}
-										</div>
-									</CardContent>
-								</Card>
-							);
-						})}
-					{/* Debug Mode Toggle */}
-					<ToggleGroup
-						type="single"
-						variant={debugEnabled ? "default" : "outline"}
-						value={debugEnabled ? "enabled" : "disabled"}
-						onValueChange={(value) => toggleDebugMode(value === "enabled")}
-					>
-						<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
-							<span className="flex items-center gap-2 cursor-pointer">
-								Debug Mode:
-								{debugEnabled ? (
-									<span className="text-green-500">Enabled</span>
-								) : (
-									<span className="text-destructive">Disabled</span>
-								)}
-							</span>
-						</ToggleGroupItem>
-					</ToggleGroup>
+					<div className="space-y-5">
+						<AuthSection
+							value={newConfig.Auth}
+							editing={editing}
+							dirtyFields={dirty.Auth}
+							onChange={(field, value) => updateConfigField("Auth", field, value)}
+							errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
+						/>
+
+						<LoggingSection
+							value={newConfig.Logging}
+							editing={editing}
+							dirtyFields={dirty.Logging}
+							onChange={(field, value) => updateConfigField("Logging", field, value)}
+							errorsUpdate={(errs) => updateSectionErrors("Logging", errs as Record<string, string>)}
+						/>
+
+						<MediaServerSection
+							value={newConfig.MediaServer}
+							editing={editing}
+							configAlreadyLoaded={false}
+							dirtyFields={dirty.MediaServer}
+							onChange={(field, value) => updateConfigField("MediaServer", field, value)}
+							errorsUpdate={(errs) => updateSectionErrors("MediaServer", errs as Record<string, string>)}
+						/>
+
+						<MediuxSection
+							value={newConfig.Mediux}
+							editing={editing}
+							configAlreadyLoaded={false}
+							dirtyFields={dirty.Mediux}
+							onChange={(field, value) => updateConfigField("Mediux", field, value)}
+							errorsUpdate={(errs) => updateSectionErrors("Mediux", errs as Record<string, string>)}
+						/>
+
+						<AutoDownloadSection
+							value={newConfig.AutoDownload}
+							editing={editing}
+							dirtyFields={dirty.AutoDownload}
+							onChange={(f, v) => updateConfigField("AutoDownload", f, v)}
+							errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
+						/>
+
+						<ImagesSection
+							value={newConfig.Images}
+							editing={editing}
+							dirtyFields={dirty.Images}
+							onChange={updateImagesField}
+							errorsUpdate={(errs) => updateSectionErrors("Images", errs as Record<string, string>)}
+						/>
+
+						<TMDBSection
+							value={newConfig.TMDB}
+							editing={editing}
+							dirtyFields={dirty.TMDB}
+							onChange={(f, v) => updateConfigField("TMDB", f, v)}
+							errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
+						/>
+
+						<KometaSection
+							value={newConfig.Kometa}
+							editing={editing}
+							dirtyFields={dirty.Kometa}
+							onChange={(field, val) => updateConfigField("Kometa", field, val)}
+							errorsUpdate={(errs) => updateSectionErrors("Kometa", errs as Record<string, string>)}
+						/>
+
+						<NotificationsSection
+							value={newConfig.Notifications}
+							editing={editing}
+							dirtyFields={
+								dirty.Notifications as {
+									Enabled?: boolean;
+									Providers?: Partial<
+										Record<
+											string,
+											| boolean
+											| {
+													Enabled?: boolean;
+													Webhook?: boolean;
+													UserKey?: boolean;
+													Token?: boolean;
+											  }
+										>
+									>[];
+								}
+							}
+							onChange={(field, val) => updateConfigField("Notifications", field, val)}
+							errorsUpdate={(errs) =>
+								updateSectionErrors("Notifications", errs as Record<string, string>)
+							}
+						/>
+					</div>
+
+					{editing && (
+						<div className="sticky bottom-0 mt-10 z-30">
+							<div className="mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex items-center gap-3">
+								<span className="text-sm">{anyDirty ? "Unsaved changes" : "No changes yet"}</span>
+								<Button size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
+									Cancel
+								</Button>
+								<Button onClick={handleSaveAll} disabled={!anyDirty || saving || hasValidationErrors}>
+									{saving ? "Saving..." : "Save All"}
+								</Button>
+							</div>
+						</div>
+					)}
 				</>
 			)}
+
+			{/* Debug Mode Toggle */}
+			<ToggleGroup
+				className="mt-2"
+				type="single"
+				variant={debugEnabled ? "default" : "outline"}
+				value={debugEnabled ? "enabled" : "disabled"}
+				onValueChange={(value) => toggleDebugMode(value === "enabled")}
+			>
+				<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
+					<span className="flex items-center gap-2 cursor-pointer">
+						Debug Mode:
+						{debugEnabled ? (
+							<span className="text-green-500">Enabled</span>
+						) : (
+							<span className="text-destructive">Disabled</span>
+						)}
+					</span>
+				</ToggleGroupItem>
+			</ToggleGroup>
 		</div>
 	);
 };
