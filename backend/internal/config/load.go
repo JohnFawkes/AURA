@@ -204,6 +204,10 @@ func PrintConfig() {
 			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
 			logging.LOG.NoTime(fmt.Sprintf("\t\t\tToken: %s\n", "***"+notification.Pushover.Token[len(notification.Pushover.Token)-4:]))
 			logging.LOG.NoTime(fmt.Sprintf("\t\t\tUserKey: %s\n", "***"+notification.Pushover.UserKey[len(notification.Pushover.UserKey)-4:]))
+		case "Gotify":
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", notification.Enabled))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tURL: %s\n", notification.Gotify.URL))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tToken: %s\n", "***"+notification.Gotify.Token[len(notification.Gotify.Token)-4:]))
 		}
 	}
 
@@ -415,7 +419,7 @@ func ValidateNotificationsConfig(Notifications modals.Config_Notifications) (boo
 			continue
 		}
 
-		validProviders := []string{"Discord", "Pushover"}
+		validProviders := []string{"Discord", "Pushover", "Gotify"}
 
 		// If the provider is not in the list of valid providers, return an error
 		if !contains(validProviders, provider.Provider) {
@@ -442,6 +446,20 @@ func ValidateNotificationsConfig(Notifications modals.Config_Notifications) (boo
 				return false, errorMsgs, Notifications
 			}
 			if provider.Pushover.Token == "" {
+				errorMsg = fmt.Sprintf("\tNotifications[%d].Token is not set", i)
+				logging.LOG.Warn(errorMsg)
+				errorMsgs = append(errorMsgs, errorMsg)
+				return false, errorMsgs, Notifications
+			}
+
+		case "Gotify":
+			if provider.Gotify.URL == "" {
+				errorMsg = fmt.Sprintf("\tNotifications[%d].URL is not set", i)
+				logging.LOG.Warn(errorMsg)
+				errorMsgs = append(errorMsgs, errorMsg)
+				return false, errorMsgs, Notifications
+			}
+			if provider.Gotify.Token == "" {
 				errorMsg = fmt.Sprintf("\tNotifications[%d].Token is not set", i)
 				logging.LOG.Warn(errorMsg)
 				errorMsgs = append(errorMsgs, errorMsg)

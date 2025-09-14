@@ -1,5 +1,7 @@
 "use client";
 
+import { ValidateURL } from "@/app/settings/components/settings_media_server";
+import { sendTestNotification } from "@/app/settings/services/notifications";
 import { Plus, Trash2 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -16,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import {
 	AppConfigNotificationDiscord,
+	AppConfigNotificationGotify,
 	AppConfigNotificationProviders,
 	AppConfigNotificationPushover,
 	AppConfigNotifications,
@@ -36,7 +39,7 @@ interface NotificationsSectionProps {
 	errorsUpdate?: (errors: Record<string, string>) => void;
 }
 
-const PROVIDER_TYPES = ["Discord", "Pushover"] as const;
+const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify"] as const;
 
 export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 	value,
@@ -64,22 +67,35 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 		}
 
 		providers.forEach((p, idx) => {
-			const base = `Providers[${idx}].${p.Provider}`;
+			const prefix = `Providers[${idx}]`;
 			if (value.Enabled && p.Enabled) {
 				if (p.Provider === "Discord") {
-					const discord = p.Discord as AppConfigNotificationDiscord | undefined;
-					if (!(discord?.Webhook || "").trim()) {
-						errs[`${base}.Webhook`] = "Webhook URL required.";
-					} else if (!/^https?:\/\//i.test(discord!.Webhook.trim())) {
-						errs[`${base}.Webhook`] = "Webhook must start with http(s)://";
+					const discord = p.Discord;
+					const webhook = (discord?.Webhook || "").trim();
+					if (!webhook) {
+						errs[`${prefix}.Discord.Webhook`] = "Webhook URL required.";
+					} else if (!/^https?:\/\//i.test(webhook)) {
+						errs[`${prefix}.Discord.Webhook`] = "Webhook must start with http(s)://";
 					}
 				} else if (p.Provider === "Pushover") {
-					const push = p.Pushover as AppConfigNotificationPushover | undefined;
+					const push = p.Pushover;
 					if (!(push?.UserKey || "").trim()) {
-						errs[`${base}.UserKey`] = "User key required.";
+						errs[`${prefix}.Pushover.UserKey`] = "User key required.";
 					}
 					if (!(push?.Token || "").trim()) {
-						errs[`${base}.Token`] = "App token required.";
+						errs[`${prefix}.Pushover.Token`] = "App token required.";
+					}
+				} else if (p.Provider === "Gotify") {
+					const gotify = p.Gotify;
+					const rawURL = (gotify?.URL || "").trim();
+					if (!rawURL) {
+						errs[`${prefix}.Gotify.URL`] = "URL required.";
+					} else {
+						const urlErr = ValidateURL(rawURL);
+						if (urlErr) errs[`${prefix}.Gotify.URL`] = urlErr;
+					}
+					if (!(gotify?.Token || "").trim()) {
+						errs[`${prefix}.Gotify.Token`] = "App token required.";
 					}
 				}
 			}
@@ -110,11 +126,17 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 				Enabled: true,
 				Discord: { Enabled: true, Webhook: "" },
 			};
-		} else {
+		} else if (type === "Pushover") {
 			newEntry = {
 				Provider: "Pushover",
 				Enabled: true,
 				Pushover: { Enabled: true, UserKey: "", Token: "" },
+			};
+		} else {
+			newEntry = {
+				Provider: "Gotify",
+				Enabled: true,
+				Gotify: { Enabled: true, URL: "", Token: "" },
 			};
 		}
 		setProviders([...providers, newEntry]);
@@ -167,10 +189,34 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 		setProviders(next);
 	};
 
+	const updateGotify = <K extends keyof AppConfigNotificationGotify>(
+		idx: number,
+		field: K,
+		val: AppConfigNotificationGotify[K]
+	) => {
+		const prov = providers[idx];
+		if (!prov.Gotify) return;
+		const next = providers.slice();
+		next[idx] = {
+			...prov,
+			Gotify: { ...prov.Gotify, [field]: val },
+		};
+		setProviders(next);
+	};
+
 	return (
 		<Card className="p-5 space-y-6">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Notifications</h2>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={editing}
+					hidden={editing}
+					onClick={() => sendTestNotification()}
+				>
+					Test Notifications
+				</Button>
 			</div>
 
 			{/* Global Enabled */}
@@ -206,7 +252,7 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 								className="w-72 text-xs leading-snug"
 							>
 								<p className="mb-2">
-									Turn on to send events through enabled providers (Discord, Pushover).
+									Turn on to send events through enabled providers (Discord, Pushover, Gotify).
 								</p>
 								<p className="text-[10px] text-muted-foreground">
 									Each provider must also be enabled individually.
@@ -257,11 +303,16 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 					const providerDirty = dirtyFields.Providers?.[idx] as Partial<{
 						Discord?: Partial<AppConfigNotificationDiscord>;
 						Pushover?: Partial<AppConfigNotificationPushover>;
+						Gotify?: Partial<AppConfigNotificationGotify>;
 						Enabled?: boolean;
 					}>;
-					const providerErrors = Object.entries(errors)
-						.filter((e) => e[0].startsWith(`Providers[${idx}]`))
-						.map((e) => e[1]);
+					const providerErrorEntries = Object.entries(errors).filter(([k]) =>
+						k.startsWith(`Providers[${idx}]`)
+					);
+					const providerErrors = providerErrorEntries.map(([, msg]) => msg);
+
+					// Field-level helpers (key-based)
+					const hasError = (suffix: string) => providerErrorEntries.some(([k]) => k.endsWith(suffix));
 
 					return (
 						<div
@@ -301,8 +352,8 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 								<div
 									className={cn(
 										"space-y-1",
-										providerErrors.some((e) => e.includes("Webhook")) && "rounded-md",
-										providerErrors.some((e) => e.includes("Webhook"))
+										hasError("Discord.Webhook") && "rounded-md",
+										hasError("Discord.Webhook")
 											? "border border-red-500 p-3"
 											: providerDirty?.Discord?.Webhook && "border border-amber-500 p-3"
 									)}
@@ -349,9 +400,9 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 										}}
 										aria-invalid={providerErrors.some((e) => e.includes("Webhook"))}
 									/>
-									{providerErrors
-										.filter((e) => e.toLowerCase().includes("webhook"))
-										.map((msg, i) => (
+									{providerErrorEntries
+										.filter(([k]) => k.endsWith("Discord.Webhook"))
+										.map(([, msg], i) => (
 											<p key={i} className="text-xs text-red-500">
 												{msg}
 											</p>
@@ -365,8 +416,8 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 									<div
 										className={cn(
 											"space-y-1",
-											providerErrors.some((e) => e.includes("UserKey")) && "rounded-md",
-											providerErrors.some((e) => e.includes("UserKey"))
+											hasError("Pushover.UserKey") && "rounded-md",
+											hasError("Pushover.UserKey")
 												? "border border-red-500 p-3"
 												: providerDirty?.Pushover?.UserKey && "border border-amber-500 p-3"
 										)}
@@ -408,9 +459,9 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 											onChange={(e) => updatePushover(idx, "UserKey", e.target.value)}
 											aria-invalid={providerErrors.some((e) => e.includes("UserKey"))}
 										/>
-										{providerErrors
-											.filter((e) => e.toLowerCase().includes("user key"))
-											.map((msg, i) => (
+										{providerErrorEntries
+											.filter(([k]) => k.endsWith("Pushover.UserKey"))
+											.map(([, msg], i) => (
 												<p key={i} className="text-xs text-red-500">
 													{msg}
 												</p>
@@ -419,8 +470,8 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 									<div
 										className={cn(
 											"space-y-1",
-											providerErrors.some((e) => e.includes("Token")) && "rounded-md",
-											providerErrors.some((e) => e.includes("Token"))
+											hasError("Pushover.Token") && "rounded-md",
+											hasError("Pushover.Token")
 												? "border border-red-500 p-3"
 												: providerDirty?.Pushover?.Token && "border border-amber-500 p-3"
 										)}
@@ -462,9 +513,123 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
 											onChange={(e) => updatePushover(idx, "Token", e.target.value)}
 											aria-invalid={providerErrors.some((e) => e.includes("Token"))}
 										/>
-										{providerErrors
-											.filter((e) => e.toLowerCase().includes("token"))
-											.map((msg, i) => (
+										{providerErrorEntries
+											.filter(([k]) => k.endsWith("Pushover.Token"))
+											.map(([, msg], i) => (
+												<p key={i} className="text-xs text-red-500">
+													{msg}
+												</p>
+											))}
+									</div>
+								</div>
+							)}
+
+							{/* Gotify Fields */}
+							{p.Provider === "Gotify" && p.Enabled && (
+								<div className="grid gap-3 md:grid-cols-2">
+									<div
+										className={cn(
+											"space-y-1",
+											hasError("Gotify.URL") && "rounded-md",
+											hasError("Gotify.URL")
+												? "border border-red-500 p-3"
+												: providerDirty?.Gotify?.URL && "border border-amber-500 p-3"
+										)}
+									>
+										<div className="flex items-center justify-between">
+											<Label>URL</Label>
+											{editing && (
+												<Popover>
+													<PopoverTrigger asChild>
+														<Button
+															variant="outline"
+															className="h-5 w-5 rounded-md border flex items-center justify-center text-[10px] bg-background hover:bg-muted transition"
+															aria-label="help-gotify-user-key"
+														>
+															?
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent
+														side="right"
+														align="center"
+														sideOffset={8}
+														className="w-64 text-xs leading-snug"
+													>
+														<p className="mb-1 font-medium">Gotify URL</p>
+														<p className="text-[11px] mb-2">
+															The base URL of your Gotify server. Domains may omit port.
+															IPv4 addresses must include a port. Example:
+															https://gotify.domain.com, http://192.168.1.10:8070 or
+															http://gotify:8070
+														</p>
+													</PopoverContent>
+												</Popover>
+											)}
+										</div>
+										<Input
+											disabled={!editing}
+											placeholder="URL"
+											value={p.Gotify?.URL || ""}
+											onChange={(e) => updateGotify(idx, "URL", e.target.value)}
+											aria-invalid={providerErrors.some((e) => e.includes("URL"))}
+										/>
+										{providerErrorEntries
+											.filter(([k]) => k.endsWith("Gotify.URL"))
+											.map(([, msg], i) => (
+												<p key={i} className="text-xs text-red-500">
+													{msg}
+												</p>
+											))}
+									</div>
+									<div
+										className={cn(
+											"space-y-1",
+											hasError("Gotify.Token") && "rounded-md",
+											hasError("Gotify.Token")
+												? "border border-red-500 p-3"
+												: providerDirty?.Gotify?.Token && "border border-amber-500 p-3"
+										)}
+									>
+										<div className="flex items-center justify-between">
+											<Label>App Token</Label>
+											{editing && (
+												<Popover>
+													<PopoverTrigger asChild>
+														<Button
+															variant="outline"
+															className="h-5 w-5 rounded-md border flex items-center justify-center text-[10px] bg-background hover:bg-muted transition"
+															aria-label="help-gotify-app-token"
+														>
+															?
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent
+														side="right"
+														align="center"
+														sideOffset={8}
+														className="w-64 text-xs leading-snug"
+													>
+														<p className="mb-1 font-medium">Gotify App Token</p>
+														<p className="text-[11px] mb-2">
+															Create or view under "Apps" in Gotify.
+														</p>
+														<p className="text-[10px] text-muted-foreground">
+															Needed to send messages via the API.
+														</p>
+													</PopoverContent>
+												</Popover>
+											)}
+										</div>
+										<Input
+											disabled={!editing}
+											placeholder="App token"
+											value={p.Gotify?.Token || ""}
+											onChange={(e) => updateGotify(idx, "Token", e.target.value)}
+											aria-invalid={providerErrors.some((e) => e.includes("Token"))}
+										/>
+										{providerErrorEntries
+											.filter(([k]) => k.endsWith("Gotify.Token"))
+											.map(([, msg], i) => (
 												<p key={i} className="text-xs text-red-500">
 													{msg}
 												</p>

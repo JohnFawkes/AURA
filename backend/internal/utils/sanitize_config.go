@@ -38,6 +38,12 @@ func SanitizedCopy() modals.Config {
 					UserKey: masking.MaskToken(p.Pushover.UserKey),
 				}
 			}
+			if p.Gotify != nil {
+				cp.Gotify = &modals.Config_Notification_Gotify{
+					URL:   p.Gotify.URL, // URL is not sensitive
+					Token: masking.MaskToken(p.Gotify.Token),
+				}
+			}
 			c.Notifications.Providers[i] = cp
 		}
 	}

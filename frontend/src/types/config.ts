@@ -76,6 +76,7 @@ export interface AppConfigNotificationProviders {
 	Enabled: boolean;
 	Discord?: AppConfigNotificationDiscord;
 	Pushover?: AppConfigNotificationPushover;
+	Gotify?: AppConfigNotificationGotify;
 }
 
 export interface AppConfigNotificationDiscord {
@@ -86,5 +87,11 @@ export interface AppConfigNotificationDiscord {
 export interface AppConfigNotificationPushover {
 	Enabled: boolean;
 	UserKey: string;
+	Token: string;
+}
+
+export interface AppConfigNotificationGotify {
+	Enabled: boolean;
+	URL: string;
 	Token: string;
 }

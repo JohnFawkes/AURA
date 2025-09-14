@@ -30,6 +30,11 @@ func SendAppStartNotification() logging.StandardError {
 				if Err.Message != "" {
 					logging.LOG.ErrorWithLog(Err)
 				}
+			case "Gotify":
+				Err := SendGotifyNotification(provider.Gotify, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.ErrorWithLog(Err)
+				}
 			}
 		}
 	}

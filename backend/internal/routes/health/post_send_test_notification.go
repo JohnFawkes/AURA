@@ -38,6 +38,12 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 					logging.LOG.Warn(Err.Message)
 					errorSending = true
 				}
+			case "Gotify":
+				Err := notifications.SendGotifyNotification(provider.Gotify, startMessage, imageURL, title)
+				if Err.Message != "" {
+					logging.LOG.Warn(Err.Message)
+					errorSending = true
+				}
 			}
 		}
 	}

@@ -56,7 +56,7 @@ function isValidIPv4(host: string): boolean {
 	});
 }
 
-function validateMediaServerURL(raw: string): string | null {
+export function ValidateURL(raw: string): string | null {
 	const value = raw.trim();
 	if (!/^https?:\/\//i.test(value)) return "Must start with http:// or https://";
 
@@ -132,7 +132,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 		// URL
 		if (!value.URL.trim()) errs.URL = "URL is required.";
 		else {
-			const urlErr = validateMediaServerURL(value.URL.trim());
+			const urlErr = ValidateURL(value.URL.trim());
 			if (urlErr) errs.URL = urlErr;
 		}
 

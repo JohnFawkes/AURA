@@ -450,6 +450,34 @@ func CheckConfigDifferences_Notifications(oldNotifications, newNotifications mod
 						}
 
 					}
+
+				case "Gotify":
+					var oldGotifyURL, newGotifyURL string
+					if oldProv.Gotify != nil {
+						oldGotifyURL = strings.TrimSpace(oldProv.Gotify.URL)
+					}
+					if newProv.Gotify != nil {
+						newGotifyURL = strings.TrimSpace(newProv.Gotify.URL)
+					}
+					// URL is never masked; any difference is a real change
+					if oldGotifyURL != newGotifyURL {
+						logging.LOG.Info(fmt.Sprintf(
+							"Notifications.Gotify.URL changed: '%s' -> '%s'", oldGotifyURL, newGotifyURL))
+						changed = true
+					}
+					// Token may still arrive masked; keep existing mask logic
+					if oldProv.Gotify != nil && newProv.Gotify != nil {
+						if oldProv.Gotify.Token != newProv.Gotify.Token {
+							if !isMaskedWebhook(newProv.Gotify.Token) {
+								logging.LOG.Info(fmt.Sprintf(
+									"Notifications.Gotify.Token changed: '%s' -> '%s'",
+									oldProv.Gotify.Token, newProv.Gotify.Token))
+								changed = true
+							} else {
+								newProv.Gotify.Token = oldProv.Gotify.Token
+							}
+						}
+					}
 				default:
 					// Unknown provider type: nothing more to compare
 				}

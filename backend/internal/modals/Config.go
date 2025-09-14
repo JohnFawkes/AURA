@@ -86,6 +86,7 @@ type Config_Notification_Providers struct {
 	Enabled  bool                          `yaml:"Enabled,omitempty"`  // Whether this notification method is enabled
 	Discord  *Config_Notification_Discord  `yaml:"Discord,omitempty"`  // Discord notification settings
 	Pushover *Config_Notification_Pushover `yaml:"Pushover,omitempty"` // Pushover notification settings
+	Gotify   *Config_Notification_Gotify   `yaml:"Gotify,omitempty"`   // Gotify notification settings
 }
 
 type Config_Notification_Discord struct {
@@ -95,4 +96,9 @@ type Config_Notification_Discord struct {
 type Config_Notification_Pushover struct {
 	Token   string `yaml:"Token,omitempty"`   // Token for the Pushover notification provider.
 	UserKey string `yaml:"UserKey,omitempty"` // UserKey for the Pushover notification provider.
+}
+
+type Config_Notification_Gotify struct {
+	URL   string `yaml:"URL,omitempty"`   // URL for the Gotify notification provider.
+	Token string `yaml:"Token,omitempty"` // Token for the Gotify notification provider.
 }

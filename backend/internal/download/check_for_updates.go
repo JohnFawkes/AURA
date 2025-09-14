@@ -279,6 +279,22 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 								),
 								"Image Updated",
 							)
+						case "Gotify":
+							notifications.SendGotifyNotification(
+								provider.Gotify,
+								fmt.Sprintf(
+									"%s has been updated for %s in set %s",
+									mediaserver.GetFileDownloadName(file),
+									dbSavedItem.MediaItem.Title,
+									dbPosterSet.PosterSetID,
+								),
+								fmt.Sprintf("%s/%s?v=%s&key=jpg",
+									"https://images.mediux.io/assets",
+									file.ID,
+									file.Modified.Format("20060102150405"),
+								),
+								"Image Updated",
+							)
 						}
 					}
 				}
