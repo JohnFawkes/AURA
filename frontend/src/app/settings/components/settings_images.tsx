@@ -1,5 +1,9 @@
 "use client";
 
+import { postClearTempImagesFolder } from "@/app/settings/services/temp_images";
+import { ReturnErrorMessage } from "@/services/api.shared";
+import { toast } from "sonner";
+
 import React, { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -45,10 +49,38 @@ export const ImagesSection: React.FC<ImagesSectionProps> = ({
 		errorsUpdate(errors);
 	}, [errorsUpdate]);
 
+	const clearTempImagesFolder = async () => {
+		try {
+			const response = await postClearTempImagesFolder();
+
+			if (response.status === "error") {
+				toast.error(response.error?.Message || "Failed to clear temp images folder");
+				return;
+			}
+
+			toast.success(response.data || "Temp images folder cleared successfully");
+		} catch (error) {
+			const errorResponse = ReturnErrorMessage<void>(error);
+			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
+		}
+	};
+
 	return (
 		<Card className="p-5 space-y-1">
-			<h2 className="text-xl font-semibold">Images</h2>
-
+			<div className="flex items-center justify-between">
+				<h2 className="text-xl font-semibold">Images</h2>
+				<Button
+					variant="destructive"
+					size="sm"
+					hidden={editing}
+					disabled={editing}
+					onClick={() => {
+						clearTempImagesFolder();
+					}}
+				>
+					Clear Temp Images Folder
+				</Button>
+			</div>
 			{/* Cache Images */}
 			<div
 				className={cn(
