@@ -75,7 +75,7 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the user has enabled caching, then save the image to the temporary folder
-	if config.Global.CacheImages {
+	if config.Global.Images.CacheImages.Enabled {
 		Err = utils.CheckFolderExists(tmpFolder)
 		if Err.Message != "" {
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)

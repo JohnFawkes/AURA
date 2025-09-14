@@ -13,7 +13,7 @@ import (
 
 func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) logging.StandardError {
 
-	if !config.Global.SaveImageNextToContent {
+	if !config.Global.Images.SaveImageNextToContent.Enabled {
 		Err := UpdateSetOnly(plex, file)
 		if Err.Message != "" {
 			return Err
@@ -125,7 +125,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		}
 	}
 
-	if config.Global.Dev.Enable {
+	if config.Global.Dev.Enabled {
 		newFilePath = path.Join(config.Global.Dev.LocalPath, newFilePath)
 	}
 
@@ -162,7 +162,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 
 	// If cacheImages is False, delete the image from the temporary folder
 	// 		This is to prevent the temporary folder from getting too large
-	if !config.Global.CacheImages {
+	if !config.Global.Images.CacheImages.Enabled {
 		logging.LOG.Trace("Deleting image from temporary folder")
 		err := os.Remove(filePath)
 		if err != nil {

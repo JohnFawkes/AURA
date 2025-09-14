@@ -116,7 +116,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.St
 	// Else set it to posters
 
 	requestMethod := "PUT"
-	if !config.Global.SaveImageNextToContent {
+	if !config.Global.Images.SaveImageNextToContent.Enabled {
 		requestMethod = "POST"
 		if posterType == "backdrop" {
 			posterType = "arts"
