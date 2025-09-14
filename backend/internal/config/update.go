@@ -40,6 +40,7 @@ func SaveConfigToFile(newConfig modals.Config) logging.StandardError {
 	yamlFile := path.Join(configPath, "config.yaml")
 
 	newConfig.Logging.File = ""
+	newConfig.MediaServer.UserID = ""
 
 	// Save the new config to a file
 	data, marshalErr := yaml.Marshal(newConfig)

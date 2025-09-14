@@ -87,6 +87,7 @@ func AddRoutes(r *chi.Mux) {
 			// Config Routes
 			r.Get("/config", route_config.GetConfig)
 			r.Get("/config/mediaserver/type", route_config.GetMediaServerType)
+			r.Post("/config/get/mediaserver/sections", mediaserver.GetAllLibrariesWithRequest)
 			r.Post("/config/update", route_config.UpdateConfig)
 			r.Post("/config/validate/mediaserver", route_config.ValidateMediaServerNewInfoConnection)
 			r.Post("/config/validate/mediux", route_config.ValidateMediuxToken)
@@ -140,6 +141,7 @@ func addOnboardingRoutes(r chi.Router) {
 
 			// Config Routes
 			r.Post("/config/validate/mediaserver", route_config.ValidateMediaServerNewInfoConnection)
+			r.Post("/config/get/mediaserver/sections", mediaserver.GetAllLibrariesWithRequest)
 			r.Post("/config/validate/mediux", route_config.ValidateMediuxToken)
 			r.Post("/config/update", route_config.UpdateConfig)
 

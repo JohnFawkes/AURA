@@ -57,7 +57,7 @@ export async function postMediaServerNewInfoConnectionStatus(
 
 export const checkMediaServerNewInfoConnectionStatus = async (
 	mediaServerInfo: AppConfigMediaServer
-): Promise<{ ok: boolean; message: string }> => {
+): Promise<{ ok: boolean; message: string; data: AppConfigMediaServer | null }> => {
 	try {
 		const loadingToast = toast.loading(`Checking connection to ${mediaServerInfo.Type}...`);
 		const response = await postMediaServerNewInfoConnectionStatus(mediaServerInfo);
@@ -66,11 +66,16 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 			return {
 				ok: false,
 				message: response.error?.Message || "Couldn't connect to media server. Check the URL and Token",
+				data: null,
 			};
 		}
 		toast.dismiss(loadingToast);
 		toast.success(`Successfully connected to ${mediaServerInfo.Type}`, { duration: 1000 });
-		return { ok: true, message: `Successfully connected to ${mediaServerInfo.Type}` };
+		return {
+			ok: true,
+			message: `Successfully connected to ${mediaServerInfo.Type}`,
+			data: response.data ? mediaServerInfo : null,
+		};
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
 		toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
@@ -79,6 +84,7 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		return {
 			ok: false,
 			message: errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token",
+			data: null,
 		};
 	}
 };

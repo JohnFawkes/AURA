@@ -23,6 +23,9 @@ type MediaServer interface {
 	// Get the library section info
 	FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, logging.StandardError)
 
+	// Get the library section options
+	FetchLibrarySectionOptions() ([]string, logging.StandardError)
+
 	// Get the library section items
 	FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.StandardError)
 
@@ -76,6 +79,25 @@ func (e *EmbyJellyServer) FetchLibrarySectionInfo(library *modals.Config_MediaSe
 		return false, Err
 	}
 	return found, logging.StandardError{}
+}
+
+func (p *PlexServer) FetchLibrarySectionOptions() ([]string, logging.StandardError) {
+	// Fetch the library section from Plex
+	options, Err := plex.FetchLibrarySectionOptions()
+	if Err.Message != "" {
+		return nil, Err
+	}
+	return options, logging.StandardError{}
+}
+
+func (e *EmbyJellyServer) FetchLibrarySectionOptions() ([]string, logging.StandardError) {
+	// Fetch the library section from Emby/Jellyfin
+	InitUserID()
+	options, Err := emby_jellyfin.FetchLibrarySectionOptions()
+	if Err.Message != "" {
+		return nil, Err
+	}
+	return options, logging.StandardError{}
 }
 
 func (p *PlexServer) FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex string) ([]modals.MediaItem, int, logging.StandardError) {
@@ -180,7 +202,6 @@ func InitUserID() logging.StandardError {
 	// Parse the base URL
 	baseURL, err := url.Parse(config.Global.MediaServer.URL)
 	if err != nil {
-
 		Err.Message = "Failed to parse base URL"
 		Err.HelpText = "Ensure the Media Server URL is correctly configured in the settings."
 		Err.Details = fmt.Sprintf("Base URL: %s", config.Global.MediaServer.URL)
