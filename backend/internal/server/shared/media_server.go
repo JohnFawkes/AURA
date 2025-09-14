@@ -239,19 +239,6 @@ func CheckPlexConnection() logging.StandardError {
 	if Err.Message != "" {
 		return Err
 	}
-	logging.LOG.Trace(fmt.Sprintf("Plex Media Server Version: %s", version))
-
-	// Make a GET request to the Plex server
-	response, _, Err := utils.MakeHTTPRequest(config.Global.MediaServer.URL, http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return Err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		Err.Message = fmt.Sprintf("Failed to connect to Plex Media Server. Status code: '%d'. Possibly a bad token", response.StatusCode)
-		return Err
-	}
 
 	logging.LOG.Info(fmt.Sprintf("Successfully connected to Plex Media Server (Version: %s)", version))
 
