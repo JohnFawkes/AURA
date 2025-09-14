@@ -32,10 +32,10 @@ func LoadYamlConfig() {
 		configPath = "/config"
 	}
 
-	// Check for a config.yml or config.yaml file
-	yamlFile := path.Join(configPath, "config.yml")
+	// Check for a config.yaml or config.yml file
+	yamlFile := path.Join(configPath, "config.yaml")
 	if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
-		yamlFile = path.Join(configPath, "config.yaml")
+		yamlFile = path.Join(configPath, "config.yml")
 		if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
 			logging.LOG.Error(fmt.Sprintf("Config file not found in '%s'", configPath))
 			return
@@ -45,14 +45,14 @@ func LoadYamlConfig() {
 	// Read the YAML file
 	data, err := os.ReadFile(yamlFile)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("failed to read config.yml file: %s", err.Error()))
+		logging.LOG.Error(fmt.Sprintf("failed to read config.yaml file: %s", err.Error()))
 		return
 	}
 
 	// Parse the YAML file into a Config struct
 	var config modals.Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		logging.LOG.Error(fmt.Sprintf("failed to parse config.yml file: %s", err.Error()))
+		logging.LOG.Error(fmt.Sprintf("failed to parse config.yaml file: %s", err.Error()))
 		return
 	}
 

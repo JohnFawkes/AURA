@@ -18,7 +18,7 @@ To install aura using Docker Compose, follow these steps:
     cd aura
     ```
 
-2. **Tweak the Docker Compose File**: Open the `docker-compose.yml` file in a text editor and adjust the settings to match your environment. You may need to set the correct paths for volumes and ports.
+2. **Tweak the Docker Compose File**: Open the `docker-compose.yaml` file in a text editor and adjust the settings to match your environment. You may need to set the correct paths for volumes and ports.
 
 3. **Log in to ghcr.io** (if required): If you need to pull images from GitHub Container Registry, log in using:
 
@@ -26,9 +26,7 @@ To install aura using Docker Compose, follow these steps:
     docker login ghcr.io
 ```
 
-4. **Create a `config.yml` File**: Before running the application, create a `config.yml` file in the `/config` directory of your Docker container. You can use the [config.yml.sample](https://raw.githubusercontent.com/mediux-team/aura/master/config.yml.sample) as a template.
-
-5. **Run the Application**: Use Docker Compose to build and run the application:
+4. **Run the Application**: Use Docker Compose to build and run the application:
 
     ```bash
     docker-compose up --build
@@ -36,6 +34,6 @@ To install aura using Docker Compose, follow these steps:
 
     The web interface will now be available at `http://localhost:3000`.
 
-6. **Access the Web UI**: Open your web browser and navigate to `http://localhost:3000` to access the aura web interface.
+5. **Access the Web UI**: Open your web browser and navigate to `http://localhost:3000` to access the aura web interface.
 
 **Note**: Ensure that Docker is installed and running on your system before executing these commands. You can find more information about Docker installation on the [official Docker website](https://docs.docker.com/get-docker/).

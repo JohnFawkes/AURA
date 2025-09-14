@@ -8,17 +8,16 @@ permalink: /config
 
 # Configuration
 
-aura uses a `config.yml` file for configuration. You can setup the configuration file during the onboarding process. However, if you would like, below are the instructions for creating and modifying the `config.yml` file.
+aura uses a `config.yaml` file for configuration. You can setup the configuration file during the onboarding process. However, if you would like, below are the instructions for creating and modifying the `config.yaml` file.
 
-1. **Create the `config.yml` File**:
+1. **Create the `config.yaml` File**:
 
-    - You can create a new file named `config.yml` in the root directory of your aura installation.
-    - Alternatively, you can use the sample configuration file provided in the repository as a starting point. You can find it [here](https://raw.githubusercontent.com/mediux-team/aura/master/config.yml.sample).
+    - You can create a new file named `config.yaml` in the root directory of your aura installation.
 
-2. **Edit the `config.yml` File**:
-    - Open the `config.yml` file in a text editor of your choice.
+2. **Edit the `config.yaml` File**:
+    - Open the `config.yaml` file in a text editor of your choice.
     - Modify the configuration settings according to your needs.
-3. **Place the `config.yml` File**:
+3. **Place the `config.yaml` File**:
     - Place your configuration file in the `/config` directory on your Docker container.
 
 ---
@@ -287,6 +286,11 @@ Notifications:
           Pushover:
               Token: YOUR_PUSHOVER_APP_TOKEN
               UserKey: YOUR_PUSHOVER_USER_KEY
+        - Provider: "Gotify"
+          Enabled: true
+          Gotify:
+              URL: YOUR_GOTIFY_SERVER_URL
+              Token: YOUR_GOTIFY_APP_TOKEN
 ```
 
 ### Structure
@@ -305,5 +309,7 @@ Notifications:
 | Discord.Webhook  | yes (when Provider=Discord & Enabled)  | Full Discord webhook URL                     |
 | Pushover.Token   | yes (when Provider=Pushover & Enabled) | Your app token                               |
 | Pushover.UserKey | yes (when Provider=Pushover & Enabled) | Your user key                                |
+| Gotify.URL       | yes (when Provider=Gotify & Enabled)   | Base URL for your Gotify server              |
+| Gotify.Token     | yes (when Provider=Gotify & Enabled)   | Your Gotify app token                        |
 
 ---

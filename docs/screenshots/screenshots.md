@@ -142,8 +142,6 @@ _View all Poster Sets uploaded by a specific user, including image counts and [B
 ![Settings Page Screenshot](assets/demo/screenshots/settings_page.png)
 _View various settings for the application._
 
-> **Note:** Editing is not available from this page. Please edit your `config.yml` file manually.
-
 ---
 
 ## Saved Sets Page
