@@ -10,10 +10,16 @@ export const postLogin = async (password: string): Promise<APIResponse<{ token: 
 	try {
 		const response = await apiClient.post<APIResponse<{ token: string }>>(`/login`, { password });
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const token = response.data?.data?.token || (response.data as any)?.token;
+		const token =
+			response.data?.data?.token ??
+			(typeof response.data === "object" &&
+			response.data !== null &&
+			"token" in response.data &&
+			typeof (response.data as Record<string, unknown>).token === "string"
+				? (response.data as Record<string, unknown>).token
+				: undefined);
 		if (token && typeof window !== "undefined") {
-			localStorage.setItem("aura-auth-token", token);
+			localStorage.setItem("aura-auth-token", String(token));
 		}
 
 		log("api.auth - Login succeeded");
