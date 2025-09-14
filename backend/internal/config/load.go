@@ -22,6 +22,7 @@ import (
 // Returns:
 //   - An error if the configuration file is missing, unreadable, or invalid.
 func LoadYamlConfig() {
+	logging.LOG.Debug("Attempting to load configuration from YAML file...")
 	// Use an environment variable to determine the config path
 	// By default, it will use /config
 	// This is useful for testing and local development
@@ -61,7 +62,7 @@ func LoadYamlConfig() {
 
 func ValidateConfig(config *modals.Config) {
 
-	logging.LOG.Info("Validating configuration file...")
+	logging.LOG.Debug("Validating configuration file...")
 
 	// Check if config is nil
 	if config == nil {
