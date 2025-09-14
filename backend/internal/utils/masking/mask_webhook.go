@@ -1,4 +1,4 @@
-package config
+package masking
 
 import "strings"
 
@@ -28,17 +28,4 @@ func MaskWebhookURL(url string) string {
 	parts[len(parts)-1] = maskedToken
 
 	return strings.Join(parts, "/")
-}
-
-// MaskToken masks the token by keeping only the last 4 characters visible.
-// If the token is shorter than 4 characters, it masks all but the last character.
-// If the token is empty, it returns "N/A".
-func MaskToken(token string) string {
-	if token == "" {
-		return "N/A"
-	}
-	if len(token) < 4 {
-		return "***" + token[len(token)-1:]
-	}
-	return "***" + token[len(token)-4:]
 }
