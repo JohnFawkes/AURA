@@ -3,8 +3,6 @@ package config
 import (
 	"aura/internal/logging"
 	"aura/internal/modals"
-	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 
@@ -18,13 +16,6 @@ func UpdateConfig(newConfig modals.Config) logging.StandardError {
 	Err = SaveConfigToFile(newConfig)
 	if Err.Message != "" {
 		return Err
-	}
-
-	jsonConfig, err := json.MarshalIndent(newConfig, "", "  ")
-	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to marshal config to JSON: %v", err))
-	} else {
-		logging.LOG.Info(fmt.Sprintf("Saving New Config (JSON): %s", string(jsonConfig)))
 	}
 
 	logging.SetLogLevel(newConfig.Logging.Level)
