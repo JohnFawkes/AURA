@@ -117,7 +117,7 @@ export const patchSavedItemInDB = async (
 export interface AutodownloadResult {
 	MediaItemTitle: string;
 	Sets: AutodownloadSetResult[];
-	OverAllResult: "Error" | "Warning" | "Success" | "Skipped";
+	OverAllResult: "Error" | "Warn" | "Success" | "Skipped";
 	OverAllResultMessage: string;
 }
 
