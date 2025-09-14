@@ -326,8 +326,6 @@ func ValidateMediaServerConfig(MediaServer modals.Config_MediaServer) (bool, []s
 	// Trim the trailing slash from the URL
 	MediaServer.URL = strings.TrimSuffix(MediaServer.URL, "/")
 
-	logging.LOG.Info(fmt.Sprintf("MediaServer: %v", MediaServer))
-
 	return true, errorMsgs, MediaServer
 }
 
