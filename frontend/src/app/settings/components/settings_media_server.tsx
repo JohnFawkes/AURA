@@ -39,10 +39,11 @@ const SEASON_NAMING_CONVENTION_REQUIRED_TYPES = new Set<string>(["Plex"]);
 
 // Basic URL validation rules:
 // 1. Must start with http:// or https://
-// 2. Host may be a domain or an IPv4 address
+// 2. Host may be a domain, IPv4 address or docker name
 // 3. If host is an IPv4 address, a port MUST be present
 // 4. Domain must contain at least one dot and a 2+ char TLD
-const domainHostRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+const domainHostRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/; // multi-label domain
+const singleLabelHostRegex = /^[a-zA-Z0-9-]+$/; // docker / single label
 
 function isValidIPv4(host: string): boolean {
 	if (!/^[0-9.]+$/.test(host)) return false;
@@ -70,23 +71,39 @@ function validateMediaServerURL(raw: string): string | null {
 	if (protocol !== "http:" && protocol !== "https:") return "Only http and https are allowed.";
 
 	const host = parsed.hostname;
-	const ipv4 = isValidIPv4(host);
+	const isIPv4 = isValidIPv4(host);
 	const looksNumeric = /^[0-9.]+$/.test(host);
 
-	// Numeric with dots but not valid IPv4
-	if (looksNumeric && !ipv4) return "Invalid IPv4 address (must have 4 octets).";
+	// Reject numeric-but-not-IPv4 like 999.10.1
+	if (looksNumeric && !isIPv4) return "Invalid IPv4 address (must have 4 octets).";
 
-	if (ipv4) {
-		if (!parsed.port) return "IP address requires a port number.";
+	// Port validation helper
+	const validatePort = () => {
+		if (!parsed.port) return "Port is required.";
 		const portNum = Number(parsed.port);
 		if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
-	} else {
-		if (!domainHostRegex.test(host)) return "Invalid domain (must include a dot and valid TLD).";
+		return "";
+	};
+
+	if (isIPv4) {
+		if (!parsed.port) return "IP address requires a port number.";
+		const msg = validatePort();
+		if (msg != "") return msg;
+	} else if (host.includes(".")) {
+		// Domain form (plex.domain.com). Port optional.
+		if (!domainHostRegex.test(host)) return "Invalid domain.";
 		if (parsed.port) {
 			const portNum = Number(parsed.port);
 			if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
 		}
+	} else {
+		// Single-label docker hostname (e.g. plex)
+		if (!singleLabelHostRegex.test(host)) return "Invalid host.";
+		// Require a port for single-label hosts
+		const msg = validatePort();
+		if (msg != "") return msg;
 	}
+
 	return null;
 }
 
@@ -330,7 +347,7 @@ export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
 							>
 								<p>
 									Base server URL. Domains may omit port. IPv4 addresses must include a port. Example:
-									https://server.example.com or http://192.168.1.10:32400
+									https://plex.domain.com, http://192.168.1.10:32400 or http://plex:32400
 								</p>
 							</PopoverContent>
 						</Popover>
