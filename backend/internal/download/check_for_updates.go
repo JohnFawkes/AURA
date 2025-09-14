@@ -333,7 +333,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 			result.OverAllResult = "Error"
 			result.OverAllResultMessage = "All set downloads failed"
 		case errorCount > 0 && successCount > 0:
-			result.OverAllResult = "Warning"
+			result.OverAllResult = "Warn"
 			result.OverAllResultMessage = fmt.Sprintf("Success %d | Error %d | Skipped %d",
 				successCount, errorCount, skippedCount)
 		case successCount == totalCount:
