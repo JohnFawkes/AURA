@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 
 	"github.com/robfig/cron/v3"
 )
@@ -24,97 +25,114 @@ var (
 	APP_PORT    = 8888
 )
 
+// activeHandler dynamically switches from onboarding router to main app router.
+var activeHandler atomic.Value
+
+// cron instance started only after app is fully configured
+var cronInstance *cron.Cron
+
 func main() {
 
 	// Print the banner with application details on startup
-	utils.PrintBanner(
-		APP_VERSION,
-		Author,
-		License,
-		APP_PORT,
-	)
+	utils.PrintBanner(APP_VERSION, Author, License, APP_PORT)
 
-	// Load the configuration file
-	// If the config file is not found, exit the program
-	Err := config.LoadYamlConfig()
-	if Err.Message != "" {
-		logging.LOG.ErrorWithLog(Err)
-		return
+	Err := logging.StandardError{}
+
+	// Load (if exists) + validate
+	config.LoadYamlConfig()
+	if config.ConfigLoaded {
+		config.ValidateConfig(config.Global)
 	}
 
-	// Check if the config file is valid
-	valid := config.ValidateConfig()
-	if !valid {
-		return
-	}
-
-	// Print the configuration settings
-	config.PrintConfig()
-
-	// Validate Mediux Token
-	Err = utils.ValidateMediUXToken(config.Global.Mediux.Token)
-	if Err.Message != "" {
-		logging.LOG.ErrorWithLog(Err)
-		return
-	}
-
-	// For Jellyfin/Emby, we need to get the User ID for the Admin user
-	Err = mediaserver_shared.InitUserID()
-	if Err.Message != "" {
-		logging.LOG.ErrorWithLog(Err)
-		return
-	}
-
-	// Initialize the database
-	init := database.InitDB()
-	if !init {
-		return
-	}
-
-	// Create a new router
-	r := routes.NewRouter()
-
-	// Create a new cron instance
-	c := cron.New()
-
-	// Add a cron job for auto-downloading posters
-	c.AddFunc(config.Global.AutoDownload.Cron, func() {
-		// Call the auto download function if enabled
-		if config.Global.AutoDownload.Enabled {
-			download.CheckForUpdatesToPosters()
+	// Set onboarding completion hook (called by /onboarding/apply success)
+	routes.OnboardingComplete = func() {
+		logging.LOG.Info("Onboarding Complete: Running Preflight")
+		e := logging.StandardError{}
+		if !finishPreflight(&e) {
+			logging.LOG.Error("Preflight failed after onboarding: " + e.Message)
+			return
 		}
-	})
-
-	// Start the cron tasks
-	if config.Global.AutoDownload.Enabled {
-		logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", config.Global.AutoDownload.Cron))
-		c.Start()
+		startRuntimeServices()
+		// Swap to full router (now config is valid)
+		activeHandler.Store(routes.NewRouter())
+		logging.LOG.Info("Onboarding complete. Main routes active.")
 	}
 
-	// Send a notification to Discord when the application starts if not in development mode
-	if !strings.Contains(APP_VERSION, "dev") {
-		// If notifications are enabled
-		if config.Global.Notifications.Enabled {
-			Err := notifications.SendAppStartNotification()
-			if Err.Message != "" {
-				logging.LOG.ErrorWithLog(Err)
+	// Build initial router (either onboarding-only or full)
+	initialRouter := routes.NewRouter()
+	activeHandler.Store(initialRouter)
+
+	// If already valid at startup, run preflight + runtime services
+	if config.ConfigLoaded && config.ConfigValid {
+		if finishPreflight(&Err) {
+			startRuntimeServices()
+		} else {
+			logging.LOG.Error("Preflight failed on startup: " + Err.Message)
+		}
+	}
+
+	// Start HTTP server using dispatch (so we can atomically swap routers)
+	logging.LOG.Info(fmt.Sprintf("Starting HTTP server on :%d", APP_PORT))
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), http.HandlerFunc(dispatch)); err != nil {
+		logging.LOG.Error(fmt.Sprintf("Error starting server: %s", err.Error()))
+	}
+}
+
+// dispatch forwards to the currently active router.
+func dispatch(w http.ResponseWriter, r *http.Request) {
+	h := activeHandler.Load().(http.Handler)
+	h.ServeHTTP(w, r)
+}
+
+// Called once config becomes valid (either at boot or after onboarding)
+func startRuntimeServices() {
+	// Init DB
+	if ok := database.InitDB(); !ok {
+		logging.LOG.Error("Database initialization failed; application not fully started.")
+		return
+	}
+
+	// Schedule auto-download if enabled
+	cronInstance = cron.New()
+	if config.ConfigLoaded && config.ConfigValid && config.Global.AutoDownload.Enabled {
+		_, err := cronInstance.AddFunc(config.Global.AutoDownload.Cron, func() {
+			if config.Global.AutoDownload.Enabled {
+				download.CheckForUpdatesToPosters()
 			}
+		})
+		if err != nil {
+			logging.LOG.Error(fmt.Sprintf("Failed to schedule AutoDownload cron: %v", err))
+		} else {
+			logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", config.Global.AutoDownload.Cron))
+			cronInstance.Start()
+		}
+	}
+
+	// Send notification (only if not dev & notifications enabled)
+	if !strings.Contains(APP_VERSION, "dev") &&
+		config.Global.Notifications.Enabled {
+		if Err := notifications.SendAppStartNotification(); Err.Message != "" {
+			logging.LOG.ErrorWithLog(Err)
 		}
 	}
 
 	go func() {
-		// On boot, we will fetch all sections and items from the media server
 		logging.LOG.Info("Fetching all items from the media server")
 		mediaserver.GetAllSectionsAndItems()
 	}()
+}
 
-	go func() {
-		// Start the API server
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), r); err != nil {
-			logging.LOG.Error(fmt.Sprintf("Error starting server: %s", err.Error()))
-		}
-	}()
-
-	select {}
-
+// Perform token/userID preflight
+func finishPreflight(Err *logging.StandardError) bool {
+	*Err = utils.ValidateMediuxToken(config.Global.Mediux.Token)
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(*Err)
+		return false
+	}
+	*Err = mediaserver_shared.InitUserID()
+	if Err.Message != "" {
+		logging.LOG.ErrorWithLog(*Err)
+		return false
+	}
+	return true
 }
