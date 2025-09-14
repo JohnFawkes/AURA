@@ -63,15 +63,18 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		const response = await postMediaServerNewInfoConnectionStatus(mediaServerInfo);
 		if (response.status === "error") {
 			toast.dismiss(loadingToast);
-			return { ok: false, message: response.error?.Message || "Token invalid" };
+			return {
+				ok: false,
+				message: response.error?.Message || "Couldn't connect to media server. Check the URL and Token",
+			};
 		}
 		toast.dismiss(loadingToast);
-		toast.success(`Successfully connected to ${mediaServerInfo.Type}`, { duration: 750 });
+		toast.success(`Successfully connected to ${mediaServerInfo.Type}`, { duration: 1000 });
 		return { ok: true, message: `Successfully connected to ${mediaServerInfo.Type}` };
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
 		toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
-			duration: 750,
+			duration: 1000,
 		});
 		return {
 			ok: false,

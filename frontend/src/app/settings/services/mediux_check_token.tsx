@@ -27,18 +27,17 @@ export const checkMediuxNewTokenStatusResult = async (
 	mediuxInfo: AppConfigMediux
 ): Promise<{ ok: boolean; message: string }> => {
 	try {
-		const loadingToast = toast.loading(`Checking connection to MediUX...`);
 		const response = await postMediuxNewTokenStatus(mediuxInfo);
 		if (response.status === "error") {
-			toast.dismiss(loadingToast);
+			toast.error(response.error?.Message || "Couldn't connect to MediUX. Check the Token");
 			return { ok: false, message: response.error?.Message || "Token invalid" };
 		}
-		toast.dismiss(loadingToast);
-		toast.success(`Successfully connected to MediUX`, { duration: 750 });
+
+		toast.success(`Successfully connected to MediUX`, { duration: 1000 });
 		return { ok: true, message: "Successfully connected to MediUX" };
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.error(errorResponse.error?.Message || "Couldn't connect to MediUX. Check the Token", { duration: 750 });
+		toast.error(errorResponse.error?.Message || "Couldn't connect to MediUX. Check the Token");
 		return { ok: false, message: errorResponse.error?.Message || "Couldn't connect to MediUX. Check the Token" };
 	}
 };
