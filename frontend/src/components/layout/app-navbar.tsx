@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { useMediaStore } from "@/lib/mediaStore";
+import { useOnboardingStore } from "@/lib/onboardingStore";
 import { useHomePageStore } from "@/lib/pageHomeStore";
 import { usePaginationStore } from "@/lib/paginationStore";
 import { useSearchQueryStore } from "@/lib/searchQueryStore";
@@ -70,6 +71,26 @@ export default function Navbar() {
 	const [showDropdown, setShowDropdown] = useState(false);
 	const { setMediaItem } = useMediaStore();
 	const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
+
+	// Select only needed slices to avoid re-renders
+	const onboarding = useOnboardingStore();
+
+	// Kick off (once)
+	useEffect(() => {
+		onboarding.check();
+	}, [pathName, onboarding]);
+
+	// Redirect logic (only after hydration + first check completes)
+	useEffect(() => {
+		if (!onboarding.hasHydrated || onboarding.loading) return;
+		if (onboarding.checked) {
+			if (onboarding.needsSetup && pathName !== "/onboarding/") {
+				router.replace("/onboarding");
+			} else if (!onboarding.needsSetup && pathName === "/onboarding/") {
+				router.replace("/");
+			}
+		}
+	}, [onboarding.loading, onboarding.checked, onboarding.needsSetup, pathName, router, onboarding.hasHydrated]);
 
 	// Set the placeholder text based on the current page
 	useEffect(() => {
@@ -216,7 +237,7 @@ export default function Navbar() {
 			</div>
 
 			{/* Search Section */}
-			<div className="relative w-full max-w-2xl ml-1 mr-3">
+			<div className="relative w-full max-w-2xl ml-1 mr-3" hidden={!!onboarding.needsSetup}>
 				<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="search"
@@ -259,7 +280,7 @@ export default function Navbar() {
 			</div>
 			{/* Settings */}
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild className="cursor-pointer">
+				<DropdownMenuTrigger hidden={!!onboarding.needsSetup} asChild className="cursor-pointer">
 					<Button>
 						<SettingsIcon className="w-5 h-5" />
 					</Button>
