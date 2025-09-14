@@ -52,6 +52,5 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 		return "", Err
 	}
 
-	logging.LOG.Trace("Plex server status retrieved successfully, version: " + serverVersion)
 	return serverVersion, logging.StandardError{}
 }
