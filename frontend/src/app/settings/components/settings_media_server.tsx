@@ -40,58 +40,132 @@ const USER_ID_REQUIRED_TYPES = new Set<string>(["Emby", "Jellyfin"]);
 const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
 const SEASON_NAMING_CONVENTION_REQUIRED_TYPES = new Set<string>(["Plex"]);
 
-// Domain / host validation
+// Regex for domain names: must have at least one dot, labels with letters, digits, hyphens, TLD at least 2 letters
 const domainHostRegex = /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+// Regex for single-label hostnames (docker/container): letters, digits, hyphens only
 const singleLabelHostRegex = /^[a-zA-Z0-9-]+$/;
 
-function isValidIPv4(host: string): boolean {
-	if (!/^[0-9.]+$/.test(host)) return false;
-	const parts = host.split(".");
-	if (parts.length !== 4) return false;
-	return parts.every((p) => {
-		if (p.length === 0 || (p.length > 1 && p.startsWith("0"))) return false;
-		const n = Number(p);
-		return Number.isInteger(n) && n >= 0 && n <= 255;
-	});
+/**
+ * Validates a port number.
+ * @param port Port as string or null
+ * @param required Is port required for this connection type?
+ * @param connectionType "ipv4", "docker", "domain"
+ * @returns Error message or null if valid
+ */
+function validatePort(port: string | null, required: boolean, connectionType: string): string | null {
+	if (!port) {
+		// Allow default ports for http/https if not required
+		if (!required) return null;
+		switch (connectionType) {
+			case "ipv4":
+				return "Port is required for IPv4 addresses.";
+			case "docker":
+				return "Port is required for docker/container hostnames.";
+			case "domain":
+				// Domain names may omit port (default to 80/443)
+				return null;
+			default:
+				return "Port is required.";
+		}
+	}
+	const portNum = Number(port);
+	if (!(portNum > 0 && portNum <= 65535)) {
+		return `Port "${port}" is not valid. Must be between 1 and 65535.`;
+	}
+	return null;
 }
 
+/**
+ * Validates an IPv4 address and its port.
+ * @param host IPv4 address string
+ * @param port Port string or null
+ * @returns Error message or null if valid
+ */
+function validateIPv4Host(host: string, port: string | null): string | null {
+	const errorMsg = `"${host}" is not a valid IPv4 address. Format: x.x.x.x, each between 0-255.`;
+	if (!/^[0-9.]+$/.test(host)) return errorMsg;
+	const parts = host.split(".");
+	if (parts.length !== 4) return errorMsg;
+	for (const p of parts) {
+		if (p.length === 0 || (p.length > 1 && p.startsWith("0"))) return errorMsg;
+		const n = Number(p);
+		if (!Number.isInteger(n) || n < 0 || n > 255) return errorMsg;
+	}
+	return validatePort(port, true, "ipv4");
+}
+
+/**
+ * Validates a domain name and its port.
+ * @param host Domain name string
+ * @param port Port string or null
+ * @returns Error message or null if valid
+ */
+function validateDomainHost(host: string, port: string | null): string | null {
+	if (!domainHostRegex.test(host)) {
+		return `"${host}" is not a valid domain name. Example: example.com`;
+	}
+	return validatePort(port, false, "domain");
+}
+
+/**
+ * Validates a docker/container hostname and its port.
+ * @param host Hostname string
+ * @param port Port string or null
+ * @returns Error message or null if valid
+ */
+function validateDockerHost(host: string, port: string | null): string | null {
+	if (!singleLabelHostRegex.test(host)) {
+		return `"${host}" is not a valid docker/container host name. Only letters, numbers, and dashes allowed.`;
+	}
+	return validatePort(port, true, "docker");
+}
+
+/**
+ * Validates a full media server URL.
+ * Accepts http/https URLs for domain, IPv4, or docker hostnames.
+ * @param raw Raw URL string
+ * @returns Error message or null if valid
+ */
 export function ValidateURL(raw: string): string | null {
 	const value = raw.trim();
-	if (!/^https?:\/\//i.test(value)) return "Must start with http:// or https://";
-	let parsed: URL;
+	if (!/^https?:\/\//i.test(value)) {
+		return "Must start with http:// or https://";
+	}
+
+	let parsed;
 	try {
 		parsed = new URL(value);
 	} catch {
-		return "Invalid URL format.";
+		return "Invalid URL format. Valid options are http://example.com, http://192.168.1.10:8080, http://my-docker-host:8080";
 	}
+
 	const protocol = parsed.protocol.toLowerCase();
-	if (protocol !== "http:" && protocol !== "https:") return "Only http and https are allowed.";
-	const host = parsed.hostname;
-	const isIPv4 = isValidIPv4(host);
-	const looksNumeric = /^[0-9.]+$/.test(host);
-	if (looksNumeric && !isIPv4) return "Invalid IPv4 address (must have 4 octets).";
-	const validatePort = () => {
-		if (!parsed.port) return "Port is required.";
-		const portNum = Number(parsed.port);
-		if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
-		return "";
-	};
-	if (isIPv4) {
-		if (!parsed.port) return "IP address requires a port number.";
-		const msg = validatePort();
-		if (msg) return msg;
-	} else if (host.includes(".")) {
-		if (!domainHostRegex.test(host)) return "Invalid domain.";
-		if (parsed.port) {
-			const portNum = Number(parsed.port);
-			if (!(portNum > 0 && portNum <= 65535)) return "Invalid port number.";
-		}
-	} else {
-		if (!singleLabelHostRegex.test(host)) return "Invalid host.";
-		const msg = validatePort();
-		if (msg) return msg;
+	if (protocol !== "http:" && protocol !== "https:") {
+		return "Only http and https protocols are allowed.";
 	}
-	return null;
+
+	const host = parsed.hostname;
+	const port = parsed.port || null;
+
+	// Case 1: Host looks like IPv4
+	if (/^[0-9.]+$/.test(host)) {
+		// Extract IP and port from raw input
+		const ipMatch = value.match(/^https?:\/\/([0-9.]+)(?::\d+)?$/i);
+		const portMatch = value.match(/^https?:\/\/[0-9.]+:(\d+)$/);
+		const rawIp = ipMatch ? ipMatch[1] : host;
+		const rawPort = portMatch ? portMatch[1] : port;
+		return validateIPv4Host(rawIp, rawPort);
+	}
+
+	// Case 2: Host contains a dot (domain)
+	if (host.includes(".")) {
+		return validateDomainHost(host, port);
+	}
+
+	// Case 3: Single-label host (docker/container)
+	const portMatch = value.match(/^https?:\/\/[a-zA-Z0-9-]+:(\d+)$/);
+	const rawPort = portMatch ? portMatch[1] : port;
+	return validateDockerHost(host, rawPort);
 }
 
 export const MediaServerSection: React.FC<MediaServerSectionProps> = ({
