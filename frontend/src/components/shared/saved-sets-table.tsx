@@ -1,19 +1,16 @@
 "use client";
 
 import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
+import { Delete, Edit, Loader, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import Link from "next/link";
 
-import { AssetImage } from "@/components/shared/asset-image";
-import Loader from "@/components/shared/loader";
 import {
 	SavedSetDeleteModal,
 	SavedSetEditModal,
 	SavedSetsList,
-	handleStopIgnoring,
 	onCloseSavedSetsEditDeleteModals,
 	refreshPosterSet,
 	renderTypeBadges,
@@ -21,24 +18,22 @@ import {
 	savedSetsConfirmEdit,
 } from "@/components/shared/saved-sets-shared";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
-import { H4, P } from "@/components/ui/typography";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { P } from "@/components/ui/typography";
 
-import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 import { usePosterSetsStore } from "@/lib/posterSetStore";
 
 import { APIResponse } from "@/types/apiResponse";
 import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
 
-const SavedSetsCard: React.FC<{
+const SavedSetsTableRow: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
 	onUpdate: () => void;
 	handleRecheckItem: (title: string, item: DBMediaItemWithPosterSets) => void;
@@ -79,9 +74,72 @@ const SavedSetsCard: React.FC<{
 	const [unignoreLoading, setUnignoreLoading] = useState(false);
 	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
 
+	const latestTimestamp = Math.max(...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime()));
+	const latestDate =
+		latestTimestamp > 0
+			? new Date(latestTimestamp).toLocaleDateString("en-US") +
+				" " +
+				new Date(latestTimestamp).toLocaleTimeString("en-US", {
+					hour: "numeric",
+					minute: "numeric",
+					hour12: true,
+				})
+			: "N/A";
+
 	return (
-		<Card className="relative w-full max-w-md mx-auto mb-4">
-			<CardHeader>
+		<>
+			<TableRow key={savedSet.MediaItemID}>
+				<TableCell>
+					{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
+						<RefreshCcw className="text-green-500" size={24} />
+					) : (
+						<RefreshCwOff className="text-red-500" size={24} />
+					)}
+				</TableCell>
+				<TableCell className="font-medium">
+					{
+						<Link
+							href={formatMediaItemUrl(savedSet.MediaItem)}
+							className="text-primary hover:underline"
+							onClick={() => {
+								setMediaItem(savedSet.MediaItem);
+							}}
+						>
+							{savedSet.MediaItem.Title}
+						</Link>
+					}
+				</TableCell>
+				<TableCell>{savedSet.MediaItem.Year}</TableCell>
+				<TableCell>{savedSet.MediaItem.LibraryTitle}</TableCell>
+				<TableCell>{latestDate}</TableCell>
+				<TableCell>
+					<SavedSetsList
+						savedSet={savedSet}
+						layout="table"
+						onUpdate={onUpdate}
+						unignoreLoading={unignoreLoading}
+						setUnignoreLoading={setUnignoreLoading}
+						setUpdateError={setUpdateError}
+						onSelectSet={(ps) => {
+							setPosterSets([ps.PosterSet]);
+							setSetType(ps.PosterSet.Type);
+							setSetTitle(ps.PosterSet.Title);
+							setSetAuthor(ps.PosterSet.User.Name);
+							setSetID(ps.PosterSetID);
+						}}
+					/>
+				</TableCell>
+				<TableCell>
+					{savedSet.PosterSets.some(
+						(set) =>
+							Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
+					) ? (
+						<div className="flex flex-wrap gap-2">{renderTypeBadges(savedSet)}</div>
+					) : (
+						<P className="text-sm text-muted-foreground">No types selected.</P>
+					)}
+				</TableCell>
+
 				{isRefreshing && (
 					<div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
 						<Loader className="animate-spin h-8 w-8 text-primary" />
@@ -89,18 +147,7 @@ const SavedSetsCard: React.FC<{
 					</div>
 				)}
 
-				{/* Top Left: Auto Download Icon */}
-				{savedSet.MediaItem.Type === "show" && (
-					<div className="absolute top-2 left-2">
-						{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
-							<RefreshCcw className="text-green-500" size={24} />
-						) : (
-							<RefreshCwOff className="text-red-500" size={24} />
-						)}
-					</div>
-				)}
-				{/* Top Right: Dropdown Menu */}
-				<div className="absolute top-2 right-2">
+				<TableCell className="text-right">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -149,79 +196,8 @@ const SavedSetsCard: React.FC<{
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-				</div>
-				{/* Middle: Image */}
-				<div className="flex justify-center mt-6">
-					<AssetImage
-						image={savedSet.MediaItem}
-						className="w-[170px] h-auto transition-transform hover:scale-105"
-					/>
-				</div>
-			</CardHeader>
-
-			{/* Content */}
-			<CardContent>
-				{/* Title */}
-				<H4>
-					<Link
-						href={formatMediaItemUrl(savedSet.MediaItem)}
-						className="text-primary hover:underline"
-						onClick={() => {
-							setMediaItem(savedSet.MediaItem);
-						}}
-					>
-						{savedSet.MediaItem.Title}
-					</Link>
-				</H4>
-
-				{/* Year */}
-				<P className="text-sm text-muted-foreground">Year: {savedSet.MediaItem.Year}</P>
-
-				{/* Library Title */}
-				<P className="text-sm text-muted-foreground">Library: {savedSet.MediaItem.LibraryTitle}</P>
-
-				{/* Last Updated */}
-				<P className="text-sm text-muted-foreground">
-					Last Updated:{" "}
-					{(() => {
-						const latestTimestamp = Math.max(
-							...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())
-						);
-						const latestDate = new Date(latestTimestamp);
-						return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString("en-US", {
-							hour: "numeric",
-							minute: "numeric",
-							second: "numeric",
-							hour12: true,
-						})}`;
-					})()}
-				</P>
-
-				<SavedSetsList
-					savedSet={savedSet}
-					layout="table"
-					onUpdate={onUpdate}
-					unignoreLoading={unignoreLoading}
-					setUnignoreLoading={setUnignoreLoading}
-					setUpdateError={setUpdateError}
-					onSelectSet={(ps) => {
-						setPosterSets([ps.PosterSet]);
-						setSetType(ps.PosterSet.Type);
-						setSetTitle(ps.PosterSet.Title);
-						setSetAuthor(ps.PosterSet.User.Name);
-						setSetID(ps.PosterSetID);
-					}}
-				/>
-				<Separator className="my-4" />
-
-				{savedSet.PosterSets.some(
-					(set) => Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
-				) ? (
-					<div className="flex flex-wrap gap-2">{renderTypeBadges(savedSet)}</div>
-				) : (
-					<P className="text-sm text-muted-foreground">No types selected.</P>
-				)}
-			</CardContent>
+				</TableCell>
+			</TableRow>
 
 			{/* Edit Modal */}
 			<SavedSetEditModal
@@ -278,8 +254,8 @@ const SavedSetsCard: React.FC<{
 					})
 				}
 			/>
-		</Card>
+		</>
 	);
 };
 
-export default SavedSetsCard;
+export default SavedSetsTableRow;

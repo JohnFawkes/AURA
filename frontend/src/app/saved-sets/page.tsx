@@ -5,6 +5,7 @@ import { ReturnErrorMessage } from "@/services/api.shared";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
+	CalendarArrowDown,
 	ClockArrowDown,
 	ClockArrowUp,
 	RefreshCcw as RefreshIcon,
@@ -20,10 +21,13 @@ import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
+import SavedSetsTableRow from "@/components/shared/saved-sets-table";
 import { SortControl } from "@/components/shared/sort-control";
+import { ViewControl } from "@/components/shared/view-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { log } from "@/lib/logger";
 import { useSavedSetsPageStore } from "@/lib/pageSavedSets";
@@ -51,10 +55,11 @@ const SavedSetsPage: React.FC = () => {
 	// State to track the selected sorting option
 	const { sortOption, setSortOption } = useSavedSetsPageStore();
 	const { sortOrder, setSortOrder } = useSavedSetsPageStore();
+	const { viewOption, setViewOption } = useSavedSetsPageStore();
 
-	// Set sortOption to "date" if its not title or date
-	if (sortOption !== "title" && sortOption !== "date") {
-		setSortOption("date");
+	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
+	if (sortOption !== "title" && sortOption !== "dateUpdated" && sortOption !== "year" && sortOption !== "library") {
+		setSortOption("dateUpdated");
 	}
 
 	const fetchSavedSets = useCallback(async () => {
@@ -71,7 +76,7 @@ const SavedSetsPage: React.FC = () => {
 			}
 
 			if (!response.data) {
-				setError(ReturnErrorMessage<unknown>(new Error("No sets found")));
+				setError(ReturnErrorMessage<Error>("No saved sets found in the database"));
 				setSavedSets([]);
 				return;
 			}
@@ -96,6 +101,18 @@ const SavedSetsPage: React.FC = () => {
 		}
 		fetchSavedSets();
 	}, [fetchSavedSets]);
+
+	// Change to Card View if on mobile
+	useEffect(() => {
+		const handleResize = () => {
+			if (window.innerWidth < 1040) {
+				setViewOption("card");
+			}
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, [setViewOption]);
 
 	// This useMemo will first filter the savedSets using your search logic,
 	// then sort the resulting array from newest to oldest using the LastDownloaded values.
@@ -123,7 +140,7 @@ const SavedSetsPage: React.FC = () => {
 			} else {
 				sorted.sort((a, b) => b.MediaItem.Title.localeCompare(a.MediaItem.Title));
 			}
-		} else if (sortOption === "date") {
+		} else if (sortOption === "dateUpdated") {
 			const getMaxDownloadTimestamp = (set: DBMediaItemWithPosterSets) => {
 				if (!set.PosterSets || set.PosterSets.length === 0) return 0;
 				return set.PosterSets.reduce((max, ps) => {
@@ -136,6 +153,18 @@ const SavedSetsPage: React.FC = () => {
 				const aMax = getMaxDownloadTimestamp(a);
 				const bMax = getMaxDownloadTimestamp(b);
 				return sortOrder === "asc" ? aMax - bMax : bMax - aMax;
+			});
+		} else if (sortOption === "year") {
+			sorted.sort((a, b) => {
+				const aYear = a.MediaItem.Year || 0;
+				const bYear = b.MediaItem.Year || 0;
+				return sortOrder === "asc" ? aYear - bYear : bYear - aYear;
+			});
+		} else if (sortOption === "library") {
+			sorted.sort((a, b) => {
+				const aLib = a.MediaItem.LibraryTitle || "";
+				const bLib = b.MediaItem.LibraryTitle || "";
+				return sortOrder === "asc" ? aLib.localeCompare(bLib) : bLib.localeCompare(aLib);
 			});
 		}
 
@@ -267,27 +296,58 @@ const SavedSetsPage: React.FC = () => {
 			</div>
 
 			{/* Sorting controls */}
-			<div className="w-full flex items-center mb-2">
-				<SortControl
-					options={[
-						{
-							value: "date",
-							label: "Date Updated",
-							ascIcon: <ClockArrowUp />,
-							descIcon: <ClockArrowDown />,
-						},
-						{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
-					]}
-					sortOption={sortOption}
-					sortOrder={sortOrder}
-					setSortOption={(value) => {
-						setSortOption(value as "title" | "date" | "");
-						if (value === "title") setSortOrder("asc");
-						else if (value === "date") setSortOrder("desc");
-					}}
-					setSortOrder={setSortOrder}
-				/>
+			<div className="w-full flex items-center justify-between mb-4">
+				{viewOption === "card" && (
+					<SortControl
+						options={[
+							{
+								value: "dateUpdated",
+								label: "Date Updated",
+								ascIcon: <ClockArrowUp />,
+								descIcon: <ClockArrowDown />,
+							},
+							{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+							{
+								value: "year",
+								label: "Year",
+								ascIcon: <CalendarArrowDown />,
+								descIcon: <CalendarArrowDown />,
+							},
+							{
+								value: "library",
+								label: "Library",
+								ascIcon: <ArrowDownAZ />,
+								descIcon: <ArrowDownZA />,
+							},
+						]}
+						sortOption={sortOption}
+						sortOrder={sortOrder}
+						setSortOption={(value) => {
+							setSortOption(value as "title" | "dateUpdated" | "year" | "library" | "");
+							if (value === "title") setSortOrder("asc");
+							else if (value === "dateUpdated") setSortOrder("desc");
+							else if (value === "year") setSortOrder("desc");
+							else if (value === "library") setSortOrder("asc");
+						}}
+						setSortOrder={setSortOrder}
+					/>
+				)}
+
+				{/* View Control - only show this if not on mobile */}
+				<div className="hidden sm:flex w-full items-center justify-end">
+					<ViewControl
+						options={[
+							{ value: "card", label: "Card View" },
+							{ value: "table", label: "Table View" },
+						]}
+						viewOption={viewOption}
+						setViewOption={(value) => setViewOption(value as "card" | "table")}
+						label="View:"
+						showLabel={true}
+					/>
+				</div>
 			</div>
+
 			{/* Items Per Page Selection */}
 			{
 				// Only show the items per page selection if there are more than 10 sets
@@ -411,17 +471,151 @@ const SavedSetsPage: React.FC = () => {
 				</div>
 			)}
 
-			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-				{paginatedSets.length > 0 &&
-					paginatedSets.map((savedSet) => (
-						<SavedSetsCard
-							key={savedSet.MediaItem.RatingKey}
-							savedSet={savedSet}
-							onUpdate={fetchSavedSets}
-							handleRecheckItem={handleRecheckItem}
-						/>
-					))}
-			</div>
+			{/* Table View (only available for larger screens) */}
+			{viewOption === "table" && (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead className="w-[20px]"></TableHead>
+							<TableHead
+								className="w-[300px] group cursor-pointer select-none"
+								onClick={() => {
+									if (sortOption === "title") {
+										// Toggle sort order
+										setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+									} else {
+										setSortOption("title");
+										setSortOrder("asc");
+									}
+								}}
+							>
+								<span className="inline-flex items-center gap-1">
+									Title
+									<span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
+										{sortOption === "title" ? (
+											sortOrder === "asc" ? (
+												<ArrowDownAZ className="h-4 w-4 ml-1" />
+											) : (
+												<ArrowDownZA className="h-4 w-4 ml-1" />
+											)
+										) : (
+											<ArrowDownAZ className="h-4 w-4 ml-1" />
+										)}
+									</span>
+								</span>
+							</TableHead>
+							<TableHead
+								className="w-[75px] group cursor-pointer select-none"
+								onClick={() => {
+									if (sortOption === "year") {
+										// Toggle sort order
+										setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+									} else {
+										setSortOption("year");
+										setSortOrder("desc");
+									}
+								}}
+							>
+								<span className="inline-flex items-center gap-1">
+									Year
+									<span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
+										{sortOption === "year" ? (
+											sortOrder === "asc" ? (
+												<ClockArrowUp className="h-4 w-4 ml-1" />
+											) : (
+												<ClockArrowDown className="h-4 w-4 ml-1" />
+											)
+										) : (
+											<ClockArrowDown className="h-4 w-4 ml-1" />
+										)}
+									</span>
+								</span>
+							</TableHead>
+							<TableHead
+								className="group cursor-pointer select-none"
+								onClick={() => {
+									if (sortOption === "library") {
+										setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+									} else {
+										setSortOption("library");
+										setSortOrder("asc");
+									}
+								}}
+							>
+								<span className="inline-flex items-center gap-1">
+									Library
+									<span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
+										{sortOption === "library" ? (
+											sortOrder === "asc" ? (
+												<ArrowDownAZ className="h-4 w-4 ml-1" />
+											) : (
+												<ArrowDownZA className="h-4 w-4 ml-1" />
+											)
+										) : (
+											<ArrowDownAZ className="h-4 w-4 ml-1" />
+										)}
+									</span>
+								</span>
+							</TableHead>
+							<TableHead
+								className="w-[150px] group cursor-pointer select-none"
+								onClick={() => {
+									if (sortOption === "dateUpdated") {
+										setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+									} else {
+										setSortOption("dateUpdated");
+										setSortOrder("desc");
+									}
+								}}
+							>
+								<span className="inline-flex items-center gap-1">
+									Last Updated
+									<span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
+										{sortOption === "dateUpdated" ? (
+											sortOrder === "asc" ? (
+												<ClockArrowUp className="h-4 w-4 ml-1" />
+											) : (
+												<ClockArrowDown className="h-4 w-4 ml-1" />
+											)
+										) : (
+											<ClockArrowDown className="h-4 w-4 ml-1" />
+										)}
+									</span>
+								</span>
+							</TableHead>
+							<TableHead>Sets</TableHead>
+							<TableHead>Types</TableHead>
+							<TableHead className="text-right">Actions</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{paginatedSets.length > 0 &&
+							paginatedSets.map((savedSet) => (
+								<SavedSetsTableRow
+									key={savedSet.MediaItem.RatingKey}
+									savedSet={savedSet}
+									onUpdate={fetchSavedSets}
+									handleRecheckItem={handleRecheckItem}
+								/>
+							))}
+					</TableBody>
+				</Table>
+			)}
+
+			{/* Card View */}
+			{viewOption === "card" && (
+				<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+					{paginatedSets.length > 0 &&
+						paginatedSets.map((savedSet) => (
+							<SavedSetsCard
+								key={savedSet.MediaItem.RatingKey}
+								savedSet={savedSet}
+								onUpdate={fetchSavedSets}
+								handleRecheckItem={handleRecheckItem}
+							/>
+						))}
+				</div>
+			)}
 
 			{/* Pagination */}
 			<CustomPagination
