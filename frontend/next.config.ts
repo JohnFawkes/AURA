@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
 				pathname: "/**",
 			},
 		],
+		localPatterns: [
+			{
+				pathname: "/api/mediaserver/image/**",
+			},
+		],
 	},
 	allowedDevOrigins: ["localhost", "10.1.1.30"],
 	reactStrictMode: false,
