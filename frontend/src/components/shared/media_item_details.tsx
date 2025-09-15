@@ -64,6 +64,7 @@ export function MediaItemDetails({
 	otherMediaItem,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
+	const [isInDB, setIsInDB] = useState(existsInDB); // <-- local state for DB existence
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
 	const { setSearchQuery } = useSearchQueryStore();
@@ -86,7 +87,7 @@ export function MediaItemDetails({
 	}, []);
 
 	const handleSavedSetsPageClick = () => {
-		if (existsInDB) {
+		if (isInDB) {
 			setSearchQuery(`${title} y:${year}: id:${ratingKey}:`);
 			router.push("/saved-sets");
 		}
@@ -127,6 +128,7 @@ export function MediaItemDetails({
 			toast.error(`Failed to add ${title} to DB`);
 		} else {
 			log(`Successfully added ${title} to DB for ignoring`);
+			setIsInDB(true); // <-- update local state to trigger re-render
 			toast.success(`Will successfully ignore ${title} in the future`);
 		}
 	};
@@ -216,19 +218,19 @@ export function MediaItemDetails({
 			{/* Show Existence in Database */}
 			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 				<Lead
-					className={`text-md ${existsInDB ? "hover:cursor-pointer text-green-500" : "text-red-500"}`}
+					className={`text-md ${isInDB ? "hover:cursor-pointer text-green-500" : "text-red-500"}`}
 					onClick={() => {
-						if (existsInDB) {
+						if (isInDB) {
 							handleSavedSetsPageClick();
 						}
 					}}
 				>
-					<Database className="inline ml-1 mr-1" /> {existsInDB ? "Already in Database" : "Not in Database"}
+					<Database className="inline ml-1 mr-1" /> {isInDB ? "Already in Database" : "Not in Database"}
 				</Lead>
 			</div>
 
 			{/* Add Item to DB to Ignore it */}
-			{!existsInDB && (
+			{!isInDB && (
 				<Button
 					onClick={handleAddToIgnoredClick}
 					variant="destructive"

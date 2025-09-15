@@ -8,7 +8,7 @@ import { APIResponse } from "../types/apiResponse";
 import { ReturnErrorMessage } from "./api.shared";
 import apiClient from "./apiClient";
 
-const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Promise<void> => {
+const updateMediaItemStore = async (ratingKey: string, sectionTitle: string, updateType: string): Promise<void> => {
 	try {
 		// Retrieve the library record from librarySectionsStorage
 		const librarySection = await librarySectionsStorage.getItem<{
@@ -30,7 +30,8 @@ const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Pr
 		}
 
 		// Update the ExistInDatabase flag
-		mediaItems[index].ExistInDatabase = true;
+		if (updateType === "add" || updateType === "update") mediaItems[index].ExistInDatabase = true;
+		else if (updateType === "delete") mediaItems[index].ExistInDatabase = false;
 
 		// Write the updated record back to librarySectionsStorage
 		await librarySectionsStorage.setItem(sectionTitle, {
@@ -41,20 +42,22 @@ const updateMediaItemStore = async (ratingKey: string, sectionTitle: string): Pr
 			},
 		});
 
-		log("api.db - Updated media item cache successfully");
+		log(
+			`api.db - Updated media item cache successfully (${updateType}) for RatingKey: ${ratingKey} in section: ${sectionTitle}`
+		);
 	} catch (error) {
 		log(`api.db - Error updating media item cache: ${error instanceof Error ? error.message : "Unknown error"}`);
 		throw error;
 	}
 };
 
-export const postAddItemToDB = async (SaveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
+export const postAddItemToDB = async (saveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
 	log("api.db - Adding item to DB started");
 	try {
-		const response = await apiClient.post<APIResponse<DBSavedItem>>(`/db/add/item`, SaveItem);
+		const response = await apiClient.post<APIResponse<DBSavedItem>>(`/db/add/item`, saveItem);
 		log("api.db - Adding item to DB succeeded");
 		// Call updateMediaItemStore and swallow any errors if it fails.
-		updateMediaItemStore(SaveItem.MediaItem.RatingKey, SaveItem.MediaItem.LibraryTitle).catch((e) => {
+		updateMediaItemStore(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "add").catch((e) => {
 			log(`api.db - Updating media item cache failed: ${e instanceof Error ? e.message : "Unknown error"}`);
 		});
 		return response.data;
@@ -80,15 +83,19 @@ export const fetchAllItemsFromDB = async (): Promise<APIResponse<DBMediaItemWith
 	}
 };
 
-export const deleteMediaItemFromDB = async (ratingKey: string): Promise<APIResponse<string>> => {
-	log(`api.db - Deleting media item with ID ${ratingKey} started`);
+export const deleteMediaItemFromDB = async (saveItem: DBMediaItemWithPosterSets): Promise<APIResponse<string>> => {
+	log(`api.db - Deleting media item with ID ${saveItem.MediaItemID} started`);
 	try {
-		const response = await apiClient.delete<APIResponse<string>>(`/db/delete/mediaitem/${ratingKey}`);
-		log(`api.db - Deleting media item with ID ${ratingKey} succeeded`);
+		const response = await apiClient.delete<APIResponse<string>>(`/db/delete/mediaitem/${saveItem.MediaItemID}`);
+		log(`api.db - Deleting media item with ID ${saveItem.MediaItemID} succeeded`);
+		// Call updateMediaItemStore and swallow any errors if it fails.
+		updateMediaItemStore(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "delete").catch((e) => {
+			log(`api.db - Updating media item cache failed: ${e instanceof Error ? e.message : "Unknown error"}`);
+		});
 		return response.data;
 	} catch (error) {
 		log(
-			`api.db - Deleting media item with ID ${ratingKey} failed: ${
+			`api.db - Deleting media item with ID ${saveItem.MediaItemID} failed: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
@@ -103,6 +110,10 @@ export const patchSavedItemInDB = async (
 	try {
 		const response = await apiClient.patch<APIResponse<DBMediaItemWithPosterSets>>(`/db/update/`, saveItem);
 		log(`api.db - Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID} succeeded`);
+		// Call updateMediaItemStore and swallow any errors if it fails.
+		updateMediaItemStore(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "update").catch((e) => {
+			log(`api.db - Updating media item cache failed: ${e instanceof Error ? e.message : "Unknown error"}`);
+		});
 		return response.data;
 	} catch (error) {
 		log(
@@ -128,19 +139,19 @@ export interface AutodownloadSetResult {
 }
 
 export const postForceRecheckDBItemForAutoDownload = async (
-	item: DBMediaItemWithPosterSets
+	saveItem: DBMediaItemWithPosterSets
 ): Promise<APIResponse<AutodownloadResult>> => {
-	log(`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} started`);
+	log(`api.db - Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} started`);
 	try {
 		const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force/recheck`, {
-			Item: item,
+			Item: saveItem,
 		});
-		log(`api.db - Forcing recheck for auto-download for item with ID ${item.MediaItemID} succeeded`);
+		log(`api.db - Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} succeeded`);
 		return response.data;
 	} catch (error) {
 		log(
 			`api.db - Forcing recheck for auto-download for item with ID ${
-				item.MediaItemID
+				saveItem.MediaItemID
 			} failed: ${error instanceof Error ? error.message : "Unknown error"}`
 		);
 		return ReturnErrorMessage<AutodownloadResult>(error);
