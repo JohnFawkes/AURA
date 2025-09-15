@@ -31,11 +31,11 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Stan
 
 	// Query all rows from SavedItems.
 	query := `
-    SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
-    FROM SavedItems`
+SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
+FROM SavedItems
+ORDER BY media_item_id`
 	rows, err := db.Query(query)
 	if err != nil {
-
 		Err.Message = "Failed to query all items from database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = "Query: " + query
@@ -43,13 +43,16 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Stan
 	}
 	defer rows.Close()
 
-	// Map to group poster sets by media_item_id.
-	mediaMap := map[string]*modals.DBMediaItemWithPosterSets{}
+	var (
+		result    []modals.DBMediaItemWithPosterSets
+		currentID string
+		current   *modals.DBMediaItemWithPosterSets
+	)
 
 	for rows.Next() {
 		var savedItem modals.DBSavedItem
 		var selectedTypesStr string
-		err := rows.Scan(
+		if err := rows.Scan(
 			&savedItem.MediaItemID,
 			&savedItem.MediaItemJSON,
 			&savedItem.PosterSetID,
@@ -57,28 +60,43 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Stan
 			&selectedTypesStr,
 			&savedItem.AutoDownload,
 			&savedItem.LastDownloaded,
-		)
-		if err != nil {
-
+		); err != nil {
 			Err.Message = "Failed to scan row from SavedItems"
-			Err.HelpText = "Ensure the database schema matches the query and the data types are correct."
+			Err.HelpText = "Check schema/data types."
 			Err.Details = "Query: " + query
 			return nil, Err
 		}
 
-		// Unmarshal MediaItem and PosterSet from JSON if necessary.
-		var mediaItem modals.MediaItem
-		var posterSet modals.PosterSet
-		if Err = UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); Err.Message != "" {
-			return nil, Err
+		// Start a new group when media_item_id changes
+		if savedItem.MediaItemID != currentID {
+			if current != nil {
+				result = append(result, *current)
+			}
+			currentID = savedItem.MediaItemID
+
+			var mediaItem modals.MediaItem
+			if Err = UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); Err.Message != "" {
+				return nil, Err
+			}
+
+			current = &modals.DBMediaItemWithPosterSets{
+				MediaItemID:   savedItem.MediaItemID,
+				MediaItem:     mediaItem,
+				MediaItemJSON: savedItem.MediaItemJSON,
+				PosterSets:    make([]modals.DBPosterSetDetail, 0, 4),
+			}
 		}
+
+		var posterSet modals.PosterSet
 		if Err = UnmarshalPosterSet(savedItem.PosterSetJSON, &posterSet); Err.Message != "" {
 			return nil, Err
 		}
 
-		// Convert selectedTypesStr to a slice of strings.
-		selectedTypes := strings.Split(selectedTypesStr, ",")
-		savedItem.SelectedTypes = selectedTypes
+		if selectedTypesStr != "" {
+			savedItem.SelectedTypes = strings.Split(selectedTypesStr, ",")
+		} else {
+			savedItem.SelectedTypes = nil
+		}
 
 		psDetail := modals.DBPosterSetDetail{
 			PosterSetID:    savedItem.PosterSetID,
@@ -88,24 +106,11 @@ func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.Stan
 			SelectedTypes:  savedItem.SelectedTypes,
 			AutoDownload:   savedItem.AutoDownload,
 		}
-
-		// Group by MediaItemID.
-		if existing, ok := mediaMap[savedItem.MediaItemID]; ok {
-			existing.PosterSets = append(existing.PosterSets, psDetail)
-		} else {
-			mediaMap[savedItem.MediaItemID] = &modals.DBMediaItemWithPosterSets{
-				MediaItemID:   savedItem.MediaItemID,
-				MediaItem:     mediaItem,
-				MediaItemJSON: savedItem.MediaItemJSON,
-				PosterSets:    []modals.DBPosterSetDetail{psDetail},
-			}
-		}
+		current.PosterSets = append(current.PosterSets, psDetail)
 	}
 
-	// Convert the map to a slice.
-	result := []modals.DBMediaItemWithPosterSets{}
-	for _, v := range mediaMap {
-		result = append(result, *v)
+	if current != nil {
+		result = append(result, *current)
 	}
 
 	return result, logging.StandardError{}
