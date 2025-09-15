@@ -122,6 +122,7 @@ func CheckItemForAutodownload(dbSavedItem modals.DBMediaItemWithPosterSets) Auto
 		updatedSet, Err := mediux.FetchShowSetByID(dbSavedItem.MediaItem.LibraryTitle, dbSavedItem.MediaItemID, dbPosterSet.PosterSetID)
 		if Err.Message != "" {
 			logging.LOG.ErrorWithLog(Err)
+			logging.LOG.Warn(fmt.Sprintf("Set '%s' for '%s' possibly deleted from Mediux - %s", dbPosterSet.PosterSetID, dbSavedItem.MediaItem.Title, Err.Message))
 			setResult.Result = "Error"
 			setResult.Reason = fmt.Sprintf("Error fetching updated set - %s", Err.Message)
 			result.Sets = append(result.Sets, setResult)

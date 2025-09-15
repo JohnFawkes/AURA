@@ -808,7 +808,6 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 
 	// If cache is empty, return false
 	if cache.LibraryCacheStore.IsEmpty() {
-
 		Err.Message = "Backend cache is empty"
 		Err.HelpText = "Try refreshing the cache from the Home Page"
 		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
@@ -855,8 +854,6 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 	var responseBody modals.MediuxShowSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
@@ -865,12 +862,27 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 
 	showSet := responseBody.Data.ShowSetID
 
+	if showSet.ID == "" {
+		Err.Message = "No show set found in the response"
+		Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
+		Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		return modals.PosterSet{}, Err
+	}
+
 	logging.LOG.Trace(fmt.Sprintf("Processing show set: %s", showSet.SetTitle))
 	logging.LOG.Trace(fmt.Sprintf("Date Created: %s", showSet.DateCreated))
 	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", showSet.DateUpdated))
 
 	// Process the response and return the poster sets
 	posterSets := processShowResponse(librarySection, itemRatingKey, showSet.Show)
+
+	if len(posterSets) == 0 {
+		Err.Message = "No poster sets found for the provided show set ID"
+		Err.HelpText = "Ensure the show set ID is correct and the show set exists in the Mediux database."
+		Err.Details = fmt.Sprintf("Show Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		return modals.PosterSet{}, Err
+	}
+
 	posterSet := posterSets[0]
 
 	posterSet.ID = showSet.ID
