@@ -13,7 +13,6 @@ import {
 	SavedSetDeleteModal,
 	SavedSetEditModal,
 	SavedSetsList,
-	handleStopIgnoring,
 	onCloseSavedSetsEditDeleteModals,
 	refreshPosterSet,
 	renderTypeBadges,
@@ -31,7 +30,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { H4, P } from "@/components/ui/typography";
 
-import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/mediaStore";
 import { usePosterSetsStore } from "@/lib/posterSetStore";
 
