@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 const H1 = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>((props, ref) => (
 	<h1 {...props} ref={ref} className={cn("scroll-m-20 text-4xl font-bold lg:text-5xl mb-4", props.className)}>
