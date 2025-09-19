@@ -1,13 +1,8 @@
 "use client";
 
-import {
-	TMDBLookupMap,
-	createTMDBLookupMap,
-	getAllLibrarySectionsFromIDB,
-	searchWithLookupMap,
-} from "@/helper/searchIDBForTMDBID";
-import { fetchAllUserSets } from "@/services/api.mediux";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { fetchAllUserSets } from "@/services/mediux/api-mediux-fetch-username-sets";
 import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -17,29 +12,27 @@ import { useParams } from "next/navigation";
 import { RenderBoxSetDisplay } from "@/components/shared/boxset-display";
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
-import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import Loader from "@/components/shared/loader";
-import { SortControl } from "@/components/shared/sort-control";
+import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
+import { SortControl } from "@/components/shared/select_sort";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { log } from "@/lib/logger";
-import { useUserPageStore } from "@/lib/pageUserStore";
-import { usePaginationStore } from "@/lib/paginationStore";
-import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { librarySectionsStorage } from "@/lib/storage";
+import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
+import { useUserPageStore } from "@/lib/stores/page-store-user";
 
-import { APIResponse } from "@/types/apiResponse";
-import { MediaItem } from "@/types/mediaItem";
+import { APIResponse } from "@/types/api/api-response";
 import {
 	MediuxUserBoxset,
 	MediuxUserCollectionMovie,
 	MediuxUserCollectionSet,
 	MediuxUserMovieSet,
 	MediuxUserShowSet,
-} from "@/types/mediuxUserAllSets";
+} from "@/types/mediux/mediux-sets";
 
 const processBatch = async <T extends MediuxUserMovieSet | MediuxUserShowSet | MediuxUserCollectionMovie>(
 	items: MediuxUserMovieSet[] | MediuxUserShowSet[] | MediuxUserCollectionMovie[],
@@ -141,7 +134,7 @@ const UserSetPage = () => {
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadMessage, setLoadMessage] = useState("");
-	const { itemsPerPage } = usePaginationStore();
+	const { currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useUserPageStore();
 
 	// Add state to track progress
 	const [, setProgressCount] = useState<{
@@ -169,7 +162,6 @@ const UserSetPage = () => {
 
 	// Pagination and Active Tab state
 	const [activeTab, setActiveTab] = useState("boxSets");
-	const [currentPage, setCurrentPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(0);
 
 	// Library sections & progress
@@ -181,19 +173,20 @@ const UserSetPage = () => {
 	const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB">("all");
 
 	// State to track the selected sorting option
-	const { sortOption, setSortOption } = useUserPageStore();
-	const { sortOrder, setSortOrder } = useUserPageStore();
+	const { sortOption, setSortOption, sortOrder, setSortOrder } = useUserPageStore();
+
+	const { sections, getSectionSummaries } = useLibrarySectionsStore();
 
 	// Get all the library sections from the IDB
 	useEffect(() => {
 		const fetchLibrarySections = async () => {
 			setLoadMessage("Loading library sections from cache");
-			const sections = await getAllLibrarySectionsFromIDB();
+			const sections = getSectionSummaries();
 			setLibrarySections(sections);
 			log("User Page - Library Sections", sections);
 		};
 		fetchLibrarySections();
-	}, []);
+	}, [getSectionSummaries]);
 
 	// Set sortOption to "dateLastUpdate" if it's not title or dateLastUpdate
 	if (sortOption !== "title" && sortOption !== "dateLastUpdate") {
@@ -259,19 +252,15 @@ const UserSetPage = () => {
 			setIsLoading(true);
 
 			// Get the library section data once
-			const librarySection = await librarySectionsStorage.getItem<{
-				data: {
-					MediaItems: MediaItem[];
-				};
-			}>(selectedLibrarySection.title);
-			if (!librarySection || !librarySection.data?.MediaItems) {
+			const librarySection = sections[selectedLibrarySection.title];
+			if (!librarySection || !librarySection.MediaItems) {
 				log(`User Page - No data found for library section: ${selectedLibrarySection.title}`);
 				setIsLoading(false);
 				return;
 			}
 
 			// Create a lookup map for faster access
-			const tmdbLookupMap = createTMDBLookupMap(librarySection.data.MediaItems);
+			const tmdbLookupMap = createTMDBLookupMap(librarySection.MediaItems);
 			log("User Page - TMDB Lookup Map", tmdbLookupMap);
 
 			log("Setting items based on", selectedLibrarySection, filterOutInDB);
@@ -616,7 +605,16 @@ const UserSetPage = () => {
 		);
 		log("User Page - Total Pages", totalPages);
 		setCurrentPage(1); // Reset to first page when tab changes
-	}, [activeTab, boxsets.length, collectionSets.length, itemsPerPage, movieSets.length, showSets.length, totalPages]);
+	}, [
+		activeTab,
+		boxsets.length,
+		collectionSets.length,
+		itemsPerPage,
+		movieSets.length,
+		showSets.length,
+		totalPages,
+		setCurrentPage,
+	]);
 
 	const paginatedShowSets = showSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 	const paginatedMovieSets = movieSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -761,7 +759,12 @@ const UserSetPage = () => {
 						{/* No library selected message */}
 						{!selectedLibrarySection && (
 							<div className="flex justify-center mt-8">
-								<ErrorMessage error={ReturnErrorMessage<string>("No library selected")} />
+								<ErrorMessage
+									isWarning={true}
+									error={ReturnErrorMessage<string>(
+										"No library selected. Select one to get started."
+									)}
+								/>
 							</div>
 						)}
 
@@ -864,7 +867,11 @@ const UserSetPage = () => {
 
 									{/* Items Per Page Selection */}
 									<div className="w-full flex items-center mb-2">
-										<SelectItemsPerPage setCurrentPage={setCurrentPage} />
+										<SelectItemsPerPage
+											setCurrentPage={setCurrentPage}
+											itemsPerPage={itemsPerPage}
+											setItemsPerPage={setItemsPerPage}
+										/>
 									</div>
 
 									{/* Sort Control */}
@@ -1026,6 +1033,7 @@ const UserSetPage = () => {
 														? movieSets.length
 														: collectionSets.length
 										}
+										itemsPerPage={itemsPerPage}
 									/>
 								</div>
 							))}

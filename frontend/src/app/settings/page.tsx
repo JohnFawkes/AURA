@@ -1,28 +1,33 @@
 "use client";
 
-import { AuthSection } from "@/app/settings/components/settings_auth";
-import { AutoDownloadSection } from "@/app/settings/components/settings_autodownload";
-import { ImagesSection } from "@/app/settings/components/settings_images";
-import { KometaSection } from "@/app/settings/components/settings_kometa";
-import { LoggingSection } from "@/app/settings/components/settings_logging";
-import { MediaServerSection } from "@/app/settings/components/settings_media_server";
-import { MediuxSection } from "@/app/settings/components/settings_mediux";
-import { NotificationsSection } from "@/app/settings/components/settings_notifications";
-import { TMDBSection } from "@/app/settings/components/settings_tmdb";
-import { defaultAppConfig, fetchConfig } from "@/app/settings/services/fetch_config";
-import { updateConfig } from "@/app/settings/services/update_config";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { fetchConfig } from "@/services/settings-onboarding/api-config-fetch";
+import { updateConfig } from "@/services/settings-onboarding/api-config-update";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
 
+import { useRouter } from "next/navigation";
+
+import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
+import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
+import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
+import { ConfigSectionKometa } from "@/components/settings-onboarding/ConfigSectionKometa";
+import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
+import { ConfigSectionMediaServer } from "@/components/settings-onboarding/ConfigSectionMediaServer";
+import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
+import { ConfigSectionNotifications } from "@/components/settings-onboarding/ConfigSectionNotifications";
+import { ConfigSectionTMDB } from "@/components/settings-onboarding/ConfigSectionTMDB";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-import { APIResponse } from "@/types/apiResponse";
-import { AppConfig } from "@/types/config";
+import { ClearAllStores } from "@/lib/stores/clear-all-stores";
+
+import { APIResponse } from "@/types/api/api-response";
+import { AppConfig } from "@/types/config/config-app";
+import { defaultAppConfig } from "@/types/config/config-default-app";
 
 type ObjectSectionKeys = {
 	[K in keyof AppConfig]-?: NonNullable<AppConfig[K]> extends object ? K : never;
@@ -46,6 +51,7 @@ type ValidationErrors = {
 };
 
 const SettingsPage: React.FC = () => {
+	const router = useRouter();
 	const isMounted = useRef(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
@@ -331,7 +337,7 @@ const SettingsPage: React.FC = () => {
 					)}
 
 					<div className="space-y-5">
-						<AuthSection
+						<ConfigSectionAuth
 							value={newConfig.Auth}
 							editing={editing}
 							dirtyFields={dirty.Auth}
@@ -339,7 +345,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
 						/>
 
-						<LoggingSection
+						<ConfigSectionLogging
 							value={newConfig.Logging}
 							editing={editing}
 							dirtyFields={dirty.Logging}
@@ -347,7 +353,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("Logging", errs as Record<string, string>)}
 						/>
 
-						<MediaServerSection
+						<ConfigSectionMediaServer
 							value={newConfig.MediaServer}
 							editing={editing}
 							configAlreadyLoaded={false}
@@ -356,7 +362,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("MediaServer", errs as Record<string, string>)}
 						/>
 
-						<MediuxSection
+						<ConfigSectionMediux
 							value={newConfig.Mediux}
 							editing={editing}
 							configAlreadyLoaded={false}
@@ -365,7 +371,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("Mediux", errs as Record<string, string>)}
 						/>
 
-						<AutoDownloadSection
+						<ConfigSectionAutoDownload
 							value={newConfig.AutoDownload}
 							editing={editing}
 							dirtyFields={dirty.AutoDownload}
@@ -373,7 +379,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
 						/>
 
-						<ImagesSection
+						<ConfigSectionImages
 							value={newConfig.Images}
 							editing={editing}
 							dirtyFields={dirty.Images}
@@ -381,7 +387,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("Images", errs as Record<string, string>)}
 						/>
 
-						<TMDBSection
+						<ConfigSectionTMDB
 							value={newConfig.TMDB}
 							editing={editing}
 							dirtyFields={dirty.TMDB}
@@ -389,7 +395,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
 						/>
 
-						<KometaSection
+						<ConfigSectionKometa
 							value={newConfig.Kometa}
 							editing={editing}
 							dirtyFields={dirty.Kometa}
@@ -397,7 +403,7 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("Kometa", errs as Record<string, string>)}
 						/>
 
-						<NotificationsSection
+						<ConfigSectionNotifications
 							value={newConfig.Notifications}
 							editing={editing}
 							dirtyFields={
@@ -441,24 +447,41 @@ const SettingsPage: React.FC = () => {
 			)}
 
 			{/* Debug Mode Toggle */}
-			<ToggleGroup
-				className="mt-2"
-				type="single"
-				variant={debugEnabled ? "default" : "outline"}
-				value={debugEnabled ? "enabled" : "disabled"}
-				onValueChange={(value) => toggleDebugMode(value === "enabled")}
-			>
-				<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
-					<span className="flex items-center gap-2 cursor-pointer">
-						Debug Mode:
-						{debugEnabled ? (
-							<span className="text-green-500">Enabled</span>
-						) : (
-							<span className="text-destructive">Disabled</span>
-						)}
-					</span>
-				</ToggleGroupItem>
-			</ToggleGroup>
+			<div className="flex items-center justify-between mt-6 border-t pt-4">
+				<ToggleGroup
+					type="single"
+					variant={debugEnabled ? "default" : "outline"}
+					value={debugEnabled ? "enabled" : "disabled"}
+					onValueChange={(value) => toggleDebugMode(value === "enabled")}
+				>
+					<ToggleGroupItem value="enabled" variant={debugEnabled ? "default" : "outline"}>
+						<span className="flex items-center gap-2 cursor-pointer">
+							Debug Mode:
+							{debugEnabled ? (
+								<span className="text-green-500">Enabled</span>
+							) : (
+								<span className="text-destructive">Disabled</span>
+							)}
+						</span>
+					</ToggleGroupItem>
+				</ToggleGroup>
+
+				<Button
+					variant="ghost"
+					className="text-red-600 border-none shadow-none hover:bg-red-50"
+					onClick={async () => {
+						localStorage.clear();
+						await ClearAllStores();
+						toast.success("App cache cleared.");
+						toast.success("App Cache Cleared. Reloading...");
+						setTimeout(() => {
+							router.replace("/settings");
+						}, 1000);
+					}}
+				>
+					Clear App Cache
+				</Button>
+			</div>
 		</div>
 	);
 };

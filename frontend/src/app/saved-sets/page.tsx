@@ -1,7 +1,8 @@
 "use client";
 
-import { AutodownloadResult, fetchAllItemsFromDB, postForceRecheckDBItemForAutoDownload } from "@/services/api.db";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { fetchAllItemsFromDB } from "@/services/database/api-db-get-all";
+import { AutodownloadResult, postForceRecheckDBItemForAutoDownload } from "@/services/database/api-db-items-recheck";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
@@ -17,28 +18,28 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
-import { SelectItemsPerPage } from "@/components/shared/items-per-page-select";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
 import SavedSetsTableRow from "@/components/shared/saved-sets-table";
-import { SortControl } from "@/components/shared/sort-control";
-import { ViewControl } from "@/components/shared/view-control";
+import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
+import { SortControl } from "@/components/shared/select_sort";
+import { ViewControl } from "@/components/shared/select_view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ToggleGroup } from "@/components/ui/toggle-group";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
-import { useSavedSetsPageStore } from "@/lib/pageSavedSets";
-import { usePaginationStore } from "@/lib/paginationStore";
-import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { cn } from "@/lib/utils";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
+import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 
-import { searchMediaItems } from "@/hooks/searchMediaItems";
+import { searchMediaItems } from "@/hooks/search-media-item";
 
-import { APIResponse } from "@/types/apiResponse";
-import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
+import { APIResponse } from "@/types/api/api-response";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 
 const SavedSetsPage: React.FC = () => {
 	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
@@ -46,16 +47,18 @@ const SavedSetsPage: React.FC = () => {
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const isFetchingRef = useRef(false);
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
-	const [filterAutoDownloadOnly, setFilterAutoDownloadOnly] = useState(false);
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
-	const { itemsPerPage } = usePaginationStore();
-	const [currentPage, setCurrentPage] = useState(1);
+	const { currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useSavedSetsPageStore();
 
 	// State to track the selected sorting option
 	const { sortOption, setSortOption } = useSavedSetsPageStore();
 	const { sortOrder, setSortOrder } = useSavedSetsPageStore();
 	const { viewOption, setViewOption } = useSavedSetsPageStore();
+
+	// State to track filters
+	const { filteredLibraries, setFilteredLibraries } = useSavedSetsPageStore();
+	const { filterAutoDownloadOnly, setFilterAutoDownloadOnly } = useSavedSetsPageStore();
 
 	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
 	if (sortOption !== "title" && sortOption !== "dateUpdated" && sortOption !== "year" && sortOption !== "library") {
@@ -132,6 +135,10 @@ const SavedSetsPage: React.FC = () => {
 			);
 		}
 
+		if (filteredLibraries.length > 0) {
+			filtered = filtered.filter((set) => filteredLibraries.includes(set.MediaItem.LibraryTitle || ""));
+		}
+
 		// Sort the filtered sets based on the selected sort option and order
 		const sorted = filtered.slice();
 		if (sortOption === "title") {
@@ -169,7 +176,7 @@ const SavedSetsPage: React.FC = () => {
 		}
 
 		return sorted;
-	}, [savedSets, searchQuery, filterAutoDownloadOnly, sortOption, sortOrder]);
+	}, [savedSets, searchQuery, filterAutoDownloadOnly, sortOption, sortOrder, filteredLibraries]);
 
 	const paginatedSets = useMemo(() => {
 		const startIndex = (currentPage - 1) * itemsPerPage;
@@ -258,16 +265,50 @@ const SavedSetsPage: React.FC = () => {
 					<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
 						Filters:
 					</Label>
-					<Badge
-						key={"filter-auto-download-only"}
-						className="cursor-pointer text-sm mb-2 sm:mb-0 sm:mr-4"
-						variant={filterAutoDownloadOnly ? "default" : "outline"}
-						onClick={() => {
-							setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
-						}}
+					<ToggleGroup
+						type="multiple"
+						className="flex flex-wrap sm:flex-nowrap gap-2"
+						value={filteredLibraries}
+						onValueChange={setFilteredLibraries}
 					>
-						{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
-					</Badge>
+						{savedSets
+							.flatMap((set) => set.MediaItem.LibraryTitle || [])
+							.filter((value, index, self) => self.indexOf(value) === index) // Get unique library titles
+							.map((lib) => lib || "Unknown Library")
+							.map((section) => (
+								<Badge
+									key={section}
+									className="cursor-pointer text-sm"
+									variant={filteredLibraries.includes(section) ? "default" : "outline"}
+									onClick={() => {
+										if (filteredLibraries.includes(section)) {
+											setFilteredLibraries(
+												filteredLibraries.filter((lib: string) => lib !== section)
+											);
+											setCurrentPage(1);
+										} else {
+											setFilteredLibraries([...filteredLibraries, section]);
+											setCurrentPage(1);
+										}
+									}}
+								>
+									{section}
+								</Badge>
+							))}
+
+						<Badge
+							key={"filter-auto-download-only"}
+							className="cursor-pointer text-sm mb-2 sm:mb-0 sm:mr-4"
+							variant={filterAutoDownloadOnly ? "default" : "outline"}
+							onClick={() => {
+								if (setFilterAutoDownloadOnly) {
+									setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
+								}
+							}}
+						>
+							{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
+						</Badge>
+					</ToggleGroup>
 				</div>
 				{
 					// Only show the force recheck button if there are sets with AutoDownload enabled
@@ -353,7 +394,11 @@ const SavedSetsPage: React.FC = () => {
 				// Only show the items per page selection if there are more than 10 sets
 				filteredAndSortedSavedSets.length > 10 && (
 					<div className="w-full flex items-center mb-2">
-						<SelectItemsPerPage setCurrentPage={setCurrentPage} />
+						<SelectItemsPerPage
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
+						/>
 					</div>
 				)
 			}
@@ -459,20 +504,31 @@ const SavedSetsPage: React.FC = () => {
 				<div className="w-full">
 					<ErrorMessage
 						error={ReturnErrorMessage<string>(
-							`No saved sets found${searchQuery ? ` for "${searchQuery}"` : ""}`
+							`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
+								${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
+								${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}.`
 						)}
 					/>
 					<div className="text-center text-muted-foreground mt-4">
-						<Button variant="outline" size="sm" onClick={() => setSearchQuery("")} className="text-sm">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								setSearchQuery("");
+								setFilteredLibraries([]);
+								if (setFilterAutoDownloadOnly) setFilterAutoDownloadOnly(false);
+							}}
+							className="text-sm"
+						>
 							<XCircle className="inline mr-1" />
-							Clear Search Query
+							Clear All Filters & Search Query
 						</Button>
 					</div>
 				</div>
 			)}
 
 			{/* Table View (only available for larger screens) */}
-			{viewOption === "table" && (
+			{viewOption === "table" && paginatedSets && paginatedSets.length > 0 && (
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -618,13 +674,16 @@ const SavedSetsPage: React.FC = () => {
 			)}
 
 			{/* Pagination */}
-			<CustomPagination
-				currentPage={currentPage}
-				totalPages={totalPages}
-				setCurrentPage={setCurrentPage}
-				scrollToTop={true}
-				filterItemsLength={filteredAndSortedSavedSets.length}
-			/>
+			{filteredAndSortedSavedSets.length > itemsPerPage && (
+				<CustomPagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					setCurrentPage={setCurrentPage}
+					scrollToTop={true}
+					filterItemsLength={filteredAndSortedSavedSets.length}
+					itemsPerPage={itemsPerPage}
+				/>
+			)}
 
 			{/* Refresh Button */}
 			<RefreshButton onClick={fetchSavedSets} />

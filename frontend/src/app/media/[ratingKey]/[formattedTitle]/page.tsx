@@ -1,10 +1,11 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { getAdjacentMediaItemFromIDB, getAllLibrarySectionsFromIDB } from "@/helper/searchIDBForTMDBID";
-import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
-import { fetchMediuxSets, fetchMediuxUserFollowHides } from "@/services/api.mediux";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { formatMediaItemUrl } from "@/helper/format-media-item-url";
+import { getAdjacentMediaItem } from "@/helper/search-idb-for-tmdb-id";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
+import { fetchMediuxSets } from "@/services/mediux/api-mediux-fetch-sets";
+import { fetchMediuxUserFollowHides } from "@/services/mediux/api-mediux-fetch-user-follow-hide";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
@@ -23,18 +24,18 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaItemDetails } from "@/components/shared/media_item_details";
-import { SortControl } from "@/components/shared/sort-control";
+import { SortControl } from "@/components/shared/select_sort";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { log } from "@/lib/logger";
-import { useMediaStore } from "@/lib/mediaStore";
-import { useMediaPageStore } from "@/lib/pageMediaStore";
-import { librarySectionsStorage } from "@/lib/storage";
+import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { useMediaPageStore } from "@/lib/stores/page-store-media";
 
-import { APIResponse } from "@/types/apiResponse";
-import { MediaItem } from "@/types/mediaItem";
-import { PosterSet } from "@/types/posterSets";
+import { APIResponse } from "@/types/api/api-response";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 const MediaItemPage = () => {
 	const router = useRouter();
@@ -50,8 +51,16 @@ const MediaItemPage = () => {
 	const [filteredPosterSets, setFilteredPosterSets] = useState<PosterSet[] | null>(null);
 
 	// State to track the selected sorting option
-	const { sortOption, setSortOption } = useMediaPageStore();
-	const { sortOrder, setSortOrder } = useMediaPageStore();
+	const {
+		sortOption,
+		setSortOption,
+		sortOrder,
+		setSortOrder,
+		showOnlyTitlecardSets,
+		setShowOnlyTitlecardSets,
+		showHiddenUsers,
+		setShowHiddenUsers,
+	} = useMediaPageStore();
 
 	// Loading State
 	const [isLoading, setIsLoading] = useState(true);
@@ -63,8 +72,6 @@ const MediaItemPage = () => {
 
 	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
 	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
-	const { showHiddenUsers, setShowHiddenUsers } = useMediaPageStore();
-	const { showOnlyTitlecardSets, setShowOnlyTitlecardSets } = useMediaPageStore();
 
 	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
 	const [imageVersion, setImageVersion] = useState(Date.now());
@@ -178,53 +185,31 @@ const MediaItemPage = () => {
 				}
 				setMediaItem(responseItem);
 
-				// Fetch all sections in parallel, then check for existence in other sections
-				const sections = await getAllLibrarySectionsFromIDB();
 				log("Media Item Page - Media Item fetched:", responseItem);
-				log("Library Sections:", sections);
+				log("Media Item Page - Cached Library Sections:", sectionsMap);
+				const otherSections = Object.values(sectionsMap).filter(
+					(s) => s.Type === responseItem.Type && s.Title !== responseItem.LibraryTitle
+				);
+				log("Cached Library Sections of same type:", otherSections);
 
-				if (sections.length > 0) {
-					const otherSections = sections.filter(
-						(s) => s.type === responseItem.Type && s.title !== responseItem.LibraryTitle
+				await fetchUserFollowHides();
+				await fetchPosterSets(responseItem);
+
+				// Check the other sections for the same media item by TMDB ID
+				if (!responseItem.Guids?.length) return;
+				const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
+				if (!tmdbID) return;
+
+				for (const section of otherSections) {
+					if (!section.MediaItems || section.MediaItems.length === 0) continue;
+					const otherMediaItem = section.MediaItems.find((item) =>
+						item.Guids?.some((guid) => guid.Provider === "tmdb" && guid.ID === tmdbID)
 					);
-
-					// Fetch all section data in parallel
-					const sectionDataArr = await Promise.all(
-						otherSections.map((section) =>
-							librarySectionsStorage
-								.getItem<{
-									data: {
-										MediaItems: MediaItem[];
-									};
-								}>(section.title)
-								.then((data) => ({ section, data }))
-						)
-					);
-
-					await fetchUserFollowHides();
-					await fetchPosterSets(responseItem);
-
-					const tmdbId = Array.isArray(responseItem.Guids)
-						? responseItem.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID
-						: currentMediaItem.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID;
-					if (!tmdbId) {
-						return;
-					}
-					for (const { section, data } of sectionDataArr) {
-						log("SECTION:", section);
-						log("Library Section Data:", data);
-
-						if (data && data.data && data.data.MediaItems) {
-							const otherMediaItem = data.data.MediaItems?.find?.(
-								(item) => item.Guids?.find?.((guid) => guid.Provider === "tmdb")?.ID === tmdbId
-							);
-							log(`Checking section: ${section.title}, found item: ${otherMediaItem ? "Yes" : "No"}`);
-							if (otherMediaItem) {
-								log(`Media Item ${responseItem.RatingKey} exists in section: ${section.title}`);
-								setExistsInOtherSections(otherMediaItem);
-								break;
-							}
-						}
+					log(`Checking section: ${section.Title}, found item: ${otherMediaItem ? "Yes" : "No"}`);
+					if (otherMediaItem) {
+						log(`Media Item ${responseItem.RatingKey} exists in section: ${section.Title}`);
+						setExistsInOtherSections(otherMediaItem);
+						break;
 					}
 				}
 			} catch (error) {
@@ -235,7 +220,7 @@ const MediaItemPage = () => {
 		};
 
 		fetchAllInfo();
-	}, [partialMediaItem, mediaItem]);
+	}, [partialMediaItem, mediaItem, sectionsMap]);
 
 	// Compute hiddenCount based on posterSets and userHides
 	const hiddenCount = useMemo(() => {
@@ -320,21 +305,11 @@ const MediaItemPage = () => {
 	]);
 
 	useEffect(() => {
-		const fetchAdjacentItems = async () => {
-			if (!mediaItem?.RatingKey) return;
-
-			const [previousItem, nextItem] = await Promise.all([
-				getAdjacentMediaItemFromIDB(mediaItem.RatingKey, "previous"),
-				getAdjacentMediaItemFromIDB(mediaItem.RatingKey, "next"),
-			]);
-
-			setAdjacentItems({
-				previous: previousItem,
-				next: nextItem,
-			});
-		};
-
-		fetchAdjacentItems();
+		if (!mediaItem?.RatingKey) return;
+		setAdjacentItems({
+			previous: getAdjacentMediaItem(mediaItem.RatingKey, "previous"),
+			next: getAdjacentMediaItem(mediaItem.RatingKey, "next"),
+		});
 	}, [mediaItem?.RatingKey]);
 
 	if (!mediaItem) {
