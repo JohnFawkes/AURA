@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
+
 export type ViewControlOption = {
 	value: string;
 	label: string;
@@ -14,7 +16,7 @@ export type ViewControlOption = {
 type ViewControlProps = {
 	options: ViewControlOption[];
 	viewOption: string;
-	setViewOption: (option: string) => void;
+	setViewOption: (option: TYPE_VIEW_TYPE_OPTIONS) => void;
 	label?: string;
 	showLabel?: boolean;
 };
@@ -58,7 +60,7 @@ export const ViewControl: React.FC<ViewControlProps> = ({
 			) : (
 				<Select
 					onValueChange={(value) => {
-						setViewOption(value);
+						setViewOption(value as TYPE_VIEW_TYPE_OPTIONS);
 					}}
 					value={viewOption}
 				>

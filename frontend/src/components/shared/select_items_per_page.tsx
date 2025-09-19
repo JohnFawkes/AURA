@@ -1,8 +1,6 @@
 "use client";
 
-import { usePaginationStore } from "@/lib/paginationStore";
-
-import { Label } from "../ui/label";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -11,12 +9,19 @@ import {
 	SelectScrollUpButton,
 	SelectTrigger,
 	SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
 
-export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: number) => void }) {
-	const { itemsPerPage, setItemsPerPage } = usePaginationStore();
-	const itemsPerPageOptions = [10, 20, 30, 50, 100];
+import { ITEMS_PER_PAGE_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
+export function SelectItemsPerPage({
+	setCurrentPage,
+	itemsPerPage,
+	setItemsPerPage,
+}: {
+	setCurrentPage: (page: number) => void;
+	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
+	setItemsPerPage: (itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+}) {
 	return (
 		<>
 			<Label htmlFor="items-per-page-trigger" className="text-lg font-semibold mb-2 sm:mb-0 mr-2">
@@ -25,8 +30,8 @@ export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: 
 			<Select
 				value={itemsPerPage.toString()}
 				onValueChange={(value) => {
-					const newItemsPerPage = parseInt(value);
-					if (!isNaN(newItemsPerPage)) {
+					const newItemsPerPage = Number(value) as TYPE_ITEMS_PER_PAGE_OPTIONS;
+					if (ITEMS_PER_PAGE_OPTIONS.includes(newItemsPerPage)) {
 						setItemsPerPage(newItemsPerPage);
 						setCurrentPage(1);
 					}
@@ -36,7 +41,7 @@ export function SelectItemsPerPage({ setCurrentPage }: { setCurrentPage: (page: 
 					<SelectValue placeholder="Select" />
 				</SelectTrigger>
 				<SelectContent>
-					{itemsPerPageOptions.map((option) => (
+					{ITEMS_PER_PAGE_OPTIONS.map((option) => (
 						<SelectItem className="cursor-pointer" key={option} value={option.toString()}>
 							{option}
 						</SelectItem>
