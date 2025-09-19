@@ -1,7 +1,7 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { getAuthToken } from "@/services/api.auth";
+import { formatMediaItemUrl } from "@/helper/format-media-item-url";
+import { getAuthToken } from "@/services/auth/api-auth";
 import {
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
@@ -25,16 +25,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-import { useMediaStore } from "@/lib/mediaStore";
-import { useOnboardingStore } from "@/lib/onboardingStore";
-import { useHomePageStore } from "@/lib/pageHomeStore";
-import { usePaginationStore } from "@/lib/paginationStore";
-import { useSearchQueryStore } from "@/lib/searchQueryStore";
-import { librarySectionsStorage } from "@/lib/storage";
+import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
+import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchMediaItems } from "@/hooks/searchMediaItems";
+import { searchMediaItems } from "@/hooks/search-media-item";
 
-import { LibrarySection, MediaItem } from "@/types/mediaItem";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 const placeholderTexts = {
 	home: {
@@ -53,14 +52,15 @@ const placeholderTexts = {
 
 export default function Navbar() {
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
-	const { setCurrentPage } = usePaginationStore();
-	const { setFilteredLibraries, setFilterOutInDB } = useHomePageStore();
+	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
+	const { status, fetchStatus } = useOnboardingStore();
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
 	const [isAuthed, setIsAuthed] = useState(false);
+	const sectionsMap = useLibrarySectionsStore((s) => s.sections); // subscribe so effect reacts to cache changes
 
 	const [placeholderText, setPlaceholderText] = useState("");
 
@@ -72,25 +72,23 @@ export default function Navbar() {
 	const { setMediaItem } = useMediaStore();
 	const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
 
-	// Select only needed slices to avoid re-renders
-	const onboarding = useOnboardingStore();
-
-	// Kick off (once)
 	useEffect(() => {
-		onboarding.check();
-	}, [pathName, onboarding]);
+		const checkOnboarding = async () => {
+			await fetchStatus();
+		};
+		checkOnboarding();
+		// Optionally, add pathName as a dependency to re-check on route change
+	}, [pathName, fetchStatus]);
 
-	// Redirect logic (only after hydration + first check completes)
 	useEffect(() => {
-		if (!onboarding.hasHydrated || onboarding.loading) return;
-		if (onboarding.checked) {
-			if (onboarding.needsSetup && pathName !== "/onboarding/") {
+		if (status) {
+			if (status.needsSetup && pathName !== "/onboarding") {
 				router.replace("/onboarding");
-			} else if (!onboarding.needsSetup && pathName === "/onboarding/") {
+			} else if (!status.needsSetup && pathName === "/onboarding") {
 				router.replace("/");
 			}
 		}
-	}, [onboarding.loading, onboarding.checked, onboarding.needsSetup, pathName, router, onboarding.hasHydrated]);
+	}, [status, pathName, router]);
 
 	// Set the placeholder text based on the current page
 	useEffect(() => {
@@ -138,55 +136,38 @@ export default function Navbar() {
 		}
 	}, [searchQuery, setSearchQuery, isHomePage, isSavedSetsPage, isUserPage]);
 
-	// When not on homepage, search the IDB (cache) for matching MediaItems
+	// When not on homepage, search cached media items from zustand store
 	useEffect(() => {
-		if (!isHomePage && searchQuery.trim() !== "") {
-			const handler = setTimeout(async () => {
-				try {
-					// Get all cached sections from librarySectionsStorage
-					const keys = await librarySectionsStorage.keys();
-					const cachedSectionsPromises = keys.map((key) =>
-						librarySectionsStorage.getItem<{
-							data: LibrarySection;
-							timestamp: number;
-						}>(key)
-					);
-					const cachedSections = (await Promise.all(cachedSectionsPromises)).filter(
-						(
-							section
-						): section is {
-							data: LibrarySection;
-							timestamp: number;
-						} => section !== null
-					);
-
-					if (cachedSections.length === 0) {
-						setSearchResults([]);
-						return;
-					}
-
-					let allMediaItems: MediaItem[] = [];
-					const sections = cachedSections.map((s) => s.data);
-
-					sections.forEach((section: LibrarySection) => {
-						if (section.MediaItems) {
-							allMediaItems = allMediaItems.concat(section.MediaItems);
-						}
-					});
-
-					// Filter items based on the searchQuery (case-insensitive)
-					const query = searchQuery.trim().toLowerCase();
-					const results = searchMediaItems(allMediaItems, query, 10);
-					setSearchResults(results);
-				} catch {
-					setSearchResults([]);
-				}
-			}, 300);
-			return () => clearTimeout(handler);
-		} else {
+		if (isHomePage || searchQuery.trim() === "") {
 			setSearchResults([]);
+			return;
 		}
-	}, [searchQuery, isHomePage]);
+
+		const handler = setTimeout(() => {
+			try {
+				const records = Object.values(sectionsMap);
+
+				if (!records || records.length === 0) {
+					setSearchResults([]);
+					return;
+				}
+
+				const allMediaItems: MediaItem[] = records.flatMap((r) => r.MediaItems ?? []);
+				if (allMediaItems.length === 0) {
+					setSearchResults([]);
+					return;
+				}
+
+				const query = searchQuery.trim().toLowerCase();
+				const results = searchMediaItems(allMediaItems, query, 10);
+				setSearchResults(results);
+			} catch {
+				setSearchResults([]);
+			}
+		}, 300);
+
+		return () => clearTimeout(handler);
+	}, [searchQuery, isHomePage, sectionsMap]); // sectionsMap included so results update when cache fills
 
 	useEffect(() => {
 		// Track the auth status
@@ -199,7 +180,7 @@ export default function Navbar() {
 			setSearchQuery("");
 			setCurrentPage(1);
 			setFilteredLibraries([]);
-			setFilterOutInDB(false);
+			setFilterInDB("all");
 			setSearchResults([]);
 		}
 		router.push("/");
@@ -237,7 +218,7 @@ export default function Navbar() {
 			</div>
 
 			{/* Search Section */}
-			<div className="relative w-full max-w-2xl ml-1 mr-3" hidden={!!onboarding.needsSetup}>
+			<div className="relative w-full max-w-2xl ml-1 mr-3" hidden={false}>
 				<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="search"
@@ -280,7 +261,7 @@ export default function Navbar() {
 			</div>
 			{/* Settings */}
 			<DropdownMenu>
-				<DropdownMenuTrigger hidden={!!onboarding.needsSetup} asChild className="cursor-pointer">
+				<DropdownMenuTrigger hidden={false} asChild className="cursor-pointer">
 					<Button>
 						<SettingsIcon className="w-5 h-5" />
 					</Button>
