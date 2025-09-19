@@ -57,7 +57,7 @@ func shouldSkipLogging(request *http.Request) bool {
 
 // getTodayLogFile generates the file path for today's log file.
 // It performs the following steps:
-//  1. Retrieves the current date and time in the "America/New_York" time zone.
+//  1. Retrieves the current date and time in the server time zone.
 //  2. Formats the date as "YYYYMMDD".
 //  3. Reads the log directory path from the configuration file.
 //     If the variable is not set, it defaults to "/tmp/logs".
@@ -67,15 +67,9 @@ func shouldSkipLogging(request *http.Request) bool {
 // Returns:
 // - A string representing the full path to today's log file.
 func GetTodayLogFile() string {
-	// Get the current time in the format "2006/01/02 15:04:05"
-	dt := time.Now().Format("2006/01/02 15:04:05")
-
-	// Change time zone to America/New_York
-	loc, _ := time.LoadLocation("America/New_York")
-	tz, _ := time.ParseInLocation("2006/01/02 15:04:05", dt, loc)
-
-	// Format the time in the format "2006/01/02 15:04:05"
-	formattedDT := tz.Format("20060102")
+	// Get the current time in the server's local timezone
+	now := time.Now().In(time.Local)
+	formattedDT := now.Format("20060102")
 
 	// Use the Log Path and the formatted date to create the log file path
 	filepath := path.Join(LogFolder, formattedDT+".log")

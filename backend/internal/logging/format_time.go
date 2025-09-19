@@ -11,22 +11,16 @@ import (
 )
 
 // getLogTime retrieves the current time formatted as "2006/01/02 15:04:05"
-// in the America/New_York timezone. It returns two strings: the formatted
-// time with a grey color applied and the plain formatted time without color.
+// It returns two strings: the formatted time with a grey color applied
+// and the plain formatted time without color.
 //
 // Returns:
 //   - colored (string): The formatted time string with grey color applied.
 //   - formattedDT (string): The plain formatted time string without color.
 func getLogTime() (string, string) {
-	// Get the current time in the format "2006/01/02 15:04:05" for America/New_York
-	dt := time.Now().Format("2006/01/02 15:04:05")
-
-	// Change time zone to America/New_York
-	loc, _ := time.LoadLocation("America/New_York")
-	tz, _ := time.ParseInLocation("2006/01/02 15:04:05", dt, loc)
-
-	// Format the time in the format "2006/01/02 15:04:05" for America/New_York
-	formattedDT := tz.Format("2006/01/02 15:04:05")
+	// Get the current time in the server's local timezone
+	now := time.Now().In(time.Local)
+	formattedDT := now.Format("2006/01/02 15:04:05")
 
 	formattedDT = fixStringLength(formattedDT, TimeLength)
 	colored := grey(formattedDT)
