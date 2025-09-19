@@ -1,11 +1,11 @@
-import { ReturnErrorMessage } from "@/services/api.shared";
-import apiClient from "@/services/apiClient";
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
-import { AppConfigMediaServer } from "@/types/config";
+import { APIResponse } from "@/types/api/api-response";
+import { AppConfigMediaServer } from "@/types/config/config-app";
 
 export async function postMediaServerLibraryOptions(
 	mediaServerInfo: AppConfigMediaServer
@@ -25,7 +25,7 @@ export async function postMediaServerLibraryOptions(
 	}
 }
 
-export const getMediaServerLibraryOptions = async (
+export const fetchMediaServerLibraryOptions = async (
 	mediaServerInfo: AppConfigMediaServer
 ): Promise<{ ok: boolean; data: string[] }> => {
 	try {

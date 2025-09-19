@@ -1,9 +1,9 @@
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
-
-import { ReturnErrorMessage } from "./api.shared";
-import apiClient from "./apiClient";
+import { APIResponse } from "@/types/api/api-response";
 
 export const postLogin = async (password: string): Promise<APIResponse<{ token: string }>> => {
 	log("api.auth - Login started");

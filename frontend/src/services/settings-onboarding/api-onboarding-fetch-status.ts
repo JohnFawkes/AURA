@@ -1,17 +1,10 @@
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+
 import { log } from "@/lib/logger";
 
-import { AppConfig } from "@/types/config";
-
-import { APIResponse } from "../types/apiResponse";
-import { ReturnErrorMessage } from "./api.shared";
-import apiClient from "./apiClient";
-
-export interface AppOnboardingStatus {
-	configLoaded: boolean;
-	configValid: boolean;
-	needsSetup: boolean;
-	currentSetup: AppConfig;
-}
+import { APIResponse } from "@/types/api/api-response";
+import { AppOnboardingStatus } from "@/types/config/onboarding";
 
 export const fetchOnboardingStatus = async (): Promise<APIResponse<AppOnboardingStatus>> => {
 	log("api.settings - Fetching onboarding status started");

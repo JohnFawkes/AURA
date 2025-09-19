@@ -1,4 +1,4 @@
-import { MediaItem } from "@/types/mediaItem";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface PosterSet {
 	ID: string;

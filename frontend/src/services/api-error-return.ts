@@ -2,7 +2,7 @@ import { AxiosError } from "axios";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "../types/apiResponse";
+import { APIResponse } from "@/types/api/api-response";
 
 export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	const defaultError = {

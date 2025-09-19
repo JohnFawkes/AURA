@@ -16,6 +16,6 @@ export interface APIResponse<T> {
 }
 
 // Helper type guard to check if response contains an error
-export function hasError(response: APIResponse<unknown>): response is APIResponse<never> {
-	return response.status === "error" && response.error !== undefined;
-}
+// export function hasError(response: APIResponse<unknown>): response is APIResponse<never> {
+// 	return response.status === "error" && response.error !== undefined;
+// }

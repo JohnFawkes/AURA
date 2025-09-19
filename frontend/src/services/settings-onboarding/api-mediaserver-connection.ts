@@ -1,11 +1,11 @@
-import { ReturnErrorMessage } from "@/services/api.shared";
-import apiClient from "@/services/apiClient";
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
-import { AppConfigMediaServer } from "@/types/config";
+import { APIResponse } from "@/types/api/api-response";
+import { AppConfigMediaServer } from "@/types/config/config-app";
 
 export const checkMediaServerConnectionStatus = async (mediaServerInfo: AppConfigMediaServer) => {
 	try {
@@ -74,10 +74,11 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		return {
 			ok: true,
 			message: `Successfully connected to ${mediaServerInfo.Type}`,
-			data: response.data ? mediaServerInfo : null,
+			data: response.data as unknown as AppConfigMediaServer | null,
 		};
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
+		toast.dismiss();
 		toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
 			duration: 1000,
 		});

@@ -1,11 +1,11 @@
-import { ReturnErrorMessage } from "@/services/api.shared";
-import apiClient from "@/services/apiClient";
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
-import { AppConfigMediux } from "@/types/config";
+import { APIResponse } from "@/types/api/api-response";
+import { AppConfigMediux } from "@/types/config/config-app";
 
 export async function postMediuxNewTokenStatus(mediuxInfo: AppConfigMediux): Promise<APIResponse<string>> {
 	log("api.settings - Posting mediux new token status started");

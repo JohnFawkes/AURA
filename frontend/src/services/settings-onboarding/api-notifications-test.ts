@@ -1,10 +1,10 @@
-import { ReturnErrorMessage } from "@/services/api.shared";
-import apiClient from "@/services/apiClient";
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
+import { APIResponse } from "@/types/api/api-response";
 
 export const postSendTestNotification = async (): Promise<APIResponse<string>> => {
 	log("api.settings - Sending test notification started");
