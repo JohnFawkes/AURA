@@ -16,6 +16,19 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 	// Get the latest version from Github
 	const [latestVersion, setLatestVersion] = useState<string | null>(null);
 
+	function isNewerVersion(latest: string, current: string): boolean {
+		const parse = (v: string) => v.replace(/^v/, "").split("-")[0].split(".").map(Number);
+		const [lMaj, lMin, lPatch] = parse(latest);
+		const [cMaj, cMin, cPatch] = parse(current);
+
+		if (lMaj > cMaj) return true;
+		if (lMaj < cMaj) return false;
+		if (lMin > cMin) return true;
+		if (lMin < cMin) return false;
+		if (lPatch > cPatch) return true;
+		return false;
+	}
+
 	useEffect(() => {
 		const fetchLatestVersion = async () => {
 			try {
@@ -85,7 +98,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					>
 						App Version: {version}
 					</Link>
-					{latestVersion && latestVersion !== version && (
+					{latestVersion && isNewerVersion(latestVersion, version) && (
 						<Link
 							href="https://github.com/mediux-team/AURA/pkgs/container/aura"
 							target="_blank"
