@@ -1,26 +1,30 @@
 "use client";
 
-import { AlertCircle, ChevronDown } from "lucide-react";
+import { AlertCircle, AlertTriangle, ChevronDown } from "lucide-react";
 
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { H4, Lead } from "@/components/ui/typography";
+import { H3, H4, Lead } from "@/components/ui/typography";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { APIResponse } from "@/types/apiResponse";
+import { APIResponse } from "@/types/api/api-response";
 
 interface ErrorMessageProps<T> {
 	error: APIResponse<T> | null;
 	className?: string;
+	isWarning?: boolean;
 }
 
-export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
+export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessageProps<T>) {
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	if (!error?.error) return null;
+
+	const textColorClass = isWarning ? "text-yellow-500" : "text-destructive";
+	const backgroundColorClass = isWarning ? "bg-yellow-500/10" : "bg-destructive/10";
 
 	// Helper for pretty JSON
 	const getPrettyDetails = () => {
@@ -49,13 +53,17 @@ export function ErrorMessage<T>({ error, className }: ErrorMessageProps<T>) {
 
 	return (
 		<div className={cn("flex flex-col items-center justify-center mt-10 w-full max-w-md mx-auto", className)}>
-			<div className="w-full bg-destructive/10 rounded-lg p-4 text-center">
+			<div className={cn("w-full rounded-lg p-4 text-center", backgroundColorClass)}>
 				<div className="flex items-center justify-center gap-2 mb-1">
-					<AlertCircle className="h-5 w-5 text-destructive" />
-					<span className="text-lg font-semibold text-destructive">Error</span>
+					{isWarning ? (
+						<AlertTriangle className="h-5 w-5 text-yellow-500" />
+					) : (
+						<AlertCircle className="h-5 w-5 text-destructive" />
+					)}
+					<H3 className={cn("text-lg", textColorClass)}>{isWarning ? "Warning" : "Error"}</H3>
 				</div>
 
-				<H4 className="text-md text-destructive mt-2">{error.error.Message}</H4>
+				<H4 className={cn("text-md", textColorClass)}>{error.error.Message}</H4>
 
 				<Lead className="text-sm text-muted-foreground mt-2">{error.error.HelpText}</Lead>
 
