@@ -1,7 +1,7 @@
 "use client";
 
-import { postClearTempImagesFolder } from "@/app/settings/services/temp_images";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { postClearTempImagesFolder } from "@/services/settings-onboarding/api-images-actions";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigImages } from "@/types/config";
+import { AppConfigImages } from "@/types/config/config-app";
 
-interface ImagesSectionProps {
+interface ConfigSectionImagesProps {
 	value: AppConfigImages;
 	editing: boolean;
 	dirtyFields?: {
@@ -31,7 +31,7 @@ interface ImagesSectionProps {
 	errorsUpdate?: (errors: Record<string, string>) => void;
 }
 
-export const ImagesSection: React.FC<ImagesSectionProps> = ({
+export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

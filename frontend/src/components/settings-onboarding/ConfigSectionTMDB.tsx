@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigTMDB } from "@/types/config";
+import { AppConfigTMDB } from "@/types/config/config-app";
 
-interface TMDBSectionProps {
+interface ConfigSectionTMDBProps {
 	value: AppConfigTMDB;
 	editing: boolean;
 	dirtyFields?: Partial<Record<keyof AppConfigTMDB, boolean>>;
@@ -21,7 +21,7 @@ interface TMDBSectionProps {
 	onTest?: (cfg: AppConfigTMDB) => void;
 }
 
-export const TMDBSection: React.FC<TMDBSectionProps> = ({
+export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

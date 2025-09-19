@@ -1,4 +1,4 @@
-import { MediaItem } from "@/types/mediaItem";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export function formatMediaItemUrl(mediaItem: MediaItem): string {
 	const formattedTitle = mediaItem.Title.replace(/\s+/g, "_");

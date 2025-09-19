@@ -1,6 +1,6 @@
 "use client";
 
-import { checkMediuxNewTokenStatusResult } from "@/app/settings/services/mediux_check_token";
+import { checkMediuxNewTokenStatusResult } from "@/services/settings-onboarding/api-mediux-connection";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -11,11 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigMediux } from "@/types/config";
+import { AppConfigMediux } from "@/types/config/config-app";
 
-interface MediuxSectionProps {
+interface ConfigSectionMediuxProps {
 	value: AppConfigMediux;
 	editing: boolean;
 	configAlreadyLoaded: boolean;
@@ -26,7 +26,7 @@ interface MediuxSectionProps {
 
 const QUALITY_OPTIONS = ["optimized", "original"] as const;
 
-export const MediuxSection: React.FC<MediuxSectionProps> = ({
+export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 	value,
 	editing,
 	configAlreadyLoaded,

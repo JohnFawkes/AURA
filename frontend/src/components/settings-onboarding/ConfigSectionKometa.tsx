@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigKometa } from "@/types/config";
+import { AppConfigKometa } from "@/types/config/config-app";
 
-interface KometaSectionProps {
+interface ConfigSectionKometaProps {
 	value: AppConfigKometa;
 	editing: boolean;
 	dirtyFields?: Partial<Record<keyof AppConfigKometa, boolean>>;
@@ -24,7 +24,7 @@ interface KometaSectionProps {
 	errorsUpdate?: (errors: Partial<Record<keyof AppConfigKometa, string>>) => void;
 }
 
-export const KometaSection: React.FC<KometaSectionProps> = ({
+export const ConfigSectionKometa: React.FC<ConfigSectionKometaProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

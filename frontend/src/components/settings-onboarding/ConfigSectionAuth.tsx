@@ -7,11 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigAuth } from "@/types/config";
+import { AppConfigAuth } from "@/types/config/config-app";
 
-interface AuthConfigProps {
+interface ConfigSectionAuthProps {
 	value: AppConfigAuth;
 	editing: boolean;
 	dirtyFields?: { Enabled?: boolean; Password?: boolean };
@@ -21,7 +21,7 @@ interface AuthConfigProps {
 
 const hashRegex = /^\$argon2id\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+$/;
 
-export const AuthSection: React.FC<AuthConfigProps> = ({
+export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

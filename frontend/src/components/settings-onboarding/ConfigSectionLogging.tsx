@@ -1,6 +1,6 @@
 "use client";
 
-import { postClearOldLogs } from "@/app/settings/services/logs";
+import { postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -14,13 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigLogging } from "@/types/config";
+import { AppConfigLogging } from "@/types/config/config-app";
 
-// adjust import path if different
-
-interface LoggingSectionProps {
+interface ConfigSectionLoggingProps {
 	value: AppConfigLogging;
 	editing: boolean;
 	dirtyFields?: Partial<Record<keyof AppConfigLogging, boolean>>;
@@ -30,7 +28,7 @@ interface LoggingSectionProps {
 
 const LOG_LEVEL_OPTIONS = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"] as const;
 
-export const LoggingSection: React.FC<LoggingSectionProps> = ({
+export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

@@ -1,7 +1,7 @@
 "use client";
 
-import { ValidateURL } from "@/app/settings/components/settings_media_server";
-import { sendTestNotification } from "@/app/settings/services/notifications";
+import { ValidateURL } from "@/helper/validation/validate-url";
+import { sendTestNotification } from "@/services/settings-onboarding/api-notifications-test";
 import { Plus, Trash2 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 import {
 	AppConfigNotificationDiscord,
@@ -22,9 +22,9 @@ import {
 	AppConfigNotificationProviders,
 	AppConfigNotificationPushover,
 	AppConfigNotifications,
-} from "@/types/config";
+} from "@/types/config/config-app";
 
-interface NotificationsSectionProps {
+interface ConfigSectionNotificationsProps {
 	value: AppConfigNotifications;
 	editing: boolean;
 	dirtyFields?: {
@@ -41,7 +41,7 @@ interface NotificationsSectionProps {
 
 const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify"] as const;
 
-export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
+export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProps> = ({
 	value,
 	editing,
 	dirtyFields = {},

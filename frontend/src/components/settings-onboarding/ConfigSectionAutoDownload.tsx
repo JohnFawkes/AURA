@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { AppConfigAutoDownload } from "@/types/config";
+import { AppConfigAutoDownload } from "@/types/config/config-app";
 
-interface AutoDownloadSectionProps {
+interface ConfigSectionAutoDownloadProps {
 	value: AppConfigAutoDownload;
 	editing: boolean;
 	dirtyFields?: Partial<Record<keyof AppConfigAutoDownload, boolean>>;
@@ -46,7 +46,7 @@ const parseCronToHumanReadable = (cronExpression: string): string => {
 	return `Currently runs ${minuteText} ${hourText}, ${dayOfMonthText}, ${monthText}, and ${dayOfWeekText}.`;
 };
 
-export const AutoDownloadSection: React.FC<AutoDownloadSectionProps> = ({
+export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps> = ({
 	value,
 	editing,
 	dirtyFields = {},
