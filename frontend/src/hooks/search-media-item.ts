@@ -1,4 +1,4 @@
-import { MediaItem } from "@/types/mediaItem";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 // Helper to remove special characters and lowercase the string
 function normalizeString(str: string): string {
