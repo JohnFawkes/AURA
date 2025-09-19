@@ -40,6 +40,7 @@ type MediaItemDetailsProps = {
 	movieDuration: number;
 	guids: Guid[];
 	existsInDB: boolean;
+	onExistsInDBChange?: (existsInDB: boolean) => void;
 	status: string;
 	libraryTitle: string;
 	otherMediaItem: MediaItem | null;
@@ -59,15 +60,21 @@ export function MediaItemDetails({
 	movieDuration,
 	guids,
 	existsInDB,
+	onExistsInDBChange,
 	status,
 	libraryTitle,
 	otherMediaItem,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
-	const [isInDB, setIsInDB] = useState(existsInDB); // <-- local state for DB existence
+	const [isInDB, setIsInDBLocal] = useState(existsInDB); // rename to avoid confusion
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
 	const { setSearchQuery } = useSearchQueryStore();
+
+	// Sync when parent prop changes (e.g. route change or external update)
+	useEffect(() => {
+		setIsInDBLocal(existsInDB);
+	}, [existsInDB]);
 
 	useEffect(() => {
 		const fetchServerType = async () => {
@@ -86,6 +93,11 @@ export function MediaItemDetails({
 		fetchServerType();
 	}, []);
 
+	const updateInDB = (next: boolean) => {
+		setIsInDBLocal(next); // local optimistic
+		onExistsInDBChange?.(next); // notify parent
+	};
+
 	const handleSavedSetsPageClick = () => {
 		if (isInDB) {
 			setSearchQuery(`${title} y:${year}: id:${ratingKey}:`);
@@ -103,7 +115,7 @@ export function MediaItemDetails({
 				LibraryTitle: libraryTitle,
 				RatingKey: ratingKey,
 				Type: "show",
-				ExistInDatabase: false,
+				ExistInDatabase: true,
 				Guids: [],
 			},
 			PosterSetID: "",
@@ -127,8 +139,7 @@ export function MediaItemDetails({
 			log(`Error adding ${title} to DB:`, addToDBResp.error);
 			toast.error(`Failed to add ${title} to DB`);
 		} else {
-			log(`Successfully added ${title} to DB for ignoring`);
-			setIsInDB(true); // <-- update local state to trigger re-render
+			updateInDB(true); // use helper so parent also updates
 			toast.success(`Will successfully ignore ${title} in the future`);
 		}
 	};

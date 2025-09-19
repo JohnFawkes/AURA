@@ -68,6 +68,8 @@ const MediaItemPage = () => {
 
 	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
 	const [imageVersion, setImageVersion] = useState(Date.now());
+	const sectionsMap = useLibrarySectionsStore((state) => state.sections);
+	const [existsInDB, setExistsInDB] = useState<boolean>(mediaItem?.ExistInDatabase || false);
 
 	const [adjacentItems, setAdjacentItems] = useState<{
 		previous: MediaItem | null;
@@ -353,6 +355,9 @@ const MediaItemPage = () => {
 	}
 
 	const handleMediaItemChange = (item: MediaItem) => {
+		if (item.ExistInDatabase) {
+			setExistsInDB(true);
+		}
 		setMediaItem(item);
 		setImageVersion(Date.now());
 	};
@@ -422,7 +427,8 @@ const MediaItemPage = () => {
 						movieSize={mediaItem.Movie?.File?.Size || 0}
 						movieDuration={mediaItem.Movie?.File?.Duration || 0}
 						guids={mediaItem.Guids || []}
-						existsInDB={mediaItem.ExistInDatabase || false}
+						existsInDB={existsInDB}
+						onExistsInDBChange={setExistsInDB}
 						status={posterSets ? posterSets[0]?.Status : ""}
 						libraryTitle={mediaItem.LibraryTitle || ""}
 						otherMediaItem={existsInOtherSections}
