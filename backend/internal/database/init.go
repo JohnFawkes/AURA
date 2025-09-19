@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -32,14 +31,6 @@ func InitDB() bool {
 		logging.LOG.Error(fmt.Sprintf("Failed to open database: %v", err))
 		return false
 	}
-
-	// Set the timezone to your local timezone
-	location, err := time.LoadLocation("America/New_York") // Replace with your timezone
-	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to load timezone: %v", err))
-		return false
-	}
-	time.Local = location // Set the default timezone for the application
 
 	// Create the SavedItems table
 	createSavedItemsTableQuery := `
