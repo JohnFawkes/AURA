@@ -6,6 +6,7 @@ import (
 	"aura/internal/modals"
 	mediaserver_shared "aura/internal/server/shared"
 	"aura/internal/utils"
+	"aura/internal/utils/masking"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,6 +33,7 @@ func ValidateMediaServerNewInfoConnection(w http.ResponseWriter, r *http.Request
 	currentType := config.Global.MediaServer.Type
 	currentURL := config.Global.MediaServer.URL
 	currentToken := config.Global.MediaServer.Token
+	currentUserID := config.Global.MediaServer.UserID
 
 	// Change the Global values temporarily
 	config.Global.MediaServer.Type = mediaServerInfo.Type
@@ -39,6 +41,17 @@ func ValidateMediaServerNewInfoConnection(w http.ResponseWriter, r *http.Request
 	if !strings.HasPrefix(mediaServerInfo.Token, "***") {
 		config.Global.MediaServer.Token = mediaServerInfo.Token
 	}
+	config.Global.MediaServer.UserID = "" // Clear UserID to force re-fetch
+
+	// Restore the previous values
+	defer func() {
+		config.Global.MediaServer.Type = currentType
+		config.Global.MediaServer.URL = currentURL
+		config.Global.MediaServer.Token = currentToken
+		config.Global.MediaServer.UserID = currentUserID
+		logging.LOG.Debug("Restored original media server configuration values")
+		logging.LOG.Debug(fmt.Sprintf("Type: %s, URL: %s, Token: %s, UserID: %s", currentType, currentURL, currentToken, currentUserID))
+	}()
 
 	var mediaServer mediaserver_shared.MediaServer
 	switch config.Global.MediaServer.Type {
@@ -54,13 +67,6 @@ func ValidateMediaServerNewInfoConnection(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Restore the previous values
-	defer func() {
-		config.Global.MediaServer.Type = currentType
-		config.Global.MediaServer.URL = currentURL
-		config.Global.MediaServer.Token = currentToken
-	}()
-
 	_, Err = mediaServer.GetMediaServerStatus()
 	if Err.Message != "" {
 		logging.LOG.Warn(Err.Message)
@@ -75,7 +81,15 @@ func ValidateMediaServerNewInfoConnection(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	mediaServerInfo.UserID = config.Global.MediaServer.UserID
+	// Set the UserID in the response
+	// if Jellyfin/Emby, we can get it from the server
+	// if Plex, we set it to the existing value (it won't change)
+	if config.Global.MediaServer.Type == "Emby" || config.Global.MediaServer.Type == "Jellyfin" {
+		mediaServerInfo.UserID = config.Global.MediaServer.UserID
+	}
+
+	// For security, mask the token in the response
+	mediaServerInfo.Token = masking.MaskToken(mediaServerInfo.Token)
 
 	// Respond with a success message
 	utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
