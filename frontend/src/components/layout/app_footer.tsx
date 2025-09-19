@@ -1,15 +1,40 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 
 import Image from "next/image";
 import Link from "next/link";
+
+import { log } from "@/lib/logger";
 
 interface AppFooterProps {
 	version?: string;
 }
 
 export function AppFooter({ version = "dev" }: AppFooterProps) {
+	// Get the latest version from Github
+	const [latestVersion, setLatestVersion] = useState<string | null>(null);
+
+	useEffect(() => {
+		const fetchLatestVersion = async () => {
+			try {
+				const res = await fetch("https://raw.githubusercontent.com/mediux-team/AURA/master/VERSION.txt", {
+					cache: "no-store",
+				});
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const txt = (await res.text()).trim();
+				// Basic sanity (optional)
+				if (txt && txt.length < 50) {
+					setLatestVersion(txt);
+				}
+			} catch (error) {
+				log("Error fetching latest version:", error);
+			}
+		};
+		fetchLatestVersion();
+	}, []);
+
 	return (
 		<footer className="border-t bg-background/80 backdrop-blur-sm w-full py-4 px-4 md:px-12">
 			<div className="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center md:space-y-0">
@@ -52,13 +77,25 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				</div>
 
 				{/* Version - Line 3 on mobile */}
-				<div className="flex justify-center md:justify-end">
+				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2">
 					<Link
 						href="/logs"
 						className="text-xs py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
+						title="View application logs"
 					>
 						App Version: {version}
 					</Link>
+					{latestVersion && latestVersion !== version && (
+						<Link
+							href="https://github.com/mediux-team/AURA/pkgs/container/aura"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-xs py-1 px-2 bg-amber-500/10 border border-amber-500/40 rounded-md hover:bg-amber-500/20 transition-colors"
+							title={`Latest version ${latestVersion} on GitHub`}
+						>
+							Update Available: {latestVersion}
+						</Link>
+					)}
 				</div>
 			</div>
 		</footer>
