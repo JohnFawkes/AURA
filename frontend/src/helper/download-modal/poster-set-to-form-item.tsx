@@ -1,6 +1,6 @@
 import { FormItemDisplay } from "@/components/shared/download-modal";
 
-import { PosterFile, PosterSet } from "@/types/posterSets";
+import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 
 const createBaseItem = (set: PosterSet): FormItemDisplay => ({
 	MediaItemRatingKey: "",
