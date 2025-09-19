@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
 import React, { useState } from "react";
@@ -30,11 +30,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { H4, P } from "@/components/ui/typography";
 
-import { useMediaStore } from "@/lib/mediaStore";
-import { usePosterSetsStore } from "@/lib/posterSetStore";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { APIResponse } from "@/types/apiResponse";
-import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
+import { APIResponse } from "@/types/api/api-response";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -64,7 +63,6 @@ const SavedSetsCard: React.FC<{
 	const [isMounted, setIsMounted] = useState(false);
 
 	// Access global stores
-	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
 
 	// State to track if we are currently refreshing poster sets
@@ -202,13 +200,6 @@ const SavedSetsCard: React.FC<{
 					unignoreLoading={unignoreLoading}
 					setUnignoreLoading={setUnignoreLoading}
 					setUpdateError={setUpdateError}
-					onSelectSet={(ps) => {
-						setPosterSets([ps.PosterSet]);
-						setSetType(ps.PosterSet.Type);
-						setSetTitle(ps.PosterSet.Title);
-						setSetAuthor(ps.PosterSet.User.Name);
-						setSetID(ps.PosterSetID);
-					}}
 				/>
 				<Separator className="my-4" />
 

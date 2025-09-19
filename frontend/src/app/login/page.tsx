@@ -1,6 +1,6 @@
 "use client";
 
-import { postLogin } from "@/services/api.auth";
+import { postLogin } from "@/services/auth/api-auth";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 
 import { useEffect, useState } from "react";

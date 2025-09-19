@@ -1,9 +1,10 @@
 "use client";
 
-import { posterSetToFormItem } from "@/helper/download-modal/posterSetToFormItem";
-import { formatDownloadSize } from "@/helper/formatDownloadSize";
-import { postAddItemToDB } from "@/services/api.db";
-import { fetchMediaServerItemContent, patchDownloadPosterFileAndUpdateMediaServer } from "@/services/api.mediaserver";
+import { posterSetToFormItem } from "@/helper/download-modal/poster-set-to-form-item";
+import { formatDownloadSize } from "@/helper/format-download-size";
+import { postAddItemToDB } from "@/services/database/api-db-item-add";
+import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
+import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, Loader, TriangleAlert, X } from "lucide-react";
 import { z } from "zod";
@@ -38,9 +39,9 @@ import { Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
 
-import { DBSavedItem } from "@/types/databaseSavedSet";
-import { MediaItem } from "@/types/mediaItem";
-import { PosterFile, PosterSet } from "@/types/posterSets";
+import { DBSavedItem } from "@/types/database/db-saved-item";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 
 export interface FormItemDisplay {
 	MediaItemRatingKey: string;

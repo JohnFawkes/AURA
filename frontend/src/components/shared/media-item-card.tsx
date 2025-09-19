@@ -1,6 +1,6 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
+import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { Database } from "lucide-react";
 
 import React from "react";
@@ -12,9 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { H4 } from "@/components/ui/typography";
 
-import { useMediaStore } from "@/lib/mediaStore";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { MediaItem } from "@/types/mediaItem";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 interface HomeMediaItemCardProps {
 	mediaItem: MediaItem;

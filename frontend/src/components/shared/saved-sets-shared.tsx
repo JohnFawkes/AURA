@@ -1,11 +1,13 @@
-import { deleteMediaItemFromDB, patchSavedItemInDB } from "@/services/api.db";
-import { fetchMediaServerItemContent } from "@/services/api.mediaserver";
-import { fetchSetByID } from "@/services/api.mediux";
+import { deleteMediaItemFromDB } from "@/services/database/api-db-item-delete";
+import { patchSavedItemInDB } from "@/services/database/api-db-item-update";
+import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
+import { fetchSetByID } from "@/services/mediux/api-mediux-fetch-set-by-id";
 import { User } from "lucide-react";
 
 import React from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import DownloadModal from "@/components/shared/download-modal";
 import { ErrorMessage } from "@/components/shared/error-message";
@@ -21,10 +23,13 @@ import {
 } from "@/components/ui/dialog";
 
 import { log } from "@/lib/logger";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 
-import { APIResponse } from "@/types/apiResponse";
-import { DBMediaItemWithPosterSets } from "@/types/databaseSavedSet";
-import { PosterSet } from "@/types/posterSets";
+import { APIResponse } from "@/types/api/api-response";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 export const refreshPosterSet = async ({
 	editSets,
@@ -570,7 +575,6 @@ export interface SavedSetsListProps {
 	unignoreLoading: boolean;
 	setUnignoreLoading: (v: boolean) => void;
 	setUpdateError: (v: APIResponse<unknown> | null) => void;
-	onSelectSet: (ps: DBMediaItemWithPosterSets["PosterSets"][number]) => void;
 }
 
 export const SavedSetsList: React.FC<SavedSetsListProps> = ({
@@ -580,8 +584,11 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 	unignoreLoading,
 	setUnignoreLoading,
 	setUpdateError,
-	onSelectSet,
 }) => {
+	const router = useRouter();
+	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
+	const { setMediaItem } = useMediaStore();
+
 	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
 
 	if (onlyIgnore) {
@@ -612,6 +619,16 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 
 	const heading = sets.length > 1 ? "Sets:" : "Set:";
 
+	const goToSetPage = (set: PosterSet, mediaItem: MediaItem) => {
+		setPosterSets([set]);
+		setSetType(set.Type);
+		setSetTitle(set.Title);
+		setSetAuthor(set.User.Name);
+		setSetID(set.ID);
+		setMediaItem(mediaItem);
+		router.push(`/sets/${set.ID}`);
+	};
+
 	if (layout === "card") {
 		return (
 			<div className="w-full">
@@ -625,7 +642,10 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 							<Link
 								href={`/sets/${ps.PosterSetID}`}
 								className="text-primary hover:underline text-sm shrink-0"
-								onClick={() => onSelectSet(ps)}
+								onClick={(e) => {
+									e.stopPropagation();
+									goToSetPage(ps.PosterSet, savedSet.MediaItem);
+								}}
 							>
 								{ps.PosterSetID}
 							</Link>
@@ -655,7 +675,10 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 						<Link
 							href={`/sets/${ps.PosterSetID}`}
 							className="text-primary hover:underline text-sm"
-							onClick={() => onSelectSet(ps)}
+							onClick={(e) => {
+								e.stopPropagation();
+								goToSetPage(ps.PosterSet, savedSet.MediaItem);
+							}}
 						>
 							{ps.PosterSetID}
 						</Link>

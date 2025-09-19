@@ -2,7 +2,7 @@
 
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 
-import { usePosterSetsStore } from "@/lib/posterSetStore";
+import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 
 const SetPage = () => {
 	const { setType, setTitle, setAuthor, setID, posterSets } = usePosterSetsStore();

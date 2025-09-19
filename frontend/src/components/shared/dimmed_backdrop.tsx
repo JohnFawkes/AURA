@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 export function DimmedBackground({ backdropURL }: { backdropURL: string }) {
 	const [isBlurred, setIsBlurred] = useState(false);

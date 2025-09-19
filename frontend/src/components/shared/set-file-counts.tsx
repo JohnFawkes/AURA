@@ -1,9 +1,9 @@
 import { Lead } from "@/components/ui/typography";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
-import { MediaItem } from "@/types/mediaItem";
-import { PosterSet } from "@/types/posterSets";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 interface SetFileCountsProps {
 	mediaItem: MediaItem;

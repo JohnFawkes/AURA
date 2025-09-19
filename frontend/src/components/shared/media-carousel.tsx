@@ -1,4 +1,4 @@
-import { formatLastUpdatedDate } from "@/helper/formatDate";
+import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { User, ZoomInIcon } from "lucide-react";
 
 import Link from "next/link";
@@ -10,11 +10,11 @@ import { SetFileCounts } from "@/components/shared/set-file-counts";
 import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Lead } from "@/components/ui/typography";
 
-import { useMediaStore } from "@/lib/mediaStore";
-import { usePosterSetsStore } from "@/lib/posterSetStore";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 
-import { MediaItem } from "@/types/mediaItem";
-import { PosterSet } from "@/types/posterSets";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 type MediaCarouselProps = {
 	set: PosterSet;

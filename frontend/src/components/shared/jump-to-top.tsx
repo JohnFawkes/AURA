@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/cn";
 
 export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);

@@ -1,27 +1,24 @@
-import {
-	BoxsetCollectionToPosterSet,
-	BoxsetMovieToPosterSet,
-	BoxsetShowToPosterSet,
-	BoxsetToPosterSet,
-} from "@/helper/boxsetToPosterSet";
-import { formatLastUpdatedDate } from "@/helper/formatDate";
+import { BoxsetCollectionToPosterSet } from "@/helper/boxsets/boxset-to-collection-poster-set";
+import { BoxsetMovieToPosterSet } from "@/helper/boxsets/boxset-to-movie-poster-set";
+import { BoxsetToPosterSet } from "@/helper/boxsets/boxset-to-poster-set";
+import { BoxsetShowToPosterSet } from "@/helper/boxsets/boxset-to-show-poster-set";
+import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { Database } from "lucide-react";
 
 import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Lead } from "@/components/ui/typography";
 
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 import {
 	MediuxUserBoxset,
 	MediuxUserCollectionSet,
 	MediuxUserMovieSet,
 	MediuxUserShowSet,
-} from "@/types/mediuxUserAllSets";
-import { PosterSet } from "@/types/posterSets";
-
-import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "../ui/carousel";
-import { Lead } from "../ui/typography";
+} from "@/types/mediux/mediux-sets";
 
 export const RenderBoxSetDisplay = ({
 	set,

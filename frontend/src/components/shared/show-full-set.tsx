@@ -1,4 +1,4 @@
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { useEffect, useState } from "react";
 
@@ -13,7 +13,7 @@ import { H1, Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
 
-import { PosterFile, PosterSet } from "@/types/posterSets";
+import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 
 export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 	setType,

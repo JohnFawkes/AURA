@@ -5,7 +5,7 @@ import React from "react";
 import { AssetImage } from "@/components/shared/asset-image";
 import { CarouselItem } from "@/components/ui/carousel";
 
-import { PosterSet } from "@/types/posterSets";
+import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 	return (

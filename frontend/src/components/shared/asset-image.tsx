@@ -4,13 +4,13 @@ import { useState } from "react";
 
 import Image from "next/image";
 
-import { cn } from "@/lib/utils";
-import { type AspectRatio, getAspectRatioClass, getImageSizes } from "@/lib/utils/image-utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
-import { MediaItem } from "@/types/mediaItem";
-import { PosterFile } from "@/types/posterSets";
+import { cn } from "@/lib/cn";
+import { type AspectRatio, getAspectRatioClass, getImageSizes } from "@/lib/image-sizes";
 
-import { Skeleton } from "../ui/skeleton";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { PosterFile } from "@/types/media-and-posters/poster-sets";
 
 interface AssetImageProps {
 	image: PosterFile | MediaItem | string;

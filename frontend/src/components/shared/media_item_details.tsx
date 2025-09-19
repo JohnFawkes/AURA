@@ -1,8 +1,8 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/formatMediaItemURL";
-import { postAddItemToDB } from "@/services/api.db";
-import { fetchMediaServerType } from "@/services/api.mediaserver";
+import { formatMediaItemUrl } from "@/helper/format-media-item-url";
+import { postAddItemToDB } from "@/services/database/api-db-item-add";
+import { fetchMediaServerType } from "@/services/mediaserver/api-mediaserver-fetch-type";
 import { Database } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,19 +12,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { MediaItemRatings } from "@/components/shared/media_item_ratings";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { H1, Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
-import { useMediaStore } from "@/lib/mediaStore";
-import { useSearchQueryStore } from "@/lib/searchQueryStore";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { DBSavedItem } from "@/types/databaseSavedSet";
-import { Guid, MediaItem } from "@/types/mediaItem";
-
-import { Badge } from "../ui/badge";
-import { H1, Lead } from "../ui/typography";
-import { MediaItemRatings } from "./media_item_ratings";
+import { DBSavedItem } from "@/types/database/db-saved-item";
+import { Guid, MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 type MediaItemDetailsProps = {
 	ratingKey: string;

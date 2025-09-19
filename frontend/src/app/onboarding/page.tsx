@@ -1,29 +1,29 @@
 "use client";
 
-import { AuthSection } from "@/app/settings/components/settings_auth";
-import { AutoDownloadSection } from "@/app/settings/components/settings_autodownload";
-import { ImagesSection } from "@/app/settings/components/settings_images";
-import { KometaSection } from "@/app/settings/components/settings_kometa";
-import { LoggingSection } from "@/app/settings/components/settings_logging";
-import { MediaServerSection } from "@/app/settings/components/settings_media_server";
-import { MediuxSection } from "@/app/settings/components/settings_mediux";
-import { NotificationsSection } from "@/app/settings/components/settings_notifications";
-import { defaultAppConfig } from "@/app/settings/services/fetch_config";
-import { finalizeOnboarding } from "@/app/settings/services/finalize_onboarding";
-import { updateConfig } from "@/app/settings/services/update_config";
+import { updateConfig } from "@/services/settings-onboarding/api-config-update";
+import { finalizeOnboarding } from "@/services/settings-onboarding/api-onboarding-finalize";
 import yaml from "js-yaml";
 import { toast } from "sonner";
 
-import { JSX, useCallback, useMemo, useState } from "react";
+import { JSX, useCallback, useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 
+import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
+import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
+import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
+import { ConfigSectionKometa } from "@/components/settings-onboarding/ConfigSectionKometa";
+import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
+import { ConfigSectionMediaServer } from "@/components/settings-onboarding/ConfigSectionMediaServer";
+import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
+import { ConfigSectionNotifications } from "@/components/settings-onboarding/ConfigSectionNotifications";
 import { Button } from "@/components/ui/button";
 import { H1, H2, P } from "@/components/ui/typography";
 
-import { useOnboardingStore } from "@/lib/onboardingStore";
+import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
-import type { AppConfig } from "@/types/config";
+import type { AppConfig } from "@/types/config/config-app";
+import { defaultAppConfig } from "@/types/config/config-default-app";
 
 interface StepDef {
 	key: string;
@@ -33,13 +33,24 @@ interface StepDef {
 }
 
 const OnboardingPage = () => {
-	const onboarding = useOnboardingStore();
+	const { status, fetchStatus } = useOnboardingStore();
+
+	// Hydrate/fetch onboarding status on mount
+	useEffect(() => {
+		if (!status) fetchStatus();
+	}, [status, fetchStatus]);
+
 	const [applyLoading, setApplyLoading] = useState(false);
-	const [configState, setConfigState] = useState<AppConfig>(
-		() => onboarding.data?.currentSetup || defaultAppConfig()
-	);
+	const [configState, setConfigState] = useState<AppConfig>(() => status?.currentSetup || defaultAppConfig());
 	const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
 	const [errorSummaryOpen, setErrorSummaryOpen] = useState(false);
+
+	// Keep configState in sync with backend status if it changes
+	useEffect(() => {
+		if (status?.currentSetup) {
+			setConfigState(status.currentSetup);
+		}
+	}, [status?.currentSetup]);
 
 	const updateSectionErrors = useCallback((section: string, errs?: Record<string, string>) => {
 		setValidationErrors((prev) => {
@@ -113,7 +124,7 @@ const OnboardingPage = () => {
 						</div>
 
 						<P className="text-muted-foreground max-w-xl">
-							{onboarding.data?.configLoaded && (
+							{status?.configLoaded && (
 								<span className="text-destructive">
 									Your configuration file might have some errors.{" "}
 								</span>
@@ -128,10 +139,10 @@ const OnboardingPage = () => {
 				key: "mediux",
 				title: "Mediux",
 				render: () => (
-					<MediuxSection
+					<ConfigSectionMediux
 						value={configState.Mediux}
 						editing
-						configAlreadyLoaded={onboarding.data?.configLoaded || false}
+						configAlreadyLoaded={status?.configLoaded || false}
 						dirtyFields={{}}
 						onChange={(f, v) => updateSectionField("Mediux", f, v)}
 						errorsUpdate={(errs) => updateSectionErrors("Mediux", errs as Record<string, string>)}
@@ -142,10 +153,10 @@ const OnboardingPage = () => {
 				key: "mediaserver",
 				title: "Media Server",
 				render: () => (
-					<MediaServerSection
+					<ConfigSectionMediaServer
 						value={configState.MediaServer}
 						editing
-						configAlreadyLoaded={onboarding.data?.configLoaded || false}
+						configAlreadyLoaded={status?.configLoaded || false}
 						dirtyFields={{}}
 						onChange={(f, v) => updateSectionField("MediaServer", f, v)}
 						errorsUpdate={(errs) => updateSectionErrors("MediaServer", errs as Record<string, string>)}
@@ -157,7 +168,7 @@ const OnboardingPage = () => {
 				title: "Auth",
 				optional: true,
 				render: () => (
-					<AuthSection
+					<ConfigSectionAuth
 						value={configState.Auth}
 						editing
 						dirtyFields={{}}
@@ -170,7 +181,7 @@ const OnboardingPage = () => {
 				key: "logging",
 				title: "Logging",
 				render: () => (
-					<LoggingSection
+					<ConfigSectionLogging
 						value={configState.Logging}
 						editing
 						dirtyFields={{}}
@@ -184,7 +195,7 @@ const OnboardingPage = () => {
 				title: "Images",
 				optional: true,
 				render: () => (
-					<ImagesSection
+					<ConfigSectionImages
 						value={configState.Images}
 						editing
 						dirtyFields={{}}
@@ -193,26 +204,12 @@ const OnboardingPage = () => {
 					/>
 				),
 			},
-			// {
-			// 	key: "tmdb",
-			// 	title: "TMDB",
-			// 	optional: true,
-			// 	render: () => (
-			// 		<TMDBSection
-			// 			value={configState.TMDB}
-			// 			editing
-			// 			dirtyFields={{}}
-			// 			onChange={(f, v) => updateSectionField("TMDB", f, v)}
-			// 			errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
-			// 		/>
-			// 	),
-			// },
 			{
 				key: "kometa",
 				title: "Kometa",
 				optional: true,
 				render: () => (
-					<KometaSection
+					<ConfigSectionKometa
 						value={configState.Kometa}
 						editing
 						dirtyFields={{}}
@@ -226,7 +223,7 @@ const OnboardingPage = () => {
 				title: "Notifications",
 				optional: true,
 				render: () => (
-					<NotificationsSection
+					<ConfigSectionNotifications
 						value={configState.Notifications}
 						editing
 						dirtyFields={{}}
@@ -240,7 +237,7 @@ const OnboardingPage = () => {
 				title: "Auto Download",
 				optional: true,
 				render: () => (
-					<AutoDownloadSection
+					<ConfigSectionAutoDownload
 						value={configState.AutoDownload}
 						editing
 						dirtyFields={{}}
@@ -267,7 +264,7 @@ const OnboardingPage = () => {
 			},
 		],
 		[
-			onboarding.data?.configLoaded,
+			status?.configLoaded,
 			configState.Mediux,
 			configState.MediaServer,
 			configState.Auth,
@@ -315,7 +312,6 @@ const OnboardingPage = () => {
 					const finalizeResp = await finalizeOnboarding(resp.data);
 					if (finalizeResp.status === "success") {
 						toast.success("Configuration applied successfully, redirecting...");
-						onboarding.complete({ currentSetup: configState });
 						setTimeout(() => (window.location.href = "/"), 50);
 					} else {
 						toast.error("Failed to finalize onboarding.");

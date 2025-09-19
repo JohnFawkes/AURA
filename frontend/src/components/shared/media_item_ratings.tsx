@@ -1,6 +1,6 @@
 import { AssetImage } from "@/components/shared/asset-image";
 
-import { Guid } from "@/types/mediaItem";
+import { Guid } from "@/types/media-and-posters/media-item-and-library";
 
 interface ProviderInfo {
 	id: string;

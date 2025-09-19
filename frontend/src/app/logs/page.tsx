@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchLogContents, postClearOldLogs } from "@/app/settings/services/logs";
-import { ReturnErrorMessage } from "@/services/api.shared";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { fetchLogContents, postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
 import { ArrowLeft, Download } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/apiResponse";
+import { APIResponse } from "@/types/api/api-response";
 
 export default function LogsPage() {
 	const router = useRouter();

@@ -3,8 +3,8 @@
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 
-import AppFooter from "@/components/layout/app-footer";
-import Navbar from "@/components/layout/app-navbar";
+import AppFooter from "@/components/layout/app_footer";
+import Navbar from "@/components/layout/app_navbar";
 import { JumpToTop } from "@/components/shared/jump-to-top";
 
 import { gabarito } from "../../public/fonts/Gabarito";
