@@ -1,0 +1,85 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+import { PageStore } from "@/lib/stores/stores";
+
+import { PaginationStore, SortStore } from "@/types/store-interfaces";
+import { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS, TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
+
+interface SavedSets_PageStore
+	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>,
+		PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+	// View Store
+	viewOption: TYPE_VIEW_TYPE_OPTIONS;
+	setViewOption: (option: TYPE_VIEW_TYPE_OPTIONS) => void;
+
+	// Filters Store
+	filteredLibraries: string[];
+	setFilteredLibraries: (libraries: string[]) => void;
+	filterAutoDownloadOnly: boolean;
+	setFilterAutoDownloadOnly: (value: boolean) => void;
+
+	// Hydration and Clear
+	_hasHydrated: boolean;
+	hasHydrated: () => boolean;
+	hydrate: () => void;
+	clear: () => void;
+}
+
+export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
+	persist(
+		(set, get) => ({
+			sortOption: "dateUpdated",
+			setSortOption: (option) => set({ sortOption: option }),
+
+			sortOrder: "asc",
+			setSortOrder: (order) => set({ sortOrder: order }),
+
+			currentPage: 1,
+			setCurrentPage: (page) => set({ currentPage: page }),
+
+			itemsPerPage: 20,
+			setItemsPerPage: (itemsPerPage) => set({ itemsPerPage }),
+
+			viewOption: "card",
+			setViewOption: (option) => set({ viewOption: option }),
+
+			filteredLibraries: [],
+			setFilteredLibraries: (libraries) => set({ filteredLibraries: libraries }),
+
+			filterAutoDownloadOnly: false,
+			setFilterAutoDownloadOnly: (value) => set({ filterAutoDownloadOnly: value }),
+
+			_hasHydrated: false,
+			hasHydrated: () => get()._hasHydrated,
+			hydrate: () => set({ _hasHydrated: true }),
+
+			clear: () =>
+				set({
+					sortOption: "dateUpdated",
+					sortOrder: "asc",
+					currentPage: 1,
+					itemsPerPage: 20,
+					viewOption: "card",
+					filteredLibraries: [],
+					filterAutoDownloadOnly: false,
+				}),
+		}),
+		{
+			name: "SavedSets",
+			storage: PageStore,
+			partialize: (state) => ({
+				sortOption: state.sortOption,
+				sortOrder: state.sortOrder,
+				currentPage: state.currentPage,
+				itemsPerPage: state.itemsPerPage,
+				viewOption: state.viewOption,
+				filteredLibraries: state.filteredLibraries,
+				filterAutoDownloadOnly: state.filterAutoDownloadOnly,
+			}),
+			onRehydrateStorage: () => (state) => {
+				state?.hydrate();
+			},
+		}
+	)
+);
