@@ -22,7 +22,6 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&SaveItem)
 	if err != nil {
 		Err := logging.NewStandardError()
-
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
 		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
@@ -65,6 +64,9 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 
 func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	Err := logging.NewStandardError()
+
+	// Set the MediaItem to exist in the database, in case it was not set
+	saveItem.MediaItem.ExistInDatabase = true
 
 	// Marshal the MediaItem into JSON
 	mediaItemJSONBytes, err := json.Marshal(saveItem.MediaItem)
