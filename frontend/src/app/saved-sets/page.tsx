@@ -80,7 +80,7 @@ const SavedSetsPage: React.FC = () => {
 	const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
 	const [userFilterSearch, setUserFilterSearch] = useState("");
 	const [totalItems, setTotalItems] = useState(0);
-
+	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
 	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
 	useEffect(() => {
 		if (
@@ -174,8 +174,11 @@ const SavedSetsPage: React.FC = () => {
 	// Change to Card View if on mobile
 	useEffect(() => {
 		const handleResize = () => {
-			if (window.innerWidth < 1040) {
+			if (window.innerWidth < 1300) {
 				setViewOption("card");
+				setIsWideScreen(false);
+			} else {
+				setIsWideScreen(true);
 			}
 		};
 		handleResize();
