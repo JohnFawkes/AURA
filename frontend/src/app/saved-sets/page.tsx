@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
@@ -43,7 +43,7 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 
-import { extractYearAndMediaItemID, searchMediaItems } from "@/hooks/search-query";
+import { extractYearAndMediaItemID } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
@@ -152,7 +152,6 @@ const SavedSetsPage: React.FC = () => {
 			isFetchingRef.current = false;
 		}
 	}, [
-		setCurrentPage,
 		searchQuery,
 		filteredLibraries,
 		filterAutoDownloadOnly,
@@ -183,6 +182,27 @@ const SavedSetsPage: React.FC = () => {
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, [setViewOption]);
+
+	useEffect(() => {
+		// If any of the following is changed, reset to page 1
+		// - searchQuery
+		// - filteredLibraries
+		// - filterAutoDownloadOnly
+		// - filteredUsers
+		// - sortOption
+		// - sortOrder
+		// - itemsPerPage
+		setCurrentPage(1);
+	}, [
+		searchQuery,
+		filteredLibraries,
+		filterAutoDownloadOnly,
+		filteredUsers,
+		sortOption,
+		sortOrder,
+		itemsPerPage,
+		setCurrentPage,
+	]);
 
 	const paginatedSets = savedSets;
 
@@ -624,11 +644,10 @@ const SavedSetsPage: React.FC = () => {
 			{(!savedSets || savedSets.length === 0) && !loading && !error && !Object.keys(recheckStatus).length && (
 				<div className="w-full">
 					<ErrorMessage
-						error={ReturnErrorMessage<string>(
-							`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
+						error={ReturnErrorMessage<string>(`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
                 ${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
-                ${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}.`
-						)}
+                ${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}
+				${filteredUsers.length > 0 ? ` for user${filteredUsers.length > 1 ? "s" : ""} ${filteredUsers.join(", ")}` : ""}.`)}
 					/>
 					<div className="text-center text-muted-foreground mt-4">
 						<Button
@@ -638,6 +657,8 @@ const SavedSetsPage: React.FC = () => {
 								setSearchQuery("");
 								setFilteredLibraries([]);
 								if (setFilterAutoDownloadOnly) setFilterAutoDownloadOnly(false);
+								setFilteredUsers([]);
+								setCurrentPage(1);
 							}}
 							className="text-sm"
 						>
