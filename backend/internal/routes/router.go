@@ -107,7 +107,7 @@ func AddRoutes(r *chi.Mux) {
 			r.Patch("/mediaserver/download/file", mediaserver.DownloadAndUpdate)
 
 			// Database Routes
-			r.Get("/db/get/all", database.GetAllItems)
+			r.Get("/db/get/all", database.GetAllItemsWithFilter)
 			r.Delete("/db/delete/mediaitem/{ratingKey}", database.DeleteMediaItemFromDatabase)
 			r.Patch("/db/update", database.UpdateSavedSetTypesForItem)
 			r.Post("/db/add/item", mediaserver.AddItemToDatabase)

@@ -1,12 +1,14 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchAllItemsFromDB } from "@/services/database/api-db-get-all";
+import { fetchAllItemFromDBWithFilters } from "@/services/database/api-db-get-all";
 import { AutodownloadResult, postForceRecheckDBItemForAutoDownload } from "@/services/database/api-db-items-recheck";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
 	CalendarArrowDown,
+	Check,
+	ChevronDown,
 	ClockArrowDown,
 	ClockArrowUp,
 	RefreshCcw as RefreshIcon,
@@ -27,16 +29,21 @@ import { SortControl } from "@/components/shared/select_sort";
 import { ViewControl } from "@/components/shared/select_view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
+import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 
-import { searchMediaItems } from "@/hooks/search-media-item";
+import { extractYearAndMediaItemID, searchMediaItems } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
@@ -49,59 +56,121 @@ const SavedSetsPage: React.FC = () => {
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
-	const { currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useSavedSetsPageStore();
+	const {
+		currentPage,
+		setCurrentPage,
+		itemsPerPage,
+		setItemsPerPage,
+		sortOption,
+		setSortOption,
+		sortOrder,
+		setSortOrder,
+		viewOption,
+		setViewOption,
+		filterAutoDownloadOnly,
+		setFilterAutoDownloadOnly,
+		filteredLibraries,
+		setFilteredLibraries,
+	} = useSavedSetsPageStore();
 
-	// State to track the selected sorting option
-	const { sortOption, setSortOption } = useSavedSetsPageStore();
-	const { sortOrder, setSortOrder } = useSavedSetsPageStore();
-	const { viewOption, setViewOption } = useSavedSetsPageStore();
+	// Get the library options from Global Library Store
+	const { getSectionSummaries } = useLibrarySectionsStore();
 
-	// State to track filters
-	const { filteredLibraries, setFilteredLibraries } = useSavedSetsPageStore();
-	const { filterAutoDownloadOnly, setFilterAutoDownloadOnly } = useSavedSetsPageStore();
+	const [filterUserOptions, setFilterUserOptions] = useState<string[]>([]);
+	const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
+	const [userFilterSearch, setUserFilterSearch] = useState("");
+	const [totalItems, setTotalItems] = useState(0);
 
 	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
-	if (sortOption !== "title" && sortOption !== "dateUpdated" && sortOption !== "year" && sortOption !== "library") {
-		setSortOption("dateUpdated");
-	}
+	useEffect(() => {
+		if (
+			sortOption !== "title" &&
+			sortOption !== "dateUpdated" &&
+			sortOption !== "year" &&
+			sortOption !== "library"
+		) {
+			setSortOption("dateUpdated");
+		}
+	}, [sortOption, setSortOption]);
 
+	// Fetch saved sets with filters from store
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
 		try {
 			setLoading(true);
-			const response = await fetchAllItemsFromDB();
+			setCurrentPage(1); // Reset to first page on new fetch
+
+			// From Search Query
+			// Get the mediaItemID (if any)
+			// Get the mediaItemYear (if any)
+			const {
+				cleanedQuery,
+				year: searchMediaItemYear,
+				mediaItemID: searchMediaItemID,
+			} = extractYearAndMediaItemID(searchQuery);
+
+			const response = await fetchAllItemFromDBWithFilters(
+				searchMediaItemID,
+				cleanedQuery,
+				filteredLibraries,
+				searchMediaItemYear,
+				filterAutoDownloadOnly,
+				filteredUsers,
+				itemsPerPage,
+				currentPage,
+				sortOption,
+				sortOrder
+			);
 
 			if (response.status === "error") {
 				setError(response);
 				setSavedSets([]);
+				setTotalItems(0);
+				setFilterUserOptions([]);
 				return;
 			}
 
 			if (!response.data) {
 				setError(ReturnErrorMessage<Error>("No saved sets found in the database"));
 				setSavedSets([]);
+				setTotalItems(0);
+				setFilterUserOptions([]);
 				return;
 			}
 
-			setSavedSets(response.data);
-			setError(null);
+			setSavedSets(response.data.items);
+			setTotalItems(response.data.total_items || 0);
+			setFilterUserOptions(response.data.unique_users || []);
 
-			toast.success("Saved sets fetched successfully", { duration: 1000 });
+			setError(null);
 		} catch (error) {
 			setError(ReturnErrorMessage<unknown>(error));
 			setSavedSets([]);
+			setTotalItems(0);
+			setFilterUserOptions([]);
 		} finally {
 			setLoading(false);
 			isFetchingRef.current = false;
 		}
-	}, []);
+	}, [
+		setCurrentPage,
+		searchQuery,
+		filteredLibraries,
+		filterAutoDownloadOnly,
+		filteredUsers,
+		itemsPerPage,
+		currentPage,
+		sortOption,
+		sortOrder,
+	]);
 
+	// Load values from store first, then fetch data
 	useEffect(() => {
 		if (typeof window !== "undefined") {
-			// Safe to use document here.
 			document.title = "aura | Saved Sets";
 		}
+		// Fetch after store values are loaded
 		fetchSavedSets();
 	}, [fetchSavedSets]);
 
@@ -117,74 +186,9 @@ const SavedSetsPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, [setViewOption]);
 
-	// This useMemo will first filter the savedSets using your search logic,
-	// then sort the resulting array from newest to oldest using the LastDownloaded values.
-	const filteredAndSortedSavedSets = useMemo(() => {
-		let filtered = savedSets;
+	const paginatedSets = savedSets;
 
-		if (searchQuery.trim() !== "") {
-			const mediaItems = savedSets.map((set) => set.MediaItem);
-			const filteredMediaItems = searchMediaItems(mediaItems, searchQuery);
-			const filteredKeys = new Set(filteredMediaItems.map((item) => item.RatingKey));
-			filtered = savedSets.filter((set) => filteredKeys.has(set.MediaItem.RatingKey));
-		}
-
-		if (filterAutoDownloadOnly) {
-			filtered = filtered.filter(
-				(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload === true)
-			);
-		}
-
-		if (filteredLibraries.length > 0) {
-			filtered = filtered.filter((set) => filteredLibraries.includes(set.MediaItem.LibraryTitle || ""));
-		}
-
-		// Sort the filtered sets based on the selected sort option and order
-		const sorted = filtered.slice();
-		if (sortOption === "title") {
-			if (sortOrder === "asc") {
-				sorted.sort((a, b) => a.MediaItem.Title.localeCompare(b.MediaItem.Title));
-			} else {
-				sorted.sort((a, b) => b.MediaItem.Title.localeCompare(a.MediaItem.Title));
-			}
-		} else if (sortOption === "dateUpdated") {
-			const getMaxDownloadTimestamp = (set: DBMediaItemWithPosterSets) => {
-				if (!set.PosterSets || set.PosterSets.length === 0) return 0;
-				return set.PosterSets.reduce((max, ps) => {
-					const time = new Date(ps.LastDownloaded).getTime();
-					return time > max ? time : max;
-				}, 0);
-			};
-
-			sorted.sort((a, b) => {
-				const aMax = getMaxDownloadTimestamp(a);
-				const bMax = getMaxDownloadTimestamp(b);
-				return sortOrder === "asc" ? aMax - bMax : bMax - aMax;
-			});
-		} else if (sortOption === "year") {
-			sorted.sort((a, b) => {
-				const aYear = a.MediaItem.Year || 0;
-				const bYear = b.MediaItem.Year || 0;
-				return sortOrder === "asc" ? aYear - bYear : bYear - aYear;
-			});
-		} else if (sortOption === "library") {
-			sorted.sort((a, b) => {
-				const aLib = a.MediaItem.LibraryTitle || "";
-				const bLib = b.MediaItem.LibraryTitle || "";
-				return sortOrder === "asc" ? aLib.localeCompare(bLib) : bLib.localeCompare(aLib);
-			});
-		}
-
-		return sorted;
-	}, [savedSets, searchQuery, filterAutoDownloadOnly, sortOption, sortOrder, filteredLibraries]);
-
-	const paginatedSets = useMemo(() => {
-		const startIndex = (currentPage - 1) * itemsPerPage;
-		const endIndex = startIndex + itemsPerPage;
-		return filteredAndSortedSavedSets.slice(startIndex, endIndex);
-	}, [currentPage, itemsPerPage, filteredAndSortedSavedSets]);
-
-	const totalPages = Math.ceil(filteredAndSortedSavedSets.length / itemsPerPage);
+	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
 	if (loading) {
 		return <Loader className="mt-10" message="Loading saved sets..." />;
@@ -260,81 +264,200 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			<div className="w-full flex items-center justify-between mb-4">
-				<div className="flex items-center gap-2">
-					<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
-						Filters:
-					</Label>
-					<ToggleGroup
-						type="multiple"
-						className="flex flex-wrap sm:flex-nowrap gap-2"
-						value={filteredLibraries}
-						onValueChange={setFilteredLibraries}
-					>
-						{savedSets
-							.flatMap((set) => set.MediaItem.LibraryTitle || [])
-							.filter((value, index, self) => self.indexOf(value) === index) // Get unique library titles
-							.map((lib) => lib || "Unknown Library")
-							.map((section) => (
-								<Badge
-									key={section}
-									className="cursor-pointer text-sm"
-									variant={filteredLibraries.includes(section) ? "default" : "outline"}
-									onClick={() => {
-										if (filteredLibraries.includes(section)) {
-											setFilteredLibraries(
-												filteredLibraries.filter((lib: string) => lib !== section)
-											);
-											setCurrentPage(1);
-										} else {
-											setFilteredLibraries([...filteredLibraries, section]);
-											setCurrentPage(1);
-										}
-									}}
-								>
-									{section}
-								</Badge>
-							))}
+			<div className="w-full flex items-center justify-between mb-2">
+				<div className="w-full">
+					<div className="w-full flex flex-col gap-4">
+						<div className="flex items-center justify-between mb-2">
+							<Label htmlFor="filters" className="text-lg font-semibold">
+								Filters:
+							</Label>
+							{savedSets &&
+								savedSets.some(
+									(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
+								) && (
+									<Button
+										variant="secondary"
+										size="sm"
+										onClick={() => forceRecheckAll()}
+										className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
+									>
+										<span className="hidden sm:inline">Force Autodownload Recheck</span>
+										<span className="sm:hidden">Recheck</span>
+										<span className="whitespace-nowrap">
+											(
+											{
+												savedSets.filter(
+													(set) =>
+														set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
+												).length
+											}
+											)
+										</span>
+										<RefreshIcon className="h-3 w-3" />
+									</Button>
+								)}
+						</div>
+					</div>
+					<div className="flex flex-col gap-4">
+						{/* Library Filter */}
+						<div className="flex flex-row" id="library-filter">
+							<Label htmlFor="library-filter" className="text-md font-semibold mb-1 block">
+								Library
+							</Label>
+							<ToggleGroup
+								type="multiple"
+								className="flex flex-wrap gap-2 ml-2"
+								value={filteredLibraries}
+								onValueChange={setFilteredLibraries}
+							>
+								{getSectionSummaries()
+									.map((section) => section.title || "Unknown Library")
+									.filter((value, index, self) => self.indexOf(value) === index)
+									.map((section) => (
+										<Badge
+											key={section}
+											className="cursor-pointer text-sm"
+											variant={filteredLibraries.includes(section) ? "default" : "outline"}
+											onClick={() => {
+												if (filteredLibraries.includes(section)) {
+													setFilteredLibraries(
+														filteredLibraries.filter((lib: string) => lib !== section)
+													);
+													setCurrentPage(1);
+												} else {
+													setFilteredLibraries([...filteredLibraries, section]);
+													setCurrentPage(1);
+												}
+											}}
+										>
+											{section}
+										</Badge>
+									))}
+							</ToggleGroup>
+						</div>
 
-						<Badge
-							key={"filter-auto-download-only"}
-							className="cursor-pointer text-sm mb-2 sm:mb-0 sm:mr-4"
-							variant={filterAutoDownloadOnly ? "default" : "outline"}
-							onClick={() => {
-								if (setFilterAutoDownloadOnly) {
-									setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
-								}
-							}}
-						>
-							{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
-						</Badge>
-					</ToggleGroup>
+						{/* AutoDownload Filter */}
+						<div className="flex flex-row" id="auto-download-filter">
+							<Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
+							<Badge
+								key={"filter-auto-download-only"}
+								className="cursor-pointer text-sm ml-2"
+								variant={filterAutoDownloadOnly ? "default" : "outline"}
+								onClick={() => {
+									if (setFilterAutoDownloadOnly) {
+										setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
+									}
+								}}
+							>
+								{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
+							</Badge>
+						</div>
+
+						{/* User Filter */}
+						{filterUserOptions.length > 0 && (
+							<div className="flex flex-row" id="user-filter">
+								<Label className="text-md font-semibold mb-1 block">User</Label>
+								<Popover>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											className="min-w-[180px] max-w-[220px] justify-between border-muted-foreground/30 ml-2"
+										>
+											<span className="truncate">
+												{filteredUsers.length === 0
+													? "All Users"
+													: filteredUsers.length === 1
+														? filteredUsers[0]
+														: `${filteredUsers.length} users selected`}
+											</span>
+											<ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-72 p-2 shadow-lg border-muted-foreground/20">
+										<Input
+											type="search"
+											placeholder="Search users..."
+											className="mb-2"
+											value={userFilterSearch || ""}
+											onChange={(e) => setUserFilterSearch(e.target.value)}
+											tabIndex={-1} // Prevents auto-focus when popover opens
+											autoFocus={false} // Auto-focus when popover opens
+										/>
+										<div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+											<div
+												className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+													filteredUsers.length === 0 ? "bg-muted" : "hover:bg-muted/60"
+												}`}
+												onClick={() => {
+													setFilteredUsers([]);
+													setCurrentPage(1);
+												}}
+											>
+												<Checkbox checked={filteredUsers.length === 0} id={`users-all`} />
+												<Label
+													htmlFor={`users-all`}
+													className="text-sm flex-1 cursor-pointer truncate"
+													onClick={(e) => e.stopPropagation()}
+												>
+													All User
+												</Label>
+												{filteredUsers.length === 0 && (
+													<Check className="h-4 w-4 text-primary" />
+												)}
+											</div>
+											<div className="border-b my-1" />
+											{filterUserOptions
+												.filter(
+													(user) =>
+														!userFilterSearch ||
+														user.toLowerCase().includes(userFilterSearch.toLowerCase())
+												)
+												.sort((a, b) => a.localeCompare(b))
+												.map((user) => (
+													<div
+														key={user}
+														className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+															filteredUsers.includes(user)
+																? "bg-muted"
+																: "hover:bg-muted/60"
+														}`}
+														onClick={() => {
+															let newUsers: string[];
+															if (filteredUsers.includes(user)) {
+																newUsers = filteredUsers.filter((u) => u !== user);
+															} else {
+																newUsers = [...filteredUsers, user];
+															}
+															setFilteredUsers(newUsers);
+															setCurrentPage(1);
+														}}
+													>
+														<Checkbox
+															checked={filteredUsers.includes(user)}
+															id={`user-${user}`}
+														/>
+														<Label
+															htmlFor={`user-${user}`}
+															className="text-sm flex-1 cursor-pointer truncate"
+															onClick={(e) => e.stopPropagation()}
+														>
+															{user}
+														</Label>
+														{filteredUsers.includes(user) && (
+															<Check className="h-4 w-4 text-primary" />
+														)}
+													</div>
+												))}
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
+						)}
+					</div>
 				</div>
-				{
-					// Only show the force recheck button if there are sets with AutoDownload enabled
-					savedSets.some((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)) && (
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={() => forceRecheckAll()}
-							className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
-						>
-							<span className="hidden sm:inline">Force Autodownload Recheck</span>
-							<span className="sm:hidden">Recheck</span>
-							<span className="whitespace-nowrap">
-								(
-								{
-									savedSets.filter(
-										(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
-									).length
-								}
-								)
-							</span>
-							<RefreshIcon className="h-3 w-3" />
-						</Button>
-					)
-				}
 			</div>
+
+			<Separator className="my-4 w-full" />
 
 			{/* Sorting controls */}
 			<div className="w-full flex items-center justify-between mb-4">
@@ -392,7 +515,7 @@ const SavedSetsPage: React.FC = () => {
 			{/* Items Per Page Selection */}
 			{
 				// Only show the items per page selection if there are more than 10 sets
-				filteredAndSortedSavedSets.length > 10 && (
+				totalItems > 10 && (
 					<div className="w-full flex items-center mb-2">
 						<SelectItemsPerPage
 							setCurrentPage={setCurrentPage}
@@ -500,13 +623,13 @@ const SavedSetsPage: React.FC = () => {
 			)}
 
 			{/* If there are no saved sets, show a message */}
-			{filteredAndSortedSavedSets.length === 0 && !loading && !error && !Object.keys(recheckStatus).length && (
+			{(!savedSets || savedSets.length === 0) && !loading && !error && !Object.keys(recheckStatus).length && (
 				<div className="w-full">
 					<ErrorMessage
 						error={ReturnErrorMessage<string>(
 							`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
-								${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
-								${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}.`
+                ${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
+                ${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}.`
 						)}
 					/>
 					<div className="text-center text-muted-foreground mt-4">
@@ -674,13 +797,13 @@ const SavedSetsPage: React.FC = () => {
 			)}
 
 			{/* Pagination */}
-			{filteredAndSortedSavedSets.length > itemsPerPage && (
+			{itemsPerPage && (
 				<CustomPagination
 					currentPage={currentPage}
 					totalPages={totalPages}
 					setCurrentPage={setCurrentPage}
 					scrollToTop={true}
-					filterItemsLength={filteredAndSortedSavedSets.length}
+					filterItemsLength={totalItems}
 					itemsPerPage={itemsPerPage}
 				/>
 			)}

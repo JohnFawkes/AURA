@@ -134,9 +134,10 @@ export const renderTypeBadges = (savedSet: DBMediaItemWithPosterSets) => {
 	// Flatten all SelectedTypes arrays from every poster set.
 	const allTypes = savedSet.PosterSets.flatMap((set) => set.SelectedTypes);
 	const uniqueTypes = Array.from(new Set(allTypes));
-	return uniqueTypes.map((type) =>
+	return uniqueTypes.map((type) => {
+		if (!type) return null;
 		// Check if the type is empty or not
-		type.trim() === "" ? null : (
+		return type.trim() === "" ? null : (
 			// Render the badge only if the type is not empty
 			<Badge key={type}>
 				{type === "poster"
@@ -151,8 +152,8 @@ export const renderTypeBadges = (savedSet: DBMediaItemWithPosterSets) => {
 									? "Title Card"
 									: type}
 			</Badge>
-		)
-	);
+		);
+	});
 };
 
 export const handleStopIgnoring = async (
@@ -347,8 +348,8 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 		}
 
 		return availableTypes.map((type) => {
-			const isSelected = editSet.selectedTypes.includes(type);
-			// Disable the type if this set is marked for deletion
+			const selectedTypes = Array.isArray(editSet.selectedTypes) ? editSet.selectedTypes : [];
+			const isSelected = selectedTypes.includes(type); // Disable the type if this set is marked for deletion
 			// or if it's not selected here, but found in any other set.
 			const isTypeDisabled =
 				editSet.toDelete ||
@@ -589,7 +590,11 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
 
-	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
+	const onlyIgnore =
+		savedSet.PosterSets.length === 1 &&
+		(savedSet.PosterSets[0].PosterSetID === "ignore" ||
+			!Array.isArray(savedSet.PosterSets[0].SelectedTypes) ||
+			savedSet.PosterSets[0].SelectedTypes.length === 0);
 
 	if (onlyIgnore) {
 		return (
