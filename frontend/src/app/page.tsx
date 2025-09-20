@@ -23,7 +23,7 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchMediaItems } from "@/hooks/search-media-item";
+import { searchMediaItems } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";

@@ -79,3 +79,28 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 
 	return filteredItems.slice(0, limit);
 }
+
+// Extracts year (Y:2023:) and mediaItemID (ID:123:) from a search query string
+export function extractYearAndMediaItemID(query: string): { cleanedQuery: string; year: number; mediaItemID: string } {
+	const trimmed = query.trim();
+
+	// Match year: Y:2023: or y:2023:
+	const yearMatch = trimmed.match(/[Yy]:(\d{4}):/);
+	const year = yearMatch ? parseInt(yearMatch[1], 10) : 0;
+
+	// Match mediaItemID: ID:123: or id:123:
+	const idMatch = trimmed.match(/[Ii][Dd]:(.+?):/);
+	const mediaItemID = idMatch ? idMatch[1] : "";
+
+	// Remove matched tokens from the original query
+	let cleanedQuery = trimmed;
+	if (yearMatch) {
+		cleanedQuery = cleanedQuery.replace(yearMatch[0], "").trim();
+	}
+	if (idMatch) {
+		cleanedQuery = cleanedQuery.replace(idMatch[0], "").trim();
+	}
+
+	// Return the cleaned search query along with extracted year and mediaItemIDs
+	return { cleanedQuery, year, mediaItemID };
+}

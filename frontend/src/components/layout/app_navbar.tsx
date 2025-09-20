@@ -31,7 +31,7 @@ import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchMediaItems } from "@/hooks/search-media-item";
+import { searchMediaItems } from "@/hooks/search-query";
 
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
@@ -231,7 +231,7 @@ export default function Navbar() {
 				/>
 				{/* If not on homepage, display dropdown results */}
 				{!isHomePage && !isSavedSetsPage && !isUserPage && showDropdown && searchResults.length > 0 && (
-					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none">
+					<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
 						{searchResults.map((result) => (
 							<div
 								key={result.RatingKey}
