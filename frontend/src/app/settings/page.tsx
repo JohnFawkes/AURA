@@ -472,8 +472,7 @@ const SettingsPage: React.FC = () => {
 					onClick={async () => {
 						localStorage.clear();
 						await ClearAllStores();
-						toast.success("App cache cleared.");
-						toast.success("App Cache Cleared. Reloading...");
+						toast.success("App Cache Cleared. Reloading...", { duration: 750 });
 						setTimeout(() => {
 							router.replace("/settings");
 						}, 1000);
