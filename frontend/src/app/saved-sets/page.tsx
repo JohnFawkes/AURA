@@ -99,8 +99,6 @@ const SavedSetsPage: React.FC = () => {
 		isFetchingRef.current = true;
 		try {
 			setLoading(true);
-			setCurrentPage(1); // Reset to first page on new fetch
-
 			// From Search Query
 			// Get the mediaItemID (if any)
 			// Get the mediaItemYear (if any)
