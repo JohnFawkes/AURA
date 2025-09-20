@@ -16,8 +16,6 @@ func GetAllItemsWithFilter(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	params := r.URL.Query()
-	logging.LOG.Debug(fmt.Sprintf("Query params: %v", params))
-	logging.LOG.Debug(fmt.Sprintf("Raw query string: %s", r.URL.RawQuery))
 	mediaItemID := params.Get("mediaItemID")
 	mediaItemLibraryTitles := params["mediaItemLibraryTitles"]
 	if len(mediaItemLibraryTitles) == 0 {
