@@ -25,7 +25,7 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.Standa
 	}
 
 	refreshPlexItem(itemRatingKey)
-	setPoster(itemRatingKey, mediuxImageUrl, file.Type)
+	setPoster(itemRatingKey, mediuxImageUrl, file.Type, false)
 
 	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
 	if config.Global.Kometa.RemoveLabels {

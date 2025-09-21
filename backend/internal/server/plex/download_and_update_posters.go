@@ -176,23 +176,25 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 
 	refreshPlexItem(itemRatingKey)
 	posterKey, Err := getPosters(itemRatingKey)
+	failedOnGetPosters := false
 	if Err.Message != "" {
+		failedOnGetPosters = true
 		var posterName string
-		if file.Type == "poster" {
+		switch file.Type {
+		case "poster":
 			posterName = "Poster"
-		} else if file.Type == "backdrop" {
+		case "backdrop":
 			posterName = "Backdrop"
-		} else if file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" {
+		case "seasonPoster", "specialSeasonPoster":
 			posterName = fmt.Sprintf("Season %s Poster", utils.Get2DigitNumber(int64(file.Season.Number)))
-		} else if file.Type == "titlecard" {
+		case "titlecard":
 			posterName = fmt.Sprintf("S%sE%s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)))
 		}
 		Err.Message = fmt.Sprintf("Failed to get %s key for item", posterName)
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists in Plex and has a valid %s.", itemRatingKey, posterName)
 		Err.Details = fmt.Sprintf("Error getting %s key for item with rating key %s: %v", posterName, itemRatingKey, Err)
-		return Err
 	}
-	setPoster(itemRatingKey, posterKey, file.Type)
+	setPoster(itemRatingKey, posterKey, file.Type, failedOnGetPosters)
 
 	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
 	if config.Global.Kometa.RemoveLabels {

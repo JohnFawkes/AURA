@@ -108,12 +108,22 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 	return "", Err
 }
 
-func setPoster(ratingKey string, posterKey string, posterType string) logging.StandardError {
-	// If the posterType is "backdrop", set the URL to art
-	// Else set it to posters
+func setPoster(ratingKey, posterKey, posterType string, failedOnGetPosters bool) logging.StandardError {
+	// If failedOnGetPosters is true, always treat SaveImageNextToContent.Enabled as false
+	// This means we will use the POST method and the plural endpoint ("arts"/"posters")
+	// Otherwise, use the config value to decide between PUT (next to content) and POST (upload)
+	// For "backdrop" posterType:
+	//   - Use "art" (PUT) or "arts" (POST)
+	// For all other poster types:
+	//   - Use "poster" (PUT) or "posters" (POST)
+
+	saveNextToContent := config.Global.Images.SaveImageNextToContent.Enabled
+	if failedOnGetPosters {
+		saveNextToContent = false
+	}
 
 	requestMethod := "PUT"
-	if !config.Global.Images.SaveImageNextToContent.Enabled {
+	if !saveNextToContent {
 		requestMethod = "POST"
 		if posterType == "backdrop" {
 			posterType = "arts"
@@ -127,6 +137,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.St
 			posterType = "poster"
 		}
 	}
+
 	logging.LOG.Trace(fmt.Sprintf("Setting %s for rating key: %s", posterType, ratingKey))
 
 	// Use net/url to escape the rating key
@@ -142,6 +153,7 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.St
 	defer response.Body.Close()
 
 	if !strings.HasPrefix(string(body), "/library/metadata/") {
+
 		Err.Message = "Failed to set poster"
 		Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
 		Err.Details = fmt.Sprintf("Received response: %s", string(body))
