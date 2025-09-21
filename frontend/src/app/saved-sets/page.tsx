@@ -85,6 +85,8 @@ const SavedSetsPage: React.FC = () => {
 
 	// Get the library options from Global Library Store
 	const { getSectionSummaries } = useLibrarySectionsStore();
+	const librarySectionsLoaded = useLibrarySectionsStore((state) => state.hasHydrated);
+
 	// User Filter Options: all unique users from the savedSets
 	const [filterUserOptions, setFilterUserOptions] = useState<string[]>([]);
 	// User Filter Search: for searching within the user filter options
@@ -363,6 +365,7 @@ const SavedSetsPage: React.FC = () => {
 							>
 								<FilterContent
 									getSectionSummaries={getSectionSummaries}
+									librarySectionsLoaded={librarySectionsLoaded}
 									typeOptions={typeOptions}
 									filterUserOptions={filterUserOptions}
 									filteredLibraries={pendingFilters.filteredLibraries}
@@ -399,6 +402,14 @@ const SavedSetsPage: React.FC = () => {
 										setCurrentPage(1);
 									}}
 									onResetFilters={() => {
+										setSearchQuery("");
+										setFilteredLibraries([]);
+										setFilterAutoDownloadOnly(false);
+										setFilteredUsers([]);
+										setFilteredTypes([]);
+										setCurrentPage(1);
+										setFilterMultiSetOnly(false);
+										setUserFilterSearch("");
 										setPendingFilters({
 											filteredLibraries: [],
 											filteredTypes: [],
@@ -407,7 +418,6 @@ const SavedSetsPage: React.FC = () => {
 											filteredUsers: [],
 											filterMultiSetOnly: false,
 										});
-										setSearchQuery("");
 									}}
 								/>
 							</PopoverContent>
@@ -433,6 +443,7 @@ const SavedSetsPage: React.FC = () => {
 								<Separator className="my-1 w-full" />
 								<FilterContent
 									getSectionSummaries={getSectionSummaries}
+									librarySectionsLoaded={librarySectionsLoaded}
 									typeOptions={typeOptions}
 									filterUserOptions={filterUserOptions}
 									filteredLibraries={pendingFilters.filteredLibraries}
@@ -469,6 +480,14 @@ const SavedSetsPage: React.FC = () => {
 										setCurrentPage(1);
 									}}
 									onResetFilters={() => {
+										setSearchQuery("");
+										setFilteredLibraries([]);
+										setFilterAutoDownloadOnly(false);
+										setFilteredUsers([]);
+										setFilteredTypes([]);
+										setCurrentPage(1);
+										setFilterMultiSetOnly(false);
+										setUserFilterSearch("");
 										setPendingFilters({
 											filteredLibraries: [],
 											filteredTypes: [],
@@ -477,7 +496,6 @@ const SavedSetsPage: React.FC = () => {
 											filteredUsers: [],
 											filterMultiSetOnly: false,
 										});
-										setSearchQuery("");
 									}}
 								/>
 							</DrawerContent>
