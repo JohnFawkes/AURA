@@ -19,7 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { log } from "@/lib/logger";
-import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
+import { MAX_CACHE_DURATION, useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
@@ -28,8 +28,6 @@ import { searchMediaItems } from "@/hooks/search-query";
 import { APIResponse } from "@/types/api/api-response";
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
 import { FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
-
-const CACHE_DURATION = 60 * 60 * 1000;
 
 export default function Home() {
 	useEffect(() => {
@@ -73,7 +71,7 @@ export default function Home() {
 	} = useHomePageStore();
 
 	const { sections, setSections, timestamp } = useLibrarySectionsStore();
-	const hasHydrated = useLibrarySectionsStore((state) => state.hasHydrated());
+	const hasHydrated = useLibrarySectionsStore((state) => state.hasHydrated);
 
 	// -------------------------------
 	// Derived values
@@ -105,15 +103,26 @@ export default function Home() {
 			try {
 				// Check if we want to use cache
 				if (useCache) {
-					log("Home Page - Attempting to load sections from cache (zustand)");
+					log("Home Page - Attempting to load sections from cache", {
+						"Current Time": Date.now(),
+						"Cache Timestamp": timestamp,
+						"Cache Age Max (ms)": MAX_CACHE_DURATION,
+						"Cache Age (ms)": timestamp ? Date.now() - timestamp : "N/A",
+						"Is Cache Valid":
+							sections && Object.keys(sections).length > 0 && timestamp
+								? Date.now() - timestamp < MAX_CACHE_DURATION
+								: false,
+					});
 					if (sections && Object.keys(sections).length > 0 && timestamp) {
-						if (Date.now() - timestamp < CACHE_DURATION) {
+						if (Date.now() - timestamp < MAX_CACHE_DURATION) {
 							setLibrarySections(Object.values(sections));
 							setFullyLoaded(true);
 							log("Home Page - Using cached sections (zustand)", sections);
 							return;
 						} else {
-							log("Home Page - Cache expired, fetching fresh data");
+							log(
+								`Home Page - Cache expired (age: ${((Date.now() - timestamp) / 1000 / 60).toFixed(1)} min), fetching fresh data`
+							);
 						}
 					} else {
 						log("Home Page - No valid cache found, fetching fresh data");
@@ -199,6 +208,7 @@ export default function Home() {
 	useEffect(() => {
 		if (!hasHydrated) return;
 		getMediaItems(true);
+		isMounted.current = true;
 	}, [getMediaItems, hasHydrated]);
 
 	useEffect(() => {

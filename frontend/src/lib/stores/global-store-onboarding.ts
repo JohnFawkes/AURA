@@ -19,14 +19,13 @@ interface OnboardingStore {
 	fetchStatus: () => Promise<void>;
 	clear: () => void;
 
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 }
 
 export const useOnboardingStore = create<OnboardingStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			status: null,
 			loading: false,
 			error: null,
@@ -48,9 +47,8 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
 			clear: () => set({ status: null, loading: false, error: null }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 		}),
 		{
 			name: "Onboarding",

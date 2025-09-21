@@ -34,15 +34,14 @@ interface SavedSets_PageStore
 	setFilterMultiSetOnly: (value: boolean) => void;
 
 	// Hydration and Clear
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			sortOption: "dateUpdated",
 			setSortOption: (option) => set({ sortOption: option }),
 
@@ -74,9 +73,8 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 			setFilterMultiSetOnly: (value) => set({ filterMultiSetOnly: value }),
 
 			// Hydration and Clear
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({
@@ -90,7 +88,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 					filteredUsers: [],
 					filteredTypes: [],
 					filterMultiSetOnly: false,
-					_hasHydrated: false,
+					hasHydrated: false,
 				}),
 		}),
 		{

@@ -8,6 +8,9 @@ import { LibrarySection } from "@/types/media-and-posters/media-item-and-library
 
 type UpdateType = "add" | "update" | "delete";
 
+// Max Cache Duration: 1 Hour
+export const MAX_CACHE_DURATION = 60 * 60 * 1000;
+
 interface LibrarySectionsStore {
 	sections: Record<string, LibrarySection>;
 	setSections: (sections: Record<string, LibrarySection>, timestamp?: number) => void;
@@ -23,8 +26,7 @@ interface LibrarySectionsStore {
 
 	clear: () => void;
 
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 }
 
@@ -105,10 +107,9 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 				set({ sections: {}, timestamp: undefined });
 			},
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
+			hasHydrated: false,
 			hydrate: () => {
-				set({ _hasHydrated: true });
+				set({ hasHydrated: true });
 			},
 		}),
 		{

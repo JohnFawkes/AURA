@@ -20,15 +20,14 @@ interface Home_PageStore
 	setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
 
 	// Hydrate and Clear
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const useHomePageStore = create<Home_PageStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			sortOption: "dateUpdated",
 			setSortOption: (option) => set({ sortOption: option }),
 
@@ -50,9 +49,8 @@ export const useHomePageStore = create<Home_PageStore>()(
 			filterInDB: "all",
 			setFilterInDB: (filter) => set({ filterInDB: filter }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({

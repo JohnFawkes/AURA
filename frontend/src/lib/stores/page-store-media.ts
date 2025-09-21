@@ -14,15 +14,14 @@ interface Media_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS> {
 	setShowOnlyTitlecardSets: (show: boolean) => void;
 
 	// Hydrate and Clear
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const useMediaPageStore = create<Media_PageStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			sortOption: "date",
 			setSortOption: (option) => set({ sortOption: option }),
 
@@ -35,9 +34,8 @@ export const useMediaPageStore = create<Media_PageStore>()(
 			showOnlyTitlecardSets: false,
 			setShowOnlyTitlecardSets: (show) => set({ showOnlyTitlecardSets: show }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({

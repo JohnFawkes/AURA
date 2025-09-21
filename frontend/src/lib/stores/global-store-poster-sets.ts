@@ -22,15 +22,14 @@ interface PosterSetsStore {
 	posterSets: PosterSet[];
 	setPosterSets: (posterSets: PosterSet[]) => void;
 
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const usePosterSetsStore = create<PosterSetsStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			setType: "set",
 			setSetType: (setType) => set({ setType }),
 
@@ -46,9 +45,8 @@ export const usePosterSetsStore = create<PosterSetsStore>()(
 			posterSets: [],
 			setPosterSets: (posterSets) => set({ posterSets }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({

@@ -11,22 +11,20 @@ interface MediaStore {
 
 	clear: () => void;
 
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 }
 
 export const useMediaStore = create<MediaStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			mediaItem: null,
 			setMediaItem: (mediaItem) => set({ mediaItem }),
 
 			clear: () => set({ mediaItem: null }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 		}),
 		{
 			name: "CurrentMedia",

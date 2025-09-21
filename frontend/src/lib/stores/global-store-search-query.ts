@@ -7,21 +7,19 @@ interface SearchQueryStore {
 	searchQuery: string;
 	setSearchQuery: (query: string) => void;
 
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const useSearchQueryStore = create<SearchQueryStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			searchQuery: "",
 			setSearchQuery: (query) => set({ searchQuery: query }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () => set({ searchQuery: "" }),
 		}),

@@ -10,15 +10,14 @@ interface User_PageStore
 	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>,
 		PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
 	// Hydration and Clear
-	_hasHydrated: boolean;
-	hasHydrated: () => boolean;
+	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
 }
 
 export const useUserPageStore = create<User_PageStore>()(
 	persist(
-		(set, get) => ({
+		(set) => ({
 			sortOption: "date",
 			setSortOption: (option) => set({ sortOption: option }),
 
@@ -31,9 +30,8 @@ export const useUserPageStore = create<User_PageStore>()(
 			itemsPerPage: 20,
 			setItemsPerPage: (itemsPerPage) => set({ itemsPerPage }),
 
-			_hasHydrated: false,
-			hasHydrated: () => get()._hasHydrated,
-			hydrate: () => set({ _hasHydrated: true }),
+			hasHydrated: false,
+			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({
