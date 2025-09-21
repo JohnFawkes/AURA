@@ -15,8 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
-import { log } from "@/lib/logger";
-
 import { APIResponse } from "@/types/api/api-response";
 
 export default function LogsPage() {
