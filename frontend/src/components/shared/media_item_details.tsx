@@ -84,8 +84,7 @@ export function MediaItemDetails({
 				}
 				const serverType = response.data?.serverType || "Media Server";
 				setServerType(serverType);
-			} catch (error) {
-				log("Media Item Details Section - Error fetching server type:", error);
+			} catch {
 				setServerType("Media Server");
 			}
 		};
@@ -135,7 +134,6 @@ export function MediaItemDetails({
 		};
 		const addToDBResp = await postAddItemToDB(ignoreDBItem);
 		if (addToDBResp.status === "error") {
-			log(`Error adding ${title} to DB:`, addToDBResp.error);
 			toast.error(`Failed to add ${title} to DB`);
 		} else {
 			updateInDB(true); // use helper so parent also updates

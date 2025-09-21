@@ -24,14 +24,28 @@ export const checkMediaServerConnectionStatus = async (mediaServerInfo: AppConfi
 };
 
 export async function fetchMediaServerConnectionStatus(): Promise<APIResponse<string>> {
-	log("api.settings - Fetching media server connection status started");
+	log("INFO", "API - Settings", "Media Server", "Fetching media server connection status");
 	try {
 		const response = await apiClient.get<APIResponse<string>>(`/health/status/mediaserver`);
-		log("api.settings - Fetching media server connection status succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error fetching media server connection status");
+		} else {
+			log(
+				"INFO",
+				"API - Settings",
+				"Media Server",
+				"Fetched media server connection status successfully",
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Fetching media server connection status failed: ${error instanceof Error ? error.message : "Unknown error"}`
+			"ERROR",
+			"API - Settings",
+			"Media Server",
+			`Failed to fetch media server connection status: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}
@@ -40,16 +54,22 @@ export async function fetchMediaServerConnectionStatus(): Promise<APIResponse<st
 export async function postMediaServerNewInfoConnectionStatus(
 	mediaServerInfo: AppConfigMediaServer
 ): Promise<APIResponse<string>> {
-	log("api.settings - Posting media server new info connection status started");
+	log("INFO", "API - Settings", "Media Server", "Posting media server new info to check connection status");
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/config/validate/mediaserver`, mediaServerInfo);
-		log("api.settings - Posting media server new info connection status succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error posting media server new info");
+		} else {
+			log("INFO", "API - Settings", "Media Server", "Posted media server new info successfully", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Posting media server new info connection status failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Media Server",
+			`Failed to post media server new info: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}

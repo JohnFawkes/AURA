@@ -9,7 +9,12 @@ export const BoxsetMovieToPosterSet = (movieSet: MediuxUserMovieSet) => {
 	const backdrop = movieSet.movie_backdrop[0] || undefined;
 
 	if (!poster && !backdrop) {
-		log("BoxsetMovieToPosterSet - No poster or backdrop found for movie set", movieSet);
+		log(
+			"WARN",
+			"BoxsetMovieToPosterSet",
+			"No poster or backdrop found for movie set",
+			JSON.stringify({ movieSet })
+		);
 		return [];
 	}
 

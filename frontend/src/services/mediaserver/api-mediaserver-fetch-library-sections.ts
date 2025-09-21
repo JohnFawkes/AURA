@@ -14,16 +14,22 @@ import { LibrarySection } from "@/types/media-and-posters/media-item-and-library
  * @returns {Promise<APIResponse<LibrarySection[]>>} A promise that resolves to the API response containing an array of library sections.
  */
 export const fetchMediaServerLibrarySections = async (): Promise<APIResponse<LibrarySection[]>> => {
-	log("api.mediaserver - Fetching all library sections started");
+	log("INFO", "API - Media Server", "Fetch Library Sections", "Fetching all library sections");
 	try {
 		const response = await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/sections/`);
-		log("api.mediaserver - Fetching all library sections succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error fetching all library sections");
+		} else {
+			log("INFO", "API - Media Server", "Fetch Library Sections", `Fetched all library sections successfully`);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Fetching all library sections failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Media Server",
+			"Fetch Library Sections",
+			`Failed to fetch all library sections: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<LibrarySection[]>(error);
 	}

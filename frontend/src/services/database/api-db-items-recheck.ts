@@ -22,18 +22,36 @@ export interface AutodownloadSetResult {
 export const postForceRecheckDBItemForAutoDownload = async (
 	saveItem: DBMediaItemWithPosterSets
 ): Promise<APIResponse<AutodownloadResult>> => {
-	log(`api.db - Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} started`);
+	log(
+		"INFO",
+		"API - DB",
+		"Recheck",
+		`Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID}`,
+		saveItem
+	);
 	try {
 		const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force/recheck`, {
 			Item: saveItem,
 		});
-		log(`api.db - Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} succeeded`);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error forcing recheck for auto-download");
+		} else {
+			log(
+				"INFO",
+				"API - DB",
+				"Recheck",
+				`Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} succeeded`,
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.db - Forcing recheck for auto-download for item with ID ${
-				saveItem.MediaItemID
-			} failed: ${error instanceof Error ? error.message : "Unknown error"}`
+			"ERROR",
+			"API - DB",
+			"Recheck",
+			`Failed to force recheck for auto-download for item with ID ${saveItem.MediaItemID}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<AutodownloadResult>(error);
 	}

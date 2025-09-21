@@ -6,10 +6,8 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 
 export const postLogin = async (password: string): Promise<APIResponse<{ token: string }>> => {
-	log("api.auth - Login started");
 	try {
 		const response = await apiClient.post<APIResponse<{ token: string }>>(`/login`, { password });
-
 		const token =
 			response.data?.data?.token ??
 			(typeof response.data === "object" &&
@@ -21,11 +19,20 @@ export const postLogin = async (password: string): Promise<APIResponse<{ token: 
 		if (token && typeof window !== "undefined") {
 			localStorage.setItem("aura-auth-token", String(token));
 		}
-
-		log("api.auth - Login succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error during login");
+		} else {
+			log("INFO", "Auth", "Login", "Login successful");
+		}
 		return response.data;
 	} catch (error) {
-		log(`api.auth - Login failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+		log(
+			"ERROR",
+			"Auth",
+			"Login",
+			`Failed to login: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
+		);
 		return ReturnErrorMessage<{ token: string }>(error);
 	}
 };

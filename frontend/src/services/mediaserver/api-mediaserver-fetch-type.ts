@@ -8,19 +8,33 @@ import { APIResponse } from "@/types/api/api-response";
 /**
  * Fetches the media server type (e.g., Plex, Emby, Jellyfin).
  *
- * Initiates a GET request to the `/api/mediaserver/type/` endpoint and returns the response data.
+ * Initiates a GET request to the `/config/mediaserver/type` endpoint and returns the response data.
  *
  * @returns {Promise<APIResponse<LibrarySection[]>>} A promise that resolves to the API response containing an array of library sections.
  */
 export const fetchMediaServerType = async (): Promise<APIResponse<{ serverType: string }>> => {
-	log("api.mediaserver - Fetching server type started");
+	log("INFO", "API - Media Server", "Fetch Server Type", "Fetching media server type");
 	try {
-		const response = await apiClient.get<APIResponse<{ serverType: string }>>(`/mediaserver/type`);
-		log("api.mediaserver - Fetching server type succeeded");
+		const response = await apiClient.get<APIResponse<{ serverType: string }>>(`/config/mediaserver/type`);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error fetching media server type");
+		} else {
+			log(
+				"INFO",
+				"API - Media Server",
+				"Fetch Server Type",
+				`Fetched media server type successfully`,
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Fetching server type failed: ${error instanceof Error ? error.message : "Unknown error"}`
+			"ERROR",
+			"API - Media Server",
+			"Fetch Server Type",
+			`Failed to fetch media server type: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<{ serverType: string }>(error);
 	}

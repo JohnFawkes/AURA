@@ -7,16 +7,22 @@ import { APIResponse } from "@/types/api/api-response";
 import { AppConfig } from "@/types/config/config-app";
 
 export const updateConfig = async (newConfig: AppConfig): Promise<APIResponse<AppConfig>> => {
-	log("api.settings - Updating app configuration started");
+	log("INFO", "API - Settings", "Update Config", "Updating app configuration");
 	try {
 		const response = await apiClient.post<APIResponse<AppConfig>>(`/config/update`, newConfig);
-		log("api.settings - Updating app configuration succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error updating app configuration");
+		} else {
+			log("INFO", "API - Settings", "Update Config", "Updated app configuration successfully", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Updating app configuration failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Update Config",
+			`Failed to update app configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<AppConfig>(error);
 	}

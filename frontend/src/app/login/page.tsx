@@ -43,16 +43,10 @@ export default function LoginPage() {
 		try {
 			setLoading(true);
 			const resp = await postLogin(password);
-
-			const token =
-				// support either wrapped or flat
-				(resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
-
+			const token = (resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
 			if (!token) {
 				throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
 			}
-
-			log("Login Page - Successful login");
 			router.replace("/");
 		} catch (err: unknown) {
 			setErrorMsg((err as { message?: string })?.message || "Login failed. Check password.");

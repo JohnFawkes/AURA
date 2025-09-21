@@ -6,16 +6,28 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 
 export const postClearTempImagesFolder = async (): Promise<APIResponse<void>> => {
-	log("api.settings - Clearing temp images folder started");
+	log("INFO", "API - Settings", "Clear Temp Images", "Clearing temp images folder");
 	try {
 		const response = await apiClient.post<APIResponse<void>>(`/temp-images/clear`);
-		log("api.settings - Clearing temp images folder succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error clearing temp images folder");
+		} else {
+			log(
+				"INFO",
+				"API - Settings",
+				"Clear Temp Images",
+				"Cleared temp images folder successfully",
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Clearing temp images folder failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Clear Temp Images",
+			`Failed to clear temp images folder: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<void>(error);
 	}

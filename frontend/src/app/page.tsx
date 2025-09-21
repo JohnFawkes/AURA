@@ -105,7 +105,7 @@ export default function Home() {
 				if (useCache) {
 					const isCacheAgeValid = timestamp ? Date.now() - timestamp < MAX_CACHE_DURATION : false;
 					const cacheContainsSectionsAndTimestamp = sections && timestamp && Object.keys(sections).length > 0;
-					log("Home Page - Attempting to load sections from cache", {
+					log("INFO", "Home Page", "Library Cache", "Attempting to load sections from cache", {
 						"Current Time": Date.now(),
 						"Cache Timestamp": timestamp,
 						"Cache Age Max (ms)": MAX_CACHE_DURATION,
@@ -117,13 +117,13 @@ export default function Home() {
 						if (isCacheAgeValid) {
 							setLibrarySections(Object.values(sections));
 							setFullyLoaded(true);
-							log("Home Page - Using cached sections", sections);
+							log("INFO", "Home Page", "Library Cache", "Using cached sections", sections);
 							return;
 						} else {
-							log("Home Page - Cache expired, fetching fresh data");
+							log("WARN", "Home Page", "Library Cache", "Cache expired, fetching fresh data");
 						}
 					} else {
-						log("Home Page - No valid cache found, fetching fresh data");
+						log("WARN", "Home Page", "Library Cache", "No valid cache found, fetching fresh data");
 					}
 				}
 
@@ -191,7 +191,7 @@ export default function Home() {
 				// Store in zustand and update timestamp
 				setSections(sectionsObj, Date.now());
 				setFullyLoaded(true);
-				log("Home Page - Sections fetched successfully from server", {
+				log("INFO", "Home Page", "", "Sections fetched successfully from server", {
 					"Library Sections": librarySections,
 					Sections: sectionsObj,
 				});

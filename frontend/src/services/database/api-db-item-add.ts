@@ -8,15 +8,31 @@ import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-saved-item";
 
 export const postAddItemToDB = async (saveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
-	log("api.db - Adding item to DB started");
+	log("INFO", "API - DB", "Add", `Adding item with RatingKey ${saveItem.MediaItem.RatingKey} to DB`);
 	try {
 		const response = await apiClient.post<APIResponse<DBSavedItem>>(`/db/add/item`, saveItem);
-		log("api.db - Adding item to DB succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error adding item to DB");
+		} else {
+			log(
+				"INFO",
+				"API - DB",
+				"Add",
+				`Added item with RatingKey ${saveItem.MediaItem.RatingKey} to DB`,
+				response.data
+			);
+		}
 		const { updateMediaItem } = useLibrarySectionsStore.getState();
 		updateMediaItem(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "add");
 		return response.data;
 	} catch (error) {
-		log(`api.db - Adding item to DB failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+		log(
+			"ERROR",
+			"API - DB",
+			"Add",
+			`Failed to add item to DB: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
+		);
 		return ReturnErrorMessage<DBSavedItem>(error);
 	}
 };

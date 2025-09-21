@@ -12,14 +12,34 @@ export const fetchMediuxSets = async (
 	librarySection: string,
 	ratingKey: string
 ): Promise<APIResponse<PosterSet[]>> => {
+	log(
+		"INFO",
+		"API - Mediux",
+		"Fetch Sets",
+		`Fetching Mediux sets for tmdbID: ${tmdbID}, itemType: ${itemType}, librarySection: ${librarySection}, ratingKey: ${ratingKey}`
+	);
 	try {
 		const response = await apiClient.get<APIResponse<PosterSet[]>>(
 			`/mediux/sets/get/${itemType}/${librarySection}/${ratingKey}/${tmdbID}`
 		);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || `Unknown error fetching Mediux sets for tmdbID: ${tmdbID}`);
+		} else {
+			log(
+				"INFO",
+				"API - Mediux",
+				"Fetch Sets",
+				`Fetched Mediux sets for tmdbID: ${tmdbID} successfully`,
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`API - Mediux - Fetching Mediux sets for tmdbID: ${tmdbID}, itemType: ${itemType} librarySection: ${librarySection} failed with error: ${
+			"ERROR",
+			"API - Mediux",
+			"Fetch Sets",
+			`Failed to fetch Mediux sets for tmdbID: ${tmdbID}, itemType: ${itemType}, librarySection: ${librarySection}, ratingKey: ${ratingKey}: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);

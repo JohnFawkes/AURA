@@ -7,18 +7,30 @@ import { APIResponse } from "@/types/api/api-response";
 import { MediuxUserAllSetsResponse } from "@/types/mediux/mediux-sets";
 
 export const fetchAllUserSets = async (username: string): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
-	log(`api.mediux - Fetching all user sets for ${username} started`);
+	log("INFO", "API - Mediux", "Fetch All User Sets", `Fetching all user sets for ${username}`);
 	try {
 		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>(
 			`/mediux/sets/get_user/sets/${username}`
 		);
-		log(`api.mediux - Fetching all user sets for ${username} completed`);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || `Unknown error fetching all user sets for ${username}`);
+		} else {
+			log(
+				"INFO",
+				"API - Mediux",
+				"Fetch All User Sets",
+				`Fetched all user sets for ${username} successfully`,
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediux - Fetching all user sets for ${username} failed with error: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Mediux",
+			"Fetch All User Sets",
+			`Failed to fetch all user sets for ${username}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<MediuxUserAllSetsResponse>(error);
 	}

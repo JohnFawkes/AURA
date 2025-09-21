@@ -434,18 +434,18 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	}, [formItems, watchSelectedOptions]);
 
 	const LOG_VALUES = () => {
-		log("Props:", {
+		log("INFO", "Download Modal", "Debug Info", "Logging props values:", {
 			setType,
 			setTitle,
 			setAuthor,
 			setID,
 			posterSets,
 		});
-		log("Form Items:", formItems);
-		log("Form Values:", form);
-		log("Watch Selected Types:", watchSelectedOptions);
-		log("Progress Values:", progressValues);
-		log("Duplicates:", duplicates);
+		log("INFO", "Download Modal", "Debug Info", "Logging form items:", formItems);
+		log("INFO", "Download Modal", "Debug Info", "Logging form values:", form);
+		log("INFO", "Download Modal", "Debug Info", "Logging watch selected types:", watchSelectedOptions);
+		log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
+		log("INFO", "Download Modal", "Debug Info", "Logging duplicates:", duplicates);
 	};
 
 	const renderFormItemAssetType = (
@@ -787,9 +787,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			resetProgressValues();
 
 			// Your download logic here
-			log("Form submitted with data:", data);
-			log("Progress Values:", progressValues);
-			log("Selected Types:", { watchSelectedOptions });
+			log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
+			log("INFO", "Download Modal", "Debug Info", "Progress Values:", progressValues);
+			log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
 
 			updateProgressValue(1); // Reset progress to 0 at the start
 
@@ -798,18 +798,23 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 			// Sort formItems by MediaItemTitle for consistent order
 			const sortedFormItems = formItems.sort((a, b) => a.MediaItemTitle.localeCompare(b.MediaItemTitle));
-			log("Sorted Form Items:", sortedFormItems);
+			log("INFO", "Download Modal", "Debug Info", "Sorted Form Items:", sortedFormItems);
 
 			// Go through each item in the formItems
 			for (const item of sortedFormItems) {
-				log("Processing Item:", item);
+				log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
 
 				const selectedOptions = data.selectedOptionsByItem[item.MediaItemRatingKey];
-				log("Selected Types for Item:", selectedOptions);
+				log("INFO", "Download Modal", "Debug Info", "Selected Types for Item:", selectedOptions);
 
 				// If no types are selected and not set to "Add to DB Only", skip this item
 				if (selectedOptions.types.length === 0 && !selectedOptions.addToDBOnly) {
-					log(`Skipping ${item.MediaItemTitle} - Nothing to do here.`);
+					log(
+						"INFO",
+						"Download Modal",
+						"Debug Info",
+						`Skipping ${item.MediaItemTitle} - Nothing to do here.`
+					);
 					continue;
 				}
 
@@ -824,7 +829,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						item.Set.TitleCards?.find((card) => card.Show?.MediaItem)?.Show?.MediaItem;
 				}
 				if (!currentMediaItem) {
-					log(`No MediaItem found for ${item.MediaItemTitle}. Skipping.`);
+					log(
+						"INFO",
+						"Download Modal",
+						"Debug Info",
+						`No MediaItem found for ${item.MediaItemTitle}. Skipping.`
+					);
 					continue;
 				}
 
@@ -837,6 +847,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					duplicates[item.MediaItemRatingKey].selectedType !== item.Set.Type
 				) {
 					log(
+						"INFO",
+						"Download Modal",
+						"Debug Info",
 						`Skipping ${item.MediaItemTitle} in ${item.SetID} - Duplicate type selected: ${duplicates[item.MediaItemRatingKey].selectedType}`
 					);
 					continue;
@@ -895,11 +908,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
 				if (selectedOptions.addToDBOnly) {
 					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Adding");
-					log(`Adding ${item.MediaItemTitle} to DB only.`);
-					log("DB Item Created:", createdSavedItem.dbItem);
+					log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
+					log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
 					const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
 					if (addToDBResp.status === "error") {
-						log(`Error adding ${item.MediaItemTitle} to DB:`, addToDBResp.error);
+						log(
+							"INFO",
+							"Download Modal",
+							"Debug Info",
+							`Error adding ${item.MediaItemTitle} to DB:`,
+							addToDBResp.error
+						);
 						setProgressValues((prev) => ({
 							...prev,
 							progressColor: "red",
@@ -917,7 +936,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						}));
 						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 					} else {
-						log(`Successfully added ${item.MediaItemTitle} to DB.`);
+						log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
 						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 					}
 					updateProgressValue(progressRef.current + progressIncrementRef.current);
@@ -932,17 +951,28 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 				// If no types are selected, skip this item
 				if (selectedTypes.length === 0) {
-					log(`Skipping ${item.MediaItemTitle} - No types selected.`);
+					log("INFO", "Download Modal", "Debug Info", `Skipping ${item.MediaItemTitle} - No types selected.`);
 					continue;
 				}
 
-				log(`Selected Types for ${item.MediaItemTitle}:`, selectedTypes);
+				log(
+					"INFO",
+					"Download Modal",
+					"Debug Info",
+					`Selected Types for ${item.MediaItemTitle}:`,
+					selectedTypes
+				);
 
 				for (const type of selectedTypes) {
 					switch (type) {
 						case "poster":
 							if (item.Set.Poster) {
-								log(`Downloading Poster for ${item.MediaItemTitle}`);
+								log(
+									"INFO",
+									"Download Modal",
+									"Debug Info",
+									`Downloading Poster for ${item.MediaItemTitle}`
+								);
 								await downloadPosterFileAndUpdateMediaServer(
 									item.Set.Poster,
 									"poster",
@@ -953,7 +983,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							break;
 						case "backdrop":
 							if (item.Set.Backdrop) {
-								log(`Downloading Backdrop for ${item.MediaItemTitle}`);
+								log(
+									"INFO",
+									"Download Modal",
+									"Debug Info",
+									`Downloading Backdrop for ${item.MediaItemTitle}`
+								);
 								await downloadPosterFileAndUpdateMediaServer(
 									item.Set.Backdrop,
 									"backdrop",
@@ -964,7 +999,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							break;
 						case "seasonPoster":
 							if (item.Set.SeasonPosters) {
-								log(`Downloading Season Posters for ${item.MediaItemTitle}`);
+								log(
+									"INFO",
+									"Download Modal",
+									"Debug Info",
+									`Downloading Season Posters for ${item.MediaItemTitle}`
+								);
 								const sortedSeasonPosters = item.Set.SeasonPosters.filter(
 									(sp) => sp.Season?.Number !== 0
 								).sort((a, b) => (a.Season?.Number || 0) - (b.Season?.Number || 0));
@@ -974,6 +1014,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									);
 									if (!seasonExists) {
 										log(
+											"INFO",
+											"Download Modal",
+											"Debug Info",
 											`Skipping Season ${sp.Season?.Number} for ${item.MediaItemTitle} - Season does not exist in latest media item.`
 										);
 										continue;
@@ -989,7 +1032,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							break;
 						case "specialSeasonPoster":
 							if (item.Set.SeasonPosters) {
-								log(`Downloading Special Season Posters for ${item.MediaItemTitle}`);
+								log(
+									"INFO",
+									"Download Modal",
+									"Debug Info",
+									`Downloading Special Season Posters for ${item.MediaItemTitle}`
+								);
 								const specialSeasonPosters = item.Set.SeasonPosters.filter(
 									(sp) => sp.Season?.Number === 0
 								);
@@ -999,6 +1047,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									);
 									if (!spExists) {
 										log(
+											"INFO",
+											"Download Modal",
+											"Debug Info",
 											`Skipping Special Season Poster for ${item.MediaItemTitle} - Special Season does not exist in latest media item.`
 										);
 										continue;
@@ -1014,7 +1065,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							break;
 						case "titlecard":
 							if (item.Set.TitleCards) {
-								log(`Downloading Title Cards for ${item.MediaItemTitle}`);
+								log(
+									"INFO",
+									"Download Modal",
+									"Debug Info",
+									`Downloading Title Cards for ${item.MediaItemTitle}`
+								);
 								const sortedTitleCards = item.Set.TitleCards.filter(
 									(tc) =>
 										tc.Episode?.SeasonNumber !== undefined &&
@@ -1042,6 +1098,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										);
 										if (!episode) {
 											log(
+												"INFO",
+												"Download Modal",
+												"Debug Info",
 												`Skipping Title Card for S${tc.Episode.SeasonNumber}E${tc.Episode.EpisodeNumber} - Episode does not exist in latest media item.`
 											);
 											continue;
@@ -1060,17 +1119,28 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							}
 							break;
 						default:
-							log(`Unknown type ${type} for ${item.MediaItemTitle}. Skipping.`);
+							log(
+								"INFO",
+								"Download Modal",
+								"Debug Info",
+								`Unknown type ${type} for ${item.MediaItemTitle}. Skipping.`
+							);
 							continue;
 					}
 				}
 				// Add the item to the database after downloading
 				updateItemProgress(item.MediaItemRatingKey, "addToDB", "Adding");
-				log(`Adding ${item.MediaItemTitle} to DB only.`);
-				log("DB Item Created:", createdSavedItem.dbItem);
+				log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
+				log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
 				const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
 				if (addToDBResp.status === "error") {
-					log(`Error adding ${item.MediaItemTitle} to DB:`, addToDBResp.error);
+					log(
+						"ERROR",
+						"Download Modal",
+						"Debug Info",
+						`Error adding ${item.MediaItemTitle} to DB:`,
+						addToDBResp.error
+					);
 					setProgressValues((prev) => ({
 						...prev,
 						progressColor: "red",
@@ -1088,7 +1158,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					}));
 					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 				} else {
-					log(`Successfully added ${item.MediaItemTitle} to DB.`);
+					log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
 					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 				}
 				updateProgressValue(progressRef.current + progressIncrementRef.current);
@@ -1106,7 +1176,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			updateProgressValue(100); // Set progress to 100% at the end
 			setIsMounted(false);
 		} catch (error) {
-			log("Download Error:", error);
+			log("ERROR", "Download Modal", "Debug Info", "Download Error:", error);
 			setProgressValues((prev) => ({
 				...prev,
 				progressColor: "red",
@@ -1338,13 +1408,18 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																				item.mediaItem
 																			) {
 																				log(
+																					"INFO",
+																					"Download Modal",
+																					"Debug Info",
 																					"Retrying Download for:",
-																					item.posterFile,
-																					item.posterFileType,
-																					item.fileName,
-																					item.mediaItem
-																				);
-																				// Remove this warningMessage
+																					{
+																						posterFile: item.posterFile,
+																						posterFileType:
+																							item.posterFileType,
+																						fileName: item.fileName,
+																						mediaItem: item.mediaItem,
+																					}
+																				); // Remove this warningMessage
 																				setProgressValues((prev) => {
 																					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 																					const { [key]: _, ...rest } =

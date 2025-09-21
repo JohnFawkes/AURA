@@ -42,7 +42,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					setLatestVersion(txt);
 				}
 			} catch (error) {
-				log("Error fetching latest version:", error);
+				log("ERROR", "App Footer", "Fetch Latest Version", "Failed to fetch latest version:", error);
 			}
 		};
 		fetchLatestVersion();

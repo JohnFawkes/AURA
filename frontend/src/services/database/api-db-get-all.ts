@@ -26,9 +26,8 @@ export const fetchAllItemFromDBWithFilters = async (
 	filteredTypes: string[],
 	filterMultiSetOnly: boolean
 ): Promise<APIResponse<DBGetAllItemsWithFiltersResponse>> => {
-	log("api.db - Fetching all items from the database with filters started");
 	try {
-		log("Fetching Saved Sets with filters:", {
+		log("INFO", "API - DB", "Fetch", "Fetching saved sets with filters", {
 			mediaItemID,
 			cleanedQuery,
 			mediaItemLibraryTitles,
@@ -58,13 +57,19 @@ export const fetchAllItemFromDBWithFilters = async (
 				filterMultiSetOnly,
 			},
 		});
-		log("api.db - Fetching all items from the database with filters succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error fetching saved sets with filters");
+		} else {
+			log("INFO", "API - DB", "Fetch", "Fetched saved sets with filters", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.db - Fetching all items from the database with filters failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - DB",
+			"Fetch",
+			`Failed to get all saved sets with filters: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<DBGetAllItemsWithFiltersResponse>(error);
 	}

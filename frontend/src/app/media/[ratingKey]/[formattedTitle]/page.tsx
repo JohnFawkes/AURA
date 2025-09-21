@@ -132,14 +132,16 @@ const MediaItemPage = () => {
 				setMediaItemLoading(true);
 				setLoadingMessage(`Loading Details for ${partialMediaItem.Title}...`);
 				log(
-					`Media Item Page - Media Item - Fetching full media item for ${partialMediaItem.Title} (${partialMediaItem.RatingKey})`
+					"INFO",
+					"Media Item Page",
+					"Fetch",
+					`Getting full media item for ${partialMediaItem.Title} (${partialMediaItem.RatingKey})`
 				);
 				const resp = await fetchMediaServerItemContent(
 					partialMediaItem.RatingKey,
 					partialMediaItem.LibraryTitle
 				);
 				if (resp.status === "error") {
-					log("Media Item Page - Media Item - Error fetching media item from server", resp);
 					setError(resp);
 					setHasError(true);
 					setMediaItemLoading(false);
@@ -148,13 +150,12 @@ const MediaItemPage = () => {
 
 				const responseItem = resp.data;
 				if (!responseItem) {
-					log("Media Item Page - Media Item - No media item found in response");
 					setError(ReturnErrorMessage("No media item found in response from server."));
 					setHasError(true);
 					setMediaItemLoading(false);
 					return;
 				}
-				log("Media Item Page - Media Item - Fetched full media item", responseItem);
+				log("INFO", "Media Item Page", "Fetch", `Fetched full media item`, responseItem);
 				setMediaItem(responseItem);
 
 				// Find if this item exists in other sections
@@ -164,7 +165,10 @@ const MediaItemPage = () => {
 
 				if (otherSections && otherSections.length > 0) {
 					log(
-						`Media Item Page - Media Item - Found other sections of type ${responseItem.Type}`,
+						"INFO",
+						"Media Item Page",
+						"Fetch",
+						`Found other sections of type ${responseItem.Type}`,
 						otherSections
 					);
 					let foundOther: MediaItem | null = null;
@@ -183,11 +187,11 @@ const MediaItemPage = () => {
 							}
 						}
 					}
-					log("Media Item Page - Media Item - Exists in other sections?", foundOther);
+					log("INFO", "Media Item Page", "Fetch", `Media Item - Exists in other sections?`, foundOther);
 					setExistsInOtherSections(foundOther);
 				}
 			} catch (err) {
-				log("Media Item Page - Media Item - Exception while fetching media item", err);
+				log("ERROR", "Media Item Page", "Fetch", "Exception while fetching media item", err);
 				setError(ReturnErrorMessage<unknown>(err));
 				setHasError(true);
 				setMediaItemLoading(false);
@@ -211,11 +215,11 @@ const MediaItemPage = () => {
 			try {
 				setUserFollowsHidesLoading(true);
 				setLoadingMessage("Loading User Follows/Hides");
-				log("Media Item Page - User Follows/Hides - Fetching user preferences from Mediux");
+				log("INFO", "Media Item Page", "User Follows/Hides", "Fetching user preferences from Mediux");
 				const response = await fetchMediuxUserFollowHides();
 
 				if (response.status === "error") {
-					log("Media Item Page - User Follows/Hides - Error fetching user preferences", response);
+					log("ERROR", "Media Item Page", "User Follows/Hides", "Error fetching user preferences", response);
 					setError(response);
 					setHasError(true);
 					setUserFollowsHidesLoading(false);
@@ -224,11 +228,11 @@ const MediaItemPage = () => {
 					return;
 				}
 
-				log("Media Item Page - User Follows/Hides - Fetched user preferences", response.data);
+				log("INFO", "Media Item Page", "User Follows/Hides", "Fetched user preferences", response.data);
 				setUserFollows(response.data?.Follows || []);
 				setUserHides(response.data?.Hides || []);
 			} catch (err) {
-				log("Media Item Page - User Follows/Hides - Exception while fetching user preferences", err);
+				log("ERROR", "Media Item Page", "User Follows/Hides", "Exception while fetching user preferences", err);
 				setError(ReturnErrorMessage<unknown>(err));
 				setHasError(true);
 				setUserFollowsHidesLoading(false);
@@ -254,13 +258,18 @@ const MediaItemPage = () => {
 		const fetchPosterSetsAsync = async () => {
 			try {
 				if (!mediaItem.Guids?.length) {
-					log("Media Item Page - Poster Sets - No Guids found on mediaItem, skipping poster sets fetch");
+					log(
+						"INFO",
+						"Media Item Page",
+						"Poster Sets",
+						"No Guids found on mediaItem, skipping poster sets fetch"
+					);
 					return;
 				}
 
 				const tmdbID = mediaItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
 				if (!tmdbID) {
-					log("Media Item Page - Poster Sets - No TMDB ID found, cannot fetch poster sets");
+					log("ERROR", "Media Item Page", "Poster Sets", "No TMDB ID found, cannot fetch poster sets");
 					setError(ReturnErrorMessage<string>("No TMDB ID found"));
 					setHasError(true);
 					setPosterSets([]);
@@ -270,7 +279,7 @@ const MediaItemPage = () => {
 
 				setPosterSetsLoading(true);
 				setLoadingMessage("Loading Poster Sets");
-				log("Media Item Page - Poster Sets - Fetching poster sets", {
+				log("INFO", "Media Item Page", "Poster Sets", "Fetching poster sets", {
 					tmdbID,
 					type: mediaItem.Type,
 					libraryTitle: mediaItem.LibraryTitle,
@@ -284,7 +293,7 @@ const MediaItemPage = () => {
 				);
 
 				if (response.status === "error") {
-					log("Media Item Page - Poster Sets - Error fetching poster sets", response);
+					log("ERROR", "Media Item Page", "Poster Sets", "Error fetching poster sets", response);
 					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
 						response.error.Message = `No Poster Sets found for ${mediaItem.Title}`;
 					}
@@ -295,10 +304,10 @@ const MediaItemPage = () => {
 					return;
 				}
 
-				log("Media Item Page - Poster Sets - Fetched poster sets", response.data);
+				log("INFO", "Media Item Page", "Poster Sets", "Fetched poster sets", response.data);
 				setPosterSets(response.data || []);
 			} catch (err) {
-				log("Media Item Page - Poster Sets - Exception while fetching poster sets", err);
+				log("ERROR", "Media Item Page", "Poster Sets", "Exception while fetching poster sets", err);
 				setError(ReturnErrorMessage<unknown>(err));
 				setHasError(true);
 				setPosterSets([]);
@@ -319,7 +328,7 @@ const MediaItemPage = () => {
 		if (!mediaItem) return; // If no mediaItem, do nothing
 		if (!posterSets || posterSets.length === 0) return; // If no poster sets, do nothing
 
-		log("Media Item Page - Filters Sets - Applying filters to poster sets", {
+		log("INFO", "Media Item Page", "Filters Sets", "Applying filters to poster sets", {
 			posterSets,
 			showHiddenUsers,
 			userHides,
@@ -372,7 +381,7 @@ const MediaItemPage = () => {
 			return dateB.getTime() - dateA.getTime();
 		});
 
-		log("Media Item Page - Filters Sets - Filtered and sorted poster sets", filtered);
+		log("INFO", "Media Item Page", "Filters Sets", "Filtered and sorted poster sets", filtered);
 		setFilteredPosterSets(filtered);
 	}, [
 		posterSets,

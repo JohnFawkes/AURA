@@ -183,7 +183,7 @@ const UserSetPage = () => {
 			setLoadMessage("Loading library sections from cache");
 			const sections = getSectionSummaries();
 			setLibrarySections(sections);
-			log("User Page - Library Sections", sections);
+			log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
 		};
 		fetchLibrarySections();
 	}, [getSectionSummaries]);
@@ -216,7 +216,7 @@ const UserSetPage = () => {
 				setRespCollectionSets(response.data?.collection_sets || []);
 				setRespBoxsets(response.data?.boxsets || []);
 			} catch (error) {
-				log("User Page - Error fetching user sets:", error);
+				log("ERROR", "User Page", "Fetch User Sets", "Failed to fetch user sets:", error);
 				setError(ReturnErrorMessage<unknown>(error));
 			} finally {
 				setIsLoading(false);
@@ -238,15 +238,15 @@ const UserSetPage = () => {
 		setFilterOutInDB("all");
 
 		if (!respShowSets || !respMovieSets || !respCollectionSets || !respBoxsets) {
-			log("No sets found in response");
+			log("ERROR", "User Page", "Fetch User Sets", "No sets found in response");
 			return;
 		}
 		if (!selectedLibrarySection) {
-			log("No library section selected");
+			log("ERROR", "User Page", "Fetch User Sets", "No library section selected");
 			return;
 		}
 
-		log("Filtering sets based on selected library", selectedLibrarySection);
+		log("INFO", "User Page", "Fetch User Sets", "Filtering sets based on selected library", selectedLibrarySection);
 
 		const filterOutItems = async () => {
 			setIsLoading(true);
@@ -254,16 +254,24 @@ const UserSetPage = () => {
 			// Get the library section data once
 			const librarySection = sections[selectedLibrarySection.title];
 			if (!librarySection || !librarySection.MediaItems) {
-				log(`User Page - No data found for library section: ${selectedLibrarySection.title}`);
+				log(
+					"ERROR",
+					"User Page",
+					"Fetch User Sets",
+					`No data found for library section: ${selectedLibrarySection.title}`
+				);
 				setIsLoading(false);
 				return;
 			}
 
 			// Create a lookup map for faster access
 			const tmdbLookupMap = createTMDBLookupMap(librarySection.MediaItems);
-			log("User Page - TMDB Lookup Map", tmdbLookupMap);
+			log("INFO", "User Page", "Fetch User Sets", "TMDB Lookup Map", tmdbLookupMap);
 
-			log("Setting items based on", selectedLibrarySection, filterOutInDB);
+			log("INFO", "User Page", "Fetch User Sets", "Setting items based on", {
+				selectedLibrarySection,
+				filterOutInDB,
+			});
 
 			// Process Boxsets
 			if (respBoxsets && respBoxsets.length > 0) {
@@ -330,14 +338,14 @@ const UserSetPage = () => {
 					"boxset_title"
 				) as MediuxUserBoxset[];
 
-				log("Processed Boxsets", sortedBoxsets);
+				log("INFO", "User Page", "Fetch User Sets", "Processed Boxsets", sortedBoxsets);
 				setBoxSets(sortedBoxsets);
 				setIdbBoxsets(sortedBoxsets);
 			}
 
 			// Process Show Sets
 			if (selectedLibrarySection.type === "show" && respShowSets && respShowSets.length > 0) {
-				log("Processing Show Sets");
+				log("INFO", "User Page", "Fetch User Sets", "Processing Show Sets");
 				const processedShowSets = await processBatch<MediuxUserShowSet>(
 					respShowSets,
 					tmdbLookupMap,
@@ -352,14 +360,14 @@ const UserSetPage = () => {
 					sortOrder as "asc" | "desc"
 				);
 
-				log("Processed Show Sets", sortedShowSets);
+				log("INFO", "User Page", "Fetch User Sets", "Processed Show Sets", sortedShowSets);
 				setShowSets(sortedShowSets);
 				setIdbShowSets(sortedShowSets);
 			}
 
 			// Process Movie Sets
 			if (selectedLibrarySection.type === "movie" && respMovieSets && respMovieSets.length > 0) {
-				log("Processing Movie Sets");
+				log("INFO", "User Page", "Fetch User Sets", "Processing Movie Sets");
 				const processedMovieSets = await processBatch<MediuxUserMovieSet>(
 					respMovieSets,
 					tmdbLookupMap,
@@ -374,7 +382,7 @@ const UserSetPage = () => {
 					sortOrder as "asc" | "desc"
 				);
 
-				log("Processed Movie Sets", sortedMovieSets);
+				log("INFO", "User Page", "Fetch User Sets", "Processed Movie Sets", sortedMovieSets);
 				setMovieSets(sortedMovieSets);
 				setIdbMovieSets(sortedMovieSets);
 			}
@@ -400,7 +408,7 @@ const UserSetPage = () => {
 						sortOrder as "asc" | "desc"
 					);
 
-					log("Processed Collection Sets", sortedCollectionSets);
+					log("INFO", "User Page", "Fetch User Sets", "Processed Collection Sets", sortedCollectionSets);
 					setCollectionSets(sortedCollectionSets);
 					setIdbCollectionSets(sortedCollectionSets);
 				}
@@ -537,7 +545,7 @@ const UserSetPage = () => {
 
 		// Filter show sets
 		if (idbShowSets.length > 0) {
-			log("Filtering Show Sets by Database Status", idbShowSets);
+			log("INFO", "User Page", "Fetch User Sets", "Filtering Show Sets by Database Status", idbShowSets);
 			const filteredShowSets = idbShowSets.filter((idbShowSets) => filterByDatabaseStatus(idbShowSets.show_id));
 			const sortedShowSets = sortSets<MediuxUserShowSet>(
 				filteredShowSets,
@@ -549,7 +557,7 @@ const UserSetPage = () => {
 
 		// Filter movie sets
 		if (idbMovieSets.length > 0) {
-			log("Filtering Movie Sets by Database Status", idbMovieSets);
+			log("INFO", "User Page", "Fetch User Sets", "Filtering Movie Sets by Database Status", idbMovieSets);
 			const filteredMovieSets = idbMovieSets.filter((idbMovieSet) =>
 				filterByDatabaseStatus(idbMovieSet.movie_id)
 			);
@@ -603,7 +611,7 @@ const UserSetPage = () => {
 							: boxsets.length) / itemsPerPage
 			)
 		);
-		log("User Page - Total Pages", totalPages);
+		log("INFO", "User Page", "Fetch User Sets", "User Page - Total Pages", totalPages);
 		setCurrentPage(1); // Reset to first page when tab changes
 	}, [
 		activeTab,

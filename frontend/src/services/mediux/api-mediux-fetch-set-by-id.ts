@@ -12,7 +12,12 @@ export const fetchSetByID = async (
 	setID: string,
 	itemType: "movie" | "show" | "collection"
 ): Promise<APIResponse<PosterSet>> => {
-	log(`api.mediux - Fetching set by ID: ${setID} started`);
+	log(
+		"INFO",
+		"API - Mediux",
+		"Fetch Set By ID",
+		`Fetching set by ID: ${setID} for itemType: ${itemType}, librarySection: ${librarySection}, itemRatingKey: ${itemRatingKey}`
+	);
 	try {
 		const response = await apiClient.get<APIResponse<PosterSet>>(`/mediux/sets/get_set/${setID}`, {
 			params: {
@@ -21,13 +26,19 @@ export const fetchSetByID = async (
 				itemRatingKey: itemRatingKey,
 			},
 		});
-		log(`api.mediux - Fetching set by ID: ${setID} completed`);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || `Unknown error fetching set by ID: ${setID}`);
+		} else {
+			log("INFO", "API - Mediux", "Fetch Set By ID", `Fetched set by ID: ${setID} successfully`, response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediux - Fetching set by ID: ${setID} failed with error: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Mediux",
+			"Fetch Set By ID",
+			`Failed to fetch set by ID: ${setID}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<PosterSet>(error);
 	}

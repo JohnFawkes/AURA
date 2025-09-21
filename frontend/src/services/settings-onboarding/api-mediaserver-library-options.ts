@@ -10,16 +10,30 @@ import { AppConfigMediaServer } from "@/types/config/config-app";
 export async function postMediaServerLibraryOptions(
 	mediaServerInfo: AppConfigMediaServer
 ): Promise<APIResponse<string>> {
-	log("api.settings - Posting media server info to get library options started");
+	log("INFO", "API - Settings", "Media Server", "Posting media server info to get library options");
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/config/get/mediaserver/sections`, mediaServerInfo);
-		log("api.settings - Posting media server info to get library options succeeded");
+		if (response.data.status === "error") {
+			throw new Error(
+				response.data.error?.Message || "Unknown error posting media server info to get library options"
+			);
+		} else {
+			log(
+				"INFO",
+				"API - Settings",
+				"Media Server",
+				"Posted media server info to get library options successfully",
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Posting media server info to get library options failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Media Server",
+			`Failed to post media server info to get library options: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}

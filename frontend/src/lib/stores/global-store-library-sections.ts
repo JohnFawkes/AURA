@@ -63,14 +63,24 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 				const { sections } = get();
 				const section = sections[sectionTitle];
 				if (!section || !Array.isArray(section.MediaItems)) {
-					log(`librarySections - Section "${sectionTitle}" missing or invalid while updating ${ratingKey}`);
+					log(
+						"ERROR",
+						"librarySections",
+						"updateMediaItem",
+						`Section "${sectionTitle}" not found or has no MediaItems`
+					);
 					return;
 				}
 
 				const mediaItems = [...section.MediaItems];
 				const idx = mediaItems.findIndex((m) => m.RatingKey === ratingKey);
 				if (idx === -1) {
-					log(`librarySections - Media item ${ratingKey} not found in section "${sectionTitle}"`);
+					log(
+						"ERROR",
+						"librarySections",
+						"updateMediaItem",
+						`Media item ${ratingKey} not found in section "${sectionTitle}"`
+					);
 					return;
 				}
 
@@ -91,7 +101,10 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 				}));
 
 				log(
-					`librarySections - Updated media item (${updateType}) RatingKey=${ratingKey} in section="${sectionTitle}"`
+					"INFO",
+					"librarySections",
+					"updateMediaItem",
+					`Updated media item ${ratingKey} in section "${sectionTitle}" with action "${updateType}"`
 				);
 			},
 

@@ -10,18 +10,38 @@ import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 export const patchSavedItemInDB = async (
 	saveItem: DBMediaItemWithPosterSets
 ): Promise<APIResponse<DBMediaItemWithPosterSets>> => {
-	log(`api.db - Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID} started.`);
+	log(
+		"INFO",
+		"API - DB",
+		"Update",
+		`Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID}`,
+		saveItem
+	);
 	try {
 		const response = await apiClient.patch<APIResponse<DBMediaItemWithPosterSets>>(`/db/update/`, saveItem);
-		log(`api.db - Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID} succeeded`);
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error patching item in DB");
+		} else {
+			log(
+				"INFO",
+				"API - DB",
+				"Update",
+				`Patched DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID}`,
+				response.data
+			);
+		}
 		const { updateMediaItem } = useLibrarySectionsStore.getState();
 		updateMediaItem(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "update");
 		return response.data;
 	} catch (error) {
 		log(
-			`api.db - Patching DBMediaItemWithPosterSets for item with ID ${
+			"ERROR",
+			"API - DB",
+			"Update",
+			`Failed to patch DBMediaItemWithPosterSets for item with ID ${
 				saveItem.MediaItemID
-			} failed: ${error instanceof Error ? error.message : "Unknown error"}`
+			}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);
 	}

@@ -7,16 +7,22 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 
 export const postSendTestNotification = async (): Promise<APIResponse<string>> => {
-	log("api.settings - Sending test notification started");
+	log("INFO", "API - Settings", "Notifications", "Sending test notification");
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/health/test/notification`);
-		log("api.settings - Sending test notification succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error sending test notification");
+		} else {
+			log("INFO", "API - Settings", "Notifications", "Sent test notification successfully", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Sending test notification failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Notifications",
+			`Failed to send test notification: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}

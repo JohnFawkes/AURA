@@ -319,7 +319,12 @@ const ShowFullSetDetails: React.FC<{
 
 			// Convert Set to Array and get random RatingKey
 			const ratingKeysArray = Array.from(uniqueRatingKeys);
-			log("Unique RatingKeys:", ratingKeysArray);
+			log(
+				"INFO",
+				"ShowFullSetDetails",
+				"Unique RatingKeys for Backdrop Selection",
+				JSON.stringify(ratingKeysArray)
+			);
 			if (ratingKeysArray.length > 0) {
 				const randomRatingKey = ratingKeysArray[Math.floor(Math.random() * ratingKeysArray.length)];
 				setBackdropURL(`/api/mediaserver/image/${randomRatingKey}/backdrop`);
@@ -337,13 +342,12 @@ const ShowFullSetDetails: React.FC<{
 				<H1
 					className="mb-1"
 					onClick={() => {
-						log("INFO", {
-							setType,
-							setTitle,
-							setAuthor,
-							setID,
-							posterSets,
-						});
+						log(
+							"INFO",
+							"ShowFullSetDetails",
+							"Set Details Clicked",
+							JSON.stringify({ setID, setType, setTitle, setAuthor })
+						);
 					}}
 				>
 					{setTitle}

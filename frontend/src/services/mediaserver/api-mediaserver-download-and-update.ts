@@ -12,19 +12,40 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 	mediaItem: MediaItem,
 	fileName: string
 ): Promise<APIResponse<string>> => {
-	log(`api.mediaserver - Downloading ${fileName}`, {
-		posterFile: posterFile,
-		mediaItem: mediaItem,
-	});
+	log(
+		"INFO",
+		"API - Media Server",
+		"Download and Update",
+		`Downloading poster file ${fileName} and updating media item with RatingKey ${mediaItem.RatingKey}`
+	);
 	try {
 		const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/download/file`, {
 			PosterFile: posterFile,
 			MediaItem: mediaItem,
 		});
+		if (response.data.status === "error") {
+			throw new Error(
+				response.data.error?.Message || "Unknown error downloading poster file and updating media server"
+			);
+		} else {
+			log(
+				"INFO",
+				"API - Media Server",
+				"Download and Update",
+				`Downloaded poster file ${fileName} and updated media item with RatingKey ${mediaItem.RatingKey}`,
+				response.data
+			);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Download and update failed: ${error instanceof Error ? error.message : "Unknown error"}`
+			"ERROR",
+			"API - Media Server",
+			"Download and Update",
+			`Failed to download poster file ${fileName} and update media item with RatingKey ${
+				mediaItem.RatingKey
+			}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}

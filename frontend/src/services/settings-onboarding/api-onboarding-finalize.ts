@@ -7,16 +7,22 @@ import { APIResponse } from "@/types/api/api-response";
 import { AppConfig } from "@/types/config/config-app";
 
 export const finalizeOnboarding = async (newConfig: AppConfig): Promise<APIResponse<AppConfig>> => {
-	log("api.settings - Finalizing app configuration started");
+	log("INFO", "API - Settings", "Onboarding", "Finalizing app configuration", newConfig);
 	try {
 		const response = await apiClient.post<APIResponse<AppConfig>>(`/onboarding/complete`, newConfig);
-		log("api.settings - Finalizing app configuration succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error finalizing app configuration");
+		} else {
+			log("INFO", "API - Settings", "Onboarding", "Finalized app configuration successfully", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Finalizing app configuration failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Onboarding",
+			`Failed to finalize app configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<AppConfig>(error);
 	}

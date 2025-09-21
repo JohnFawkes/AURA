@@ -302,7 +302,9 @@ const SavedSetsPage: React.FC = () => {
 		// Get all saved sets that have AutoDownload enabled
 		const setsToRecheck = savedSets.filter((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload));
 
-		log("Sets to recheck:", setsToRecheck);
+		log("INFO", "Saved Sets Page", "Force Recheck", `Forcing recheck for ${setsToRecheck.length} sets`, {
+			setsToRecheck,
+		});
 
 		if (setsToRecheck.length === 0) {
 			toast.warning("No sets with AutoDownload enabled found", {

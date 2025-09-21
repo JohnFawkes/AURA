@@ -8,16 +8,22 @@ import { APIResponse } from "@/types/api/api-response";
 import { AppConfigMediux } from "@/types/config/config-app";
 
 export async function postMediuxNewTokenStatus(mediuxInfo: AppConfigMediux): Promise<APIResponse<string>> {
-	log("api.settings - Posting mediux new token status started");
+	log("INFO", "API - Settings", "MediUX", "Posting mediux new token to check connection status");
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/config/validate/mediux`, mediuxInfo);
-		log("api.settings - Posting mediux new token status succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error posting mediux new token");
+		} else {
+			log("INFO", "API - Settings", "MediUX", "Posted mediux new token successfully", response.data);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.settings - Posting mediux new token status failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"MediUX",
+			`Failed to post mediux new token: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}

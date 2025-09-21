@@ -25,7 +25,7 @@ export const fetchMediaServerLibrarySectionItems = async (
 		sectionStartIndex === 0
 			? `Fetching items for '${librarySection.Title}'...`
 			: `Fetching items for '${librarySection.Title}' (index: ${sectionStartIndex})`;
-	log(`api.mediaserver - ${logMessage}`);
+	log("INFO", "API - Media Server", "Fetch Section Items", logMessage);
 	try {
 		const response = await apiClient.get<APIResponse<LibrarySection>>(`/mediaserver/sections/items`, {
 			params: {
@@ -35,11 +35,20 @@ export const fetchMediaServerLibrarySectionItems = async (
 				sectionStartIndex: sectionStartIndex,
 			},
 		});
-		log(`api.mediaserver - Fetched items for '${librarySection.Title}' successfully.`);
+		if (response.data.status === "error") {
+			throw new Error(
+				response.data.error?.Message || `Unknown error fetching items for section '${librarySection.Title}'`
+			);
+		} else {
+			log("INFO", "API - Media Server", "Fetch Section Items", `Fetched items for '${librarySection.Title}'`);
+		}
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Fetching items for '${librarySection.Title}' failed: ${
+			"ERROR",
+			"API - Media Server",
+			"Fetch Section Items",
+			`Failed to fetch items for '${librarySection.Title}': ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);

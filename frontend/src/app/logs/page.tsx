@@ -38,20 +38,17 @@ export default function LogsPage() {
 			try {
 				setLoading(true);
 				const response = await fetchLogContents();
-
 				if (response.status === "error") {
 					setError(response);
 					setLogs("");
 					return;
 				}
-
 				setLogs(response.data || "");
 				setError(null);
 			} catch (error) {
 				setError(ReturnErrorMessage<string>(error));
 				setLogs("");
 			} finally {
-				log("Logs Page - Fetching logs completed");
 				setLoading(false);
 			}
 		};

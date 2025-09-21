@@ -1,7 +1,5 @@
 import { AxiosError } from "axios";
 
-import { log } from "@/lib/logger";
-
 import { APIResponse } from "@/types/api/api-response";
 
 export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
@@ -12,7 +10,6 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	};
 
 	if (error instanceof AxiosError) {
-		log(`api.shared - Axios error occurred: ${error}`);
 		return {
 			status: "error",
 			elapsed: "0",
@@ -26,7 +23,6 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	}
 
 	if (error instanceof Error) {
-		log(`api.shared - General error occurred: ${error.message}`);
 		return {
 			status: "error",
 			elapsed: "0",
@@ -40,7 +36,6 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	}
 
 	if (typeof error === "string") {
-		log(`api.shared - String error occurred: ${error}`);
 		return {
 			status: "error",
 			elapsed: "0",
@@ -53,7 +48,6 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 		};
 	}
 
-	log("api.shared - Unknown error occurred");
 	return {
 		status: "error",
 		elapsed: "0",

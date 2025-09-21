@@ -8,19 +8,25 @@ import { AppConfig } from "@/types/config/config-app";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
 export const fetchConfig = async (): Promise<APIResponse<AppConfig>> => {
-	log("api.settings - Fetching app configuration started");
+	log("INFO", "API - Settings", "Fetch Config", "Fetching app configuration");
 	try {
 		const response = await apiClient.get<APIResponse<AppConfig>>(`/config`);
-		log("api.settings - Fetching app configuration succeeded");
+		if (response.data.status === "error") {
+			throw new Error(response.data.error?.Message || "Unknown error fetching app configuration");
+		} else {
+			log("INFO", "API - Settings", "Fetch Config", "Fetched app configuration successfully", response.data);
+		}
 		return {
 			...response.data,
 			data: response.data.data ?? defaultAppConfig(),
 		};
 	} catch (error) {
 		log(
-			`api.settings - Fetching app configuration failed: ${
-				error instanceof Error ? error.message : "Unknown error"
-			}`
+			"ERROR",
+			"API - Settings",
+			"Fetch Config",
+			`Failed to fetch app configuration: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
 		);
 		const err = ReturnErrorMessage<AppConfig>(error);
 		// Preserve error status + message, but ensure data shape
