@@ -10,7 +10,6 @@ export const fetchMediaServerItemContent = async (
 	ratingKey: string,
 	sectionTitle: string
 ): Promise<APIResponse<MediaItem>> => {
-	log(`api.mediaserver - Fetching item content for ratingKey ${ratingKey} started`);
 	try {
 		// Encode sectionTitle to handle spaces and special characters
 		const encodedSectionTitle = encodeURIComponent(sectionTitle);
@@ -18,11 +17,10 @@ export const fetchMediaServerItemContent = async (
 		const response = await apiClient.get<APIResponse<MediaItem>>(
 			`/mediaserver/item/${ratingKey}?sectionTitle=${encodedSectionTitle}`
 		);
-		log(`api.mediaserver - Fetching item content for ratingKey ${ratingKey} succeeded`);
 		return response.data;
 	} catch (error) {
 		log(
-			`api.mediaserver - Fetching item content for ratingKey ${ratingKey} failed: ${
+			`API - Media Server - Fetching item content for ratingKey ${ratingKey} failed: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);
