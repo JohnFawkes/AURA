@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { H1, Lead } from "@/components/ui/typography";
 
-import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
