@@ -41,23 +41,45 @@ export function SetFileCounts({ mediaItem, set }: SetFileCountsProps) {
 	};
 
 	const getShowFileCounts = () => {
-		let primary = "";
+		const primary: React.ReactNode[] = [];
 		let secondary = "";
 
-		// Primary line logic
-		const parts = [];
-		if (set.Poster) parts.push("1 Poster");
-		if (set.Backdrop) parts.push("1 Backdrop");
+		if (set.Poster) primary.push(<span key="poster">1 Poster</span>);
+		if (set.Backdrop) {
+			if (primary.length) primary.push(<span key="sep1"> • </span>);
+			primary.push(<span key="backdrop">1 Backdrop</span>);
+		}
 
 		const seasonPosterCount =
 			set.SeasonPosters?.filter((file) => file.Type === "seasonPoster" || file.Type === "specialSeasonPoster")
 				.length ?? 0;
-		if (seasonPosterCount > 0) {
-			parts.push(`${seasonPosterCount} Season Poster${seasonPosterCount > 1 ? "s" : ""}`);
-		}
-		primary = parts.join(" • ");
+		const mediaSeasonCount = mediaItem.Series?.SeasonCount ?? 0;
 
-		// Secondary line logic for titlecards
+		if (seasonPosterCount > 0 && mediaSeasonCount > 0) {
+			if (primary.length) primary.push(<span key="sep2"> • </span>);
+			if (seasonPosterCount < mediaSeasonCount) {
+				primary.push(
+					<span key="season-count" className="text-yellow-500">
+						{seasonPosterCount}/{mediaSeasonCount} Season Poster{mediaSeasonCount > 1 ? "s" : ""}
+					</span>
+				);
+			} else {
+				primary.push(
+					<span key="season-label">
+						{seasonPosterCount} Season Poster{seasonPosterCount > 1 ? "s" : ""}
+					</span>
+				);
+			}
+		} else if (seasonPosterCount > 0 && mediaSeasonCount === 0) {
+			if (primary.length) primary.push(<span key="sep3"> • </span>);
+			primary.push(
+				<span key="season-label">
+					{seasonPosterCount} Season Poster{seasonPosterCount > 1 ? "s" : ""}
+				</span>
+			);
+		}
+
+		// Secondary line logic for titlecards (unchanged)
 		const titlecardCount = set.TitleCards?.length ?? 0;
 		const episodeCount = mediaItem.Series?.EpisodeCount ?? 0;
 
