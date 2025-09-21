@@ -7,35 +7,39 @@ import {
 	ArrowDownAZ,
 	ArrowDownZA,
 	CalendarArrowDown,
-	Check,
-	ChevronDown,
 	ClockArrowDown,
 	ClockArrowUp,
+	Filter,
 	RefreshCcw as RefreshIcon,
 	XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
+import { FilterContent } from "@/components/shared/saved-sets-filter";
 import SavedSetsTableRow from "@/components/shared/saved-sets-table";
 import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
 import { SortControl } from "@/components/shared/select_sort";
 import { ViewControl } from "@/components/shared/select_view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
@@ -67,20 +71,45 @@ const SavedSetsPage: React.FC = () => {
 		setSortOrder,
 		viewOption,
 		setViewOption,
-		filterAutoDownloadOnly,
-		setFilterAutoDownloadOnly,
 		filteredLibraries,
 		setFilteredLibraries,
+		filterAutoDownloadOnly,
+		setFilterAutoDownloadOnly,
+		filteredUsers,
+		setFilteredUsers,
+		filteredTypes,
+		setFilteredTypes,
+		filterMultiSetOnly,
+		setFilterMultiSetOnly,
 	} = useSavedSetsPageStore();
 
 	// Get the library options from Global Library Store
 	const { getSectionSummaries } = useLibrarySectionsStore();
-
+	// User Filter Options: all unique users from the savedSets
 	const [filterUserOptions, setFilterUserOptions] = useState<string[]>([]);
-	const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
+	// User Filter Search: for searching within the user filter options
 	const [userFilterSearch, setUserFilterSearch] = useState("");
+	// Selected Types Options
+	const typeOptions = [
+		{ label: "Poster", value: "poster" },
+		{ label: "Backdrop", value: "backdrop" },
+		{ label: "Season Posters", value: "seasonPoster" },
+		{ label: "Title Cards", value: "titlecard" },
+		{ label: "No Selected Types", value: "none" },
+	]; // Total Items: Total items matching filters in DB (for pagination)
 	const [totalItems, setTotalItems] = useState(0);
+	// Is Wide Screen: for showing/hiding the ViewControl
 	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+
+	const [pendingFilters, setPendingFilters] = useState({
+		filteredLibraries,
+		filteredTypes,
+		filterAutoDownloadOnly,
+		filteredUsers,
+		filterMultiSetOnly,
+		userFilterSearch,
+	});
+
 	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
 	useEffect(() => {
 		if (
@@ -93,6 +122,12 @@ const SavedSetsPage: React.FC = () => {
 		}
 	}, [sortOption, setSortOption]);
 
+	const {
+		cleanedQuery,
+		year: searchMediaItemYear,
+		mediaItemID: searchMediaItemID,
+	} = extractYearAndMediaItemID(searchQuery);
+
 	// Fetch saved sets with filters from store
 	const fetchSavedSets = useCallback(async () => {
 		if (isFetchingRef.current) return;
@@ -102,11 +137,6 @@ const SavedSetsPage: React.FC = () => {
 			// From Search Query
 			// Get the mediaItemID (if any)
 			// Get the mediaItemYear (if any)
-			const {
-				cleanedQuery,
-				year: searchMediaItemYear,
-				mediaItemID: searchMediaItemID,
-			} = extractYearAndMediaItemID(searchQuery);
 
 			const response = await fetchAllItemFromDBWithFilters(
 				searchMediaItemID,
@@ -118,7 +148,9 @@ const SavedSetsPage: React.FC = () => {
 				itemsPerPage,
 				currentPage,
 				sortOption,
-				sortOrder
+				sortOrder,
+				filteredTypes,
+				filterMultiSetOnly
 			);
 
 			if (response.status === "error") {
@@ -152,14 +184,18 @@ const SavedSetsPage: React.FC = () => {
 			isFetchingRef.current = false;
 		}
 	}, [
-		searchQuery,
+		searchMediaItemID,
+		cleanedQuery,
 		filteredLibraries,
+		searchMediaItemYear,
 		filterAutoDownloadOnly,
 		filteredUsers,
 		itemsPerPage,
 		currentPage,
 		sortOption,
 		sortOrder,
+		filteredTypes,
+		filterMultiSetOnly,
 	]);
 
 	// Load values from store first, then fetch data
@@ -186,30 +222,45 @@ const SavedSetsPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, [setViewOption]);
 
+	// Calculate total pages
+	const totalPages = Math.ceil(totalItems / itemsPerPage);
+
 	useEffect(() => {
-		// If any of the following is changed, reset to page 1
-		// - searchQuery
-		// - filteredLibraries
-		// - filterAutoDownloadOnly
-		// - filteredUsers
-		// - sortOption
-		// - sortOrder
-		// - itemsPerPage
 		setCurrentPage(1);
 	}, [
-		searchQuery,
-		filteredLibraries,
+		filteredLibraries.length,
 		filterAutoDownloadOnly,
-		filteredUsers,
-		sortOption,
-		sortOrder,
-		itemsPerPage,
+		filteredUsers.length,
+		filteredTypes.length,
+		filterMultiSetOnly,
+		cleanedQuery,
+		searchMediaItemYear,
+		searchMediaItemID,
 		setCurrentPage,
 	]);
 
-	const paginatedSets = savedSets;
-
-	const totalPages = Math.ceil(totalItems / itemsPerPage);
+	// Calculate number of active filters
+	const numberOfActiveFilters = useMemo(() => {
+		let count = 0;
+		if (filteredLibraries.length > 0) count++;
+		if (filterAutoDownloadOnly) count++;
+		if (filteredUsers.length > 0) count++;
+		if (filteredTypes.length > 0) count++;
+		if (filterMultiSetOnly) count++;
+		if (cleanedQuery) count++;
+		if (searchMediaItemYear) count++;
+		if (searchMediaItemID) count++;
+		return count;
+	}, [
+		filteredLibraries.length,
+		filterAutoDownloadOnly,
+		filteredUsers.length,
+		filteredTypes.length,
+		filterMultiSetOnly,
+		cleanedQuery,
+		searchMediaItemYear,
+		searchMediaItemID,
+	]);
 
 	if (loading) {
 		return <Loader className="mt-10" message="Loading saved sets..." />;
@@ -285,270 +336,229 @@ const SavedSetsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
+			{/* Row 1: Filter Icon (left), Autodownload (right) */}
 			<div className="w-full flex items-center justify-between mb-2">
-				<div className="w-full">
-					<div className="w-full flex flex-col gap-4">
-						<div className="flex items-center justify-between mb-2">
-							<Label htmlFor="filters" className="text-lg font-semibold">
-								Filters:
-							</Label>
-							{savedSets &&
-								savedSets.some(
-									(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
-								) && (
+				<div>
+					{isWideScreen ? (
+						<Popover>
+							<PopoverTrigger asChild>
+								<div>
 									<Button
-										variant="secondary"
-										size="sm"
-										onClick={() => forceRecheckAll()}
-										className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
+										variant="outline"
+										className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
 									>
-										<span className="hidden sm:inline">Force Autodownload Recheck</span>
-										<span className="sm:hidden">Recheck</span>
-										<span className="whitespace-nowrap">
-											(
-											{
-												savedSets.filter(
-													(set) =>
-														set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
-												).length
-											}
-											)
-										</span>
-										<RefreshIcon className="h-3 w-3" />
+										Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+										<Filter className="h-5 w-5" />
 									</Button>
-								)}
-						</div>
-					</div>
-					<div className="flex flex-col gap-4">
-						{/* Library Filter */}
-						<div className="flex flex-row" id="library-filter">
-							<Label htmlFor="library-filter" className="text-md font-semibold mb-1 block">
-								Library
-							</Label>
-							<ToggleGroup
-								type="multiple"
-								className="flex flex-wrap gap-2 ml-2"
-								value={filteredLibraries}
-								onValueChange={setFilteredLibraries}
+								</div>
+							</PopoverTrigger>
+							<PopoverContent
+								side="right"
+								align="start"
+								className="w-[350px] p-2 bg-background border border-primary"
 							>
-								{getSectionSummaries()
-									.map((section) => section.title || "Unknown Library")
-									.filter((value, index, self) => self.indexOf(value) === index)
-									.map((section) => (
-										<Badge
-											key={section}
-											className="cursor-pointer text-sm"
-											variant={filteredLibraries.includes(section) ? "default" : "outline"}
-											onClick={() => {
-												if (filteredLibraries.includes(section)) {
-													setFilteredLibraries(
-														filteredLibraries.filter((lib: string) => lib !== section)
-													);
-													setCurrentPage(1);
-												} else {
-													setFilteredLibraries([...filteredLibraries, section]);
-													setCurrentPage(1);
-												}
-											}}
-										>
-											{section}
-										</Badge>
-									))}
-							</ToggleGroup>
-						</div>
-
-						{/* AutoDownload Filter */}
-						<div className="flex flex-row" id="auto-download-filter">
-							<Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
-							<Badge
-								key={"filter-auto-download-only"}
-								className="cursor-pointer text-sm ml-2"
-								variant={filterAutoDownloadOnly ? "default" : "outline"}
-								onClick={() => {
-									if (setFilterAutoDownloadOnly) {
-										setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
+								<FilterContent
+									getSectionSummaries={getSectionSummaries}
+									typeOptions={typeOptions}
+									filterUserOptions={filterUserOptions}
+									filteredLibraries={pendingFilters.filteredLibraries}
+									setFilteredLibraries={(libs) =>
+										setPendingFilters((f) => ({ ...f, filteredLibraries: libs }))
 									}
-								}}
+									filteredTypes={pendingFilters.filteredTypes}
+									setFilteredTypes={(types) =>
+										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
+									}
+									filterAutoDownloadOnly={pendingFilters.filterAutoDownloadOnly}
+									setFilterAutoDownloadOnly={(val) =>
+										setPendingFilters((f) => ({ ...f, filterAutoDownloadOnly: val }))
+									}
+									userFilterSearch={pendingFilters.userFilterSearch}
+									setUserFilterSearch={(val) =>
+										setPendingFilters((f) => ({ ...f, userFilterSearch: val }))
+									}
+									filteredUsers={pendingFilters.filteredUsers}
+									setFilteredUsers={(users) =>
+										setPendingFilters((f) => ({ ...f, filteredUsers: users }))
+									}
+									filterMultiSetOnly={pendingFilters.filterMultiSetOnly}
+									setFilterMultiSetOnly={(val) =>
+										setPendingFilters((f) => ({ ...f, filterMultiSetOnly: val }))
+									}
+									onApplyFilters={() => {
+										setFilteredLibraries(pendingFilters.filteredLibraries);
+										setFilteredTypes(pendingFilters.filteredTypes);
+										setFilterAutoDownloadOnly(pendingFilters.filterAutoDownloadOnly);
+										setFilteredUsers(pendingFilters.filteredUsers);
+										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
+										setUserFilterSearch(pendingFilters.userFilterSearch);
+										setCurrentPage(1);
+									}}
+									onResetFilters={() => {
+										setPendingFilters({
+											filteredLibraries: [],
+											filteredTypes: [],
+											filterAutoDownloadOnly: false,
+											userFilterSearch: "",
+											filteredUsers: [],
+											filterMultiSetOnly: false,
+										});
+										setSearchQuery("");
+									}}
+								/>
+							</PopoverContent>
+						</Popover>
+					) : (
+						<Drawer direction="left">
+							<DrawerTrigger asChild>
+								<Button
+									variant="outline"
+									className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+								>
+									Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+									<Filter className="h-5 w-5" />
+								</Button>
+							</DrawerTrigger>
+							<DrawerContent>
+								<DrawerHeader className="my-0">
+									<DrawerTitle className="mb-0">Filters</DrawerTitle>
+									<DrawerDescription className="mb-0">
+										Use the options below to filter your saved sets.
+									</DrawerDescription>
+								</DrawerHeader>
+								<Separator className="my-1 w-full" />
+								<FilterContent
+									getSectionSummaries={getSectionSummaries}
+									typeOptions={typeOptions}
+									filterUserOptions={filterUserOptions}
+									filteredLibraries={pendingFilters.filteredLibraries}
+									setFilteredLibraries={(libs) =>
+										setPendingFilters((f) => ({ ...f, filteredLibraries: libs }))
+									}
+									filteredTypes={pendingFilters.filteredTypes}
+									setFilteredTypes={(types) =>
+										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
+									}
+									filterAutoDownloadOnly={pendingFilters.filterAutoDownloadOnly}
+									setFilterAutoDownloadOnly={(val) =>
+										setPendingFilters((f) => ({ ...f, filterAutoDownloadOnly: val }))
+									}
+									userFilterSearch={pendingFilters.userFilterSearch}
+									setUserFilterSearch={(val) =>
+										setPendingFilters((f) => ({ ...f, userFilterSearch: val }))
+									}
+									filteredUsers={pendingFilters.filteredUsers}
+									setFilteredUsers={(users) =>
+										setPendingFilters((f) => ({ ...f, filteredUsers: users }))
+									}
+									filterMultiSetOnly={pendingFilters.filterMultiSetOnly}
+									setFilterMultiSetOnly={(val) =>
+										setPendingFilters((f) => ({ ...f, filterMultiSetOnly: val }))
+									}
+									onApplyFilters={() => {
+										setFilteredLibraries(pendingFilters.filteredLibraries);
+										setFilteredTypes(pendingFilters.filteredTypes);
+										setFilterAutoDownloadOnly(pendingFilters.filterAutoDownloadOnly);
+										setFilteredUsers(pendingFilters.filteredUsers);
+										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
+										setUserFilterSearch(pendingFilters.userFilterSearch);
+										setCurrentPage(1);
+									}}
+									onResetFilters={() => {
+										setPendingFilters({
+											filteredLibraries: [],
+											filteredTypes: [],
+											filterAutoDownloadOnly: false,
+											userFilterSearch: "",
+											filteredUsers: [],
+											filterMultiSetOnly: false,
+										});
+										setSearchQuery("");
+									}}
+								/>
+							</DrawerContent>
+						</Drawer>
+					)}
+				</div>
+				<div>
+					{savedSets &&
+						savedSets.some((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)) && (
+							<Button
+								variant="secondary"
+								size="sm"
+								onClick={() => forceRecheckAll()}
+								className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
 							>
-								{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
-							</Badge>
-						</div>
-
-						{/* User Filter */}
-						{filterUserOptions.length > 0 && (
-							<div className="flex flex-row" id="user-filter">
-								<Label className="text-md font-semibold mb-1 block">User</Label>
-								<Popover>
-									<PopoverTrigger asChild>
-										<Button
-											variant="outline"
-											className="min-w-[180px] max-w-[220px] justify-between border-muted-foreground/30 ml-2"
-										>
-											<span className="truncate">
-												{filteredUsers.length === 0
-													? "All Users"
-													: filteredUsers.length === 1
-														? filteredUsers[0]
-														: `${filteredUsers.length} users selected`}
-											</span>
-											<ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent className="w-72 p-2 shadow-lg border-muted-foreground/20">
-										<Input
-											type="search"
-											placeholder="Search users..."
-											className="mb-2"
-											value={userFilterSearch || ""}
-											onChange={(e) => setUserFilterSearch(e.target.value)}
-											tabIndex={-1} // Prevents auto-focus when popover opens
-											autoFocus={false} // Auto-focus when popover opens
-										/>
-										<div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
-											<div
-												className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-													filteredUsers.length === 0 ? "bg-muted" : "hover:bg-muted/60"
-												}`}
-												onClick={() => {
-													setFilteredUsers([]);
-													setCurrentPage(1);
-												}}
-											>
-												<Checkbox checked={filteredUsers.length === 0} id={`users-all`} />
-												<Label
-													htmlFor={`users-all`}
-													className="text-sm flex-1 cursor-pointer truncate"
-													onClick={(e) => e.stopPropagation()}
-												>
-													All User
-												</Label>
-												{filteredUsers.length === 0 && (
-													<Check className="h-4 w-4 text-primary" />
-												)}
-											</div>
-											<div className="border-b my-1" />
-											{filterUserOptions
-												.filter(
-													(user) =>
-														!userFilterSearch ||
-														user.toLowerCase().includes(userFilterSearch.toLowerCase())
-												)
-												.sort((a, b) => a.localeCompare(b))
-												.map((user) => (
-													<div
-														key={user}
-														className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-															filteredUsers.includes(user)
-																? "bg-muted"
-																: "hover:bg-muted/60"
-														}`}
-														onClick={() => {
-															let newUsers: string[];
-															if (filteredUsers.includes(user)) {
-																newUsers = filteredUsers.filter((u) => u !== user);
-															} else {
-																newUsers = [...filteredUsers, user];
-															}
-															setFilteredUsers(newUsers);
-															setCurrentPage(1);
-														}}
-													>
-														<Checkbox
-															checked={filteredUsers.includes(user)}
-															id={`user-${user}`}
-														/>
-														<Label
-															htmlFor={`user-${user}`}
-															className="text-sm flex-1 cursor-pointer truncate"
-															onClick={(e) => e.stopPropagation()}
-														>
-															{user}
-														</Label>
-														{filteredUsers.includes(user) && (
-															<Check className="h-4 w-4 text-primary" />
-														)}
-													</div>
-												))}
-										</div>
-									</PopoverContent>
-								</Popover>
-							</div>
+								<span className="hidden sm:inline">Force Autodownload Recheck</span>
+								<span className="sm:hidden">Recheck</span>
+								<span className="whitespace-nowrap">
+									(
+									{
+										savedSets.filter(
+											(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
+										).length
+									}
+									)
+								</span>
+								<RefreshIcon className="h-3 w-3" />
+							</Button>
 						)}
-					</div>
 				</div>
 			</div>
 
-			<Separator className="my-4 w-full" />
+			{/* Row 2: SortControl (full width) */}
+			<div className="w-full mb-2">
+				<SortControl
+					options={[
+						{
+							value: "dateUpdated",
+							label: "Date Updated",
+							ascIcon: <ClockArrowUp />,
+							descIcon: <ClockArrowDown />,
+						},
+						{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+						{
+							value: "year",
+							label: "Year",
+							ascIcon: <CalendarArrowDown />,
+							descIcon: <CalendarArrowDown />,
+						},
+						{ value: "library", label: "Library", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+					]}
+					sortOption={sortOption}
+					sortOrder={sortOrder}
+					setSortOption={setSortOption}
+					setSortOrder={setSortOrder}
+				/>
+			</div>
 
-			{/* Sorting controls */}
-			<div className="w-full flex items-center justify-between mb-4">
-				{viewOption === "card" && (
-					<SortControl
-						options={[
-							{
-								value: "dateUpdated",
-								label: "Date Updated",
-								ascIcon: <ClockArrowUp />,
-								descIcon: <ClockArrowDown />,
-							},
-							{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
-							{
-								value: "year",
-								label: "Year",
-								ascIcon: <CalendarArrowDown />,
-								descIcon: <CalendarArrowDown />,
-							},
-							{
-								value: "library",
-								label: "Library",
-								ascIcon: <ArrowDownAZ />,
-								descIcon: <ArrowDownZA />,
-							},
-						]}
-						sortOption={sortOption}
-						sortOrder={sortOrder}
-						setSortOption={(value) => {
-							setSortOption(value as "title" | "dateUpdated" | "year" | "library" | "");
-							if (value === "title") setSortOrder("asc");
-							else if (value === "dateUpdated") setSortOrder("desc");
-							else if (value === "year") setSortOrder("desc");
-							else if (value === "library") setSortOrder("asc");
-						}}
-						setSortOrder={setSortOrder}
+			{/* Row 3: ItemsPerPage (left), ViewControl (right) */}
+			<div className="w-full flex items-center justify-between">
+				<div className="flex items-center gap-2">
+					<SelectItemsPerPage
+						setCurrentPage={setCurrentPage}
+						itemsPerPage={itemsPerPage}
+						setItemsPerPage={setItemsPerPage}
 					/>
-				)}
-
-				{/* View Control - only show this if not on mobile */}
-				<div className="hidden sm:flex w-full items-center justify-end">
+				</div>
+				{isWideScreen && (
 					<ViewControl
 						options={[
 							{ value: "card", label: "Card View" },
 							{ value: "table", label: "Table View" },
 						]}
 						viewOption={viewOption}
-						setViewOption={(value) => setViewOption(value as "card" | "table")}
+						setViewOption={setViewOption}
 						label="View:"
 						showLabel={true}
 					/>
-				</div>
+				)}
 			</div>
 
-			{/* Items Per Page Selection */}
-			{
-				// Only show the items per page selection if there are more than 10 sets
-				totalItems > 10 && (
-					<div className="w-full flex items-center mb-2">
-						<SelectItemsPerPage
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</div>
-				)
-			}
+			<Separator className="my-4 w-full" />
 
 			{Object.keys(recheckStatus).length > 0 && (
-				<div className="w-full mb-4">
+				<div className="w-full">
 					<h3 className="text-lg font-semibold mb-2">Recheck Status:</h3>
 					<div className="rounded-md border">
 						<table className="w-full divide-y divide-border">
@@ -640,6 +650,7 @@ const SavedSetsPage: React.FC = () => {
 							</tbody>
 						</table>
 					</div>
+					<Separator className="my-4 w-full" />
 				</div>
 			)}
 
@@ -647,10 +658,28 @@ const SavedSetsPage: React.FC = () => {
 			{(!savedSets || savedSets.length === 0) && !loading && !error && !Object.keys(recheckStatus).length && (
 				<div className="w-full">
 					<ErrorMessage
-						error={ReturnErrorMessage<string>(`No items found ${searchQuery ? `matching "${searchQuery}"` : ""} in 
-                ${filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"} 
-                ${filterAutoDownloadOnly ? "that are set to AutoDownload" : ""}
-				${filteredUsers.length > 0 ? ` for user${filteredUsers.length > 1 ? "s" : ""} ${filteredUsers.join(", ")}` : ""}.`)}
+						error={ReturnErrorMessage<string>(
+							[
+								`No ${filterMultiSetOnly ? "Multi-Poster" : ""} Sets found`,
+								filteredLibraries.length > 0
+									? `in ${filteredLibraries.map((lib) => `"${lib}"`).join(", ")}`
+									: null,
+								filterAutoDownloadOnly ? "that are set to Auto Download" : null,
+								filteredTypes.length > 0
+									? `with type${filteredTypes.length > 1 ? "s" : ""} ${filteredTypes
+											.map((t) => `"${typeOptions.find((opt) => opt.value === t)?.label || t}"`)
+											.join(", ")}`
+									: null,
+								filteredUsers.length > 0
+									? `for user${filteredUsers.length > 1 ? "s" : ""} ${filteredUsers
+											.map((u) => `"${u}"`)
+											.join(", ")}`
+									: null,
+								searchQuery ? `matching "${searchQuery}"` : null,
+							]
+								.filter(Boolean)
+								.join("\n")
+						)}
 					/>
 					<div className="text-center text-muted-foreground mt-4">
 						<Button
@@ -661,7 +690,19 @@ const SavedSetsPage: React.FC = () => {
 								setFilteredLibraries([]);
 								if (setFilterAutoDownloadOnly) setFilterAutoDownloadOnly(false);
 								setFilteredUsers([]);
+								setFilteredTypes([]);
 								setCurrentPage(1);
+								if (filterMultiSetOnly) setFilterMultiSetOnly(false);
+								setUserFilterSearch("");
+								// Reset pending filters as well
+								setPendingFilters({
+									filteredLibraries: [],
+									filteredTypes: [],
+									filterAutoDownloadOnly: false,
+									userFilterSearch: "",
+									filteredUsers: [],
+									filterMultiSetOnly: false,
+								});
 							}}
 							className="text-sm"
 						>
@@ -673,7 +714,7 @@ const SavedSetsPage: React.FC = () => {
 			)}
 
 			{/* Table View (only available for larger screens) */}
-			{viewOption === "table" && paginatedSets && paginatedSets.length > 0 && (
+			{viewOption === "table" && savedSets && savedSets.length > 0 && (
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -790,8 +831,9 @@ const SavedSetsPage: React.FC = () => {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{paginatedSets.length > 0 &&
-							paginatedSets.map((savedSet) => (
+						{savedSets &&
+							savedSets.length > 0 &&
+							savedSets.map((savedSet) => (
 								<SavedSetsTableRow
 									key={savedSet.MediaItem.RatingKey}
 									savedSet={savedSet}
@@ -806,8 +848,9 @@ const SavedSetsPage: React.FC = () => {
 			{/* Card View */}
 			{viewOption === "card" && (
 				<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-					{paginatedSets.length > 0 &&
-						paginatedSets.map((savedSet) => (
+					{savedSets &&
+						savedSets.length > 0 &&
+						savedSets.map((savedSet) => (
 							<SavedSetsCard
 								key={savedSet.MediaItem.RatingKey}
 								savedSet={savedSet}

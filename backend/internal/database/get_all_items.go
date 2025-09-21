@@ -16,6 +16,7 @@ func GetAllItemsWithFilter(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	params := r.URL.Query()
+	logging.LOG.Trace(fmt.Sprintf("Query Params: %v", params))
 	mediaItemID := params.Get("mediaItemID")
 	mediaItemLibraryTitles := params["mediaItemLibraryTitles"]
 	if len(mediaItemLibraryTitles) == 0 {
@@ -64,6 +65,19 @@ func GetAllItemsWithFilter(w http.ResponseWriter, r *http.Request) {
 			logging.LOG.Warn(fmt.Sprintf("Invalid sortOrder value: %s, defaulting to 'desc'", soStr))
 		}
 	}
+	filteredTypes := params["filteredTypes"]
+	if len(filteredTypes) == 0 {
+		filteredTypes = params["filteredTypes[]"]
+	}
+	if len(filteredTypes) == 0 {
+		if ftStr := params.Get("filteredTypes"); ftStr != "" {
+			filteredTypes = strings.Split(ftStr, ",")
+		}
+	}
+	filterMultiSetOnly := false
+	if msStr := params.Get("filterMultiSetOnly"); msStr == "true" {
+		filterMultiSetOnly = true
+	}
 
 	items, totalItems, uniqueUsers, Err := GetAllItemsFromDatabaseWithFilter(
 		mediaItemID,
@@ -76,6 +90,8 @@ func GetAllItemsWithFilter(w http.ResponseWriter, r *http.Request) {
 		pageNumber,
 		sortOption,
 		sortOrder,
+		filteredTypes,
+		filterMultiSetOnly,
 	)
 	if Err.Message != "" {
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -104,6 +120,8 @@ func GetAllItemsFromDatabaseWithFilter(
 	userNames []string,
 	itemsPerPage, pageNumber int,
 	sortOption string, sortOrder string,
+	filteredTypes []string,
+	filterMultiSetOnly bool,
 ) ([]modals.DBMediaItemWithPosterSets, int, []string, logging.StandardError) {
 	Err := logging.NewStandardError()
 
@@ -135,6 +153,29 @@ func GetAllItemsFromDatabaseWithFilter(
 			clauses = append(clauses, "LOWER(json_extract(media_item, '$.Title')) LIKE ?")
 			args = append(args, "%"+strings.ToLower(cleanedQuery)+"%")
 		}
+		if len(filteredTypes) > 0 {
+			var typeClauses []string
+			hasNone := false
+			var realTypes []string
+			for _, t := range filteredTypes {
+				if t == "none" {
+					hasNone = true
+				} else {
+					realTypes = append(realTypes, t)
+				}
+			}
+			if hasNone {
+				// Match rows where selected_types is NULL or empty
+				typeClauses = append(typeClauses, "(selected_types IS NULL OR TRIM(selected_types) = '')")
+			}
+			for _, t := range realTypes {
+				typeClauses = append(typeClauses, "(',' || selected_types || ',') LIKE ?")
+				args = append(args, "%,"+t+",%")
+			}
+			if len(typeClauses) > 0 {
+				clauses = append(clauses, "("+strings.Join(typeClauses, " OR ")+")")
+			}
+		}
 		if !skipUserFilter && len(userNames) > 0 {
 			var userClauses []string
 			for _, name := range userNames {
@@ -152,12 +193,124 @@ func GetAllItemsFromDatabaseWithFilter(
 	if len(whereClauses) > 0 {
 		whereSQL = "WHERE " + strings.Join(whereClauses, " AND ")
 	}
+
+	var totalItems int
+
+	// --- MULTI-SET FILTER LOGIC ---
+	if filterMultiSetOnly {
+		// 1. Get media_item_ids with more than one poster set (with pagination)
+		countQuery := `
+SELECT COUNT(*) FROM (
+    SELECT media_item_id
+    FROM SavedItems
+    ` + whereSQL + `
+    GROUP BY media_item_id
+    HAVING COUNT(*) > 1
+)
+`
+		if err := db.QueryRow(countQuery, filterArgs...).Scan(&totalItems); err != nil {
+			Err.Message = "Failed to count multi-set media items"
+			Err.HelpText = "Check error details for more information."
+			Err.Details = "Error: " + err.Error() + ", Query: " + countQuery
+			return nil, 0, nil, Err
+		}
+
+		limit := itemsPerPage
+		offset := (pageNumber - 1) * itemsPerPage
+
+		// 2. Get paginated media_item_ids
+		idQuery := `
+SELECT media_item_id
+FROM SavedItems
+` + whereSQL + `
+GROUP BY media_item_id
+HAVING COUNT(*) > 1
+` + fmt.Sprintf("ORDER BY media_item_id LIMIT %d OFFSET %d", limit, offset)
+
+		idRows, err := db.Query(idQuery, filterArgs...)
+		if err != nil {
+			Err.Message = "Failed to query multi-set media_item_ids"
+			Err.HelpText = "Check error details for more information."
+			Err.Details = "Error: " + err.Error() + ", Query: " + idQuery
+			return nil, 0, nil, Err
+		}
+		defer idRows.Close()
+
+		var ids []string
+		for idRows.Next() {
+			var id string
+			if err := idRows.Scan(&id); err == nil {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == 0 {
+			return nil, totalItems, nil, logging.StandardError{}
+		}
+
+		// 3. Fetch all poster sets for those media_item_ids
+		placeholders := strings.Repeat("?,", len(ids))
+		placeholders = placeholders[:len(placeholders)-1]
+		mainQuery := fmt.Sprintf(`
+SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
+FROM SavedItems
+WHERE media_item_id IN (%s)
+`, placeholders)
+
+		mainArgs := make([]any, len(ids))
+		for i, id := range ids {
+			mainArgs[i] = id
+		}
+
+		rows2, err := db.Query(mainQuery, mainArgs...)
+		if err != nil {
+			Err.Message = "Failed to query multi-set items"
+			Err.HelpText = "Check error details for more information."
+			Err.Details = "Error: " + err.Error() + ", Query: " + mainQuery
+			return nil, 0, nil, Err
+		}
+		defer rows2.Close()
+
+		result, groupErr := groupRowsIntoMediaItems(rows2, mainQuery)
+		if groupErr.Message != "" {
+			return nil, 0, nil, groupErr
+		}
+
+		// --- UNIQUE USERS QUERY (same filters, but skip user filter) ---
+		uniqueUsersWhereClauses, uniqueUsersArgs := buildWhere(true)
+		uniqueUsersWhereSQL := ""
+		if len(uniqueUsersWhereClauses) > 0 {
+			uniqueUsersWhereSQL = "WHERE " + strings.Join(uniqueUsersWhereClauses, " AND ")
+		}
+		uniqueUsersQuery := `
+SELECT DISTINCT json_extract(poster_set, '$.User.Name')
+FROM SavedItems
+` + uniqueUsersWhereSQL
+
+		userRows, err := db.Query(uniqueUsersQuery, uniqueUsersArgs...)
+		if err != nil {
+			Err.Message = "Failed to get unique user names"
+			Err.HelpText = "Check error details for more information."
+			Err.Details = "Error: " + err.Error() + ", Query: " + uniqueUsersQuery
+			return nil, 0, nil, Err
+		}
+		defer userRows.Close()
+		var uniqueUsers []string
+		for userRows.Next() {
+			var user string
+			if err := userRows.Scan(&user); err == nil && user != "" {
+				uniqueUsers = append(uniqueUsers, user)
+			}
+		}
+
+		return result, totalItems, uniqueUsers, logging.StandardError{}
+	}
+
+	// --- NORMAL (non-multiset) LOGIC ---
 	countQuery := `
 SELECT COUNT(DISTINCT media_item_id)
 FROM SavedItems
 ` + whereSQL
 
-	var totalItems int
 	if err := db.QueryRow(countQuery, filterArgs...).Scan(&totalItems); err != nil {
 		Err.Message = "Failed to count unique media items"
 		Err.HelpText = "Check error details for more information."
@@ -240,38 +393,9 @@ LIMIT ? OFFSET ?`
 	return result, totalItems, uniqueUsers, logging.StandardError{}
 }
 
-func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.StandardError) {
-	Err := logging.NewStandardError()
-
-	// Query all rows from SavedItems.
-	query := `
-SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
-FROM SavedItems
-ORDER BY media_item_id`
-	rows, err := db.Query(query)
-	if err != nil {
-		Err.Message = "Failed to query all items from database"
-		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = "Query: " + query
-		return nil, Err
-	}
-	defer rows.Close()
-
-	result, groupErr := groupRowsIntoMediaItems(rows, query)
-	if groupErr.Message != "" {
-		return nil, groupErr
-	}
-
-	return result, logging.StandardError{}
-}
-
 func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItemWithPosterSets, logging.StandardError) {
 	Err := logging.NewStandardError()
-	var (
-		result    []modals.DBMediaItemWithPosterSets
-		currentID string
-		current   *modals.DBMediaItemWithPosterSets
-	)
+	resultMap := make(map[string]*modals.DBMediaItemWithPosterSets)
 
 	for rows.Next() {
 		var savedItem modals.DBSavedItem
@@ -291,24 +415,20 @@ func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItem
 			return nil, Err
 		}
 
-		// Start a new group when media_item_id changes
-		if savedItem.MediaItemID != currentID {
-			if current != nil {
-				result = append(result, *current)
-			}
-			currentID = savedItem.MediaItemID
-
+		// Unmarshal media item if not already in map
+		mediaItemGroup, exists := resultMap[savedItem.MediaItemID]
+		if !exists {
 			var mediaItem modals.MediaItem
 			if Err = UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); Err.Message != "" {
 				return nil, Err
 			}
-
-			current = &modals.DBMediaItemWithPosterSets{
+			mediaItemGroup = &modals.DBMediaItemWithPosterSets{
 				MediaItemID:   savedItem.MediaItemID,
 				MediaItem:     mediaItem,
 				MediaItemJSON: savedItem.MediaItemJSON,
 				PosterSets:    make([]modals.DBPosterSetDetail, 0, 4),
 			}
+			resultMap[savedItem.MediaItemID] = mediaItemGroup
 		}
 
 		var posterSet modals.PosterSet
@@ -330,11 +450,39 @@ func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItem
 			SelectedTypes:  savedItem.SelectedTypes,
 			AutoDownload:   savedItem.AutoDownload,
 		}
-		current.PosterSets = append(current.PosterSets, psDetail)
+
+		mediaItemGroup.PosterSets = append(mediaItemGroup.PosterSets, psDetail)
 	}
 
-	if current != nil {
-		result = append(result, *current)
+	// Convert map to slice
+	result := make([]modals.DBMediaItemWithPosterSets, 0, len(resultMap))
+	for _, v := range resultMap {
+		result = append(result, *v)
+	}
+
+	return result, logging.StandardError{}
+}
+
+func GetAllItemsFromDatabase() ([]modals.DBMediaItemWithPosterSets, logging.StandardError) {
+	Err := logging.NewStandardError()
+
+	// Query all rows from SavedItems.
+	query := `
+SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update
+FROM SavedItems
+ORDER BY media_item_id`
+	rows, err := db.Query(query)
+	if err != nil {
+		Err.Message = "Failed to query all items from database"
+		Err.HelpText = "Ensure the database connection is established and the query is correct."
+		Err.Details = "Query: " + query
+		return nil, Err
+	}
+	defer rows.Close()
+
+	result, groupErr := groupRowsIntoMediaItems(rows, query)
+	if groupErr.Message != "" {
+		return nil, groupErr
 	}
 
 	return result, logging.StandardError{}

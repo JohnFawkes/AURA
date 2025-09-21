@@ -22,7 +22,9 @@ export const fetchAllItemFromDBWithFilters = async (
 	itemsPerPage: number,
 	pageNumber: number,
 	sortOption: string,
-	sortOrder: "asc" | "desc"
+	sortOrder: "asc" | "desc",
+	filteredTypes: string[],
+	filterMultiSetOnly: boolean
 ): Promise<APIResponse<DBGetAllItemsWithFiltersResponse>> => {
 	log("api.db - Fetching all items from the database with filters started");
 	try {
@@ -37,6 +39,8 @@ export const fetchAllItemFromDBWithFilters = async (
 			pageNumber,
 			sortOption,
 			sortOrder,
+			filteredTypes,
+			filterMultiSetOnly,
 		});
 		const response = await apiClient.get<APIResponse<DBGetAllItemsWithFiltersResponse>>(`/db/get/all`, {
 			params: {
@@ -50,6 +54,8 @@ export const fetchAllItemFromDBWithFilters = async (
 				pageNumber,
 				sortOption,
 				sortOrder,
+				filteredTypes,
+				filterMultiSetOnly,
 			},
 		});
 		log("api.db - Fetching all items from the database with filters succeeded");

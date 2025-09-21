@@ -13,11 +13,25 @@ interface SavedSets_PageStore
 	viewOption: TYPE_VIEW_TYPE_OPTIONS;
 	setViewOption: (option: TYPE_VIEW_TYPE_OPTIONS) => void;
 
-	// Filters Store
+	// Library Filter
 	filteredLibraries: string[];
 	setFilteredLibraries: (libraries: string[]) => void;
+
+	// AutoDownload Filter
 	filterAutoDownloadOnly: boolean;
 	setFilterAutoDownloadOnly: (value: boolean) => void;
+
+	// User Filter
+	filteredUsers: string[];
+	setFilteredUsers: (users: string[]) => void;
+
+	// Selected Type Filter
+	filteredTypes: string[];
+	setFilteredTypes: (types: string[]) => void;
+
+	// MultiSet Filter
+	filterMultiSetOnly: boolean;
+	setFilterMultiSetOnly: (value: boolean) => void;
 
 	// Hydration and Clear
 	_hasHydrated: boolean;
@@ -50,6 +64,16 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 			filterAutoDownloadOnly: false,
 			setFilterAutoDownloadOnly: (value) => set({ filterAutoDownloadOnly: value }),
 
+			filteredUsers: [],
+			setFilteredUsers: (users) => set({ filteredUsers: users }),
+
+			filteredTypes: [],
+			setFilteredTypes: (types) => set({ filteredTypes: types }),
+
+			filterMultiSetOnly: false,
+			setFilterMultiSetOnly: (value) => set({ filterMultiSetOnly: value }),
+
+			// Hydration and Clear
 			_hasHydrated: false,
 			hasHydrated: () => get()._hasHydrated,
 			hydrate: () => set({ _hasHydrated: true }),
@@ -63,6 +87,10 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 					viewOption: "card",
 					filteredLibraries: [],
 					filterAutoDownloadOnly: false,
+					filteredUsers: [],
+					filteredTypes: [],
+					filterMultiSetOnly: false,
+					_hasHydrated: false,
 				}),
 		}),
 		{
@@ -76,6 +104,9 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 				viewOption: state.viewOption,
 				filteredLibraries: state.filteredLibraries,
 				filterAutoDownloadOnly: state.filterAutoDownloadOnly,
+				filteredUsers: state.filteredUsers,
+				filteredTypes: state.filteredTypes,
+				filterMultiSetOnly: state.filterMultiSetOnly,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();
