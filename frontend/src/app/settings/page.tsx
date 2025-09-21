@@ -18,6 +18,7 @@ import { ConfigSectionMediaServer } from "@/components/settings-onboarding/Confi
 import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
 import { ConfigSectionNotifications } from "@/components/settings-onboarding/ConfigSectionNotifications";
 import { ConfigSectionTMDB } from "@/components/settings-onboarding/ConfigSectionTMDB";
+import { UserPreferencesCard } from "@/components/settings-onboarding/UserPreferences";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
@@ -443,6 +444,9 @@ const SettingsPage: React.FC = () => {
 							</div>
 						</div>
 					)}
+
+					{/* User Preferences Section */}
+					<UserPreferencesCard />
 				</>
 			)}
 

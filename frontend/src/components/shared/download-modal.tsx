@@ -38,6 +38,7 @@ import { Progress } from "@/components/ui/progress";
 import { Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { DBSavedItem } from "@/types/database/db-saved-item";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
@@ -209,6 +210,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// State - Duplicate Media Items
 	const [duplicates, setDuplicates] = useState<DuplicateMap>({});
 
+	// User Preferences
+	const { defaultImageTypes } = useUserPreferencesStore();
+
 	// Function - Reset Progress Values
 	const resetProgressValues = () => {
 		setProgressValues({
@@ -288,7 +292,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
 					acc[item.MediaItemRatingKey] = {
-						types: computeAssetTypes(item),
+						types: computeAssetTypes(item).filter((type) => defaultImageTypes.includes(type)),
 						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
 						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
@@ -311,7 +315,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
 					acc[item.MediaItemRatingKey] = {
-						types: computeAssetTypes(item),
+						types: computeAssetTypes(item).filter((type) => defaultImageTypes.includes(type)),
 						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
 						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
@@ -321,7 +325,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
 			),
 		});
-	}, [formItems, form, autoDownloadDefault]);
+	}, [formItems, form, autoDownloadDefault, defaultImageTypes]);
 
 	useEffect(() => {
 		const dups = findDuplicateMediaItems(formItems);
@@ -460,7 +464,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		const isDuplicate = duplicates[item.MediaItemRatingKey];
 
 		// Calculate checked state
-		const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.Type);
+		const isChecked =
+			(types.includes(assetType) || (!types.length && defaultImageTypes.includes(assetType))) &&
+			(!isDuplicate || isDuplicate.selectedType === item.Set.Type);
 
 		// Calculate disabled state
 		const isDisabled = Boolean(
