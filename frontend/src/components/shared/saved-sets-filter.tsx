@@ -11,6 +11,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 
 type FilterContentProps = {
 	getSectionSummaries: () => { title?: string }[];
+	librarySectionsLoaded: boolean;
 	filteredLibraries: string[];
 	setFilteredLibraries: (libs: string[]) => void;
 	typeOptions: { label: string; value: string }[];
@@ -31,6 +32,7 @@ type FilterContentProps = {
 
 export function FilterContent({
 	getSectionSummaries,
+	librarySectionsLoaded,
 	filteredLibraries,
 	setFilteredLibraries,
 	typeOptions,
@@ -52,34 +54,40 @@ export function FilterContent({
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
 			{/* Library Sections */}
 			<div className="flex flex-col">
-				<Label className="text-md font-semibold mb-2 block">Library</Label>
-				<ToggleGroup
-					type="multiple"
-					className="flex flex-wrap gap-2 ml-2"
-					value={filteredLibraries}
-					onValueChange={setFilteredLibraries}
-				>
-					{getSectionSummaries()
-						.map((section) => section.title || "Unknown Library")
-						.filter((value, index, self) => self.indexOf(value) === index)
-						.map((section) => (
-							<Badge
-								key={section}
-								className="cursor-pointer text-sm"
-								variant={filteredLibraries.includes(section) ? "default" : "outline"}
-								onClick={() => {
-									if (filteredLibraries.includes(section)) {
-										setFilteredLibraries(filteredLibraries.filter((lib) => lib !== section));
-									} else {
-										setFilteredLibraries([...filteredLibraries, section]);
-									}
-								}}
-							>
-								{section}
-							</Badge>
-						))}
-				</ToggleGroup>
-				<Separator className="my-4 w-full" />
+				{librarySectionsLoaded && getSectionSummaries().length > 0 && (
+					<>
+						<Label className="text-md font-semibold mb-2 block">Library</Label>
+						<ToggleGroup
+							type="multiple"
+							className="flex flex-wrap gap-2 ml-2"
+							value={filteredLibraries}
+							onValueChange={setFilteredLibraries}
+						>
+							{getSectionSummaries()
+								.map((section) => section.title || "Unknown Library")
+								.filter((value, index, self) => self.indexOf(value) === index)
+								.map((section) => (
+									<Badge
+										key={section}
+										className="cursor-pointer text-sm"
+										variant={filteredLibraries.includes(section) ? "default" : "outline"}
+										onClick={() => {
+											if (filteredLibraries.includes(section)) {
+												setFilteredLibraries(
+													filteredLibraries.filter((lib) => lib !== section)
+												);
+											} else {
+												setFilteredLibraries([...filteredLibraries, section]);
+											}
+										}}
+									>
+										{section}
+									</Badge>
+								))}
+						</ToggleGroup>
+						<Separator className="my-4 w-full" />
+					</>
+				)}
 				{/* Selected Types */}
 				<Label className="text-md font-semibold mb-2 block">Selected Types</Label>
 				<ToggleGroup
