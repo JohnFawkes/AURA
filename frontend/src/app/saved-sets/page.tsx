@@ -110,6 +110,11 @@ const SavedSetsPage: React.FC = () => {
 		userFilterSearch,
 	});
 
+	// Set the Document Title
+	useEffect(() => {
+		document.title = `aura | Saved Sets`;
+	}, []);
+
 	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
 	useEffect(() => {
 		if (
@@ -200,9 +205,6 @@ const SavedSetsPage: React.FC = () => {
 
 	// Load values from store first, then fetch data
 	useEffect(() => {
-		if (typeof window !== "undefined") {
-			document.title = "aura | Saved Sets";
-		}
 		// Fetch after store values are loaded
 		fetchSavedSets();
 	}, [fetchSavedSets]);
