@@ -91,8 +91,9 @@ export default function Home() {
 			sortOption !== "dateReleased"
 		) {
 			setSortOption("dateAdded");
+			setSortOrder("desc");
 		}
-	}, [sortOption, setSortOption]);
+	}, [sortOption, setSortOption, setSortOrder]);
 
 	// Fetch data from cache or API
 	const getMediaItems = useCallback(
