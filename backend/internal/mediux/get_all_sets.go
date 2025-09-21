@@ -48,7 +48,6 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	librarySection := chi.URLParam(r, "librarySection")
 	itemRatingKey := chi.URLParam(r, "ratingKey")
 	if tmdbID == "" || itemType == "" || librarySection == "" {
-
 		Err.Message = "Missing TMDB ID, Item Type or Library Section in URL Parameters"
 		Err.HelpText = "Ensure the TMDB ID, Item Type and Library Section are provided in path parameters."
 		Err.Details = fmt.Sprintf("Params: tmdbID=%s, itemType=%s, librarySection=%s", tmdbID, itemType, librarySection)
@@ -58,7 +57,6 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 
 	// If cache is empty, return false
 	if cache.LibraryCacheStore.IsEmpty() {
-
 		Err.Message = "Backend cache is empty"
 		Err.HelpText = "Try refreshing the cache from the Home Page"
 		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
@@ -96,7 +94,6 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 
 func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]modals.PosterSet, logging.StandardError) {
 	Err := logging.NewStandardError()
-	Err.Function = utils.GetFunctionName()
 
 	// Generate the request body
 	var requestBody map[string]any
@@ -713,7 +710,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 	// Get the set ID from the URL
 	setID := chi.URLParam(r, "setID")
 	if setID == "" {
-
 		Err.Message = "Missing setID in URL"
 		Err.HelpText = "Ensure the setID is provided in the URL path."
 		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
@@ -726,8 +722,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 	itemRatingKey := r.URL.Query().Get("itemRatingKey")
 	itemType := r.URL.Query().Get("itemType")
 	if librarySection == "" || itemRatingKey == "" || itemType == "" {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Missing librarySection, itemRatingKey or itemType in query parameters"
 		Err.HelpText = "Ensure the librarySection, itemRatingKey and itemType are provided in query parameters."
 		Err.Details = fmt.Sprintf("Query Params: librarySection=%s, itemRatingKey=%s, itemType=%s", librarySection, itemRatingKey, itemType)
@@ -745,8 +739,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if updatedSet.ID == "" {
-			Err.Function = utils.GetFunctionName()
-
 			Err.Message = "No show set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
 			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -760,8 +752,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if updatedSet.ID == "" {
-			Err.Function = utils.GetFunctionName()
-
 			Err.Message = "No movie set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the movie set exists in the Mediux database."
 			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -775,8 +765,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if updatedSet.ID == "" {
-			Err.Function = utils.GetFunctionName()
-
 			Err.Message = "No collection set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the collection set exists in the Mediux database."
 			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -784,8 +772,6 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	default:
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Invalid item type provided"
 		Err.HelpText = "Ensure the item type is either 'movie', 'show' or 'collection'."
 		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
@@ -803,7 +789,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
 
 	Err := logging.NewStandardError()
-	Err.Function = utils.GetFunctionName()
+
 	requestBody := generateShowSetByIDRequestBody(setID)
 
 	// If cache is empty, return false
@@ -824,7 +810,7 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		SetBody(requestBody).
 		Post("https://images.mediux.io/graphql")
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
+
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
@@ -897,12 +883,11 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 
 func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
 	Err := logging.NewStandardError()
-	Err.Function = utils.GetFunctionName()
+
 	requestBody := generateMovieSetByIDRequestBody(setID)
 
 	// If cache is empty, return false
 	if cache.LibraryCacheStore.IsEmpty() {
-
 		Err.Message = "Backend cache is empty"
 		Err.HelpText = "Try refreshing the cache from the Home Page"
 		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
@@ -919,7 +904,7 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 		SetBody(requestBody).
 		Post("https://images.mediux.io/graphql")
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
+
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
@@ -949,8 +934,6 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 	var responseBody modals.MediuxMovieSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
@@ -965,8 +948,6 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 	// Process the response and return the poster sets
 	posterSets := processMovieSetPostersAndBackdrops(librarySection, itemRatingKey, movieSet.Movie)
 	if len(posterSets) == 0 {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "No poster sets found for the provided movie set ID"
 		Err.HelpText = "Ensure the movie set ID is correct and the movie set exists in the Mediux database."
 		Err.Details = fmt.Sprintf("Movie Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -987,11 +968,9 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 
 func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals.PosterSet, logging.StandardError) {
 	Err := logging.NewStandardError()
-	Err.Function = utils.GetFunctionName()
 
 	// If cache is empty, return false
 	if cache.LibraryCacheStore.IsEmpty() {
-
 		Err.Message = "Backend cache is empty"
 		Err.HelpText = "Try refreshing the cache from the Home Page"
 		Err.Details = "This typically happens when the backend cache is not initialized or has been cleared. Example on application restart."
@@ -1000,7 +979,6 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 
 	tmdbID, exists := cache.LibraryCacheStore.GetTMDBIDFromMediaItemRatingKey(librarySection, itemRatingKey)
 	if !exists {
-
 		Err.Message = "TMDB ID not found in cache"
 		Err.HelpText = "Ensure the itemRatingKey is valid and the TMDB ID exists in the cache."
 		Err.Details = fmt.Sprintf("Item Rating Key: %s, Library Section: %s", itemRatingKey, librarySection)
@@ -1018,7 +996,7 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		SetBody(requestBody).
 		Post("https://images.mediux.io/graphql")
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
+
 		Err.Message = "Failed to make request to Mediux API"
 		Err.HelpText = "Ensure the Mediux API is reachable and the token is valid."
 		Err.Details = map[string]any{
@@ -1049,8 +1027,6 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	var responseBody modals.MediuxCollectionSetResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
@@ -1062,7 +1038,7 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	logging.LOG.Trace(fmt.Sprintf("Date Created: %s", collectionSet.DateCreated))
 	logging.LOG.Trace(fmt.Sprintf("Date Updated: %s", collectionSet.DateUpdated))
 	if collectionSet.ID == "" {
-		Err.Function = utils.GetFunctionName()
+
 		Err.Message = "No collection set found for the provided ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
 		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
@@ -1072,8 +1048,6 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	// Process the response and return the poster sets
 	posterSets := processMovieCollection(itemRatingKey, librarySection, tmdbID, collectionSet.Collection)
 	if len(posterSets) == 0 {
-		Err.Function = utils.GetFunctionName()
-
 		Err.Message = "No poster sets found for the provided collection set ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
 		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)

@@ -29,7 +29,6 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the section ID, title, type, and start index
 	if sectionID == "" || sectionTitle == "" || sectionType == "" || sectionStartIndex == "" {
-
 		Err.Message = "Missing required query parameters"
 		Err.HelpText = "Ensure the URL contains sectionID, sectionTitle, sectionType, and sectionStartIndex query parameters."
 		Err.Details = fmt.Sprintf("Received sectionID: %s, sectionTitle: %s, sectionType: %s, sectionStartIndex: %s",
@@ -68,7 +67,6 @@ func CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType string, s
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
 		Err := logging.NewStandardError()
-
 		Err.Message = "Unsupported media server type"
 		Err.HelpText = "Ensure the media server type is either Plex, Emby, or Jellyfin."
 		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
@@ -83,7 +81,6 @@ func CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType string, s
 	}
 	if len(mediaItems) == 0 {
 		logging.LOG.Warn(fmt.Sprintf("Library section '%s' is empty", section.Title))
-
 		Err.Message = "No items found in the library section"
 		Err.HelpText = fmt.Sprintf("Ensure the section '%s' has items.", section.Title)
 		Err.Details = fmt.Sprintf("No items found for section ID '%s' with title '%s'.", section.ID, section.Title)

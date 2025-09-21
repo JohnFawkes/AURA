@@ -221,7 +221,6 @@ func InitUserID() logging.StandardError {
 	var responseSection modals.EmbyJellyUserIDResponse
 	err = json.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse Emby/Jellyfin user ID response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -239,7 +238,6 @@ func InitUserID() logging.StandardError {
 	}
 
 	// If no Admin user is found, return an error
-
 	Err.Message = "No Admin user found in Emby/Jellyfin user list"
 	Err.HelpText = "Ensure that there is at least one user with Admin privileges in the Emby/Jellyfin server."
 	Err.Details = "No Admin user found in the Emby/Jellyfin user list"

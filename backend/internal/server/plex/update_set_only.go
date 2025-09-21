@@ -14,7 +14,6 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.Standa
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
 		Err := logging.NewStandardError()
-
 		Err.Message = "Failed to determine item rating key"
 		Err.HelpText = "Ensure the item and file types are correctly set."
 		return Err

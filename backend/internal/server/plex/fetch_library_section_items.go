@@ -47,7 +47,6 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse XML response"
 		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())

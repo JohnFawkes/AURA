@@ -33,7 +33,6 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	// Get the asset ID from the URL
 	assetID := chi.URLParam(r, "assetID")
 	if assetID == "" {
-
 		Err.Message = "Missing asset ID in URL"
 		Err.HelpText = "Ensure the asset ID is provided in the URL path."
 		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
@@ -106,7 +105,6 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		}
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-
 			Err.Message = "Failed to write image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", MediuxThumbsTempImageFolder)
 			Err.Details = fmt.Sprintf("Error writing image: %v", err)

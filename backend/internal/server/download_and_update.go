@@ -27,7 +27,6 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -41,7 +40,6 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	// Make sure that the mediaItem has the following fields set
 	// 1. MediaItem.RatingKey
 	if mediaItem.RatingKey == "" {
-
 		Err.Message = "mediaItem.RatingKey is required"
 		Err.HelpText = "Ensure the mediaItem.RatingKey is provided in the request body."
 		Err.Details = "mediaItem.RatingKey is required to identify the media item."
@@ -53,7 +51,6 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	// 1. PosterFile.ID
 	// 2. PosterFile.Type
 	if posterFile.ID == "" || posterFile.Type == "" {
-
 		Err.Message = "PosterFile.ID and PosterFile.Type are required"
 		Err.HelpText = "Ensure the PosterFile.ID and PosterFile.Type are provided in the request body."
 		Err.Details = fmt.Sprintf("Received PosterFile.ID: %s, PosterFile.Type: %s", posterFile.ID, posterFile.Type)
@@ -69,7 +66,6 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-
 		Err.Message = "Unsupported media server type"
 		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
 		Err.Details = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)

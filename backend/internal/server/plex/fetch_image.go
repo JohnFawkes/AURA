@@ -32,14 +32,12 @@ func GetPlexImage(w http.ResponseWriter, r *http.Request) {
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
 	if ratingKey == "" || imageType == "" {
-
 		Err.Message = "Missing rating key or image type"
 		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
 		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
-
 		Err.Message = "Invalid image type"
 		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
 		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
@@ -83,7 +81,6 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 
 	// Check if the response body is empty
 	if len(body) == 0 {
-
 		Err.Message = "Received empty response from Plex server"
 		Err.HelpText = fmt.Sprintf("Ensure the Plex server is running and the item with rating key %s exists.", ratingKey)
 		Err.Details = "The Plex server returned an empty response for the requested image."

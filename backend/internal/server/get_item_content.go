@@ -21,7 +21,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	// Get the ratingKey from the URL
 	ratingKey := chi.URLParam(r, "ratingKey")
 	if ratingKey == "" {
-
 		Err.Message = "Missing rating key in URL"
 		Err.HelpText = "Ensure the URL contains a valid rating key."
 		Err.Details = fmt.Sprintf("Received ratingKey: %s", ratingKey)
@@ -32,7 +31,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	// Get the library section title from the query parameters
 	sectionTitle := r.URL.Query().Get("sectionTitle")
 	if sectionTitle == "" {
-
 		Err.Message = "Missing section title in query parameters"
 		Err.HelpText = "Ensure the URL contains a valid sectionTitle query parameter."
 		Err.Details = fmt.Sprintf("Received sectionTitle: %s", sectionTitle)
@@ -47,7 +45,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	case "Emby", "Jellyfin":
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
-
 		Err.Message = "Unsupported media server type"
 		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
 		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
@@ -62,7 +59,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if itemInfo.RatingKey == "" {
-
 		Err.Message = "Item content not found"
 		Err.HelpText = "Ensure the rating key is valid and the item exists in the media server."
 		Err.Details = fmt.Sprintf("No content found for ratingKey: %s in sectionTitle: %s", ratingKey, sectionTitle)

@@ -17,7 +17,6 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 
 	itemRatingKey := getItemRatingKey(item, file)
 	if itemRatingKey == "" {
-
 		Err.Message = "Media not found"
 		Err.HelpText = "Ensure the item exists in the Emby/Jellyfin library."
 		Err.Details = fmt.Sprintf("Item Title: %s, Rating Key: %s, File ID: %s", item.Title, itemRatingKey, file.ID)
@@ -47,7 +46,6 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		// Add the image to the temporary folder
 		err := os.WriteFile(filePath, imageData, 0644)
 		if err != nil {
-
 			Err.Message = "Failed to write image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", mediux.MediuxFullTempImageFolder)
 			Err.Details = fmt.Sprintf("Error writing image: %v", err)

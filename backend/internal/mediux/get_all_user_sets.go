@@ -21,7 +21,6 @@ func GetAllUserSets(w http.ResponseWriter, r *http.Request) {
 	// Get the username from the URL
 	username := chi.URLParam(r, "username")
 	if username == "" {
-
 		Err.Message = "Missing username in URL"
 		Err.HelpText = "Ensure the username is provided in the URL path."
 		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
@@ -84,7 +83,6 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Stand
 
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-
 		Err.Message = "Failed to unmarshal response from Mediux API"
 		Err.HelpText = "Ensure the response format matches the expected structure."
 		Err.Details = fmt.Sprintf("Error: %s, Response Body: %s", err.Error(), string(response.Body()))

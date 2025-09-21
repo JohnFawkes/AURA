@@ -18,7 +18,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	// Get the SKU from the URL
 	ratingKey := chi.URLParam(r, "ratingKey")
 	if ratingKey == "" {
-
 		Err.Message = "Missing rating key"
 		Err.HelpText = "Ensure the URL contains a valid rating key parameter."
 		Err.Details = fmt.Sprintf("Received ratingKey: %s", ratingKey)
@@ -33,7 +32,6 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if itemInfo.RatingKey == "" {
-
 		Err.Message = "Item not found"
 		Err.HelpText = "Ensure the rating key corresponds to an existing item in Plex."
 		Err.Details = fmt.Sprintf("No item found for ratingKey: %s", ratingKey)

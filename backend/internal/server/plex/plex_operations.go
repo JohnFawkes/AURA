@@ -64,19 +64,16 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 									}
 								}
 							}
-
 							Err.Message = "No local posters found for the item"
 							Err.HelpText = "Ensure the item has local posters available."
 							Err.Details = fmt.Sprintf("No local posters found for rating key: %s", ratingKey)
 
 						}
-
 						Err.Message = "No posters found for the item"
 						Err.HelpText = "Ensure the item has posters available."
 						Err.Details = fmt.Sprintf("No posters found for rating key: %s", ratingKey)
 					}
 					logging.LOG.Trace(fmt.Sprintf("Failed to parse XML response: %v", err))
-
 					Err.Message = "Failed to parse XML response"
 					Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 					Err.Details = fmt.Sprintf("Error parsing XML response for rating key: %s", ratingKey)
@@ -145,7 +142,6 @@ func setPoster(ratingKey string, posterKey string, posterType string) logging.St
 	defer response.Body.Close()
 
 	if !strings.HasPrefix(string(body), "/library/metadata/") {
-
 		Err.Message = "Failed to set poster"
 		Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
 		Err.Details = fmt.Sprintf("Received response: %s", string(body))

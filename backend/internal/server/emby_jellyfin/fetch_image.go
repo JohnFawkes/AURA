@@ -27,7 +27,6 @@ func FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.Sta
 	} else if imageType == "backdrop" {
 		imageType = "Backdrop"
 	} else {
-
 		Err.Message = "Invalid image type"
 		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
 		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
@@ -47,7 +46,6 @@ func FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.Sta
 
 	// Check if the response is empty
 	if len(body) == 0 {
-
 		Err.Message = "Received empty response from media server"
 		Err.HelpText = fmt.Sprintf("Ensure the media server is running and the item with rating key %s exists.", ratingKey)
 		Err.Details = "The media server returned an empty response for the requested image."

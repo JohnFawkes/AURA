@@ -18,7 +18,6 @@ func GetCurrentLogFile(w http.ResponseWriter, r *http.Request) {
 	filePath := logging.GetTodayLogFile()
 
 	if filePath == "" {
-
 		Err.Message = "Failed to get the current log file path"
 		Err.HelpText = "Ensure the logging system is properly configured and the log file path is valid."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
@@ -28,7 +27,6 @@ func GetCurrentLogFile(w http.ResponseWriter, r *http.Request) {
 	// Read the log file using os
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-
 		Err.Message = fmt.Sprintf("Failed to read the log file: %s", err.Error())
 		Err.HelpText = "Ensure the log file exists and is accessible."
 		Err.Details = fmt.Sprintf("Log File Path: %s", filePath)

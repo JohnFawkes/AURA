@@ -45,7 +45,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		// Add the image to the temporary folder
 		err := os.WriteFile(filePath, imageData, 0644)
 		if err != nil {
-
 			Err.Message = "Failed to save image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the temporary folder %s is writable.", mediux.MediuxFullTempImageFolder)
 			Err.Details = fmt.Sprintf("Error saving image to %s: %v", filePath, err)
@@ -57,7 +56,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		var err error
 		imageData, err = os.ReadFile(filePath)
 		if err != nil {
-
 			Err.Message = "Failed to read image from temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the temporary folder %s is accessible.", mediux.MediuxFullTempImageFolder)
 			Err.Details = fmt.Sprintf("Error reading image from %s: %v", filePath, err)
@@ -116,7 +114,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 				newFileName = path.Base(episodePath)
 				newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
 			} else {
-
 				Err.Message = "Episode path is empty for titlecard"
 				Err.HelpText = "Ensure the episode path is correctly set in Plex."
 				Err.Details = fmt.Sprintf("No episode path found for titlecard in show '%s'", plex.Title)
@@ -132,7 +129,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	// Ensure the directory exists
 	err := os.MkdirAll(newFilePath, os.ModePerm)
 	if err != nil {
-
 		Err.Message = "Failed to create directory for new file"
 		Err.HelpText = fmt.Sprintf("Ensure the directory %s is writable.", newFilePath)
 		Err.Details = fmt.Sprintf("Error creating directory %s: %v", newFilePath, err)
@@ -142,7 +138,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	// Create the new file
 	newFile, err := os.Create(path.Join(newFilePath, newFileName))
 	if err != nil {
-
 		Err.Message = "Failed to create new file for image"
 		Err.HelpText = fmt.Sprintf("Ensure the directory %s is writable.", newFilePath)
 		Err.Details = fmt.Sprintf("Error creating file %s: %v", newFileName, err)
@@ -153,7 +148,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	// Write the image data to the file
 	_, err = newFile.Write(imageData)
 	if err != nil {
-
 		Err.Message = "Failed to write image data to new file"
 		Err.HelpText = fmt.Sprintf("Ensure the directory %s is writable.", newFilePath)
 		Err.Details = fmt.Sprintf("Error writing image data to file %s: %v", newFileName, err)
@@ -174,7 +168,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 	itemRatingKey := getItemRatingKey(plex, file)
 	if itemRatingKey == "" {
 		logging.LOG.Error(fmt.Sprintf("Item rating key is empty for '%s' not found", plex.Title))
-
 		Err.Message = "Item rating key is empty"
 		Err.HelpText = "Ensure the item exists in Plex and has a valid rating key."
 		Err.Details = fmt.Sprintf("No rating key found for item '%s'", plex.Title)
@@ -194,7 +187,6 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		} else if file.Type == "titlecard" {
 			posterName = fmt.Sprintf("S%sE%s Titlecard", utils.Get2DigitNumber(int64(file.Episode.SeasonNumber)), utils.Get2DigitNumber(int64(file.Episode.EpisodeNumber)))
 		}
-
 		Err.Message = fmt.Sprintf("Failed to get %s key for item", posterName)
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists in Plex and has a valid %s.", itemRatingKey, posterName)
 		Err.Details = fmt.Sprintf("Error getting %s key for item with rating key %s: %v", posterName, itemRatingKey, Err)

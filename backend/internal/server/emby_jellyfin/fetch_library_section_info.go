@@ -31,7 +31,6 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	var responseSection modals.EmbyJellyLibrarySectionsResponse
 	err := json.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())

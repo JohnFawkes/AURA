@@ -71,7 +71,6 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	// Marshal the MediaItem into JSON
 	mediaItemJSONBytes, err := json.Marshal(saveItem.MediaItem)
 	if err != nil {
-
 		Err.Message = "Failed to marshal MediaItem data"
 		Err.HelpText = "Ensure the MediaItem struct is correctly defined and contains valid data."
 		Err.Details = fmt.Sprintf("MediaItem: %+v", saveItem.MediaItem)
@@ -81,7 +80,6 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	// Marshal the PosterSet into JSON
 	posterSetJSONBytes, err := json.Marshal(saveItem.PosterSet)
 	if err != nil {
-
 		Err.Message = "Failed to marshal PosterSet data"
 		Err.HelpText = "Ensure the PosterSet struct is correctly defined and contains valid data."
 		Err.Details = fmt.Sprintf("PosterSet: %+v", saveItem.PosterSet)
@@ -100,7 +98,6 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		string(mediaItemJSONBytes),
 		saveItem.MediaItem.RatingKey)
 	if err != nil {
-
 		Err.Message = "Failed to update MediaItem data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = fmt.Sprintf("MediaItemID: %s, MediaItem: %+v", saveItem.MediaItem.RatingKey, saveItem.MediaItem)
@@ -122,7 +119,6 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		saveItem.MediaItem.RatingKey,
 		saveItem.PosterSet.ID)
 	if err != nil {
-
 		Err.Message = "Failed to update PosterSet data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = fmt.Sprintf("PosterSetID: %s, PosterSet: %+v, MediaItemID: %s", saveItem.PosterSet.ID, saveItem.PosterSet, saveItem.MediaItem.RatingKey)

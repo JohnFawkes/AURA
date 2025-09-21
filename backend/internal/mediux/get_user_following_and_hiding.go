@@ -103,7 +103,6 @@ func fetchUserFollowingAndHiding() (modals.MediuxUserFollowHideResponse, logging
 	var responseBody modals.MediuxUserFollowHideResponse
 	err = json.Unmarshal(response.Body(), &responseBody)
 	if err != nil {
-
 		Err.Message = "Failed to unmarshal response from Mediux API"
 		Err.HelpText = "Ensure the response format matches the expected structure."
 		Err.Details = fmt.Sprintf("Error: %s, Response Body: %s", err.Error(), string(response.Body()))

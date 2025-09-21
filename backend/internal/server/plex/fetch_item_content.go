@@ -35,7 +35,6 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse XML response"
 		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -140,7 +139,6 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse XML response for seasons"
 		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
@@ -192,7 +190,6 @@ func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeas
 	var responseSection modals.PlexResponse
 	err := xml.Unmarshal(body, &responseSection)
 	if err != nil {
-
 		Err.Message = "Failed to parse XML response for episodes"
 		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())

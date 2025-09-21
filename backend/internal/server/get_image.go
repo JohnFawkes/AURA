@@ -23,14 +23,12 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	ratingKey := chi.URLParam(r, "ratingKey")
 	imageType := chi.URLParam(r, "imageType")
 	if ratingKey == "" || imageType == "" {
-
 		Err.Message = "Missing rating key or image type in URL"
 		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
 		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
-
 		Err.Message = "Invalid image type"
 		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
 		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
@@ -48,7 +46,6 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 		tmpFolder = emby_jellyfin.EmbyJellyTempImageFolder
 	default:
-
 		Err.Message = "Unsupported media server type"
 		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
 		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
@@ -84,7 +81,6 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 		imagePath := path.Join(tmpFolder, fileName)
 		err := os.WriteFile(imagePath, imageData, 0644)
 		if err != nil {
-
 			Err.Message = "Failed to write image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the temporary folder %s is writable.", tmpFolder)
 			Err.Details = fmt.Sprintf("Error writing image to %s: %v", imagePath, err)
