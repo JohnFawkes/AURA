@@ -7,6 +7,8 @@ import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaser
 import { fetchMediuxSets } from "@/services/mediux/api-mediux-fetch-sets";
 import { fetchMediuxUserFollowHides } from "@/services/mediux/api-mediux-fetch-user-follow-hide";
 import {
+	ArrowDown01,
+	ArrowDown10,
 	ArrowDownAZ,
 	ArrowDownZA,
 	ArrowLeftCircle,
@@ -378,6 +380,18 @@ const MediaItemPage = () => {
 				return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
 			}
 
+			if (sortOption === "numberOfSeasons") {
+				const seasonsA = a.SeasonPosters ? a.SeasonPosters.length : 0;
+				const seasonsB = b.SeasonPosters ? b.SeasonPosters.length : 0;
+				return sortOrder === "asc" ? seasonsA - seasonsB : seasonsB - seasonsA;
+			}
+
+			if (sortOption === "numberOfTitlecards") {
+				const titlecardsA = a.TitleCards ? a.TitleCards.length : 0;
+				const titlecardsB = b.TitleCards ? b.TitleCards.length : 0;
+				return sortOrder === "asc" ? titlecardsA - titlecardsB : titlecardsB - titlecardsA;
+			}
+
 			return dateB.getTime() - dateA.getTime();
 		});
 
@@ -609,6 +623,18 @@ const MediaItemPage = () => {
 											label: "User Name",
 											ascIcon: <ArrowDownAZ />,
 											descIcon: <ArrowDownZA />,
+										},
+										{
+											value: "numberOfSeasons",
+											label: "Number of Seasons",
+											ascIcon: <ArrowDown01 />,
+											descIcon: <ArrowDown10 />,
+										},
+										{
+											value: "numberOfTitlecards",
+											label: "Number of Titlecards",
+											ascIcon: <ArrowDown01 />,
+											descIcon: <ArrowDown10 />,
 										},
 									]}
 									sortOption={sortOption}
