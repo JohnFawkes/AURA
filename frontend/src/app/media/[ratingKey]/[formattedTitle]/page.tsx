@@ -103,6 +103,20 @@ const MediaItemPage = () => {
 	});
 
 	useEffect(() => {
+		const validSortOptions =
+			mediaItem?.Type === "show"
+				? ["user", "date", "numberOfSeasons", "numberOfTitlecards"]
+				: mediaItem?.Type === "movie"
+					? ["user", "date", "numberOfItemsInCollection"]
+					: ["user", "date"];
+
+		if (!validSortOptions.includes(sortOption)) {
+			setSortOption("date");
+			setSortOrder("desc");
+		}
+	}, [sortOption, setSortOption, setSortOrder, mediaItem?.Type]);
+
+	useEffect(() => {
 		document.title = `aura | ${mediaItem?.Title || partialMediaItem?.Title || "Media Item"}`;
 	}, [mediaItem?.Title, partialMediaItem?.Title]);
 
@@ -380,16 +394,28 @@ const MediaItemPage = () => {
 				return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
 			}
 
-			if (sortOption === "numberOfSeasons") {
+			if (mediaItem?.Type === "show" && sortOption === "numberOfSeasons") {
 				const seasonsA = a.SeasonPosters ? a.SeasonPosters.length : 0;
 				const seasonsB = b.SeasonPosters ? b.SeasonPosters.length : 0;
 				return sortOrder === "asc" ? seasonsA - seasonsB : seasonsB - seasonsA;
 			}
 
-			if (sortOption === "numberOfTitlecards") {
+			if (mediaItem?.Type === "show" && sortOption === "numberOfTitlecards") {
 				const titlecardsA = a.TitleCards ? a.TitleCards.length : 0;
 				const titlecardsB = b.TitleCards ? b.TitleCards.length : 0;
 				return sortOrder === "asc" ? titlecardsA - titlecardsB : titlecardsB - titlecardsA;
+			}
+
+			if (mediaItem?.Type === "movie" && sortOption === "numberOfItemsInCollection") {
+				const countAPosters = a.OtherPosters?.length ?? 0;
+				const countABackdrops = a.OtherBackdrops?.length ?? 0;
+				const countAMax = Math.max(countAPosters, countABackdrops);
+
+				const countBPosters = b.OtherPosters?.length ?? 0;
+				const countBBackdrops = b.OtherBackdrops?.length ?? 0;
+				const countBMax = Math.max(countBPosters, countBBackdrops);
+
+				return sortOrder === "asc" ? countAMax - countBMax : countBMax - countAMax;
 			}
 
 			return dateB.getTime() - dateA.getTime();
@@ -624,18 +650,32 @@ const MediaItemPage = () => {
 											ascIcon: <ArrowDownAZ />,
 											descIcon: <ArrowDownZA />,
 										},
-										{
-											value: "numberOfSeasons",
-											label: "Number of Seasons",
-											ascIcon: <ArrowDown01 />,
-											descIcon: <ArrowDown10 />,
-										},
-										{
-											value: "numberOfTitlecards",
-											label: "Number of Titlecards",
-											ascIcon: <ArrowDown01 />,
-											descIcon: <ArrowDown10 />,
-										},
+										...(mediaItem?.Type === "movie"
+											? [
+													{
+														value: "numberOfItemsInCollection",
+														label: "Number in Collection",
+														ascIcon: <ArrowDown01 />,
+														descIcon: <ArrowDown10 />,
+													},
+												]
+											: []),
+										...(mediaItem?.Type === "show"
+											? [
+													{
+														value: "numberOfSeasons",
+														label: "Number of Seasons",
+														ascIcon: <ArrowDown01 />,
+														descIcon: <ArrowDown10 />,
+													},
+													{
+														value: "numberOfTitlecards",
+														label: "Number of Titlecards",
+														ascIcon: <ArrowDown01 />,
+														descIcon: <ArrowDown10 />,
+													},
+												]
+											: []),
 									]}
 									sortOption={sortOption}
 									sortOrder={sortOrder}
