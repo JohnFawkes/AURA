@@ -28,7 +28,7 @@ export const fetchAllItemFromDBWithFilters = async (
 ): Promise<APIResponse<DBGetAllItemsWithFiltersResponse>> => {
 	log("api.db - Fetching all items from the database with filters started");
 	try {
-		log("Using filters:", {
+		log("Fetching Saved Sets with filters:", {
 			mediaItemID,
 			cleanedQuery,
 			mediaItemLibraryTitles,
