@@ -242,7 +242,7 @@ const UserSetPage = () => {
 			return;
 		}
 		if (!selectedLibrarySection) {
-			log("ERROR", "User Page", "Fetch User Sets", "No library section selected");
+			log("WARN", "User Page", "Fetch User Sets", "No library section selected");
 			return;
 		}
 
