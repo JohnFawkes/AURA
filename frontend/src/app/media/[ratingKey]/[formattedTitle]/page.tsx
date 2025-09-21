@@ -410,10 +410,16 @@ const MediaItemPage = () => {
 				const countAPosters = a.OtherPosters?.length ?? 0;
 				const countABackdrops = a.OtherBackdrops?.length ?? 0;
 				const countAMax = Math.max(countAPosters, countABackdrops);
+				const countASum = countAPosters + countABackdrops;
 
 				const countBPosters = b.OtherPosters?.length ?? 0;
 				const countBBackdrops = b.OtherBackdrops?.length ?? 0;
 				const countBMax = Math.max(countBPosters, countBBackdrops);
+				const countBSum = countBPosters + countBBackdrops;
+
+				if (countAMax === countBMax) {
+					return sortOrder === "asc" ? countASum - countBSum : countBSum - countASum;
+				}
 
 				return sortOrder === "asc" ? countAMax - countBMax : countBMax - countAMax;
 			}
