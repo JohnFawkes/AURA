@@ -28,6 +28,7 @@ import { SortControl } from "@/components/shared/select_sort";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
@@ -39,18 +40,33 @@ import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 const MediaItemPage = () => {
 	const router = useRouter();
+	const isMounted = useRef(false);
 
-	const hasFetchedInfo = useRef(false);
-
+	// Partial Media Item States
 	const mediaStore = useMediaStore();
 	const partialMediaItem = mediaStore.mediaItem;
 
-	const [mediaItem, setMediaItem] = useState<MediaItem | null>(partialMediaItem);
+	// Library Sections States (From Library Section Store)
+	const librarySectionsMap = useLibrarySectionsStore((state) => state.sections);
+	const librarySectionsHasHydrated = useLibrarySectionsStore((state) => state.hasHydrated);
 
+	// Main Media Item States
+	const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
+	const [mediaItemLoading, setMediaItemLoading] = useState<boolean>(true);
+	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
+	const [existsInDB, setExistsInDB] = useState<boolean>(mediaItem?.ExistInDatabase || false);
+
+	// User Follows/Hides States
+	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
+	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
+	const [userFollowsHidesLoading, setUserFollowsHidesLoading] = useState<boolean>(true);
+
+	// Poster Sets States
 	const [posterSets, setPosterSets] = useState<PosterSet[] | null>(null);
 	const [filteredPosterSets, setFilteredPosterSets] = useState<PosterSet[] | null>(null);
+	const [posterSetsLoading, setPosterSetsLoading] = useState<boolean>(true);
 
-	// State to track the selected sorting option
+	// UI States from Media Page Store
 	const {
 		sortOption,
 		setSortOption,
@@ -62,22 +78,20 @@ const MediaItemPage = () => {
 		setShowHiddenUsers,
 	} = useMediaPageStore();
 
-	// Loading State
-	const [isLoading, setIsLoading] = useState(true);
+	// Loading States
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
+	const isLoading = useMemo(() => {
+		return mediaItemLoading || userFollowsHidesLoading || posterSetsLoading;
+	}, [mediaItemLoading, userFollowsHidesLoading, posterSetsLoading]);
 
-	// Error Handling
+	// Error States
 	const [hasError, setHasError] = useState(false);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 
-	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
-	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
-
-	const [existsInOtherSections, setExistsInOtherSections] = useState<MediaItem | null>(null);
+	// Image Version State (for forcing image reloads)
 	const [imageVersion, setImageVersion] = useState(Date.now());
-	const sectionsMap = useLibrarySectionsStore((state) => state.sections);
-	const [existsInDB, setExistsInDB] = useState<boolean>(mediaItem?.ExistInDatabase || false);
 
+	// Adjacent Items States
 	const [adjacentItems, setAdjacentItems] = useState<{
 		previous: MediaItem | null;
 		next: MediaItem | null;
@@ -86,143 +100,297 @@ const MediaItemPage = () => {
 		next: null,
 	});
 
-	const handleShowSetsWithTitleCardsOnly = () => {
-		setShowOnlyTitlecardSets(!showOnlyTitlecardSets);
-	};
-
-	const handleShowHiddenUsers = () => {
-		setShowHiddenUsers(!showHiddenUsers);
-	};
-
 	useEffect(() => {
-		if (hasFetchedInfo.current) return;
-		hasFetchedInfo.current = true;
+		document.title = `aura | ${mediaItem?.Title || partialMediaItem?.Title || "Media Item"}`;
+	}, [mediaItem?.Title, partialMediaItem?.Title]);
 
-		const fetchUserFollowHides = async () => {
+	// 1. If no partial media item, show error and stop further effects
+	useEffect(() => {
+		if (!isMounted.current) {
+			isMounted.current = true;
+			return;
+		}
+		if (!partialMediaItem) {
+			setHasError(true);
+			setError(ReturnErrorMessage("No media item selected. Please go back and select a media item."));
+			setMediaItemLoading(false);
+			setUserFollowsHidesLoading(false);
+			setPosterSetsLoading(false);
+			return;
+		}
+	}, [partialMediaItem]);
+
+	// 2. Fetch full media item from server when partialMediaItem and librarySectionsMap are ready
+	useEffect(() => {
+		if (!librarySectionsHasHydrated) return;
+		if (!partialMediaItem || Object.keys(librarySectionsMap).length === 0) return;
+
+		setError(null);
+
+		const fetchMediaItem = async () => {
 			try {
-				setLoadingMessage("Loading User Follows/Hides");
-				const response = await fetchMediuxUserFollowHides();
-
-				if (response.status === "error") {
-					setError(response);
-					setHasError(true);
-					return;
-				}
-
-				setUserFollows(response.data?.Follows || []);
-				setUserHides(response.data?.Hides || []);
-			} catch (error) {
-				setError(ReturnErrorMessage<unknown>(error));
-				setHasError(true);
-				setUserFollows([]);
-				setUserHides([]);
-			}
-		};
-
-		const fetchPosterSets = async (responseItem: MediaItem) => {
-			try {
-				if (!responseItem.Guids?.length) {
-					return;
-				}
-
-				const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
-				if (!tmdbID) {
-					setError(ReturnErrorMessage<unknown>(new Error("No TMDB ID found")));
-					setHasError(true);
-					return;
-				}
-
-				setLoadingMessage("Loading Poster Sets");
-				const response = await fetchMediuxSets(
-					tmdbID,
-					responseItem.Type,
-					responseItem.LibraryTitle,
-					responseItem.RatingKey
+				setMediaItemLoading(true);
+				setLoadingMessage(`Loading Details for ${partialMediaItem.Title}...`);
+				log(
+					`Media Item Page - Media Item - Fetching full media item for ${partialMediaItem.Title} (${partialMediaItem.RatingKey})`
 				);
-
-				if (response.status === "error") {
-					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
-						response.error.Message = `No Poster Sets found for ${responseItem.Title}`;
-					}
-					setError(response);
-					setHasError(true);
-					return;
-				}
-
-				setPosterSets(response.data || []);
-			} catch (error) {
-				setError(ReturnErrorMessage<unknown>(error));
-				setHasError(true);
-				setPosterSets([]);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		const fetchAllInfo = async () => {
-			try {
-				const currentMediaItem = mediaItem || useMediaStore.getState().mediaItem;
-				if (!currentMediaItem) {
-					throw new Error("No media item found");
-				}
-				setMediaItem(currentMediaItem);
-				setLoadingMessage(`Loading Details for ${currentMediaItem.Title}...`);
-
 				const resp = await fetchMediaServerItemContent(
-					currentMediaItem.RatingKey,
-					currentMediaItem.LibraryTitle
+					partialMediaItem.RatingKey,
+					partialMediaItem.LibraryTitle
 				);
-
 				if (resp.status === "error") {
+					log("Media Item Page - Media Item - Error fetching media item from server", resp);
 					setError(resp);
 					setHasError(true);
+					setMediaItemLoading(false);
 					return;
 				}
 
 				const responseItem = resp.data;
 				if (!responseItem) {
-					throw new Error("No media item found in response");
+					log("Media Item Page - Media Item - No media item found in response");
+					setError(ReturnErrorMessage("No media item found in response from server."));
+					setHasError(true);
+					setMediaItemLoading(false);
+					return;
 				}
+				log("Media Item Page - Media Item - Fetched full media item", responseItem);
 				setMediaItem(responseItem);
 
-				log("Media Item Page - Media Item fetched:", responseItem);
-				log("Media Item Page - Cached Library Sections:", sectionsMap);
-				const otherSections = Object.values(sectionsMap).filter(
+				// Find if this item exists in other sections
+				const otherSections = Object.values(librarySectionsMap).filter(
 					(s) => s.Type === responseItem.Type && s.Title !== responseItem.LibraryTitle
 				);
-				log("Cached Library Sections of same type:", otherSections);
 
-				await fetchUserFollowHides();
-				await fetchPosterSets(responseItem);
-
-				// Check the other sections for the same media item by TMDB ID
-				if (!responseItem.Guids?.length) return;
-				const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
-				if (!tmdbID) return;
-
-				for (const section of otherSections) {
-					if (!section.MediaItems || section.MediaItems.length === 0) continue;
-					const otherMediaItem = section.MediaItems.find((item) =>
-						item.Guids?.some((guid) => guid.Provider === "tmdb" && guid.ID === tmdbID)
+				if (otherSections && otherSections.length > 0) {
+					log(
+						`Media Item Page - Media Item - Found other sections of type ${responseItem.Type}`,
+						otherSections
 					);
-					log(`Checking section: ${section.Title}, found item: ${otherMediaItem ? "Yes" : "No"}`);
-					if (otherMediaItem) {
-						log(`Media Item ${responseItem.RatingKey} exists in section: ${section.Title}`);
-						setExistsInOtherSections(otherMediaItem);
-						break;
+					let foundOther: MediaItem | null = null;
+					if (responseItem.Guids?.length) {
+						const tmdbID = responseItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
+						if (tmdbID) {
+							for (const section of otherSections) {
+								if (!section.MediaItems || section.MediaItems.length === 0) continue;
+								const otherMediaItem = section.MediaItems.find((item) =>
+									item.Guids?.some((guid) => guid.Provider === "tmdb" && guid.ID === tmdbID)
+								);
+								if (otherMediaItem) {
+									foundOther = otherMediaItem;
+									break;
+								}
+							}
+						}
 					}
+					log("Media Item Page - Media Item - Exists in other sections?", foundOther);
+					setExistsInOtherSections(foundOther);
 				}
-			} catch (error) {
+			} catch (err) {
+				log("Media Item Page - Media Item - Exception while fetching media item", err);
+				setError(ReturnErrorMessage<unknown>(err));
 				setHasError(true);
-				setError(ReturnErrorMessage<unknown>(error));
-				setIsLoading(false);
+				setMediaItemLoading(false);
+			} finally {
+				setMediaItemLoading(false);
 			}
 		};
 
-		fetchAllInfo();
-	}, [partialMediaItem, mediaItem, sectionsMap]);
+		fetchMediaItem();
+	}, [partialMediaItem, librarySectionsMap, librarySectionsHasHydrated]);
 
-	// Compute hiddenCount based on posterSets and userHides
+	// 3. Fetch user follows/hides when mediaItem is loaded
+	useEffect(() => {
+		if (hasError) return; // Stop if there's already an error
+		if (mediaItemLoading) return; // Wait for mediaItem to finish loading
+		if (!mediaItem) return; // If no mediaItem, do nothing
+
+		setError(null);
+
+		const fetchUserFollowHidesAsync = async () => {
+			try {
+				setUserFollowsHidesLoading(true);
+				setLoadingMessage("Loading User Follows/Hides");
+				log("Media Item Page - User Follows/Hides - Fetching user preferences from Mediux");
+				const response = await fetchMediuxUserFollowHides();
+
+				if (response.status === "error") {
+					log("Media Item Page - User Follows/Hides - Error fetching user preferences", response);
+					setError(response);
+					setHasError(true);
+					setUserFollowsHidesLoading(false);
+					setUserFollows([]);
+					setUserHides([]);
+					return;
+				}
+
+				log("Media Item Page - User Follows/Hides - Fetched user preferences", response.data);
+				setUserFollows(response.data?.Follows || []);
+				setUserHides(response.data?.Hides || []);
+			} catch (err) {
+				log("Media Item Page - User Follows/Hides - Exception while fetching user preferences", err);
+				setError(ReturnErrorMessage<unknown>(err));
+				setHasError(true);
+				setUserFollowsHidesLoading(false);
+				setUserFollows([]);
+				setUserHides([]);
+			} finally {
+				setUserFollowsHidesLoading(false);
+			}
+		};
+
+		fetchUserFollowHidesAsync();
+	}, [hasError, mediaItem, mediaItemLoading]);
+
+	// 4. Fetch poster sets when mediaItem and userHides are loaded
+	useEffect(() => {
+		if (hasError) return; // Stop if there's already an error
+		if (mediaItemLoading) return; // Wait for mediaItem to finish loading
+		if (userFollowsHidesLoading) return; // Wait for user follows/hides to finish loading
+		if (!mediaItem) return; // If no mediaItem, do nothing
+
+		setError(null);
+
+		const fetchPosterSetsAsync = async () => {
+			try {
+				if (!mediaItem.Guids?.length) {
+					log("Media Item Page - Poster Sets - No Guids found on mediaItem, skipping poster sets fetch");
+					return;
+				}
+
+				const tmdbID = mediaItem.Guids.find((guid) => guid.Provider === "tmdb")?.ID;
+				if (!tmdbID) {
+					log("Media Item Page - Poster Sets - No TMDB ID found, cannot fetch poster sets");
+					setError(ReturnErrorMessage<string>("No TMDB ID found"));
+					setHasError(true);
+					setPosterSets([]);
+					setPosterSetsLoading(false);
+					return;
+				}
+
+				setPosterSetsLoading(true);
+				setLoadingMessage("Loading Poster Sets");
+				log("Media Item Page - Poster Sets - Fetching poster sets", {
+					tmdbID,
+					type: mediaItem.Type,
+					libraryTitle: mediaItem.LibraryTitle,
+					ratingKey: mediaItem.RatingKey,
+				});
+				const response = await fetchMediuxSets(
+					tmdbID,
+					mediaItem.Type,
+					mediaItem.LibraryTitle,
+					mediaItem.RatingKey
+				);
+
+				if (response.status === "error") {
+					log("Media Item Page - Poster Sets - Error fetching poster sets", response);
+					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
+						response.error.Message = `No Poster Sets found for ${mediaItem.Title}`;
+					}
+					setError(response);
+					setHasError(true);
+					setPosterSets([]);
+					setPosterSetsLoading(false);
+					return;
+				}
+
+				log("Media Item Page - Poster Sets - Fetched poster sets", response.data);
+				setPosterSets(response.data || []);
+			} catch (err) {
+				log("Media Item Page - Poster Sets - Exception while fetching poster sets", err);
+				setError(ReturnErrorMessage<unknown>(err));
+				setHasError(true);
+				setPosterSets([]);
+			} finally {
+				setPosterSetsLoading(false);
+			}
+		};
+
+		fetchPosterSetsAsync();
+	}, [hasError, mediaItem, mediaItemLoading, userFollowsHidesLoading, userHides]);
+
+	// 6. Filtering logic for poster sets
+	useEffect(() => {
+		if (hasError) return; // Stop if there's already an error
+		if (mediaItemLoading) return; // Wait for mediaItem to finish loading
+		if (userFollowsHidesLoading) return; // Wait for user follows/hides to finish loading
+		if (posterSetsLoading) return; // Wait for poster sets to finish loading
+		if (!mediaItem) return; // If no mediaItem, do nothing
+		if (!posterSets || posterSets.length === 0) return; // If no poster sets, do nothing
+
+		log("Media Item Page - Filters Sets - Applying filters to poster sets", {
+			posterSets,
+			showHiddenUsers,
+			userHides,
+			userFollows,
+			sortOption,
+			sortOrder,
+			mediaItem,
+			showOnlyTitlecardSets,
+		});
+
+		let filtered = posterSets.filter((set) => {
+			if (showHiddenUsers) return true;
+			const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
+			return !isHidden;
+		});
+
+		// If there is no titlecard sets, then showOnlyTitlecardSets should be false
+		if (mediaItem && mediaItem.Type === "show") {
+			const hasTitlecardSets = posterSets.some(
+				(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+			);
+			if (!hasTitlecardSets) {
+				setShowOnlyTitlecardSets(false);
+			}
+		}
+
+		if (mediaItem && mediaItem.Type === "show" && showOnlyTitlecardSets) {
+			filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
+		}
+
+		// Sort the filtered poster sets
+		filtered.sort((a, b) => {
+			const isAFollow = userFollows.some((follow) => follow.Username === a.User.Name);
+			const isBFollow = userFollows.some((follow) => follow.Username === b.User.Name);
+			if (isAFollow && !isBFollow) return -1;
+			if (!isAFollow && isBFollow) return 1;
+
+			if (sortOption === "user") {
+				return sortOrder === "asc"
+					? a.User.Name.localeCompare(b.User.Name)
+					: b.User.Name.localeCompare(a.User.Name);
+			}
+
+			const dateA = new Date(a.DateUpdated);
+			const dateB = new Date(b.DateUpdated);
+			if (sortOption === "date") {
+				return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+			}
+
+			return dateB.getTime() - dateA.getTime();
+		});
+
+		log("Media Item Page - Filters Sets - Filtered and sorted poster sets", filtered);
+		setFilteredPosterSets(filtered);
+	}, [
+		posterSets,
+		showHiddenUsers,
+		userHides,
+		userFollows,
+		sortOption,
+		sortOrder,
+		mediaItem,
+		showOnlyTitlecardSets,
+		setShowOnlyTitlecardSets,
+		hasError,
+		mediaItemLoading,
+		userFollowsHidesLoading,
+		posterSetsLoading,
+	]);
+
+	// 7. Compute hiddenCount based on posterSets and userHides
 	const hiddenCount = useMemo(() => {
 		if (!posterSets) return 0;
 		if (!userHides || userHides.length === 0) return 0;
@@ -235,75 +403,7 @@ const MediaItemPage = () => {
 		return uniqueHiddenUsers.size;
 	}, [posterSets, userHides]);
 
-	useEffect(() => {
-		if (posterSets) {
-			log("Media Item Page - Poster Sets updated:", posterSets);
-			// Filter out hidden users
-			let filtered = posterSets.filter((set) => {
-				if (showHiddenUsers) {
-					return true; // Show all if the checkbox is checked
-				}
-				// Check if the user is in the hides list
-				const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
-				return !isHidden; // Show only if not hidden
-			});
-
-			// If there is no titlecard sets, then showOnlyTitlecardSets should be false
-			if (mediaItem && mediaItem.Type === "show") {
-				const hasTitlecardSets = posterSets.some(
-					(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
-				);
-				if (!hasTitlecardSets) {
-					setShowOnlyTitlecardSets(false);
-				}
-			}
-
-			if (mediaItem && mediaItem.Type === "show" && showOnlyTitlecardSets) {
-				// If it's a show and the checkbox is checked, filter for sets with title cards
-				filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
-			}
-
-			// Sort the filtered poster sets
-			// Follows should always be at the top
-			filtered.sort((a, b) => {
-				const isAFollow = userFollows.some((follow) => follow.Username === a.User.Name);
-				const isBFollow = userFollows.some((follow) => follow.Username === b.User.Name);
-				if (isAFollow && !isBFollow) return -1;
-				if (!isAFollow && isBFollow) return 1;
-
-				if (sortOption === "user") {
-					return sortOrder === "asc"
-						? a.User.Name.localeCompare(b.User.Name)
-						: b.User.Name.localeCompare(a.User.Name);
-				}
-
-				// For date sorting: newest to oldest unless sortOrder is "asc"
-				const dateA = new Date(a.DateUpdated);
-				const dateB = new Date(b.DateUpdated);
-				if (sortOption === "date") {
-					return sortOrder === "asc"
-						? dateA.getTime() - dateB.getTime() // oldest to newest
-						: dateB.getTime() - dateA.getTime(); // newest to oldest
-				}
-
-				// Default: newest to oldest
-				return dateB.getTime() - dateA.getTime();
-			});
-
-			setFilteredPosterSets(filtered);
-		}
-	}, [
-		posterSets,
-		showHiddenUsers,
-		userHides,
-		userFollows,
-		sortOption,
-		sortOrder,
-		mediaItem,
-		showOnlyTitlecardSets,
-		setShowOnlyTitlecardSets,
-	]);
-
+	// 8. Compute adjacent items when mediaItem changes
 	useEffect(() => {
 		if (!mediaItem?.RatingKey) return;
 		setAdjacentItems({
@@ -312,7 +412,23 @@ const MediaItemPage = () => {
 		});
 	}, [mediaItem?.RatingKey]);
 
-	if (!mediaItem) {
+	const handleShowSetsWithTitleCardsOnly = () => {
+		setShowOnlyTitlecardSets(!showOnlyTitlecardSets);
+	};
+
+	const handleShowHiddenUsers = () => {
+		setShowHiddenUsers(!showHiddenUsers);
+	};
+
+	const handleMediaItemChange = (item: MediaItem) => {
+		if (item.ExistInDatabase) {
+			setExistsInDB(true);
+		}
+		setMediaItem(item);
+		setImageVersion(Date.now());
+	};
+
+	if (!partialMediaItem && !mediaItem && hasError) {
 		return (
 			<div className="flex flex-col items-center">
 				<ErrorMessage error={error} />
@@ -329,31 +445,35 @@ const MediaItemPage = () => {
 		);
 	}
 
-	const handleMediaItemChange = (item: MediaItem) => {
-		if (item.ExistInDatabase) {
-			setExistsInDB(true);
-		}
-		setMediaItem(item);
-		setImageVersion(Date.now());
-	};
+	if (!mediaItem && mediaItemLoading) {
+		return (
+			<div className={cn("mt-4 flex flex-col items-center", hasError ? "hidden" : "block")}>
+				<Loader message={loadingMessage} />
+			</div>
+		);
+	}
 
-	if (hasError) {
-		if (typeof window !== "undefined") {
-			// Safe to use document here.
-			document.title = "aura | Error";
-		}
-	} else {
-		if (typeof window !== "undefined") {
-			// Safe to use document here.
-			document.title = `aura | ${mediaItem?.Title}`;
-		}
+	if (!mediaItem && hasError) {
+		return (
+			<div className="flex flex-col items-center">
+				<ErrorMessage error={error} />
+				<Button
+					className="mt-4"
+					variant="secondary"
+					onClick={() => {
+						router.push("/");
+					}}
+				>
+					Go to Home
+				</Button>
+			</div>
+		);
 	}
 
 	return (
 		<>
-			{/* Backdrop Background */}
 			<DimmedBackground
-				backdropURL={`/api/mediaserver/image/${mediaItem.RatingKey}/backdrop?cb=${imageVersion}`}
+				backdropURL={`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop?cb=${imageVersion}`}
 			/>
 
 			{/* Navigation Buttons */}
@@ -390,38 +510,34 @@ const MediaItemPage = () => {
 			<div className="p-4 lg:p-6">
 				<div className="pb-6">
 					<MediaItemDetails
-						ratingKey={mediaItem.RatingKey}
-						mediaItemType={mediaItem.Type}
-						title={mediaItem.Title}
-						summary={mediaItem.Summary || ""}
-						year={mediaItem.Year}
-						contentRating={mediaItem.ContentRating || ""}
-						seasonCount={mediaItem.Type === "show" ? mediaItem.Series?.SeasonCount || 0 : 0}
-						episodeCount={mediaItem.Type === "show" ? mediaItem.Series?.EpisodeCount || 0 : 0}
-						moviePath={mediaItem.Movie?.File?.Path || "N/A"}
-						movieSize={mediaItem.Movie?.File?.Size || 0}
-						movieDuration={mediaItem.Movie?.File?.Duration || 0}
-						guids={mediaItem.Guids || []}
+						ratingKey={mediaItem?.RatingKey || ""}
+						mediaItemType={mediaItem?.Type || ""}
+						title={mediaItem?.Title || ""}
+						summary={mediaItem?.Summary || ""}
+						year={mediaItem?.Year || 0}
+						contentRating={mediaItem?.ContentRating || ""}
+						seasonCount={mediaItem?.Type === "show" ? mediaItem?.Series?.SeasonCount || 0 : 0}
+						episodeCount={mediaItem?.Type === "show" ? mediaItem?.Series?.EpisodeCount || 0 : 0}
+						moviePath={mediaItem?.Movie?.File?.Path || "N/A"}
+						movieSize={mediaItem?.Movie?.File?.Size || 0}
+						movieDuration={mediaItem?.Movie?.File?.Duration || 0}
+						guids={mediaItem?.Guids || []}
 						existsInDB={existsInDB}
 						onExistsInDBChange={setExistsInDB}
 						status={posterSets ? posterSets[0]?.Status : ""}
-						libraryTitle={mediaItem.LibraryTitle || ""}
+						libraryTitle={mediaItem?.LibraryTitle || ""}
 						otherMediaItem={existsInOtherSections}
 					/>
 
 					{isLoading && (
-						<div className="flex justify-center">
+						<div className={cn("mt-4 flex flex-col items-center", hasError ? "hidden" : "block")}>
 							<Loader message={loadingMessage} />
 						</div>
 					)}
-					{hasError && (
-						<div className="flex justify-center">
-							<ErrorMessage error={error} />
-						</div>
-					)}
+					{hasError && error && <ErrorMessage error={error} />}
 
 					{/* Render filtered poster sets */}
-					{posterSets && posterSets.length > 0 && (
+					{posterSets && posterSets.length > 0 && mediaItem && (
 						<>
 							<div
 								className="flex flex-col sm:flex-row sm:justify-end mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
@@ -452,7 +568,7 @@ const MediaItemPage = () => {
 									</div>
 								)}
 
-								{mediaItem.Type === "show" &&
+								{mediaItem?.Type === "show" &&
 									posterSets.some(
 										(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
 									) && (
@@ -511,10 +627,6 @@ const MediaItemPage = () => {
 								)}
 							</div>
 
-							{/* 
-							If all poster sets are filtered out, show a message 
-							This can happen if all users are hidden or the titlecard filter is applied
-							*/}
 							{filteredPosterSets && filteredPosterSets.length === 0 && posterSets.length > 0 && (
 								<div className="flex flex-col items-center">
 									<ErrorMessage
@@ -527,7 +639,7 @@ const MediaItemPage = () => {
 											Show Hidden Users
 										</Button>
 									)}
-									{mediaItem.Type === "show" && (
+									{mediaItem?.Type === "show" && (
 										<Button
 											className="mt-4"
 											variant="secondary"
