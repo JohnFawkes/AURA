@@ -31,7 +31,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 			sortOption: "dateUpdated",
 			setSortOption: (option) => set({ sortOption: option }),
 
-			sortOrder: "asc",
+			sortOrder: "desc",
 			setSortOrder: (order) => set({ sortOrder: order }),
 
 			currentPage: 1,
@@ -55,7 +55,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 			clear: () =>
 				set({
 					sortOption: "dateUpdated",
-					sortOrder: "asc",
+					sortOrder: "desc",
 					currentPage: 1,
 					itemsPerPage: 20,
 					filteredAndSortedMediaItems: [],

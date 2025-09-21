@@ -25,7 +25,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
 			sortOption: "date",
 			setSortOption: (option) => set({ sortOption: option }),
 
-			sortOrder: "asc",
+			sortOrder: "desc",
 			setSortOrder: (order) => set({ sortOrder: order }),
 
 			showHiddenUsers: false,
@@ -40,7 +40,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
 			clear: () =>
 				set({
 					sortOption: "date",
-					sortOrder: "asc",
+					sortOrder: "desc",
 					showHiddenUsers: false,
 					showOnlyTitlecardSets: false,
 				}),
