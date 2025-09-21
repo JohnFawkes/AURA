@@ -20,6 +20,10 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 
 export default function LogsPage() {
+	useEffect(() => {
+		document.title = "aura | Logs";
+	}, []);
+
 	const router = useRouter();
 	const [logs, setLogs] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(true);
@@ -29,9 +33,6 @@ export default function LogsPage() {
 	useEffect(() => {
 		if (isMounted) return;
 		setIsMounted(true);
-		if (typeof window !== "undefined") {
-			document.title = "aura | Logs";
-		}
 
 		const fetchLogs = async () => {
 			try {
@@ -50,7 +51,7 @@ export default function LogsPage() {
 				setError(ReturnErrorMessage<string>(error));
 				setLogs("");
 			} finally {
-				log("LogsPage - Fetching logs completed");
+				log("Logs Page - Fetching logs completed");
 				setLoading(false);
 			}
 		};

@@ -16,6 +16,10 @@ import { Label } from "@/components/ui/label";
 import { log } from "@/lib/logger";
 
 export default function LoginPage() {
+	useEffect(() => {
+		document.title = "aura | Login";
+	}, []);
+
 	const router = useRouter();
 	const [password, setPassword] = useState("");
 	const [showPw, setShowPw] = useState(false);
@@ -23,7 +27,6 @@ export default function LoginPage() {
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 	useEffect(() => {
-		document.title = "aura | Login";
 		const token = localStorage.getItem("aura-auth-token");
 		if (token && token.length > 0 && token !== "null" && token !== "undefined") {
 			router.replace("/");
@@ -49,7 +52,7 @@ export default function LoginPage() {
 				throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
 			}
 
-			log("Login successful");
+			log("Login Page - Successful login");
 			router.replace("/");
 		} catch (err: unknown) {
 			setErrorMsg((err as { message?: string })?.message || "Login failed. Check password.");

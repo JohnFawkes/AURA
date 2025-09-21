@@ -97,32 +97,30 @@ export default function Home() {
 	// Fetch data from cache or API
 	const getMediaItems = useCallback(
 		async (useCache: boolean) => {
-			if (isMounted.current) return;
+			if (isMounted.current && useCache) return;
 			setSectionProgress({});
 			setFullyLoaded(false);
 			try {
 				// Check if we want to use cache
 				if (useCache) {
+					const isCacheAgeValid = timestamp ? Date.now() - timestamp < MAX_CACHE_DURATION : false;
+					const cacheContainsSectionsAndTimestamp = sections && timestamp && Object.keys(sections).length > 0;
 					log("Home Page - Attempting to load sections from cache", {
 						"Current Time": Date.now(),
 						"Cache Timestamp": timestamp,
 						"Cache Age Max (ms)": MAX_CACHE_DURATION,
 						"Cache Age (ms)": timestamp ? Date.now() - timestamp : "N/A",
-						"Is Cache Valid":
-							sections && Object.keys(sections).length > 0 && timestamp
-								? Date.now() - timestamp < MAX_CACHE_DURATION
-								: false,
+						"Is Cache Age Valid": isCacheAgeValid,
+						"Cache Contains Sections & Timestamp": cacheContainsSectionsAndTimestamp,
 					});
-					if (sections && Object.keys(sections).length > 0 && timestamp) {
-						if (Date.now() - timestamp < MAX_CACHE_DURATION) {
+					if (cacheContainsSectionsAndTimestamp) {
+						if (isCacheAgeValid) {
 							setLibrarySections(Object.values(sections));
 							setFullyLoaded(true);
-							log("Home Page - Using cached sections (zustand)", sections);
+							log("Home Page - Using cached sections", sections);
 							return;
 						} else {
-							log(
-								`Home Page - Cache expired (age: ${((Date.now() - timestamp) / 1000 / 60).toFixed(1)} min), fetching fresh data`
-							);
+							log("Home Page - Cache expired, fetching fresh data");
 						}
 					} else {
 						log("Home Page - No valid cache found, fetching fresh data");
@@ -189,13 +187,15 @@ export default function Home() {
 					acc[section.Title] = section;
 					return acc;
 				}, {});
-
+				const librarySections = fetchedSections.slice().sort((a, b) => a.Title.localeCompare(b.Title));
 				// Store in zustand and update timestamp
 				setSections(sectionsObj, Date.now());
 				setFullyLoaded(true);
-				log("Home Page - Sections fetched successfully (zustand)", sectionsObj);
-
-				setLibrarySections(fetchedSections.slice().sort((a, b) => a.Title.localeCompare(b.Title)));
+				log("Home Page - Sections fetched successfully from server", {
+					"Library Sections": librarySections,
+					Sections: sectionsObj,
+				});
+				setLibrarySections(librarySections);
 			} catch (error) {
 				setError(ReturnErrorMessage<unknown>(error));
 			} finally {
