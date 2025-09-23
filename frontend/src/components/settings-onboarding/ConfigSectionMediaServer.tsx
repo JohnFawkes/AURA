@@ -247,12 +247,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-media-server-type"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-media-server-type"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"
@@ -306,12 +306,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-media-server-url"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-media-server-url"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"
@@ -351,12 +351,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-media-server-token"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-media-server-token"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"
@@ -397,12 +397,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-media-server-user-id"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+										variant="outline"
+										className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+										aria-label="help-media-server-user-id"
+									>
+										<HelpCircle className="h-4 w-4" />
+									</Button>
 								</PopoverTrigger>
 								<PopoverContent
 									side="right"
@@ -445,12 +445,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-media-server-season-naming-convention"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+										variant="outline"
+										className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+										aria-label="help-media-server-season-naming-convention"
+									>
+										<HelpCircle className="h-4 w-4" />
+									</Button>
 								</PopoverTrigger>
 								<PopoverContent
 									side="right"

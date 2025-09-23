@@ -2,6 +2,7 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { postClearTempImagesFolder } from "@/services/settings-onboarding/api-images-actions";
+import { HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -15,7 +16,6 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 
 import { AppConfigImages } from "@/types/config/config-app";
-import { HelpCircle } from "lucide-react";
 
 interface ConfigSectionImagesProps {
 	value: AppConfigImages;
@@ -101,12 +101,12 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-images-cache"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-images-cache"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
 								<p>
@@ -138,12 +138,12 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-images-save-next-to-content"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-images-save-next-to-content"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"

@@ -238,12 +238,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notifications-enabled"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-notifications-enabled"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"
@@ -364,12 +364,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											<Popover>
 												<PopoverTrigger asChild>
 													<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notifications-discord-webhook"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+														variant="outline"
+														className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+														aria-label="help-notifications-discord-webhook"
+													>
+														<HelpCircle className="h-4 w-4" />
+													</Button>
 												</PopoverTrigger>
 												<PopoverContent
 													side="right"
@@ -428,12 +428,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												<Popover>
 													<PopoverTrigger asChild>
 														<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notification-pushover-user-key"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+															variant="outline"
+															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+															aria-label="help-notification-pushover-user-key"
+														>
+															<HelpCircle className="h-4 w-4" />
+														</Button>
 													</PopoverTrigger>
 													<PopoverContent
 														side="right"
@@ -482,12 +482,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												<Popover>
 													<PopoverTrigger asChild>
 														<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notifications-pushover-app-token"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+															variant="outline"
+															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+															aria-label="help-notifications-pushover-app-token"
+														>
+															<HelpCircle className="h-4 w-4" />
+														</Button>
 													</PopoverTrigger>
 													<PopoverContent
 														side="right"
@@ -542,12 +542,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												<Popover>
 													<PopoverTrigger asChild>
 														<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notifications-gotify-url"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+															variant="outline"
+															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+															aria-label="help-notifications-gotify-url"
+														>
+															<HelpCircle className="h-4 w-4" />
+														</Button>
 													</PopoverTrigger>
 													<PopoverContent
 														side="right"
@@ -596,12 +596,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												<Popover>
 													<PopoverTrigger asChild>
 														<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-notifications-pushover-app-token"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+															variant="outline"
+															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+															aria-label="help-notifications-pushover-app-token"
+														>
+															<HelpCircle className="h-4 w-4" />
+														</Button>
 													</PopoverTrigger>
 													<PopoverContent
 														side="right"

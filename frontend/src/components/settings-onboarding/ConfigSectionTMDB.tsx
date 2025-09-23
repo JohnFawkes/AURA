@@ -1,5 +1,7 @@
 "use client";
 
+import { HelpCircle } from "lucide-react";
+
 import React, { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/cn";
 
 import { AppConfigTMDB } from "@/types/config/config-app";
-import { HelpCircle } from "lucide-react";
 
 interface ConfigSectionTMDBProps {
 	value: AppConfigTMDB;
@@ -73,12 +74,12 @@ export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-tmdb-api-key"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-tmdb-api-key"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"

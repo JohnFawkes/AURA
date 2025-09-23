@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
-import { Switch } from "@/components/ui/switch";
 
 export function UserPreferencesCard() {
 	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
@@ -78,11 +78,12 @@ export function UserPreferencesCard() {
 				</div>
 				<div className="flex items-center justify-between mt-3">
 					<div className="flex items-center gap-5">
-					<Label>Only Show Default Image Types</Label>
-					<Switch
-						checked={showOnlyDefaultImages}
-						onCheckedChange={() => setShowOnlyDefaultImages(!showOnlyDefaultImages)}
-					/></div>
+						<Label>Only Show Default Image Types</Label>
+						<Switch
+							checked={showOnlyDefaultImages}
+							onCheckedChange={() => setShowOnlyDefaultImages(!showOnlyDefaultImages)}
+						/>
+					</div>
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button
@@ -95,16 +96,13 @@ export function UserPreferencesCard() {
 						</PopoverTrigger>
 						<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
 							<p className="mb-2">
-								When enabled, only poster sets that have at least one of your selected default image types
-								will be shown.
+								When enabled, only poster sets that have at least one of your selected default image
+								types will be shown.
 							</p>
 						</PopoverContent>
 					</Popover>
 				</div>
-				<div className="mt-2">
-					
-
-				</div>
+				<div className="mt-2"></div>
 			</div>
 		</Card>
 	);

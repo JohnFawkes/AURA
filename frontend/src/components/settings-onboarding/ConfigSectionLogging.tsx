@@ -1,6 +1,7 @@
 "use client";
 
 import { postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
+import { HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -17,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/cn";
 
 import { AppConfigLogging } from "@/types/config/config-app";
-import { HelpCircle } from "lucide-react";
 
 interface ConfigSectionLoggingProps {
 	value: AppConfigLogging;
@@ -89,12 +89,12 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-logging-level"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
+									variant="outline"
+									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+									aria-label="help-logging-level"
+								>
+									<HelpCircle className="h-4 w-4" />
+								</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"
