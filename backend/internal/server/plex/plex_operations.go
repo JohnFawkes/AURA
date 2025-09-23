@@ -97,6 +97,7 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 
 		// If this is not the last attempt, refresh the Plex item and retry
 		if attempt < 3 {
+			logging.LOG.Warn(fmt.Sprintf("Attempt %d to get posters failed: %s", attempt, Err.Message))
 			logging.LOG.Trace(fmt.Sprintf("Retrying to get posters for rating key: %s in 2 seconds", ratingKey))
 			time.Sleep(2 * time.Second) // Wait before retrying
 			refreshErr := refreshPlexItem(ratingKey)
