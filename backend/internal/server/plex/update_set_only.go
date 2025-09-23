@@ -1,11 +1,9 @@
 package plex
 
 import (
-	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/mediux"
 	"aura/internal/modals"
-	"fmt"
 )
 
 func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.StandardError {
@@ -25,16 +23,11 @@ func UpdateSetOnly(item modals.MediaItem, file modals.PosterFile) logging.Standa
 	}
 
 	refreshPlexItem(itemRatingKey)
-	setPoster(itemRatingKey, mediuxImageUrl, file.Type, false)
+	setPoster(itemRatingKey, mediuxImageUrl, file.Type)
 
-	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
-	if config.Global.Kometa.RemoveLabels {
-		for _, label := range config.Global.Kometa.Labels {
-			Err := removeLabel(itemRatingKey, label)
-			if Err.Message != "" {
-				logging.LOG.Warn(fmt.Sprintf("Failed to remove label '%s': %v", label, Err.Message))
-			}
-		}
+	Err = handleLabelsInPlex(item)
+	if Err.Message != "" {
+		logging.LOG.Warn(Err.Message)
 	}
 
 	return logging.StandardError{}

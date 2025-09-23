@@ -194,16 +194,21 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists in Plex and has a valid %s.", itemRatingKey, posterName)
 		Err.Details = fmt.Sprintf("Error getting %s key for item with rating key %s: %v", posterName, itemRatingKey, Err)
 	}
-	setPoster(itemRatingKey, posterKey, file.Type, failedOnGetPosters)
 
-	// If config.Global.Kometa.RemoveLabels is true, remove the labels specified in the config
-	if config.Global.Kometa.RemoveLabels {
-		for _, label := range config.Global.Kometa.Labels {
-			Err := removeLabel(itemRatingKey, label)
-			if Err.Message != "" {
-				logging.LOG.Warn(fmt.Sprintf("Failed to remove label '%s': %v", label, Err.Message))
-			}
+	// If failedOnGetPosters is true, just upload the image MediUX URL
+	if failedOnGetPosters {
+		Err := UpdateSetOnly(plex, file)
+		if Err.Message != "" {
+			return Err
 		}
+		return logging.StandardError{}
+	}
+
+	setPoster(itemRatingKey, posterKey, file.Type)
+
+	Err = handleLabelsInPlex(plex)
+	if Err.Message != "" {
+		logging.LOG.Warn(Err.Message)
 	}
 
 	return logging.StandardError{}

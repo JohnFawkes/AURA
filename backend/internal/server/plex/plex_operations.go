@@ -23,7 +23,12 @@ func refreshPlexItem(ratingKey string) logging.StandardError {
 	}
 	defer response.Body.Close()
 
-	time.Sleep(500 * time.Millisecond)
+	if response.StatusCode != http.StatusOK {
+		Err.Message = fmt.Sprintf("Failed to refresh Plex item, received status code: %d", response.StatusCode)
+		Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
+		return Err
+	}
+
 	return logging.StandardError{}
 }
 
@@ -49,14 +54,14 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 			if strings.HasPrefix(string(body), "<?xml version=\"1.0\"") {
 				// Check if the response status code is OK
 				if response.StatusCode == http.StatusOK {
-					// Parse the response body into a PlexPhotosResponse struct
-					var plexPosters modals.PlexPhotosResponse
-					err := xml.Unmarshal(body, &plexPosters)
+					// Parse the response body into a PlexGetAllImagesWrapper struct
+					var plexPosters modals.PlexGetAllImagesWrapper
+					err := json.Unmarshal(body, &plexPosters)
 					if err == nil {
 						// Check if the response contains any posters
-						if len(plexPosters.Photos) > 0 {
+						if len(plexPosters.MediaContainer.Metadata) > 0 {
 							// Look for the first poster with a provider of "local"
-							for _, poster := range plexPosters.Photos {
+							for _, poster := range plexPosters.MediaContainer.Metadata {
 								if poster.Provider == "local" {
 									if poster.RatingKey != "" {
 										logging.LOG.Trace(fmt.Sprintf("Poster RatingKey: %s", poster.RatingKey))
@@ -73,18 +78,18 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 						Err.HelpText = "Ensure the item has posters available."
 						Err.Details = fmt.Sprintf("No posters found for rating key: %s", ratingKey)
 					}
-					logging.LOG.Trace(fmt.Sprintf("Failed to parse XML response: %v", err))
-					Err.Message = "Failed to parse XML response"
-					Err.HelpText = "Ensure the Plex server is returning a valid XML response."
-					Err.Details = fmt.Sprintf("Error parsing XML response for rating key: %s", ratingKey)
+					logging.LOG.Trace(fmt.Sprintf("Failed to parse JSON response: %v", err))
+					Err.Message = "Failed to parse JSON response"
+					Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
+					Err.Details = fmt.Sprintf("Error parsing JSON response for rating key: %s", ratingKey)
 				} else {
 					Err.Message = fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)
 					Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
 					Err.Details = fmt.Sprintf("Received status code '%d' for rating key: %s", response.StatusCode, ratingKey)
 				}
 			} else {
-				Err.Message = "Invalid XML response from Plex server"
-				Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+				Err.Message = "Invalid JSON response from Plex server"
+				Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
 				Err.Details = fmt.Sprintf("Response from Plex server: %s", string(body))
 			}
 		}
@@ -97,7 +102,6 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 			if refreshErr.Message != "" {
 				logging.LOG.Trace(fmt.Sprintf("Failed to refresh Plex item: %v", refreshErr.Message))
 			}
-
 		} else {
 			// If this is the last attempt, return the error
 			return "", Err

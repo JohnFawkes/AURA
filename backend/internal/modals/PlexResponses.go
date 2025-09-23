@@ -1,116 +1,222 @@
 package modals
 
-import "encoding/xml"
-
-// PlexResponse represents the root MediaContainer element
-type PlexResponse struct {
-	XMLName             xml.Name            `xml:"MediaContainer"`
-	Size                int                 `xml:"size,attr"`
-	TotalSize           int                 `xml:"totalSize,attr,omitempty"`
-	LibrarySectionID    string              `xml:"librarySectionID,attr"`
-	LibrarySectionTitle string              `xml:"librarySectionTitle,attr"`
-	ViewGroup           string              `xml:"viewGroup,attr"`      // Shows whether it is a movie, show
-	Videos              []PlexVideoItem     `xml:"Video,omitempty"`     // Movies and Episodes
-	Directory           []PlexDirectoryItem `xml:"Directory,omitempty"` // Shows and Seasons
-	Version             string              `xml:"version,attr,omitempty"`
+type PlexConnectionInfoWrapper struct {
+	MediaContainer PlexConnectionInfo `json:"MediaContainer"`
 }
 
-// Video represents each Video element inside MediaContainer
-// It is used for Movies
-type PlexVideoItem struct {
-	RatingKey           string          `xml:"ratingKey,attr"`
-	Key                 string          `xml:"key,attr"`
-	Type                string          `xml:"type,attr"`
-	Title               string          `xml:"title,attr"`
-	ContentRating       string          `xml:"contentRating,attr"`
-	Summary             string          `xml:"summary,attr"`
-	Rating              float64         `xml:"rating,attr"`
-	AudienceRating      float64         `xml:"audienceRating,attr"`
-	UserRating          float64         `xml:"userRating,attr"`
-	ViewCount           int             `xml:"viewCount,attr"`
-	LastViewedAt        int64           `xml:"lastViewedAt,attr"`
-	Year                int             `xml:"year,attr"`
-	Tagline             string          `xml:"tagline,attr"`
-	Thumb               string          `xml:"thumb,attr"`
-	Art                 string          `xml:"art,attr"`
-	UpdatedAt           int64           `xml:"updatedAt,attr"`
-	Media               []PlexMediaItem `xml:"Media"`
-	Index               int             `xml:"index,attr,omitempty"`       // Episode Number
-	ParentIndex         int             `xml:"parentIndex,attr,omitempty"` // Season Number
-	LibrarySectionTitle string          `xml:"librarySectionTitle,attr"`
-	Guids               []PlexGuidItem  `xml:"Guid"`
-	AddedAt             int64           `xml:"addedAt,attr,omitempty"`               // Timestamp when the item was added to the library
-	ReleasedAt          string          `xml:"originallyAvailableAt,attr,omitempty"` // Timestamp when the item was released
+type PlexConnectionInfo struct {
+	Size              int    `json:"size"`
+	APIVersion        string `json:"apiVersion"`
+	Claimed           bool   `json:"claimed"`
+	MachineIdentifier string `json:"machineIdentifier"`
+	Version           string `json:"version"`
 }
 
-// Guid represents the GUID element inside a Video
-type PlexGuidItem struct {
-	ID string `xml:"id,attr"`
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
+type PlexLibrarySectionsWrapper struct {
+	MediaContainer PlexLibrarySections `json:"MediaContainer"`
 }
 
-// Media represents the Media element inside a Video
-type PlexMediaItem struct {
-	ID   string         `xml:"id,attr"`
-	Part []PlexPartItem `xml:"Part"`
+type PlexLibrarySections struct {
+	Size      int                            `json:"size"`
+	Directory []PlexLibrarySectionsDirectory `json:"Directory"`
 }
 
-// Part represents the Part element inside a Media
-type PlexPartItem struct {
-	ID       string `xml:"id,attr"`
-	Duration int64  `xml:"duration,attr"`
-	File     string `xml:"file,attr"`
-	Size     int64  `xml:"size,attr"`
+type PlexLibrarySectionsDirectory struct {
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
 }
 
-// Directory represents each Directory element inside MediaContainer
-// It is used for TV Shows
-type PlexDirectoryItem struct {
-	RatingKey           string  `xml:"ratingKey,attr"`
-	Key                 string  `xml:"key,attr"`
-	Type                string  `xml:"type,attr"`
-	Title               string  `xml:"title,attr"`
-	ContentRating       string  `xml:"contentRating,attr"`
-	Summary             string  `xml:"summary,attr"`
-	Index               int     `xml:"index,attr"`
-	AudienceRating      float64 `xml:"audienceRating,attr"`
-	UserRating          float64 `xml:"userRating,attr"`
-	ViewCount           int     `xml:"viewCount,attr"`
-	LastViewedAt        int64   `xml:"lastViewedAt,attr"`
-	Year                int     `xml:"year,attr"`
-	Thumb               string  `xml:"thumb,attr"`
-	LeafCount           int     `xml:"leafCount,attr"`  // Episodes
-	ChildCount          int     `xml:"childCount,attr"` // Seasons
-	UpdatedAt           int64   `xml:"updatedAt,attr"`
-	LibrarySectionTitle string  `xml:"librarySectionTitle,attr"`
-	Location            struct {
-		Path string `xml:"path,attr"`
-	} `xml:"Location"`
-	Guids      []PlexGuidItem `xml:"Guid"`
-	AddedAt    int64          `xml:"addedAt,attr,omitempty"`               // Timestamp when the item was added to the library
-	ReleasedAt string         `xml:"originallyAvailableAt,attr,omitempty"` // Timestamp when the item was released
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
+type PlexLibraryItemsWrapper struct {
+	MediaContainer PlexLibraryItems `json:"MediaContainer"`
 }
 
-type PlexPhotosResponse struct {
-	XMLName xml.Name        `xml:"MediaContainer"`
-	Size    int             `xml:"size,attr"`
-	Photos  []PlexPhotoItem `xml:"Photo"`
+type PlexLibraryItems struct {
+	LibrarySectionID    int                        `json:"librarySectionID"`
+	LibrarySectionTitle string                     `json:"librarySectionTitle"`
+	Metadata            []PlexLibraryItemsMetadata `json:"Metadata"`
+	Offset              int                        `json:"offset"`
+	Size                int                        `json:"size"`
+	TotalSize           int                        `json:"totalSize"`
+	ViewGroup           string                     `json:"viewGroup"`
 }
 
-type PlexPhotoItem struct {
-	Key       string `xml:"key,attr"`
-	RatingKey string `xml:"ratingKey,attr"`
-	Thumb     string `xml:"thumb,attr"`
-	Selected  int    `xml:"selected,attr"`
-	Provider  string `xml:"provider,attr,omitempty"`
+type PlexLibraryItemsMetadata struct {
+	// Shared Fields
+	RatingKey             string            `json:"ratingKey"`
+	Key                   string            `json:"key"`
+	Slug                  string            `json:"slug"`
+	Studio                string            `json:"studio"`
+	Type                  string            `json:"type"` // "movie", "show", "season", "episode"
+	Title                 string            `json:"title"`
+	Guid                  string            `json:"guid"`
+	ContentRating         string            `json:"contentRating"` // "PG-13", "R", etc
+	ContentRatingAge      int               `json:"contentRatingAge"`
+	Summary               string            `json:"summary"`
+	AudienceRating        float64           `json:"audienceRating"` // TMDB Rating
+	ViewCount             int               `json:"viewCount"`
+	LastViewedAt          int64             `json:"lastViewedAt"`
+	Year                  int               `json:"year"`
+	Tagline               string            `json:"tagline"`
+	Thumb                 string            `json:"thumb"`
+	Art                   string            `json:"art"`
+	Duration              int64             `json:"duration"`
+	OriginallyAvailableAt string            `json:"originallyAvailableAt"`
+	AddedAt               int64             `json:"addedAt"`
+	UpdatedAt             int64             `json:"updatedAt"`
+	Images                []PlexImage       `json:"Image,omitempty"`
+	UltraBlurColors       *UltraBlurColors  `json:"UltraBlurColors,omitempty"`
+	Guids                 []PlexTagField    `json:"Guid"`
+	Genres                []PlexTagFieldInt `json:"Genre,omitempty"`
+	Countries             []PlexTagFieldInt `json:"Country,omitempty"`
+	Roles                 []PlexRoleField   `json:"Role,omitempty"`
+
+	// Series Specific
+	Index           int `json:"index,omitempty"`
+	LeafCount       int `json:"leafCount,omitempty"` // Number of Episodes
+	ViewedLeafCount int `json:"viewedLeafCount"`
+	ChildCount      int `json:"childCount"` // Number of Seasons
+
+	// Media Specific (Movies & Episodes)
+	TitleSort string               `json:"titleSort,omitempty"`
+	SkipCount int                  `json:"skipCount,omitempty"`
+	Directors []PlexTagFieldInt    `json:"Director,omitempty"`
+	Writers   []PlexTagFieldInt    `json:"Writer,omitempty"`
+	Media     []PlexVideoMediaItem `json:"Media,omitempty"`
+
+	// MediaItem Specific
+	LibrarySectionID    int    `json:"librarySectionID"`
+	LibrarySectionTitle string `json:"librarySectionTitle"`
+	LibrarySectionKey   string `json:"librarySectionKey"`
+
+	// Series Item Specific
+	Rating      float64           `json:"rating,omitempty"` // IMDB Rating
+	UserRating  float64           `json:"userRating,omitempty"`
+	LastRatedAt int64             `json:"lastRatedAt,omitempty"`
+	Theme       string            `json:"theme,omitempty"`
+	Ratings     []PlexRatings     `json:"Rating,omitempty"`
+	Collections []PlexTagFieldInt `json:"Collection,omitempty"`
+	Labels      []PlexTagFieldInt `json:"Label,omitempty"`
+	Location    []PlexLocation    `json:"Location,omitempty"`
+
+	// Season & Episode Specific
+	ParentRatingKey string `json:"parentRatingKey,omitempty"`
+
+	// Episode Specific
+	GrandParentRatingKey string `json:"grandparentRatingKey,omitempty"`
+	ParentTitle          string `json:"parentTitle,omitempty"`
+	ParentIndex          int    `json:"parentIndex,omitempty"`
+}
+
+type PlexLocation struct {
+	ID   int    `json:"id"`
+	Path string `json:"path"`
+}
+
+type PlexVideoMediaItem struct {
+	ID               int                 `json:"id"`
+	Duration         int64               `json:"duration"`
+	Bitrate          int64               `json:"bitrate"`
+	Width            int64               `json:"width"`
+	Height           int64               `json:"height"`
+	AspectRatio      float64             `json:"aspectRatio"`
+	AudioChannels    int64               `json:"audioChannels"`
+	AudioCodec       string              `json:"audioCodec"`
+	VideoCodec       string              `json:"videoCodec"`
+	Container        string              `json:"container"`
+	VideoFrameRate   string              `json:"videoFrameRate"`
+	VideoProfile     string              `json:"videoProfile"`
+	HasVoiceActivity bool                `json:"hasVoiceActivity"`
+	Part             []PlexVideoPartItem `json:"Part"`
+}
+
+type PlexVideoPartItem struct {
+	ID           int    `json:"id"`
+	Key          string `json:"key"`
+	Duration     int64  `json:"duration"`
+	File         string `json:"file"`
+	Size         int64  `json:"size"`
+	Container    string `json:"container"`
+	VideoProfile string `json:"videoProfile"`
+}
+
+type PlexTagFieldInt struct {
+	ID     int    `json:"id,omitempty"`
+	Filter string `json:"filter,omitempty"`
+	Tag    string `json:"tag"`
+}
+
+type PlexTagField struct {
+	ID     string `json:"id,omitempty"`
+	Filter string `json:"filter,omitempty"`
+	Tag    string `json:"tag"`
+}
+
+type PlexRoleField struct {
+	PlexTagFieldInt
+	Role  string `json:"role"`
+	Thumb string `json:"thumb,omitempty"`
+}
+
+type PlexImage struct {
+	Alt  string `json:"alt"`
+	Type string `json:"type"`
+	URL  string `json:"url"`
+}
+
+type UltraBlurColors struct {
+	TopLeft     string `json:"topLeft"`
+	TopRight    string `json:"topRight"`
+	BottomRight string `json:"bottomRight"`
+	BottomLeft  string `json:"bottomLeft"`
+}
+
+type PlexRatings struct {
+	Image string  `json:"image"` // Use this to get the provider name as well
+	Value float64 `json:"value"`
+	Type  string  `json:"type"`
+}
+
+// //////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////
+type PlexGetAllImagesWrapper struct {
+	MediaContainer PlexGetAllImages `json:"MediaContainer"`
+}
+
+type PlexGetAllImages struct {
+	Size            int                        `json:"size"`
+	Identifier      string                     `json:"identifier"`
+	MediaTagPrefix  string                     `json:"mediaTagPrefix"`
+	MediaTagVersion int64                      `json:"mediaTagVersion"`
+	Metadata        []PlexGetAllImagesMetadata `json:"Metadata"`
+}
+
+type PlexGetAllImagesMetadata struct {
+	Key       string `json:"key"`
+	RatingKey string `json:"ratingKey"`
+	Thumb     string `json:"thumb"`
+	Selected  bool   `json:"selected"`
+	Provider  string `json:"provider"`
+}
+
+// //////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////
+
+type PlexSearchResponseWrapper struct {
+	MediaContainer PlexSearchResponse `json:"MediaContainer"`
 }
 
 type PlexSearchResponse struct {
-	XMLName       xml.Name                   `xml:"MediaContainer"`
-	Size          int                        `xml:"size,attr"`
-	SearchResults []PlexSearchResultResponse `xml:"SearchResult"`
+	Size          int                        `json:"size"`
+	SearchResults []PlexSearchResultResponse `json:"SearchResult"`
 }
 
 type PlexSearchResultResponse struct {
-	Video     PlexVideoItem     `xml:"Video,omitempty"`
-	Directory PlexDirectoryItem `xml:"Directory,omitempty"`
+	Metadata []PlexLibraryItemsMetadata `json:"Metadata"`
 }

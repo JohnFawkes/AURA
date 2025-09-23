@@ -7,10 +7,11 @@ import (
 	"aura/internal/logging"
 	"aura/internal/modals"
 	"aura/internal/utils"
-	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -25,88 +26,71 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	var itemInfo modals.MediaItem
 
 	// Make a GET request to the Plex server
-	response, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+	resp, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
 	if Err.Message != "" {
 		return itemInfo, Err
 	}
-	defer response.Body.Close()
+	defer resp.Body.Close()
 
-	// Parse the response body into a PlexResponse struct
-	var responseSection modals.PlexResponse
-	err := xml.Unmarshal(body, &responseSection)
+	// Parse the response body into a PlexLibraryItemsWrapper struct
+	var plexResponse modals.PlexLibraryItemsWrapper
+	err := json.Unmarshal(body, &plexResponse)
 	if err != nil {
-		Err.Message = "Failed to parse XML response"
-		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
 		return itemInfo, Err
 	}
 
-	// Get GUIDs and Ratings from the response body
-	guids, _ := getGUIDsAndRatingsFromBody(body)
-	if len(guids) > 0 {
-		itemInfo.Guids = guids
+	if len(plexResponse.MediaContainer.Metadata) == 0 {
+		Err.Message = "No metadata found for the given rating key"
+		Err.HelpText = "Ensure the rating key is correct and the item exists on the Plex server."
+		Err.Details = fmt.Sprintf("Rating Key: %s", ratingKey)
+		return itemInfo, Err
 	}
 
-	// If the item is a movie
-	if len(responseSection.Videos) > 0 && responseSection.Directory == nil {
-		itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-		itemInfo.RatingKey = responseSection.Videos[0].RatingKey
-		itemInfo.Type = responseSection.Videos[0].Type
-		itemInfo.Title = responseSection.Videos[0].Title
-		itemInfo.Year = responseSection.Videos[0].Year
-		itemInfo.Thumb = responseSection.Videos[0].Thumb
-		itemInfo.ContentRating = responseSection.Videos[0].ContentRating
-		itemInfo.Summary = responseSection.Videos[0].Summary
-		itemInfo.UpdatedAt = responseSection.Videos[0].UpdatedAt
-		itemInfo.AddedAt = responseSection.Videos[0].AddedAt
-		if t, err := time.Parse("2006-01-02", responseSection.Videos[0].ReleasedAt); err == nil {
-			itemInfo.ReleasedAt = t.Unix()
-		} else {
-			itemInfo.ReleasedAt = 0
-		}
+	itemInfo.LibraryTitle = plexResponse.MediaContainer.Metadata[0].LibrarySectionTitle
+	itemInfo.RatingKey = plexResponse.MediaContainer.Metadata[0].RatingKey
+	itemInfo.Type = plexResponse.MediaContainer.Metadata[0].Type
+	itemInfo.Title = plexResponse.MediaContainer.Metadata[0].Title
+	itemInfo.Year = plexResponse.MediaContainer.Metadata[0].Year
+	itemInfo.Thumb = plexResponse.MediaContainer.Metadata[0].Thumb
+	itemInfo.ContentRating = plexResponse.MediaContainer.Metadata[0].ContentRating
+	itemInfo.Summary = plexResponse.MediaContainer.Metadata[0].Summary
+	itemInfo.UpdatedAt = plexResponse.MediaContainer.Metadata[0].UpdatedAt
+	itemInfo.AddedAt = plexResponse.MediaContainer.Metadata[0].AddedAt
+
+	if t, err := time.Parse("2006-01-02", plexResponse.MediaContainer.Metadata[0].OriginallyAvailableAt); err == nil {
+		itemInfo.ReleasedAt = t.Unix()
+	} else {
+		itemInfo.ReleasedAt = 0
+	}
+
+	if plexResponse.MediaContainer.Metadata[0].Type == "movie" {
 		itemInfo.Movie = &modals.MediaItemMovie{
 			File: modals.MediaItemFile{
-				Path:     responseSection.Videos[0].Media[0].Part[0].File,
-				Size:     responseSection.Videos[0].Media[0].Part[0].Size,
-				Duration: responseSection.Videos[0].Media[0].Part[0].Duration,
+				Path:     plexResponse.MediaContainer.Metadata[0].Media[0].Part[0].File,
+				Size:     plexResponse.MediaContainer.Metadata[0].Media[0].Part[0].Size,
+				Duration: plexResponse.MediaContainer.Metadata[0].Media[0].Part[0].Duration,
 			},
 		}
-		// Append the community rating to the guids
-		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
-			Provider: "community",
-			Rating:   fmt.Sprintf("%.1f", responseSection.Videos[0].AudienceRating),
-		})
 	}
 
-	// If the item is a series
-	if len(responseSection.Directory) > 0 && responseSection.Videos == nil {
-		itemInfo.LibraryTitle = responseSection.LibrarySectionTitle
-		itemInfo.RatingKey = responseSection.Directory[0].RatingKey
-		itemInfo.Type = responseSection.Directory[0].Type
-		itemInfo.Title = responseSection.Directory[0].Title
-		itemInfo.Year = responseSection.Directory[0].Year
-		itemInfo.Thumb = responseSection.Directory[0].Thumb
-		itemInfo.ContentRating = responseSection.Directory[0].ContentRating
-		itemInfo.Summary = responseSection.Directory[0].Summary
-		itemInfo.UpdatedAt = responseSection.Directory[0].UpdatedAt
-		itemInfo.AddedAt = responseSection.Directory[0].AddedAt
-		if t, err := time.Parse("2006-01-02", responseSection.Directory[0].ReleasedAt); err == nil {
-			itemInfo.ReleasedAt = t.Unix()
-		} else {
-			itemInfo.ReleasedAt = 0
-		}
-		itemInfo, Err = fetchSeasonsForShow(&itemInfo)
+	if plexResponse.MediaContainer.Metadata[0].Type == "show" {
+		itemInfo, Err = fetchSeasonsAndEpisodesForShow(&itemInfo)
 		if Err.Message != "" {
 			return itemInfo, Err
 		}
-		itemInfo.Series.SeasonCount = responseSection.Directory[0].ChildCount
-		itemInfo.Series.EpisodeCount = responseSection.Directory[0].LeafCount
-		itemInfo.Series.Location = responseSection.Directory[0].Location.Path
-		itemInfo.Guids = append(itemInfo.Guids, modals.Guid{
-			Provider: "community",
-			Rating:   fmt.Sprintf("%.1f", responseSection.Directory[0].AudienceRating),
-		})
+		itemInfo.Series.SeasonCount = plexResponse.MediaContainer.Metadata[0].LeafCount
+		itemInfo.Series.EpisodeCount = plexResponse.MediaContainer.Metadata[0].ChildCount
+		itemInfo.Series.Location = plexResponse.MediaContainer.Metadata[0].Location[0].Path
 	}
+
+	// Extract GUIDs and Ratings from the response
+	guids, _ := getGUIDsAndRatingsFromResponse(plexResponse.MediaContainer.Metadata[0].Guids,
+		plexResponse.MediaContainer.Metadata[0].Ratings,
+		fmt.Sprintf("%.1f", plexResponse.MediaContainer.Metadata[0].AudienceRating))
+	itemInfo.Guids = guids
 
 	existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
 	if existsInDB {
@@ -118,86 +102,39 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	// Update item in cache
 	cache.LibraryCacheStore.UpdateMediaItem(itemInfo.LibraryTitle, &itemInfo)
 
+	// Return the populated itemInfo struct
 	return itemInfo, logging.StandardError{}
 }
 
-func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching seasons for show: %s", itemInfo.Title))
+func fetchSeasonsAndEpisodesForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.StandardError) {
+	logging.LOG.Trace(fmt.Sprintf("Fetching seasons and episodes for show: %s", itemInfo.Title))
 	Err := logging.NewStandardError()
 
-	url := fmt.Sprintf("%s/library/metadata/%s/children",
+	url := fmt.Sprintf("%s/library/metadata/%s/allLeaves",
 		config.Global.MediaServer.URL, itemInfo.RatingKey)
 
-	// Make a GET request to fetch children content
+	// Make a GET request to fetch all leaves (episodes)
 	response, body, Err := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
 	if Err.Message != "" {
 		return *itemInfo, Err
 	}
 	defer response.Body.Close()
 
-	// Parse the response body into a PlexResponse struct
-	var responseSection modals.PlexResponse
-	err := xml.Unmarshal(body, &responseSection)
+	// Parse the response body into a PlexResponseWrapper struct
+	var responseSection modals.PlexLibraryItemsWrapper
+	err := json.Unmarshal(body, &responseSection)
 	if err != nil {
-		Err.Message = "Failed to parse XML response for seasons"
-		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Message = "Failed to parse JSON response for all leaves"
+		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		logging.LOG.Warn(err.Error())
 		return *itemInfo, Err
 	}
 
-	if responseSection.ViewGroup == "season" {
-		var seasons []modals.MediaItemSeason
-		for _, directory := range responseSection.Directory {
-			if directory.Title == "All episodes" && directory.Index == 0 {
-				continue
-			}
-			season := modals.MediaItemSeason{
-				RatingKey:    directory.RatingKey,
-				SeasonNumber: directory.Index,
-				Title:        directory.Title,
-				Episodes:     []modals.MediaItemEpisode{},
-			}
-
-			// Fetch episodes for the season
-			season, Err = fetchEpisodesForSeason(season)
-			if Err.Message != "" {
-				return *itemInfo, Err
-			}
-
-			seasons = append(seasons, season)
-		}
-		itemInfo.Series = &modals.MediaItemSeries{Seasons: seasons}
-	}
-
-	return *itemInfo, logging.StandardError{}
-}
-
-func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeason, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching episodes for season: %s", season.Title))
-	Err := logging.NewStandardError()
-
-	url := fmt.Sprintf("%s/library/metadata/%s/children",
-		config.Global.MediaServer.URL, season.RatingKey)
-
-	// Make a GET request to fetch episodes
-	response, body, Err := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return season, Err
-	}
-	defer response.Body.Close()
-
-	// Parse the response body into a PlexResponse struct
-	var responseSection modals.PlexResponse
-	err := xml.Unmarshal(body, &responseSection)
-	if err != nil {
-		Err.Message = "Failed to parse XML response for episodes"
-		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
-		return season, Err
-	}
-
-	// Populate episodes for the season
-	for _, video := range responseSection.Videos {
+	// Group episodes by season number
+	seasonsMap := make(map[int]*modals.MediaItemSeason)
+	for _, video := range responseSection.MediaContainer.Metadata {
+		seasonNum := video.ParentIndex
 		episode := modals.MediaItemEpisode{
 			RatingKey:     video.RatingKey,
 			Title:         video.Title,
@@ -209,86 +146,104 @@ func fetchEpisodesForSeason(season modals.MediaItemSeason) (modals.MediaItemSeas
 				Duration: video.Media[0].Part[0].Duration,
 			},
 		}
-		season.Episodes = append(season.Episodes, episode)
+		if _, exists := seasonsMap[seasonNum]; !exists {
+			seasonsMap[seasonNum] = &modals.MediaItemSeason{
+				SeasonNumber: seasonNum,
+				Title:        video.ParentTitle,
+				RatingKey:    video.ParentRatingKey,
+				Episodes:     []modals.MediaItemEpisode{},
+			}
+		}
+		seasonsMap[seasonNum].Episodes = append(seasonsMap[seasonNum].Episodes, episode)
 	}
 
-	return season, logging.StandardError{}
+	// Convert map to slice and sort by season number
+	var seasons []modals.MediaItemSeason
+	for _, season := range seasonsMap {
+		seasons = append(seasons, *season)
+	}
+	// Optional: sort seasons by SeasonNumber
+	sort.Slice(seasons, func(i, j int) bool {
+		return seasons[i].SeasonNumber < seasons[j].SeasonNumber
+	})
+
+	itemInfo.Series = &modals.MediaItemSeries{Seasons: seasons}
+	return *itemInfo, logging.StandardError{}
 }
 
-func getGUIDsAndRatingsFromBody(body []byte) ([]modals.Guid, error) {
-	// Use Regex to search for GUIDs manually in the XML response
-	// Example GUIDs:
-	// <Guid id="imdb://tt######" />
-	// <Guid id="tmdb://######" />
-	// <Guid id="tvdb://#####" />
-	guidRegex := regexp.MustCompile(`(?i)<guid id="([a-z]+)://([^"]+)" ?/?>`)
-	guidMatches := guidRegex.FindAllStringSubmatch(string(body), -1)
+func getGUIDsAndRatingsFromResponse(plexGUIDS []modals.PlexTagField, plexRatings []modals.PlexRatings, audienceRating string) ([]modals.Guid, error) {
 
-	// Check if any GUIDs were found
-	if len(guidMatches) == 0 {
-		return nil, fmt.Errorf("no GUIDs found in the XML response")
-	}
+	// Example Ratings From GUIDS:
+	// type PlexRatings struct {
+	// 	Image string `json:"image"` // Use this to get the provider name as well
+	// 	Value string `json:"value"`
+	// 	Type  string `json:"type"`
+	// }
+	// Use the image field to determine the provider
+	// Example Ratings:
+	// Rating: {image:imdb://image.rating value:7.9 type:audience}
+	// Rating: {image:rottentomatoes://image.rating.ripe value:8.1 type:critic}
+	// Rating: {image:rottentomatoes://image.rating.upright value:8.2 type:audience}
+	// Rating: {image:themoviedb://image.rating value:7.6 type:audience}
 
-	// Create a slice to hold the GUIDs
-	var guids []modals.Guid
+	var returnGUIDs []modals.Guid
 
-	// Iterate over the matches and extract the provider and ID
-	for _, match := range guidMatches {
-		if len(match) == 3 {
-			provider := strings.ToLower(match[1])
-			id := match[2]
-			guids = append(guids, modals.Guid{
+	// First, process the GUIDs to add them to the returnGUIDs slice
+	for _, plexGUID := range plexGUIDS {
+		parts := strings.SplitN(plexGUID.ID, "://", 2)
+		if len(parts) == 2 {
+			provider := strings.ToLower(parts[0])
+			id := parts[1]
+			returnGUIDs = append(returnGUIDs, modals.Guid{
 				Provider: provider,
 				ID:       id,
 			})
 		}
 	}
 
-	// Use Regex to search for Ratings manually in the XML response
-	// This regex matches ratings for audience (and similar types if needed)
-	// Example Ratings:
-	// <Rating image="imdb://image.rating" value="7.9" type="audience" />
-	// <Rating image="rottentomatoes://image.rating.ripe" value="8.1" type="critic" />
-	// <Rating image="rottentomatoes://image.rating.upright" value="8.2" type="audience" />
-	// <Rating image="themoviedb://image.rating" value="7.6" type="audience" />
-	ratingRegex := regexp.MustCompile(`(?i)<Rating\s+image="([a-z]+)://[^"]+"\s+value="([^"]+)"\s+type="audience" ?/?>`)
-	ratingMatches := ratingRegex.FindAllStringSubmatch(string(body), -1)
+	// Next, process the Ratings to associate them with the correct GUIDs
+	for _, plexRating := range plexRatings {
+		// Extract provider from the image field
+		parts := strings.SplitN(plexRating.Image, "://", 2)
+		if len(parts) != 2 {
+			continue // Skip if the format is unexpected
+		}
 
-	// If no Ratings were found, simply return the GUIDs slice
-	if len(ratingMatches) == 0 {
-		return guids, nil
-	}
+		provider := strings.ToLower(parts[0])
+		ratingValue := strconv.FormatFloat(plexRating.Value, 'f', -1, 64)
 
-	// Iterate over the rating matches and associate the rating with the proper provider
-	for _, match := range ratingMatches {
-		if len(match) == 3 {
-			provider := strings.ToLower(match[1])
-			ratingValue := match[2]
+		// Normalize provider if needed
+		if provider == "themoviedb" {
+			provider = "tmdb"
+		}
 
-			// Normalize provider if needed
-			if provider == "themoviedb" {
-				provider = "tmdb"
+		// Check if the provider already exists in the returnGUIDs slice using an index-based loop
+		found := false
+		for i := 0; i < len(returnGUIDs); i++ {
+			if returnGUIDs[i].Provider == provider {
+				returnGUIDs[i].Rating = ratingValue // assign rating as a single string
+				found = true
+				break
 			}
+		}
 
-			// Check if the provider already exists in the GUIDs slice using an index-based loop
-			found := false
-			for i := 0; i < len(guids); i++ {
-				if guids[i].Provider == provider {
-					guids[i].Rating = ratingValue // assign rating as a single string
-					found = true
-					break
-				}
-			}
-
-			// If the provider was not found, add a new GUID with the rating.
-			if !found {
-				guids = append(guids, modals.Guid{
-					Provider: provider,
-					Rating:   ratingValue,
-				})
-			}
+		// If the provider was not found, add a new GUID with the rating.
+		if !found {
+			returnGUIDs = append(returnGUIDs, modals.Guid{
+				Provider: provider,
+				Rating:   ratingValue,
+			})
 		}
 	}
 
-	return guids, nil
+	// Finally, handle the audienceRating if it's provided and valid
+	if audienceRating != "" {
+		returnGUIDs = append(returnGUIDs, modals.Guid{
+			Provider: "community",
+			Rating:   audienceRating,
+		})
+	}
+
+	// Return the final slice of GUIDs with associated ratings
+	return returnGUIDs, nil
 }

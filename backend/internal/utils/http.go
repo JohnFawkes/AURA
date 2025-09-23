@@ -52,6 +52,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 	if tokenType == "MediaServer" {
 		if strings.ToLower(config.Global.MediaServer.Type) == "plex" {
 			req.Header.Set("X-Plex-Token", config.Global.MediaServer.Token)
+			req.Header.Set("Accept", "application/json")
 		} else if strings.ToLower(config.Global.MediaServer.Type) == "emby" {
 			req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
 		} else if strings.ToLower(config.Global.MediaServer.Type) == "jellyfin" {
@@ -63,6 +64,7 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 		req.Header.Set("Authorization", "Bearer "+config.Global.Mediux.Token)
 	} else if strings.ToLower(tokenType) == "plex" {
 		req.Header.Set("X-Plex-Token", config.Global.MediaServer.Token)
+		req.Header.Set("Accept", "application/json")
 	} else if strings.ToLower(tokenType) == "emby" {
 		req.Header.Set("X-Emby-Token", config.Global.MediaServer.Token)
 	} else if strings.ToLower(tokenType) == "jellyfin" {
@@ -89,7 +91,6 @@ func MakeHTTPRequest(url, method string, headers map[string]string, timeout int,
 
 	// Add common headers
 	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Accept", "*/*")
 
 	// Send the HTTP request
 	resp, err := client.Do(req)

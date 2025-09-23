@@ -5,7 +5,7 @@ import (
 	"aura/internal/logging"
 	"aura/internal/modals"
 	"aura/internal/utils"
-	"encoding/xml"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -14,29 +14,30 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	Err := logging.NewStandardError()
 
 	// Construct the URL for the Plex server API request
-	url, Err := utils.MakeMediaServerAPIURL("library/sections", config.Global.MediaServer.URL)
+	url, Err := utils.MakeMediaServerAPIURL("library/sections/all", config.Global.MediaServer.URL)
 	if Err.Message != "" {
 		return false, Err
 	}
-	// Make a GET request to the Plex server
-	response, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		logging.LOG.Error(Err.Message)
-		return false, Err
-	}
-	defer response.Body.Close()
 
-	var responseSection modals.PlexResponse
-	err := xml.Unmarshal(body, &responseSection)
+	// Make a GET request to the Plex server
+	resp, body, Err := utils.MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
+	if Err.Message != "" {
+		return false, Err
+	}
+	defer resp.Body.Close()
+
+	// Parse the response body into a PlexLibrarySectionsWrapper struct
+	var plexResponse modals.PlexLibrarySectionsWrapper
+	err := json.Unmarshal(body, &plexResponse)
 	if err != nil {
-		Err.Message = "Failed to parse XML response"
-		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.Message = "Failed to parse JSON response"
+		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
 		return false, Err
 	}
 
 	// Find the library section with the matching Name
-	for _, section := range responseSection.Directory {
+	for _, section := range plexResponse.MediaContainer.Directory {
 		if section.Title == library.Name {
 			library.Type = section.Type
 			library.SectionID = section.Key

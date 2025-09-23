@@ -76,7 +76,8 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	downloadFileName := GetFileDownloadName(posterFile)
 	logging.LOG.Debug(fmt.Sprintf("Downloading %s", downloadFileName))
 
-	// Respond with a success message
+	// // Respond with a success message
+	// time.Sleep(2 * time.Second) // Simulate download time
 	// utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 	// 	Status:  "success",
 	// 	Elapsed: utils.ElapsedTime(startTime),

@@ -211,7 +211,7 @@ func InitUserID() logging.StandardError {
 	baseURL.Path = path.Join(baseURL.Path, "Users")
 	url := baseURL.String()
 
-	// Make a GET request to the Emby server
+	// Make a GET request to the Jellyfin/Emby server
 	response, body, Err := utils.MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
 	if Err.Message != "" {
 		return Err

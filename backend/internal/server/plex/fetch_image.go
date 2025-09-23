@@ -5,13 +5,10 @@ import (
 	"aura/internal/logging"
 	"aura/internal/utils"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 )
 
 var PlexTempImageFolder string
@@ -22,40 +19,6 @@ func init() {
 		configPath = "/config"
 	}
 	PlexTempImageFolder = path.Join(configPath, "temp-images", "plex")
-}
-
-func GetPlexImage(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
-	logging.LOG.Trace(r.URL.Path)
-	Err := logging.NewStandardError()
-
-	ratingKey := chi.URLParam(r, "ratingKey")
-	imageType := chi.URLParam(r, "imageType")
-	if ratingKey == "" || imageType == "" {
-		Err.Message = "Missing rating key or image type"
-		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
-		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
-		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
-		return
-	} else if imageType != "poster" && imageType != "backdrop" {
-		Err.Message = "Invalid image type"
-		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
-		Err.Details = fmt.Sprintf("Received image type: %s", imageType)
-		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
-		return
-	}
-
-	// If the image does not exist, then get it from Plex
-	imageData, Err := FetchImageFromMediaServer(ratingKey, imageType)
-	if Err.Message != "" {
-		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
-		return
-	}
-
-	// Set the content type for the response
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.WriteHeader(http.StatusOK)
-	w.Write(imageData)
 }
 
 func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.StandardError) {

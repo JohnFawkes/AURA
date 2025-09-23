@@ -2,32 +2,15 @@ package mediux
 
 import (
 	"aura/internal/config"
-	"aura/internal/database"
 	"aura/internal/logging"
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
+	"strings"
 )
-
-func SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
-
-	// Check if the media server is Plex or Emby/Jellyfin
-	switch config.Global.MediaServer.Type {
-	case "Plex":
-		return PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
-	case "Emby", "Jellyfin":
-		return EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection)
-	}
-	Err := logging.NewStandardError()
-	Err.Message = fmt.Sprintf("Unsupported media server type: %s", config.Global.MediaServer.Type)
-	Err.Details = fmt.Sprintf("Media server type must be either 'Plex', 'Emby', or 'Jellyfin', but got '%s'", config.Global.MediaServer.Type)
-	return "", Err
-}
 
 func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError) {
 	logging.LOG.Trace(fmt.Sprintf("Searching for %s in %s", itemTitle, librarySection))
@@ -50,12 +33,13 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	}
 
 	// If the itemType is "movie", change it to "movies" for the search
+	var searchType string = itemType
 	if itemType == "movie" {
-		itemType = "movies"
+		searchType = "movies"
 	}
 	// If the itemType is "show", change it to "tv" for the search
 	if itemType == "show" {
-		itemType = "tv"
+		searchType = "tv"
 	}
 
 	// Construct the URL for the Plex server API request
@@ -67,7 +51,7 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	// Add Query Parameters to the URL
 	params := url.Values{}
 	params.Add("query", itemTitle)
-	params.Add("searchTypes", itemType)
+	params.Add("searchTypes", searchType)
 	baseURL.RawQuery = params.Encode()
 
 	// Make a GET request to the Plex server
@@ -78,58 +62,18 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	defer response.Body.Close()
 
 	// Parse the response body into a PlexSearchResponse struct
-	var responseSection modals.PlexSearchResponse
+	var plexSearchResponse modals.PlexSearchResponse
 
 	// Output the response body
-	err := xml.Unmarshal(body, &responseSection)
+	err := json.Unmarshal(body, &plexSearchResponse)
 	if err != nil {
 		Err.Message = "Failed to parse Plex search response"
-		Err.HelpText = "Ensure the Plex server is returning a valid XML response."
+		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
 		Err.Details = fmt.Sprintf("Error: %s", err.Error())
 		return "", Err
 	}
 
-	// If the item is a movie section/library
-	var items []modals.MediaItem
-	for _, result := range responseSection.SearchResults {
-		var itemInfo modals.MediaItem
-		if itemType == "movies" {
-			if result.Video.Type != "movie" ||
-				result.Video.LibrarySectionTitle != librarySection {
-				continue
-			}
-			itemInfo.RatingKey = result.Video.RatingKey
-			itemInfo.Type = result.Video.Type
-			itemInfo.Title = result.Video.Title
-			itemInfo.Year = result.Video.Year
-			itemInfo.LibraryTitle = result.Video.LibrarySectionTitle
-			itemInfo.ExistInDatabase = false
-			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
-			if existsInDB {
-				itemInfo.ExistInDatabase = true
-			}
-			items = append(items, itemInfo)
-		} else if itemType == "tv" {
-			if result.Directory.Type != "show" ||
-				result.Directory.LibrarySectionTitle != librarySection {
-				continue
-			}
-			itemInfo.RatingKey = result.Directory.RatingKey
-			itemInfo.Type = result.Directory.Type
-			itemInfo.Title = result.Directory.Title
-			itemInfo.Year = result.Directory.Year
-			itemInfo.LibraryTitle = result.Directory.LibrarySectionTitle
-			itemInfo.ExistInDatabase = false
-			existsInDB, _ := database.CheckIfMediaItemExistsInDatabase(itemInfo.RatingKey)
-			if existsInDB {
-				itemInfo.ExistInDatabase = true
-			}
-			items = append(items, itemInfo)
-		}
-	}
-
-	// If no items were found, return an error
-	if len(items) == 0 {
+	if len(plexSearchResponse.SearchResults) == 0 {
 		logging.LOG.Warn(fmt.Sprintf("No items found for %s", itemTitle))
 		Err.Message = "No items found for the given search criteria"
 		Err.HelpText = fmt.Sprintf("No items found for %s in %s library section", itemTitle, librarySection)
@@ -137,13 +81,24 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 		return "", Err
 	}
 
-	// For each item, grab the full info using the rating key
-	// then check to see if the item TMDB ID in the GUID section is a match to the TMDB ID
-	// If it is a match, return the rating key
-	logging.LOG.Trace(fmt.Sprintf("Found %d items for %s", len(items), itemTitle))
-	for _, item := range items {
-		logging.LOG.Trace(fmt.Sprintf("Checking to see if %s is a match for %s", item.Title, itemTitle))
-		url, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", item.RatingKey), config.Global.MediaServer.URL)
+	logging.LOG.Trace(fmt.Sprintf("Found %d possible matches for %s", len(plexSearchResponse.SearchResults), itemTitle))
+
+	// For each result, go through to find the one with a match to the TMDB ID
+	for _, result := range plexSearchResponse.SearchResults {
+		searchItem := result.Metadata[0]
+		// If the library section does not match, skip it
+		if searchItem.LibrarySectionTitle != librarySection {
+			continue
+		}
+
+		// If the itemTypes do not match, skip it
+		if searchItem.Type != itemType {
+			continue
+		}
+
+		logging.LOG.Trace(fmt.Sprintf("Checking to see if %s is a match for %s", searchItem.Title, itemTitle))
+
+		url, Err := utils.MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", searchItem.RatingKey), config.Global.MediaServer.URL)
 		if Err.Message != "" {
 			continue
 		}
@@ -154,23 +109,21 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 		}
 		defer fullResponse.Body.Close()
 
-		// Parse the response body into a PlexResponse struct
-		var fullResponseSection modals.PlexResponse
-		err := xml.Unmarshal(fullBody, &fullResponseSection)
+		// Parse the response body into a PlexLibraryItemsWrapper struct
+		var fullResponseSection modals.PlexLibraryItemsWrapper
+		err := json.Unmarshal(fullBody, &fullResponseSection)
 		if err != nil {
 			continue
 		}
-		// Get GUIDs and Ratings from the response body
-		guidRegex := regexp.MustCompile(`(?i)tmdb://(\d+)`)
-		guidMatches := guidRegex.FindAllStringSubmatch(string(fullBody), -1)
-		if len(guidMatches) > 0 {
-			logging.LOG.Trace(fmt.Sprintf("Found %d GUID matches for %s", len(guidMatches), itemTitle))
-			for _, match := range guidMatches {
-				logging.LOG.Trace(fmt.Sprintf("Match: %s", match[0]))
-				if len(match) > 1 && match[1] == tmdbID {
-					logging.LOG.Debug(fmt.Sprintf("Found TMDB ID match for %s: %s", itemTitle, match[1]))
-					// If the TMDB ID matches, return the rating key
-					return item.RatingKey, logging.StandardError{}
+
+		for _, guid := range fullResponseSection.MediaContainer.Metadata[0].Guids {
+			parts := strings.SplitN(guid.ID, "://", 2)
+			if len(parts) == 2 {
+				if parts[0] == "tmdb" || parts[0] == "themoviedb" {
+					if parts[1] == tmdbID {
+						logging.LOG.Debug(fmt.Sprintf("Found TMDB ID match for %s: %s", itemTitle, parts[1]))
+						return searchItem.RatingKey, logging.StandardError{}
+					}
 				}
 			}
 		}
