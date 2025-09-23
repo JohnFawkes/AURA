@@ -56,6 +56,8 @@ export default function Navbar() {
 
 	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
 	const { status, fetchStatus } = useOnboardingStore();
+	const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
+
 	const router = useRouter();
 	const pathName = usePathname();
 	const isHomePage = pathName === "/";
@@ -83,14 +85,15 @@ export default function Navbar() {
 	}, [pathName, fetchStatus]);
 
 	useEffect(() => {
+		if (!hasHydrated) return;
 		if (status) {
-			if (status.needsSetup && pathName !== "/onboarding") {
+			if (status.needsSetup && (pathName !== "/onboarding" || pathName !== "/onboarding/")) {
 				router.replace("/onboarding");
-			} else if (!status.needsSetup && pathName === "/onboarding") {
+			} else if (!status.needsSetup && (pathName === "/onboarding" || pathName === "/onboarding/")) {
 				router.replace("/");
 			}
 		}
-	}, [status, pathName, router]);
+	}, [status, pathName, router, hasHydrated]);
 
 	// Set the placeholder text based on the current page
 	useEffect(() => {
