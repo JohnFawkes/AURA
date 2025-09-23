@@ -383,6 +383,13 @@ const MediaItemPage = () => {
 			if (!isAFollow && isBFollow) return 1;
 
 			if (sortOption === "user") {
+				// If users are the same, sort by date updated
+				if (a.User.Name === b.User.Name) {
+					const dateA = new Date(a.DateUpdated);
+					const dateB = new Date(b.DateUpdated);
+					return dateB.getTime() - dateA.getTime();
+				}
+				// Otherwise, sort by user name
 				return sortOrder === "asc"
 					? a.User.Name.localeCompare(b.User.Name)
 					: b.User.Name.localeCompare(a.User.Name);
@@ -397,12 +404,27 @@ const MediaItemPage = () => {
 			if (mediaItem?.Type === "show" && sortOption === "numberOfSeasons") {
 				const seasonsA = a.SeasonPosters ? a.SeasonPosters.length : 0;
 				const seasonsB = b.SeasonPosters ? b.SeasonPosters.length : 0;
+				if (seasonsA === seasonsB) {
+					// If number of seasons are equal, sort by number of titlecards
+					const titlecardsA = a.TitleCards ? a.TitleCards.length : 0;
+					const titlecardsB = b.TitleCards ? b.TitleCards.length : 0;
+					
+					if (titlecardsA === titlecardsB) {
+						// If number of titlecards are also equal, sort by date
+						return dateB.getTime() - dateA.getTime();
+					}
+					return sortOrder === "asc" ? titlecardsA - titlecardsB : titlecardsB - titlecardsA;
+				}
 				return sortOrder === "asc" ? seasonsA - seasonsB : seasonsB - seasonsA;
 			}
 
 			if (mediaItem?.Type === "show" && sortOption === "numberOfTitlecards") {
 				const titlecardsA = a.TitleCards ? a.TitleCards.length : 0;
 				const titlecardsB = b.TitleCards ? b.TitleCards.length : 0;
+				if (titlecardsA === titlecardsB) {
+					// If number of titlecards are equal, sort by date
+					return dateB.getTime() - dateA.getTime();
+				}
 				return sortOrder === "asc" ? titlecardsA - titlecardsB : titlecardsB - titlecardsA;
 			}
 
@@ -418,9 +440,13 @@ const MediaItemPage = () => {
 				const countBSum = countBPosters + countBBackdrops;
 
 				if (countAMax === countBMax) {
+					// If max counts are equal, sort by sum of counts
+					if (countASum === countBSum) {
+						// If sum of counts are also equal, sort by date
+						return dateB.getTime() - dateA.getTime();
+					}
 					return sortOrder === "asc" ? countASum - countBSum : countBSum - countASum;
 				}
-
 				return sortOrder === "asc" ? countAMax - countBMax : countBMax - countAMax;
 			}
 
