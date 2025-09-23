@@ -408,7 +408,7 @@ const MediaItemPage = () => {
 					// If number of seasons are equal, sort by number of titlecards
 					const titlecardsA = a.TitleCards ? a.TitleCards.length : 0;
 					const titlecardsB = b.TitleCards ? b.TitleCards.length : 0;
-					
+
 					if (titlecardsA === titlecardsB) {
 						// If number of titlecards are also equal, sort by date
 						return dateB.getTime() - dateA.getTime();
