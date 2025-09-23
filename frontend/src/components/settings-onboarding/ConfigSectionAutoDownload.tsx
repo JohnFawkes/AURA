@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 
 import { AppConfigAutoDownload } from "@/types/config/config-app";
+import { HelpCircle } from "lucide-react";
 
 interface ConfigSectionAutoDownloadProps {
 	value: AppConfigAutoDownload;
@@ -94,12 +95,12 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-cron-enabled"
-								>
-									?
-								</Button>
+								variant="outline"
+								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+								aria-label="help-auto-download-enabled"
+							>
+								<HelpCircle className="h-4 w-4" />
+							</Button>
 							</PopoverTrigger>
 							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
 								<p>Whether auto-download is enabled.</p>
@@ -123,12 +124,12 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-cron-expression"
-								>
-									?
-								</Button>
+								variant="outline"
+								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+								aria-label="help-cron-expression"
+							>
+								<HelpCircle className="h-4 w-4" />
+							</Button>
 							</PopoverTrigger>
 							<PopoverContent
 								side="right"

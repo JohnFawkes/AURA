@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 
 import { AppConfigAuth } from "@/types/config/config-app";
+import { HelpCircle } from "lucide-react";
 
 interface ConfigSectionAuthProps {
 	value: AppConfigAuth;
@@ -82,12 +83,12 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 						<Popover>
 							<PopoverTrigger asChild>
 								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-auth-enabled"
-								>
-									?
-								</Button>
+								variant="outline"
+								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+								aria-label="help-auth-enabled"
+							>
+								<HelpCircle className="h-4 w-4" />
+							</Button>
 							</PopoverTrigger>
 							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
 								<p>
@@ -114,13 +115,12 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
-										variant="outline"
-										className="ml-2 h-6 w-6 rounded-md border flex items-center justify-center text-xs
-                                            bg-background hover:bg-muted transition"
-										aria-label="help-auth-hash"
-									>
-										?
-									</Button>
+								variant="outline"
+								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+								aria-label="help-auth-password-hash"
+							>
+								<HelpCircle className="h-4 w-4" />
+							</Button>
 								</PopoverTrigger>
 								<PopoverContent
 									side="right"
