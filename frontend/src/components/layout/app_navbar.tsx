@@ -87,7 +87,7 @@ export default function Navbar() {
 	useEffect(() => {
 		if (!hasHydrated) return;
 		if (status) {
-			if (status.needsSetup && (pathName !== "/onboarding" || pathName !== "/onboarding/")) {
+			if (status.needsSetup && pathName !== "/onboarding" && pathName !== "/onboarding/") {
 				router.replace("/onboarding");
 			} else if (!status.needsSetup && (pathName === "/onboarding" || pathName === "/onboarding/")) {
 				router.replace("/");
