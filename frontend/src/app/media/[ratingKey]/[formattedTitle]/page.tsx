@@ -89,7 +89,6 @@ const MediaItemPage = () => {
 	// Default Images Store
 	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
 	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
-	const setShowOnlyDefaultImages = useUserPreferencesStore((state) => state.setShowOnlyDefaultImages);
 
 	// Loading States
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -324,7 +323,7 @@ const MediaItemPage = () => {
 					mediaItem.LibraryTitle,
 					mediaItem.RatingKey
 				);
-				
+
 				if (response.status === "error") {
 					log("ERROR", "Media Item Page", "Poster Sets", "Error fetching poster sets", response);
 					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
@@ -508,6 +507,8 @@ const MediaItemPage = () => {
 		mediaItemLoading,
 		userFollowsHidesLoading,
 		posterSetsLoading,
+		sortOption,
+		sortOrder,
 	]);
 
 	// 7. Compute hiddenCount based on posterSets and userHides
@@ -538,10 +539,6 @@ const MediaItemPage = () => {
 
 	const handleShowHiddenUsers = () => {
 		setShowHiddenUsers(!showHiddenUsers);
-	};
-
-	const handleShowDefaultImagesOnly = () => {
-		setShowOnlyDefaultImages(!showOnlyDefaultImages);
 	};
 
 	const handleMediaItemChange = (item: MediaItem) => {
