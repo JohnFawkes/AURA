@@ -419,6 +419,9 @@ const SavedSetsPage: React.FC = () => {
 											filterMultiSetOnly: false,
 										});
 									}}
+									searchString={cleanedQuery}
+									searchYear={searchMediaItemYear}
+									searchID={searchMediaItemID}
 								/>
 							</PopoverContent>
 						</Popover>
@@ -497,6 +500,9 @@ const SavedSetsPage: React.FC = () => {
 											filterMultiSetOnly: false,
 										});
 									}}
+									searchString={cleanedQuery}
+									searchYear={searchMediaItemYear}
+									searchID={searchMediaItemID}
 								/>
 							</DrawerContent>
 						</Drawer>

@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
+
 type FilterContentProps = {
 	getSectionSummaries: () => { title?: string }[];
 	librarySectionsLoaded: boolean;
@@ -28,6 +30,9 @@ type FilterContentProps = {
 	setFilterMultiSetOnly?: (val: boolean) => void;
 	onApplyFilters: () => void;
 	onResetFilters: () => void;
+	searchString?: string;
+	searchYear?: number;
+	searchID?: string;
 };
 
 export function FilterContent({
@@ -49,9 +54,46 @@ export function FilterContent({
 	setFilterMultiSetOnly,
 	onApplyFilters,
 	onResetFilters,
+	searchString,
+	searchYear,
+	searchID,
 }: FilterContentProps) {
+	const { setSearchQuery } = useSearchQueryStore();
+
 	return (
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
+			{/* Search Info */}
+			{(searchString || searchYear || searchID) && (
+				<div className="p-2 bg-secondary rounded-md">
+					<Label className="text-md font-semibold mb-1 block">Current Search</Label>
+					<div className="flex flex-col gap-1">
+						{searchString && (
+							<div className="text-sm">
+								<span className="font-semibold">Search:</span> {searchString}
+							</div>
+						)}
+						{typeof searchYear === "number" && searchYear > 0 && (
+							<div className="text-sm">
+								<span className="font-semibold">Year:</span> {searchYear}
+							</div>
+						)}
+						{searchID && (
+							<div className="text-sm">
+								<span className="font-semibold">ID:</span> {searchID}
+							</div>
+						)}
+					</div>
+					<Button
+						variant={"destructive"}
+						className="mt-2"
+						onClick={() => {
+							setSearchQuery("");
+						}}
+					>
+						Clear Search
+					</Button>
+				</div>
+			)}
 			{/* Library Sections */}
 			<div className="flex flex-col">
 				{librarySectionsLoaded && getSectionSummaries().length > 0 && (

@@ -15,10 +15,12 @@ import {
 	ArrowRightCircle,
 	CalendarArrowDown,
 	CalendarArrowUp,
+	HelpCircle,
 } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
@@ -29,11 +31,13 @@ import { MediaItemDetails } from "@/components/shared/media_item_details";
 import { SortControl } from "@/components/shared/select_sort";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 import { useMediaPageStore } from "@/lib/stores/page-store-media";
 
 import { APIResponse } from "@/types/api/api-response";
@@ -70,15 +74,22 @@ const MediaItemPage = () => {
 
 	// UI States from Media Page Store
 	const {
-		sortOption,
+		sortStates,
 		setSortOption,
-		sortOrder,
 		setSortOrder,
 		showOnlyTitlecardSets,
 		setShowOnlyTitlecardSets,
 		showHiddenUsers,
 		setShowHiddenUsers,
 	} = useMediaPageStore();
+	const sortType = partialMediaItem?.Type as "movie" | "show";
+	const sortOption = sortStates[sortType]?.sortOption ?? "date";
+	const sortOrder = sortStates[sortType]?.sortOrder ?? "desc";
+
+	// Default Images Store
+	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
+	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
+	const setShowOnlyDefaultImages = useUserPreferencesStore((state) => state.setShowOnlyDefaultImages);
 
 	// Loading States
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -102,23 +113,29 @@ const MediaItemPage = () => {
 		next: null,
 	});
 
+	// Update the sortOption and sortOrder based on type
 	useEffect(() => {
-		const validSortOptions =
-			mediaItem?.Type === "show"
-				? ["user", "date", "numberOfSeasons", "numberOfTitlecards"]
-				: mediaItem?.Type === "movie"
-					? ["user", "date", "numberOfItemsInCollection"]
-					: ["user", "date"];
-
-		if (!validSortOptions.includes(sortOption)) {
-			setSortOption("date");
-			setSortOrder("desc");
+		if (!sortType) return;
+		// If the current sortOption or sortOrder is not set, initialize them
+		if (!sortStates[sortType]) {
+			setSortOption(sortType, "date");
+			setSortOrder(sortType, "desc");
 		}
-	}, [sortOption, setSortOption, setSortOrder, mediaItem?.Type]);
+	}, [sortType, sortStates, setSortOption, setSortOrder]);
 
+	// Set the document title
 	useEffect(() => {
 		document.title = `aura | ${mediaItem?.Title || partialMediaItem?.Title || "Media Item"}`;
 	}, [mediaItem?.Title, partialMediaItem?.Title]);
+
+	// When the Media Item changes, set ExistsInDB
+	useEffect(() => {
+		if (mediaItem && mediaItem.ExistInDatabase) {
+			setExistsInDB(true);
+		} else {
+			setExistsInDB(false);
+		}
+	}, [mediaItem]);
 
 	// 1. If no partial media item, show error and stop further effects
 	useEffect(() => {
@@ -307,7 +324,7 @@ const MediaItemPage = () => {
 					mediaItem.LibraryTitle,
 					mediaItem.RatingKey
 				);
-
+				
 				if (response.status === "error") {
 					log("ERROR", "Media Item Page", "Poster Sets", "Error fetching poster sets", response);
 					if (response.error?.Message && response.error.Message.startsWith("No sets found")) {
@@ -349,8 +366,7 @@ const MediaItemPage = () => {
 			showHiddenUsers,
 			userHides,
 			userFollows,
-			sortOption,
-			sortOrder,
+			sortStates,
 			mediaItem,
 			showOnlyTitlecardSets,
 		});
@@ -373,6 +389,28 @@ const MediaItemPage = () => {
 
 		if (mediaItem && mediaItem.Type === "show" && showOnlyTitlecardSets) {
 			filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
+		}
+
+		// If showOnlyDefaultImages is true, check sets to see if they have at least one of the default image types
+		if (showOnlyDefaultImages && defaultImageTypes && defaultImageTypes.length > 0) {
+			filtered = filtered.filter((set) => {
+				for (const imageType of defaultImageTypes) {
+					if (imageType === "poster" && set.Poster) return true;
+					if (imageType === "poster" && set.OtherPosters && set.OtherPosters.length > 0) return true;
+					if (imageType === "backdrop" && set.Backdrop) return true;
+					if (imageType === "backdrop" && set.OtherBackdrops && set.OtherBackdrops.length > 0) return true;
+					if (imageType === "seasonPoster" && set.SeasonPosters && set.SeasonPosters.length > 0) return true;
+					if (
+						imageType === "specialSeasonPoster" &&
+						set.SeasonPosters &&
+						set.SeasonPosters.length > 0 &&
+						set.SeasonPosters.some((sp) => sp.Season?.Number === 0)
+					)
+						return true;
+					if (imageType === "titlecard" && set.TitleCards && set.TitleCards.length > 0) return true;
+				}
+				return false;
+			});
 		}
 
 		// Sort the filtered poster sets
@@ -460,11 +498,12 @@ const MediaItemPage = () => {
 		showHiddenUsers,
 		userHides,
 		userFollows,
-		sortOption,
-		sortOrder,
+		sortStates,
 		mediaItem,
 		showOnlyTitlecardSets,
 		setShowOnlyTitlecardSets,
+		defaultImageTypes,
+		showOnlyDefaultImages,
 		hasError,
 		mediaItemLoading,
 		userFollowsHidesLoading,
@@ -499,6 +538,10 @@ const MediaItemPage = () => {
 
 	const handleShowHiddenUsers = () => {
 		setShowHiddenUsers(!showHiddenUsers);
+	};
+
+	const handleShowDefaultImagesOnly = () => {
+		setShowOnlyDefaultImages(!showOnlyDefaultImages);
 	};
 
 	const handleMediaItemChange = (item: MediaItem) => {
@@ -621,112 +664,169 @@ const MediaItemPage = () => {
 					{posterSets && posterSets.length > 0 && mediaItem && (
 						<>
 							<div
-								className="flex flex-col sm:flex-row sm:justify-end mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
+								className="flex flex-col sm:flex-row sm:justify-between mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
 								style={{
 									background: "oklch(0.16 0.0202 282.55)",
 									opacity: "0.95",
 									padding: "0.5rem",
 								}}
 							>
-								{hiddenCount === 0 ? (
-									<span className="text-sm text-muted-foreground ml-2">No hidden users</span>
-								) : (
-									<div className="flex items-center space-x-2">
-										<Checkbox
-											checked={showHiddenUsers}
-											onCheckedChange={handleShowHiddenUsers}
-											disabled={hiddenCount === 0}
-											className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
-										/>
-										{showHiddenUsers ? (
-											<span className="text-sm ml-2">Showing all users</span>
-										) : (
-											<span className="text-sm ml-2">
-												Show {hiddenCount} hidden user
-												{hiddenCount > 1 ? "s" : ""}
-											</span>
-										)}
-									</div>
-								)}
-
-								{mediaItem?.Type === "show" &&
-									posterSets.some(
-										(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
-									) && (
+								{/* Left column: all checkboxes */}
+								<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 flex-1">
+									{/* Hidden users */}
+									{hiddenCount === 0 ? (
+										<span className="text-sm text-muted-foreground ml-2">No hidden users</span>
+									) : (
 										<div className="flex items-center space-x-2">
 											<Checkbox
-												checked={showOnlyTitlecardSets}
-												onCheckedChange={handleShowSetsWithTitleCardsOnly}
+												checked={showHiddenUsers}
+												onCheckedChange={handleShowHiddenUsers}
+												disabled={hiddenCount === 0}
 												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
 											/>
-											{showOnlyTitlecardSets ? (
-												<span className="text-sm ml-2">Showing Titlecard Sets Only</span>
+											{showHiddenUsers ? (
+												<span className="text-sm ml-2">Showing all users</span>
 											) : (
-												<span className="text-sm ml-2">Filter Titlecard Only Sets</span>
+												<span className="text-sm ml-2">
+													Show {hiddenCount} hidden user
+													{hiddenCount > 1 ? "s" : ""}
+												</span>
 											)}
 										</div>
 									)}
 
-								{/* Sorting controls */}
-								<SortControl
-									options={[
-										{
-											value: "date",
-											label: "Date Updated",
-											ascIcon: <CalendarArrowUp />,
-											descIcon: <CalendarArrowDown />,
-										},
-										{
-											value: "user",
-											label: "User Name",
-											ascIcon: <ArrowDownAZ />,
-											descIcon: <ArrowDownZA />,
-										},
-										...(mediaItem?.Type === "movie"
-											? [
-													{
-														value: "numberOfItemsInCollection",
-														label: "Number in Collection",
-														ascIcon: <ArrowDown01 />,
-														descIcon: <ArrowDown10 />,
-													},
-												]
-											: []),
-										...(mediaItem?.Type === "show"
-											? [
-													{
-														value: "numberOfSeasons",
-														label: "Number of Seasons",
-														ascIcon: <ArrowDown01 />,
-														descIcon: <ArrowDown10 />,
-													},
-													{
-														value: "numberOfTitlecards",
-														label: "Number of Titlecards",
-														ascIcon: <ArrowDown01 />,
-														descIcon: <ArrowDown10 />,
-													},
-												]
-											: []),
-									]}
-									sortOption={sortOption}
-									sortOrder={sortOrder}
-									setSortOption={(value) => {
-										setSortOption(value as "user" | "date" | "");
-										if (value === "user") setSortOrder("asc");
-										else if (value === "date") setSortOrder("desc");
-									}}
-									setSortOrder={setSortOrder}
-									showLabel={false}
-								/>
+									{/* Titlecard sets only (shows only) */}
+									{mediaItem?.Type === "show" &&
+										posterSets.some(
+											(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+										) && (
+											<div className="flex items-center space-x-2">
+												<Checkbox
+													checked={showOnlyTitlecardSets}
+													onCheckedChange={handleShowSetsWithTitleCardsOnly}
+													className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
+												/>
+												{showOnlyTitlecardSets ? (
+													<span className="text-sm ml-2">Showing Titlecard Sets Only</span>
+												) : (
+													<span className="text-sm ml-2">Filter Titlecard Only Sets</span>
+												)}
+											</div>
+										)}
+								</div>
+
+								{/* Right column: sort options */}
+								<div className="flex items-center sm:justify-end sm:ml-4">
+									<SortControl
+										options={[
+											{
+												value: "date",
+												label: "Date Updated",
+												ascIcon: <CalendarArrowUp />,
+												descIcon: <CalendarArrowDown />,
+											},
+											{
+												value: "user",
+												label: "User Name",
+												ascIcon: <ArrowDownAZ />,
+												descIcon: <ArrowDownZA />,
+											},
+											...(mediaItem?.Type === "movie"
+												? [
+														{
+															value: "numberOfItemsInCollection",
+															label: "Number in Collection",
+															ascIcon: <ArrowDown01 />,
+															descIcon: <ArrowDown10 />,
+														},
+													]
+												: []),
+											...(mediaItem?.Type === "show"
+												? [
+														{
+															value: "numberOfSeasons",
+															label: "Number of Seasons",
+															ascIcon: <ArrowDown01 />,
+															descIcon: <ArrowDown10 />,
+														},
+														{
+															value: "numberOfTitlecards",
+															label: "Number of Titlecards",
+															ascIcon: <ArrowDown01 />,
+															descIcon: <ArrowDown10 />,
+														},
+													]
+												: []),
+										]}
+										sortOption={sortOption}
+										sortOrder={sortOrder}
+										setSortOption={(option) => setSortOption(sortType, option)}
+										setSortOrder={(order) => setSortOrder(sortType, order)}
+										showLabel={false}
+									/>
+								</div>
 							</div>
 
 							<div className="text-center">
 								{filteredPosterSets && filteredPosterSets.length !== posterSets.length ? (
-									<p className="text-sm text-muted-foreground">
-										Showing {filteredPosterSets.length} of {posterSets.length} Poster Set
-										{posterSets.length > 1 ? "s" : ""}
-									</p>
+									<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+										<span>
+											Showing {filteredPosterSets.length} of {posterSets.length} Poster Set
+											{posterSets.length > 1 ? "s" : ""}
+										</span>
+										<Popover>
+											<PopoverTrigger asChild>
+												<Button
+													variant="outline"
+													className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
+													aria-label="help-filters"
+												>
+													<HelpCircle className="h-4 w-4" />
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent
+												side="top"
+												align="end"
+												sideOffset={6}
+												className="w-64 text-xs leading-snug"
+											>
+												<p className="mb-2">
+													Some of your sets are being hidden by filters. Here's why:
+												</p>
+												<ul className="list-disc list-inside mb-2">
+													{hiddenCount > 0 && (
+														<li>
+															You have {hiddenCount} hidden user
+															{hiddenCount > 1 ? "s" : ""}.{" "}
+														</li>
+													)}
+													{mediaItem?.Type === "show" &&
+														showOnlyTitlecardSets &&
+														posterSets.some(
+															(set) =>
+																Array.isArray(set.TitleCards) &&
+																set.TitleCards.length > 0
+														) && <li>You are filtering to show only titlecard sets.</li>}
+													{showOnlyDefaultImages &&
+														defaultImageTypes &&
+														defaultImageTypes.length > 0 && (
+															<li>
+																You are filtering to show only sets with your selected
+																default image types.
+															</li>
+														)}
+												</ul>
+												<p>
+													You can adjust your filters using the checkboxes on this page. You
+													can also adjust your default image types in{" "}
+													<Link href="/settings#preferences-section" className="underline">
+														User Preferences
+													</Link>
+													.
+												</p>
+											</PopoverContent>
+										</Popover>
+									</div>
 								) : (
 									<p className="text-sm text-muted-foreground">
 										{posterSets.length} Poster Set{posterSets.length > 1 ? "s" : ""}

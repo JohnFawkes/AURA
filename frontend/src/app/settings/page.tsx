@@ -66,6 +66,8 @@ const SettingsPage: React.FC = () => {
 
 	const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
+	const preferencesRef = useRef<HTMLDivElement>(null);
+
 	// State - Debug Mode
 	const [debugEnabled, setDebugEnabled] = useState(false);
 
@@ -73,6 +75,19 @@ const SettingsPage: React.FC = () => {
 		const savedMode = localStorage.getItem("debugMode") === "true";
 		setDebugEnabled(savedMode);
 	}, []);
+
+	useEffect(() => {
+		const scrollToPreferences = () => {
+			if (loading) return;
+			if (window.location.hash === "#preferences-section") {
+				preferencesRef.current?.scrollIntoView({ behavior: "smooth" });
+			}
+		};
+		window.addEventListener("hashchange", scrollToPreferences);
+		// Run on mount
+		scrollToPreferences();
+		return () => window.removeEventListener("hashchange", scrollToPreferences);
+	}, [loading]);
 
 	const toggleDebugMode = (checked: boolean) => {
 		setDebugEnabled(checked);
@@ -459,7 +474,9 @@ const SettingsPage: React.FC = () => {
 					)}
 
 					{/* User Preferences Section */}
-					<UserPreferencesCard />
+					<div id="preferences-section" ref={preferencesRef}>
+						<UserPreferencesCard />
+					</div>
 				</>
 			)}
 

@@ -5,9 +5,19 @@ import React from "react";
 import { AssetImage } from "@/components/shared/asset-image";
 import { CarouselItem } from "@/components/ui/carousel";
 
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
+
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
+import { TYPE_DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
+	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
+	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
+
+	function shouldShow(type: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS) {
+		return !showOnlyDefaultImages || defaultImageTypes.includes(type);
+	}
+
 	return (
 		<>
 			{sets.map((set) => (
@@ -16,8 +26,10 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 					{(set.Poster || set.Backdrop) && (
 						<CarouselItem key={`${set.ID}-primary`}>
 							<div className="space-y-2">
-								{set.Poster && <AssetImage image={set.Poster} aspect="poster" className="w-full" />}
-								{set.Backdrop && (
+								{set.Poster && shouldShow("poster") && (
+									<AssetImage image={set.Poster} aspect="poster" className="w-full" />
+								)}
+								{set.Backdrop && shouldShow("backdrop") && (
 									<AssetImage image={set.Backdrop} aspect="backdrop" className="w-full" />
 								)}
 							</div>
@@ -33,12 +45,14 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 						return (
 							<CarouselItem key={`${set.ID}-other-${poster.ID}`}>
 								<div className="space-y-2">
-									<AssetImage
-										image={poster}
-										aspect="poster"
-										className={`w-full ${!poster.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
-									/>
-									{matchingBackdrop && (
+									{shouldShow("poster") && (
+										<AssetImage
+											image={poster}
+											aspect="poster"
+											className={`w-full ${!poster.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
+										/>
+									)}
+									{matchingBackdrop && shouldShow("backdrop") && (
 										<AssetImage
 											image={matchingBackdrop}
 											aspect="backdrop"
@@ -52,7 +66,9 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 
 					{/* Season Posters with Latest Titlecards */}
 					{set.SeasonPosters?.filter(
-						(poster) => poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster"
+						(poster) =>
+							(poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster") &&
+							shouldShow(poster.Type)
 					)
 						.sort((a, b) => (b.Season?.Number ?? 0) - (a.Season?.Number ?? 0))
 						.map((seasonPoster) => {
@@ -76,7 +92,7 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 											aspect="poster"
 											className={`w-full ${!seasonPoster.Show?.MediaItem.RatingKey ? "opacity-35" : ""}`}
 										/>
-										{latestTitlecard && (
+										{shouldShow("titlecard") && latestTitlecard && (
 											<AssetImage
 												image={latestTitlecard}
 												aspect="titlecard"
@@ -95,6 +111,7 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 						(poster) => poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster"
 					) &&
 						!set.Poster &&
+						shouldShow("titlecard") &&
 						set.TitleCards && (
 							<>
 								{Object.entries(

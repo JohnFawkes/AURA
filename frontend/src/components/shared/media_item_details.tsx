@@ -64,7 +64,7 @@ export function MediaItemDetails({
 	otherMediaItem,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
-	const [isInDB, setIsInDBLocal] = useState(existsInDB); // rename to avoid confusion
+	const [isInDB, setIsInDBLocal] = useState(existsInDB);
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
 	const { setSearchQuery } = useSearchQueryStore();

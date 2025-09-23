@@ -9,6 +9,9 @@ interface UserPreferencesStore {
 	defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[];
 	setDefaultImageTypes: (defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[]) => void;
 
+	showOnlyDefaultImages: boolean;
+	setShowOnlyDefaultImages: (showOnlyDefaultImages: boolean) => void;
+
 	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
@@ -20,12 +23,16 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 			defaultImageTypes: DEFAULT_IMAGE_TYPE_OPTIONS,
 			setDefaultImageTypes: (defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[]) => set({ defaultImageTypes }),
 
+			showOnlyDefaultImages: false,
+			setShowOnlyDefaultImages: (showOnlyDefaultImages: boolean) => set({ showOnlyDefaultImages }),
+
 			hasHydrated: false,
 			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({
 					defaultImageTypes: DEFAULT_IMAGE_TYPE_OPTIONS,
+					showOnlyDefaultImages: false,
 				}),
 		}),
 		{
@@ -33,6 +40,7 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 			storage: GlobalStore,
 			partialize: (state) => ({
 				defaultImageTypes: state.defaultImageTypes,
+				showOnlyDefaultImages: state.showOnlyDefaultImages,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();
