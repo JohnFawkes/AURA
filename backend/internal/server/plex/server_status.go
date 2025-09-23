@@ -23,10 +23,11 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	}
 	defer httpResponse.Body.Close()
 
-	// Check if the httpResponse body is empty
-	if len(body) == 0 {
-		Err.Message = "Received empty response body from Plex server"
-		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL."
+	// Check to see if the Status is OK
+	if httpResponse.StatusCode != 200 {
+		Err.Message = "Failed to connect to Plex server"
+		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL with the correct token."
+		Err.Details = "HTTP Status: " + httpResponse.Status
 		return "", Err
 	}
 
