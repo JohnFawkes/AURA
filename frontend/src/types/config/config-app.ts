@@ -6,7 +6,7 @@ export interface AppConfig {
 	AutoDownload: AppConfigAutoDownload; // Auto-download settings
 	Images: AppConfigImages;
 	TMDB: AppConfigTMDB; // TMDB (The Movie Database) integration settings
-	Kometa: AppConfigKometa; // Kometa integration settings
+	LabelsAndTags: AppConfigLabelsAndTags; // Labels and tags management settings
 	Notifications: AppConfigNotifications; // Notification settings
 }
 
@@ -61,9 +61,15 @@ export interface AppConfigTMDB {
 	ApiKey: string; // API key for accessing TMDB services
 }
 
-export interface AppConfigKometa {
-	RemoveLabels: boolean; // Whether to remove labels from media items
-	Labels: string[]; // List of labels to apply to media items
+export interface AppConfigLabelsAndTags {
+	Applications: AppConfigLabelsAndTagsApplication[];
+}
+
+export interface AppConfigLabelsAndTagsApplication {
+	Application: string; // Name of the application (e.g., Plex)
+	Enabled: boolean; // Whether label/tag management is enabled for this application
+	Add: string[]; // List of labels/tags to add
+	Remove: string[]; // List of labels/tags to remove
 }
 
 export interface AppConfigNotifications {

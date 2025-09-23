@@ -12,7 +12,7 @@ import Image from "next/image";
 import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
 import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
 import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
-import { ConfigSectionKometa } from "@/components/settings-onboarding/ConfigSectionKometa";
+import { ConfigSectionLabelsAndTags } from "@/components/settings-onboarding/ConfigSectionLabelsAndTags";
 import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
 import { ConfigSectionMediaServer } from "@/components/settings-onboarding/ConfigSectionMediaServer";
 import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
@@ -205,16 +205,16 @@ const OnboardingPage = () => {
 				),
 			},
 			{
-				key: "kometa",
-				title: "Kometa",
+				key: "labelsandtags",
+				title: "Labels & Tags",
 				optional: true,
 				render: () => (
-					<ConfigSectionKometa
-						value={configState.Kometa}
+					<ConfigSectionLabelsAndTags
+						value={configState.LabelsAndTags}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("Kometa", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("Kometa", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("LabelsAndTags", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("LabelsAndTags", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -270,7 +270,7 @@ const OnboardingPage = () => {
 			configState.Auth,
 			configState.Logging,
 			configState.Images,
-			configState.Kometa,
+			configState.LabelsAndTags,
 			configState.Notifications,
 			configState.AutoDownload,
 			updateSectionField,

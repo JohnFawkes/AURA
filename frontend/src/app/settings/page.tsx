@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
 import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
 import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
-import { ConfigSectionKometa } from "@/components/settings-onboarding/ConfigSectionKometa";
+import { ConfigSectionLabelsAndTags } from "@/components/settings-onboarding/ConfigSectionLabelsAndTags";
 import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
 import { ConfigSectionMediaServer } from "@/components/settings-onboarding/ConfigSectionMediaServer";
 import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
@@ -396,12 +396,25 @@ const SettingsPage: React.FC = () => {
 							errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
 						/>
 
-						<ConfigSectionKometa
-							value={newConfig.Kometa}
+						<ConfigSectionLabelsAndTags
+							value={newConfig.LabelsAndTags}
 							editing={editing}
-							dirtyFields={dirty.Kometa}
-							onChange={(field, val) => updateConfigField("Kometa", field, val)}
-							errorsUpdate={(errs) => updateSectionErrors("Kometa", errs as Record<string, string>)}
+							dirtyFields={
+								dirty.LabelsAndTags as {
+									Applications?: Array<
+										Partial<
+											Record<
+												string,
+												boolean | { Enabled?: boolean; Add?: boolean; Remove?: boolean }
+											>
+										>
+									>;
+								}
+							}
+							onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
+							errorsUpdate={(errs) =>
+								updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
+							}
 						/>
 
 						<ConfigSectionNotifications

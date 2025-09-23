@@ -181,13 +181,14 @@ func PrintConfig() {
 		logging.LOG.NoTime(fmt.Sprintf("\t\tAPI Key: %s\n", "***"+Global.TMDB.ApiKey[len(Global.TMDB.ApiKey)-4:]))
 	}
 
-	// Kometa Configuration
-	if len(Global.Kometa.Labels) > 0 {
-		logging.LOG.NoTime("\tKometa\n")
-		logging.LOG.NoTime(fmt.Sprintf("\t\tRemove Labels: %t\n", Global.Kometa.RemoveLabels))
-		logging.LOG.NoTime("\t\tLabels:\n")
-		for _, label := range Global.Kometa.Labels {
-			logging.LOG.NoTime(fmt.Sprintf("\t\t\t%s\n", label))
+	// Labels and Tags Configuration
+	logging.LOG.NoTime("\tLabels and Tags\n")
+	for _, application := range Global.LabelsAndTags.Applications {
+		logging.LOG.NoTime(fmt.Sprintf("\t\tApplication: %s\n", application.Application))
+		logging.LOG.NoTime(fmt.Sprintf("\t\t\tEnabled: %t\n", application.Enabled))
+		if application.Enabled {
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tAdd: %v\n", application.Add))
+			logging.LOG.NoTime(fmt.Sprintf("\t\t\tRemove: %v\n", application.Remove))
 		}
 	}
 

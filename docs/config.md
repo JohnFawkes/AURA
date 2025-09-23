@@ -241,29 +241,55 @@ Images:
 
 ---
 
-## Kometa
+## Labels and Tags
+
+Aura supports adding and removing labels (tags) on Plex items after processing. This is useful for organizing your media library, marking items for automation, or integrating with other tools.
 
 -   **Example**:
 
 ```yaml
-Kometa:
-    RemoveLabels: true
-    Labels:
-        - "aura"
-        - "kometa"
+LabelsAndTags:
+    Applications:
+        - Application: Plex
+          Enabled: true
+          Add:
+              - "Overlay"
+              - "4K"
+          Remove:
+              - "OldLabel"
 ```
 
-### RemoveLabels
+### Applications
 
--   **Default**: `false`
--   **Options**: `true` or `false`
--   **Description**: Whether to remove labels from Plex items.
--   **Details**: If set to `true`, aura will remove labels from Plex items after processing them. This is useful for keeping your media library clean and organized, especially if you use labels for temporary categorization during image processing.
+-   **Description**:  
+    An array of label/tag configuration blocks, one per supported application (currently only Plex is supported).
+-   **Fields**:
+    -   `Application`: The name of the application (e.g., `Plex`).
+    -   `Enabled`: Set to `true` to enable label/tag management for this application.
+    -   `Add`: A list of labels/tags to add to items after processing.
+    -   `Remove`: A list of labels/tags to remove from items after processing.
 
-### Labels
+#### Example Use Case
 
--   **Description**: The labels to remove from Plex items.
--   **Details**: This option specifies the labels that aura will remove from Plex items. Each label should be a new line in the configuration file.
+If you want Aura to add the labels `Overlay` and `4K` to your Plex items, and remove the label `OldLabel`, your config would look like:
+
+```yaml
+LabelsAndTags:
+    Applications:
+        - Application: Plex
+          Enabled: true
+          Add:
+              - "Overlay"
+              - "4K"
+          Remove:
+              - "OldLabel"
+```
+
+#### Notes
+
+-   You can leave `Add` or `Remove` empty if you only want to add or only want to remove labels.
+-   Only applications with `Enabled: true` will be processed.
+-   This structure is extensible for future support of other applications (such as Sonarr or Radarr).
 
 ---
 

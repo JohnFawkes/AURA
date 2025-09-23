@@ -33,9 +33,8 @@ export const defaultAppConfig = (): AppConfig =>
 		TMDB: {
 			ApiKey: "",
 		},
-		Kometa: {
-			RemoveLabels: false,
-			Labels: [],
+		LabelsAndTags: {
+			Applications: [],
 		},
 		Notifications: {
 			Enabled: false,

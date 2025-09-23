@@ -12,7 +12,7 @@ type Config struct {
 	AutoDownload  Config_AutoDownload  `yaml:"AutoDownload,omitempty"`  // Auto-download settings.
 	Images        Config_Images        `yaml:"Images,omitempty"`        // Image settings.
 	TMDB          Config_TMDB          `yaml:"TMDB,omitempty"`          // TMDB (The Movie Database) integration settings.
-	Kometa        Config_Kometa        `yaml:"Kometa,omitempty"`        // Kometa settings.
+	LabelsAndTags Config_LabelsAndTags `yaml:"LabelsAndTags,omitempty"` // Labels and tags settings.
 	Notifications Config_Notifications `yaml:"Notifications,omitempty"` // Notification settings.
 }
 
@@ -71,9 +71,17 @@ type Config_TMDB struct {
 	ApiKey string `yaml:"ApiKey,omitempty" json:"-"` // API key for accessing TMDB services.
 }
 
-type Config_Kometa struct {
-	RemoveLabels bool     `yaml:"RemoveLabels"`     // Whether to remove overlays from images.
-	Labels       []string `yaml:"Labels,omitempty"` // List of labels to remove from images.
+type Config_LabelsAndTags struct {
+	Applications []Config_LabelsAndTagsProvider `yaml:"Applications,omitempty"`
+	// Sonarr Config_LabelsAndTagsActions `yaml:"Sonarr,omitempty"` // for future use
+	// Radarr Config_LabelsAndTagsActions `yaml:"Radarr,omitempty"` // for future use
+}
+
+type Config_LabelsAndTagsProvider struct {
+	Application string   `yaml:"Application,omitempty"`
+	Enabled     bool     `yaml:"Enabled,omitempty"`
+	Add         []string `yaml:"Add,omitempty"`
+	Remove      []string `yaml:"Remove,omitempty"`
 }
 
 type Config_Notifications struct {

@@ -42,7 +42,7 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	autodownloadChanged, autodownloadValid, autodownloadErrorMessages, autodownloadConfig := CheckConfigDifferences_Autodownload(config.Global.AutoDownload, newConfig.AutoDownload)
 	imagesChanged := CheckConfigDifferences_Images(config.Global.Images, newConfig.Images)
 	tmdbChanged := CheckConfigDifferences_TMDB(config.Global.TMDB, newConfig.TMDB)
-	kometaChanged := CheckConfigDifferences_Kometa(config.Global.Kometa, newConfig.Kometa)
+	labelsAndTagsChanged := CheckConfigDifferences_LabelsAndTags(config.Global.LabelsAndTags, newConfig.LabelsAndTags)
 	notificationsChanged, notificationsValid, notificationsErrorMessages, notificationsConfig := CheckConfigDifferences_Notifications(config.Global.Notifications, newConfig.Notifications)
 
 	if authChanged {
@@ -113,8 +113,8 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 		logging.LOG.Info("TMDB configuration changes detected")
 	}
 
-	if kometaChanged {
-		logging.LOG.Info("Kometa configuration changes detected")
+	if labelsAndTagsChanged {
+		logging.LOG.Info("LabelsAndTags configuration changes detected")
 	}
 
 	if notificationsChanged {
@@ -130,7 +130,7 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if config.ConfigLoaded && config.ConfigValid {
-		if !authChanged && !loggingChanged && !mediaServerChanged && !mediuxChanged && !autodownloadChanged && !imagesChanged && !tmdbChanged && !kometaChanged && !notificationsChanged {
+		if !authChanged && !loggingChanged && !mediaServerChanged && !mediuxChanged && !autodownloadChanged && !imagesChanged && !tmdbChanged && !labelsAndTagsChanged && !notificationsChanged {
 			// No changes detected
 			utils.SendJsonResponse(w, http.StatusOK, utils.JSONResponse{
 				Status:  "warn",
@@ -322,22 +322,115 @@ func CheckConfigDifferences_TMDB(oldTMDB, newTMDB modals.Config_TMDB) bool {
 	return changed
 }
 
-func CheckConfigDifferences_Kometa(oldKometa, newKometa modals.Config_Kometa) bool {
+func CheckConfigDifferences_LabelsAndTags(oldLAT, newLAT modals.Config_LabelsAndTags) bool {
 	changed := false
 	if config.ConfigLoaded && config.ConfigValid {
-		if !reflect.DeepEqual(oldKometa, newKometa) {
-			if oldKometa.RemoveLabels != newKometa.RemoveLabels {
-				logging.LOG.Info(fmt.Sprintf("Kometa.RemoveLabels changed: '%v' -> '%v'", oldKometa.RemoveLabels, newKometa.RemoveLabels))
+		if !reflect.DeepEqual(oldLAT, newLAT) {
+
+			// Applications diff
+			oldMap := applicationMapLabelsAndTags(oldLAT.Applications)
+			newMap := applicationMapLabelsAndTags(newLAT.Applications)
+
+			// Added / removed apps
+			var added, removed []string
+			for k := range oldMap {
+				if _, ok := newMap[k]; !ok {
+					removed = append(removed, k)
+				}
+			}
+			for k := range newMap {
+				if _, ok := oldMap[k]; !ok {
+					added = append(added, k)
+				}
+			}
+			if len(added) > 0 {
+				sort.Strings(added)
+				logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Applications added: %s", joinNonEmptyComma(added)))
+				changed = true
+			}
+			if len(removed) > 0 {
+				sort.Strings(removed)
+				logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Applications removed: %s", joinNonEmptyComma(removed)))
 				changed = true
 			}
 
-			if !reflect.DeepEqual(oldKometa.Labels, newKometa.Labels) {
-				logging.LOG.Info(fmt.Sprintf(
-					"Kometa.Labels changed: '%s' -> '%s'",
-					joinNonEmptyComma(oldKometa.Labels),
-					joinNonEmptyComma(newKometa.Labels),
-				))
-				changed = true
+			// Compare applications present in both
+			for name, oldApp := range oldMap {
+				newApp, ok := newMap[name]
+				if !ok {
+					continue
+				}
+
+				// Per-application enabled
+				if oldApp.Enabled != newApp.Enabled {
+					logging.LOG.Info(fmt.Sprintf(
+						"LabelsAndTags.Application[%s].Enabled changed: '%v' -> '%v'",
+						name, oldApp.Enabled, newApp.Enabled,
+					))
+					changed = true
+				}
+
+				// Add list diff
+				var addAdded, addRemoved []string
+				oldAddMap := make(map[string]bool)
+				for _, v := range oldApp.Add {
+					oldAddMap[v] = true
+				}
+				newAddMap := make(map[string]bool)
+				for _, v := range newApp.Add {
+					newAddMap[v] = true
+				}
+				for k := range oldAddMap {
+					if _, ok := newAddMap[k]; !ok {
+						addRemoved = append(addRemoved, k)
+					}
+				}
+				for k := range newAddMap {
+					if _, ok := oldAddMap[k]; !ok {
+						addAdded = append(addAdded, k)
+					}
+				}
+				if len(addAdded) > 0 {
+					sort.Strings(addAdded)
+					logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Application[%s].Add added: %s", name, joinNonEmptyComma(addAdded)))
+					changed = true
+				}
+				if len(addRemoved) > 0 {
+					sort.Strings(addRemoved)
+					logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Application[%s].Add removed: %s", name, joinNonEmptyComma(addRemoved)))
+					changed = true
+				}
+
+				// Remove list diff
+				var removeAdded, removeRemoved []string
+				oldRemoveMap := make(map[string]bool)
+				for _, v := range oldApp.Remove {
+					oldRemoveMap[v] = true
+				}
+				newRemoveMap := make(map[string]bool)
+				for _, v := range newApp.Remove {
+					newRemoveMap[v] = true
+				}
+				for k := range oldRemoveMap {
+					if _, ok := newRemoveMap[k]; !ok {
+						removeRemoved = append(removeRemoved, k)
+					}
+				}
+				for k := range newRemoveMap {
+					if _, ok := oldRemoveMap[k]; !ok {
+						removeAdded = append(removeAdded, k)
+					}
+				}
+				if len(removeAdded) > 0 {
+					sort.Strings(removeAdded)
+					logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Application[%s].Remove added: %s", name, joinNonEmptyComma(removeAdded)))
+					changed = true
+				}
+				if len(removeRemoved) > 0 {
+					sort.Strings(removeRemoved)
+					logging.LOG.Info(fmt.Sprintf("LabelsAndTags.Application[%s].Remove removed: %s", name, joinNonEmptyComma(removeRemoved)))
+					changed = true
+				}
 			}
 		}
 	}
@@ -359,8 +452,8 @@ func CheckConfigDifferences_Notifications(oldNotifications, newNotifications mod
 			}
 
 			// Providers diff
-			oldMap := providerMap(oldNotifications.Providers)
-			newMap := providerMap(newNotifications.Providers)
+			oldMap := providerMapNotifications(oldNotifications.Providers)
+			newMap := providerMapNotifications(newNotifications.Providers)
 
 			// Added / removed types
 			var added, removed []string
@@ -512,13 +605,24 @@ func joinNonEmptyComma(items []string) string {
 	return strings.Join(out, ", ")
 }
 
-func providerMap(items []modals.Config_Notification_Providers) map[string]modals.Config_Notification_Providers {
+func providerMapNotifications(items []modals.Config_Notification_Providers) map[string]modals.Config_Notification_Providers {
 	m := make(map[string]modals.Config_Notification_Providers, len(items))
 	for _, p := range items {
 		if p.Provider == "" {
 			continue
 		}
 		m[p.Provider] = p
+	}
+	return m
+}
+
+func applicationMapLabelsAndTags(items []modals.Config_LabelsAndTagsProvider) map[string]modals.Config_LabelsAndTagsProvider {
+	m := make(map[string]modals.Config_LabelsAndTagsProvider, len(items))
+	for _, p := range items {
+		if p.Application == "" {
+			continue
+		}
+		m[p.Application] = p
 	}
 	return m
 }
