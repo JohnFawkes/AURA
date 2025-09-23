@@ -106,6 +106,7 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 			}
 		} else {
 			logging.LOG.Error(fmt.Sprintf("All attempts to get posters failed. URL: %s", posterURL))
+			logging.LOG.Error(fmt.Sprintf("Final error: %s", Err.Details))
 			// If this is the last attempt, return the error
 			return "", Err
 		}
