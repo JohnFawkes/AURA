@@ -12,7 +12,7 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	logging.LOG.Trace("Checking Plex server status")
 	Err := logging.NewStandardError()
 
-	baseURL, Err := utils.MakeMediaServerAPIURL("/identity", config.Global.MediaServer.URL)
+	baseURL, Err := utils.MakeMediaServerAPIURL("/", config.Global.MediaServer.URL)
 	if Err.Message != "" {
 		return "", Err
 	}
