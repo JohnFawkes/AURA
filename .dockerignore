@@ -4,6 +4,7 @@ frontend/node_modules
 frontend/dist
 frontend/dist-ssr
 frontend/\*.local
+frontend/.next
 legacy-frontend
 
 # VS Code files
@@ -17,6 +18,7 @@ legacy-frontend
 # Local files
 
 local/\*
+frontend/run_frontend
 backend/run_backend
 backend/.air.toml
 .secrets
