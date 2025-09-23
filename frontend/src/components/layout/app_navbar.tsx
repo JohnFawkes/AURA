@@ -52,6 +52,8 @@ const placeholderTexts = {
 
 export default function Navbar() {
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
+	const [searchInput, setSearchInput] = useState(searchQuery);
+
 	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
 	const { status, fetchStatus } = useOnboardingStore();
 	const router = useRouter();
@@ -126,15 +128,18 @@ export default function Navbar() {
 		};
 	}, []);
 
-	// Debounce updating the zustand store when on the homepage
+	// Debounce updating
 	useEffect(() => {
-		if (isHomePage || isSavedSetsPage || isUserPage) {
-			const handler = setTimeout(() => {
-				setSearchQuery(searchQuery);
-			}, 300);
-			return () => clearTimeout(handler);
-		}
-	}, [searchQuery, setSearchQuery, isHomePage, isSavedSetsPage, isUserPage]);
+		const handler = setTimeout(() => {
+			setSearchQuery(searchInput);
+		}, 300);
+		return () => clearTimeout(handler);
+	}, [searchInput, setSearchQuery]);
+
+	// Sync local input if store value changes externally
+	useEffect(() => {
+		setSearchInput(searchQuery);
+	}, [searchQuery]);
 
 	// When not on homepage, search cached media items from zustand store
 	useEffect(() => {
@@ -178,6 +183,7 @@ export default function Navbar() {
 	const handleHomeClick = () => {
 		if (isHomePage) {
 			setSearchQuery("");
+			setSearchInput("");
 			setCurrentPage(1);
 			setFilteredLibraries([]);
 			setFilterInDB("all");
@@ -224,8 +230,8 @@ export default function Navbar() {
 					type="search"
 					placeholder={placeholderText}
 					className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted"
-					onChange={(e) => setSearchQuery(e.target.value)}
-					value={searchQuery}
+					onChange={(e) => setSearchInput(e.target.value)}
+					value={searchInput}
 					onFocus={() => setShowDropdown(true)}
 					onBlur={() => setShowDropdown(false)}
 				/>
