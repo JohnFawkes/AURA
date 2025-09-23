@@ -81,8 +81,8 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 		if Err.Message != "" {
 			return itemInfo, Err
 		}
-		itemInfo.Series.SeasonCount = plexResponse.MediaContainer.Metadata[0].LeafCount
-		itemInfo.Series.EpisodeCount = plexResponse.MediaContainer.Metadata[0].ChildCount
+		itemInfo.Series.SeasonCount = plexResponse.MediaContainer.Metadata[0].ChildCount
+		itemInfo.Series.EpisodeCount = plexResponse.MediaContainer.Metadata[0].LeafCount
 		itemInfo.Series.Location = plexResponse.MediaContainer.Metadata[0].Location[0].Path
 	}
 
