@@ -10,6 +10,12 @@ import (
 )
 
 func UpdateConfig(newConfig modals.Config) logging.StandardError {
+
+	if Global.Dev.Enabled {
+		newConfig.Dev.Enabled = true
+		newConfig.Dev.LocalPath = Global.Dev.LocalPath
+	}
+
 	Global = &newConfig
 	Err := logging.NewStandardError()
 
