@@ -105,6 +105,7 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 				logging.LOG.Trace(fmt.Sprintf("Failed to refresh Plex item: %v", refreshErr.Message))
 			}
 		} else {
+			logging.LOG.Error(fmt.Sprintf("All attempts to get posters failed. URL: %s", posterURL))
 			// If this is the last attempt, return the error
 			return "", Err
 		}
