@@ -63,6 +63,7 @@ func main() {
 
 	// If already valid at startup, run preflight + runtime services
 	if config.ConfigLoaded && config.ConfigValid {
+		config.PrintConfig()
 		preFlightErr := finishPreflight()
 		if preFlightErr.Message != "" {
 			// Preflight failed: mark invalid and FALL BACK to onboarding routes
