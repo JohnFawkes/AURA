@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
 import { fetchMediaServerType } from "@/services/mediaserver/api-mediaserver-fetch-type";
 import { Database } from "lucide-react";
@@ -208,10 +207,12 @@ export function MediaItemDetails({
 					<Lead className="text-md text-primary-dynamic ml-1">
 						Also available in{" "}
 						<Link
-							href={formatMediaItemUrl(otherMediaItem)}
+							//href={formatMediaItemUrl(otherMediaItem)}
+							href={"/media/"}
 							onClick={() => {
 								setMediaItem(otherMediaItem);
-								router.push(formatMediaItemUrl(otherMediaItem));
+								//router.push(formatMediaItemUrl(otherMediaItem));
+								router.push("/media/");
 							}}
 							className="text-primary-dynamic hover:underline"
 						>

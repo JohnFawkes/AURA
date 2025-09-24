@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { getAdjacentMediaItem } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
@@ -616,7 +615,8 @@ const MediaItemPage = () => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.previous,
 								});
-								router.push(formatMediaItemUrl(adjacentItems.previous!));
+								//router.push(formatMediaItemUrl(adjacentItems.previous!));
+								router.push("/media/");
 							}}
 						/>
 					)}
@@ -629,7 +629,8 @@ const MediaItemPage = () => {
 								useMediaStore.setState({
 									mediaItem: adjacentItems.next,
 								});
-								router.push(formatMediaItemUrl(adjacentItems.next!));
+								//router.push(formatMediaItemUrl(adjacentItems.next!));
+								router.push("/media/");
 							}}
 						/>
 					)}

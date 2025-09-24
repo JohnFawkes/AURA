@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { getAuthToken } from "@/services/auth/api-auth";
 import {
 	Bookmark as BookmarkIcon,
@@ -198,7 +197,8 @@ export default function Navbar() {
 	// When clicking on a dropdown result (non-homepage), set the mediaStore and navigate
 	const handleResultClick = (result: MediaItem) => {
 		setMediaItem(result);
-		router.push(formatMediaItemUrl(result));
+		//router.push(formatMediaItemUrl(result));
+		router.push("/media/");
 	};
 
 	const handleLogout = () => {

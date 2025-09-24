@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
 import React, { useState } from "react";
@@ -160,7 +159,8 @@ const SavedSetsCard: React.FC<{
 				{/* Title */}
 				<H4>
 					<Link
-						href={formatMediaItemUrl(savedSet.MediaItem)}
+						//href={formatMediaItemUrl(savedSet.MediaItem)}
+						href={"/media/"}
 						className="text-primary hover:underline"
 						onClick={() => {
 							setMediaItem(savedSet.MediaItem);

@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMediaItemUrl } from "@/helper/format-media-item-url";
 import { Database } from "lucide-react";
 
 import React from "react";
@@ -27,7 +26,8 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 
 	const handleCardClick = (mediaItem: MediaItem) => {
 		setMediaItem(mediaItem);
-		router.push(formatMediaItemUrl(mediaItem));
+		//router.push(formatMediaItemUrl(mediaItem));
+		router.push("/media/");
 	};
 
 	return (
