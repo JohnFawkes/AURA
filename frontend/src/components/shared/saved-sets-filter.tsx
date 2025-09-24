@@ -1,4 +1,3 @@
-// FilterContent.tsx
 import { Check } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";

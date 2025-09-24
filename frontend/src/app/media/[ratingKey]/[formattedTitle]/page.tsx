@@ -27,10 +27,10 @@ import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
+import { MediaItemFilter } from "@/components/shared/media-item-filters";
 import { MediaItemDetails } from "@/components/shared/media_item_details";
 import { SortControl } from "@/components/shared/select_sort";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { cn } from "@/lib/cn";
@@ -549,6 +549,15 @@ const MediaItemPage = () => {
 		setImageVersion(Date.now());
 	};
 
+	// Number of active filters
+	const numberOfActiveFilters = useMemo(() => {
+		let count = 0;
+		if (!showHiddenUsers) count++;
+		if (showOnlyTitlecardSets) count++;
+		if (showOnlyDefaultImages) count++;
+		return count;
+	}, [showHiddenUsers, showOnlyTitlecardSets, showOnlyDefaultImages]);
+
 	if (!partialMediaItem && !mediaItem && hasError) {
 		return (
 			<div className="flex flex-col items-center">
@@ -668,49 +677,22 @@ const MediaItemPage = () => {
 									padding: "0.5rem",
 								}}
 							>
-								{/* Left column: all checkboxes */}
-								<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 flex-1">
-									{/* Hidden users */}
-									{hiddenCount === 0 ? (
-										<span className="text-sm text-muted-foreground ml-2">No hidden users</span>
-									) : (
-										<div className="flex items-center space-x-2">
-											<Checkbox
-												checked={showHiddenUsers}
-												onCheckedChange={handleShowHiddenUsers}
-												disabled={hiddenCount === 0}
-												className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
-											/>
-											{showHiddenUsers ? (
-												<span className="text-sm ml-2">Showing all users</span>
-											) : (
-												<span className="text-sm ml-2">
-													Show {hiddenCount} hidden user
-													{hiddenCount > 1 ? "s" : ""}
-												</span>
-											)}
-										</div>
-									)}
-
-									{/* Titlecard sets only (shows only) */}
-									{mediaItem?.Type === "show" &&
-										posterSets.some(
-											(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
-										) && (
-											<div className="flex items-center space-x-2">
-												<Checkbox
-													checked={showOnlyTitlecardSets}
-													onCheckedChange={handleShowSetsWithTitleCardsOnly}
-													className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 rounded-xs ml-2 sm:ml-0 cursor-pointer"
-												/>
-												{showOnlyTitlecardSets ? (
-													<span className="text-sm ml-2">Showing Titlecard Sets Only</span>
-												) : (
-													<span className="text-sm ml-2">Filter Titlecard Only Sets</span>
-												)}
-											</div>
-										)}
-								</div>
+								{/* Left column: Filters */}
+								<MediaItemFilter
+									numberOfActiveFilters={numberOfActiveFilters}
+									hiddenCount={hiddenCount}
+									showHiddenUsers={showHiddenUsers}
+									handleShowHiddenUsers={handleShowHiddenUsers}
+									hasTitleCards={
+										mediaItem?.Type === "show"
+											? posterSets.some(
+													(set) => Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+												)
+											: false
+									}
+									showOnlyTitlecardSets={showOnlyTitlecardSets}
+									handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
+								/>
 
 								{/* Right column: sort options */}
 								<div className="flex items-center sm:justify-end sm:ml-4">
@@ -788,7 +770,9 @@ const MediaItemPage = () => {
 												className="w-64 text-xs leading-snug"
 											>
 												<p className="mb-2">
-													Some of your sets are being hidden by filters. Here's why:
+													Some of your sets are being hidden by{" "}
+													{`${numberOfActiveFilters ? `${numberOfActiveFilters} active filter${numberOfActiveFilters > 1 ? "s" : ""}` : "no filters"}`}
+													.
 												</p>
 												<ul className="list-disc list-inside mb-2">
 													{hiddenCount > 0 && (

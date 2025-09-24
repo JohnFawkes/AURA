@@ -23,7 +23,7 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 			{sets.map((set) => (
 				<React.Fragment key={set.ID}>
 					{/* Primary Poster and Backdrop */}
-					{(set.Poster || set.Backdrop) && (
+					{(set.Poster || set.Backdrop) && (shouldShow("poster") || shouldShow("backdrop")) && (
 						<CarouselItem key={`${set.ID}-primary`}>
 							<div className="space-y-2">
 								{set.Poster && shouldShow("poster") && (
@@ -37,38 +37,39 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 					)}
 
 					{/* All Other Posters and their matching Backdrops */}
-					{set.OtherPosters?.map((poster) => {
-						const matchingBackdrop = set.OtherBackdrops?.find(
-							(backdrop) => backdrop.Movie?.ID === poster.Movie?.ID
-						);
+					{(shouldShow("poster") || shouldShow("backdrop")) &&
+						set.OtherPosters?.map((poster) => {
+							const matchingBackdrop = set.OtherBackdrops?.find(
+								(backdrop) => backdrop.Movie?.ID === poster.Movie?.ID
+							);
 
-						return (
-							<CarouselItem key={`${set.ID}-other-${poster.ID}`}>
-								<div className="space-y-2">
-									{shouldShow("poster") && (
-										<AssetImage
-											image={poster}
-											aspect="poster"
-											className={`w-full ${!poster.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
-										/>
-									)}
-									{matchingBackdrop && shouldShow("backdrop") && (
-										<AssetImage
-											image={matchingBackdrop}
-											aspect="backdrop"
-											className={`w-full ${!matchingBackdrop.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
-										/>
-									)}
-								</div>
-							</CarouselItem>
-						);
-					})}
+							return (
+								<CarouselItem key={`${set.ID}-other-${poster.ID}`}>
+									<div className="space-y-2">
+										{shouldShow("poster") && (
+											<AssetImage
+												image={poster}
+												aspect="poster"
+												className={`w-full ${!poster.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
+											/>
+										)}
+										{matchingBackdrop && shouldShow("backdrop") && (
+											<AssetImage
+												image={matchingBackdrop}
+												aspect="backdrop"
+												className={`w-full ${!matchingBackdrop.Movie?.MediaItem.RatingKey ? "opacity-35" : ""}`}
+											/>
+										)}
+									</div>
+								</CarouselItem>
+							);
+						})}
 
 					{/* Season Posters with Latest Titlecards */}
 					{set.SeasonPosters?.filter(
 						(poster) =>
 							(poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster") &&
-							shouldShow(poster.Type)
+							(shouldShow(poster.Type) || shouldShow("titlecard"))
 					)
 						.sort((a, b) => (b.Season?.Number ?? 0) - (a.Season?.Number ?? 0))
 						.map((seasonPoster) => {
@@ -87,11 +88,13 @@ export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
 							return (
 								<CarouselItem key={`${set.ID}-season-${seasonPoster.ID}`}>
 									<div className="space-y-2">
-										<AssetImage
-											image={seasonPoster}
-											aspect="poster"
-											className={`w-full ${!seasonPoster.Show?.MediaItem.RatingKey ? "opacity-35" : ""}`}
-										/>
+										{shouldShow("seasonPoster") && (
+											<AssetImage
+												image={seasonPoster}
+												aspect="poster"
+												className={`w-full ${!seasonPoster.Show?.MediaItem.RatingKey ? "opacity-35" : ""}`}
+											/>
+										)}
 										{shouldShow("titlecard") && latestTitlecard && (
 											<AssetImage
 												image={latestTitlecard}

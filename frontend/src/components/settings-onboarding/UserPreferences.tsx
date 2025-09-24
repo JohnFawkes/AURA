@@ -1,10 +1,8 @@
-import { HelpCircle } from "lucide-react";
-
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
@@ -27,22 +25,13 @@ export function UserPreferencesCard() {
 				<div className="flex items-center justify-between">
 					<Label>Default Image Types</Label>
 					<Popover>
-						<PopoverTrigger asChild>
-							<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-default-image-types"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
+						<PopoverHelp side="top" align="end" ariaLabel="help-default-image-types">
 							<p className="mb-2">
-								Select which image types you want autochecked for each download. This will let you avoid
-								unchecking them manually for each download.
+								Select which image types you want auto-checked for each download. This will let you
+								avoid unchecking them manually for each download.
 							</p>
-							<p className="text-[10px] text-muted-foreground">Click a badge to toggle it on or off.</p>
-						</PopoverContent>
+							<p className="text-xs text-muted-foreground">Click a badge to toggle it on or off.</p>
+						</PopoverHelp>
 					</Popover>
 				</div>
 				<div className="flex flex-wrap gap-2 mt-3">
@@ -52,7 +41,7 @@ export function UserPreferencesCard() {
 							className={cn(
 								"cursor-pointer text-sm px-3 py-1 font-normal transition",
 								defaultImageTypes.includes(type)
-									? "bg-primary text-primary-foreground"
+									? "bg-primary text-primary-foreground hover:bg-red-500"
 									: "bg-muted text-muted-foreground border"
 							)}
 							variant={defaultImageTypes.includes(type) ? "default" : "outline"}
@@ -85,21 +74,17 @@ export function UserPreferencesCard() {
 						/>
 					</div>
 					<Popover>
-						<PopoverTrigger asChild>
-							<Button
-								variant="outline"
-								className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-								aria-label="help-show-only-default-image-types"
-							>
-								<HelpCircle className="h-4 w-4" />
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
+						<PopoverHelp side="top" align="end" ariaLabel="help-filter-image-types">
 							<p className="mb-2">
-								When enabled, only poster sets that have at least one of your selected default image
-								types will be shown.
+								If checked, only sets that contain at least one of the selected image types will be
+								shown.
 							</p>
-						</PopoverContent>
+							<p className="text-xs text-muted-foreground">
+								This is global setting that will be applied to all media items and user sets. You can
+								always change this setting here or in the Filters section of the Media Item Page.
+								Section.
+							</p>
+						</PopoverHelp>
 					</Popover>
 				</div>
 				<div className="mt-2"></div>
