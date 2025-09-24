@@ -4,6 +4,7 @@ import { HelpCircle } from "lucide-react";
 
 import React, { useEffect, useRef } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -71,28 +72,20 @@ export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 				<div className="flex items-center justify-between">
 					<Label>API Key</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-tmdb-api-key"
+						<PopoverHelp ariaLabel="help-tmdb-api-key">
+							<p className="mb-2">The TMDB API key used for metadata lookups (v3 key).</p>
+							<p className="text-muted-foreground">
+								Get one at:{" "}
+								<a
+									href="https://www.themoviedb.org/settings/api"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="underline"
 								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-72 text-xs leading-snug"
-							>
-								<p className="mb-2">The TMDB API key used for metadata lookups (v3 key).</p>
-								<p className="text-[10px] text-muted-foreground">
-									Get one at: https://www.themoviedb.org/settings/api
-								</p>
-							</PopoverContent>
-						</Popover>
+									https://www.themoviedb.org/settings/api
+								</a>
+							</p>
+						</PopoverHelp>
 					)}
 				</div>
 				<Input

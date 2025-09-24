@@ -20,7 +20,7 @@ export function PopoverHelp({
 	side = "right",
 	align = "center",
 	sideOffset = 8,
-	className = "w-72 text-xs leading-snug",
+	className = "w-72 text-sm leading-snug",
 }: PopoverHelpProps) {
 	return (
 		<Popover>

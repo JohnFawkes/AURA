@@ -6,6 +6,7 @@ import { HelpCircle, Plus, Trash2 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -235,30 +236,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 						onCheckedChange={(v) => onChange("Enabled", v)}
 					/>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-notifications-enabled"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-72 text-xs leading-snug"
-							>
-								<p className="mb-2">
-									Turn on to send events through enabled providers (Discord, Pushover, Gotify).
-								</p>
-								<p className="text-[10px] text-muted-foreground">
-									Each provider must also be enabled individually.
-								</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-notifications-enabled">
+							<p className="mb-2">
+								Turn on to send events through enabled providers (Discord, Pushover, Gotify).
+							</p>
+							<p className="text-muted-foreground">Each provider can also be enabled individually.</p>
+						</PopoverHelp>
 					)}
 				</div>
 			</div>
@@ -361,33 +344,17 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 									<div className="flex items-center justify-between">
 										<Label>Webhook URL</Label>
 										{editing && (
-											<Popover>
-												<PopoverTrigger asChild>
-													<Button
-														variant="outline"
-														className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-														aria-label="help-notifications-discord-webhook"
-													>
-														<HelpCircle className="h-4 w-4" />
-													</Button>
-												</PopoverTrigger>
-												<PopoverContent
-													side="right"
-													align="center"
-													sideOffset={8}
-													className="w-72 text-xs leading-snug"
-												>
-													<p className="mb-2 font-medium">Discord Webhook</p>
-													<ol className="list-decimal ml-4 space-y-1 text-[11px]">
-														<li>Server Settings &gt; Integrations &gt; Webhooks</li>
-														<li>Create Webhook (choose channel)</li>
-														<li>Copy the webhook URL and paste here</li>
-													</ol>
-													<p className="mt-2 text-[10px] text-muted-foreground">
-														Must begin with https://discord.com/api/webhooks/...
-													</p>
-												</PopoverContent>
-											</Popover>
+											<PopoverHelp ariaLabel="help-notifications-discord-webhook">
+												<p className="mb-2 font-medium">Discord Webhook</p>
+												<ol className="list-decimal ml-4 space-y-1 ">
+													<li>Server Settings &gt; Integrations &gt; Webhooks</li>
+													<li>Create Webhook (choose channel)</li>
+													<li>Copy the webhook URL and paste here</li>
+												</ol>
+												<p className="mt-2 text-muted-foreground">
+													Must begin with https://discord.com/api/webhooks/...
+												</p>
+											</PopoverHelp>
 										)}
 									</div>
 									<Input
@@ -425,31 +392,13 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<div className="flex items-center justify-between">
 											<Label>User Key</Label>
 											{editing && (
-												<Popover>
-													<PopoverTrigger asChild>
-														<Button
-															variant="outline"
-															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-															aria-label="help-notification-pushover-user-key"
-														>
-															<HelpCircle className="h-4 w-4" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent
-														side="right"
-														align="center"
-														sideOffset={8}
-														className="w-64 text-xs leading-snug"
-													>
-														<p className="mb-1 font-medium">Pushover User Key</p>
-														<p className="text-[11px] mb-2">
-															Found on your Pushover dashboard after logging in.
-														</p>
-														<p className="text-[10px] text-muted-foreground">
-															https://pushover.net/
-														</p>
-													</PopoverContent>
-												</Popover>
+												<PopoverHelp ariaLabel="help-notification-pushover-user-key">
+													<p className="mb-1 font-medium">Pushover User Key</p>
+													<p className=" mb-2">
+														Found on your Pushover dashboard after logging in.
+													</p>
+													<p className="text-muted-foreground">https://pushover.net/</p>
+												</PopoverHelp>
 											)}
 										</div>
 										<Input
@@ -479,31 +428,15 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<div className="flex items-center justify-between">
 											<Label>App Token</Label>
 											{editing && (
-												<Popover>
-													<PopoverTrigger asChild>
-														<Button
-															variant="outline"
-															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-															aria-label="help-notifications-pushover-app-token"
-														>
-															<HelpCircle className="h-4 w-4" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent
-														side="right"
-														align="center"
-														sideOffset={8}
-														className="w-64 text-xs leading-snug"
-													>
-														<p className="mb-1 font-medium">Pushover App Token</p>
-														<p className="text-[11px] mb-2">
-															Create or view under "Your Applications" in Pushover.
-														</p>
-														<p className="text-[10px] text-muted-foreground">
-															Needed to send messages via the API.
-														</p>
-													</PopoverContent>
-												</Popover>
+												<PopoverHelp ariaLabel="help-notifications-pushover-app-token">
+													<p className="mb-1 font-medium">Pushover App Token</p>
+													<p className=" mb-2">
+														Create or view under "Your Applications" in Pushover.
+													</p>
+													<p className="text-muted-foreground">
+														Needed to send messages via the API.
+													</p>
+												</PopoverHelp>
 											)}
 										</div>
 										<Input
@@ -539,31 +472,19 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<div className="flex items-center justify-between">
 											<Label>URL</Label>
 											{editing && (
-												<Popover>
-													<PopoverTrigger asChild>
-														<Button
-															variant="outline"
-															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-															aria-label="help-notifications-gotify-url"
-														>
-															<HelpCircle className="h-4 w-4" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent
-														side="right"
-														align="center"
-														sideOffset={8}
-														className="w-64 text-xs leading-snug"
-													>
-														<p className="mb-1 font-medium">Gotify URL</p>
-														<p className="text-[11px] mb-2">
-															The base URL of your Gotify server. Domains may omit port.
-															IPv4 addresses must include a port. Example:
-															https://gotify.domain.com, http://192.168.1.10:8070 or
-															http://gotify:8070
-														</p>
-													</PopoverContent>
-												</Popover>
+												<PopoverHelp ariaLabel="help-notifications-gotify-url">
+													<p className="mb-1 font-medium">Gotify URL</p>
+													<p className=" mb-2">
+														The base URL of your Gotify server. Domains may omit port. IPv4
+														addresses must include a port
+													</p>
+													<p>Exmaples:</p>
+													<ul className="list-disc ml-4 space-y-1 text-muted-foreground">
+														<li>https://gotify.domain.com</li>
+														<li>http://192.168.1.10:8070</li>
+														<li>http://gotify:8070</li>
+													</ul>
+												</PopoverHelp>
 											)}
 										</div>
 										<Input
@@ -593,31 +514,18 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<div className="flex items-center justify-between">
 											<Label>App Token</Label>
 											{editing && (
-												<Popover>
-													<PopoverTrigger asChild>
-														<Button
-															variant="outline"
-															className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-															aria-label="help-notifications-pushover-app-token"
-														>
-															<HelpCircle className="h-4 w-4" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent
-														side="right"
-														align="center"
-														sideOffset={8}
-														className="w-64 text-xs leading-snug"
-													>
-														<p className="mb-1 font-medium">Gotify App Token</p>
-														<p className="text-[11px] mb-2">
-															Create or view under "Apps" in Gotify.
-														</p>
-														<p className="text-[10px] text-muted-foreground">
-															Needed to send messages via the API.
-														</p>
-													</PopoverContent>
-												</Popover>
+												<PopoverHelp ariaLabel="help-notifications-gotify-app-token">
+													<p className="mb-1 font-medium">
+														<span className="font-mono">Gotify App Token</span>
+													</p>
+													<p className=" mb-2">
+														Generate or view your app token under{" "}
+														<span className="font-semibold">Apps</span> in Gotify.
+													</p>
+													<p className=" text-muted-foreground">
+														This token is required to send messages via the API.
+													</p>
+												</PopoverHelp>
 											)}
 										</div>
 										<Input

@@ -149,12 +149,12 @@ function MediaItemFilterContent({
 				<div className="flex items-center space-x-2 justify-between">
 					<Label className="text-md font-semibold block">Default Image Types</Label>
 
-					<PopoverHelp side="bottom" align="start" ariaLabel="help-default-image-types">
+					<PopoverHelp ariaLabel="help-default-image-types">
 						<p className="mb-2">
 							Select which image types you want auto-checked for each download. This will let you avoid
 							unchecking them manually for each download.
 						</p>
-						<p className="text-xs text-muted-foreground">Click a badge to toggle it on or off.</p>
+						<p className="text-muted-foreground">Click a badge to toggle it on or off.</p>
 					</PopoverHelp>
 				</div>
 				<ToggleGroup
@@ -207,11 +207,11 @@ function MediaItemFilterContent({
 						<Label>Only show selected image types</Label>
 					</div>
 
-					<PopoverHelp side="bottom" align="start" ariaLabel="help-filter-image-types">
+					<PopoverHelp ariaLabel="help-filter-image-types">
 						<p className="mb-2">
 							If checked, only sets that contain at least one of the selected image types will be shown.
 						</p>
-						<p className="text-xs text-muted-foreground">
+						<p className="text-muted-foreground">
 							This is global setting that will be applied to all media items and user sets. You can always
 							change this setting in this filter, or in the Settings Page{" "}
 							<Link href="/settings#preferences-section" className="underline">
@@ -237,20 +237,18 @@ function MediaItemFilterContent({
 								/>{" "}
 								<Label>Show hidden users</Label>
 							</div>
-							<PopoverHelp side="bottom" align="start" ariaLabel="media-item-filter-hidden-users">
+							<PopoverHelp ariaLabel="media-item-filter-hidden-users">
 								<p className="mb-2">
 									When enabled, sets from users you have hidden will be shown in the list.
 								</p>
-								<p className="text-xs text-muted-foreground">
-									You can hide users directly in the MediUX site.
-								</p>
+								<p className="text-muted-foreground">You can hide users directly in the MediUX site.</p>
 							</PopoverHelp>
 						</div>
 					</>
 				)}
 
 				{/* Mandatory Titlecard Sets */}
-				{hasTitleCards && (
+				{hasTitleCards && (!showOnlyDefaultImages || defaultImageTypes.includes("titlecard")) && (
 					<>
 						<Separator className="my-4 w-full" />
 						<Label className="text-md font-semibold mb-1 block">Titlecard Filter</Label>
@@ -263,7 +261,7 @@ function MediaItemFilterContent({
 								/>
 								<Label>Only show sets with titlecards</Label>
 							</div>
-							<PopoverHelp side="bottom" align="start" ariaLabel="media-item-filter-titlecards">
+							<PopoverHelp ariaLabel="media-item-filter-titlecards">
 								<p className="mb-2">
 									When enabled, only sets that contain titlecards will be shown in the list.
 								</p>

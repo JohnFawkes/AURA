@@ -2,15 +2,14 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { postClearTempImagesFolder } from "@/services/settings-onboarding/api-images-actions";
-import { HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
@@ -98,23 +97,9 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						onCheckedChange={(v) => onChange("CacheImages", "Enabled", v)}
 					/>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-images-cache"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
-								<p>
-									Store downloaded artwork locally to reduce external requests and speed repeat
-									access.
-								</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-images-cache">
+							<p>Store downloaded artwork locally to reduce external requests and speed repeat access.</p>
+						</PopoverHelp>
 					)}
 				</div>
 			</div>
@@ -135,28 +120,12 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						onCheckedChange={(v) => onChange("SaveImageNextToContent", "Enabled", v)}
 					/>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-images-save-next-to-content"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p>
-									Write artwork files beside media items so external tools or servers can pick them up
-									directly.
-								</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-images-save-next-to-content">
+							<p>
+								Write artwork files beside media items so external tools or servers can pick them up
+								directly.
+							</p>
+						</PopoverHelp>
 					)}
 				</div>
 			</div>

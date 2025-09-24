@@ -5,6 +5,7 @@ import { HelpCircle } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -114,25 +115,9 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				<div className="flex items-center justify-between">
 					<Label>Token</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-mediux-token"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p>Mediux API token. Paste the personal token generated from your Mediux account.</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-mediux-token">
+							<p>Mediux API token. Paste the personal token generated from your Mediux account.</p>
+						</PopoverHelp>
 					)}
 				</div>
 				<Input
@@ -161,39 +146,27 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				<div className="flex items-center justify-between">
 					<Label>Download Quality</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-mediux-download-quality"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p className="mb-2">Select the desired quality for fetched downloads:</p>
-								<ul className="space-y-1">
-									<li className="flex gap-2">
-										<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono text-[10px]">
+						<PopoverHelp ariaLabel="help-mediux-download-quality">
+							<p className="mb-2">Select the desired quality for fetched downloads:</p>
+							<ul className="space-y-2">
+								<li>
+									<div className="flex items-center gap-3 rounded-md border border-muted bg-muted/50 px-3 py-2">
+										<p className="inline-flex items-center rounded bg-background px-2 py-1 font-mono">
 											optimized
-										</span>
-										<span className="text-[11px]">Balanced for size & performance.</span>
-									</li>
-									<li className="flex gap-2">
-										<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono text-[10px]">
+										</p>
+										<p>Balanced for size & performance.</p>
+									</div>
+								</li>
+								<li>
+									<div className="flex items-center gap-3 rounded-md border border-muted bg-muted/50 px-3 py-2">
+										<p className="inline-flex items-center rounded bg-background px-2 py-1 font-mono">
 											original
-										</span>
-										<span className="text-[11px]">Full source quality (largest size).</span>
-									</li>
-								</ul>
-							</PopoverContent>
-						</Popover>
+										</p>
+										<p>Full source quality (largest size).</p>
+									</div>
+								</li>
+							</ul>
+						</PopoverHelp>
 					)}
 				</div>
 				<Select

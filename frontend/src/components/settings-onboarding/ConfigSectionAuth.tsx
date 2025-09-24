@@ -1,12 +1,11 @@
-import { HelpCircle } from "lucide-react";
-
 import React, { useEffect, useRef } from "react";
 
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
@@ -81,23 +80,12 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 						onCheckedChange={(c) => onChange("Enabled", c)}
 					/>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-auth-enabled"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
-								<p>
-									Turn on to enforce authentication. A valid Argon2id password hash must be provided
-									below.
-								</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-auth-enabled">
+							<p>
+								Turn on to enforce authentication. A valid Argon2id password hash must be provided
+								below.
+							</p>
+						</PopoverHelp>
 					)}
 				</div>
 			</div>
@@ -113,35 +101,24 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 					<div className="flex items-center justify-between">
 						<Label htmlFor="auth-hash">Argon2id Password Hash</Label>
 						{editing && (
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-										aria-label="help-auth-password-hash"
+							<PopoverHelp ariaLabel="help-auth-password-hash">
+								<p className="mb-2">
+									Provide an Argon2id hash. If authentication is enabled this hash must match the
+									user's password.
+								</p>
+								<p>
+									You can use a site like{" "}
+									<Link
+										className="text-primary underline"
+										href="https://argon2.online/"
+										target="_blank"
+										rel="noopener noreferrer"
 									>
-										<HelpCircle className="h-4 w-4" />
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent
-									side="right"
-									align="center"
-									sideOffset={8}
-									className="w-72 text-xs leading-snug"
-								>
-									<p className="mb-2">
-										Provide an Argon2id hash. If authentication is enabled this hash must match the
-										user's password.
-									</p>
-									<p className="font-mono text-[10px] break-all">
-										You can use a site like{" "}
-										<a href="https://argon2.online/" target="_blank" rel="noopener noreferrer">
-											https://argon2.online/
-										</a>{" "}
-										to generate a hash.
-									</p>
-								</PopoverContent>
-							</Popover>
+										Argon2.Online
+									</Link>{" "}
+									to generate a hash.
+								</p>
+							</PopoverHelp>
 						)}
 					</div>
 					<Input

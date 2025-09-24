@@ -1,18 +1,17 @@
 "use client";
 
 import { postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
-import { HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { cn } from "@/lib/cn";
@@ -86,42 +85,26 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 				<div className="flex items-center justify-between">
 					<Label>Level</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-logging-level"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p className="mb-2">Select verbosity of application logs.</p>
-								<ul className="space-y-1 text-[10px]">
-									<li>
-										<span className="font-mono">TRACE</span> – detailed tracing information
-									</li>
-									<li>
-										<span className="font-mono">DEBUG</span> – detailed development info
-									</li>
-									<li>
-										<span className="font-mono">INFO</span> – high-level operational events
-									</li>
-									<li>
-										<span className="font-mono">WARN</span> – unexpected but non-fatal issues
-									</li>
-									<li>
-										<span className="font-mono">ERROR</span> – failures requiring attention
-									</li>
-								</ul>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-logging-level">
+							<p className="mb-2">Select verbosity of application logs.</p>
+							<ul className="space-y-2 text-xs">
+								<li>
+									<span className="font-mono">TRACE</span> – detailed tracing information
+								</li>
+								<li>
+									<span className="font-mono">DEBUG</span> – detailed development info
+								</li>
+								<li>
+									<span className="font-mono">INFO</span> – high-level operational events
+								</li>
+								<li>
+									<span className="font-mono">WARN</span> – unexpected but non-fatal issues
+								</li>
+								<li>
+									<span className="font-mono">ERROR</span> – failures requiring attention
+								</li>
+							</ul>
+						</PopoverHelp>
 					)}
 				</div>
 				<Select

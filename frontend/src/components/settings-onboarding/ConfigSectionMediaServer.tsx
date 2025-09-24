@@ -7,6 +7,7 @@ import { HelpCircle, Plus, RefreshCcw } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -244,25 +245,14 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				<div className="flex items-center justify-between">
 					<Label>Type</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-media-server-type"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p>Select the media server platform (Plex, Emby, Jellyfin).</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-media-server-type">
+							<p>The type of Media Server </p>
+							<ul className="list-disc list-inside mt-1">
+								<li>Plex</li>
+								<li>Emby</li>
+								<li>Jellyfin</li>
+							</ul>
+						</PopoverHelp>
 					)}
 				</div>
 				<Select
@@ -303,28 +293,21 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				<div className="flex items-center justify-between">
 					<Label>URL</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-media-server-url"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-72 text-xs leading-snug"
-							>
-								<p>
-									Base server URL. Domains may omit port. IPv4 addresses must include a port. Example:
-									https://plex.domain.com, http://192.168.1.10:32400 or http://plex:32400
-								</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-media-server-url">
+							<p className="font-medium mb-1">Base server URL</p>
+							<p>Examples:</p>
+							<ul className="list-disc list-inside mb-1">
+								<li>https://plex.domain.com</li>
+								<li>http://192.168.1.10:32400</li>
+								<li>http://plex:32400</li>
+							</ul>
+							<p>Rules:</p>
+							<ul className="list-disc list-inside">
+								<li>Must be a valid URL</li>
+								<li>Must include http:// or https://</li>
+								<li>IPv4 addresses must include a port</li>
+							</ul>
+						</PopoverHelp>
 					)}
 				</div>
 				<Input
@@ -348,25 +331,9 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				<div className="flex items-center justify-between">
 					<Label>Token</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-media-server-token"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-72 text-xs leading-snug"
-							>
-								<p>API token used to authenticate requests to the media server.</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-media-server-token">
+							<p>API token used to authenticate requests to the media server.</p>
+						</PopoverHelp>
 					)}
 				</div>
 				<Input
@@ -394,28 +361,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					<div className="flex items-center justify-between">
 						<Label>User ID</Label>
 						{editing && (
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-										aria-label="help-media-server-user-id"
-									>
-										<HelpCircle className="h-4 w-4" />
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent
-									side="right"
-									align="center"
-									sideOffset={8}
-									className="w-64 text-xs leading-snug"
-								>
-									<p>
-										Required for Emby / Jellyfin. The internal admin user identifier. This should be
-										fetched automatically. If it doesn't, please check the logs.
-									</p>
-								</PopoverContent>
-							</Popover>
+							<PopoverHelp ariaLabel="help-media-server-user-id">
+								<p>
+									User ID is required for Emby/Jellyfin. It should be set automatically after URL &
+									Token are valid.
+								</p>
+							</PopoverHelp>
 						)}
 					</div>
 					<Input
@@ -442,49 +393,31 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					<div className="flex items-center justify-between">
 						<Label>Season Naming Convention</Label>
 						{editing && (
-							<Popover>
-								<PopoverTrigger asChild>
-									<Button
-										variant="outline"
-										className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-										aria-label="help-media-server-season-naming-convention"
-									>
-										<HelpCircle className="h-4 w-4" />
-									</Button>
-								</PopoverTrigger>
-								<PopoverContent
-									side="right"
-									align="center"
-									sideOffset={8}
-									className="w-72 text-xs leading-snug"
-								>
-									<div className="space-y-3">
-										<div>
-											<p className="font-medium mb-1">Season Naming Convention</p>
-											<p className="text-[11px] text-muted-foreground">
-												How Plex season folders / labels are formatted.
-											</p>
-										</div>
-										<ul className="space-y-1">
-											<li className="flex items-center gap-2">
-												<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono text-[10px]">
-													1
-												</span>
-												<span className="text-[11px]">Season 1</span>
-											</li>
-											<li className="flex items-center gap-2">
-												<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono text-[10px]">
-													2
-												</span>
-												<span className="text-[11px]">Season 01 (zero‑padded)</span>
-											</li>
-										</ul>
-										<p className="text-[10px] text-muted-foreground">
-											Used for display / folder naming logic.
+							<PopoverHelp ariaLabel="help-media-server-season-naming-convention">
+								<div className="space-y-3">
+									<div>
+										<p className="font-medium mb-1">Season Naming Convention</p>
+										<p className="text-muted-foreground">
+											How Plex season folders / labels are formatted.
 										</p>
 									</div>
-								</PopoverContent>
-							</Popover>
+									<ul className="space-y-1">
+										<li className="flex items-center gap-2">
+											<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono ">
+												1
+											</span>
+											<span>Season 1</span>
+										</li>
+										<li className="flex items-center gap-2">
+											<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono">
+												2
+											</span>
+											<span>Season 01 (zero‑padded)</span>
+										</li>
+									</ul>
+									<p className="text-muted-foreground">Used for display / folder naming logic.</p>
+								</div>
+							</PopoverHelp>
 						)}
 					</div>
 					<Select

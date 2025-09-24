@@ -1,14 +1,14 @@
 "use client";
 
-import { HelpCircle, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
@@ -203,25 +203,9 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 								<div className="flex items-center justify-between">
 									<Label>Add Labels</Label>
 									{editing && (
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-													aria-label="help-labels-to-add"
-												>
-													<HelpCircle className="h-4 w-4" />
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent
-												side="right"
-												align="center"
-												sideOffset={8}
-												className="w-72 text-xs leading-snug"
-											>
-												<p>Labels to add to items after processing.</p>
-											</PopoverContent>
-										</Popover>
+										<PopoverHelp ariaLabel="help-labels-to-add">
+											<p>Labels to add to items after processing.</p>
+										</PopoverHelp>
 									)}
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
@@ -290,25 +274,9 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 								<div className="flex items-center justify-between">
 									<Label>Remove Labels</Label>
 									{editing && (
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-													aria-label="help-labels-tags-remove"
-												>
-													<HelpCircle className="h-4 w-4" />
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent
-												side="right"
-												align="center"
-												sideOffset={8}
-												className="w-72 text-xs leading-snug"
-											>
-												<p>Labels to remove from items after processing.</p>
-											</PopoverContent>
-										</Popover>
+										<PopoverHelp ariaLabel="help-labels-tags-remove">
+											<p>Labels to remove from items after processing.</p>
+										</PopoverHelp>
 									)}
 								</div>
 								<div className="flex flex-wrap items-center gap-2">

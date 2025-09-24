@@ -4,6 +4,9 @@ import { HelpCircle } from "lucide-react";
 
 import React, { useEffect, useRef } from "react";
 
+import Link from "next/link";
+
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,20 +96,13 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 						onCheckedChange={(v) => onChange("Enabled", v)}
 					/>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-auto-download-enabled"
-								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent side="top" align="end" sideOffset={6} className="w-64 text-xs leading-snug">
-								<p>Whether auto-download is enabled.</p>
-							</PopoverContent>
-						</Popover>
+						<PopoverHelp ariaLabel="help-auto-download-enabled">
+							<p>
+								Auto Download will check periodically for new updates your saved sets. This is helpful
+								if you want to download and apply season poster/titlecard updates from future updates
+								your sets.
+							</p>
+						</PopoverHelp>
 					)}
 				</div>
 			</div>
@@ -122,32 +118,21 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 				<div className="flex items-center justify-between">
 					<Label>Cron Expression</Label>
 					{editing && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-									aria-label="help-cron-expression"
+						<PopoverHelp ariaLabel="help-cron-expression">
+							<p>
+								Cron expression format. Use the standard cron syntax to specify when the job should run.
+								You can use a site like{" "}
+								<Link
+									className="text-primary hover:underline"
+									href="https://crontab.guru/"
+									target="_blank"
+									rel="noopener noreferrer"
 								>
-									<HelpCircle className="h-4 w-4" />
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="center"
-								sideOffset={8}
-								className="w-64 text-xs leading-snug"
-							>
-								<p>
-									Cron expression format. Use the standard cron syntax to specify when the job should
-									run. You can use a site like{" "}
-									<a href="https://crontab.guru/" target="_blank" rel="noopener noreferrer">
-										crontab.guru
-									</a>{" "}
-									to help you create and test your cron expressions.
-								</p>
-							</PopoverContent>
-						</Popover>
+									crontab.guru
+								</Link>{" "}
+								to help you create and test your cron expressions.
+							</p>
+						</PopoverHelp>
 					)}
 				</div>
 				<Input

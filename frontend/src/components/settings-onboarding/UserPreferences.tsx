@@ -24,15 +24,13 @@ export function UserPreferencesCard() {
 			<div className="border rounded-md p-3 mt-3 space-y-2">
 				<div className="flex items-center justify-between">
 					<Label>Default Image Types</Label>
-					<Popover>
-						<PopoverHelp side="top" align="end" ariaLabel="help-default-image-types">
-							<p className="mb-2">
-								Select which image types you want auto-checked for each download. This will let you
-								avoid unchecking them manually for each download.
-							</p>
-							<p className="text-xs text-muted-foreground">Click a badge to toggle it on or off.</p>
-						</PopoverHelp>
-					</Popover>
+					<PopoverHelp ariaLabel="help-default-image-types">
+						<p className="mb-2">
+							Select which image types you want auto-checked for each download. This will let you avoid
+							unchecking them manually for each download.
+						</p>
+						<p className="text-muted-foreground">Click a badge to toggle it on or off.</p>
+					</PopoverHelp>
 				</div>
 				<div className="flex flex-wrap gap-2 mt-3">
 					{DEFAULT_IMAGE_TYPE_OPTIONS.map((type) => (
@@ -73,19 +71,15 @@ export function UserPreferencesCard() {
 							onCheckedChange={() => setShowOnlyDefaultImages(!showOnlyDefaultImages)}
 						/>
 					</div>
-					<Popover>
-						<PopoverHelp side="top" align="end" ariaLabel="help-filter-image-types">
-							<p className="mb-2">
-								If checked, only sets that contain at least one of the selected image types will be
-								shown.
-							</p>
-							<p className="text-xs text-muted-foreground">
-								This is global setting that will be applied to all media items and user sets. You can
-								always change this setting here or in the Filters section of the Media Item Page.
-								Section.
-							</p>
-						</PopoverHelp>
-					</Popover>
+					<PopoverHelp ariaLabel="help-filter-image-types">
+						<p className="mb-2">
+							If checked, only sets that contain at least one of the selected image types will be shown.
+						</p>
+						<p className="text-muted-foreground">
+							This is global setting that will be applied to all media items and user sets. You can always
+							change this setting here or in the Filters section of the Media Item Page. Section.
+						</p>
+					</PopoverHelp>
 				</div>
 				<div className="mt-2"></div>
 			</div>

@@ -14,7 +14,6 @@ import {
 	ArrowRightCircle,
 	CalendarArrowDown,
 	CalendarArrowUp,
-	HelpCircle,
 } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,9 +27,9 @@ import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaItemFilter } from "@/components/shared/media-item-filters";
 import { MediaItemDetails } from "@/components/shared/media_item_details";
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { SortControl } from "@/components/shared/select_sort";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
@@ -754,60 +753,43 @@ const MediaItemPage = () => {
 											Showing {filteredPosterSets.length} of {posterSets.length} Poster Set
 											{posterSets.length > 1 ? "s" : ""}
 										</span>
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													className="h-6 w-6 rounded-md border flex items-center justify-center text-xs bg-background hover:bg-muted transition"
-													aria-label="help-filters"
-												>
-													<HelpCircle className="h-4 w-4" />
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent
-												side="top"
-												align="end"
-												sideOffset={6}
-												className="w-64 text-xs leading-snug"
-											>
-												<p className="mb-2">
-													Some of your sets are being hidden by{" "}
-													{`${numberOfActiveFilters ? `${numberOfActiveFilters} active filter${numberOfActiveFilters > 1 ? "s" : ""}` : "no filters"}`}
-													.
-												</p>
-												<ul className="list-disc list-inside mb-2">
-													{hiddenCount > 0 && (
+										<PopoverHelp ariaLabel="help-filters">
+											<p className="mb-2">
+												Some of your sets are being hidden by{" "}
+												{`${numberOfActiveFilters ? `${numberOfActiveFilters} active filter${numberOfActiveFilters > 1 ? "s" : ""}` : "no filters"}`}
+												.
+											</p>
+											<ul className="list-disc list-inside mb-2">
+												{hiddenCount > 0 && (
+													<li>
+														You have {hiddenCount} hidden user
+														{hiddenCount > 1 ? "s" : ""}.{" "}
+													</li>
+												)}
+												{mediaItem?.Type === "show" &&
+													showOnlyTitlecardSets &&
+													posterSets.some(
+														(set) =>
+															Array.isArray(set.TitleCards) && set.TitleCards.length > 0
+													) && <li>You are filtering to show only titlecard sets.</li>}
+												{showOnlyDefaultImages &&
+													defaultImageTypes &&
+													defaultImageTypes.length > 0 && (
 														<li>
-															You have {hiddenCount} hidden user
-															{hiddenCount > 1 ? "s" : ""}.{" "}
+															You are filtering to show only sets with your selected
+															default image types.
 														</li>
 													)}
-													{mediaItem?.Type === "show" &&
-														showOnlyTitlecardSets &&
-														posterSets.some(
-															(set) =>
-																Array.isArray(set.TitleCards) &&
-																set.TitleCards.length > 0
-														) && <li>You are filtering to show only titlecard sets.</li>}
-													{showOnlyDefaultImages &&
-														defaultImageTypes &&
-														defaultImageTypes.length > 0 && (
-															<li>
-																You are filtering to show only sets with your selected
-																default image types.
-															</li>
-														)}
-												</ul>
-												<p>
-													You can adjust your filters using the checkboxes on this page. You
-													can also adjust your default image types in{" "}
-													<Link href="/settings#preferences-section" className="underline">
-														User Preferences
-													</Link>
-													.
-												</p>
-											</PopoverContent>
-										</Popover>
+											</ul>
+											<p>
+												You can adjust your filters using the checkboxes on this page. You can
+												also adjust your default image types in{" "}
+												<Link href="/settings#preferences-section" className="underline">
+													User Preferences
+												</Link>
+												.
+											</p>
+										</PopoverHelp>
 									</div>
 								) : (
 									<p className="text-sm text-muted-foreground">
