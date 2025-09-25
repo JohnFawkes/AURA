@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -60,7 +59,7 @@ export default function Navbar() {
 	// Page Logic
 	const isHomePage = pathName === "/";
 	const isMediaPage = pathName.startsWith("/media/");
-	const isSettingsPage = pathName === "/settings" || pathName === "/settings/";
+	//const isSettingsPage = pathName === "/settings" || pathName === "/settings/";
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
 	const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";

@@ -1,7 +1,6 @@
 "use client";
 
 import { checkMediuxNewTokenStatusResult } from "@/services/settings-onboarding/api-mediux-connection";
-import { HelpCircle } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -10,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { cn } from "@/lib/cn";

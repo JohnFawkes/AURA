@@ -3,7 +3,7 @@
 import { ValidateURL } from "@/helper/validation/validate-url";
 import { checkMediaServerNewInfoConnectionStatus } from "@/services/settings-onboarding/api-mediaserver-connection";
 import { fetchMediaServerLibraryOptions } from "@/services/settings-onboarding/api-mediaserver-library-options";
-import { HelpCircle, Plus, RefreshCcw } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,

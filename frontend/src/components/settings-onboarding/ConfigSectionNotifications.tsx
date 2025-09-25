@@ -2,7 +2,7 @@
 
 import { ValidateURL } from "@/helper/validation/validate-url";
 import { sendTestNotification } from "@/services/settings-onboarding/api-notifications-test";
-import { HelpCircle, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import React, { useEffect, useRef, useState } from "react";
 
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 

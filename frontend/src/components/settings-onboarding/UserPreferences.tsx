@@ -2,7 +2,6 @@ import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Popover } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";

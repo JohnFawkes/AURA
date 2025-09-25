@@ -1,7 +1,5 @@
 "use client";
 
-import { HelpCircle } from "lucide-react";
-
 import React, { useEffect, useRef } from "react";
 
 import { PopoverHelp } from "@/components/shared/popover-help";
@@ -9,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { cn } from "@/lib/cn";
 
