@@ -98,7 +98,7 @@ export default function Navbar() {
 	const { setMediaItem } = useMediaStore();
 
 	// Check if the screen is mobile
-	const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+	const [isMobile, setIsMobile] = useState(false);
 
 	// Onboarding Status Check on mount and path change
 	useEffect(() => {
@@ -211,9 +211,15 @@ export default function Navbar() {
 
 	// On mount, check auth status
 	useEffect(() => {
+		if (status?.currentSetup.Auth.Enabled === false) {
+			setIsAuthed(true);
+			return;
+		}
+
+		// If auth is enabled, check for token
 		const token = getAuthToken();
 		setIsAuthed(!!token && token !== "null" && token !== "undefined");
-	}, [pathName]);
+	}, [pathName, status?.currentSetup.Auth.Enabled]);
 
 	// When clicking on the logo, navigate to home
 	// If already on homepage, reset home page states
