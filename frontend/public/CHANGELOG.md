@@ -4,6 +4,10 @@
 
 - Added GitHub icon next to issue links in changelog for better visibility
 
+### Fixed
+
+- Button active state on click improved for better user experience across the app
+
 ---
 
 ## [0.9.25] - 2025-09-25
