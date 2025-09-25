@@ -45,7 +45,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 			sortOption: "dateUpdated",
 			setSortOption: (option) => set({ sortOption: option }),
 
-			sortOrder: "asc",
+			sortOrder: "desc",
 			setSortOrder: (order) => set({ sortOrder: order }),
 
 			currentPage: 1,
@@ -79,7 +79,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 			clear: () =>
 				set({
 					sortOption: "dateUpdated",
-					sortOrder: "asc",
+					sortOrder: "desc",
 					currentPage: 1,
 					itemsPerPage: 20,
 					viewOption: "card",

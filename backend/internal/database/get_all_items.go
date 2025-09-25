@@ -395,6 +395,7 @@ LIMIT ? OFFSET ?`
 
 func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItemWithPosterSets, logging.StandardError) {
 	Err := logging.NewStandardError()
+	resultOrder := []string{}
 	resultMap := make(map[string]*modals.DBMediaItemWithPosterSets)
 
 	for rows.Next() {
@@ -422,6 +423,7 @@ func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItem
 			if Err = UnmarshalMediaItem(savedItem.MediaItemJSON, &mediaItem); Err.Message != "" {
 				return nil, Err
 			}
+			resultOrder = append(resultOrder, savedItem.MediaItemID)
 			mediaItemGroup = &modals.DBMediaItemWithPosterSets{
 				MediaItemID:   savedItem.MediaItemID,
 				MediaItem:     mediaItem,
@@ -454,10 +456,11 @@ func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItem
 		mediaItemGroup.PosterSets = append(mediaItemGroup.PosterSets, psDetail)
 	}
 
-	// Convert map to slice
-	result := make([]modals.DBMediaItemWithPosterSets, 0, len(resultMap))
-	for _, v := range resultMap {
-		result = append(result, *v)
+	// Build result slice in order
+	result := make([]modals.DBMediaItemWithPosterSets, 0, len(resultOrder))
+	for _, id := range resultOrder {
+		result = append(result, *resultMap[id])
+		logging.LOG.Trace(fmt.Sprintf("Media Item '%s' with ID '%s' has %d poster sets", resultMap[id].MediaItem.Title, id, len(resultMap[id].PosterSets)))
 	}
 
 	return result, logging.StandardError{}

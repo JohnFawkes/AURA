@@ -7,6 +7,7 @@ import {
 	ArrowDownAZ,
 	ArrowDownZA,
 	CalendarArrowDown,
+	CalendarArrowUp,
 	ClockArrowDown,
 	ClockArrowUp,
 	Filter,
@@ -126,8 +127,9 @@ const SavedSetsPage: React.FC = () => {
 			sortOption !== "library"
 		) {
 			setSortOption("dateUpdated");
+			setSortOrder("desc");
 		}
-	}, [sortOption, setSortOption]);
+	}, [sortOption, setSortOption, setSortOrder]);
 
 	const {
 		cleanedQuery,
@@ -548,7 +550,7 @@ const SavedSetsPage: React.FC = () => {
 						{
 							value: "year",
 							label: "Year",
-							ascIcon: <CalendarArrowDown />,
+							ascIcon: <CalendarArrowUp />,
 							descIcon: <CalendarArrowDown />,
 						},
 						{ value: "library", label: "Library", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
