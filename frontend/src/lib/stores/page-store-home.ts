@@ -38,7 +38,7 @@ interface Home_PageStore
 export const useHomePageStore = create<Home_PageStore>()(
 	persist(
 		(set, get) => ({
-			sortOption: "dateUpdated",
+			sortOption: "dateAdded",
 			setSortOption: (option) => set({ sortOption: option }),
 
 			sortOrder: "desc",
@@ -89,7 +89,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 
 			clear: () =>
 				set({
-					sortOption: "dateUpdated",
+					sortOption: "dateAdded",
 					sortOrder: "desc",
 					currentPage: 1,
 					itemsPerPage: 20,
