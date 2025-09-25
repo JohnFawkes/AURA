@@ -6,8 +6,8 @@ import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
 
+import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
 import { PopoverHelp } from "@/components/shared/popover-help";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -69,18 +69,16 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 		<Card className="p-5 space-y-1">
 			<div className="flex items-center justify-between">
 				<h2 className="text-xl font-semibold">Images</h2>
-				<Button
-					variant="destructive"
-					size="sm"
+				<ConfirmDestructiveDialogActionButton
 					hidden={editing}
-					disabled={editing}
-					onClick={() => {
-						clearTempImagesFolder();
-					}}
-					className="cursor-pointer hover:text-primary"
+					onConfirm={clearTempImagesFolder}
+					title="Clear Temp Images Folder?"
+					description="This will permanently delete all temporary images. Are you sure you want to continue?"
+					confirmText="Yes, Clear Images"
+					cancelText="Cancel"
 				>
-					Clear Temp Images Folder
-				</Button>
+					Clear Temp Images
+				</ConfirmDestructiveDialogActionButton>
 			</div>
 			{/* Cache Images */}
 			<div

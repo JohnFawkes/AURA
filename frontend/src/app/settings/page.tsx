@@ -19,6 +19,7 @@ import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSect
 import { ConfigSectionNotifications } from "@/components/settings-onboarding/ConfigSectionNotifications";
 import { ConfigSectionTMDB } from "@/components/settings-onboarding/ConfigSectionTMDB";
 import { UserPreferencesCard } from "@/components/settings-onboarding/UserPreferences";
+import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
@@ -504,16 +505,14 @@ const SettingsPage: React.FC = () => {
 							{debugEnabled ? (
 								<span className="text-green-500">Enabled</span>
 							) : (
-								<span className="text-destructive">Disabled</span>
+								<span className="text-destructive hover:text-red-500">Disabled</span>
 							)}
 						</span>
 					</ToggleGroupItem>
 				</ToggleGroup>
 
-				<Button
-					variant="ghost"
-					className="text-red-600 border-none shadow-none hover:bg-red-50 cursor-pointer"
-					onClick={async () => {
+				<ConfirmDestructiveDialogActionButton
+					onConfirm={async () => {
 						localStorage.clear();
 						await ClearAllStores();
 						toast.success("App Cache Cleared. Reloading...", { duration: 750 });
@@ -521,9 +520,15 @@ const SettingsPage: React.FC = () => {
 							router.replace("/settings");
 						}, 1000);
 					}}
+					title="Clear App Cache?"
+					description="This will clear all local storage and IndexedDB data. Are you sure you want to continue?"
+					confirmText="Yes, Clear Cache"
+					cancelText="Cancel"
+					variant="ghost"
+					className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
 				>
 					Clear App Cache
-				</Button>
+				</ConfirmDestructiveDialogActionButton>
 			</div>
 		</div>
 	);

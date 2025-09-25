@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from "react";
 
 import { useRouter } from "next/navigation";
 
+import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -139,14 +140,16 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 						>
 							View
 						</Button>
-						<Button
+						<ConfirmDestructiveDialogActionButton
 							hidden={editing}
-							variant="destructive"
-							onClick={handleClearOldLogs}
-							className="cursor-pointer hover:text-primary"
+							onConfirm={handleClearOldLogs}
+							title="Clear Old Logs?"
+							description="This will permanently delete all old log files. Are you sure you want to continue?"
+							confirmText="Yes, Clear Logs"
+							cancelText="Cancel"
 						>
 							Clear Old Logs
-						</Button>
+						</ConfirmDestructiveDialogActionButton>
 					</div>
 				</div>
 				<Input disabled value={value.File || ""} placeholder="App Log File Path" />
