@@ -464,9 +464,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		const isDuplicate = duplicates[item.MediaItemRatingKey];
 
 		// Calculate checked state
-		const isChecked =
-			(types.includes(assetType) || (!types.length && defaultImageTypes.includes(assetType))) &&
-			(!isDuplicate || isDuplicate.selectedType === item.Set.Type);
+		const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.Type);
 
 		// Calculate disabled state
 		const isDisabled = Boolean(
@@ -1245,8 +1243,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								{/* If the all items have no types selected, show a message */}
 								{formItems.every(
 									(item) =>
-										!watchSelectedOptions[item.MediaItemRatingKey].types.length &&
-										!watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly
+										!watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length &&
+										!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 								) && (
 									<div className="text-sm text-destructive">
 										No image types selected for download. Please select at least one image type to
@@ -1259,7 +1257,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									// Only show if not all items are set to "Add to DB Only"
 									selectedSizes.fileCount > 0 &&
 									formItems.some(
-										(item) => !watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly
+										(item) => !watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 									) ? (
 										<div>
 											<div className="text-sm text-muted-foreground">
@@ -1272,16 +1270,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									) : (
 										// If all items are set to "Add to DB Only", show a message
 										formItems.some(
-											(item) => watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly
+											(item) => watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 										) && (
 											<div className="text-sm text-muted-foreground">
 												Will add{" "}
 												{
 													formItems.filter(
 														(item) =>
-															watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly ||
-															watchSelectedOptions[item.MediaItemRatingKey].types.length >
-																0
+															watchSelectedOptions?.[item.MediaItemRatingKey]
+																?.addToDBOnly ||
+															watchSelectedOptions?.[item.MediaItemRatingKey]?.types
+																?.length > 0
 													).length
 												}{" "}
 												items to the database without downloading any images.
@@ -1480,8 +1479,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											// Only show if at least one item has types selected or is set to "Add to DB Only"
 											formItems.some(
 												(item) =>
-													watchSelectedOptions[item.MediaItemRatingKey].types.length > 0 ||
-													watchSelectedOptions[item.MediaItemRatingKey].addToDBOnly
+													watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length >
+														0 ||
+													watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 											) && (
 												<Button
 													className="cursor-pointer hover:text-white"
