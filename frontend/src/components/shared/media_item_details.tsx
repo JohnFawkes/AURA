@@ -214,7 +214,7 @@ export function MediaItemDetails({
 								//router.push(formatMediaItemUrl(otherMediaItem));
 								router.push("/media/");
 							}}
-							className="text-primary-dynamic hover:underline"
+							className="text-primary-dynamic hover:text-primary underline"
 						>
 							{otherMediaItem.LibraryTitle}
 						</Link>{" "}
@@ -242,7 +242,7 @@ export function MediaItemDetails({
 				<Button
 					onClick={handleAddToIgnoredClick}
 					variant="destructive"
-					className="text-primary-dynamic hover:underline mt-3 block mx-auto lg:mx-0"
+					className="text-primary-dynamic hover:underline mt-3 block mx-auto lg:mx-0 cursor-pointer"
 				>
 					Mark as Ignored
 				</Button>

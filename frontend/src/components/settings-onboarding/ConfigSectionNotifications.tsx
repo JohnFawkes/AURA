@@ -214,6 +214,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					disabled={editing}
 					hidden={editing}
 					onClick={() => sendTestNotification()}
+					className="cursor-pointer hover:text-primary"
 				>
 					Test Notifications
 				</Button>
@@ -279,7 +280,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					)}
 				</div>
 
-				{providers.length === 0 && <p className="text-[11px] text-muted-foreground">No providers added.</p>}
+				{providers.length === 0 && <p className="text-xs text-muted-foreground">No providers added.</p>}
 
 				{providers.map((p, idx) => {
 					const providerDirty = dirtyFields.Providers?.[idx] as Partial<{
@@ -546,7 +547,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							)}
 
 							{providerErrors.length > 0 && (
-								<p className="text-[10px] text-red-500">Resolve provider errors above.</p>
+								<p className="text-xs text-red-500">Resolve provider errors above.</p>
 							)}
 						</div>
 					);

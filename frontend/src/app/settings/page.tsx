@@ -328,18 +328,28 @@ const SettingsPage: React.FC = () => {
 
 						<div className="flex gap-2">
 							{!editing && (
-								<Button variant="outline" onClick={() => setEditing(true)}>
+								<Button
+									variant="outline"
+									onClick={() => setEditing(true)}
+									className="cursor-pointer hover:text-primary active:scale-95 hover:brightness-120"
+								>
 									Edit
 								</Button>
 							)}
 							{editing && (
 								<>
-									<Button variant="outline" onClick={handleCancel} disabled={saving}>
+									<Button
+										variant="outline"
+										onClick={handleCancel}
+										disabled={saving}
+										className="cursor-pointer hover:text-primary"
+									>
 										Cancel
 									</Button>
 									<Button
 										onClick={handleSaveAll}
 										disabled={!anyDirty || saving || hasValidationErrors}
+										className="cursor-pointer hover:text-primary"
 									>
 										{saving ? "Saving..." : "Save All"}
 									</Button>
@@ -502,7 +512,7 @@ const SettingsPage: React.FC = () => {
 
 				<Button
 					variant="ghost"
-					className="text-red-600 border-none shadow-none hover:bg-red-50"
+					className="text-red-600 border-none shadow-none hover:bg-red-50 cursor-pointer"
 					onClick={async () => {
 						localStorage.clear();
 						await ClearAllStores();

@@ -332,7 +332,7 @@ export default function Home() {
 						.map((section) => (
 							<Badge
 								key={section.ID}
-								className="cursor-pointer text-sm"
+								className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
 								variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
 								onClick={() => {
 									if (filteredLibraries.includes(section.Title)) {
@@ -352,7 +352,7 @@ export default function Home() {
 
 					<Badge
 						key={"filter-in-db"}
-						className={`cursor-pointer text-sm ${
+						className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
 							filterInDB === "inDB"
 								? "bg-green-600 text-white"
 								: filterInDB === "notInDB"

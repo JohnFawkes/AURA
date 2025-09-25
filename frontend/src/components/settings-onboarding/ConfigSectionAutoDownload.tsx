@@ -140,7 +140,7 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 				/>
 				{errors.Cron && <p className="text-xs text-red-500">{errors.Cron}</p>}
 				{value.Enabled && !errors.Cron && value.Cron.trim() && (
-					<p className="text-[10px] text-muted-foreground">{parseCronToHumanReadable(value.Cron)}</p>
+					<p className="text-xs text-muted-foreground">{parseCronToHumanReadable(value.Cron)}</p>
 				)}
 			</div>
 		</Card>

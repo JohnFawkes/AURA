@@ -359,7 +359,7 @@ const ShowFullSetDetails: React.FC<{
 			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center text-white gap-4 tracking-wide mt-4">
 				<div className="flex items-center gap-2">
 					<Badge
-						className="flex items-center text-sm hover:text-white transition-colors"
+						className="flex items-center text-sm hover:text-white transition-colors hover:brightness-120 cursor-pointer active:scale-95"
 						onClick={(e) => {
 							e.stopPropagation();
 							window.location.href = `/user/${setAuthor}`;
@@ -368,7 +368,7 @@ const ShowFullSetDetails: React.FC<{
 						Set Author: {setAuthor}
 					</Badge>
 					<Badge
-						className="flex items-center text-sm hover:text-white transition-colors"
+						className="flex items-center text-sm hover:text-white transition-colors hover:brightness-120 cursor-pointer active:scale-95"
 						onClick={(e) => {
 							e.stopPropagation();
 							window.open(`https://mediux.io/${setType}-set/${setID}`, "_blank");

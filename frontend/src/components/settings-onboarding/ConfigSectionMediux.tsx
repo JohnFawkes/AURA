@@ -99,6 +99,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 					onClick={() => {
 						runRemoteValidation();
 					}}
+					className="cursor-pointer hover:text-primary"
 				>
 					{testingToken ? "Testing..." : "Test Token"}
 				</Button>

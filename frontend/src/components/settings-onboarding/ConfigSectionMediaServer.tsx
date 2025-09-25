@@ -228,6 +228,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					disabled={editing || testingToken}
 					hidden={editing}
 					onClick={() => runRemoteValidation()}
+					className="cursor-pointer hover:text-primary"
 				>
 					{testingToken ? "Testing..." : "Test Connection"}
 				</Button>
@@ -477,7 +478,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 				<div className="flex flex-wrap gap-2">
 					{libraries.length === 0 && (
-						<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-[11px] text-muted-foreground">
+						<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground">
 							No libraries added
 						</span>
 					)}
@@ -485,7 +486,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						<Badge
 							key={i}
 							className={cn(
-								"cursor-pointer select-none transition duration-200 px-3 py-1 text-[11px] font-normal",
+								"cursor-pointer select-none transition duration-200 px-3 py-1 text-xs font-normal",
 								editing
 									? "bg-secondary text-secondary-foreground hover:bg-red-500 hover:text-white"
 									: "bg-muted text-muted-foreground"

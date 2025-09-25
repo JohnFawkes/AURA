@@ -38,8 +38,8 @@ export function UserPreferencesCard() {
 							className={cn(
 								"cursor-pointer text-sm px-3 py-1 font-normal transition",
 								defaultImageTypes.includes(type)
-									? "bg-primary text-primary-foreground hover:bg-red-500"
-									: "bg-muted text-muted-foreground border"
+									? "bg-primary text-primary-foreground active:scale-95 hover:brightness-120"
+									: "bg-muted text-muted-foreground border hover:text-accent-foreground"
 							)}
 							variant={defaultImageTypes.includes(type) ? "default" : "outline"}
 							onClick={() => {

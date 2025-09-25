@@ -110,7 +110,7 @@ export function FilterContent({
 								.map((section) => (
 									<Badge
 										key={section}
-										className="cursor-pointer text-sm"
+										className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
 										variant={filteredLibraries.includes(section) ? "default" : "outline"}
 										onClick={() => {
 											if (filteredLibraries.includes(section)) {
@@ -140,7 +140,7 @@ export function FilterContent({
 					{typeOptions.map((type) => (
 						<Badge
 							key={type.value}
-							className="cursor-pointer text-sm"
+							className="cursor-pointer text-sm active:scale-95 hover:brightness-120s"
 							variant={filteredTypes.includes(type.value) ? "default" : "outline"}
 							onClick={() => {
 								if (filteredTypes.includes(type.value)) {
@@ -159,7 +159,7 @@ export function FilterContent({
 				<Label className="text-md font-semibold mb-1 block">Multi Set Only</Label>
 				<Badge
 					key={"filter-multi-set-only"}
-					className="cursor-pointer text-sm ml-2"
+					className="cursor-pointer text-sm ml-2 active:scale-95 hover:brightness-120"
 					variant={filterMultiSetOnly ? "default" : "outline"}
 					onClick={() => {
 						if (setFilterMultiSetOnly) {
@@ -174,7 +174,7 @@ export function FilterContent({
 				<Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
 				<Badge
 					key={"filter-auto-download-only"}
-					className="cursor-pointer text-sm ml-2"
+					className="cursor-pointer text-sm ml-2 active:scale-95 hover:brightness-120"
 					variant={filterAutoDownloadOnly ? "default" : "outline"}
 					onClick={() => {
 						if (setFilterAutoDownloadOnly) {
@@ -252,12 +252,19 @@ export function FilterContent({
 			</div>
 
 			{/* Apply Filters Button */}
-			<Button className="w-full mt-2" onClick={onApplyFilters}>
+			<Button
+				className="w-full mt-2 cursor-pointer hover:brightness-120 active:scale-95"
+				onClick={onApplyFilters}
+			>
 				Apply Filters
 			</Button>
 
 			{/* Reset Filters Button */}
-			<Button variant={"destructive"} className="w-full" onClick={onResetFilters}>
+			<Button
+				variant={"destructive"}
+				className="w-full cursor-pointer hover:brightness-120 active:scale-95"
+				onClick={onResetFilters}
+			>
 				Reset Filters
 			</Button>
 		</div>

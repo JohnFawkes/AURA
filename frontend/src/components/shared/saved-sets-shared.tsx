@@ -357,11 +357,11 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 			return (
 				<Badge
 					key={type}
-					className={`flex items-center gap-2 transition duration-200 ${
+					className={`flex items-center gap-2 transition duration-200 hover:brightness-120 active:scale-95 ${
 						isTypeDisabled
 							? "bg-secondary opacity-50 cursor-not-allowed"
 							: isSelected
-								? "cursor-pointer bg-primary text-primary-foreground hover:bg-red-500"
+								? "cursor-pointer bg-primary text-primary-foreground"
 								: "cursor-pointer bg-secondary text-secondary-foreground"
 					}`}
 					onClick={() => {

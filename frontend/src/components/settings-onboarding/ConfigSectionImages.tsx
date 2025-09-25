@@ -77,6 +77,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 					onClick={() => {
 						clearTempImagesFolder();
 					}}
+					className="cursor-pointer hover:text-primary"
 				>
 					Clear Temp Images Folder
 				</Button>

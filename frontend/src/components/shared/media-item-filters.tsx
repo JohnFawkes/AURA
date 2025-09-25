@@ -171,10 +171,10 @@ function MediaItemFilterContent({
 						<Badge
 							key={type}
 							className={cn(
-								"cursor-pointer text-sm px-3 py-1 font-normal transition",
+								"cursor-pointer text-sm px-3 py-1 font-normal transition active:scale-95",
 								defaultImageTypes.includes(type)
-									? "bg-primary text-primary-foreground"
-									: "bg-muted text-muted-foreground border"
+									? "bg-primary text-primary-foreground hover:brightness-120"
+									: "bg-muted text-muted-foreground border hover:text-accent-foreground"
 							)}
 							variant={defaultImageTypes.includes(type) ? "default" : "outline"}
 							onClick={() => {

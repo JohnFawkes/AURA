@@ -155,7 +155,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 				</div>
 
 				{applications.length === 0 && (
-					<p className="text-[11px] text-muted-foreground">No applications configured.</p>
+					<p className="text-xs text-muted-foreground">No applications configured.</p>
 				)}
 
 				{applications.map((app, idx) => {
@@ -210,7 +210,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									{addLabels.length === 0 && (
-										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-[11px] text-muted-foreground">
+										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground">
 											No labels to add
 										</span>
 									)}
@@ -218,7 +218,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										<span
 											key={i}
 											className={cn(
-												"inline-flex items-center rounded-full px-3 py-1 text-[11px] font-normal cursor-pointer select-none transition duration-200",
+												"inline-flex items-center rounded-full px-3 py-1 text-xs font-normal cursor-pointer select-none transition duration-200",
 												"bg-green-600 text-white",
 												editing && "hover:bg-red-500 hover:text-white"
 											)}
@@ -281,7 +281,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									{removeLabels.length === 0 && (
-										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-[11px] text-muted-foreground">
+										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground">
 											No labels to remove
 										</span>
 									)}
@@ -289,7 +289,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										<span
 											key={i}
 											className={cn(
-												"inline-flex items-center rounded-full px-3 py-1 text-[11px] font-normal cursor-pointer select-none transition duration-200",
+												"inline-flex items-center rounded-full px-3 py-1 text-xs font-normal cursor-pointer select-none transition duration-200",
 												"bg-red-600 text-white",
 												editing && "hover:bg-red-800 hover:text-white"
 											)}

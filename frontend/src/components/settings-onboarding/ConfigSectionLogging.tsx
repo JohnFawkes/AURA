@@ -131,11 +131,21 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 				<div className="flex items-center justify-between mb-1">
 					<Label>Log File</Label>
 					<div className="flex items-center gap-2">
-						<Button hidden={editing} variant="outline" onClick={handleViewLogs}>
+						<Button
+							hidden={editing}
+							variant="outline"
+							onClick={handleViewLogs}
+							className="cursor-pointer hover:text-primary"
+						>
 							View
 						</Button>
-						<Button hidden={editing} variant="destructive" onClick={handleClearOldLogs}>
-							Clear Old
+						<Button
+							hidden={editing}
+							variant="destructive"
+							onClick={handleClearOldLogs}
+							className="cursor-pointer hover:text-primary"
+						>
+							Clear Old Logs
 						</Button>
 					</div>
 				</div>

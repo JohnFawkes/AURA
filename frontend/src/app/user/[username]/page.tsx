@@ -750,7 +750,7 @@ const UserSetPage = () => {
 												}
 												setSearchQuery("");
 											}}
-											className={`cursor-pointer text-sm ${
+											className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
 												!!selectedLibrarySection &&
 												selectedLibrarySection.title !== section.title
 													? "opacity-50 pointer-events-none"
@@ -794,7 +794,7 @@ const UserSetPage = () => {
 
 											<Badge
 												key="filter-out-in-db"
-												className={`cursor-pointer text-sm ${
+												className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
 													filterOutInDB === "inDB"
 														? "bg-green-600 text-white"
 														: filterOutInDB === "notInDB"
@@ -846,7 +846,7 @@ const UserSetPage = () => {
 
 										<Badge
 											key="filter-out-in-db"
-											className={`cursor-pointer text-sm ${
+											className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
 												filterOutInDB === "inDB"
 													? "bg-green-600 text-white"
 													: filterOutInDB === "notInDB"
