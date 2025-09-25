@@ -322,8 +322,9 @@ const ShowFullSetDetails: React.FC<{
 			log(
 				"INFO",
 				"ShowFullSetDetails",
+				"Set to Array",
 				"Unique RatingKeys for Backdrop Selection",
-				JSON.stringify(ratingKeysArray)
+				ratingKeysArray
 			);
 			if (ratingKeysArray.length > 0) {
 				const randomRatingKey = ratingKeysArray[Math.floor(Math.random() * ratingKeysArray.length)];
@@ -342,12 +343,12 @@ const ShowFullSetDetails: React.FC<{
 				<H1
 					className="mb-1"
 					onClick={() => {
-						log(
-							"INFO",
-							"ShowFullSetDetails",
-							"Set Details Clicked",
-							JSON.stringify({ setID, setType, setTitle, setAuthor })
-						);
+						log("INFO", "ShowFullSetDetails", "Return to Set Details", "Set Details Clicked", {
+							setID,
+							setType,
+							setTitle,
+							setAuthor,
+						});
 					}}
 				>
 					{setTitle}

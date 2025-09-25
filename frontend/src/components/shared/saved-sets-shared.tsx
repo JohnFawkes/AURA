@@ -88,13 +88,7 @@ export const refreshPosterSet = async ({
 					return;
 				}
 				if (!response.data) {
-					log(
-						"ERROR",
-						"Saved Sets Shared",
-						"refreshPosterSet",
-						"No PosterSet found in response:",
-						JSON.stringify(response)
-					);
+					log("ERROR", "Saved Sets Shared", "refreshPosterSet", "No PosterSet found in response:", response);
 					return;
 				}
 				const posterSet: PosterSet = response.data;

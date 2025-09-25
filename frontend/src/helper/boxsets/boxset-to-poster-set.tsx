@@ -44,14 +44,10 @@ export const BoxsetToPosterSet = (boxset: MediuxUserBoxset) => {
 		});
 	}
 
-	log(
-		"INFO",
-		"BoxsetToPosterSet",
-		"Converted Boxset to Poster Sets",
-		JSON.stringify({
-			boxset: boxset.boxset_title,
-			posterSets: posterSets,
-		})
-	);
+	log("INFO", "Boxset", "BoxsetToPosterSet", "Converted Boxset to Poster Sets", {
+		boxset: boxset.boxset_title,
+		posterSets: posterSets,
+	});
+
 	return posterSets;
 };
