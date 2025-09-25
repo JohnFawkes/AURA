@@ -34,7 +34,7 @@ export function ConfirmDestructiveDialogActionButton({
 	description = "This action cannot be undone. Are you sure you want to continue?",
 	confirmText = "Yes, Continue",
 	cancelText = "Cancel",
-	variant = "destructive",
+	variant = "ghost",
 	disabled,
 	hidden,
 	className,
@@ -78,8 +78,8 @@ export function ConfirmDestructiveDialogActionButton({
 						</Button>
 					</DialogClose>
 					<Button
-						variant="destructive"
-						className="hover:text-primary active:scale-95 hover:brightness-120"
+						variant="ghost"
+						className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
 						onClick={handleConfirm}
 						disabled={loading}
 					>

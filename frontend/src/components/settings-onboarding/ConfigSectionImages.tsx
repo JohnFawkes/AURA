@@ -76,6 +76,8 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 					description="This will permanently delete all temporary images. Are you sure you want to continue?"
 					confirmText="Yes, Clear Images"
 					cancelText="Cancel"
+					className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+					variant="ghost"
 				>
 					Clear Temp Images
 				</ConfirmDestructiveDialogActionButton>

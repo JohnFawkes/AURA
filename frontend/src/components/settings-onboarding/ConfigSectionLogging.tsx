@@ -147,6 +147,7 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 							description="This will permanently delete all old log files. Are you sure you want to continue?"
 							confirmText="Yes, Clear Logs"
 							cancelText="Cancel"
+							className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
 						>
 							Clear Old Logs
 						</ConfirmDestructiveDialogActionButton>

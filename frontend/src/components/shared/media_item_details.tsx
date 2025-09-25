@@ -241,8 +241,8 @@ export function MediaItemDetails({
 			{!isInDB && (
 				<Button
 					onClick={handleAddToIgnoredClick}
-					variant="destructive"
-					className="text-primary-dynamic hover:underline mt-3 block mx-auto lg:mx-0 cursor-pointer"
+					variant="ghost"
+					className="mx-auto lg:w-auto lg:mx-0 flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2 text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
 				>
 					Mark as Ignored
 				</Button>

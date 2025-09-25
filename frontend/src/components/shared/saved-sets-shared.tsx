@@ -433,9 +433,9 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 										</Link>
 									</span>
 									<Button
-										variant={editSet.toDelete ? "destructive" : "outline"}
+										variant={editSet.toDelete ? "ghost" : "outline"}
 										size="sm"
-										className="cursor-pointer"
+										className={`cursor-pointer border-1 hover:brightness-120 hover:text-red-500 ${editSet.toDelete && "text-destructive"}`}
 										onClick={() => {
 											setEditSets((prev) =>
 												prev.map((item, i) =>
@@ -524,13 +524,17 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 				)}
 				{updateError && <ErrorMessage error={updateError} />}
 				<DialogFooter>
-					<Button variant="outline" className="cursor-pointer" onClick={onClose}>
+					<Button
+						variant="outline"
+						className="hover:text-primary active:scale-95 hover:brightness-120"
+						onClick={onClose}
+					>
 						Cancel
 					</Button>
 					<Button
 						hidden={onlyIgnore}
-						className="cursor-pointer"
-						variant={allToDelete ? "destructive" : "default"}
+						className={`cursor-pointer hover:brightness-120 border-1 ${allToDelete ? "text-destructive" : ""}`}
+						variant={allToDelete ? "ghost" : "default"}
 						onClick={confirmEdit}
 					>
 						{allToDelete ? (editSets.length === 1 ? "Delete Set" : "Delete All") : "Save"}
@@ -558,10 +562,14 @@ export const SavedSetDeleteModal: React.FC<SavedSetDeleteModalProps> = ({ open, 
 				</DialogDescription>
 			</DialogHeader>
 			<DialogFooter>
-				<Button className="cursor-pointer" variant="outline" onClick={onClose}>
+				<Button variant="outline" className="hover:text-primary active:scale-95 hover:brightness-120">
 					Cancel
 				</Button>
-				<Button variant="destructive" className="cursor-pointer" onClick={confirmDelete}>
+				<Button
+					variant="ghost"
+					className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+					onClick={confirmDelete}
+				>
 					Delete
 				</Button>
 			</DialogFooter>
