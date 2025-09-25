@@ -1,6 +1,7 @@
 name: Docker Image CI and Release for aura Beta
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - "master"
