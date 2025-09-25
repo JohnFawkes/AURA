@@ -1213,7 +1213,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			}}
 		>
 			<DialogTrigger asChild>
-				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
+				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
 			</DialogTrigger>
 
 			<DialogPortal>
@@ -1464,8 +1464,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										{/* Cancel button to close the modal */}
 										<DialogClose asChild>
 											<Button
-												className="cursor-pointer hover:bg-destructive/90"
-												variant="destructive"
+												className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+												variant="ghost"
 												onClick={() => {
 													handleClose();
 												}}
@@ -1484,7 +1484,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 											) && (
 												<Button
-													className="cursor-pointer hover:text-white"
+													variant={"outline"}
+													className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
 													disabled={
 														// Disable if no items are selected and nothing is set to "Add to DB Only"
 														(selectedSizes.fileCount === 0 &&
@@ -1520,7 +1521,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 										) && (
 											<Button
-												className="cursor-pointer"
+												className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
 												variant="secondary"
 												onClick={() => {
 													form.reset();

@@ -263,7 +263,7 @@ export default function Navbar() {
 			<div className="relative flex-shrink-0">
 				<div
 					onClick={handleHomeClick}
-					className="relative cursor-pointer"
+					className="relative cursor-pointer active:scale-95 transition-transform select-none"
 					style={{
 						width: logoSrc === "/aura_logo.svg" ? "50px" : "150px",
 						height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
@@ -275,12 +275,12 @@ export default function Navbar() {
 
 			{/* Center: Search */}
 			<div className="relative flex-1 flex justify-center mx-3">
-				<div className="relative w-full max-w-2xl">
+				<div className="relative w-full max-w-2xl active:scale-98 transition">
 					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						type="search"
 						placeholder={placeholderText}
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted w-full"
+						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted w-full focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground transition hover:brightness-120"
 						onChange={(e) => setSearchInput(e.target.value)}
 						value={searchInput}
 						onFocus={() => setShowDropdown(true)}
@@ -323,13 +323,13 @@ export default function Navbar() {
 				{isMediaPage && (
 					<>
 						<ArrowLeftCircle
-							className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+							className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
 							onClick={() => {
 								if (previousMediaItem) useMediaStore.setState({ mediaItem: previousMediaItem });
 							}}
 						/>
 						<ArrowRightCircle
-							className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+							className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
 							onClick={() => {
 								if (nextMediaItem) useMediaStore.setState({ mediaItem: nextMediaItem });
 							}}
@@ -338,12 +338,15 @@ export default function Navbar() {
 				)}
 				{(!isMediaPage || !isMobile) && (
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild className="cursor-pointer">
+						<DropdownMenuTrigger
+							asChild
+							className="cursor-pointer hover:brightness-120 active:scale-95 transition"
+						>
 							<SettingsIcon className="w-8 h-8 ml-2" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
 							<DropdownMenuItem
-								className="cursor-pointer flex items-center hover:bg-primary/10"
+								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
 								onClick={() => router.push("/saved-sets")}
 							>
 								<BookmarkIcon className="w-6 h-6 mr-2" />
@@ -351,7 +354,7 @@ export default function Navbar() {
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
-								className="cursor-pointer flex items-center hover:bg-primary/10"
+								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
 								onClick={() => router.push("/settings")}
 							>
 								<FileCogIcon className="w-6 h-6 mr-2" />
@@ -361,7 +364,7 @@ export default function Navbar() {
 								<>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem
-										className="cursor-pointer flex items-center hover:bg-primary/10 text-red-600 focus:text-red-700"
+										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
 										onClick={handleLogout}
 									>
 										<LogOutIcon className="w-6 h-6 mr-2" />

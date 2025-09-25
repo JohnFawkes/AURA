@@ -69,7 +69,7 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 								goToSetPage();
 							}}
 						>
-							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer" />
+							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
 						</Link>
 						<DownloadModal
 							setType={set.Type}

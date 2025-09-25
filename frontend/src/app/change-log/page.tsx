@@ -26,7 +26,7 @@ export default function Changelog() {
 									href={href}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1 underline text-primary hover:text-primary/80"
+									className="inline-flex items-center gap-1 underline text-primary active:scale-95 hover:brightness-120"
 									{...props}
 								>
 									{children}

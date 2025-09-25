@@ -62,7 +62,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 						href="https://mediux.io"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="group flex items-center hover:text-primary transition-colors"
+						className="group flex items-center hover:text-primary transition-colors active:scale-95 hover:brightness-120"
 					>
 						MediUX
 						<div className="relative ml-1 w-[16px] h-[16px] rounded-t-md overflow-hidden">
@@ -74,7 +74,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 						href="https://discord.gg/YAKzwKPwyw"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="flex items-center hover:text-primary transition-colors"
+						className="flex items-center hover:text-primary transition-colors active:scale-95 hover:brightness-120"
 					>
 						Discord <FaDiscord className="ml-1 h-3 w-3" />
 					</Link>
@@ -83,14 +83,14 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 						href="https://github.com/mediux-team/aura"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="flex items-center hover:text-primary transition-colors"
+						className="flex items-center hover:text-primary transition-colors active:scale-95 hover:brightness-120"
 					>
 						GitHub <FaGithub className="ml-1 h-3 w-3" />
 					</Link>
 				</div>
 
 				{/* Version - Line 3 on mobile */}
-				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2">
+				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2 hover:brightness-120 active:scale-95 transition">
 					<Link
 						href="/change-log"
 						className="text-xs py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
