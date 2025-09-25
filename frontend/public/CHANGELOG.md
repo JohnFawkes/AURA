@@ -7,7 +7,7 @@
 ### Fixed
 
 - Improve button active state on click for enhanced user experience
-- Prevent text selection in badge component for improved usability by adding `select-none` to class list
+- Prevent text selection in badge component for improved usability
 
 ---
 
