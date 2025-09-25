@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FaGithub } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 
 export default function Changelog() {
@@ -18,6 +19,21 @@ export default function Changelog() {
 				<h1 className="text-3xl font-bold mb-6 text-center">Change Log</h1>
 				<ReactMarkdown
 					components={{
+						a: ({ href, children, ...props }) => {
+							const isGithub = href?.includes("github.com");
+							return (
+								<a
+									href={href}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex items-center gap-1 underline text-primary hover:text-primary/80"
+									{...props}
+								>
+									{children}
+									{isGithub && <FaGithub className="inline-block w-4 h-4" />}
+								</a>
+							);
+						},
 						h2: ({ ...props }) => {
 							// Match: ## [0.9.24] - 2025-09-25
 							const headingText = Array.isArray(props.children)
@@ -41,9 +57,9 @@ export default function Changelog() {
 							else if (/fixed/i.test(text)) color = "text-yellow-600";
 							return <h3 className={`text-lg font-semibold mt-4 mb-1 ${color}`}>{props.children}</h3>;
 						},
-						ul: (props) => <ul className="list-disc ml-6 mb-2" {...props} />,
-						ol: (props) => <ol className="list-decimal ml-6 mb-2" {...props} />,
-						li: (props) => <li className="mb-1" {...props} />,
+						ul: (props) => <ul className="text-md list-disc ml-6 mb-2" {...props} />,
+						ol: (props) => <ol className="text-md list-decimal ml-6 mb-2" {...props} />,
+						li: (props) => <li className="text-md mb-1" {...props} />,
 						code: ({
 							inline,
 							className,
