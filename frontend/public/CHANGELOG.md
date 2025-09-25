@@ -6,7 +6,7 @@
 
 ### Fixed
 
-- Button active state on click improved for better user experience across the app
+- Improve button active state on click for enhanced user experience
 
 ---
 
