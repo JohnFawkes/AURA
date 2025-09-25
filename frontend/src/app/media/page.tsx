@@ -626,7 +626,7 @@ const MediaItemPage = () => {
 					{posterSets && posterSets.length > 0 && mediaItem && (
 						<>
 							<div
-								className="flex flex-col sm:flex-row sm:justify-between mb-6 pr-0 sm:pr-4 items-stretch sm:items-center gap-3 sm:gap-4 w-full"
+								className="flex flex-row w-full justify-between mb-4 sm:flex-row sm:items-center gap-4"
 								style={{
 									background: "oklch(0.16 0.0202 282.55)",
 									opacity: "0.95",
@@ -702,7 +702,7 @@ const MediaItemPage = () => {
 								</div>
 							</div>
 
-							<div className="text-center">
+							<div className="text-center mb-4">
 								{filteredPosterSets && filteredPosterSets.length !== posterSets.length ? (
 									<div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
 										<span>

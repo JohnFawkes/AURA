@@ -141,7 +141,7 @@ export function MediaItemDetails({
 
 	return (
 		<div>
-			<div className="flex flex-col lg:flex-row pt-40 items-center lg:items-start text-center lg:text-left">
+			<div className="flex flex-col lg:flex-row pt-30 items-center lg:items-start text-center lg:text-left">
 				{/* Poster Image */}
 				{ratingKey && (
 					<div className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-8 flex justify-center">
@@ -194,7 +194,7 @@ export function MediaItemDetails({
 
 			{/* Library Information */}
 			{libraryTitle && (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-0 md:mt-2">
 					<Lead className="text-md text-primary-dynamic ml-1">
 						<span className="font-semibold">{libraryTitle} Library</span>{" "}
 					</Lead>
@@ -203,7 +203,7 @@ export function MediaItemDetails({
 
 			{/* Other Media Item Information */}
 			{otherMediaItem && (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-1">
 					<Lead className="text-md text-primary-dynamic ml-1">
 						Also available in{" "}
 						<Link
@@ -224,7 +224,7 @@ export function MediaItemDetails({
 			)}
 
 			{/* Show Existence in Database */}
-			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
 				<Lead
 					className={`text-md ${isInDB ? "hover:cursor-pointer text-green-500" : "text-red-500"}`}
 					onClick={() => {
@@ -242,7 +242,7 @@ export function MediaItemDetails({
 				<Button
 					onClick={handleAddToIgnoredClick}
 					variant="destructive"
-					className="text-primary-dynamic hover:underline mt-2"
+					className="text-primary-dynamic hover:underline mt-3 block mx-auto lg:mx-0"
 				>
 					Mark as Ignored
 				</Button>
@@ -250,7 +250,7 @@ export function MediaItemDetails({
 
 			{/* Season/Episode Information */}
 			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 && (
-				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
 					<Lead className="flex items-center text-md text-primary-dynamic ml-1">
 						{seasonCount} {seasonCount > 1 ? "Seasons" : "Season"} with {episodeCount}{" "}
 						{episodeCount > 1 ? "Episodes" : "Episode"} in {serverType}

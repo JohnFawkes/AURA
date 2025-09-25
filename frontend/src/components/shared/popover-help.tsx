@@ -17,7 +17,7 @@ interface PopoverHelpProps {
 export function PopoverHelp({
 	children,
 	ariaLabel,
-	side = "right",
+	side = "bottom",
 	align = "center",
 	sideOffset = 8,
 	className = "w-72 text-sm leading-snug",

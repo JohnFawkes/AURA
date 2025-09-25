@@ -128,7 +128,7 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 					<AssetImage
 						image={"/mediux_logo.svg"}
 						aspect="logo"
-						className="relative mt-5 w-[50px] h-[45px]"
+						className="relative lg:mt-5 w-[50px] h-[45px]"
 						imageClassName="object-contain border-none"
 					/>
 				</a>
