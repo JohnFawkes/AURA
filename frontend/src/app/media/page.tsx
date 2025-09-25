@@ -1,20 +1,10 @@
 "use client";
 
-import { getAdjacentMediaItem } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { fetchMediuxSets } from "@/services/mediux/api-mediux-fetch-sets";
 import { fetchMediuxUserFollowHides } from "@/services/mediux/api-mediux-fetch-user-follow-hide";
-import {
-	ArrowDown01,
-	ArrowDown10,
-	ArrowDownAZ,
-	ArrowDownZA,
-	ArrowLeftCircle,
-	ArrowRightCircle,
-	CalendarArrowDown,
-	CalendarArrowUp,
-} from "lucide-react";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, CalendarArrowDown, CalendarArrowUp } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -36,6 +26,7 @@ import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
+import { useHomePageStore } from "@/lib/stores/page-store-home";
 import { useMediaPageStore } from "@/lib/stores/page-store-media";
 
 import { APIResponse } from "@/types/api/api-response";
@@ -47,8 +38,7 @@ const MediaItemPage = () => {
 	const isMounted = useRef(false);
 
 	// Partial Media Item States
-	const mediaStore = useMediaStore();
-	const partialMediaItem = mediaStore.mediaItem;
+	const partialMediaItem = useMediaStore((state) => state.mediaItem);
 
 	// Library Sections States (From Library Section Store)
 	const librarySectionsMap = useLibrarySectionsStore((state) => state.sections);
@@ -101,14 +91,8 @@ const MediaItemPage = () => {
 	// Image Version State (for forcing image reloads)
 	const [imageVersion, setImageVersion] = useState(Date.now());
 
-	// Adjacent Items States
-	const [adjacentItems, setAdjacentItems] = useState<{
-		previous: MediaItem | null;
-		next: MediaItem | null;
-	}>({
-		previous: null,
-		next: null,
-	});
+	// Get Adjacent Items from Home Page Store
+	const { setNextMediaItem, setPreviousMediaItem, getAdjacentMediaItem } = useHomePageStore();
 
 	// Update the sortOption and sortOrder based on type
 	useEffect(() => {
@@ -148,6 +132,11 @@ const MediaItemPage = () => {
 			setPosterSetsLoading(false);
 			return;
 		}
+		// If we have a partialMediaItem, reset state for new load
+		setMediaItem(null);
+		setMediaItemLoading(true);
+		setHasError(false);
+		setError(null);
 	}, [partialMediaItem]);
 
 	// 2. Fetch full media item from server when partialMediaItem and librarySectionsMap are ready
@@ -524,12 +513,11 @@ const MediaItemPage = () => {
 
 	// 8. Compute adjacent items when mediaItem changes
 	useEffect(() => {
+		if (!mediaItem) return;
 		if (!mediaItem?.RatingKey) return;
-		setAdjacentItems({
-			previous: getAdjacentMediaItem(mediaItem.RatingKey, "previous"),
-			next: getAdjacentMediaItem(mediaItem.RatingKey, "next"),
-		});
-	}, [mediaItem?.RatingKey]);
+		setNextMediaItem(getAdjacentMediaItem(mediaItem.RatingKey, "next"));
+		setPreviousMediaItem(getAdjacentMediaItem(mediaItem.RatingKey, "previous"));
+	}, [getAdjacentMediaItem, mediaItem, setNextMediaItem, setPreviousMediaItem]);
 
 	const handleShowSetsWithTitleCardsOnly = () => {
 		setShowOnlyTitlecardSets(!showOnlyTitlecardSets);
@@ -603,38 +591,6 @@ const MediaItemPage = () => {
 			<DimmedBackground
 				backdropURL={`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop?cb=${imageVersion}`}
 			/>
-
-			{/* Navigation Buttons */}
-			<div className="flex justify-between mt-2 mx-2">
-				<div>
-					{adjacentItems.previous && adjacentItems.previous.RatingKey && (
-						<ArrowLeftCircle
-							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors cursor-pointer"
-							onClick={() => {
-								useMediaStore.setState({
-									mediaItem: adjacentItems.previous,
-								});
-								//router.push(formatMediaItemUrl(adjacentItems.previous!));
-								router.push("/media/");
-							}}
-						/>
-					)}
-				</div>
-				<div>
-					{adjacentItems.next && (
-						<ArrowRightCircle
-							className="h-8 w-8 text-primary hover:text-primary/80 transition-colors cursor-pointer"
-							onClick={() => {
-								useMediaStore.setState({
-									mediaItem: adjacentItems.next,
-								});
-								//router.push(formatMediaItemUrl(adjacentItems.next!));
-								router.push("/media/");
-							}}
-						/>
-					)}
-				</div>
-			</div>
 
 			{/* Header */}
 			<div className="p-4 lg:p-6">
