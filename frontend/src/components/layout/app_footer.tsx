@@ -92,9 +92,9 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				{/* Version - Line 3 on mobile */}
 				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2">
 					<Link
-						href="/logs"
+						href="/change-log"
 						className="text-xs py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
-						title="View application logs"
+						title="View change log"
 					>
 						App Version: {version}
 					</Link>
