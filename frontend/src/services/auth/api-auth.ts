@@ -20,9 +20,17 @@ export const postLogin = async (password: string): Promise<APIResponse<{ token: 
 			localStorage.setItem("aura-auth-token", String(token));
 		}
 		if (response.data.status === "error") {
+			localStorage.removeItem("aura-auth-token");
 			throw new Error(response.data.error?.Message || "Unknown error during login");
 		} else {
-			log("INFO", "Auth", "Login", "Login successful");
+			log(
+				"INFO",
+				"Auth",
+				"Login",
+				"Login successful",
+				// Last 10 characters from response.data
+				response.data?.data?.token?.slice(-10)
+			);
 		}
 		return response.data;
 	} catch (error) {
@@ -33,6 +41,7 @@ export const postLogin = async (password: string): Promise<APIResponse<{ token: 
 			`Failed to login: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error
 		);
+		localStorage.removeItem("aura-auth-token");
 		return ReturnErrorMessage<{ token: string }>(error);
 	}
 };

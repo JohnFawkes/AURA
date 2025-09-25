@@ -81,7 +81,8 @@ export default function Navbar() {
 	const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
 
 	// Onboarding Store
-	const { status, fetchStatus } = useOnboardingStore();
+	const { fetchStatus } = useOnboardingStore();
+	const status = useOnboardingStore((state) => state.status);
 	const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
 	// Library Sections Store (for searching cached media items)
@@ -212,11 +213,15 @@ export default function Navbar() {
 	useEffect(() => {
 		const token = getAuthToken();
 		setIsAuthed(!!token && token !== "null" && token !== "undefined");
-	}, []);
+	}, [pathName]);
 
 	// When clicking on the logo, navigate to home
 	// If already on homepage, reset home page states
 	const handleHomeClick = () => {
+		if (!isAuthed) {
+			router.push("/login");
+			return;
+		}
 		if (isHomePage) {
 			setSearchQuery("");
 			setSearchInput("");
@@ -238,6 +243,8 @@ export default function Navbar() {
 	// Handle Logout
 	const handleLogout = () => {
 		localStorage.removeItem("aura-auth-token");
+		setIsAuthed(false);
+		// Redirect to login page
 		router.replace("/login");
 	};
 
@@ -260,106 +267,114 @@ export default function Navbar() {
 				</div>
 			</div>
 
-			{/* Center: Search */}
-			<div className="relative flex-1 flex justify-center mx-3">
-				<div className="relative w-full max-w-2xl">
-					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						type="search"
-						placeholder={placeholderText}
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted w-full"
-						onChange={(e) => setSearchInput(e.target.value)}
-						value={searchInput}
-						onFocus={() => setShowDropdown(true)}
-						onBlur={() => setShowDropdown(false)}
-					/>
-					{/* Dropdown results (unchanged) */}
-					{!isHomePage && !isSavedSetsPage && !isUserPage && showDropdown && searchResults.length > 0 && (
-						<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
-							{searchResults.map((result) => (
-								<div
-									key={result.RatingKey}
-									onMouseDown={() => handleResultClick(result)}
-									className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
-								>
-									<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
-										<Image
-											src={`/api/mediaserver/image/${result.RatingKey}/poster`}
-											alt={result.Title}
-											fill
-											className="object-cover"
-											loading="lazy"
-											unoptimized
-										/>
+			{isAuthed && (
+				<>
+					{/* Center: Search */}
+					<div className="relative flex-1 flex justify-center mx-3">
+						<div className="relative w-full max-w-2xl">
+							<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								type="search"
+								placeholder={placeholderText}
+								className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted w-full"
+								onChange={(e) => setSearchInput(e.target.value)}
+								value={searchInput}
+								onFocus={() => setShowDropdown(true)}
+								onBlur={() => setShowDropdown(false)}
+							/>
+							{/* Dropdown results (unchanged) */}
+							{!isHomePage &&
+								!isSavedSetsPage &&
+								!isUserPage &&
+								showDropdown &&
+								searchResults.length > 0 && (
+									<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
+										{searchResults.map((result) => (
+											<div
+												key={result.RatingKey}
+												onMouseDown={() => handleResultClick(result)}
+												className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
+											>
+												<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
+													<Image
+														src={`/api/mediaserver/image/${result.RatingKey}/poster`}
+														alt={result.Title}
+														fill
+														className="object-cover"
+														loading="lazy"
+														unoptimized
+													/>
+												</div>
+												<div>
+													<p className="font-medium text-sm md:text-base">{result.Title}</p>
+													<p className="text-xs text-muted-foreground">
+														{result.LibraryTitle} · {result.Year}
+													</p>
+												</div>
+											</div>
+										))}
 									</div>
-									<div>
-										<p className="font-medium text-sm md:text-base">{result.Title}</p>
-										<p className="text-xs text-muted-foreground">
-											{result.LibraryTitle} · {result.Year}
-										</p>
-									</div>
-								</div>
-							))}
+								)}
 						</div>
-					)}
-				</div>
-			</div>
+					</div>
 
-			{/* Right: Arrows and/or Settings */}
-			<div className="flex items-center gap-2 flex-shrink-0">
-				{isMediaPage && (
-					<>
-						<ArrowLeftCircle
-							className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-							onClick={() => {
-								if (previousMediaItem) useMediaStore.setState({ mediaItem: previousMediaItem });
-							}}
-						/>
-						<ArrowRightCircle
-							className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-							onClick={() => {
-								if (nextMediaItem) useMediaStore.setState({ mediaItem: nextMediaItem });
-							}}
-						/>
-					</>
-				)}
-				{(!isMediaPage || !isMobile) && (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild className="cursor-pointer">
-							<SettingsIcon className="w-8 h-8 ml-2" />
-						</DropdownMenuTrigger>
-						<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center hover:bg-primary/10"
-								onClick={() => router.push("/saved-sets")}
-							>
-								<BookmarkIcon className="w-6 h-6 mr-2" />
-								Saved Sets
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center hover:bg-primary/10"
-								onClick={() => router.push("/settings")}
-							>
-								<FileCogIcon className="w-6 h-6 mr-2" />
-								Settings
-							</DropdownMenuItem>
-							{isAuthed && (
-								<>
+					{/* Right: Arrows and/or Settings */}
+					<div className="flex items-center gap-2 flex-shrink-0">
+						{isMediaPage && (
+							<>
+								<ArrowLeftCircle
+									className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+									onClick={() => {
+										if (previousMediaItem) useMediaStore.setState({ mediaItem: previousMediaItem });
+									}}
+								/>
+								<ArrowRightCircle
+									className={`h-8 w-8 hover:scale-105 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+									onClick={() => {
+										if (nextMediaItem) useMediaStore.setState({ mediaItem: nextMediaItem });
+									}}
+								/>
+							</>
+						)}
+						{(!isMediaPage || !isMobile) && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild className="cursor-pointer">
+									<SettingsIcon className="w-8 h-8 ml-2" />
+								</DropdownMenuTrigger>
+								<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
+									<DropdownMenuItem
+										className="cursor-pointer flex items-center hover:bg-primary/10"
+										onClick={() => router.push("/saved-sets")}
+									>
+										<BookmarkIcon className="w-6 h-6 mr-2" />
+										Saved Sets
+									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									<DropdownMenuItem
-										className="cursor-pointer flex items-center hover:bg-primary/10 text-red-600 focus:text-red-700"
-										onClick={handleLogout}
+										className="cursor-pointer flex items-center hover:bg-primary/10"
+										onClick={() => router.push("/settings")}
 									>
-										<LogOutIcon className="w-6 h-6 mr-2" />
-										Logout
+										<FileCogIcon className="w-6 h-6 mr-2" />
+										Settings
 									</DropdownMenuItem>
-								</>
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
-			</div>
+									{isAuthed && status?.currentSetup.Auth.Enabled && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												className="cursor-pointer flex items-center hover:bg-primary/10 text-red-600 focus:text-red-700"
+												onClick={handleLogout}
+											>
+												<LogOutIcon className="w-6 h-6 mr-2" />
+												Logout
+											</DropdownMenuItem>
+										</>
+									)}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
+					</div>
+				</>
+			)}
 		</nav>
 	);
 }
