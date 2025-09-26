@@ -3,14 +3,14 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { DEFAULT_IMAGE_TYPE_OPTIONS, TYPE_DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 interface UserPreferencesStore {
-	defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[];
-	setDefaultImageTypes: (defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[]) => void;
+	downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
+	setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => void;
 
-	showOnlyDefaultImages: boolean;
-	setShowOnlyDefaultImages: (showOnlyDefaultImages: boolean) => void;
+	showOnlyDownloadDefaults: boolean;
+	setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => void;
 
 	hasHydrated: boolean;
 	hydrate: () => void;
@@ -20,27 +20,27 @@ interface UserPreferencesStore {
 export const useUserPreferencesStore = create<UserPreferencesStore>()(
 	persist(
 		(set) => ({
-			defaultImageTypes: DEFAULT_IMAGE_TYPE_OPTIONS,
-			setDefaultImageTypes: (defaultImageTypes: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[]) => set({ defaultImageTypes }),
+			downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+			setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => set({ downloadDefaults }),
 
-			showOnlyDefaultImages: false,
-			setShowOnlyDefaultImages: (showOnlyDefaultImages: boolean) => set({ showOnlyDefaultImages }),
+			showOnlyDownloadDefaults: false,
+			setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => set({ showOnlyDownloadDefaults }),
 
 			hasHydrated: false,
 			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({
-					defaultImageTypes: DEFAULT_IMAGE_TYPE_OPTIONS,
-					showOnlyDefaultImages: false,
+					downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+					showOnlyDownloadDefaults: false,
 				}),
 		}),
 		{
 			name: "UserPreferences",
 			storage: GlobalStore,
 			partialize: (state) => ({
-				defaultImageTypes: state.defaultImageTypes,
-				showOnlyDefaultImages: state.showOnlyDefaultImages,
+				downloadDefaults: state.downloadDefaults,
+				showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();

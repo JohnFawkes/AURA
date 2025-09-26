@@ -13,13 +13,13 @@ export const ITEMS_PER_PAGE_OPTIONS: TYPE_ITEMS_PER_PAGE_OPTIONS[] = [10, 20, 30
 export type TYPE_FILTER_IN_DB_OPTIONS = "all" | "notInDB" | "inDB";
 export const FILTER_IN_DB_OPTIONS: TYPE_FILTER_IN_DB_OPTIONS[] = ["all", "notInDB", "inDB"];
 
-export type TYPE_DEFAULT_IMAGE_TYPE_OPTIONS =
+export type TYPE_DOWNLOAD_DEFAULT_OPTIONS =
 	| "poster"
 	| "backdrop"
 	| "seasonPoster"
 	| "specialSeasonPoster"
 	| "titlecard";
-export const DEFAULT_IMAGE_TYPE_OPTIONS: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[] = [
+export const DOWNLOAD_DEFAULT_TYPE_OPTIONS: TYPE_DOWNLOAD_DEFAULT_OPTIONS[] = [
 	"poster",
 	"backdrop",
 	"seasonPoster",

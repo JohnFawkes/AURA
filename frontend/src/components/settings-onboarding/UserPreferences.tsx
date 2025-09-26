@@ -7,13 +7,14 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
 
 export function UserPreferencesCard() {
-	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
-	const setDefaultImageTypes = useUserPreferencesStore((state) => state.setDefaultImageTypes);
-	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
-	const setShowOnlyDefaultImages = useUserPreferencesStore((state) => state.setShowOnlyDefaultImages);
+	// Download Defaults from User Preferences Store
+	const downloadDefaultTypes = useUserPreferencesStore((state) => state.downloadDefaults);
+	const setDownloadDefaultTypes = useUserPreferencesStore((state) => state.setDownloadDefaults);
+	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
+	const setShowOnlyDownloadDefaults = useUserPreferencesStore((state) => state.setShowOnlyDownloadDefaults);
 
 	return (
 		<Card className="mt-4 p-5 space-y-1 border border-muted">
@@ -22,7 +23,7 @@ export function UserPreferencesCard() {
 			</div>
 			<div className="border rounded-md p-3 mt-3 space-y-2">
 				<div className="flex items-center justify-between">
-					<Label>Default Image Types</Label>
+					<Label>Download Defaults</Label>
 					<PopoverHelp ariaLabel="help-default-image-types">
 						<p className="mb-2">
 							Select which image types you want auto-checked for each download. This will let you avoid
@@ -32,28 +33,28 @@ export function UserPreferencesCard() {
 					</PopoverHelp>
 				</div>
 				<div className="flex flex-wrap gap-2 mt-3">
-					{DEFAULT_IMAGE_TYPE_OPTIONS.map((type) => (
+					{DOWNLOAD_DEFAULT_TYPE_OPTIONS.map((type) => (
 						<Badge
 							key={type}
 							className={cn(
 								"cursor-pointer text-sm px-3 py-1 font-normal transition",
-								defaultImageTypes.includes(type)
+								downloadDefaultTypes.includes(type)
 									? "bg-primary text-primary-foreground active:scale-95 hover:brightness-120"
 									: "bg-muted text-muted-foreground border hover:text-accent-foreground"
 							)}
-							variant={defaultImageTypes.includes(type) ? "default" : "outline"}
+							variant={downloadDefaultTypes.includes(type) ? "default" : "outline"}
 							onClick={() => {
-								if (defaultImageTypes.includes(type)) {
+								if (downloadDefaultTypes.includes(type)) {
 									// Only allow removal if more than one type is selected
-									if (defaultImageTypes.length > 1) {
-										setDefaultImageTypes(defaultImageTypes.filter((t) => t !== type));
+									if (downloadDefaultTypes.length > 1) {
+										setDownloadDefaultTypes(downloadDefaultTypes.filter((t) => t !== type));
 									}
 								} else {
-									setDefaultImageTypes([...defaultImageTypes, type]);
+									setDownloadDefaultTypes([...downloadDefaultTypes, type]);
 								}
 							}}
 							style={
-								defaultImageTypes.includes(type) && defaultImageTypes.length === 1
+								downloadDefaultTypes.includes(type) && downloadDefaultTypes.length === 1
 									? { opacity: 0.5, pointerEvents: "none" }
 									: undefined
 							}
@@ -64,10 +65,10 @@ export function UserPreferencesCard() {
 				</div>
 				<div className="flex items-center justify-between mt-3">
 					<div className="flex items-center gap-5">
-						<Label>Only Show Default Image Types</Label>
+						<Label>Only Show Download Defaults</Label>
 						<Switch
-							checked={showOnlyDefaultImages}
-							onCheckedChange={() => setShowOnlyDefaultImages(!showOnlyDefaultImages)}
+							checked={showOnlyDownloadDefaults}
+							onCheckedChange={() => setShowOnlyDownloadDefaults(!showOnlyDownloadDefaults)}
 						/>
 					</div>
 					<PopoverHelp ariaLabel="help-filter-image-types">

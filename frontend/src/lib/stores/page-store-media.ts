@@ -22,8 +22,9 @@ interface Media_PageStore {
 	setShowHiddenUsers: (show: boolean) => void;
 	showOnlyTitlecardSets: boolean;
 	setShowOnlyTitlecardSets: (show: boolean) => void;
-	showDefaultImagesOnly: boolean;
-	setShowDefaultImagesOnly: (show: boolean) => void;
+
+	//showOnlyDownloadDefaults: boolean;
+	//setShowOnlyDownloadDefaults: (show: boolean) => void;
 
 	// Hydrate and Clear
 	hasHydrated: boolean;
@@ -59,8 +60,8 @@ export const useMediaPageStore = create<Media_PageStore>()(
 			showOnlyTitlecardSets: false,
 			setShowOnlyTitlecardSets: (show) => set({ showOnlyTitlecardSets: show }),
 
-			showDefaultImagesOnly: false,
-			setShowDefaultImagesOnly: (show) => set({ showDefaultImagesOnly: show }),
+			//showOnlyDownloadDefaults: false,
+			//setShowOnlyDownloadDefaults: (show) => set({ showOnlyDownloadDefaults: show }),
 
 			hasHydrated: false,
 			hydrate: () => set({ hasHydrated: true }),
@@ -73,7 +74,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
 					},
 					showHiddenUsers: false,
 					showOnlyTitlecardSets: false,
-					showDefaultImagesOnly: false,
+					//showOnlyDownloadDefaults: false,
 				}),
 		}),
 		{
@@ -83,7 +84,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
 				sortStates: state.sortStates,
 				showHiddenUsers: state.showHiddenUsers,
 				showOnlyTitlecardSets: state.showOnlyTitlecardSets,
-				showDefaultImagesOnly: state.showDefaultImagesOnly,
+				//showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();

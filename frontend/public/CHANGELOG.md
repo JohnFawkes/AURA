@@ -9,6 +9,7 @@
 - Improve button active state on click for enhanced user experience
 - Prevent text selection in badge component for improved usability
 - Standardize Destructive button styles across the application
+- Rename "Default Image Types" to "Download Defaults" in User Preferences for clarity
 
 ---
 

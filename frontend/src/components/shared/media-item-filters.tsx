@@ -26,7 +26,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DEFAULT_IMAGE_TYPE_OPTIONS, TYPE_DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 type MediaItemFilterProps = {
 	numberOfActiveFilters: number;
@@ -137,17 +137,17 @@ function MediaItemFilterContent({
 	showOnlyTitlecardSets,
 	handleShowSetsWithTitleCardsOnly,
 }: MediaItemFilterProps) {
-	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
-	const setDefaultImageTypes = useUserPreferencesStore((state) => state.setDefaultImageTypes);
-	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
-	const setShowOnlyDefaultImages = useUserPreferencesStore((state) => state.setShowOnlyDefaultImages);
+	const downloadDefaultsTypes = useUserPreferencesStore((state) => state.downloadDefaults);
+	const setDownloadDefaultsTypes = useUserPreferencesStore((state) => state.setDownloadDefaults);
+	const showonlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
+	const setShowOnlyDownloadDefaults = useUserPreferencesStore((state) => state.setShowOnlyDownloadDefaults);
 
 	return (
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
 			<div className="flex flex-col">
-				{/* Default Image Types */}
+				{/* Download Defaults */}
 				<div className="flex items-center space-x-2 justify-between">
-					<Label className="text-md font-semibold block">Default Image Types</Label>
+					<Label className="text-md font-semibold block">Download Defaults</Label>
 
 					<PopoverHelp ariaLabel="help-default-image-types">
 						<p className="mb-2">
@@ -160,35 +160,35 @@ function MediaItemFilterContent({
 				<ToggleGroup
 					type="multiple"
 					className="flex flex-wrap gap-2 ml-2 mt-2"
-					value={defaultImageTypes}
-					onValueChange={(value: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS[]) => {
+					value={downloadDefaultsTypes}
+					onValueChange={(value: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => {
 						// Ensure at least one type is always selected
 						if (value.length === 0) return;
-						setDefaultImageTypes(value);
+						setDownloadDefaultsTypes(value);
 					}}
 				>
-					{DEFAULT_IMAGE_TYPE_OPTIONS.map((type) => (
+					{DOWNLOAD_DEFAULT_TYPE_OPTIONS.map((type) => (
 						<Badge
 							key={type}
 							className={cn(
 								"cursor-pointer text-sm px-3 py-1 font-normal transition active:scale-95",
-								defaultImageTypes.includes(type)
+								downloadDefaultsTypes.includes(type)
 									? "bg-primary text-primary-foreground hover:brightness-120"
 									: "bg-muted text-muted-foreground border hover:text-accent-foreground"
 							)}
-							variant={defaultImageTypes.includes(type) ? "default" : "outline"}
+							variant={downloadDefaultsTypes.includes(type) ? "default" : "outline"}
 							onClick={() => {
-								if (defaultImageTypes.includes(type)) {
+								if (downloadDefaultsTypes.includes(type)) {
 									// Only allow removal if more than one type is selected
-									if (defaultImageTypes.length > 1) {
-										setDefaultImageTypes(defaultImageTypes.filter((t) => t !== type));
+									if (downloadDefaultsTypes.length > 1) {
+										setDownloadDefaultsTypes(downloadDefaultsTypes.filter((t) => t !== type));
 									}
 								} else {
-									setDefaultImageTypes([...defaultImageTypes, type]);
+									setDownloadDefaultsTypes([...downloadDefaultsTypes, type]);
 								}
 							}}
 							style={
-								defaultImageTypes.includes(type) && defaultImageTypes.length === 1
+								downloadDefaultsTypes.includes(type) && downloadDefaultsTypes.length === 1
 									? { opacity: 0.5, pointerEvents: "none" }
 									: undefined
 							}
@@ -201,8 +201,8 @@ function MediaItemFilterContent({
 					<div className="flex items-center space-x-2">
 						<Switch
 							className="ml-0"
-							checked={showOnlyDefaultImages}
-							onCheckedChange={() => setShowOnlyDefaultImages(!showOnlyDefaultImages)}
+							checked={showonlyDownloadDefaults}
+							onCheckedChange={() => setShowOnlyDownloadDefaults(!showonlyDownloadDefaults)}
 						/>{" "}
 						<Label>Only show selected image types</Label>
 					</div>
@@ -248,7 +248,7 @@ function MediaItemFilterContent({
 				)}
 
 				{/* Mandatory Titlecard Sets */}
-				{hasTitleCards && (!showOnlyDefaultImages || defaultImageTypes.includes("titlecard")) && (
+				{hasTitleCards && (!showonlyDownloadDefaults || downloadDefaultsTypes.includes("titlecard")) && (
 					<>
 						<Separator className="my-4 w-full" />
 						<Label className="text-md font-semibold mb-1 block">Titlecard Filter</Label>

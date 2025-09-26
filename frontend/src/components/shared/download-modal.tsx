@@ -211,7 +211,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const [duplicates, setDuplicates] = useState<DuplicateMap>({});
 
 	// User Preferences
-	const { defaultImageTypes } = useUserPreferencesStore();
+	const { downloadDefaults } = useUserPreferencesStore();
 
 	// Function - Reset Progress Values
 	const resetProgressValues = () => {
@@ -292,7 +292,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
 					acc[item.MediaItemRatingKey] = {
-						types: computeAssetTypes(item).filter((type) => defaultImageTypes.includes(type)),
+						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
 						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
 						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
@@ -315,7 +315,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
 					acc[item.MediaItemRatingKey] = {
-						types: computeAssetTypes(item).filter((type) => defaultImageTypes.includes(type)),
+						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
 						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
 						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
@@ -325,7 +325,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
 			),
 		});
-	}, [formItems, form, autoDownloadDefault, defaultImageTypes]);
+	}, [formItems, form, autoDownloadDefault, downloadDefaults]);
 
 	useEffect(() => {
 		const dups = findDuplicateMediaItems(formItems);

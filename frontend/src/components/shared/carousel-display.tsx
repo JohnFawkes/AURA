@@ -8,14 +8,14 @@ import { CarouselItem } from "@/components/ui/carousel";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
-import { TYPE_DEFAULT_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
+import { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 export function CarouselDisplay({ sets }: { sets: PosterSet[] }) {
-	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
-	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
+	const downloadDefaultTypes = useUserPreferencesStore((state) => state.downloadDefaults);
+	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 
-	function shouldShow(type: TYPE_DEFAULT_IMAGE_TYPE_OPTIONS) {
-		return !showOnlyDefaultImages || defaultImageTypes.includes(type);
+	function shouldShow(type: TYPE_DOWNLOAD_DEFAULT_OPTIONS) {
+		return !showOnlyDownloadDefaults || downloadDefaultTypes.includes(type);
 	}
 
 	return (

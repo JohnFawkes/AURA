@@ -74,9 +74,9 @@ const MediaItemPage = () => {
 	const sortOption = sortStates[sortType]?.sortOption ?? "date";
 	const sortOrder = sortStates[sortType]?.sortOrder ?? "desc";
 
-	// Default Images Store
-	const defaultImageTypes = useUserPreferencesStore((state) => state.defaultImageTypes);
-	const showOnlyDefaultImages = useUserPreferencesStore((state) => state.showOnlyDefaultImages);
+	// Download Defaults from User Preferences Store
+	const downloadDefaultsTypes = useUserPreferencesStore((state) => state.downloadDefaults);
+	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 
 	// Loading States
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -377,10 +377,10 @@ const MediaItemPage = () => {
 			filtered = filtered.filter((set) => set.TitleCards && set.TitleCards.length > 0);
 		}
 
-		// If showOnlyDefaultImages is true, check sets to see if they have at least one of the default image types
-		if (showOnlyDefaultImages && defaultImageTypes && defaultImageTypes.length > 0) {
+		// If showOnlyDownloadDefaults is true, check sets to see if they have at least one of the download default types
+		if (showOnlyDownloadDefaults && downloadDefaultsTypes && downloadDefaultsTypes.length > 0) {
 			filtered = filtered.filter((set) => {
-				for (const imageType of defaultImageTypes) {
+				for (const imageType of downloadDefaultsTypes) {
 					if (imageType === "poster" && set.Poster) return true;
 					if (imageType === "poster" && set.OtherPosters && set.OtherPosters.length > 0) return true;
 					if (imageType === "backdrop" && set.Backdrop) return true;
@@ -488,8 +488,8 @@ const MediaItemPage = () => {
 		mediaItem,
 		showOnlyTitlecardSets,
 		setShowOnlyTitlecardSets,
-		defaultImageTypes,
-		showOnlyDefaultImages,
+		downloadDefaultsTypes,
+		showOnlyDownloadDefaults,
 		hasError,
 		mediaItemLoading,
 		userFollowsHidesLoading,
@@ -540,9 +540,9 @@ const MediaItemPage = () => {
 		let count = 0;
 		if (!showHiddenUsers) count++;
 		if (showOnlyTitlecardSets) count++;
-		if (showOnlyDefaultImages) count++;
+		if (showOnlyDownloadDefaults) count++;
 		return count;
-	}, [showHiddenUsers, showOnlyTitlecardSets, showOnlyDefaultImages]);
+	}, [showHiddenUsers, showOnlyTitlecardSets, showOnlyDownloadDefaults]);
 
 	if (!partialMediaItem && !mediaItem && hasError) {
 		return (
@@ -728,18 +728,18 @@ const MediaItemPage = () => {
 														(set) =>
 															Array.isArray(set.TitleCards) && set.TitleCards.length > 0
 													) && <li>You are filtering to show only titlecard sets.</li>}
-												{showOnlyDefaultImages &&
-													defaultImageTypes &&
-													defaultImageTypes.length > 0 && (
+												{showOnlyDownloadDefaults &&
+													downloadDefaultsTypes &&
+													downloadDefaultsTypes.length > 0 && (
 														<li>
 															You are filtering to show only sets with your selected
-															default image types.
+															download default types.
 														</li>
 													)}
 											</ul>
 											<p>
 												You can adjust your filters using the checkboxes on this page. You can
-												also adjust your default image types in{" "}
+												also adjust your default download image types in{" "}
 												<Link href="/settings#preferences-section" className="underline">
 													User Preferences
 												</Link>
