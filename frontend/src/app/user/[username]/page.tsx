@@ -925,7 +925,7 @@ const UserSetPage = () => {
 											{showSets.length > 0 && (
 												<TabsTrigger
 													value="showSets"
-													className="data-[state=active]:bg-background"
+													className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
 												>
 													Show Sets ({showSets.length})
 												</TabsTrigger>
@@ -933,7 +933,7 @@ const UserSetPage = () => {
 											{movieSets.length > 0 && (
 												<TabsTrigger
 													value="movieSets"
-													className="data-[state=active]:bg-background"
+													className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
 												>
 													Movie Sets ({movieSets.length})
 												</TabsTrigger>
@@ -941,7 +941,7 @@ const UserSetPage = () => {
 											{collectionSets.length > 0 && (
 												<TabsTrigger
 													value="collectionSets"
-													className="data-[state=active]:bg-background"
+													className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
 												>
 													Collection Sets ({collectionSets.length})
 												</TabsTrigger>
@@ -949,7 +949,7 @@ const UserSetPage = () => {
 											{boxsets.length > 0 && (
 												<TabsTrigger
 													value="boxSets"
-													className="data-[state=active]:bg-background"
+													className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
 												>
 													Box Sets ({boxsets.length})
 												</TabsTrigger>
