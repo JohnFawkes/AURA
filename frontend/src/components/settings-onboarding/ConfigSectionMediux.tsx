@@ -73,9 +73,19 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				setConnectionStatus("error");
 				return;
 			}
+
 			setTestingToken(true);
+			const start = Date.now();
 			const { ok, message } = await checkMediuxNewTokenStatusResult(value, showToast);
+			const elapsed = Date.now() - start;
+			const minDelay = 400; // milliseconds
+
+			if (elapsed < minDelay) {
+				await new Promise((resolve) => setTimeout(resolve, minDelay - elapsed));
+			}
+
 			setTestingToken(false);
+
 			if (ok) {
 				setRemoteTokenError(null);
 				setConnectionStatus("ok");

@@ -15,6 +15,7 @@
 - Update layout and metadata for improved web app manifest and icons
 - Add 'select-none' class to SelectTrigger components for improved styling
 - Fixed Media Item Page background so that it doesn't move when scrollbar is hidden/shown
+- Stop flickering on test connection button by adding an artificial delay
 
 ---
 

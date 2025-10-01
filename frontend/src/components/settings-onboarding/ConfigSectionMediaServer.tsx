@@ -169,7 +169,14 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			}
 
 			setTestingToken(true);
+			const start = Date.now();
 			const { ok, message, data } = await checkMediaServerNewInfoConnectionStatus(current, showToast);
+			const elapsed = Date.now() - start;
+			const minDelay = 400; // milliseconds
+
+			if (elapsed < minDelay) {
+				await new Promise((resolve) => setTimeout(resolve, minDelay - elapsed));
+			}
 			setTestingToken(false);
 
 			if (ok) {
