@@ -14,6 +14,7 @@
 - Changed settings cog color to grey for better visual integration
 - Update layout and metadata for improved web app manifest and icons
 - Add 'select-none' class to SelectTrigger components for improved styling
+- Fixed Media Item Page background so that it doesn't move when scrollbar is hidden/shown
 
 ---
 

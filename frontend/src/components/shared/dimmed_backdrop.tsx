@@ -30,9 +30,10 @@ export function DimmedBackground({ backdropURL }: { backdropURL: string }) {
 	return (
 		<div
 			className={cn(
-				"fixed inset-0 -z-20 overflow-hidden w-full h-full transition-all duration-1000",
+				"fixed inset-0 -z-20 overflow-hidden h-full transition-[filter] duration-1000",
 				isBlurred && "blur-md"
 			)}
+			style={{ width: "100vw" }}
 		>
 			<div className="absolute inset-0 bg-background">
 				<div className="absolute inset-0 opacity-[0.015] mix-blend-overlay">
