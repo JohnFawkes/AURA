@@ -38,6 +38,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
+	const [connectionStatus, setConnectionStatus] = useState<"unknown" | "ok" | "error">("unknown");
 
 	// Validation (local + remote)
 	const errors = React.useMemo(() => {
@@ -65,32 +66,56 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 		setRemoteTokenError(null);
 	}, [value.Token]);
 
-	const runRemoteValidation = useCallback(async () => {
-		if (!value.Token.trim()) {
-			setRemoteTokenError("Token is required.");
-			return;
-		}
-		setTestingToken(true);
-		const { ok, message } = await checkMediuxNewTokenStatusResult(value);
-		setTestingToken(false);
-		if (ok) {
-			setRemoteTokenError(null);
-		} else {
-			setRemoteTokenError(message || "Token invalid");
-		}
-	}, [value, setRemoteTokenError, setTestingToken]);
+	const runRemoteValidation = useCallback(
+		async (showToast = true) => {
+			if (!value.Token.trim()) {
+				setRemoteTokenError("Token is required.");
+				setConnectionStatus("error");
+				return;
+			}
+			setTestingToken(true);
+			const { ok, message } = await checkMediuxNewTokenStatusResult(value, showToast);
+			setTestingToken(false);
+			if (ok) {
+				setRemoteTokenError(null);
+				setConnectionStatus("ok");
+			} else {
+				setRemoteTokenError(message || "Token invalid");
+				setConnectionStatus("error");
+			}
+		},
+		[value, setRemoteTokenError, setTestingToken]
+	);
 
 	// If the config is already loaded, we can run validation
 	useEffect(() => {
 		if (configAlreadyLoaded) {
-			runRemoteValidation();
+			runRemoteValidation(false);
 		}
 	}, [configAlreadyLoaded, runRemoteValidation]);
 
 	return (
 		<Card className="p-5 space-y-1">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">MediUX</h2>
+				<div className="flex items-center gap-2">
+					<h2 className="text-xl font-semibold">MediUX</h2>
+					<span
+						className={`h-2 w-2 rounded-full ${
+							connectionStatus === "ok"
+								? "bg-green-500"
+								: connectionStatus === "error"
+									? "bg-red-500"
+									: "bg-gray-400"
+						}`}
+						title={
+							connectionStatus === "ok"
+								? "Connection OK"
+								: connectionStatus === "error"
+									? "Connection Error"
+									: "Connection Unknown"
+						}
+					/>
+				</div>
 				<Button
 					variant="outline"
 					size="sm"

@@ -76,21 +76,32 @@ export async function postMediaServerNewInfoConnectionStatus(
 }
 
 export const checkMediaServerNewInfoConnectionStatus = async (
-	mediaServerInfo: AppConfigMediaServer
+	mediaServerInfo: AppConfigMediaServer,
+	showToast = true
 ): Promise<{ ok: boolean; message: string; data: AppConfigMediaServer | null }> => {
 	try {
-		const loadingToast = toast.loading(`Checking connection to ${mediaServerInfo.Type}...`);
+		let loadingToast: string | number | undefined;
+		if (showToast) {
+			loadingToast = toast.loading(`Checking connection to ${mediaServerInfo.Type}...`);
+		}
 		const response = await postMediaServerNewInfoConnectionStatus(mediaServerInfo);
 		if (response.status === "error") {
-			toast.dismiss(loadingToast);
+			if (showToast && loadingToast) toast.dismiss(loadingToast);
+			if (showToast) {
+				toast.error(response.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
+					duration: 1000,
+				});
+			}
 			return {
 				ok: false,
 				message: response.error?.Message || "Couldn't connect to media server. Check the URL and Token",
 				data: null,
 			};
 		}
-		toast.dismiss(loadingToast);
-		toast.success(`Successfully connected to ${mediaServerInfo.Type}`, { duration: 1000 });
+		if (showToast && loadingToast) toast.dismiss(loadingToast);
+		if (showToast) {
+			toast.success(`Successfully connected to ${mediaServerInfo.Type}`, { duration: 1000 });
+		}
 		return {
 			ok: true,
 			message: `Successfully connected to ${mediaServerInfo.Type}`,
@@ -98,10 +109,12 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		};
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.dismiss();
-		toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
-			duration: 1000,
-		});
+		if (showToast) {
+			toast.dismiss();
+			toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
+				duration: 1000,
+			});
+		}
 		return {
 			ok: false,
 			message: errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token",

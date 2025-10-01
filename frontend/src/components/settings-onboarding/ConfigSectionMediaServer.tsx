@@ -5,7 +5,7 @@ import { checkMediaServerNewInfoConnectionStatus } from "@/services/settings-onb
 import { fetchMediaServerLibraryOptions } from "@/services/settings-onboarding/api-mediaserver-library-options";
 import { Plus, RefreshCcw } from "lucide-react";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
+	const [connectionStatus, setConnectionStatus] = useState<"unknown" | "ok" | "error">("unknown");
 
 	const valueRef = React.useRef(value);
 	React.useEffect(() => {
@@ -152,35 +153,42 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		setRemoteTokenError(null);
 	}, [value.Token, value.URL]);
 
-	const runRemoteValidation = React.useCallback(async () => {
-		const current = valueRef.current; // latest value
-		if (!current.Token.trim()) {
-			setRemoteTokenError("Token is required.");
-			return;
-		}
-		if (!current.URL.trim()) {
-			setRemoteTokenError("URL is required.");
-			return;
-		}
-
-		setTestingToken(true);
-		const { ok, message, data } = await checkMediaServerNewInfoConnectionStatus(current);
-		setTestingToken(false);
-
-		if (ok) {
-			setRemoteTokenError(null);
-			// Set UserID only if server provided one and we don't already have it (or it changed)
-			if (data?.UserID && data.UserID !== current.UserID) {
-				onChange("UserID", data.UserID);
+	const runRemoteValidation = useCallback(
+		async (showToast = true) => {
+			setConnectionStatus("unknown");
+			const current = valueRef.current;
+			if (!current.Token.trim()) {
+				setRemoteTokenError("Token is required.");
+				setConnectionStatus("error");
+				return;
 			}
-		} else {
-			setRemoteTokenError(message || "Token invalid");
-		}
-	}, [onChange]);
+			if (!current.URL.trim()) {
+				setRemoteTokenError("URL is required.");
+				setConnectionStatus("error");
+				return;
+			}
+
+			setTestingToken(true);
+			const { ok, message, data } = await checkMediaServerNewInfoConnectionStatus(current, showToast);
+			setTestingToken(false);
+
+			if (ok) {
+				setRemoteTokenError(null);
+				setConnectionStatus("ok");
+				if (data?.UserID && data.UserID !== current.UserID) {
+					onChange("UserID", data.UserID);
+				}
+			} else {
+				setRemoteTokenError(message || "Token invalid");
+				setConnectionStatus("error");
+			}
+		},
+		[onChange]
+	);
 
 	useEffect(() => {
 		if (configAlreadyLoaded && !hasRunInitialValidation.current) {
-			runRemoteValidation();
+			runRemoteValidation(false); // No toast on initial load
 			hasRunInitialValidation.current = true;
 		}
 	}, [configAlreadyLoaded, runRemoteValidation]);
@@ -221,7 +229,25 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	return (
 		<Card className="p-5 space-y-1">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Media Server</h2>
+				<div className="flex items-center gap-2">
+					<h2 className="text-xl font-semibold">Media Server</h2>
+					<span
+						className={`h-2 w-2 rounded-full ${
+							connectionStatus === "ok"
+								? "bg-green-500"
+								: connectionStatus === "error"
+									? "bg-red-500"
+									: "bg-gray-400"
+						}`}
+						title={
+							connectionStatus === "ok"
+								? "Connection OK"
+								: connectionStatus === "error"
+									? "Connection Error"
+									: "Connection Unknown"
+						}
+					/>
+				</div>
 				<Button
 					variant="outline"
 					size="sm"

@@ -406,7 +406,7 @@ const SettingsPage: React.FC = () => {
 								<ConfigSectionMediaServer
 									value={newConfig.MediaServer}
 									editing={editing}
-									configAlreadyLoaded={false}
+									configAlreadyLoaded={true}
 									dirtyFields={dirty.MediaServer}
 									onChange={(field, value) => updateConfigField("MediaServer", field, value)}
 									errorsUpdate={(errs) =>
@@ -416,7 +416,7 @@ const SettingsPage: React.FC = () => {
 								<ConfigSectionMediux
 									value={newConfig.Mediux}
 									editing={editing}
-									configAlreadyLoaded={false}
+									configAlreadyLoaded={true}
 									dirtyFields={dirty.Mediux}
 									onChange={(field, value) => updateConfigField("Mediux", field, value)}
 									errorsUpdate={(errs) =>
