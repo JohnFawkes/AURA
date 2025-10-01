@@ -42,7 +42,7 @@ export const SortControl: React.FC<SortControlProps> = ({
 				}}
 				value={sortOption}
 			>
-				<SelectTrigger className="w-[180px]">
+				<SelectTrigger className="w-[180px] select-none">
 					<SelectValue placeholder="Sort By" />
 				</SelectTrigger>
 				<SelectContent>

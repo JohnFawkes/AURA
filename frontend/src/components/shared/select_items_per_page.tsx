@@ -37,7 +37,7 @@ export function SelectItemsPerPage({
 					}
 				}}
 			>
-				<SelectTrigger id="items-per-page-trigger">
+				<SelectTrigger id="items-per-page-trigger" className="select-none">
 					<SelectValue placeholder="Select" />
 				</SelectTrigger>
 				<SelectContent>

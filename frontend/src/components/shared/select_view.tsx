@@ -64,7 +64,7 @@ export const ViewControl: React.FC<ViewControlProps> = ({
 					}}
 					value={viewOption}
 				>
-					<SelectTrigger className="w-[140px] sm:w-[180px]">
+					<SelectTrigger className="w-[140px] sm:w-[180px] select-none">
 						<SelectValue placeholder="Select view" />
 					</SelectTrigger>
 					<SelectContent>
