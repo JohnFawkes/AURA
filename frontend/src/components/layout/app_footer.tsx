@@ -6,6 +6,8 @@ import { FaDiscord, FaGithub } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 
+import { ReleaseNotesDialog } from "@/components/layout/app-release-notes";
+
 import { log } from "@/lib/logger";
 
 interface AppFooterProps {
@@ -15,6 +17,9 @@ interface AppFooterProps {
 export function AppFooter({ version = "dev" }: AppFooterProps) {
 	// Get the latest version from Github
 	const [latestVersion, setLatestVersion] = useState<string | null>(null);
+
+	const [showReleaseNotes, setShowReleaseNotes] = useState(false);
+	const [changelog, setChangelog] = useState("");
 
 	function isNewerVersion(latest: string, current: string): boolean {
 		const parse = (v: string) => v.replace(/^v/, "").split("-")[0].split(".").map(Number);
@@ -27,6 +32,59 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 		if (lMin < cMin) return false;
 		if (lPatch > cPatch) return true;
 		return false;
+	}
+
+	function normalizeVersion(version: string) {
+		return version.replace(/^v/, "").replace(/-.*$/, "");
+	}
+
+	function getChangelogEntriesSince(changelog: string, lastVersion: string) {
+		const regex = /## \[([^\]]+)\] - (\d{4}-\d{2}-\d{2})/g;
+		const entries: { version: string; content: string }[] = [];
+		let match;
+		const indices: number[] = [];
+		const versions: string[] = [];
+		while ((match = regex.exec(changelog)) !== null) {
+			indices.push(match.index);
+			versions.push(match[1]);
+		}
+		indices.push(changelog.length);
+
+		for (let i = 0; i < versions.length; i++) {
+			entries.push({
+				version: versions[i],
+				content: changelog.slice(indices[i], indices[i + 1]),
+			});
+		}
+
+		// Normalize lastSeenVersion for matching
+		const normalizedLastVersion = normalizeVersion(lastVersion || "");
+		const idx = entries.findIndex((e) => normalizeVersion(e.version) === normalizedLastVersion);
+
+		return idx === -1 ? entries : entries.slice(0, idx);
+	}
+
+	useEffect(() => {
+		const lastSeen = localStorage.getItem("lastSeenVersion");
+		log("INFO", "App Footer", "Release Notes", `Last seen version: ${lastSeen}, Current version: ${version}`);
+
+		fetch("/CHANGELOG.md")
+			.then((res) => res.text())
+			.then((fullChangelog) => {
+				const relevantEntries = getChangelogEntriesSince(fullChangelog, lastSeen || "");
+				// Join relevant entries for markdown rendering
+				setChangelog(relevantEntries.map((e) => e.content).join("\n"));
+				if (lastSeen !== version && relevantEntries.length > 0) {
+					setShowReleaseNotes(true);
+				}
+			});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [version]);
+
+	function handleCloseReleaseNotes() {
+		localStorage.setItem("lastSeenVersion", version);
+		log("INFO", "App Footer", "Release Notes", `User closed release notes for version ${version}`);
+		setShowReleaseNotes(false);
 	}
 
 	useEffect(() => {
@@ -111,6 +169,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					)}
 				</div>
 			</div>
+			<ReleaseNotesDialog open={showReleaseNotes} onOpenChange={handleCloseReleaseNotes} changelog={changelog} />
 		</footer>
 	);
 }
