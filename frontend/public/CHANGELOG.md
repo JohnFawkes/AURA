@@ -3,6 +3,7 @@
 ### Added
 
 - Added tab navigation for settings and user preferences, enhancing UI organization
+- Added release notes dialog to display changelog updates upon new version detection
 
 ### Fixed
 
