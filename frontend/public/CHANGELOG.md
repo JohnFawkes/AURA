@@ -1,9 +1,14 @@
 ## [0.9.27] - 2025-10-01
 
+### Added
+
+- Added tab navigation for settings and user preferences, enhancing UI organization
+
 ### Fixed
 
 - Update search bar to remove on-click animation for improved user experience
 - Fixed issue with plex not returning posters
+- Update tab triggers in UserSetPage for improved styling and user interaction
 
 ---
 
