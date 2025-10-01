@@ -6,6 +6,22 @@ export const metadata: Metadata = {
 	icons: {
 		icon: "/favicon.ico", // main favicon
 		shortcut: "/favicon.ico",
-		apple: "/apple-touch-icon.png",
+		apple: "/web-app-manifest-512x512.png", // apple touch icon
+		other: [
+			{
+				rel: "apple-touch-icon",
+				sizes: "192x192",
+				url: "/web-app-manifest-192x192.png",
+			},
+			{
+				rel: "apple-touch-icon",
+				sizes: "512x512",
+				url: "/web-app-manifest-512x512.png",
+			},
+			{
+				rel: "manifest",
+				url: "/site.webmanifest",
+			},
+		],
 	},
 };

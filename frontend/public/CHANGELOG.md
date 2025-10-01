@@ -10,6 +10,7 @@
 - Fixed issue with plex not returning posters
 - Update tab triggers in UserSetPage for improved styling and user interaction
 - Changed settings cog color to grey for better visual integration
+- Update layout and metadata for improved web app manifest and icons
 
 ---
 

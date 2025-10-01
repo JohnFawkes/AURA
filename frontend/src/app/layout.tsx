@@ -13,6 +13,11 @@ import "./globals.css";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
+			<head>
+				<link rel="manifest" href="/site.webmanifest" />
+				<link rel="apple-touch-icon" href="/web-app-manifest-512x512.png" />
+				<meta name="apple-mobile-web-app-capable" content="yes" />
+			</head>
 			<body className={`${gabarito.className}`}>
 				<ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
 					{/* Navbar */}
