@@ -9,6 +9,7 @@
 - Update search bar to remove on-click animation for improved user experience
 - Fixed issue with plex not returning posters
 - Update tab triggers in UserSetPage for improved styling and user interaction
+- Changed settings cog color to grey for better visual integration
 
 ---
 

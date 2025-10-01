@@ -340,7 +340,7 @@ export default function Navbar() {
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							asChild
-							className="cursor-pointer hover:brightness-120 active:scale-95 transition"
+							className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
 						>
 							<SettingsIcon className="w-8 h-8 ml-2" />
 						</DropdownMenuTrigger>
