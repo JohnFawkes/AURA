@@ -275,7 +275,7 @@ export default function Navbar() {
 
 			{/* Center: Search */}
 			<div className="relative flex-1 flex justify-center mx-3">
-				<div className="relative w-full max-w-2xl active:scale-98 transition">
+				<div className="relative w-full max-w-2xl">
 					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						type="search"

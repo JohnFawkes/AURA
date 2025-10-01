@@ -1,3 +1,11 @@
+## [0.9.27] - 2025-10-01
+
+### Fixed
+
+- Update search bar to remove on-click animation for improved user experience
+
+---
+
 ## [0.9.26] - 2025-09-25
 
 ### Added
