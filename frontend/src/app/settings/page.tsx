@@ -23,6 +23,7 @@ import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { ClearAllStores } from "@/lib/stores/clear-all-stores";
@@ -68,6 +69,8 @@ const SettingsPage: React.FC = () => {
 	const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
 	const preferencesRef = useRef<HTMLDivElement>(null);
+
+	const [activeTab, setActiveTab] = useState("app-settings");
 
 	// State - Debug Mode
 	const [debugEnabled, setDebugEnabled] = useState(false);
@@ -323,154 +326,188 @@ const SettingsPage: React.FC = () => {
 				<>
 					<div className="flex items-center justify-between mb-4">
 						<div>
-							<h1 className="text-3xl font-bold">Settings</h1>
-							<p className="text-gray-600 dark:text-gray-400">Manage your application settings</p>
+							<h1 className="text-3xl font-bold">
+								{activeTab === "user-preferences" ? "User Preferences" : "Settings"}
+							</h1>
+							<p className="text-gray-600 dark:text-gray-400">
+								{activeTab === "user-preferences"
+									? "Manage your user preferences"
+									: "Manage your application settings"}
+							</p>
 						</div>
-
-						<div className="flex gap-2">
-							{!editing && (
-								<Button
-									variant="outline"
-									onClick={() => setEditing(true)}
-									className="cursor-pointer hover:text-primary active:scale-95 hover:brightness-120"
-								>
-									Edit
-								</Button>
-							)}
-							{editing && (
-								<>
+						{activeTab !== "user-preferences" && (
+							<div className="flex gap-2">
+								{!editing && (
 									<Button
 										variant="outline"
-										onClick={handleCancel}
-										disabled={saving}
-										className="cursor-pointer hover:text-primary"
+										onClick={() => setEditing(true)}
+										className="cursor-pointer hover:text-primary active:scale-95 hover:brightness-120"
 									>
-										Cancel
+										Edit
 									</Button>
-									<Button
-										onClick={handleSaveAll}
-										disabled={!anyDirty || saving || hasValidationErrors}
-										className="cursor-pointer hover:text-primary"
-									>
-										{saving ? "Saving..." : "Save All"}
-									</Button>
-								</>
-							)}
-						</div>
+								)}
+								{editing && (
+									<>
+										<Button
+											variant="outline"
+											onClick={handleCancel}
+											disabled={saving}
+											className="cursor-pointer hover:text-primary"
+										>
+											Cancel
+										</Button>
+										<Button
+											onClick={handleSaveAll}
+											disabled={!anyDirty || saving || hasValidationErrors}
+											className="cursor-pointer hover:text-primary"
+										>
+											{saving ? "Saving..." : "Save All"}
+										</Button>
+									</>
+								)}
+							</div>
+						)}
 					</div>
 
-					{editing && hasValidationErrors && (
+					<Tabs defaultValue="app-settings" value={activeTab} onValueChange={setActiveTab} className="w-full">
+						<TabsList className="rounded-md p-1 w-full flex">
+							<TabsTrigger
+								value="app-settings"
+								className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+							>
+								App Settings
+							</TabsTrigger>
+							<TabsTrigger
+								value="user-preferences"
+								className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+							>
+								User Preferences
+							</TabsTrigger>
+						</TabsList>
+
+						<TabsContent value="app-settings" className="mt-6 w-full">
+							<div className="space-y-5 w-full">
+								<ConfigSectionAuth
+									value={newConfig.Auth}
+									editing={editing}
+									dirtyFields={dirty.Auth}
+									onChange={(field, value) => updateConfigField("Auth", field, value)}
+									errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
+								/>
+								<ConfigSectionLogging
+									value={newConfig.Logging}
+									editing={editing}
+									dirtyFields={dirty.Logging}
+									onChange={(field, value) => updateConfigField("Logging", field, value)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("Logging", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionMediaServer
+									value={newConfig.MediaServer}
+									editing={editing}
+									configAlreadyLoaded={false}
+									dirtyFields={dirty.MediaServer}
+									onChange={(field, value) => updateConfigField("MediaServer", field, value)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("MediaServer", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionMediux
+									value={newConfig.Mediux}
+									editing={editing}
+									configAlreadyLoaded={false}
+									dirtyFields={dirty.Mediux}
+									onChange={(field, value) => updateConfigField("Mediux", field, value)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("Mediux", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionAutoDownload
+									value={newConfig.AutoDownload}
+									editing={editing}
+									dirtyFields={dirty.AutoDownload}
+									onChange={(f, v) => updateConfigField("AutoDownload", f, v)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("AutoDownload", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionImages
+									value={newConfig.Images}
+									editing={editing}
+									dirtyFields={dirty.Images}
+									onChange={updateImagesField}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("Images", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionTMDB
+									value={newConfig.TMDB}
+									editing={editing}
+									dirtyFields={dirty.TMDB}
+									onChange={(f, v) => updateConfigField("TMDB", f, v)}
+									errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
+								/>
+								<ConfigSectionLabelsAndTags
+									value={newConfig.LabelsAndTags}
+									editing={editing}
+									dirtyFields={
+										dirty.LabelsAndTags as {
+											Applications?: Array<
+												Partial<
+													Record<
+														string,
+														boolean | { Enabled?: boolean; Add?: boolean; Remove?: boolean }
+													>
+												>
+											>;
+										}
+									}
+									onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
+									}
+								/>
+								<ConfigSectionNotifications
+									value={newConfig.Notifications}
+									editing={editing}
+									dirtyFields={
+										dirty.Notifications as {
+											Enabled?: boolean;
+											Providers?: Partial<
+												Record<
+													string,
+													| boolean
+													| {
+															Enabled?: boolean;
+															Webhook?: boolean;
+															UserKey?: boolean;
+															Token?: boolean;
+													  }
+												>
+											>[];
+										}
+									}
+									onChange={(field, val) => updateConfigField("Notifications", field, val)}
+									errorsUpdate={(errs) =>
+										updateSectionErrors("Notifications", errs as Record<string, string>)
+									}
+								/>
+							</div>
+						</TabsContent>
+
+						<TabsContent value="user-preferences" className="mt-6 w-full">
+							<div id="preferences-section" ref={preferencesRef} className="w-full">
+								<UserPreferencesCard />
+							</div>
+						</TabsContent>
+					</Tabs>
+
+					{activeTab === "app-settings" && editing && hasValidationErrors && (
 						<p className="mb-2 text-red-500">Fix validation errors before saving.</p>
 					)}
 
-					<div className="space-y-5">
-						<ConfigSectionAuth
-							value={newConfig.Auth}
-							editing={editing}
-							dirtyFields={dirty.Auth}
-							onChange={(field, value) => updateConfigField("Auth", field, value)}
-							errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionLogging
-							value={newConfig.Logging}
-							editing={editing}
-							dirtyFields={dirty.Logging}
-							onChange={(field, value) => updateConfigField("Logging", field, value)}
-							errorsUpdate={(errs) => updateSectionErrors("Logging", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionMediaServer
-							value={newConfig.MediaServer}
-							editing={editing}
-							configAlreadyLoaded={false}
-							dirtyFields={dirty.MediaServer}
-							onChange={(field, value) => updateConfigField("MediaServer", field, value)}
-							errorsUpdate={(errs) => updateSectionErrors("MediaServer", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionMediux
-							value={newConfig.Mediux}
-							editing={editing}
-							configAlreadyLoaded={false}
-							dirtyFields={dirty.Mediux}
-							onChange={(field, value) => updateConfigField("Mediux", field, value)}
-							errorsUpdate={(errs) => updateSectionErrors("Mediux", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionAutoDownload
-							value={newConfig.AutoDownload}
-							editing={editing}
-							dirtyFields={dirty.AutoDownload}
-							onChange={(f, v) => updateConfigField("AutoDownload", f, v)}
-							errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionImages
-							value={newConfig.Images}
-							editing={editing}
-							dirtyFields={dirty.Images}
-							onChange={updateImagesField}
-							errorsUpdate={(errs) => updateSectionErrors("Images", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionTMDB
-							value={newConfig.TMDB}
-							editing={editing}
-							dirtyFields={dirty.TMDB}
-							onChange={(f, v) => updateConfigField("TMDB", f, v)}
-							errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
-						/>
-
-						<ConfigSectionLabelsAndTags
-							value={newConfig.LabelsAndTags}
-							editing={editing}
-							dirtyFields={
-								dirty.LabelsAndTags as {
-									Applications?: Array<
-										Partial<
-											Record<
-												string,
-												boolean | { Enabled?: boolean; Add?: boolean; Remove?: boolean }
-											>
-										>
-									>;
-								}
-							}
-							onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
-							errorsUpdate={(errs) =>
-								updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
-							}
-						/>
-
-						<ConfigSectionNotifications
-							value={newConfig.Notifications}
-							editing={editing}
-							dirtyFields={
-								dirty.Notifications as {
-									Enabled?: boolean;
-									Providers?: Partial<
-										Record<
-											string,
-											| boolean
-											| {
-													Enabled?: boolean;
-													Webhook?: boolean;
-													UserKey?: boolean;
-													Token?: boolean;
-											  }
-										>
-									>[];
-								}
-							}
-							onChange={(field, val) => updateConfigField("Notifications", field, val)}
-							errorsUpdate={(errs) =>
-								updateSectionErrors("Notifications", errs as Record<string, string>)
-							}
-						/>
-					</div>
-
-					{editing && (
+					{activeTab === "app-settings" && editing && (
 						<div className="sticky bottom-0 mt-10 z-30">
 							<div className="mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex items-center gap-3">
 								<span className="text-sm">{anyDirty ? "Unsaved changes" : "No changes yet"}</span>
@@ -483,15 +520,10 @@ const SettingsPage: React.FC = () => {
 							</div>
 						</div>
 					)}
-
-					{/* User Preferences Section */}
-					<div id="preferences-section" ref={preferencesRef}>
-						<UserPreferencesCard />
-					</div>
 				</>
 			)}
 
-			{/* Debug Mode Toggle */}
+			{/* Debug Mode Toggle & Cache Clear */}
 			<div className="flex items-center justify-between mt-6 border-t pt-4">
 				<ToggleGroup
 					type="single"
