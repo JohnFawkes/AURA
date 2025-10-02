@@ -15,7 +15,7 @@ import (
 
 func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) logging.StandardError {
 
-	if !config.Global.Images.SaveImageLocally.Enabled {
+	if !config.Global.Images.SaveImagesLocally.Enabled {
 		Err := UpdateSetOnly(plex, file)
 		if Err.Message != "" {
 			return Err
@@ -126,7 +126,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 
 	logging.LOG.Debug(fmt.Sprintf("Plex File Path: %s", newFilePath))
 
-	if config.Global.Images.SaveImageLocally.Enabled && config.Global.Images.SaveImageLocally.Path != "" {
+	if config.Global.Images.SaveImagesLocally.Enabled && config.Global.Images.SaveImagesLocally.Path != "" {
 		// Build newFilePath based on library, content, and config path
 		libraryRoot := ""
 		libSection, exists := cache.LibraryCacheStore.Get(plex.LibraryTitle + "S")
@@ -151,7 +151,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 			logging.LOG.Debug(fmt.Sprintf("Relative path: %s", relativePath))
 
 			// Final path: /local/images/movies/Inception (2020), etc.
-			newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, relativePath)
+			newFilePath = path.Join(config.Global.Images.SaveImagesLocally.Path, relativePath)
 		} else {
 			logging.LOG.Warn(fmt.Sprintf("Library '%s' not found in cache, using Plex paths", plex.LibraryTitle))
 
@@ -169,7 +169,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 				logging.LOG.Trace(fmt.Sprintf("Library Path: %s", libraryPath))
 
 				// Final path: /local/images/movies/Inception (2020)
-				newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, libraryPath, contentPath)
+				newFilePath = path.Join(config.Global.Images.SaveImagesLocally.Path, libraryPath, contentPath)
 			} else if plex.Type == "show" && (file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" || file.Type == "titlecard") {
 				// For shows with seasonPoster/specialSeasonPoster/titlecard
 				seasonPath = path.Base(newFilePath)
@@ -182,7 +182,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 				logging.LOG.Trace(fmt.Sprintf("Library Path: %s", libraryPath))
 
 				// Final path: /local/images/shows/Breaking Bad/Season 01
-				newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, libraryPath, contentPath, seasonPath)
+				newFilePath = path.Join(config.Global.Images.SaveImagesLocally.Path, libraryPath, contentPath, seasonPath)
 			} else {
 				// Error: unable to determine path
 				Err.Message = "Failed to determine library path"

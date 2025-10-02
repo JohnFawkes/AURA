@@ -42,7 +42,7 @@ type SectionDirty<S extends ObjectSectionKeys = ObjectSectionKeys> = Partial<
 
 interface ImagesDirty {
 	CacheImages?: { Enabled?: boolean };
-	SaveImageLocally?: { Enabled?: boolean; Path?: string };
+	SaveImagesLocally?: { Enabled?: boolean; Path?: string };
 }
 
 type DirtyState = {
@@ -440,14 +440,14 @@ const SettingsPage: React.FC = () => {
 										dirty.Images
 											? {
 													...dirty.Images,
-													SaveImageLocally: dirty.Images.SaveImageLocally
+													SaveImagesLocally: dirty.Images.SaveImagesLocally
 														? {
-																...dirty.Images.SaveImageLocally,
+																...dirty.Images.SaveImagesLocally,
 																Path:
-																	typeof dirty.Images.SaveImageLocally.Path ===
+																	typeof dirty.Images.SaveImagesLocally.Path ===
 																	"string"
-																		? !!dirty.Images.SaveImageLocally.Path
-																		: dirty.Images.SaveImageLocally.Path,
+																		? !!dirty.Images.SaveImagesLocally.Path
+																		: dirty.Images.SaveImagesLocally.Path,
 															}
 														: undefined,
 												}

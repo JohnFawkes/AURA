@@ -120,17 +120,17 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 }
 
 func setPoster(ratingKey, posterKey, posterType string) logging.StandardError {
-	// If failedOnGetPosters is true, always treat SaveImageLocally.Enabled as false
+	// If failedOnGetPosters is true, always treat SaveImagesLocally.Enabled as false
 	// This means we will use the POST method and the plural endpoint ("arts"/"posters")
 	// Otherwise, use the config value to decide between PUT (next to content) and POST (upload)
 	// For "backdrop" posterType:
 	//   - Use "art" (PUT) or "arts" (POST)
 	// For all other poster types:
 	//   - Use "poster" (PUT) or "posters" (POST)
-	// If SaveImageLocally is true, and path is set, use POST to upload to Plex server
+	// If SaveImagesLocally is true, and path is set, use POST to upload to Plex server
 	// This is because the image is not next to the content, so we need to upload it
 
-	saveLocally := config.Global.Images.SaveImageLocally.Enabled
+	saveLocally := config.Global.Images.SaveImagesLocally.Enabled
 
 	requestMethod := "PUT"
 	if !saveLocally {
@@ -141,7 +141,7 @@ func setPoster(ratingKey, posterKey, posterType string) logging.StandardError {
 			posterType = "posters"
 		}
 	} else {
-		if config.Global.Images.SaveImageLocally.Path != "" {
+		if config.Global.Images.SaveImagesLocally.Path != "" {
 			requestMethod = "POST"
 			if posterType == "backdrop" {
 				posterType = "arts"

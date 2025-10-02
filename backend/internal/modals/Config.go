@@ -55,15 +55,15 @@ type Config_AutoDownload struct {
 }
 
 type Config_Images struct {
-	CacheImages      Config_CacheImages      `yaml:"CacheImages"`      // Settings for caching images.
-	SaveImageLocally Config_SaveImageLocally `yaml:"SaveImageLocally"` // Settings for saving images locally alongside content.
+	CacheImages       Config_CacheImages       `yaml:"CacheImages"`       // Settings for caching images.
+	SaveImagesLocally Config_SaveImagesLocally `yaml:"SaveImagesLocally"` // Settings for saving images locally alongside content.
 }
 
 type Config_CacheImages struct {
 	Enabled bool `yaml:"Enabled"` // Whether to enable caching of images.
 }
 
-type Config_SaveImageLocally struct {
+type Config_SaveImagesLocally struct {
 	Enabled bool   `yaml:"Enabled"`        // Whether to save images next to their content.
 	Path    string `yaml:"Path,omitempty"` // By default, this is set to alongside the content. If set, this will override that behavior and save all images to this path.
 }

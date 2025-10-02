@@ -296,13 +296,13 @@ func CheckConfigDifferences_Images(oldImages, newImages modals.Config_Images) bo
 				changed = true
 			}
 
-			if oldImages.SaveImageLocally.Enabled != newImages.SaveImageLocally.Enabled {
-				logging.LOG.Info(fmt.Sprintf("Images.SaveImageLocally changed: '%v' -> '%v'", oldImages.SaveImageLocally.Enabled, newImages.SaveImageLocally.Enabled))
+			if oldImages.SaveImagesLocally.Enabled != newImages.SaveImagesLocally.Enabled {
+				logging.LOG.Info(fmt.Sprintf("Images.SaveImagesLocally changed: '%v' -> '%v'", oldImages.SaveImagesLocally.Enabled, newImages.SaveImagesLocally.Enabled))
 				changed = true
 			}
 
-			if oldImages.SaveImageLocally.Path != newImages.SaveImageLocally.Path {
-				logging.LOG.Info(fmt.Sprintf("Images.SaveImageLocally.Path changed: '%v' -> '%v'", oldImages.SaveImageLocally.Path, newImages.SaveImageLocally.Path))
+			if oldImages.SaveImagesLocally.Path != newImages.SaveImagesLocally.Path {
+				logging.LOG.Info(fmt.Sprintf("Images.SaveImagesLocally.Path changed: '%v' -> '%v'", oldImages.SaveImagesLocally.Path, newImages.SaveImagesLocally.Path))
 				changed = true
 			}
 		}

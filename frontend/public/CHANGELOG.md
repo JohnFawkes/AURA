@@ -11,6 +11,10 @@
 - Remove option for Tags from non-Plex media servers
 - Remove option for SaveImagesLocally from non-Plex media servers
 
+### Breaking
+
+- If you use SaveImagesNextToContent, please change over to the new SaveImagesLocally option in your config file. The old option has been removed. View the [documentation](https://mediux-team.github.io/AURA/config#saveimageslocallyenabled) for more details.
+
 ---
 
 ## [0.9.27] - 2025-10-01

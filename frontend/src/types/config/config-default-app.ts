@@ -28,7 +28,7 @@ export const defaultAppConfig = (): AppConfig =>
 		},
 		Images: {
 			CacheImages: { Enabled: false },
-			SaveImageLocally: { Enabled: false, Path: "" },
+			SaveImagesLocally: { Enabled: false, Path: "" },
 		},
 		TMDB: {
 			ApiKey: "",

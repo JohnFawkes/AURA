@@ -46,14 +46,14 @@ export interface AppConfigAutoDownload {
 
 export interface AppConfigImages {
 	CacheImages: AppConfigCacheImages;
-	SaveImageLocally: AppConfigSaveImageLocally;
+	SaveImagesLocally: AppConfigSaveImagesLocally;
 }
 
 export interface AppConfigCacheImages {
 	Enabled: boolean; // Whether to enable caching of images.
 }
 
-export interface AppConfigSaveImageLocally {
+export interface AppConfigSaveImagesLocally {
 	Enabled: boolean; // Whether to save images locally.
 	Path: string; // Path to save images locally. If empty, images will be saved next to content.
 }

@@ -22,7 +22,7 @@ interface ConfigSectionImagesProps {
 	editing: boolean;
 	dirtyFields?: {
 		CacheImages?: { Enabled?: boolean };
-		SaveImageLocally?: { Enabled?: boolean; Path?: boolean };
+		SaveImagesLocally?: { Enabled?: boolean; Path?: boolean };
 	};
 	onChange: <K extends keyof AppConfigImages, F extends keyof AppConfigImages[K]>(
 		group: K,
@@ -114,7 +114,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 					className={cn(
 						"border rounded-md p-3 transition mb-4",
 						"border-muted",
-						dirtyFields.SaveImageLocally?.Enabled && "border-amber-500"
+						dirtyFields.SaveImagesLocally?.Enabled && "border-amber-500"
 					)}
 				>
 					<div className="flex items-center justify-between mb-2">
@@ -122,8 +122,8 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<div className="flex items-center gap-2">
 							<Switch
 								disabled={!editing}
-								checked={value.SaveImageLocally.Enabled}
-								onCheckedChange={(v) => onChange("SaveImageLocally", "Enabled", v)}
+								checked={value.SaveImagesLocally.Enabled}
+								onCheckedChange={(v) => onChange("SaveImagesLocally", "Enabled", v)}
 							/>
 							{editing && (
 								<PopoverHelp ariaLabel="help-images-save-next-to-content">
@@ -136,11 +136,11 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						</div>
 					</div>
 
-					{value.SaveImageLocally.Enabled && (
+					{value.SaveImagesLocally.Enabled && (
 						<div
 							className={cn(
 								"",
-								dirtyFields.SaveImageLocally?.Path && "border border-amber-500 rounded-md p-2"
+								dirtyFields.SaveImagesLocally?.Path && "border border-amber-500 rounded-md p-2"
 							)}
 						>
 							<div className="flex items-center justify-between mb-2">
@@ -158,11 +158,11 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 							<Input
 								type="text"
 								disabled={!editing}
-								value={value.SaveImageLocally.Path}
-								onChange={(e) => onChange("SaveImageLocally", "Path", e.target.value)}
+								value={value.SaveImagesLocally.Path}
+								onChange={(e) => onChange("SaveImagesLocally", "Path", e.target.value)}
 								className={cn(
 									"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
-									dirtyFields.SaveImageLocally?.Path && "border-amber-500"
+									dirtyFields.SaveImagesLocally?.Path && "border-amber-500"
 								)}
 								placeholder="/path/to/images"
 							/>
