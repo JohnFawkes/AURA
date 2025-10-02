@@ -1,6 +1,7 @@
 package plex
 
 import (
+	"aura/internal/cache"
 	"aura/internal/config"
 	"aura/internal/logging"
 	"aura/internal/mediux"
@@ -9,11 +10,12 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 )
 
 func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) logging.StandardError {
 
-	if !config.Global.Images.SaveImageNextToContent.Enabled {
+	if !config.Global.Images.SaveImageLocally.Enabled {
 		Err := UpdateSetOnly(plex, file)
 		if Err.Message != "" {
 			return Err
@@ -122,8 +124,73 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		}
 	}
 
-	if config.Global.Dev.Enabled {
-		newFilePath = path.Join(config.Global.Dev.LocalPath, newFilePath)
+	logging.LOG.Debug(fmt.Sprintf("Plex File Path: %s", newFilePath))
+
+	if config.Global.Images.SaveImageLocally.Enabled && config.Global.Images.SaveImageLocally.Path != "" {
+		// Build newFilePath based on library, content, and config path
+		libraryRoot := ""
+		libSection, exists := cache.LibraryCacheStore.Get(plex.LibraryTitle + "S")
+		logging.LOG.Trace(fmt.Sprintf("Library section '%s' exists: %t", plex.LibraryTitle, exists))
+
+		if exists && libSection.Path != "" {
+			// Library exists in cache (e.g. /data/media/movies or /data/media/shows)
+			libraryRoot = libSection.Path
+			logging.LOG.Trace(fmt.Sprintf("Library Root: %s", libraryRoot))
+
+			// Get last part of library root (e.g. "movies" or "shows")
+			libraryPath := path.Base(libraryRoot)
+			logging.LOG.Trace(fmt.Sprintf("Library Path: %s", libraryPath))
+
+			// Get path before library name (e.g. /data/media/)
+			remainingLibraryPath := strings.TrimSuffix(libraryRoot, libraryPath)
+			logging.LOG.Trace(fmt.Sprintf("Remaining Library Path: %s", remainingLibraryPath))
+
+			// Get relative path from newFilePath (e.g. movies/Inception (2020), shows/Breaking Bad/Season 01)
+			relativePath := strings.TrimPrefix(newFilePath, remainingLibraryPath)
+			relativePath = strings.TrimLeft(relativePath, string(os.PathSeparator))
+			logging.LOG.Debug(fmt.Sprintf("Relative path: %s", relativePath))
+
+			// Final path: /local/images/movies/Inception (2020), etc.
+			newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, relativePath)
+		} else {
+			logging.LOG.Warn(fmt.Sprintf("Library '%s' not found in cache, using Plex paths", plex.LibraryTitle))
+
+			// Fallback: build path from Plex info
+			libraryPath := ""
+			contentPath := ""
+			seasonPath := ""
+
+			if file.Type == "poster" || file.Type == "backdrop" || plex.Type == "movie" {
+				// For movies or posters/backdrops
+				contentPath = path.Base(newFilePath)
+				logging.LOG.Trace(fmt.Sprintf("Content Path: %s", contentPath))
+
+				libraryPath = path.Base(path.Dir(newFilePath))
+				logging.LOG.Trace(fmt.Sprintf("Library Path: %s", libraryPath))
+
+				// Final path: /local/images/movies/Inception (2020)
+				newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, libraryPath, contentPath)
+			} else if plex.Type == "show" && (file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" || file.Type == "titlecard") {
+				// For shows with seasonPoster/specialSeasonPoster/titlecard
+				seasonPath = path.Base(newFilePath)
+				logging.LOG.Trace(fmt.Sprintf("Season Path: %s", seasonPath))
+
+				contentPath = path.Base(path.Dir(newFilePath))
+				logging.LOG.Trace(fmt.Sprintf("Content Path: %s", contentPath))
+
+				libraryPath = path.Base(path.Dir(path.Dir(newFilePath)))
+				logging.LOG.Trace(fmt.Sprintf("Library Path: %s", libraryPath))
+
+				// Final path: /local/images/shows/Breaking Bad/Season 01
+				newFilePath = path.Join(config.Global.Images.SaveImageLocally.Path, libraryPath, contentPath, seasonPath)
+			} else {
+				// Error: unable to determine path
+				Err.Message = "Failed to determine library path"
+				Err.HelpText = "Ensure the library exists in Plex and has a valid path."
+				Err.Details = fmt.Sprintf("No library found for item '%s' with type '%s' and file type '%s'", plex.Title, plex.Type, file.Type)
+				return Err
+			}
+		}
 	}
 
 	// Ensure the directory exists
@@ -153,6 +220,7 @@ func DownloadAndUpdatePosters(plex modals.MediaItem, file modals.PosterFile) log
 		Err.Details = fmt.Sprintf("Error writing image data to file %s: %v", newFileName, err)
 		return Err
 	}
+	logging.LOG.Info(fmt.Sprintf("Image saved to %s", path.Join(newFilePath, newFileName)))
 
 	// If cacheImages is False, delete the image from the temporary folder
 	// 		This is to prevent the temporary folder from getting too large

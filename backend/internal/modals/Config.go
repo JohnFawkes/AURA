@@ -41,6 +41,7 @@ type Config_MediaServerLibrary struct {
 	Name      string `yaml:"Name,omitempty"`      // Name of the library.
 	SectionID string `yaml:"SectionID,omitempty"` // Unique identifier for the library section.
 	Type      string `yaml:"Type,omitempty"`      // Type of the library (e.g., movie, show). All other types are ignored.
+	Path      string `yaml:"Path,omitempty"`      // Path of the library on the media server.
 }
 
 type Config_Mediux struct {
@@ -54,16 +55,17 @@ type Config_AutoDownload struct {
 }
 
 type Config_Images struct {
-	CacheImages            Config_CacheImages            `yaml:"CacheImages"`            // Settings for caching images.
-	SaveImageNextToContent Config_SaveImageNextToContent `yaml:"SaveImageNextToContent"` // Settings for saving images next to their content.
+	CacheImages      Config_CacheImages      `yaml:"CacheImages"`      // Settings for caching images.
+	SaveImageLocally Config_SaveImageLocally `yaml:"SaveImageLocally"` // Settings for saving images locally alongside content.
 }
 
 type Config_CacheImages struct {
 	Enabled bool `yaml:"Enabled"` // Whether to enable caching of images.
 }
 
-type Config_SaveImageNextToContent struct {
-	Enabled bool `yaml:"Enabled"` // Whether to save images next to their content.
+type Config_SaveImageLocally struct {
+	Enabled bool   `yaml:"Enabled"`        // Whether to save images next to their content.
+	Path    string `yaml:"Path,omitempty"` // By default, this is set to alongside the content. If set, this will override that behavior and save all images to this path.
 }
 
 type Config_TMDB struct {

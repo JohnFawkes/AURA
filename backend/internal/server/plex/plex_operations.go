@@ -60,7 +60,6 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 			if response.StatusCode == http.StatusOK {
 				// Parse the response body into a PlexGetAllImagesWrapper struct
 				var plexPosters modals.PlexGetAllImagesWrapper
-				logging.LOG.Trace(fmt.Sprintf("Response Body: %s", string(body)))
 				err := json.Unmarshal(body, &plexPosters)
 				if err != nil {
 					// JSON parsing failed
@@ -121,18 +120,20 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 }
 
 func setPoster(ratingKey, posterKey, posterType string) logging.StandardError {
-	// If failedOnGetPosters is true, always treat SaveImageNextToContent.Enabled as false
+	// If failedOnGetPosters is true, always treat SaveImageLocally.Enabled as false
 	// This means we will use the POST method and the plural endpoint ("arts"/"posters")
 	// Otherwise, use the config value to decide between PUT (next to content) and POST (upload)
 	// For "backdrop" posterType:
 	//   - Use "art" (PUT) or "arts" (POST)
 	// For all other poster types:
 	//   - Use "poster" (PUT) or "posters" (POST)
+	// If SaveImageLocally is true, and path is set, use POST to upload to Plex server
+	// This is because the image is not next to the content, so we need to upload it
 
-	saveNextToContent := config.Global.Images.SaveImageNextToContent.Enabled
+	saveLocally := config.Global.Images.SaveImageLocally.Enabled
 
 	requestMethod := "PUT"
-	if !saveNextToContent {
+	if !saveLocally {
 		requestMethod = "POST"
 		if posterType == "backdrop" {
 			posterType = "arts"
@@ -140,11 +141,21 @@ func setPoster(ratingKey, posterKey, posterType string) logging.StandardError {
 			posterType = "posters"
 		}
 	} else {
-		if posterType == "backdrop" {
-			posterType = "art"
+		if config.Global.Images.SaveImageLocally.Path != "" {
+			requestMethod = "POST"
+			if posterType == "backdrop" {
+				posterType = "arts"
+			} else {
+				posterType = "posters"
+			}
 		} else {
-			posterType = "poster"
+			if posterType == "backdrop" {
+				posterType = "art"
+			} else {
+				posterType = "poster"
+			}
 		}
+
 	}
 
 	// Use net/url to escape the rating key

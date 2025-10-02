@@ -25,9 +25,10 @@ type PlexLibrarySections struct {
 }
 
 type PlexLibrarySectionsDirectory struct {
-	Key   string `json:"key"`
-	Type  string `json:"type"`
-	Title string `json:"title"`
+	Key      string         `json:"key"`
+	Type     string         `json:"type"`
+	Title    string         `json:"title"`
+	Location []PlexLocation `json:"Location"`
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

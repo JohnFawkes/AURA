@@ -73,6 +73,7 @@ func CallFetchLibrarySectionInfo() ([]modals.LibrarySection, logging.StandardErr
 		section.ID = library.SectionID
 		section.Type = library.Type
 		section.Title = library.Name
+		section.Path = library.Path
 		allSections = append(allSections, section)
 	}
 	return allSections, logging.StandardError{}

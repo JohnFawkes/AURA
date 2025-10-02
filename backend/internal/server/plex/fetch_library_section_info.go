@@ -41,6 +41,7 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 		if section.Title == library.Name {
 			library.Type = section.Type
 			library.SectionID = section.Key
+			library.Path = section.Location[0].Path
 			break
 		}
 	}

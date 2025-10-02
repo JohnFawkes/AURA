@@ -1,5 +1,9 @@
 ## [0.9.28] - 2025-10-01
 
+### Added
+
+- Added ability to save images locally with configurable path
+
 ### Fixed
 
 - Remove cache images from Media Server logic so that images are always fresh

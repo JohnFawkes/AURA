@@ -6,6 +6,7 @@ type LibrarySection struct {
 	Title      string      `json:"Title"`
 	TotalSize  int         `json:"TotalSize"`
 	MediaItems []MediaItem `json:"MediaItems"`
+	Path       string      `json:"Path,omitempty"`
 }
 
 type MediaItem struct {

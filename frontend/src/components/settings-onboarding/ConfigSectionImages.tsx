@@ -9,6 +9,7 @@ import React, { useEffect, useRef } from "react";
 import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
@@ -21,7 +22,7 @@ interface ConfigSectionImagesProps {
 	editing: boolean;
 	dirtyFields?: {
 		CacheImages?: { Enabled?: boolean };
-		SaveImageNextToContent?: { Enabled?: boolean };
+		SaveImageLocally?: { Enabled?: boolean; Path?: boolean };
 	};
 	onChange: <K extends keyof AppConfigImages, F extends keyof AppConfigImages[K]>(
 		group: K,
@@ -105,30 +106,65 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 				</div>
 			</div>
 
-			{/* Save Images Next To Content */}
+			{/* Save Images Locally */}
 			<div
 				className={cn(
-					"flex items-center justify-between border rounded-md p-3 transition",
+					"border rounded-md p-3 transition mb-4",
 					"border-muted",
-					dirtyFields.SaveImageNextToContent?.Enabled && "border-amber-500"
+					dirtyFields.SaveImageLocally?.Enabled && "border-amber-500"
 				)}
 			>
-				<Label className="mr-2">Save Images Next To Content</Label>
-				<div className="flex items-center gap-2">
-					<Switch
-						disabled={!editing}
-						checked={value.SaveImageNextToContent.Enabled}
-						onCheckedChange={(v) => onChange("SaveImageNextToContent", "Enabled", v)}
-					/>
-					{editing && (
-						<PopoverHelp ariaLabel="help-images-save-next-to-content">
-							<p>
-								Write artwork files beside media items so external tools or servers can pick them up
-								directly.
-							</p>
-						</PopoverHelp>
-					)}
+				<div className="flex items-center justify-between mb-2">
+					<Label className="mr-2">Save Images Locally</Label>
+					<div className="flex items-center gap-2">
+						<Switch
+							disabled={!editing}
+							checked={value.SaveImageLocally.Enabled}
+							onCheckedChange={(v) => onChange("SaveImageLocally", "Enabled", v)}
+						/>
+						{editing && (
+							<PopoverHelp ariaLabel="help-images-save-next-to-content">
+								<p>
+									Save images to a local folder on the server. This is useful for not relying on your
+									Media Server database. Make sure the path is accessible by the Aura server.
+								</p>
+							</PopoverHelp>
+						)}
+					</div>
 				</div>
+
+				{value.SaveImageLocally.Enabled && (
+					<div
+						className={cn(
+							"",
+							dirtyFields.SaveImageLocally?.Path && "border border-amber-500 rounded-md p-2"
+						)}
+					>
+						<div className="flex items-center justify-between mb-2">
+							<Label className="mr-2">Path</Label>
+							{editing && (
+								<PopoverHelp ariaLabel="help-images-save-path">
+									<p>
+										Enter the local folder path where images should be saved. This must be
+										accessible by the Aura server. Leave this blank if you want to save images next
+										to the content.
+									</p>
+								</PopoverHelp>
+							)}
+						</div>
+						<Input
+							type="text"
+							disabled={!editing}
+							value={value.SaveImageLocally.Path}
+							onChange={(e) => onChange("SaveImageLocally", "Path", e.target.value)}
+							className={cn(
+								"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
+								dirtyFields.SaveImageLocally?.Path && "border-amber-500"
+							)}
+							placeholder="/path/to/images"
+						/>
+					</div>
+				)}
 			</div>
 		</Card>
 	);

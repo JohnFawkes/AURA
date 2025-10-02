@@ -217,8 +217,9 @@ AutoDownload:
 Images:
     CacheImages:
         Enabled: false
-    SaveImageNextToContent:
+    SaveImageLocally:
         Enabled: false
+        Path: ""
 ```
 
 ## CacheImages.Enabled
@@ -228,16 +229,26 @@ Images:
 -   **Description**: Whether to cache images locally.
 -   **Details**: If set to `true`, aura will cache images to reduce load times and improve performance. This is particularly useful for frequently accessed images.Keep in mind that enabling this option will increase disk space usage as images will be stored locally.
 
-## SaveImageNextToContent.Enabled
+## SaveImageLocally.Enabled
 
 -   **Default:** `false`
 -   **Options:** `true` or `false`
--   **Description:** Whether to save images next to the Media Server content.
+-   **Description:** Whether to save images locally.
 -   **Details:**
     -   If `true`, images are saved in the same directory as the Media Server content.
     -   If `false`, images are updated on the Media Server but not saved next to the content.
     -   For **Emby** or **Jellyfin**, this option is ignored (handled by the server).
     -   For **Plex**, this option determines if images are saved next to content.
+
+## SaveImageLocally.Path
+
+-   **Default:** `""` (empty string)
+-   **Options:** Any valid file path
+-   **Description:** The path where images should be saved if `SaveImageLocally.Enabled` is `true`.
+-   **Details:**
+    -   If set to a valid path, images will be saved to that directory.
+    -   If left empty, images will be saved next to the media content.
+    -   Ensure the specified path is writable by the application.
 
 ---
 

@@ -166,7 +166,14 @@ func PrintConfig() {
 	// Cache Images and Save Image Next To Content
 	logging.LOG.NoTime("\tImages Options\n")
 	logging.LOG.NoTime(fmt.Sprintf("\t\tCache Images: %t\n", Global.Images.CacheImages))
-	logging.LOG.NoTime(fmt.Sprintf("\t\tSave Image Next To Content: %t\n", Global.Images.SaveImageNextToContent))
+	logging.LOG.NoTime(fmt.Sprintf("\t\tSave Image Locally: %t\n", Global.Images.SaveImageLocally.Enabled))
+	if Global.Images.SaveImageLocally.Enabled {
+		if Global.Images.SaveImageLocally.Path != "" {
+			logging.LOG.NoTime(fmt.Sprintf("\t\tSave Image Locally Path: %s\n", Global.Images.SaveImageLocally.Path))
+		} else {
+			logging.LOG.NoTime("\t\tSave Image Locally Path: Saving next to content\n")
+		}
+	}
 
 	// TMDB Configuration
 	if Global.TMDB.ApiKey != "" {
