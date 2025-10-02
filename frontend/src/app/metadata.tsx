@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 	icons: {
 		icon: "/favicon.ico", // main favicon
 		shortcut: "/favicon.ico",
-		apple: "/web-app-manifest-512x512.png", // apple touch icon
+		apple: "/web-app-manifest-padded-192x192.png", // apple touch icon
 		other: [
 			{
 				rel: "apple-touch-icon",
