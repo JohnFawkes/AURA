@@ -4,7 +4,6 @@ package modals
 // It includes options for server setup, caching, data storage, logging,
 // and integration with external services such as Plex, TMDB, and Mediux.
 type Config struct {
-	Dev           Config_Dev           `yaml:"Dev,omitempty" json:"-"`  // Development mode settings.
 	Auth          Config_Auth          `yaml:"Auth,omitempty"`          // Authentication settings.
 	Logging       Config_Logging       `yaml:"Logging,omitempty"`       // Logging configuration settings.
 	MediaServer   Config_MediaServer   `yaml:"MediaServer,omitempty"`   // Media server integration settings.

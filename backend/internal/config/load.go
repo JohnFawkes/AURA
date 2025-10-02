@@ -129,13 +129,6 @@ func ValidateConfig(config *modals.Config) {
 func PrintConfig() {
 	logging.LOG.NoTime("Current Configuration Settings\n")
 
-	// Development Mode
-	if Global.Dev.Enabled {
-		logging.LOG.NoTime("\tDevelopment Mode:\n")
-		logging.LOG.NoTime("\t\tEnabled\n")
-		logging.LOG.NoTime(fmt.Sprintf("\t\tDevelopment Local Path: %s\n", Global.Dev.LocalPath))
-	}
-
 	// Auth Mode
 	logging.LOG.NoTime("\tAuth Mode:\n")
 	logging.LOG.NoTime(fmt.Sprintf("\t\tEnabled: %t\n", Global.Auth.Enabled))
