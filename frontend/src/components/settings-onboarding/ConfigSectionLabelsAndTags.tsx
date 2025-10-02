@@ -24,9 +24,8 @@ interface ConfigSectionLabelsAndTagsProps {
 	};
 	onChange: <K extends keyof AppConfigLabelsAndTags>(field: K, value: AppConfigLabelsAndTags[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
+	mediaServerType?: string;
 }
-
-const APPLICATION_TYPES = ["Plex"];
 
 export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProps> = ({
 	value,
@@ -34,10 +33,16 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 	dirtyFields = {},
 	onChange,
 	errorsUpdate,
+	mediaServerType,
 }) => {
 	const prevErrorsRef = useRef<string>("");
 
 	const [newApplicationType, setNewApplicationType] = useState("Plex");
+
+	const APPLICATION_TYPES = React.useMemo(() => {
+		if (mediaServerType === "Plex") return ["Plex"];
+		return [];
+	}, [mediaServerType]);
 
 	const applications = React.useMemo(
 		() => (Array.isArray(value.Applications) ? value.Applications : []),
@@ -191,7 +196,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										size="icon"
 										onClick={() => removeApplication(idx)}
 										aria-label="remove-application"
-										disabled={applications.length === 1}
+										//disabled={applications.length === 1}
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>

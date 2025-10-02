@@ -30,6 +30,7 @@ interface ConfigSectionImagesProps {
 		value: AppConfigImages[K][F]
 	) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
+	mediaServerType?: string;
 }
 
 export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
@@ -38,6 +39,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 	dirtyFields = {},
 	onChange,
 	errorsUpdate,
+	mediaServerType,
 }) => {
 	const prevErrorsRef = useRef<string>("{}");
 
@@ -107,65 +109,67 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 			</div>
 
 			{/* Save Images Locally */}
-			<div
-				className={cn(
-					"border rounded-md p-3 transition mb-4",
-					"border-muted",
-					dirtyFields.SaveImageLocally?.Enabled && "border-amber-500"
-				)}
-			>
-				<div className="flex items-center justify-between mb-2">
-					<Label className="mr-2">Save Images Locally</Label>
-					<div className="flex items-center gap-2">
-						<Switch
-							disabled={!editing}
-							checked={value.SaveImageLocally.Enabled}
-							onCheckedChange={(v) => onChange("SaveImageLocally", "Enabled", v)}
-						/>
-						{editing && (
-							<PopoverHelp ariaLabel="help-images-save-next-to-content">
-								<p>
-									Save images to a local folder on the server. This is useful for not relying on your
-									Media Server database. Make sure the path is accessible by the Aura server.
-								</p>
-							</PopoverHelp>
-						)}
-					</div>
-				</div>
-
-				{value.SaveImageLocally.Enabled && (
-					<div
-						className={cn(
-							"",
-							dirtyFields.SaveImageLocally?.Path && "border border-amber-500 rounded-md p-2"
-						)}
-					>
-						<div className="flex items-center justify-between mb-2">
-							<Label className="mr-2">Path</Label>
+			{mediaServerType === "Plex" && (
+				<div
+					className={cn(
+						"border rounded-md p-3 transition mb-4",
+						"border-muted",
+						dirtyFields.SaveImageLocally?.Enabled && "border-amber-500"
+					)}
+				>
+					<div className="flex items-center justify-between mb-2">
+						<Label className="mr-2">Save Images Locally</Label>
+						<div className="flex items-center gap-2">
+							<Switch
+								disabled={!editing}
+								checked={value.SaveImageLocally.Enabled}
+								onCheckedChange={(v) => onChange("SaveImageLocally", "Enabled", v)}
+							/>
 							{editing && (
-								<PopoverHelp ariaLabel="help-images-save-path">
+								<PopoverHelp ariaLabel="help-images-save-next-to-content">
 									<p>
-										Enter the local folder path where images should be saved. This must be
-										accessible by the Aura server. Leave this blank if you want to save images next
-										to the content.
+										Save images to a local folder on the server. This is useful for not relying on
+										your Media Server database. Make sure the path is accessible by the Aura server.
 									</p>
 								</PopoverHelp>
 							)}
 						</div>
-						<Input
-							type="text"
-							disabled={!editing}
-							value={value.SaveImageLocally.Path}
-							onChange={(e) => onChange("SaveImageLocally", "Path", e.target.value)}
-							className={cn(
-								"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
-								dirtyFields.SaveImageLocally?.Path && "border-amber-500"
-							)}
-							placeholder="/path/to/images"
-						/>
 					</div>
-				)}
-			</div>
+
+					{value.SaveImageLocally.Enabled && (
+						<div
+							className={cn(
+								"",
+								dirtyFields.SaveImageLocally?.Path && "border border-amber-500 rounded-md p-2"
+							)}
+						>
+							<div className="flex items-center justify-between mb-2">
+								<Label className="mr-2">Path</Label>
+								{editing && (
+									<PopoverHelp ariaLabel="help-images-save-path">
+										<p>
+											Enter the local folder path where images should be saved. This must be
+											accessible by the Aura server. Leave this blank if you want to save images
+											next to the content.
+										</p>
+									</PopoverHelp>
+								)}
+							</div>
+							<Input
+								type="text"
+								disabled={!editing}
+								value={value.SaveImageLocally.Path}
+								onChange={(e) => onChange("SaveImageLocally", "Path", e.target.value)}
+								className={cn(
+									"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
+									dirtyFields.SaveImageLocally?.Path && "border-amber-500"
+								)}
+								placeholder="/path/to/images"
+							/>
+						</div>
+					)}
+				</div>
+			)}
 		</Card>
 	);
 };

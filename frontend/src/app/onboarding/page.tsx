@@ -201,6 +201,7 @@ const OnboardingPage = () => {
 						dirtyFields={{}}
 						onChange={updateImagesField}
 						errorsUpdate={(errs) => updateSectionErrors("Images", errs as Record<string, string>)}
+						mediaServerType={configState.MediaServer.Type}
 					/>
 				),
 			},
@@ -215,6 +216,7 @@ const OnboardingPage = () => {
 						dirtyFields={{}}
 						onChange={(f, v) => updateSectionField("LabelsAndTags", f, v)}
 						errorsUpdate={(errs) => updateSectionErrors("LabelsAndTags", errs as Record<string, string>)}
+						mediaServerType={configState.MediaServer.Type}
 					/>
 				),
 			},

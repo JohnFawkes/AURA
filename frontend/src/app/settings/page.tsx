@@ -432,6 +432,7 @@ const SettingsPage: React.FC = () => {
 										updateSectionErrors("AutoDownload", errs as Record<string, string>)
 									}
 								/>
+
 								<ConfigSectionImages
 									value={newConfig.Images}
 									editing={editing}
@@ -456,7 +457,9 @@ const SettingsPage: React.FC = () => {
 									errorsUpdate={(errs) =>
 										updateSectionErrors("Images", errs as Record<string, string>)
 									}
+									mediaServerType={newConfig.MediaServer.Type}
 								/>
+
 								<ConfigSectionTMDB
 									value={newConfig.TMDB}
 									editing={editing}
@@ -464,26 +467,30 @@ const SettingsPage: React.FC = () => {
 									onChange={(f, v) => updateConfigField("TMDB", f, v)}
 									errorsUpdate={(errs) => updateSectionErrors("TMDB", errs as Record<string, string>)}
 								/>
-								<ConfigSectionLabelsAndTags
-									value={newConfig.LabelsAndTags}
-									editing={editing}
-									dirtyFields={
-										dirty.LabelsAndTags as {
-											Applications?: Array<
-												Partial<
-													Record<
-														string,
-														boolean | { Enabled?: boolean; Add?: boolean; Remove?: boolean }
+								{newConfig.MediaServer.Type === "Plex" && (
+									<ConfigSectionLabelsAndTags
+										value={newConfig.LabelsAndTags}
+										editing={editing}
+										dirtyFields={
+											dirty.LabelsAndTags as {
+												Applications?: Array<
+													Partial<
+														Record<
+															string,
+															| boolean
+															| { Enabled?: boolean; Add?: boolean; Remove?: boolean }
+														>
 													>
-												>
-											>;
+												>;
+											}
 										}
-									}
-									onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
-									errorsUpdate={(errs) =>
-										updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
-									}
-								/>
+										mediaServerType={newConfig.MediaServer.Type}
+										onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
+										errorsUpdate={(errs) =>
+											updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
+										}
+									/>
+								)}
 								<ConfigSectionNotifications
 									value={newConfig.Notifications}
 									editing={editing}

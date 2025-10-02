@@ -8,6 +8,8 @@
 
 - Remove cache images from Media Server logic so that images are always fresh
 - [#99](https://github.com/mediux-team/AURA/issues/99) - Fixed issue with aura logo in Home Screen icon not having enough padding
+- Remove option for Tags from non-Plex media servers
+- Remove option for SaveImagesLocally from non-Plex media servers
 
 ---
 
