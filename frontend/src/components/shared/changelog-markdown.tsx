@@ -1,3 +1,5 @@
+import { Plus, TriangleAlert, Wrench } from "lucide-react";
+
 import { FaGithub } from "react-icons/fa";
 import ReactMarkdown from "react-markdown";
 
@@ -37,10 +39,31 @@ export function ChangelogMarkdown({ children }: { children: string }) {
 				},
 				h3: ({ ...props }) => {
 					const text = String(props.children);
-					let color = "";
-					if (/added/i.test(text)) color = "text-green-600";
-					else if (/fixed/i.test(text)) color = "text-yellow-600";
-					return <h3 className={`text-lg font-semibold mt-4 mb-1 ${color}`}>{props.children}</h3>;
+					if (/breaking/i.test(text)) {
+						return (
+							<h3 className="text-lg font-semibold mt-4 mb-1 text-red-600 flex items-center gap-2">
+								<TriangleAlert className="w-5 h-5" />
+								{props.children}
+							</h3>
+						);
+					}
+					if (/added/i.test(text)) {
+						return (
+							<h3 className="text-lg font-semibold mt-4 mb-1 text-green-600 flex items-center gap-2">
+								<Plus className="w-5 h-5" />
+								{props.children}
+							</h3>
+						);
+					}
+					if (/fixed/i.test(text)) {
+						return (
+							<h3 className="text-lg font-semibold mt-4 mb-1 text-yellow-600 flex items-center gap-2">
+								<Wrench className="w-5 h-5" />
+								{props.children}
+							</h3>
+						);
+					}
+					return <h3 className="text-lg font-semibold mt-4 mb-1">{props.children}</h3>;
 				},
 				ul: (props) => <ul className="text-md list-disc ml-6 mb-2" {...props} />,
 				ol: (props) => <ol className="text-md list-decimal ml-6 mb-2" {...props} />,

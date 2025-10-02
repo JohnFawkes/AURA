@@ -3,6 +3,8 @@
 ### Added
 
 - Added ability to save images locally with configurable path
+- Added icons to changelog headings for better visibility
+- Added breaking section to changelog for important changes
 
 ### Fixed
 
