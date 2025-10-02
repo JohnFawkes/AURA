@@ -1,3 +1,11 @@
+## [0.9.28] - 2025-10-01
+
+### Fixed
+
+- Remove cache images from Media Server logic so that images are always fresh
+
+---
+
 ## [0.9.27] - 2025-10-01
 
 ### Added
