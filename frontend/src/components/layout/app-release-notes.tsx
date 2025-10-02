@@ -34,7 +34,7 @@ export function ReleaseNotesDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle className="text-2xl font-bold mb-2">What's New?</DialogTitle>
+					<DialogTitle className="text-2xl font-bold">What's New?</DialogTitle>
 				</DialogHeader>
 				<div className="max-h-[60vh] overflow-y-auto pr-2">
 					<ChangelogMarkdown>{changelog}</ChangelogMarkdown>

@@ -29,7 +29,7 @@ export function ChangelogMarkdown({ children }: { children: string }) {
 					const match = /(\[([^\]]+)\])\s*-\s*(\d{4}-\d{2}-\d{2})/.exec(headingText);
 					if (match) {
 						return (
-							<div className="flex items-center gap-2 mt-6 mb-2">
+							<div className="flex items-center gap-2 mt-1 mb-2">
 								<span className="text-primary font-bold text-lg">{match[1]}</span>
 								<span className="text-muted-foreground text-sm">{match[3]}</span>
 							</div>
@@ -41,7 +41,7 @@ export function ChangelogMarkdown({ children }: { children: string }) {
 					const text = String(props.children);
 					if (/breaking/i.test(text)) {
 						return (
-							<h3 className="text-lg font-semibold mt-4 mb-1 text-red-600 flex items-center gap-2">
+							<h3 className="text-lg font-semibold mb-1 text-red-600 flex items-center gap-2">
 								<TriangleAlert className="w-5 h-5" />
 								{props.children}
 							</h3>
@@ -49,7 +49,7 @@ export function ChangelogMarkdown({ children }: { children: string }) {
 					}
 					if (/added/i.test(text)) {
 						return (
-							<h3 className="text-lg font-semibold mt-4 mb-1 text-green-600 flex items-center gap-2">
+							<h3 className="text-lg font-semibold mb-1 text-green-600 flex items-center gap-2">
 								<Plus className="w-5 h-5" />
 								{props.children}
 							</h3>
@@ -57,7 +57,7 @@ export function ChangelogMarkdown({ children }: { children: string }) {
 					}
 					if (/fixed/i.test(text)) {
 						return (
-							<h3 className="text-lg font-semibold mt-4 mb-1 text-yellow-600 flex items-center gap-2">
+							<h3 className="text-lg font-semibold mb-1 text-yellow-600 flex items-center gap-2">
 								<Wrench className="w-5 h-5" />
 								{props.children}
 							</h3>
