@@ -1,10 +1,12 @@
 import { FormItemDisplay } from "@/components/shared/download-modal";
 
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 
 const createBaseItem = (set: PosterSet): FormItemDisplay => ({
 	MediaItemRatingKey: "",
 	MediaItemTitle: "",
+	MediaItem: {} as MediaItem,
 	SetID: set.ID,
 	Set: {
 		ID: set.ID,
@@ -34,6 +36,7 @@ const handleAdditionalFiles = (
 			newItem.MediaItemRatingKey = ratingKey;
 			newItem.MediaItemTitle = file.Movie?.Title || file.Show?.Title || "";
 			newItem.Set[fileType] = file;
+			newItem.MediaItem = file.Movie?.MediaItem || file.Show?.MediaItem || ({} as MediaItem);
 			items.push(newItem);
 		}
 	});
@@ -55,6 +58,12 @@ export const posterSetToFormItem = (set: PosterSet): FormItemDisplay[] => {
 			set.SeasonPosters?.find((poster) => poster.Show?.Title)?.Show?.Title ||
 			set.TitleCards?.find((card) => card.Show?.Title)?.Show?.Title ||
 			"";
+		item.MediaItem =
+			set.Poster?.Show?.MediaItem ||
+			set.Backdrop?.Show?.MediaItem ||
+			set.SeasonPosters?.find((poster) => poster.Show?.MediaItem)?.Show?.MediaItem ||
+			set.TitleCards?.find((card) => card.Show?.MediaItem)?.Show?.MediaItem ||
+			({} as MediaItem);
 
 		if (!item.MediaItemRatingKey) return [];
 
@@ -77,6 +86,9 @@ export const posterSetToFormItem = (set: PosterSet): FormItemDisplay[] => {
 		item.MediaItemRatingKey =
 			set.Poster?.Movie?.MediaItem.RatingKey || set.Backdrop?.Movie?.MediaItem.RatingKey || "";
 		item.MediaItemTitle = set.Poster?.Movie?.Title || set.Backdrop?.Movie?.Title || "";
+
+		item.MediaItem = set.Poster?.Movie?.MediaItem || set.Backdrop?.Movie?.MediaItem || ({} as MediaItem);
+
 		if (!item.MediaItemRatingKey) return [];
 
 		Object.assign(item.Set, {

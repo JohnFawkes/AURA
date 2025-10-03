@@ -6,7 +6,7 @@ import { postAddItemToDB } from "@/services/database/api-db-item-add";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, Loader, TriangleAlert, X } from "lucide-react";
+import { CircleAlert, Download, Loader, TriangleAlert, X } from "lucide-react";
 import { z } from "zod";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +38,7 @@ import { Progress } from "@/components/ui/progress";
 import { Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
+import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { DBSavedItem } from "@/types/database/db-saved-item";
@@ -47,6 +48,7 @@ import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 export interface FormItemDisplay {
 	MediaItemRatingKey: string;
 	MediaItemTitle: string;
+	MediaItem: MediaItem;
 	SetID: string;
 	Set: PosterSet;
 }
@@ -213,6 +215,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// User Preferences
 	const { downloadDefaults } = useUserPreferencesStore();
 
+	// Media Store
+	const { setMediaItem } = useMediaStore();
+
 	// Function - Reset Progress Values
 	const resetProgressValues = () => {
 		setProgressValues({
@@ -254,8 +259,18 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					items.push(...getItems);
 				}
 			});
+
+		// Make sure that the main item always appears first
+		if (setType === "boxset" || setType === "collection") {
+			items.sort((a, b) => {
+				if (a.Set.ID === setID) return -1;
+				if (b.Set.ID === setID) return 1;
+				return 0;
+			});
+		}
+
 		return items;
-	}, [posterSets]);
+	}, [posterSets, setID, setType]);
 
 	// Compute Asset Types based on what the form item has
 	const computeAssetTypes = (item: FormItemDisplay): AssetType[] => {
@@ -536,8 +551,27 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				name={`selectedOptionsByItem.${item.MediaItemRatingKey}`}
 				render={({ field }) => (
 					<div className="rounded-md border p-4 rounded mb-4">
-						<FormLabel className="text-md font-normal mb-4">
+						<FormLabel
+							className="text-md font-normal mb-4"
+							onDoubleClick={() => {
+								setMediaItem(item.MediaItem);
+							}}
+						>
 							{item.MediaItemTitle}
+							{(setType === "boxset" || setType === "collection") && item.MediaItem && (
+								<Popover modal={true}>
+									<PopoverTrigger>
+										<CircleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
+									</PopoverTrigger>
+									<PopoverContent className="w-60">
+										<div className="text-sm text-yellow-500">
+											This media item already exists in your database. You can still download
+											images to overwrite the current images. Please keep in mind that this will
+											not delete the other entry from your database.
+										</div>
+									</PopoverContent>
+								</Popover>
+							)}
 							{setType === "boxset" &&
 								isDuplicate &&
 								isDuplicate.selectedType !== "" &&
