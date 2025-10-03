@@ -1,10 +1,11 @@
-## [0.9.29] -
-
-<!-- TODO: Add date -->
+## [0.9.29] - 2025-10-02
 
 ### Fixed
 
 - Mask sensitive information in logging for Pushover notifications and media server configuration
+- [#87](https://github.com/mediux-team/AURA/issues/87) Fixed issue with poster update failing after Plex movie file is replaced
+
+---
 
 ## [0.9.28] - 2025-10-01
 
