@@ -13,10 +13,17 @@ interface RefreshButtonProps {
 export function RefreshButton({ onClick, text = "Refresh", className }: RefreshButtonProps) {
 	return (
 		<Button
-			variant="outline"
+			variant="ghost"
 			size="sm"
 			className={cn(
-				"fixed z-100 right-3 bottom-10 sm:bottom-15 rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer",
+				`fixed z-100 right-3 cursor-pointer
+				bottom-10 sm:bottom-15
+				rounded-full shadow-lg
+				transition-all duration-300
+				border-1 border-primary
+				bg-primary/50 
+				hover:text-black hover:!bg-primary
+				`,
 				className
 			)}
 			onClick={onClick}

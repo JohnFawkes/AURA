@@ -44,10 +44,17 @@ export function JumpToTop() {
 
 	return (
 		<Button
-			variant="outline"
+			variant="ghost"
 			size="sm"
 			className={cn(
-				`fixed z-100 ${rightClass} bottom-10 sm:bottom-15  rounded-full shadow-lg transition-all duration-300 bg-background border-primary-dynamic text-primary-dynamic hover:bg-primary-dynamic hover:text-primary cursor-pointer`,
+				`fixed z-100 ${rightClass} cursor-pointer
+				bottom-10 sm:bottom-15
+				rounded-full shadow-lg
+				transition-all duration-300
+				border-1 border-primary
+				bg-primary/50 
+				hover:text-black hover:!bg-primary
+				`,
 				isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
 			)}
 			onClick={scrollToTop}
