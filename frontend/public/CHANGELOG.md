@@ -4,6 +4,8 @@
 
 - Change button variant to ghost and update styles for consistency in JumpToTop and RefreshButton components
 - Mask sensitive information in logging for Pushover notifications and media server configuration
+- Change home page loading progress bar to be front and center for better visibility on larger libraries
+- Changed home page loading sections to use a skeleton loader for better user experience
 
 ### Fixed
 
