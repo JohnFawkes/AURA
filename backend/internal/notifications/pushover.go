@@ -3,6 +3,7 @@ package notifications
 import (
 	"aura/internal/logging"
 	"aura/internal/modals"
+	"aura/internal/utils/masking"
 	"fmt"
 	"net/http"
 
@@ -39,7 +40,7 @@ func SendPushoverNotification(provider *modals.Config_Notification_Pushover, mes
 	if err != nil {
 		Err.Message = fmt.Sprintf("Failed to send Pushover notification: %v", err)
 		Err.HelpText = "Ensure the Pushover token and user key are correct."
-		Err.Details = fmt.Sprintf("Pushover Token: %s, User Key: %s", provider.Token, provider.UserKey)
+		Err.Details = fmt.Sprintf("Pushover Token: %s, User Key: %s", masking.MaskToken(provider.Token), masking.MaskToken(provider.UserKey))
 		return Err
 	}
 

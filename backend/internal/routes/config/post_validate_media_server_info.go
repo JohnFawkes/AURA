@@ -50,7 +50,7 @@ func ValidateMediaServerNewInfoConnection(w http.ResponseWriter, r *http.Request
 		config.Global.MediaServer.Token = currentToken
 		config.Global.MediaServer.UserID = currentUserID
 		logging.LOG.Debug("Restored original media server configuration values")
-		logging.LOG.Debug(fmt.Sprintf("Type: %s, URL: %s, Token: %s, UserID: %s", currentType, currentURL, currentToken, currentUserID))
+		logging.LOG.Debug(fmt.Sprintf("Type: %s, URL: %s, Token: %s, UserID: %s", currentType, currentURL, masking.MaskToken(currentToken), currentUserID))
 	}()
 
 	var mediaServer mediaserver_shared.MediaServer

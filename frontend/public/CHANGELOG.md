@@ -1,3 +1,11 @@
+## [0.9.29] -
+
+<!-- TODO: Add date -->
+
+### Fixed
+
+- Mask sensitive information in logging for Pushover notifications and media server configuration
+
 ## [0.9.28] - 2025-10-01
 
 ### Added
