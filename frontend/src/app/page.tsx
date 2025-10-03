@@ -100,6 +100,8 @@ export default function Home() {
 		async (useCache: boolean) => {
 			if (isMounted.current && useCache) return;
 			setSectionProgress({});
+			setLibrarySections([]);
+			setError(null);
 			setFullyLoaded(false);
 			try {
 				// Check if we want to use cache
@@ -287,175 +289,174 @@ export default function Home() {
 	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
 
 	return (
-		<div className="min-h-screen px-8 pb-20 sm:px-20">
-			{!fullyLoaded && librarySections.length > 0 && (
-				<div className="mb-4">
+		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
+			{!fullyLoaded && librarySections.length > 0 ? (
+				<div className="w-full flex flex-col items-center justify-center min-h-screen">
 					{librarySections.map((section) => {
-						// Retrieve progress info for this section
 						const progressInfo = sectionProgress[section.ID];
 						const percentage =
 							progressInfo && progressInfo.total > 0
 								? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
 								: 0;
 
-						// Render progress UI only if the percentage is not 100
 						if (Math.round(percentage) !== 100) {
 							return (
-								<div key={section.ID} className="mb-2">
-									<Label className="text-lg font-semibold">Loading {section.Title}</Label>
-									<Progress value={percentage} className="mt-1" />
-									<span className="ml-2 text-sm text-muted-foreground">
+								<div key={section.ID} className="mb-6 w-full max-w-xl flex flex-col items-center">
+									<Label className="text-lg font-semibold text-center mb-2">
+										Loading {section.Title}
+									</Label>
+									<Progress value={percentage} className="w-full h-4 rounded-full" />
+									<span className="mt-2 text-base text-muted-foreground font-medium">
 										{Math.round(percentage)}%
 									</span>
 								</div>
 							);
 						}
+						return null;
 					})}
 				</div>
-			)}
-			{/* Filter Section*/}
-			<div className="flex flex-col sm:flex-row mb-4 mt-2">
-				{/* Label */}
-				<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
-					Filters:
-				</Label>
+			) : (
+				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
+					{/* Filter Section */}
+					<div className="flex flex-col sm:flex-row mb-4 mt-2">
+						<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
+							Filters:
+						</Label>
+						<ToggleGroup
+							type="multiple"
+							className="flex flex-wrap sm:flex-nowrap gap-2"
+							value={filteredLibraries}
+							onValueChange={setFilteredLibraries}
+						>
+							{[...librarySections]
+								.sort((a, b) => a.Title.localeCompare(b.Title))
+								.map((section) => (
+									<Badge
+										key={section.ID}
+										className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
+										variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
+										onClick={() => {
+											if (filteredLibraries.includes(section.Title)) {
+												setFilteredLibraries(
+													filteredLibraries.filter((lib: string) => lib !== section.Title)
+												);
+												setCurrentPage(1);
+											} else {
+												setFilteredLibraries([...filteredLibraries, section.Title]);
+												setCurrentPage(1);
+											}
+										}}
+									>
+										{section.Title}
+									</Badge>
+								))}
 
-				{/* ToggleGroup */}
-				<ToggleGroup
-					type="multiple"
-					className="flex flex-wrap sm:flex-nowrap gap-2"
-					value={filteredLibraries}
-					onValueChange={setFilteredLibraries}
-				>
-					{[...librarySections]
-						.sort((a, b) => a.Title.localeCompare(b.Title))
-						.map((section) => (
 							<Badge
-								key={section.ID}
-								className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
-								variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
+								key={"filter-in-db"}
+								className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
+									filterInDB === "inDB"
+										? "bg-green-600 text-white"
+										: filterInDB === "notInDB"
+											? "bg-red-600 text-white"
+											: ""
+								}`}
+								variant={filterInDB !== "all" ? "default" : "outline"}
 								onClick={() => {
-									if (filteredLibraries.includes(section.Title)) {
-										setFilteredLibraries(
-											filteredLibraries.filter((lib: string) => lib !== section.Title)
-										);
-										setCurrentPage(1);
-									} else {
-										setFilteredLibraries([...filteredLibraries, section.Title]);
-										setCurrentPage(1);
-									}
+									const currentIdx = FILTER_IN_DB_OPTIONS.indexOf(filterInDB);
+									const nextIdx = (currentIdx + 1) % FILTER_IN_DB_OPTIONS.length;
+									setFilterInDB(FILTER_IN_DB_OPTIONS[nextIdx]);
+									setCurrentPage(1);
 								}}
 							>
-								{section.Title}
+								{filterInDB === "all"
+									? "All Items"
+									: filterInDB === "notInDB"
+										? "Items Not in DB"
+										: "Items In DB"}
 							</Badge>
-						))}
-
-					<Badge
-						key={"filter-in-db"}
-						className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
-							filterInDB === "inDB"
-								? "bg-green-600 text-white"
-								: filterInDB === "notInDB"
-									? "bg-red-600 text-white"
-									: ""
-						}`}
-						variant={filterInDB !== "all" ? "default" : "outline"}
-						onClick={() => {
-							const currentIdx = FILTER_IN_DB_OPTIONS.indexOf(filterInDB);
-							const nextIdx = (currentIdx + 1) % FILTER_IN_DB_OPTIONS.length;
-							setFilterInDB(FILTER_IN_DB_OPTIONS[nextIdx]);
-							setCurrentPage(1);
+						</ToggleGroup>
+					</div>
+					{/* Sorting controls */}
+					<SortControl
+						options={[
+							{
+								value: "dateAdded",
+								label: "Date Added",
+								ascIcon: <ClockArrowUp />,
+								descIcon: <ClockArrowDown />,
+							},
+							...(hasUpdatedAt
+								? [
+										{
+											value: "dateUpdated",
+											label: "Date Updated",
+											ascIcon: <ClockArrowUp />,
+											descIcon: <ClockArrowDown />,
+										},
+									]
+								: []),
+							{
+								value: "dateReleased",
+								label: "Date Released",
+								ascIcon: <ClockArrowUp />,
+								descIcon: <ClockArrowDown />,
+							},
+							{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+						]}
+						sortOption={sortOption}
+						sortOrder={sortOrder}
+						setSortOption={(value) => {
+							setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
+							if (value === "title") setSortOrder("asc");
+							else if (value === "dateUpdated") setSortOrder("desc");
+							else if (value === "dateAdded") setSortOrder("desc");
+							else if (value === "dateReleased") setSortOrder("desc");
 						}}
-					>
-						{filterInDB === "all"
-							? "All Items"
-							: filterInDB === "notInDB"
-								? "Items Not in DB"
-								: "Items In DB"}
-					</Badge>
-				</ToggleGroup>
-			</div>
-			{/* Sorting controls */}
-			<SortControl
-				options={[
-					{
-						value: "dateAdded",
-						label: "Date Added",
-						ascIcon: <ClockArrowUp />,
-						descIcon: <ClockArrowDown />,
-					},
-					// Conditionally include "dateUpdated"
-					...(hasUpdatedAt
-						? [
-								{
-									value: "dateUpdated",
-									label: "Date Updated",
-									ascIcon: <ClockArrowUp />,
-									descIcon: <ClockArrowDown />,
-								},
-							]
-						: []),
-					{
-						value: "dateReleased",
-						label: "Date Released",
-						ascIcon: <ClockArrowUp />,
-						descIcon: <ClockArrowDown />,
-					},
-					{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
-				]}
-				sortOption={sortOption}
-				sortOrder={sortOrder}
-				setSortOption={(value) => {
-					setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
-					if (value === "title") setSortOrder("asc");
-					else if (value === "dateUpdated") setSortOrder("desc");
-					else if (value === "dateAdded") setSortOrder("desc");
-					else if (value === "dateReleased") setSortOrder("desc");
-				}}
-				setSortOrder={setSortOrder}
-			/>
-			{/* Items Per Page Selection */}
-			<div className="flex items-center mb-4">
-				<SelectItemsPerPage
-					setCurrentPage={setCurrentPage}
-					itemsPerPage={itemsPerPage}
-					setItemsPerPage={setItemsPerPage}
-				/>
-			</div>
-			{/* Grid of Cards */}
-			<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-				{paginatedItems.length === 0 && fullyLoaded && (searchQuery || filteredLibraries.length > 0) ? (
-					<div className="col-span-full text-center text-red-500">
-						<ErrorMessage
-							error={ReturnErrorMessage<string>(
-								`No items found${searchQuery ? ` matching "${searchQuery}"` : ""} in ${
-									filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"
-								}${
-									filterInDB === "notInDB"
-										? " that are not in the database."
-										: filterInDB === "inDB"
-											? " that are already in the database."
-											: ""
-								}`
-							)}
+						setSortOrder={setSortOrder}
+					/>
+					{/* Items Per Page Selection */}
+					<div className="flex items-center mb-4">
+						<SelectItemsPerPage
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
 						/>
 					</div>
-				) : (
-					paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} mediaItem={item} />)
-				)}
-			</div>
-
-			{/* Pagination */}
-			<CustomPagination
-				currentPage={currentPage}
-				totalPages={totalPages}
-				setCurrentPage={setCurrentPage}
-				scrollToTop={true}
-				filterItemsLength={filteredAndSortedMediaItems.length}
-				itemsPerPage={itemsPerPage}
-			/>
-			{/* Refresh Button */}
-			<RefreshButton onClick={() => getMediaItems(false)} />
+					{/* Grid of Cards */}
+					<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+						{paginatedItems.length === 0 && fullyLoaded && (searchQuery || filteredLibraries.length > 0) ? (
+							<div className="col-span-full text-center text-red-500">
+								<ErrorMessage
+									error={ReturnErrorMessage<string>(
+										`No items found${searchQuery ? ` matching "${searchQuery}"` : ""} in ${
+											filteredLibraries.length > 0 ? filteredLibraries.join(", ") : "any library"
+										}${
+											filterInDB === "notInDB"
+												? " that are not in the database."
+												: filterInDB === "inDB"
+													? " that are already in the database."
+													: ""
+										}`
+									)}
+								/>
+							</div>
+						) : (
+							paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} mediaItem={item} />)
+						)}
+					</div>
+					{/* Pagination */}
+					<CustomPagination
+						currentPage={currentPage}
+						totalPages={totalPages}
+						setCurrentPage={setCurrentPage}
+						scrollToTop={true}
+						filterItemsLength={filteredAndSortedMediaItems.length}
+						itemsPerPage={itemsPerPage}
+					/>
+					{/* Refresh Button */}
+					<RefreshButton onClick={() => getMediaItems(false)} />
+				</div>
+			)}
 		</div>
 	);
 }
