@@ -15,10 +15,8 @@ import { RefreshButton } from "@/components/shared/refresh-button";
 import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
 import { SortControl } from "@/components/shared/select_sort";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { log } from "@/lib/logger";
