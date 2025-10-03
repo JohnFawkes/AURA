@@ -2,7 +2,6 @@ package utils
 
 import (
 	"aura/internal/logging"
-	"fmt"
 	"net/http"
 )
 
@@ -22,7 +21,6 @@ func ValidateMediuxToken(token string) logging.StandardError {
 	if err.Message != "" {
 		Err.Message = "Failed to validate MediUX token"
 		Err.HelpText = "Ensure the MediUX service is reachable and the token is valid."
-		Err.Details = fmt.Sprintf("Error making request to MediUX API: %s", err.Message)
 		return Err
 	}
 

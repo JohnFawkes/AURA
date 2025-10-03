@@ -204,7 +204,10 @@ func InitUserID() logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to parse base URL"
 		Err.HelpText = "Ensure the Media Server URL is correctly configured in the settings."
-		Err.Details = fmt.Sprintf("Base URL: %s", config.Global.MediaServer.URL)
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": baseURL.String(),
+		}
 		return Err
 	}
 	// Construct the full URL by appending the path
@@ -223,7 +226,10 @@ func InitUserID() logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to parse Emby/Jellyfin user ID response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": baseURL.String(),
+		}
 		return Err
 	}
 
@@ -240,7 +246,9 @@ func InitUserID() logging.StandardError {
 	// If no Admin user is found, return an error
 	Err.Message = "No Admin user found in Emby/Jellyfin user list"
 	Err.HelpText = "Ensure that there is at least one user with Admin privileges in the Emby/Jellyfin server."
-	Err.Details = "No Admin user found in the Emby/Jellyfin user list"
+	Err.Details = map[string]any{
+		"request": baseURL.String(),
+	}
 	return Err
 
 }

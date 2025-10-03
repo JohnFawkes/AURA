@@ -28,7 +28,10 @@ func SendPushoverNotification(provider *modals.Config_Notification_Pushover, mes
 		if err != nil {
 			Err.Message = fmt.Sprintf("Failed to download image for Pushover notification: %v", err)
 			Err.HelpText = "Ensure the image URL is correct and accessible."
-			Err.Details = fmt.Sprintf("Image URL: %s", imageURL)
+			Err.Details = map[string]any{
+				"imageURL": imageURL,
+				"error":    err.Error(),
+			}
 			return Err
 		}
 		defer resp.Body.Close()
@@ -40,7 +43,10 @@ func SendPushoverNotification(provider *modals.Config_Notification_Pushover, mes
 	if err != nil {
 		Err.Message = fmt.Sprintf("Failed to send Pushover notification: %v", err)
 		Err.HelpText = "Ensure the Pushover token and user key are correct."
-		Err.Details = fmt.Sprintf("Pushover Token: %s, User Key: %s", masking.MaskToken(provider.Token), masking.MaskToken(provider.UserKey))
+		Err.Details = map[string]any{
+			"pushoverToken":   masking.MaskToken(provider.Token),
+			"pushoverUserKey": masking.MaskToken(provider.UserKey),
+		}
 		return Err
 	}
 

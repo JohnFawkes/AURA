@@ -35,7 +35,11 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	if resp.StatusCode != http.StatusOK {
 		Err.Message = "Failed to fetch item content from Plex server"
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = fmt.Sprintf("Plex server returned status code: %d", resp.StatusCode)
+		Err.Details = map[string]any{
+			"statusCode": resp.StatusCode,
+			"ratingKey":  ratingKey,
+			"request":    url.String(),
+		}
 		return itemInfo, Err
 	}
 
@@ -45,14 +49,19 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": url.String(),
+		}
 		return itemInfo, Err
 	}
 
 	if len(plexResponse.MediaContainer.Metadata) == 0 {
 		Err.Message = "No metadata found for the given rating key"
 		Err.HelpText = "Ensure the rating key is correct and the item exists on the Plex server."
-		Err.Details = fmt.Sprintf("Rating Key: %s", ratingKey)
+		Err.Details = map[string]any{
+			"ratingKey": ratingKey,
+		}
 		return itemInfo, Err
 	}
 
@@ -133,7 +142,10 @@ func fetchSeasonsAndEpisodesForShow(itemInfo *modals.MediaItem) (modals.MediaIte
 	if err != nil {
 		Err.Message = "Failed to parse JSON response for all leaves"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": url,
+		}
 		logging.LOG.Warn(err.Error())
 		return *itemInfo, Err
 	}

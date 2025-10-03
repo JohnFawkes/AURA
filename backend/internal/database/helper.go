@@ -12,9 +12,11 @@ func UnmarshalPosterSet(posterSetJSON string, posterSet *modals.PosterSet) loggi
 	if err != nil {
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to unmarshal PosterSet JSON"
-
 		Err.HelpText = "Ensure the JSON structure matches the PosterSet model."
-		Err.Details = "PosterSet JSON: " + posterSetJSON
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"json":  posterSetJSON,
+		}
 		return Err
 	}
 	return logging.StandardError{}
@@ -25,9 +27,11 @@ func UnmarshalMediaItem(mediaItemJSON string, mediaItem *modals.MediaItem) loggi
 	if err != nil {
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to unmarshal MediaItem JSON"
-
 		Err.HelpText = "Ensure the JSON structure matches the MediaItem model."
-		Err.Details = "MediaItem JSON: " + mediaItemJSON
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"json":  mediaItemJSON,
+		}
 		return Err
 	}
 	return logging.StandardError{}

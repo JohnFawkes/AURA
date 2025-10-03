@@ -13,7 +13,11 @@ SELECT COUNT(*) FROM SavedItems WHERE media_item_id = ?`
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to query database for media item"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = "Query: " + query + ", RatingKey: " + ratingKey
+		Err.Details = map[string]any{
+			"error":     err.Error(),
+			"query":     query,
+			"ratingKey": ratingKey,
+		}
 		return false, Err
 	}
 	if count > 0 {
@@ -31,7 +35,12 @@ SELECT COUNT(*) FROM SavedItems WHERE media_item_id = ? AND poster_set_id = ?`
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to query database for item"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = "Query: " + query + ", RatingKey: " + ratingKey + ", SetID: " + setID
+		Err.Details = map[string]any{
+			"error":     err.Error(),
+			"query":     query,
+			"ratingKey": ratingKey,
+			"setID":     setID,
+		}
 		return false, Err
 	}
 	if count > 0 {

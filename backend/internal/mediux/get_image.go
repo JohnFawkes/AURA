@@ -35,7 +35,10 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	if assetID == "" {
 		Err.Message = "Missing asset ID in URL"
 		Err.HelpText = "Ensure the asset ID is provided in the URL path."
-		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		Err.Details = map[string]any{
+			"error":   "Asset ID is empty",
+			"request": r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -53,7 +56,9 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			Err.Message = "Invalid modified date format"
 			Err.HelpText = "Ensure the modified date is in ISO 8601 format (e.g., 2023-10-01T12:00:00Z)."
-			Err.Details = fmt.Sprintf("Modified Date: %s", modifiedDate)
+			Err.Details = map[string]any{
+				"modifiedDate": modifiedDate,
+			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
@@ -72,7 +77,9 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	if qualityParam != "thumb" && qualityParam != "original" && qualityParam != "optimized" {
 		Err.Message = "Invalid quality parameter"
 		Err.HelpText = "Ensure the quality parameter is either 'thumb', 'original', or 'optimized'."
-		Err.Details = fmt.Sprintf("Quality Parameter: %s", qualityParam)
+		Err.Details = map[string]any{
+			"quality": qualityParam,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -107,7 +114,10 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			Err.Message = "Failed to write image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", MediuxThumbsTempImageFolder)
-			Err.Details = fmt.Sprintf("Error writing image: %v", err)
+			Err.Details = map[string]any{
+				"error":   fmt.Sprintf("Error writing image: %v", err),
+				"request": r.URL.Path,
+			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
@@ -137,7 +147,10 @@ func FetchImage(assetID string, formatDate string, qualityParam string) ([]byte,
 	if len(body) == 0 {
 		Err.Message = "Empty response body from Mediux"
 		Err.HelpText = "Ensure the asset ID is valid and the Mediux service is operational."
-		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
+		Err.Details = map[string]any{
+			"assetID":    assetID,
+			"formatDate": formatDate,
+		}
 		return nil, "", Err
 	}
 
@@ -146,7 +159,10 @@ func FetchImage(assetID string, formatDate string, qualityParam string) ([]byte,
 	if imageType == "" {
 		Err.Message = "Missing Content-Type header in Mediux response"
 		Err.HelpText = "Ensure the Mediux service is returning a valid image type."
-		Err.Details = fmt.Sprintf("Asset ID: %s, Format Date: %s", assetID, formatDate)
+		Err.Details = map[string]any{
+			"assetID":    assetID,
+			"formatDate": formatDate,
+		}
 		return nil, "", Err
 	}
 

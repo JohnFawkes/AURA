@@ -21,7 +21,12 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 	if ratingKey == "" || imageType == "" {
 		Err.Message = "Missing rating key or image type in URL"
 		Err.HelpText = "Ensure the URL contains both rating key and image type parameters."
-		Err.Details = fmt.Sprintf("Received ratingKey: %s, imageType: %s", ratingKey, imageType)
+		Err.Details = map[string]any{
+			"error":     "Rating key or image type is empty",
+			"ratingKey": ratingKey,
+			"imageType": imageType,
+			"request":   r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	} else if imageType != "poster" && imageType != "backdrop" {
@@ -40,8 +45,10 @@ func GetImageFromMediaServer(w http.ResponseWriter, r *http.Request) {
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
 		Err.Message = "Unsupported media server type"
-		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
-		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		Err.HelpText = "Supported types are: Plex, Emby, Jellyfin"
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

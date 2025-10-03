@@ -20,7 +20,12 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	if tmdbID == "" || itemType == "" || itemTitle == "" || librarySection == "" {
 		Err.Message = "Missing parameters for Plex search"
 		Err.HelpText = "Ensure that tmdbID, itemType, itemTitle, and librarySection are provided."
-		Err.Details = fmt.Sprintf("tmdbID: %s, itemType: %s, itemTitle: %s, librarySection: %s", tmdbID, itemType, itemTitle, librarySection)
+		Err.Details = map[string]any{
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"itemTitle":      itemTitle,
+			"librarySection": librarySection,
+		}
 		return "", Err
 	}
 
@@ -28,7 +33,9 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	if itemType != "movie" && itemType != "show" {
 		Err.Message = "Invalid itemType for Plex search"
 		Err.HelpText = "itemType must be either 'movie' or 'show'."
-		Err.Details = fmt.Sprintf("Received itemType: %s", itemType)
+		Err.Details = map[string]any{
+			"receivedItemType": itemType,
+		}
 		return "", Err
 	}
 
@@ -69,7 +76,10 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 	if err != nil {
 		Err.Message = "Failed to parse Plex search response"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":        err.Error(),
+			"responseCode": response.StatusCode,
+		}
 		return "", Err
 	}
 
@@ -77,7 +87,12 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 		logging.LOG.Warn(fmt.Sprintf("No items found for %s", itemTitle))
 		Err.Message = "No items found for the given search criteria"
 		Err.HelpText = fmt.Sprintf("No items found for %s in %s library section", itemTitle, librarySection)
-		Err.Details = fmt.Sprintf("Search criteria: tmdbID: %s, itemType: %s, itemTitle: %s, librarySection: %s", tmdbID, itemType, itemTitle, librarySection)
+		Err.Details = map[string]any{
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"itemTitle":      itemTitle,
+			"librarySection": librarySection,
+		}
 		return "", Err
 	}
 
@@ -167,7 +182,9 @@ func EmbyJellySearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, libraryS
 		logging.LOG.Error(fmt.Sprintf("Failed to parse JSON response: %v", err))
 		Err.Message = "Failed to parse Emby/Jellyfin search response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return "", Err
 	}
 

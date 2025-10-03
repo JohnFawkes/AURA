@@ -48,8 +48,10 @@ func CallFetchLibrarySectionInfo() ([]modals.LibrarySection, logging.StandardErr
 	default:
 		Err := logging.NewStandardError()
 		Err.Message = "Unsupported media server type"
-		Err.HelpText = "Ensure the media server type is either Plex, Emby, or Jellyfin."
-		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		Err.HelpText = "Supported types are: Plex, Emby, Jellyfin"
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type),
+		}
 		return nil, Err
 	}
 

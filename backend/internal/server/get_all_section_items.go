@@ -31,8 +31,12 @@ func GetAllSectionItems(w http.ResponseWriter, r *http.Request) {
 	if sectionID == "" || sectionTitle == "" || sectionType == "" || sectionStartIndex == "" {
 		Err.Message = "Missing required query parameters"
 		Err.HelpText = "Ensure the URL contains sectionID, sectionTitle, sectionType, and sectionStartIndex query parameters."
-		Err.Details = fmt.Sprintf("Received sectionID: %s, sectionTitle: %s, sectionType: %s, sectionStartIndex: %s",
-			sectionID, sectionTitle, sectionType, sectionStartIndex)
+		Err.Details = map[string]any{
+			"sectionID":         sectionID,
+			"sectionTitle":      sectionTitle,
+			"sectionType":       sectionType,
+			"sectionStartIndex": sectionStartIndex,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -68,8 +72,10 @@ func CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType string, s
 	default:
 		Err := logging.NewStandardError()
 		Err.Message = "Unsupported media server type"
-		Err.HelpText = "Ensure the media server type is either Plex, Emby, or Jellyfin."
-		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		Err.HelpText = "Supported types are: Plex, Emby, Jellyfin"
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type),
+		}
 		return section, Err
 	}
 
@@ -83,7 +89,9 @@ func CallFetchLibrarySectionItems(sectionID, sectionTitle, sectionType string, s
 		logging.LOG.Warn(fmt.Sprintf("Library section '%s' is empty", section.Title))
 		Err.Message = "No items found in the library section"
 		Err.HelpText = fmt.Sprintf("Ensure the section '%s' has items.", section.Title)
-		Err.Details = fmt.Sprintf("No items found for section ID '%s' with title '%s'.", section.ID, section.Title)
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("No items found for section ID '%s' with title '%s'.", section.ID, section.Title),
+		}
 		return section, Err
 	}
 	section.MediaItems = mediaItems

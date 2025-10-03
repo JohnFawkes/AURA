@@ -19,7 +19,9 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 	if itemRatingKey == "" {
 		Err.Message = "Media not found"
 		Err.HelpText = "Ensure the item exists in the Emby/Jellyfin library."
-		Err.Details = fmt.Sprintf("Item Title: %s, Rating Key: %s, File ID: %s", item.Title, itemRatingKey, file.ID)
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("No matching media item found for file ID: %s", file.ID),
+		}
 		return Err
 	}
 
@@ -48,7 +50,10 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		if err != nil {
 			Err.Message = "Failed to write image to temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", mediux.MediuxFullTempImageFolder)
-			Err.Details = fmt.Sprintf("Error writing image: %v", err)
+			Err.Details = map[string]any{
+				"error":    fmt.Sprintf("Error writing image: %v", err),
+				"filePath": filePath,
+			}
 			return Err
 		}
 		logging.LOG.Trace(fmt.Sprintf("Image %s downloaded and saved to temporary folder", file.ID))
@@ -59,7 +64,10 @@ func DownloadAndUpdatePosters(item modals.MediaItem, file modals.PosterFile) log
 		if err != nil {
 			Err.Message = "Failed to read image from temporary folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and readable.", mediux.MediuxFullTempImageFolder)
-			Err.Details = fmt.Sprintf("Error reading image: %v", err)
+			Err.Details = map[string]any{
+				"error":    fmt.Sprintf("Error reading image: %v", err),
+				"filePath": filePath,
+			}
 			return Err
 		}
 	}

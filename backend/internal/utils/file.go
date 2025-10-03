@@ -16,7 +16,10 @@ func CheckFolderExists(folderPath string) logging.StandardError {
 		if err != nil {
 			Err.Message = "Failed to create folder"
 			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", folderPath)
-			Err.Details = fmt.Sprintf("Error creating folder: %v", err)
+			Err.Details = map[string]any{
+				"error":      err.Error(),
+				"folderPath": folderPath,
+			}
 			return Err
 		}
 	}
@@ -35,7 +38,10 @@ func ClearFilesFromFolder(folderPath string, daysToClear int64) (int, logging.St
 	if err != nil {
 		Err.Message = "Failed to read folder"
 		Err.HelpText = fmt.Sprintf("Ensure the path '%s' is accessible.", folderPath)
-		Err.Details = fmt.Sprintf("Error reading folder: %v", err)
+		Err.Details = map[string]any{
+			"error":      err.Error(),
+			"folderPath": folderPath,
+		}
 		return 0, Err
 	}
 

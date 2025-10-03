@@ -33,7 +33,9 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
-		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -52,6 +54,10 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				Err.Message = "Failed to create today's log file"
 				Err.HelpText = "Check file permissions and ensure the log directory is writable."
+				Err.Details = map[string]any{
+					"filePath": todaysLogFile,
+					"error":    err.Error(),
+				}
 				utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 				return
 			}
@@ -63,6 +69,10 @@ func ClearLogOldFiles(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				Err.Message = "Failed to clear today's log file"
 				Err.HelpText = "Check file permissions and ensure the log directory is writable."
+				Err.Details = map[string]any{
+					"filePath": todaysLogFile,
+					"error":    err.Error(),
+				}
 				utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 				return
 			}

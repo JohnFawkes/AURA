@@ -6,7 +6,6 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -23,7 +22,10 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
-		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"body":  r.Body,
+		}
 		logging.LOG.ErrorWithLog(Err)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
@@ -50,7 +52,9 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	if dbSavedItem.MediaItemID == "" {
 		Err.Message = "Item not found in database"
 		Err.HelpText = "Ensure the item exists in the database before attempting a force recheck."
-		Err.Details = fmt.Sprintf("Item ID: %s", item.MediaItemID)
+		Err.Details = map[string]any{
+			"MediaItemID": item.MediaItemID,
+		}
 		logging.LOG.ErrorWithLog(Err)
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return

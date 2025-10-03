@@ -30,7 +30,9 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	if err != nil {
 		Err.Message = "Failed to parse JSON response from media server"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = "Error: " + err.Error()
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return "", Err
 	}
 
@@ -39,7 +41,9 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	if status == "" {
 		Err.Message = "Received empty status from media server"
 		Err.HelpText = "Ensure the media server is running and accessible."
-		Err.Details = "The media server returned an empty status response."
+		Err.Details = map[string]any{
+			"statusCode": response.StatusCode,
+		}
 		return "", Err
 	}
 

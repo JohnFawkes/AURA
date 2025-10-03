@@ -23,7 +23,10 @@ func GetAllUserSets(w http.ResponseWriter, r *http.Request) {
 	if username == "" {
 		Err.Message = "Missing username in URL"
 		Err.HelpText = "Ensure the username is provided in the URL path."
-		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		Err.Details = map[string]any{
+			"error":   "Username is empty",
+			"request": r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -85,7 +88,10 @@ func fetchAllUserSets(username string) (MediuxUserAllSetsResponse, logging.Stand
 	if err != nil {
 		Err.Message = "Failed to unmarshal response from Mediux API"
 		Err.HelpText = "Ensure the response format matches the expected structure."
-		Err.Details = fmt.Sprintf("Error: %s, Response Body: %s", err.Error(), string(response.Body()))
+		Err.Details = map[string]any{
+			"error":        err.Error(),
+			"responseBody": string(response.Body()),
+		}
 		return MediuxUserAllSetsResponse{}, Err
 	}
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"aura/internal/logging"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -27,8 +28,30 @@ func SendErrorResponse(w http.ResponseWriter, elapsed string, err logging.Standa
 		Elapsed: elapsed,
 		Error:   &err,
 	}
+
 	// Log the error using the logging package
-	logging.LOG.Error(err.Message)
+	logMsg := err.Message
+
+	if err.HelpText != "" {
+		logMsg += "\n" + err.HelpText
+	}
+
+	if err.Details != nil {
+		if detailsStr, ok := err.Details.(string); ok {
+			logMsg += "\n" + detailsStr
+		} else if detailsMap, ok := err.Details.(map[string]any); ok {
+			if jsonBytes, jsonErr := json.MarshalIndent(detailsMap, "", "  "); jsonErr == nil {
+				logMsg += "\n" + string(jsonBytes)
+			} else {
+				logMsg += "\n" + fmt.Sprintf("%v", detailsMap)
+			}
+		} else {
+			logMsg += "\n" + fmt.Sprintf("%v", err.Details)
+		}
+	}
+
+	logging.LOG.Error(logMsg)
+
 	// Encode the response as JSON and send it
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		// Handle encoding error if necessary

@@ -6,7 +6,6 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -22,7 +21,9 @@ func ValidateMediuxToken(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&mediuxInfo); err != nil {
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is valid JSON"
-		Err.Details = fmt.Sprintf("Error: %v", err)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

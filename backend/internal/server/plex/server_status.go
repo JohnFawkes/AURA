@@ -27,7 +27,10 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	if httpResponse.StatusCode != 200 {
 		Err.Message = "Failed to connect to Plex server"
 		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL with the correct token."
-		Err.Details = "HTTP Status: " + httpResponse.Status
+		Err.Details = map[string]any{
+			"statusCode": httpResponse.StatusCode,
+			"request":    baseURL.String(),
+		}
 		return "", Err
 	}
 
@@ -36,7 +39,10 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	if err != nil {
 		Err.Message = "Failed to parse Plex server response"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = "Error: " + err.Error()
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": baseURL.String(),
+		}
 		return "", Err
 	}
 
@@ -45,7 +51,9 @@ func GetMediaServerStatus() (string, logging.StandardError) {
 	if serverVersion == "" {
 		Err.Message = "Failed to retrieve Plex server version"
 		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL."
-		Err.Details = "Response: " + string(body)
+		Err.Details = map[string]any{
+			"request": baseURL.String(),
+		}
 		return "", Err
 	}
 

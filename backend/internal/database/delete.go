@@ -20,7 +20,11 @@ func DeleteMediaItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 	if ratingKey == "" {
 		Err.Message = "Missing Rating Key in Request"
 		Err.HelpText = "Ensure the request includes a valid ratingKey parameter."
-		Err.Details = fmt.Sprintf("Request URL: %s - RatingKey: %s", r.URL.Path, ratingKey)
+		Err.Details = map[string]any{
+			"error":     "Rating Key is empty",
+			"ratingKey": ratingKey,
+			"request":   r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -45,7 +49,11 @@ DELETE FROM SavedItems WHERE media_item_id = ?`
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to delete Media Item from database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = fmt.Sprintf("Query: %s, RatingKey: %s", deleteMediaItemQuery, ratingKey)
+		Err.Details = map[string]any{
+			"error":     err.Error(),
+			"query":     deleteMediaItemQuery,
+			"ratingKey": ratingKey,
+		}
 		return Err
 	}
 
@@ -61,7 +69,12 @@ DELETE FROM SavedItems WHERE media_item_id = ? AND poster_set_id = ?`
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to delete Poster Item from database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = fmt.Sprintf("Query: %s, RatingKey: %s, SetID: %s", deletePosterItemQuery, ratingKey, setID)
+		Err.Details = map[string]any{
+			"error":     err.Error(),
+			"query":     deletePosterItemQuery,
+			"ratingKey": ratingKey,
+			"setID":     setID,
+		}
 		return Err
 	}
 	logging.LOG.Info(fmt.Sprintf("DB - Poster Item deleted successfully for item: %s - %s", ratingKey, setID))

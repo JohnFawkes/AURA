@@ -211,7 +211,11 @@ SELECT COUNT(*) FROM (
 		if err := db.QueryRow(countQuery, filterArgs...).Scan(&totalItems); err != nil {
 			Err.Message = "Failed to count multi-set media items"
 			Err.HelpText = "Check error details for more information."
-			Err.Details = "Error: " + err.Error() + ", Query: " + countQuery
+			Err.Details = map[string]any{
+				"error":      err.Error(),
+				"query":      countQuery,
+				"filterArgs": filterArgs,
+			}
 			return nil, 0, nil, Err
 		}
 
@@ -231,7 +235,11 @@ HAVING COUNT(*) > 1
 		if err != nil {
 			Err.Message = "Failed to query multi-set media_item_ids"
 			Err.HelpText = "Check error details for more information."
-			Err.Details = "Error: " + err.Error() + ", Query: " + idQuery
+			Err.Details = map[string]any{
+				"error":      err.Error(),
+				"query":      idQuery,
+				"filterArgs": filterArgs,
+			}
 			return nil, 0, nil, Err
 		}
 		defer idRows.Close()
@@ -265,7 +273,11 @@ WHERE media_item_id IN (%s)
 		if err != nil {
 			Err.Message = "Failed to query multi-set items"
 			Err.HelpText = "Check error details for more information."
-			Err.Details = "Error: " + err.Error() + ", Query: " + mainQuery
+			Err.Details = map[string]any{
+				"error":    err.Error(),
+				"query":    mainQuery,
+				"mainArgs": mainArgs,
+			}
 			return nil, 0, nil, Err
 		}
 		defer rows2.Close()
@@ -290,7 +302,11 @@ FROM SavedItems
 		if err != nil {
 			Err.Message = "Failed to get unique user names"
 			Err.HelpText = "Check error details for more information."
-			Err.Details = "Error: " + err.Error() + ", Query: " + uniqueUsersQuery
+			Err.Details = map[string]any{
+				"error":           err.Error(),
+				"query":           uniqueUsersQuery,
+				"uniqueUsersArgs": uniqueUsersArgs,
+			}
 			return nil, 0, nil, Err
 		}
 		defer userRows.Close()
@@ -314,7 +330,11 @@ FROM SavedItems
 	if err := db.QueryRow(countQuery, filterArgs...).Scan(&totalItems); err != nil {
 		Err.Message = "Failed to count unique media items"
 		Err.HelpText = "Check error details for more information."
-		Err.Details = "Error: " + err.Error() + ", Query: " + countQuery
+		Err.Details = map[string]any{
+			"error":      err.Error(),
+			"query":      countQuery,
+			"filterArgs": filterArgs,
+		}
 		return nil, 0, nil, Err
 	}
 
@@ -333,7 +353,11 @@ FROM SavedItems
 	if err != nil {
 		Err.Message = "Failed to get unique user names"
 		Err.HelpText = "Check error details for more information."
-		Err.Details = "Error: " + err.Error() + ", Query: " + uniqueUsersQuery
+		Err.Details = map[string]any{
+			"error":           err.Error(),
+			"query":           uniqueUsersQuery,
+			"uniqueUsersArgs": uniqueUsersArgs,
+		}
 		return nil, 0, nil, Err
 	}
 	defer rows.Close()
@@ -380,7 +404,11 @@ LIMIT ? OFFSET ?`
 	if err != nil {
 		Err.Message = "Failed to query filtered items from database"
 		Err.HelpText = "Check error details for more information."
-		Err.Details = "Error: " + err.Error() + ", Query: " + mainQuery
+		Err.Details = map[string]any{
+			"error":    err.Error(),
+			"query":    mainQuery,
+			"mainArgs": mainArgs,
+		}
 		return nil, 0, nil, Err
 	}
 	defer rows2.Close()
@@ -412,7 +440,10 @@ func groupRowsIntoMediaItems(rows *sql.Rows, query string) ([]modals.DBMediaItem
 		); err != nil {
 			Err.Message = "Failed to scan row from SavedItems"
 			Err.HelpText = "Check schema/data types."
-			Err.Details = "Error: " + err.Error() + ", Query: " + query
+			Err.Details = map[string]any{
+				"error": err.Error(),
+				"query": query,
+			}
 			return nil, Err
 		}
 
@@ -478,7 +509,10 @@ ORDER BY media_item_id`
 	if err != nil {
 		Err.Message = "Failed to query all items from database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = "Query: " + query
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"query": query,
+		}
 		return nil, Err
 	}
 	defer rows.Close()

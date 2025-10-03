@@ -24,7 +24,10 @@ func UpdateSavedSetTypesForItem(w http.ResponseWriter, r *http.Request) {
 		Err := logging.NewStandardError()
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is a valid JSON object matching the expected structure."
-		Err.Details = fmt.Sprintf("Request Body: %s", r.Body)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"body":  r.Body,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -73,7 +76,9 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to marshal MediaItem data"
 		Err.HelpText = "Ensure the MediaItem struct is correctly defined and contains valid data."
-		Err.Details = fmt.Sprintf("MediaItem: %+v", saveItem.MediaItem)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return Err
 	}
 
@@ -82,7 +87,9 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to marshal PosterSet data"
 		Err.HelpText = "Ensure the PosterSet struct is correctly defined and contains valid data."
-		Err.Details = fmt.Sprintf("PosterSet: %+v", saveItem.PosterSet)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return Err
 	}
 
@@ -100,7 +107,11 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to update MediaItem data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = fmt.Sprintf("MediaItemID: %s, MediaItem: %+v", saveItem.MediaItem.RatingKey, saveItem.MediaItem)
+		Err.Details = map[string]any{
+			"error":       err.Error(),
+			"query":       query,
+			"MediaItemID": saveItem.MediaItem.RatingKey,
+		}
 		return Err
 	}
 
@@ -121,7 +132,12 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to update PosterSet data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = fmt.Sprintf("PosterSetID: %s, PosterSet: %+v, MediaItemID: %s", saveItem.PosterSet.ID, saveItem.PosterSet, saveItem.MediaItem.RatingKey)
+		Err.Details = map[string]any{
+			"error":       err.Error(),
+			"query":       query,
+			"MediaItemID": saveItem.MediaItem.RatingKey,
+			"PosterSetID": saveItem.PosterSet.ID,
+		}
 		return Err
 	}
 	logging.LOG.Info(fmt.Sprintf("DB - Item updated successfully for: %s - Set %s", saveItem.MediaItem.Title, saveItem.PosterSet.ID))

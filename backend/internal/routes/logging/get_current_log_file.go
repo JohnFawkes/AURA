@@ -4,7 +4,6 @@ import (
 	"aura/internal/logging"
 	"aura/internal/utils"
 	"aura/internal/utils/masking"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -27,9 +26,12 @@ func GetCurrentLogFile(w http.ResponseWriter, r *http.Request) {
 	// Read the log file using os
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-		Err.Message = fmt.Sprintf("Failed to read the log file: %s", err.Error())
+		Err.Message = "Failed to read the log file"
 		Err.HelpText = "Ensure the log file exists and is accessible."
-		Err.Details = fmt.Sprintf("Log File Path: %s", filePath)
+		Err.Details = map[string]any{
+			"filePath": filePath,
+			"error":    err.Error(),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

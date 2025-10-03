@@ -33,7 +33,9 @@ func FetchLibrarySectionOptions() ([]string, logging.StandardError) {
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return nil, Err
 	}
 

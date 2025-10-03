@@ -46,7 +46,10 @@ func SendDiscordNotification(provider *modals.Config_Notification_Discord, messa
 	if err != nil {
 		Err.Message = "Failed to marshal webhook body"
 		Err.HelpText = "Ensure the webhook body is correctly formatted."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"body":  webhookBody,
+		}
 		return Err
 	}
 
@@ -54,7 +57,9 @@ func SendDiscordNotification(provider *modals.Config_Notification_Discord, messa
 	if err != nil {
 		Err.Message = "Failed to send webhook request"
 		Err.HelpText = "Ensure the Discord webhook URL is correct and accessible."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return Err
 	}
 	defer resp.Body.Close()
@@ -62,7 +67,9 @@ func SendDiscordNotification(provider *modals.Config_Notification_Discord, messa
 	if resp.StatusCode != http.StatusNoContent {
 		Err.Message = fmt.Sprintf("Failed to send Discord notification, received status code: %d", resp.StatusCode)
 		Err.HelpText = "Ensure the Discord webhook URL is correct and the bot has permission to send messages."
-		Err.Details = fmt.Sprintf("Response status: %s", resp.Status)
+		Err.Details = map[string]any{
+			"responseStatus": resp.Status,
+		}
 		return Err
 	}
 

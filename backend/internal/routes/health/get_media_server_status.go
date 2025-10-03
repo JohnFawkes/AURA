@@ -23,8 +23,10 @@ func GetMediaServerStatus(w http.ResponseWriter, r *http.Request) {
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
 		Err.Message = "Unsupported media server type"
-		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
-		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		Err.HelpText = "Supported types are: Plex, Emby, Jellyfin"
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

@@ -46,7 +46,9 @@ func GetMediuxImageURL(assetID, dateTimeString, quality string) (string, logging
 	if quality != "original" && quality != "thumb" && quality != "optimized" {
 		Err.Message = "Invalid quality parameter"
 		Err.HelpText = "Quality must be either 'original', 'thumb', or 'optimized'."
-		Err.Details = fmt.Sprintf("Provided quality: %s", quality)
+		Err.Details = map[string]any{
+			"quality": quality,
+		}
 		return "", Err
 	}
 

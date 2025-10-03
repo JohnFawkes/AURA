@@ -41,7 +41,9 @@ func FetchItemContent(ratingKey string, sectionTitle string) (modals.MediaItem, 
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return modals.MediaItem{}, Err
 	}
 
@@ -140,7 +142,9 @@ func fetchSeasonsForShow(itemInfo *modals.MediaItem) (modals.MediaItem, logging.
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return *itemInfo, Err
 	}
 
@@ -192,7 +196,9 @@ func fetchEpisodesForSeason(showRatingKey string, season modals.MediaItemSeason)
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return season, Err
 	}
 
@@ -240,7 +246,9 @@ func fetchEpisodeInfo(episode *modals.MediaItemEpisode) (modals.MediaItemEpisode
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return *episode, Err
 	}
 

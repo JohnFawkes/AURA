@@ -46,7 +46,12 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 	if response.StatusCode != http.StatusOK {
 		Err.Message = "Failed to fetch image from Plex server"
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = fmt.Sprintf("Plex server returned status code: %d", response.StatusCode)
+		Err.Details = map[string]any{
+			"statusCode": response.StatusCode,
+			"ratingKey":  ratingKey,
+			"imageType":  imageType,
+			"request":    plexURL,
+		}
 		return nil, Err
 	}
 
@@ -54,7 +59,12 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 	if len(body) == 0 {
 		Err.Message = "Received empty response from Plex server"
 		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = "The Plex server returned an empty response for the requested image."
+		Err.Details = map[string]any{
+			"statusCode": response.StatusCode,
+			"ratingKey":  ratingKey,
+			"imageType":  imageType,
+			"request":    plexURL,
+		}
 		return nil, Err
 	}
 

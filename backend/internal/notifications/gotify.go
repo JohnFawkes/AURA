@@ -3,6 +3,7 @@ package notifications
 import (
 	"aura/internal/logging"
 	"aura/internal/modals"
+	"aura/internal/utils/masking"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -45,6 +46,12 @@ func SendGotifyNotification(provider *modals.Config_Notification_Gotify, message
 	resp, httpErr := http.PostForm(gotifyEndpoint, form)
 	if httpErr != nil {
 		Err.Message = "Failed to send Gotify notification: " + httpErr.Error()
+		Err.HelpText = "Ensure the Gotify URL and token are correct and the server is reachable."
+		Err.Details = map[string]any{
+			"gotifyURL":   provider.URL,
+			"gotifyToken": masking.MaskToken(provider.Token),
+			"error":       httpErr.Error(),
+		}
 		logging.LOG.ErrorWithLog(Err)
 		return Err
 	}
@@ -52,7 +59,14 @@ func SendGotifyNotification(provider *modals.Config_Notification_Gotify, message
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		body, _ := io.ReadAll(resp.Body)
-		Err.Message = fmt.Sprintf("Failed to send Gotify notification (%d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		Err.Message = "Failed to send Gotify notification"
+		Err.HelpText = "Ensure the Gotify URL and token are correct and the server is reachable."
+		Err.Details = map[string]any{
+			"gotifyURL":    provider.URL,
+			"gotifyToken":  masking.MaskToken(provider.Token),
+			"statusCode":   resp.StatusCode,
+			"responseBody": strings.TrimSpace(string(body)),
+		}
 		logging.LOG.ErrorWithLog(Err)
 		return Err
 	}

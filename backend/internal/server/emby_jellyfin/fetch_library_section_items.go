@@ -51,7 +51,9 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return nil, 0, Err
 	}
 
@@ -59,7 +61,10 @@ func FetchLibrarySectionItems(section modals.LibrarySection, sectionStartIndex s
 	if len(responseSection.Items) == 0 {
 		Err.Message = "No items found in the library section"
 		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' has items.", section.Title)
-		Err.Details = fmt.Sprintf("No items found for section ID '%s' with title '%s'.", section.ID, section.Title)
+		Err.Details = map[string]any{
+			"sectionID":    section.ID,
+			"sectionTitle": section.Title,
+		}
 		return nil, 0, Err
 	}
 
@@ -140,7 +145,9 @@ func SplitCollectionIntoIndividualItems(collectionName, parentID, sectionTitle s
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return nil, Err
 	}
 
@@ -148,7 +155,10 @@ func SplitCollectionIntoIndividualItems(collectionName, parentID, sectionTitle s
 	if len(responseSection.Items) == 0 {
 		Err.Message = "No items found in the library section"
 		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' has items.", sectionTitle)
-		Err.Details = fmt.Sprintf("No items found for section ID '%s' with title '%s'.", parentID, sectionTitle)
+		Err.Details = map[string]any{
+			"sectionID":    parentID,
+			"sectionTitle": sectionTitle,
+		}
 		return nil, Err
 	}
 

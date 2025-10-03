@@ -26,7 +26,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&newConfig); err != nil {
 		Err.Message = "Failed to decode request body"
 		Err.HelpText = "Ensure the request body is valid JSON"
-		Err.Details = fmt.Sprintf("Error: %v", err)
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -50,8 +52,10 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !authValid {
 		Err.Message = "Auth configuration is invalid"
-		Err.Details = authErrorMessages
 		Err.HelpText = "Please correct the Auth configuration and try again."
+		Err.Details = map[string]any{
+			"error": authErrorMessages,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue
 		return
@@ -62,7 +66,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !loggingValid {
 		Err.Message = "Logging configuration is invalid"
-		Err.Details = loggingErrorMessages
+		Err.Details = map[string]any{
+			"error": loggingErrorMessages,
+		}
 		Err.HelpText = "Please correct the Logging configuration and try again."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue
@@ -74,7 +80,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !mediaServerValid {
 		Err.Message = "MediaServer configuration is invalid"
-		Err.Details = mediaServerErrorMessages
+		Err.Details = map[string]any{
+			"error": mediaServerErrorMessages,
+		}
 		Err.HelpText = "Please correct the MediaServer configuration and try again."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue
@@ -86,7 +94,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !mediuxValid {
 		Err.Message = "Mediux configuration is invalid"
-		Err.Details = mediuxErrorMessages
+		Err.Details = map[string]any{
+			"error": mediuxErrorMessages,
+		}
 		Err.HelpText = "Please correct the Mediux configuration and try again."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue
@@ -98,7 +108,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !autodownloadValid {
 		Err.Message = "AutoDownload configuration is invalid"
-		Err.Details = autodownloadErrorMessages
+		Err.Details = map[string]any{
+			"error": autodownloadErrorMessages,
+		}
 		Err.HelpText = "Please correct the AutoDownload configuration and try again."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue
@@ -122,7 +134,9 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if !notificationsValid {
 		Err.Message = "Notifications configuration is invalid"
-		Err.Details = notificationsErrorMessages
+		Err.Details = map[string]any{
+			"error": notificationsErrorMessages,
+		}
 		Err.HelpText = "Please correct the Notifications configuration and try again."
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		config.ConfigValid = oldConfigValidValue

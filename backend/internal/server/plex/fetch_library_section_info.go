@@ -32,7 +32,10 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": url.String(),
+		}
 		return false, Err
 	}
 
@@ -48,7 +51,9 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	if library.SectionID == "" {
 		Err.Message = "Library section not found"
 		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' exists on the Plex server.", library.Name)
-		Err.Details = fmt.Sprintf("No section with name '%s' found in the Plex server response.", library.Name)
+		Err.Details = map[string]any{
+			"request": url.String(),
+		}
 		return false, Err
 	}
 

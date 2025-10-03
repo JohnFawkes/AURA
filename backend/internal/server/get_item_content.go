@@ -23,7 +23,11 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	if ratingKey == "" {
 		Err.Message = "Missing rating key in URL"
 		Err.HelpText = "Ensure the URL contains a valid rating key."
-		Err.Details = fmt.Sprintf("Received ratingKey: %s", ratingKey)
+		Err.Details = map[string]any{
+			"error":     "Rating key is empty",
+			"ratingKey": ratingKey,
+			"request":   r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -33,7 +37,11 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	if sectionTitle == "" {
 		Err.Message = "Missing section title in query parameters"
 		Err.HelpText = "Ensure the URL contains a valid sectionTitle query parameter."
-		Err.Details = fmt.Sprintf("Received sectionTitle: %s", sectionTitle)
+		Err.Details = map[string]any{
+			"error":        "Section title is empty",
+			"sectionTitle": sectionTitle,
+			"request":      r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -46,8 +54,10 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 		mediaServer = &mediaserver_shared.EmbyJellyServer{}
 	default:
 		Err.Message = "Unsupported media server type"
-		Err.HelpText = fmt.Sprintf("The media server type '%s' is not supported.", config.Global.MediaServer.Type)
-		Err.Details = fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type)
+		Err.HelpText = "Supported types are: Plex, Emby, Jellyfin"
+		Err.Details = map[string]any{
+			"error": fmt.Sprintf("Received media server type: %s", config.Global.MediaServer.Type),
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -61,7 +71,12 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	if itemInfo.RatingKey == "" {
 		Err.Message = "Item content not found"
 		Err.HelpText = "Ensure the rating key is valid and the item exists in the media server."
-		Err.Details = fmt.Sprintf("No content found for ratingKey: %s in sectionTitle: %s", ratingKey, sectionTitle)
+		Err.Details = map[string]any{
+			"error":        "No content found",
+			"ratingKey":    ratingKey,
+			"sectionTitle": sectionTitle,
+			"request":      r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

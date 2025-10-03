@@ -33,7 +33,9 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error": err.Error(),
+		}
 		return false, Err
 	}
 
@@ -53,7 +55,6 @@ func FetchLibrarySectionInfo(library *modals.Config_MediaServerLibrary) (bool, l
 	if !found {
 		Err.Message = "Library section not found"
 		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' exists on the media server.", library.Name)
-		Err.Details = fmt.Sprintf("No section with name '%s' found in the media server response.", library.Name)
 		return false, Err
 	}
 

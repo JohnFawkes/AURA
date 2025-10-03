@@ -3,7 +3,6 @@ package plex
 import (
 	"aura/internal/logging"
 	"aura/internal/utils"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -20,7 +19,10 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	if ratingKey == "" {
 		Err.Message = "Missing rating key"
 		Err.HelpText = "Ensure the URL contains a valid rating key parameter."
-		Err.Details = fmt.Sprintf("Received ratingKey: %s", ratingKey)
+		Err.Details = map[string]any{
+			"error":   "Rating key is empty",
+			"request": r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -34,7 +36,10 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 	if itemInfo.RatingKey == "" {
 		Err.Message = "Item not found"
 		Err.HelpText = "Ensure the rating key corresponds to an existing item in Plex."
-		Err.Details = fmt.Sprintf("No item found for ratingKey: %s", ratingKey)
+		Err.Details = map[string]any{
+			"ratingKey": ratingKey,
+			"request":   r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}

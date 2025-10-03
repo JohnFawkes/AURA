@@ -1,3 +1,11 @@
+## [0.9.30] - 2025-10-03
+
+### Fixed
+
+- Updated error details to use structured maps instead of formatted strings for better clarity and consistency
+
+---
+
 ## [0.9.29] - 2025-10-02
 
 ### Added

@@ -50,7 +50,11 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 	if tmdbID == "" || itemType == "" || librarySection == "" {
 		Err.Message = "Missing TMDB ID, Item Type or Library Section in URL Parameters"
 		Err.HelpText = "Ensure the TMDB ID, Item Type and Library Section are provided in path parameters."
-		Err.Details = fmt.Sprintf("Params: tmdbID=%s, itemType=%s, librarySection=%s", tmdbID, itemType, librarySection)
+		Err.Details = map[string]any{
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"librarySection": librarySection,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -105,7 +109,9 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	default:
 		Err.Message = "Invalid item type provided"
 		Err.HelpText = "Ensure the item type is either 'movie' or 'show'."
-		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
+		Err.Details = map[string]any{
+			"itemType": itemType,
+		}
 		return nil, Err
 	}
 	// Create a new Resty client
@@ -152,7 +158,15 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 	if err != nil {
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"tmdbID":         tmdbID,
+			"itemType":       itemType,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"responseBody":   string(response.Body()),
+			"statusCode":     response.StatusCode(),
+		}
 		return nil, Err
 	}
 
@@ -162,7 +176,10 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		if responseBody.Data.Movie.ID == "" {
 			Err.Message = "Movie not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the movie exists in the Mediux database."
-			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			Err.Details = map[string]any{
+				"tmdbID":   tmdbID,
+				"itemType": itemType,
+			}
 			return nil, Err
 		}
 
@@ -171,7 +188,10 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			responseBody.Data.Movie.Backdrops == nil {
 			Err.Message = "Movie sets not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the movie has sets in the Mediux database."
-			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			Err.Details = map[string]any{
+				"tmdbID":   tmdbID,
+				"itemType": itemType,
+			}
 			return nil, Err
 		}
 
@@ -179,7 +199,10 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 		if responseBody.Data.Show.ID == "" {
 			Err.Message = "Show not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the show exists in the Mediux database."
-			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			Err.Details = map[string]any{
+				"tmdbID":   tmdbID,
+				"itemType": itemType,
+			}
 			return nil, Err
 		}
 
@@ -188,7 +211,10 @@ func fetchAllSets(tmdbID, itemType, librarySection, itemRatingKey string) ([]mod
 			responseBody.Data.Show.Seasons == nil {
 			Err.Message = "Show sets not found in the response"
 			Err.HelpText = "Ensure the TMDB ID is correct and the show has sets in the Mediux database."
-			Err.Details = fmt.Sprintf("TMDB ID: %s", tmdbID)
+			Err.Details = map[string]any{
+				"tmdbID":   tmdbID,
+				"itemType": itemType,
+			}
 			return nil, Err
 		}
 	}
@@ -712,7 +738,10 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 	if setID == "" {
 		Err.Message = "Missing setID in URL"
 		Err.HelpText = "Ensure the setID is provided in the URL path."
-		Err.Details = fmt.Sprintf("URL Path: %s", r.URL.Path)
+		Err.Details = map[string]any{
+			"setID":   setID,
+			"urlPath": r.URL.Path,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -724,7 +753,11 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 	if librarySection == "" || itemRatingKey == "" || itemType == "" {
 		Err.Message = "Missing librarySection, itemRatingKey or itemType in query parameters"
 		Err.HelpText = "Ensure the librarySection, itemRatingKey and itemType are provided in query parameters."
-		Err.Details = fmt.Sprintf("Query Params: librarySection=%s, itemRatingKey=%s, itemType=%s", librarySection, itemRatingKey, itemType)
+		Err.Details = map[string]any{
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"itemType":       itemType,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -741,7 +774,11 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		if updatedSet.ID == "" {
 			Err.Message = "No show set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
-			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			Err.Details = map[string]any{
+				"Set ID":          setID,
+				"Library Section": librarySection,
+				"Item Rating Key": itemRatingKey,
+			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
@@ -754,7 +791,11 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		if updatedSet.ID == "" {
 			Err.Message = "No movie set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the movie set exists in the Mediux database."
-			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			Err.Details = map[string]any{
+				"Set ID":          setID,
+				"Library Section": librarySection,
+				"Item Rating Key": itemRatingKey,
+			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
@@ -767,14 +808,20 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		if updatedSet.ID == "" {
 			Err.Message = "No collection set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the collection set exists in the Mediux database."
-			Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+			Err.Details = map[string]any{
+				"Set ID":          setID,
+				"Library Section": librarySection,
+				"Item Rating Key": itemRatingKey,
+			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
 		}
 	default:
 		Err.Message = "Invalid item type provided"
 		Err.HelpText = "Ensure the item type is either 'movie', 'show' or 'collection'."
-		Err.Details = fmt.Sprintf("Provided item type: %s", itemType)
+		Err.Details = map[string]any{
+			"Provided item type": itemType,
+		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
 	}
@@ -842,7 +889,13 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 	if err != nil {
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"responseBody":   string(response.Body()),
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -851,7 +904,11 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 	if showSet.ID == "" {
 		Err.Message = "No show set found in the response"
 		Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
-		Err.Details = fmt.Sprintf("Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		Err.Details = map[string]any{
+			"Set ID":          setID,
+			"Library Section": librarySection,
+			"Item Rating Key": itemRatingKey,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -865,7 +922,11 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 	if len(posterSets) == 0 {
 		Err.Message = "No poster sets found for the provided show set ID"
 		Err.HelpText = "Ensure the show set ID is correct and the show set exists in the Mediux database."
-		Err.Details = fmt.Sprintf("Show Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		Err.Details = map[string]any{
+			"Show Set ID":     setID,
+			"Library Section": librarySection,
+			"Item Rating Key": itemRatingKey,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -936,7 +997,13 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 	if err != nil {
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":          err.Error(),
+			"responseBody":   string(response.Body()),
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
+			"setID":          setID,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -950,7 +1017,11 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 	if len(posterSets) == 0 {
 		Err.Message = "No poster sets found for the provided movie set ID"
 		Err.HelpText = "Ensure the movie set ID is correct and the movie set exists in the Mediux database."
-		Err.Details = fmt.Sprintf("Movie Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		Err.Details = map[string]any{
+			"Movie Set ID":    setID,
+			"Library Section": librarySection,
+			"Item Rating Key": itemRatingKey,
+		}
 		return modals.PosterSet{}, Err
 	}
 	posterSet := posterSets[0]
@@ -981,7 +1052,10 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	if !exists {
 		Err.Message = "TMDB ID not found in cache"
 		Err.HelpText = "Ensure the itemRatingKey is valid and the TMDB ID exists in the cache."
-		Err.Details = fmt.Sprintf("Item Rating Key: %s, Library Section: %s", itemRatingKey, librarySection)
+		Err.Details = map[string]any{
+			"Item Rating Key": itemRatingKey,
+			"Library Section": librarySection,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -1029,7 +1103,10 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	if err != nil {
 		Err.Message = "Failed to parse Mediux API response"
 		Err.HelpText = "Ensure the Mediux API is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s, Response: %s", err.Error(), response.Body())
+		Err.Details = map[string]any{
+			"error":        err.Error(),
+			"responseBody": string(response.Body()),
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -1041,7 +1118,11 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 
 		Err.Message = "No collection set found for the provided ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
-		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		Err.Details = map[string]any{
+			"Collection Set ID": setID,
+			"Library Section":   librarySection,
+			"Item Rating Key":   itemRatingKey,
+		}
 		return modals.PosterSet{}, Err
 	}
 
@@ -1050,7 +1131,11 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 	if len(posterSets) == 0 {
 		Err.Message = "No poster sets found for the provided collection set ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
-		Err.Details = fmt.Sprintf("Collection Set ID: %s, Library Section: %s, Item Rating Key: %s", setID, librarySection, itemRatingKey)
+		Err.Details = map[string]any{
+			"Collection Set ID": setID,
+			"Library Section":   librarySection,
+			"Item Rating Key":   itemRatingKey,
+		}
 		return modals.PosterSet{}, logging.StandardError{}
 	}
 

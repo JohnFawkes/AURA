@@ -6,7 +6,6 @@ import (
 	"aura/internal/modals"
 	"aura/internal/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -32,7 +31,10 @@ func FetchLibrarySectionOptions() ([]string, logging.StandardError) {
 	if err != nil {
 		Err.Message = "Failed to parse JSON response"
 		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
+		Err.Details = map[string]any{
+			"error":   err.Error(),
+			"request": url.String(),
+		}
 		return nil, Err
 	}
 

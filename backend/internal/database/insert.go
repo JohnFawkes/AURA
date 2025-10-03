@@ -48,7 +48,10 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to marshal MediaItem data"
 		Err.HelpText = "Ensure the MediaItem struct is correctly defined and contains valid data."
-		Err.Details = "MediaItem: " + saveItem.MediaItem.RatingKey
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"json":  string(mediaItemJSON),
+		}
 		return Err
 	}
 
@@ -57,7 +60,10 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to marshal PosterSet data"
 		Err.HelpText = "Ensure the PosterSet struct is correctly defined and contains valid data."
-		Err.Details = "PosterSet: " + saveItem.PosterSet.ID
+		Err.Details = map[string]any{
+			"error": err.Error(),
+			"json":  string(posterSetJSON),
+		}
 		return Err
 	}
 
@@ -80,7 +86,12 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 	if err != nil {
 		Err.Message = "Failed to insert item into database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = "Query: " + query + ", MediaItemID: " + saveItem.MediaItem.RatingKey + ", PosterSetID: " + saveItem.PosterSet.ID
+		Err.Details = map[string]any{
+			"error":       err.Error(),
+			"query":       query,
+			"MediaItemID": saveItem.MediaItem.RatingKey,
+			"PosterSetID": saveItem.PosterSet.ID,
+		}
 		return Err
 	}
 	logging.LOG.Info("Item inserted successfully into the database")
