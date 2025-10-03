@@ -21,9 +21,9 @@ func DeleteMediaItemFromDatabase(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Missing Rating Key in Request"
 		Err.HelpText = "Ensure the request includes a valid ratingKey parameter."
 		Err.Details = map[string]any{
-			"error":     "Rating Key is empty",
+			"url":       r.URL.Path,
+			"method":    r.Method,
 			"ratingKey": ratingKey,
-			"request":   r.URL.Path,
 		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return

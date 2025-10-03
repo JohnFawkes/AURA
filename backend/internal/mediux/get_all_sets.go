@@ -51,6 +51,8 @@ func GetAllSets(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Missing TMDB ID, Item Type or Library Section in URL Parameters"
 		Err.HelpText = "Ensure the TMDB ID, Item Type and Library Section are provided in path parameters."
 		Err.Details = map[string]any{
+			"url":            r.URL.Path,
+			"method":         r.Method,
 			"tmdbID":         tmdbID,
 			"itemType":       itemType,
 			"librarySection": librarySection,
@@ -739,8 +741,9 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Missing setID in URL"
 		Err.HelpText = "Ensure the setID is provided in the URL path."
 		Err.Details = map[string]any{
-			"setID":   setID,
-			"urlPath": r.URL.Path,
+			"url":    r.URL.Path,
+			"method": r.Method,
+			"setID":  setID,
 		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
@@ -754,6 +757,8 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Missing librarySection, itemRatingKey or itemType in query parameters"
 		Err.HelpText = "Ensure the librarySection, itemRatingKey and itemType are provided in query parameters."
 		Err.Details = map[string]any{
+			"url":            r.URL.Path,
+			"method":         r.Method,
 			"librarySection": librarySection,
 			"itemRatingKey":  itemRatingKey,
 			"itemType":       itemType,
@@ -775,9 +780,9 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			Err.Message = "No show set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
 			Err.Details = map[string]any{
-				"Set ID":          setID,
-				"Library Section": librarySection,
-				"Item Rating Key": itemRatingKey,
+				"setID":          setID,
+				"librarySection": librarySection,
+				"itemRatingKey":  itemRatingKey,
 			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
@@ -792,9 +797,9 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			Err.Message = "No movie set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the movie set exists in the Mediux database."
 			Err.Details = map[string]any{
-				"Set ID":          setID,
-				"Library Section": librarySection,
-				"Item Rating Key": itemRatingKey,
+				"setID":          setID,
+				"librarySection": librarySection,
+				"itemRatingKey":  itemRatingKey,
 			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
@@ -809,9 +814,9 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 			Err.Message = "No collection set found for the provided ID"
 			Err.HelpText = "Ensure the set ID is correct and the collection set exists in the Mediux database."
 			Err.Details = map[string]any{
-				"Set ID":          setID,
-				"Library Section": librarySection,
-				"Item Rating Key": itemRatingKey,
+				"setID":          setID,
+				"librarySection": librarySection,
+				"itemRatingKey":  itemRatingKey,
 			}
 			utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 			return
@@ -820,7 +825,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Invalid item type provided"
 		Err.HelpText = "Ensure the item type is either 'movie', 'show' or 'collection'."
 		Err.Details = map[string]any{
-			"Provided item type": itemType,
+			"itemType": itemType,
 		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
@@ -905,9 +910,9 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		Err.Message = "No show set found in the response"
 		Err.HelpText = "Ensure the set ID is correct and the show set exists in the Mediux database."
 		Err.Details = map[string]any{
-			"Set ID":          setID,
-			"Library Section": librarySection,
-			"Item Rating Key": itemRatingKey,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -923,9 +928,9 @@ func FetchShowSetByID(librarySection, itemRatingKey, setID string) (modals.Poste
 		Err.Message = "No poster sets found for the provided show set ID"
 		Err.HelpText = "Ensure the show set ID is correct and the show set exists in the Mediux database."
 		Err.Details = map[string]any{
-			"Show Set ID":     setID,
-			"Library Section": librarySection,
-			"Item Rating Key": itemRatingKey,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -1018,9 +1023,9 @@ func FetchMovieSetByID(librarySection, itemRatingKey, setID string) (modals.Post
 		Err.Message = "No poster sets found for the provided movie set ID"
 		Err.HelpText = "Ensure the movie set ID is correct and the movie set exists in the Mediux database."
 		Err.Details = map[string]any{
-			"Movie Set ID":    setID,
-			"Library Section": librarySection,
-			"Item Rating Key": itemRatingKey,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -1053,8 +1058,9 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		Err.Message = "TMDB ID not found in cache"
 		Err.HelpText = "Ensure the itemRatingKey is valid and the TMDB ID exists in the cache."
 		Err.Details = map[string]any{
-			"Item Rating Key": itemRatingKey,
-			"Library Section": librarySection,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -1119,9 +1125,9 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		Err.Message = "No collection set found for the provided ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
 		Err.Details = map[string]any{
-			"Collection Set ID": setID,
-			"Library Section":   librarySection,
-			"Item Rating Key":   itemRatingKey,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, Err
 	}
@@ -1132,9 +1138,9 @@ func FetchCollectionSetByID(librarySection, itemRatingKey, setID string) (modals
 		Err.Message = "No poster sets found for the provided collection set ID"
 		Err.HelpText = "Ensure the collection set ID is correct and the collection set exists in the Mediux database."
 		Err.Details = map[string]any{
-			"Collection Set ID": setID,
-			"Library Section":   librarySection,
-			"Item Rating Key":   itemRatingKey,
+			"setID":          setID,
+			"librarySection": librarySection,
+			"itemRatingKey":  itemRatingKey,
 		}
 		return modals.PosterSet{}, logging.StandardError{}
 	}

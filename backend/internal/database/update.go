@@ -78,6 +78,7 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		Err.HelpText = "Ensure the MediaItem struct is correctly defined and contains valid data."
 		Err.Details = map[string]any{
 			"error": err.Error(),
+			"json":  string(mediaItemJSONBytes),
 		}
 		return Err
 	}
@@ -89,6 +90,7 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		Err.HelpText = "Ensure the PosterSet struct is correctly defined and contains valid data."
 		Err.Details = map[string]any{
 			"error": err.Error(),
+			"json":  string(posterSetJSONBytes),
 		}
 		return Err
 	}
@@ -108,9 +110,9 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		Err.Message = "Failed to update MediaItem data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = map[string]any{
-			"error":       err.Error(),
-			"query":       query,
-			"MediaItemID": saveItem.MediaItem.RatingKey,
+			"error":         err.Error(),
+			"query":         query,
+			"media_item_id": saveItem.MediaItem.RatingKey,
 		}
 		return Err
 	}
@@ -133,10 +135,15 @@ func UpdateItemInDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		Err.Message = "Failed to update PosterSet data in database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = map[string]any{
-			"error":       err.Error(),
-			"query":       query,
-			"MediaItemID": saveItem.MediaItem.RatingKey,
-			"PosterSetID": saveItem.PosterSet.ID,
+			"error":          err.Error(),
+			"query":          query,
+			"media_item_id":  saveItem.MediaItem.RatingKey,
+			"media_item":     string(mediaItemJSONBytes),
+			"poster_set_id":  saveItem.PosterSet.ID,
+			"poster_set":     string(posterSetJSONBytes),
+			"selected_types": selectedTypesStr,
+			"auto_download":  saveItem.AutoDownload,
+			"last_update":    saveItem.PosterSet.DateUpdated.UTC().Format(time.RFC3339),
 		}
 		return Err
 	}

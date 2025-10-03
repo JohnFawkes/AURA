@@ -33,7 +33,7 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 
 	item := requestBody.Item
 
-	// Get the latest item from DB incase it has been updated
+	// Get the latest item from DB in case it has been updated
 	allItems, Err := database.GetAllItemsFromDatabase()
 	if Err.Message != "" {
 		logging.LOG.ErrorWithLog(Err)

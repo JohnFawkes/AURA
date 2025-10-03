@@ -87,10 +87,15 @@ func InsertItemIntoDatabase(saveItem modals.DBSavedItem) logging.StandardError {
 		Err.Message = "Failed to insert item into database"
 		Err.HelpText = "Ensure the database connection is established and the query is correct."
 		Err.Details = map[string]any{
-			"error":       err.Error(),
-			"query":       query,
-			"MediaItemID": saveItem.MediaItem.RatingKey,
-			"PosterSetID": saveItem.PosterSet.ID,
+			"error":          err.Error(),
+			"query":          query,
+			"media_item_id":  saveItem.MediaItem.RatingKey,
+			"media_item":     string(mediaItemJSON),
+			"poster_set_id":  saveItem.PosterSet.ID,
+			"poster_set":     string(posterSetJSON),
+			"selected_types": selectedTypesStr,
+			"auto_download":  saveItem.AutoDownload,
+			"last_update":    saveItem.PosterSet.DateUpdated.UTC().Format(time.RFC3339),
 		}
 		return Err
 	}

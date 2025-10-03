@@ -24,8 +24,9 @@ func GetAllUserSets(w http.ResponseWriter, r *http.Request) {
 		Err.Message = "Missing username in URL"
 		Err.HelpText = "Ensure the username is provided in the URL path."
 		Err.Details = map[string]any{
-			"error":   "Username is empty",
-			"request": r.URL.Path,
+			"url":      r.URL.Path,
+			"method":   r.Method,
+			"username": username,
 		}
 		utils.SendErrorResponse(w, utils.ElapsedTime(startTime), Err)
 		return
