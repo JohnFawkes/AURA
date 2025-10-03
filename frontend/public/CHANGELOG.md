@@ -1,8 +1,12 @@
 ## [0.9.29] - 2025-10-02
 
+### Added
+
+- Change button variant to ghost and update styles for consistency in JumpToTop and RefreshButton components
+- Mask sensitive information in logging for Pushover notifications and media server configuration
+
 ### Fixed
 
-- Mask sensitive information in logging for Pushover notifications and media server configuration
 - [#87](https://github.com/mediux-team/AURA/issues/87) Fixed issue with poster update failing after Plex movie file is replaced
 
 ---
