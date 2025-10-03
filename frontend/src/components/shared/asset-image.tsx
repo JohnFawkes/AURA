@@ -53,6 +53,8 @@ export function AssetImage({ image, aspect = "poster", className, imageClassName
 				onLoad={() => setImageLoaded(true)}
 				unoptimized
 				loading="lazy"
+				draggable={false}
+				style={{ userSelect: "none" }}
 			/>
 		</>
 	);

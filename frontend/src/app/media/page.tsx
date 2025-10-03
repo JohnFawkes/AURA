@@ -613,8 +613,11 @@ const MediaItemPage = () => {
 						status={posterSets ? posterSets[0]?.Status : ""}
 						libraryTitle={mediaItem?.LibraryTitle || ""}
 						otherMediaItem={existsInOtherSections}
+						posterImageKeys={[
+							mediaItem?.RatingKey ?? "",
+							...(mediaItem?.Series?.Seasons?.flatMap((s) => s.RatingKey) ?? []),
+						].filter(Boolean)}
 					/>
-
 					{isLoading && (
 						<div className={cn("mt-4 flex flex-col items-center", hasError ? "hidden" : "block")}>
 							<Loader message={loadingMessage} />

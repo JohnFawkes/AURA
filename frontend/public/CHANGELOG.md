@@ -3,6 +3,7 @@
 ### Added
 
 - Enhance Download Modal to include Media Item for checking existence in database
+- Can now cycle through poster and season posters on the media item page for series (using touch or mouse drag)
 
 ### Fixed
 

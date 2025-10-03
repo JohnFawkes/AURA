@@ -5,7 +5,7 @@ import { fetchMediaServerType } from "@/services/mediaserver/api-mediaserver-fet
 import { Database } from "lucide-react";
 import { toast } from "sonner";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,6 +41,7 @@ type MediaItemDetailsProps = {
 	status: string;
 	libraryTitle: string;
 	otherMediaItem: MediaItem | null;
+	posterImageKeys?: string[];
 };
 
 export function MediaItemDetails({
@@ -61,12 +62,19 @@ export function MediaItemDetails({
 	status,
 	libraryTitle,
 	otherMediaItem,
+	posterImageKeys,
 }: MediaItemDetailsProps) {
 	const [serverType, setServerType] = useState<string>("");
 	const [isInDB, setIsInDBLocal] = useState(existsInDB);
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
 	const { setSearchQuery } = useSearchQueryStore();
+
+	const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+
+	// Add at the top of your component
+	const touchStartXRef = useRef<number | undefined>(undefined);
+	const mouseStartXRef = useRef<number | undefined>(undefined);
 
 	// Sync when parent prop changes (e.g. route change or external update)
 	useEffect(() => {
@@ -143,11 +151,48 @@ export function MediaItemDetails({
 		<div>
 			<div className="flex flex-col lg:flex-row pt-30 items-center lg:items-start text-center lg:text-left">
 				{/* Poster Image */}
-				{ratingKey && (
-					<div className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-8 flex justify-center">
+				{posterImageKeys && posterImageKeys.length > 0 && (
+					<div
+						className="flex-shrink-0 mb-4 lg:mb-0 lg:mr-8 flex justify-center"
+						onDoubleClick={() => setCurrentPosterIndex(0)}
+						onTouchStart={(e) => {
+							touchStartXRef.current = e.touches[0].clientX;
+						}}
+						onTouchEnd={(e) => {
+							const startX = touchStartXRef.current;
+							const endX = e.changedTouches[0].clientX;
+							if (startX !== undefined) {
+								if (endX - startX > 50) {
+									setCurrentPosterIndex(
+										(prev) => (prev - 1 + posterImageKeys.length) % posterImageKeys.length
+									);
+								} else if (startX - endX > 50) {
+									setCurrentPosterIndex((prev) => (prev + 1) % posterImageKeys.length);
+								}
+							}
+							touchStartXRef.current = undefined;
+						}}
+						onMouseDown={(e) => {
+							mouseStartXRef.current = e.clientX;
+						}}
+						onMouseUp={(e) => {
+							const startX = mouseStartXRef.current;
+							const endX = e.clientX;
+							if (startX !== undefined) {
+								if (endX - startX > 50) {
+									setCurrentPosterIndex(
+										(prev) => (prev - 1 + posterImageKeys.length) % posterImageKeys.length
+									);
+								} else if (startX - endX > 50) {
+									setCurrentPosterIndex((prev) => (prev + 1) % posterImageKeys.length);
+								}
+							}
+							mouseStartXRef.current = undefined;
+						}}
+					>
 						<AssetImage
-							image={`/api/mediaserver/image/${ratingKey}/poster?cb=${Date.now()}`}
-							className="w-[200px] h-auto transition-transform hover:scale-105"
+							image={`/api/mediaserver/image/${posterImageKeys[currentPosterIndex]}/poster?cb=${Date.now()}`}
+							className="w-[200px] h-auto transition-transform hover:scale-105 select-none"
 						/>
 					</div>
 				)}
