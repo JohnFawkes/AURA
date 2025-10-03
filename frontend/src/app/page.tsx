@@ -10,12 +10,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
+import { HomeMediaItemCardSkeletonGrid } from "@/components/shared/media-item-card-skeleton";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
 import { SortControl } from "@/components/shared/select_sort";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { log } from "@/lib/logger";
@@ -292,28 +295,33 @@ export default function Home() {
 		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
 			{!fullyLoaded && librarySections.length > 0 ? (
 				<div className="w-full flex flex-col items-center justify-center min-h-screen">
-					{librarySections.map((section) => {
-						const progressInfo = sectionProgress[section.ID];
-						const percentage =
-							progressInfo && progressInfo.total > 0
-								? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
-								: 0;
+					{/* Progress bars */}
+					<div className="w-full flex flex-col items-center">
+						{librarySections.map((section) => {
+							const progressInfo = sectionProgress[section.ID];
+							const percentage =
+								progressInfo && progressInfo.total > 0
+									? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
+									: 0;
 
-						if (Math.round(percentage) !== 100) {
-							return (
-								<div key={section.ID} className="mb-6 w-full max-w-xl flex flex-col items-center">
-									<Label className="text-lg font-semibold text-center mb-2">
-										Loading {section.Title}
-									</Label>
-									<Progress value={percentage} className="w-full h-4 rounded-full" />
-									<span className="mt-2 text-base text-muted-foreground font-medium">
-										{Math.round(percentage)}%
-									</span>
-								</div>
-							);
-						}
-						return null;
-					})}
+							if (Math.round(percentage) !== 100) {
+								return (
+									<div key={section.ID} className="mb-6 w-full max-w-xl flex flex-col items-center">
+										<Label className="text-lg font-semibold text-center mb-2">
+											Loading {section.Title}
+										</Label>
+										<Progress value={percentage} className="w-full h-4 rounded-full" />
+										<span className="mt-2 text-base text-muted-foreground font-medium">
+											{Math.round(percentage)}%
+										</span>
+									</div>
+								);
+							}
+							return null;
+						})}
+					</div>
+
+					<HomeMediaItemCardSkeletonGrid />
 				</div>
 			) : (
 				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
