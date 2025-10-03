@@ -32,6 +32,13 @@ func FetchItemContent(ratingKey string) (modals.MediaItem, logging.StandardError
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		Err.Message = "Failed to fetch item content from Plex server"
+		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
+		Err.Details = fmt.Sprintf("Plex server returned status code: %d", resp.StatusCode)
+		return itemInfo, Err
+	}
+
 	// Parse the response body into a PlexLibraryItemsWrapper struct
 	var plexResponse modals.PlexLibraryItemsWrapper
 	err := json.Unmarshal(body, &plexResponse)

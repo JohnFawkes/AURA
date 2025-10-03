@@ -109,6 +109,10 @@ func PlexSearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySectio
 		}
 		defer fullResponse.Body.Close()
 
+		if fullResponse.StatusCode != http.StatusOK {
+			continue
+		}
+
 		// Parse the response body into a PlexLibraryItemsWrapper struct
 		var fullResponseSection modals.PlexLibraryItemsWrapper
 		err := json.Unmarshal(fullBody, &fullResponseSection)

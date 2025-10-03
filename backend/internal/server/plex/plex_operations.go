@@ -26,7 +26,7 @@ func refreshPlexItem(ratingKey string) logging.StandardError {
 
 	if response.StatusCode != http.StatusOK {
 		Err.Message = fmt.Sprintf("Failed to refresh Plex item, received status code: %d", response.StatusCode)
-		Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
+		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
 		return Err
 	}
 
@@ -92,7 +92,7 @@ func getPosters(ratingKey string) (string, logging.StandardError) {
 			} else {
 				// Non-OK status code from Plex
 				Err.Message = fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)
-				Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
+				Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
 				Err.Details = fmt.Sprintf("Received status code '%d' for rating key: %s", response.StatusCode, ratingKey)
 			}
 		}
@@ -174,7 +174,7 @@ func setPoster(ratingKey, posterKey, posterType string) logging.StandardError {
 
 	if !strings.HasPrefix(string(body), "/library/metadata/") {
 		Err.Message = "Failed to set poster"
-		Err.HelpText = "Ensure the Plex server is running and the item with rating key exists."
+		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
 		Err.Details = fmt.Sprintf("Received response: %s", string(body))
 		return Err
 	}

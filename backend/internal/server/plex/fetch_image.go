@@ -5,6 +5,7 @@ import (
 	"aura/internal/logging"
 	"aura/internal/utils"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -42,10 +43,17 @@ func FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logg
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != http.StatusOK {
+		Err.Message = "Failed to fetch image from Plex server"
+		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
+		Err.Details = fmt.Sprintf("Plex server returned status code: %d", response.StatusCode)
+		return nil, Err
+	}
+
 	// Check if the response body is empty
 	if len(body) == 0 {
 		Err.Message = "Received empty response from Plex server"
-		Err.HelpText = fmt.Sprintf("Ensure the Plex server is running and the item with rating key %s exists.", ratingKey)
+		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
 		Err.Details = "The Plex server returned an empty response for the requested image."
 		return nil, Err
 	}

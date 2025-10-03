@@ -868,10 +868,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					setProgressValues((prev) => ({
 						...prev,
 						progressColor: "red",
-						// warningMessages: [
-						// 	...prev.warningMessages,
-						// 	`Error fetching latest media item for ${item.MediaItemTitle}. Skipping.`,
-						// ],
 						warningMessages: {
 							...prev.warningMessages,
 							[item.MediaItemTitle]: {
@@ -879,7 +875,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								posterFileType: null,
 								fileName: null,
 								mediaItem: null,
-								message: `Error fetching latest media item for ${item.MediaItemTitle}: ${latestMediaItemResp.error}`,
+								message: `Error fetching latest media item for ${item.MediaItemTitle}: ${
+									latestMediaItemResp.error?.HelpText ||
+									latestMediaItemResp.error?.Details ||
+									latestMediaItemResp.error?.Message ||
+									"Unknown error"
+								}`,
 							},
 						},
 					}));

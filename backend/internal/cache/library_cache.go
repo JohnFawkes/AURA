@@ -150,14 +150,20 @@ func (c *LibraryCache) GetMediaItemFromSectionByTMDBID(sectionTitle, tmdbID stri
 		return &modals.MediaItem{}, false
 	}
 
+	var newestItem *modals.MediaItem
 	for _, item := range section.MediaItems {
 		for _, guid := range item.Guids {
 			if guid.Provider == "tmdb" && guid.ID == tmdbID {
-				return &item, true
+				if newestItem == nil || item.UpdatedAt > newestItem.UpdatedAt {
+					newestItem = &item
+				}
 			}
 		}
 	}
 
+	if newestItem != nil {
+		return newestItem, true
+	}
 	return &modals.MediaItem{}, false
 }
 
