@@ -107,7 +107,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 	}, []);
 
 	return (
-		<footer className="border-t bg-background/80 backdrop-blur-sm w-full py-4 px-4 md:px-12">
+		<footer className="border-t bg-background/80 backdrop-blur-sm w-full py-3 px-4 md:px-12">
 			<div className="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center md:space-y-0">
 				{/* Copyright - Line 1 on mobile */}
 				<div className="text-sm text-muted-foreground text-center md:text-left">
@@ -151,7 +151,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2 hover:brightness-120 active:scale-95 transition">
 					<Link
 						href="/change-log"
-						className="text-xs py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
+						className="text-sm py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
 						title="View change log"
 					>
 						App Version: {version}

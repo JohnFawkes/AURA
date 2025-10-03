@@ -8,6 +8,7 @@
 ### Fixed
 
 - [#87](https://github.com/mediux-team/AURA/issues/87) Fixed issue with poster update failing after Plex movie file is replaced
+- Adjust footer padding and link text size for improved layout consistency
 
 ---
 
