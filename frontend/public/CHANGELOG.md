@@ -1,5 +1,9 @@
 ## [0.9.30] - 2025-10-03
 
+### Added
+
+- Enhance Download Modal to include Media Item for checking existence in database
+
 ### Fixed
 
 - Updated error details to use structured maps instead of formatted strings for better clarity and consistency
