@@ -73,16 +73,11 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 	};
 
 	return (
-		<Card className="p-5 space-y-1">
-			<h2 className="text-xl font-semibold">Logging</h2>
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
+			<h2 className="text-xl font-semibold text-blue-500">Logging</h2>
 
 			{/* Level */}
-			<div
-				className={cn(
-					"space-y-1 border rounded-md p-3 transition",
-					errors.Level ? "border-red-500" : dirtyFields.Level ? "border-amber-500" : "border-muted"
-				)}
-			>
+			<div className={cn("space-y-1 border rounded-md p-3 transition")}>
 				<div className="flex items-center justify-between">
 					<Label>Level</Label>
 					{editing && (
@@ -113,7 +108,10 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 					value={value.Level}
 					onValueChange={(v) => onChange("Level", v as AppConfigLogging["Level"])}
 				>
-					<SelectTrigger className="w-full" id="logging-level-trigger">
+					<SelectTrigger
+						id="logging-level-trigger"
+						className={cn("w-full", dirtyFields.Level && "border-amber-500")}
+					>
 						<SelectValue placeholder="Select level..." />
 					</SelectTrigger>
 					<SelectContent>

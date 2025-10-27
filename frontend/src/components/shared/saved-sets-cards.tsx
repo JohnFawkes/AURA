@@ -1,6 +1,6 @@
 "use client";
 
-import { Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
+import { AlertTriangle, Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
 
 import React, { useState } from "react";
 
@@ -26,6 +26,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { H4, P } from "@/components/ui/typography";
 
@@ -33,6 +34,22 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+
+export function hasSelectedTypesOverlapOnAutoDownload(
+	posterSets: { SelectedTypes: string[]; AutoDownload: boolean }[]
+): boolean {
+	const typeToAutoDownloadSet = new Map<string, boolean>();
+	for (const set of posterSets) {
+		if (!set.AutoDownload) continue;
+		for (const type of set.SelectedTypes) {
+			if (type && typeToAutoDownloadSet.has(type)) {
+				return true;
+			}
+			typeToAutoDownloadSet.set(type, true);
+		}
+	}
+	return false;
+}
 
 const SavedSetsCard: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
@@ -86,14 +103,48 @@ const SavedSetsCard: React.FC<{
 
 				{/* Top Left: Auto Download Icon */}
 				{savedSet.MediaItem.Type === "show" && (
-					<div className="absolute top-2 left-2">
+					<div className="absolute top-2 left-2 flex items-center gap-2">
 						{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
-							<RefreshCcw className="text-green-500" size={24} />
+							<Popover>
+								<PopoverTrigger asChild>
+									<RefreshCcw className="text-green-500 cursor-help" size={24} />
+								</PopoverTrigger>
+								<PopoverContent className="p-2 max-w-xs">
+									<p className="text-sm">
+										Auto Download is enabled for this item. It will be periodically checked for new
+										updates based on your Auto Download settings.
+									</p>
+								</PopoverContent>
+							</Popover>
 						) : (
-							<RefreshCwOff className="text-red-500" size={24} />
+							<Popover>
+								<PopoverTrigger asChild>
+									<RefreshCwOff className="text-red-500 cursor-help" size={24} />
+								</PopoverTrigger>
+								<PopoverContent className="p-2 max-w-xs">
+									<p className="text-sm">
+										Auto Download is disabled for this item. Click the edit button to enable it on
+										one or more poster sets.
+									</p>
+								</PopoverContent>
+							</Popover>
+						)}
+						{hasSelectedTypesOverlapOnAutoDownload(savedSet.PosterSets) && (
+							<Popover>
+								<PopoverTrigger asChild>
+									<AlertTriangle className="text-yellow-500 cursor-help" size={24} />
+								</PopoverTrigger>
+								<PopoverContent className="p-2 max-w-xs">
+									<p className="text-sm">
+										Some poster sets have overlapping selected types with Auto Download enabled.
+										This may cause unexpected behavior.
+									</p>
+								</PopoverContent>
+							</Popover>
 						)}
 					</div>
 				)}
+
 				{/* Top Right: Dropdown Menu */}
 				<div className="absolute top-2 right-2">
 					<DropdownMenu>
@@ -124,7 +175,9 @@ const SavedSetsCard: React.FC<{
 								{isRefreshing ? "Refreshing..." : "Edit"}
 							</DropdownMenuItem>
 
-							{savedSet.PosterSets.some((set) => set.AutoDownload) && (
+							{savedSet.PosterSets.some(
+								(set) => set.AutoDownload || savedSet.MediaItem.Type === "movie"
+							) && (
 								<DropdownMenuItem
 									className="cursor-pointer"
 									onClick={() => {
@@ -132,7 +185,9 @@ const SavedSetsCard: React.FC<{
 									}}
 								>
 									<RefreshCcw className="ml-2" />
-									Force Autodownload Recheck
+									{savedSet.MediaItem.Type === "movie"
+										? "Check Movie for Key Changes"
+										: "Force Autodownload Recheck"}
 								</DropdownMenuItem>
 							)}
 							<DropdownMenuItem
@@ -176,9 +231,9 @@ const SavedSetsCard: React.FC<{
 				{/* Library Title */}
 				<P className="text-sm text-muted-foreground">Library: {savedSet.MediaItem.LibraryTitle}</P>
 
-				{/* Last Updated */}
+				{/* Last Downloaded */}
 				<P className="text-sm text-muted-foreground">
-					Last Updated:{" "}
+					Last Downloaded:{" "}
 					{(() => {
 						const latestTimestamp = Math.max(
 							...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())

@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ControllerRenderProps, useForm, useWatch } from "react-hook-form";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import DownloadModalPopover from "@/components/shared/download-modal-popover";
@@ -37,11 +38,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Lead } from "@/components/ui/typography";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DBSavedItem } from "@/types/database/db-saved-item";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
 
@@ -183,6 +186,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	autoDownloadDefault = true, // Default to false if not provided
 	onMediaItemChange,
 }) => {
+	const router = useRouter();
 	const [isMounted, setIsMounted] = useState(false);
 
 	// Download Progress
@@ -217,6 +221,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	// Media Store
 	const { setMediaItem } = useMediaStore();
+
+	// Search Query Store
+	const { setSearchQuery } = useSearchQueryStore();
 
 	// Function - Reset Progress Values
 	const resetProgressValues = () => {
@@ -324,23 +331,24 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		name: "selectedOptionsByItem",
 	});
 
-	// Reset form on mount
-	useEffect(() => {
-		form.reset({
-			selectedOptionsByItem: formItems.reduce(
-				(acc, item) => {
-					acc[item.MediaItemRatingKey] = {
-						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
-						addToDBOnly: false,
-						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
-					};
-					return acc;
-				},
-				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
-			),
-		});
-	}, [formItems, form, autoDownloadDefault, downloadDefaults]);
+	// // Reset form on mount
+	// useEffect(() => {
+	// 	console.warn("Resetting on mount");
+	// 	form.reset({
+	// 		selectedOptionsByItem: formItems.reduce(
+	// 			(acc, item) => {
+	// 				acc[item.MediaItemRatingKey] = {
+	// 					types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
+	// 					autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
+	// 					addToDBOnly: false,
+	// 					source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
+	// 				};
+	// 				return acc;
+	// 			},
+	// 			{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
+	// 		),
+	// 	});
+	// }, [formItems, form, autoDownloadDefault, downloadDefaults]);
 
 	useEffect(() => {
 		const dups = findDuplicateMediaItems(formItems);
@@ -558,17 +566,50 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							}}
 						>
 							{item.MediaItemTitle}
-							{(setType === "boxset" || setType === "collection") && item.MediaItem && (
+							{item.MediaItem && item.MediaItem.ExistInDatabase && item.MediaItem.DBSavedSets && (
 								<Popover modal={true}>
 									<PopoverTrigger>
 										<CircleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
 									</PopoverTrigger>
-									<PopoverContent className="w-60">
-										<div className="text-sm text-yellow-500">
-											This media item already exists in your database. You can still download
-											images to overwrite the current images. Please keep in mind that this will
-											not delete the other entry from your database.
+									<PopoverContent className="w-72 rounded-lg shadow-lg border-2 border-yellow-800 p-2">
+										<div className="flex items-center mb-2">
+											<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+											<span className="text-sm text-yellow-600">
+												This media item already exists in your database.
+											</span>
 										</div>
+										<div className="text-xs text-muted-foreground mb-2">
+											You have previously saved it in the following sets:
+										</div>
+										<ul className="space-y-2">
+											{item.MediaItem.DBSavedSets.map((set) => (
+												<li
+													key={set.PosterSetID}
+													className="flex items-center rounded-md px-2 py-1 shadow-sm"
+												>
+													<Button
+														variant="outline"
+														className={cn(
+															"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+															set.PosterSetID.toString() === item.SetID.toString()
+																? "text-green-600  hover:bg-green-100  hover:text-green-600"
+																: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+														)}
+														aria-label={`View saved set ${set.PosterSetID} ${set.PosterSetUser ? `by ${set.PosterSetUser}` : ""}`}
+														onClick={(e) => {
+															e.stopPropagation();
+															setSearchQuery(
+																`${item.MediaItem.Title} Y:${item.MediaItem.Year}: ID:${item.MediaItem.TMDB_ID}: L:${item.MediaItem.LibraryTitle}:`
+															);
+															router.push("/saved-sets");
+														}}
+													>
+														Set ID: {set.PosterSetID}
+														{set.PosterSetUser ? ` by ${set.PosterSetUser}` : ""}
+													</Button>
+												</li>
+											))}
+										</ul>
 									</PopoverContent>
 								</Popover>
 							)}
@@ -715,17 +756,23 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		options: z.infer<typeof formSchema>["selectedOptionsByItem"][string],
 		mediaItem: MediaItem
 	): {
-		dbItem: DBSavedItem;
+		dbItem: DBMediaItemWithPosterSets;
 	} => {
 		return {
 			dbItem: {
-				MediaItemID: mediaItem.RatingKey,
-				MediaItem: mediaItem,
-				PosterSetID: item.Set.ID,
-				PosterSet: item.Set,
-				LastDownloaded: "",
-				SelectedTypes: options.types,
-				AutoDownload: options.autodownload || false,
+				TMDB_ID: mediaItem.TMDB_ID,
+				LibraryTitle: mediaItem.LibraryTitle,
+				MediaItem: mediaItem as MediaItem,
+				PosterSets: [
+					{
+						PosterSetID: item.Set.ID,
+						PosterSet: item.Set,
+						SelectedTypes: options.types,
+						AutoDownload: options.autodownload || false,
+						LastDownloaded: "",
+						ToDelete: false,
+					},
+				],
 			},
 		};
 	};
@@ -839,7 +886,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			log("INFO", "Download Modal", "Debug Info", "Sorted Form Items:", sortedFormItems);
 
 			// Go through each item in the formItems
-			for (const item of sortedFormItems) {
+			for (let idx = 0; idx < sortedFormItems.length; idx++) {
+				const item = sortedFormItems[idx];
 				log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
 
 				const selectedOptions = data.selectedOptionsByItem[item.MediaItemRatingKey];
@@ -896,7 +944,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				// Get the latest media item from the server
 				const latestMediaItemResp = await fetchMediaServerItemContent(
 					item.MediaItemRatingKey,
-					currentMediaItem.LibraryTitle
+					currentMediaItem.LibraryTitle,
+					"mediaitem"
 				);
 				if (latestMediaItemResp.status === "error") {
 					setProgressValues((prev) => ({
@@ -941,7 +990,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					}));
 					continue;
 				}
-				const latestMediaItem = latestMediaItemResp.data;
+				const latestMediaItem = latestMediaItemResp.data.mediaItem;
 
 				// If the item is set to "Add to DB Only", create the DB item and skip download
 				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);

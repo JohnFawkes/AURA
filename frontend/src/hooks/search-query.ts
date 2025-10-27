@@ -27,7 +27,7 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 		libraryFilter = libraryMatch[1].trim().toLowerCase();
 	}
 
-	// Extract rating key filter (e.g., ID:239:)
+	// Extract rating key/tmdb id filter (e.g., ID:239:)
 	let ratingFilter: string | null = null;
 	const ratingMatch = trimmedQuery.match(/[Ii][Dd]:(.+?):/);
 	if (ratingMatch) {
@@ -74,14 +74,21 @@ export function searchMediaItems(items: MediaItem[], query: string, limit?: numb
 
 	// Apply rating key filter if present (exact match)
 	if (ratingFilter) {
-		filteredItems = filteredItems.filter((item) => item.RatingKey === ratingFilter);
+		filteredItems = filteredItems.filter(
+			(item) => item.RatingKey === ratingFilter || item.TMDB_ID === ratingFilter
+		);
 	}
 
 	return filteredItems.slice(0, limit);
 }
 
-// Extracts year (Y:2023:) and mediaItemID (ID:123:) from a search query string
-export function extractYearAndMediaItemID(query: string): { cleanedQuery: string; year: number; mediaItemID: string } {
+// Extracts year (Y:2023:) and mediaItemID (ID:123:) and Library (L:4K Movies:) from the search query
+export function extractInfoFromSearchQuery(query: string): {
+	searchTMDBID: string;
+	searchLibrary: string;
+	searchYear: number;
+	searchTitle: string;
+} {
 	const trimmed = query.trim();
 
 	// Match year: Y:2023: or y:2023:
@@ -92,6 +99,10 @@ export function extractYearAndMediaItemID(query: string): { cleanedQuery: string
 	const idMatch = trimmed.match(/[Ii][Dd]:(.+?):/);
 	const mediaItemID = idMatch ? idMatch[1] : "";
 
+	// Match library: L:4K Movies: or l:4K Movies:
+	const libraryMatch = trimmed.match(/[Ll]:(.+?):/);
+	const library = libraryMatch ? libraryMatch[1].trim() : "";
+
 	// Remove matched tokens from the original query
 	let cleanedQuery = trimmed;
 	if (yearMatch) {
@@ -100,7 +111,10 @@ export function extractYearAndMediaItemID(query: string): { cleanedQuery: string
 	if (idMatch) {
 		cleanedQuery = cleanedQuery.replace(idMatch[0], "").trim();
 	}
+	if (libraryMatch) {
+		cleanedQuery = cleanedQuery.replace(libraryMatch[0], "").trim();
+	}
 
 	// Return the cleaned search query along with extracted year and mediaItemIDs
-	return { cleanedQuery, year, mediaItemID };
+	return { searchTMDBID: mediaItemID, searchLibrary: library, searchYear: year, searchTitle: cleanedQuery };
 }

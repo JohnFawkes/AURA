@@ -18,8 +18,8 @@ interface SavedSets_PageStore
 	setFilteredLibraries: (libraries: string[]) => void;
 
 	// AutoDownload Filter
-	filterAutoDownloadOnly: boolean;
-	setFilterAutoDownloadOnly: (value: boolean) => void;
+	filterAutoDownload: "all" | "on" | "off";
+	setFilterAutoDownload: (val: "all" | "on" | "off") => void;
 
 	// User Filter
 	filteredUsers: string[];
@@ -42,7 +42,7 @@ interface SavedSets_PageStore
 export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 	persist(
 		(set) => ({
-			sortOption: "dateUpdated",
+			sortOption: "dateDownloaded",
 			setSortOption: (option) => set({ sortOption: option }),
 
 			sortOrder: "desc",
@@ -60,8 +60,8 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 			filteredLibraries: [],
 			setFilteredLibraries: (libraries) => set({ filteredLibraries: libraries }),
 
-			filterAutoDownloadOnly: false,
-			setFilterAutoDownloadOnly: (value) => set({ filterAutoDownloadOnly: value }),
+			filterAutoDownload: "all",
+			setFilterAutoDownload: (value) => set({ filterAutoDownload: value }),
 
 			filteredUsers: [],
 			setFilteredUsers: (users) => set({ filteredUsers: users }),
@@ -78,13 +78,13 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 
 			clear: () =>
 				set({
-					sortOption: "dateUpdated",
+					sortOption: "dateDownloaded",
 					sortOrder: "desc",
 					currentPage: 1,
 					itemsPerPage: 20,
 					viewOption: "card",
 					filteredLibraries: [],
-					filterAutoDownloadOnly: false,
+					filterAutoDownload: "all",
 					filteredUsers: [],
 					filteredTypes: [],
 					filterMultiSetOnly: false,
@@ -101,7 +101,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 				itemsPerPage: state.itemsPerPage,
 				viewOption: state.viewOption,
 				filteredLibraries: state.filteredLibraries,
-				filterAutoDownloadOnly: state.filterAutoDownloadOnly,
+				filterAutoDownload: state.filterAutoDownload,
 				filteredUsers: state.filteredUsers,
 				filteredTypes: state.filteredTypes,
 				filterMultiSetOnly: state.filterMultiSetOnly,

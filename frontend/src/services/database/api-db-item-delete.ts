@@ -7,10 +7,14 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 
-export const deleteMediaItemFromDB = async (saveItem: DBMediaItemWithPosterSets): Promise<APIResponse<string>> => {
-	log("INFO", "API - DB", "Delete", `Deleting media item with ID ${saveItem.MediaItemID} from DB`, saveItem);
+export const deleteMediaItemFromDB = async (
+	saveItem: DBMediaItemWithPosterSets
+): Promise<APIResponse<DBMediaItemWithPosterSets>> => {
+	log("INFO", "API - DB", "Delete", `Deleting ${saveItem.MediaItem.Title} from DB`, saveItem);
 	try {
-		const response = await apiClient.delete<APIResponse<string>>(`/db/delete/mediaitem/${saveItem.MediaItemID}`);
+		const response = await apiClient.delete<APIResponse<DBMediaItemWithPosterSets>>(
+			`/db/delete/mediaitem/${saveItem.MediaItem.TMDB_ID}/${saveItem.MediaItem.LibraryTitle}`
+		);
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.Message || "Unknown error deleting media item from DB");
 		} else {
@@ -18,21 +22,21 @@ export const deleteMediaItemFromDB = async (saveItem: DBMediaItemWithPosterSets)
 				"INFO",
 				"API - DB",
 				"Delete",
-				`Deleted media item with ID ${saveItem.MediaItemID} from DB`,
+				`Deleted ${saveItem.MediaItem.Title} from DB successfully`,
 				response.data
 			);
 		}
 		const { updateMediaItem } = useLibrarySectionsStore.getState();
-		updateMediaItem(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "delete");
+		updateMediaItem(response.data.data?.MediaItem || saveItem.MediaItem, "delete");
 		return response.data;
 	} catch (error) {
 		log(
 			"ERROR",
 			"API - DB",
 			"Delete",
-			`Failed to delete media item with ID ${saveItem.MediaItemID} from DB: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to delete ${saveItem.MediaItem.Title} from DB: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error
 		);
-		return ReturnErrorMessage<string>(error);
+		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);
 	}
 };

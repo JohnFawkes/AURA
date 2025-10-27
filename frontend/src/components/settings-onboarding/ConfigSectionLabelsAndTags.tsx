@@ -25,6 +25,7 @@ interface ConfigSectionLabelsAndTagsProps {
 	onChange: <K extends keyof AppConfigLabelsAndTags>(field: K, value: AppConfigLabelsAndTags[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
 	mediaServerType?: string;
+	srOptions?: string[];
 }
 
 export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProps> = ({
@@ -34,15 +35,22 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 	onChange,
 	errorsUpdate,
 	mediaServerType,
+	srOptions,
 }) => {
 	const prevErrorsRef = useRef<string>("");
 
-	const [newApplicationType, setNewApplicationType] = useState("Plex");
-
 	const APPLICATION_TYPES = React.useMemo(() => {
-		if (mediaServerType === "Plex") return ["Plex"];
-		return [];
-	}, [mediaServerType]);
+		let appTypes = [];
+		if (mediaServerType === "Plex") {
+			appTypes.push("Plex");
+		}
+		if (Array.isArray(srOptions) && srOptions.length > 0) {
+			appTypes = appTypes.concat(srOptions);
+		}
+		return appTypes;
+	}, [mediaServerType, srOptions]);
+
+	const [newApplicationType, setNewApplicationType] = useState(APPLICATION_TYPES[0] || "");
 
 	const applications = React.useMemo(
 		() => (Array.isArray(value.Applications) ? value.Applications : []),
@@ -56,12 +64,15 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 		applications.forEach((app, idx) => {
 			const addLabels = Array.isArray(app.Add) ? app.Add : [];
 			const removeLabels = Array.isArray(app.Remove) ? app.Remove : [];
+			const orLabelTag = app.Application === "Plex" ? "Label" : "Tag";
 			if (app.Enabled && addLabels.length === 0 && removeLabels.length === 0) {
-				errs[`Applications.${idx}`] = "At least one label to add or remove must be specified.";
+				errs[`Applications.[${idx}]`] =
+					`At least one ${orLabelTag.toLowerCase()} to add or remove must be specified.`;
 			}
 			const intersection = addLabels.filter((label) => removeLabels.includes(label));
 			if (intersection.length > 0) {
-				errs[`Applications.${idx}`] = `Labels cannot be in both Add and Remove: ${intersection.join(", ")}`;
+				errs[`Applications.[${idx}]`] =
+					`${orLabelTag} cannot be in both Add and Remove: ${intersection.join(", ")}`;
 			}
 		});
 
@@ -86,9 +97,17 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 		let newEntry: AppConfigLabelsAndTagsApplication;
 		if (type === "Plex") {
 			newEntry = { Application: "Plex", Enabled: true, Add: [], Remove: [] };
+		} else if (Array.isArray(srOptions) && srOptions.includes(type)) {
+			newEntry = { Application: type, Enabled: true, Add: [], Remove: [] };
 		}
 		setApplications([...applications, newEntry!]);
 	};
+
+	useEffect(() => {
+		const usedTypes = applications.map((app) => app.Application);
+		const nextAvailable = APPLICATION_TYPES.find((type) => !usedTypes.includes(type)) || "";
+		setNewApplicationType(nextAvailable);
+	}, [APPLICATION_TYPES, applications]);
 
 	const removeApplication = (index: number) => {
 		if (!editing) return;
@@ -114,54 +133,54 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 	};
 
 	return (
-		<Card className="p-5 space-y-6">
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Labels & Tags</h2>
+				<h2 className="text-xl font-semibold text-blue-500">Labels & Tags</h2>
 			</div>
-			<div
-				className={cn(
-					"space-y-4",
-					(errors["Applications"] || dirtyFields.Applications) && "rounded-md",
-					errors["Applications"]
-						? "border border-red-500 p-3"
-						: dirtyFields.Applications && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-4", "rounded-md")}>
 				<div className="flex items-center justify-between">
-					<Label>Applications</Label>
-					{editing && (
-						<div className="flex items-center gap-2">
-							<Select value={newApplicationType} onValueChange={(v) => setNewApplicationType(v)}>
-								<SelectTrigger className="h-8 w-36">
-									<SelectValue placeholder="Type" />
-								</SelectTrigger>
-								<SelectContent>
-									{APPLICATION_TYPES.filter(
-										(p) => !applications.some((app) => app.Application === p)
-									).map((p) => (
-										<SelectItem key={p} value={p}>
-											{p}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={addApplication}
-								disabled={providerExists}
-							>
-								<Plus className="h-4 w-4 mr-1" />
-								Add
-							</Button>
-						</div>
-					)}
+					{editing &&
+						(() => {
+							const availableTypes = APPLICATION_TYPES.filter(
+								(p) => !applications.some((app) => app.Application === p)
+							);
+							return availableTypes.length > 0 ? (
+								<div className="flex items-center gap-2">
+									<Select value={newApplicationType} onValueChange={(v) => setNewApplicationType(v)}>
+										<SelectTrigger className="h-8 w-36">
+											<SelectValue placeholder="Type" />
+										</SelectTrigger>
+										<SelectContent>
+											{availableTypes.map((p) => (
+												<SelectItem key={p} value={p}>
+													{p}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={addApplication}
+										disabled={providerExists}
+									>
+										<Plus className="h-4 w-4 mr-1" />
+										Add
+									</Button>
+								</div>
+							) : null;
+						})()}
 				</div>
 
-				{applications.length === 0 && (
+				{!mediaServerType && (!srOptions || srOptions.length === 0) ? (
+					<p className="text-sm text-red-500 mb-2">
+						You need to have a Media Server configured and/or at least one Sonarr/Radarr instance before you
+						can use Labels &amp; Tags.
+					</p>
+				) : applications.length === 0 ? (
 					<p className="text-xs text-muted-foreground">No applications configured.</p>
-				)}
+				) : null}
 
 				{applications.map((app, idx) => {
 					const appDirty = dirtyFields.Applications?.[idx] as Partial<{
@@ -169,10 +188,10 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 						Add?: boolean;
 						Remove?: boolean;
 					}>;
-					const appError = errors[`Applications.${idx}`];
+					const appError = errors[`Applications.[${idx}]`];
 					const addLabels = Array.isArray(app.Add) ? app.Add : [];
 					const removeLabels = Array.isArray(app.Remove) ? app.Remove : [];
-
+					const orLabelTag = app.Application === "Plex" ? "Labels" : "Tags";
 					return (
 						<div
 							key={idx}
@@ -183,7 +202,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 						>
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
-									<p className="font-medium text-sm">{app.Application}</p>
+									<p className="font-medium text-lg">{app.Application}</p>
 									<Switch
 										disabled={!editing}
 										checked={app.Enabled}
@@ -197,26 +216,27 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										onClick={() => removeApplication(idx)}
 										aria-label="remove-application"
 										//disabled={applications.length === 1}
+										className="bg-red-700"
 									>
 										<Trash2 className="h-4 w-4" />
 									</Button>
 								)}
 							</div>
 
-							{/* Add Labels */}
+							{/* Add Labels/Tags */}
 							<div className="space-y-2">
 								<div className="flex items-center justify-between">
-									<Label>Add Labels</Label>
+									<Label>Add {orLabelTag}</Label>
 									{editing && (
 										<PopoverHelp ariaLabel="help-labels-to-add">
-											<p>Labels to add to items after processing.</p>
+											<p>{orLabelTag} to add to items after processing.</p>
 										</PopoverHelp>
 									)}
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									{addLabels.length === 0 && (
 										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground">
-											No labels to add
+											No {orLabelTag.toLowerCase()} to add
 										</span>
 									)}
 									{addLabels.map((label, i) => (
@@ -235,7 +255,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 													addLabels.filter((_, j) => j !== i)
 												)
 											}
-											title={editing ? "Remove label" : label}
+											title={editing ? `Remove ${orLabelTag}` : label}
 										>
 											{label}
 										</span>
@@ -257,7 +277,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										>
 											<Input
 												name="addLabel"
-												placeholder="Add label..."
+												placeholder={`Add ${orLabelTag}...`}
 												className="h-7 w-40 text-xs"
 											/>
 											<Button
@@ -265,7 +285,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												variant="outline"
 												size="icon"
 												className="h-7 w-7"
-												title="Add label"
+												title={`Add ${orLabelTag}`}
 											>
 												<Plus className="h-4 w-4" />
 											</Button>
@@ -277,17 +297,17 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 							{/* Remove Labels */}
 							<div className="space-y-2">
 								<div className="flex items-center justify-between">
-									<Label>Remove Labels</Label>
+									<Label>Remove {orLabelTag}</Label>
 									{editing && (
 										<PopoverHelp ariaLabel="help-labels-tags-remove">
-											<p>Labels to remove from items after processing.</p>
+											<p>{orLabelTag} to remove from items after processing.</p>
 										</PopoverHelp>
 									)}
 								</div>
 								<div className="flex flex-wrap items-center gap-2">
 									{removeLabels.length === 0 && (
 										<span className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground">
-											No labels to remove
+											No {orLabelTag.toLowerCase()} to remove
 										</span>
 									)}
 									{removeLabels.map((label, i) => (
@@ -306,7 +326,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 													removeLabels.filter((_, j) => j !== i)
 												)
 											}
-											title={editing ? "Remove label" : label}
+											title={editing ? `Remove ${orLabelTag}` : label}
 										>
 											{label}
 										</span>
@@ -328,7 +348,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 										>
 											<Input
 												name="removeLabel"
-												placeholder="Remove label..."
+												placeholder={`Remove ${orLabelTag}...`}
 												className="h-7 w-40 text-xs"
 											/>
 											<Button
@@ -336,7 +356,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												variant="outline"
 												size="icon"
 												className="h-7 w-7"
-												title="Remove label"
+												title={`Remove ${orLabelTag}`}
 											>
 												<Plus className="h-4 w-4" />
 											</Button>
@@ -349,8 +369,6 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 						</div>
 					);
 				})}
-
-				{errors["Providers"] && <p className="text-xs text-red-500">{errors["Providers"]}</p>}
 			</div>
 		</Card>
 	);

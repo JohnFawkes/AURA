@@ -2,12 +2,35 @@
 
 ### Added
 
-- Enhance Download Modal to include Media Item for checking existence in database
+- Enhance Download Modal to include previous download history for better user tracking
 - Can now cycle through poster and season posters on the media item page for series (using touch or mouse drag)
+- Added --user support for docker images to run as non-root user
+- Added UMASK environment variable support for setting file permissions on downloaded images
+- Support for configuring Sonarr/Radarr instances
+- Support for setting tags in Sonarr
+- Support for setting tags in Radarr
+- Added support for testing Sonarr and Radarr connections individually
+- Added status indicators for Sonarr and Radarr in settings
+- Added support for testing Notification providers individually
+- Added status indicators for Notification providers in settings
+- Added support for force checking Movies for Rating Key and Path changes on Saved Sets page
+- Show already downloaded poster sets at the top of the poster selection carousels
 
 ### Fixed
 
 - Updated error details to use structured maps instead of formatted strings for better clarity and consistency
+- Reduce size of docker image by switching to a smaller base image and multi-stage builds
+- Migrated Database to new structure. TMDB is the main key for Media Items. See breaking changes below.
+- Plex labels are now added asynchronously to improve performance when downloading images
+- Autodownload will now check for changes to Rating Key (which can change when Media Items are deleted/re-added). This uses TMDB ID as the unique identifier.
+- Autodownload will now check for changes to Media Item path (which can change on upgrade or if the file is moved). This is for movies and episodes.
+- Fixed issue with clutter on Settings/Onboarding page when item is changed or error on field validation.
+- Return Media Item details, Posters and User/Follow Hides in one response to reduce number of API calls
+
+### Breaking
+
+- Database schema has changed. Previous database file should be backed up automatically. All previous entries should be migrated automatically. Any issues should be available in a file called
+  `migration_warning_v1.txt` in the same directory as your database.
 
 ---
 

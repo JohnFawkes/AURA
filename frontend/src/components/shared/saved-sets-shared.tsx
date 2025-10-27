@@ -74,7 +74,7 @@ export const refreshPosterSet = async ({
 
 				const response = await fetchSetByID(
 					savedSet.MediaItem.LibraryTitle,
-					savedSet.MediaItem.RatingKey,
+					savedSet.MediaItem.TMDB_ID,
 					set.id,
 					set.set.Type
 				);
@@ -229,13 +229,10 @@ export const savedSetsConfirmEdit = async ({
 	// Create a new DBSavedItem object with updated values
 	const updatedSavedSet: DBMediaItemWithPosterSets = {
 		...savedSet,
-		PosterSets: editSets.map((editSet, idx) => ({
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		PosterSets: editSets.map((editSet, _) => ({
 			PosterSetID: editSet.id,
 			PosterSet: editSet.set,
-			PosterSetJSON:
-				typeof editSet.set === "object"
-					? JSON.stringify(editSet.set)
-					: savedSet.PosterSets[idx]?.PosterSetJSON || "",
 			LastDownloaded: new Date().toISOString(),
 			SelectedTypes: editSet.selectedTypes,
 			AutoDownload: editSet.autoDownload,
@@ -562,7 +559,11 @@ export const SavedSetDeleteModal: React.FC<SavedSetDeleteModalProps> = ({ open, 
 				</DialogDescription>
 			</DialogHeader>
 			<DialogFooter>
-				<Button variant="outline" className="hover:text-primary active:scale-95 hover:brightness-120">
+				<Button
+					variant="outline"
+					className="hover:text-primary active:scale-95 hover:brightness-120"
+					onClick={onClose}
+				>
 					Cancel
 				</Button>
 				<Button

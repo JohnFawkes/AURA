@@ -17,8 +17,9 @@ import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSec
 import { ConfigSectionMediaServer } from "@/components/settings-onboarding/ConfigSectionMediaServer";
 import { ConfigSectionMediux } from "@/components/settings-onboarding/ConfigSectionMediux";
 import { ConfigSectionNotifications } from "@/components/settings-onboarding/ConfigSectionNotifications";
+import { ConfigSectionSonarrRadarr } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { Button } from "@/components/ui/button";
-import { H1, H2, P } from "@/components/ui/typography";
+import { H2, P } from "@/components/ui/typography";
 
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
@@ -96,20 +97,52 @@ const OnboardingPage = () => {
 		[]
 	);
 
+	const stripEmpty = useCallback(function stripEmpty(obj: unknown): unknown {
+		if (Array.isArray(obj)) {
+			return obj
+				.map(stripEmpty)
+				.filter(
+					(v) =>
+						v !== undefined &&
+						v !== null &&
+						!(typeof v === "string" && v === "") &&
+						!(Array.isArray(v) && v.length === 0) &&
+						!(typeof v === "object" && v && Object.keys(v).length === 0)
+				);
+		}
+		if (typeof obj === "object" && obj !== null) {
+			const out: Record<string, unknown> = {};
+			for (const [k, v] of Object.entries(obj)) {
+				const cleaned = stripEmpty(v);
+				if (
+					cleaned !== undefined &&
+					cleaned !== null &&
+					!(typeof cleaned === "string" && cleaned === "") &&
+					!(Array.isArray(cleaned) && cleaned.length === 0) &&
+					!(typeof cleaned === "object" && cleaned && Object.keys(cleaned).length === 0)
+				) {
+					out[k] = cleaned;
+				}
+			}
+			return out;
+		}
+		return obj;
+	}, []);
+
 	// Memoized YAML representation
 	const reviewYaml = useMemo(() => {
 		try {
-			// Clone to strip proxies / undefined
-			const plain = JSON.parse(JSON.stringify(configState));
+			// Clone and strip empty values
+			const plain = stripEmpty(JSON.parse(JSON.stringify(configState)));
 			return yaml.dump(plain, {
-				noRefs: true, // avoid anchors
-				lineWidth: 100, // prevent excessive wrapping
+				noRefs: true,
+				lineWidth: 100,
 				skipInvalid: true,
 			});
 		} catch {
 			return "# Failed to serialize configuration to YAML";
 		}
-	}, [configState]);
+	}, [configState, stripEmpty]);
 
 	const steps: StepDef[] = useMemo(
 		() => [
@@ -206,6 +239,36 @@ const OnboardingPage = () => {
 				),
 			},
 			{
+				key: "autodownload",
+				title: "Auto Download",
+				optional: true,
+				render: () => (
+					<ConfigSectionAutoDownload
+						value={configState.AutoDownload}
+						editing
+						dirtyFields={{}}
+						onChange={(f, v) => updateSectionField("AutoDownload", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
+					/>
+				),
+			},
+			{
+				key: "sonarrandradarr",
+				title: "Sonarr/Radarr",
+				optional: true,
+				render: () => (
+					<ConfigSectionSonarrRadarr
+						value={configState.SonarrRadarr}
+						editing
+						dirtyFields={{}}
+						onChange={(f, v) => updateSectionField("SonarrRadarr", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("SonarrRadarr", errs as Record<string, string>)}
+						configAlreadyLoaded={status?.configLoaded || false}
+						libraries={configState.MediaServer.Libraries || []}
+					/>
+				),
+			},
+			{
 				key: "labelsandtags",
 				title: "Labels & Tags",
 				optional: true,
@@ -217,6 +280,18 @@ const OnboardingPage = () => {
 						onChange={(f, v) => updateSectionField("LabelsAndTags", f, v)}
 						errorsUpdate={(errs) => updateSectionErrors("LabelsAndTags", errs as Record<string, string>)}
 						mediaServerType={configState.MediaServer.Type}
+						srOptions={
+							Array.from(
+								new Set(
+									(Array.isArray(configState.SonarrRadarr?.Applications)
+										? configState.SonarrRadarr.Applications
+										: []
+									)
+										.map((app) => app.Type)
+										.filter((type) => !!type)
+								)
+							) || []
+						}
 					/>
 				),
 			},
@@ -231,20 +306,7 @@ const OnboardingPage = () => {
 						dirtyFields={{}}
 						onChange={(f, v) => updateSectionField("Notifications", f, v)}
 						errorsUpdate={(errs) => updateSectionErrors("Notifications", errs as Record<string, string>)}
-					/>
-				),
-			},
-			{
-				key: "autodownload",
-				title: "Auto Download",
-				optional: true,
-				render: () => (
-					<ConfigSectionAutoDownload
-						value={configState.AutoDownload}
-						editing
-						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("AutoDownload", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
+						configAlreadyLoaded={status?.configLoaded || false}
 					/>
 				),
 			},
@@ -266,19 +328,20 @@ const OnboardingPage = () => {
 			},
 		],
 		[
-			status?.configLoaded,
-			configState.Mediux,
-			configState.MediaServer,
 			configState.Auth,
-			configState.Logging,
+			configState.AutoDownload,
 			configState.Images,
 			configState.LabelsAndTags,
+			configState.Logging,
+			configState.MediaServer,
+			configState.Mediux,
 			configState.Notifications,
-			configState.AutoDownload,
-			updateSectionField,
-			updateSectionErrors,
-			updateImagesField,
+			configState.SonarrRadarr,
 			reviewYaml,
+			status?.configLoaded,
+			updateImagesField,
+			updateSectionErrors,
+			updateSectionField,
 			validationErrors,
 		]
 	);
@@ -290,15 +353,6 @@ const OnboardingPage = () => {
 
 	const next = () => setIndex((i) => Math.min(i + 1, lastIndex));
 	const prev = () => setIndex((i) => Math.max(i - 1, 0));
-	const skipOptional = () => {
-		for (let i = index + 1; i <= lastIndex; i++) {
-			if (!steps[i].optional) {
-				setIndex(i);
-				return;
-			}
-		}
-		setIndex(lastIndex);
-	};
 
 	const finish = async () => {
 		if (hasErrors) {
@@ -422,23 +476,13 @@ const OnboardingPage = () => {
 	};
 
 	return (
-		<div className="mx-auto max-w-5xl p-6 space-y-8">
-			<div>
-				<H1 className="text-2xl font-bold">Onboarding</H1>
-			</div>
-			<div className="flex items-center justify-between">
-				<P className="mb-2 text-md text-muted-foreground">
-					Step {index + 1} of {steps.length}: {current.title}
-				</P>
-				<div className="mb-2 flex flex-row flex-wrap gap-2 justify-end">
+		<div className="mx-auto max-w-5xl p-6">
+			<div className="flex flex-row flex-wrap items-center justify-between gap-3">
+				{index > 0 ? <H2 className="text-4xl font-bold mb-2">Onboarding</H2> : <div />}
+				<div className="flex flex-row flex-wrap gap-2 justify-end">
 					{index > 0 && (
 						<Button variant="outline" onClick={prev} disabled={applyLoading}>
 							← Back
-						</Button>
-					)}
-					{current.optional && index < lastIndex - 1 && (
-						<Button variant="secondary" onClick={skipOptional} disabled={applyLoading}>
-							Skip
 						</Button>
 					)}
 					{index < lastIndex && (
@@ -454,14 +498,17 @@ const OnboardingPage = () => {
 				</div>
 			</div>
 
-			<div className="border rounded-lg p-5 bg-background shadow-sm">{current.render()}</div>
-
-			{/* Nav + Optional label */}
-			<div className="flex flex-row flex-wrap items-center justify-between gap-3 mt-2">
-				<div className="text-xs text-muted-foreground min-h-[1rem]">
-					{current.optional && <P className="text-sm font-medium text-amber-600 m-0">Optional step</P>}
+			{index > 0 && (
+				<div className="flex items-center gap-2">
+					<P className="text-md text-muted-foreground">
+						Step {index} of {steps.length}: {current.title}{" "}
+					</P>
+					{current.optional && <P className="text-md text-amber-600">(Optional)</P>}
 				</div>
-			</div>
+			)}
+
+			{/* Config Section Item  */}
+			<div>{current.render()}</div>
 
 			{/* Error summary below full width */}
 			{hasErrors && <ErrorSummary errors={validationErrors} />}

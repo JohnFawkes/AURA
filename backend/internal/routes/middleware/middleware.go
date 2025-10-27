@@ -1,7 +1,6 @@
-package middleware
+package routes_middleware
 
 import (
-	"aura/internal/logging"
 	"net/http"
 	"strings"
 
@@ -10,10 +9,26 @@ import (
 	"github.com/rs/cors"
 )
 
+/*
+	Configure_Middlewares
+
+Sets up the middleware stack for the given router.
+
+Middlewares included:
+- Custom Logging Middleware: Logs requests using a custom log formatter.
+- CORS Middleware: Allows CORS for all origins (replace this with specific origins).
+- RealIP Middleware: Gets the client's real public IP address from the request headers.
+- StripSlashes Middleware: Strips slashes to no slash URL versions.
+- Panic Recovery Middleware: Recovers from panics and returns a 500 error.
+
+Parameters:
+
+- r: The chi.Mux router to configure middlewares for.
+*/
 func Configure_Middlewares(r *chi.Mux) {
 
 	// Custom Logging Middleware: Log requests using a custom log formatter
-	r.Use(middleware.RequestLogger(&logging.LogFormatter{}))
+	//r.Use(middleware.RequestLogger(&logging.LogFormatter{}))
 
 	AllowedOrigins := []string{"*"}
 

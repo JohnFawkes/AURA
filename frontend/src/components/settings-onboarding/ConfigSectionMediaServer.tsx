@@ -7,6 +7,10 @@ import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+	CONNECTION_STATUS_COLORS_BG,
+	ConfigConnectionStatus,
+} from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +45,17 @@ const USER_ID_REQUIRED_TYPES = new Set<string>(["Emby", "Jellyfin"]);
 const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
 const SEASON_NAMING_CONVENTION_REQUIRED_TYPES = new Set<string>(["Plex"]);
 
+export function GetConnectionColor(status: "unknown" | "ok" | "error"): "green-500" | "red-500" | "gray-500" {
+	switch (status) {
+		case "ok":
+			return "green-500";
+		case "error":
+			return "red-500";
+		default:
+			return "gray-500";
+	}
+}
+
 export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> = ({
 	value,
 	editing,
@@ -65,7 +80,10 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
-	const [connectionStatus, setConnectionStatus] = useState<"unknown" | "ok" | "error">("unknown");
+	const [connectionStatus, setConnectionStatus] = useState<ConfigConnectionStatus>({
+		status: "unknown",
+		color: GetConnectionColor("unknown"),
+	});
 
 	const valueRef = React.useRef(value);
 	React.useEffect(() => {
@@ -155,16 +173,16 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 	const runRemoteValidation = useCallback(
 		async (showToast = true) => {
-			setConnectionStatus("unknown");
+			setConnectionStatus({ status: "unknown", color: GetConnectionColor("unknown") });
 			const current = valueRef.current;
 			if (!current.Token.trim()) {
 				setRemoteTokenError("Token is required.");
-				setConnectionStatus("error");
+				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
 			}
 			if (!current.URL.trim()) {
 				setRemoteTokenError("URL is required.");
-				setConnectionStatus("error");
+				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
 			}
 
@@ -181,13 +199,13 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 			if (ok) {
 				setRemoteTokenError(null);
-				setConnectionStatus("ok");
+				setConnectionStatus({ status: "ok", color: GetConnectionColor("ok") });
 				if (data?.UserID && data.UserID !== current.UserID) {
 					onChange("UserID", data.UserID);
 				}
 			} else {
 				setRemoteTokenError(message || "Token invalid");
-				setConnectionStatus("error");
+				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 			}
 		},
 		[onChange]
@@ -234,32 +252,20 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	};
 
 	return (
-		<Card className="p-5 space-y-1">
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<h2 className="text-xl font-semibold">Media Server</h2>
+					<h2 className={`text-xl font-semibold text-${connectionStatus.color}`}>Media Server</h2>
 					<span
-						className={`h-2 w-2 rounded-full ${
-							connectionStatus === "ok"
-								? "bg-green-500"
-								: connectionStatus === "error"
-									? "bg-red-500"
-									: "bg-gray-400"
-						}`}
-						title={
-							connectionStatus === "ok"
-								? "Connection OK"
-								: connectionStatus === "error"
-									? "Connection Error"
-									: "Connection Unknown"
-						}
+						className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connectionStatus.status]} animate-pulse`}
+						title={`Connection status: ${connectionStatus.status}`}
 					/>
 				</div>
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={editing || testingToken}
 					hidden={editing}
+					disabled={editing || testingToken}
 					onClick={() => runRemoteValidation()}
 					className="cursor-pointer hover:text-primary"
 				>
@@ -268,13 +274,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			</div>
 
 			{/* Type */}
-			<div
-				className={cn(
-					"space-y-1",
-					(dirtyFields.Type || errors.Type) && "rounded-md",
-					errors.Type ? "border border-red-500 p-3" : dirtyFields.Type && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-1")}>
 				<div className="flex items-center justify-between">
 					<Label>Type</Label>
 					{editing && (
@@ -299,7 +299,10 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						onChange("Type", v);
 					}}
 				>
-					<SelectTrigger className="w-full" id="media-server-type-trigger">
+					<SelectTrigger
+						id="media-server-type-trigger"
+						className={cn("w-full", dirtyFields.Type && "border-amber-500")}
+					>
 						<SelectValue placeholder="Select type..." />
 					</SelectTrigger>
 					<SelectContent>
@@ -316,13 +319,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			</div>
 
 			{/* URL */}
-			<div
-				className={cn(
-					"space-y-1",
-					(dirtyFields.URL || errors.URL) && "rounded-md",
-					errors.URL ? "border border-red-500 p-3" : dirtyFields.URL && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-1")}>
 				<div className="flex items-center justify-between">
 					<Label>URL</Label>
 					{editing && (
@@ -330,9 +327,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 							<p className="font-medium mb-1">Base server URL</p>
 							<p>Examples:</p>
 							<ul className="list-disc list-inside mb-1">
-								<li>https://plex.domain.com</li>
-								<li>http://192.168.1.10:32400</li>
-								<li>http://plex:32400</li>
+								<li>https://{value.Type.toLowerCase()}.domain.com</li>
+								<li>http://192.168.1.10:{value.Type === "Plex" ? "32400" : "8096"}</li>
+								<li>
+									http://{value.Type.toLowerCase()}:{value.Type === "Plex" ? "32400" : "8096"}
+								</li>
 							</ul>
 							<p>Rules:</p>
 							<ul className="list-disc list-inside">
@@ -349,18 +348,13 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					value={value.URL}
 					onChange={(e) => onChange("URL", e.target.value)}
 					onBlur={() => runRemoteValidation()}
+					className={cn("w-full", dirtyFields.URL && "border-amber-500")}
 				/>
 				{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
 			</div>
 
 			{/* Token */}
-			<div
-				className={cn(
-					"space-y-1",
-					(dirtyFields.Token || errors.Token) && "rounded-md",
-					errors.Token ? "border border-red-500 p-3" : dirtyFields.Token && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-1")}>
 				<div className="flex items-center justify-between">
 					<Label>Token</Label>
 					{editing && (
@@ -376,21 +370,14 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					value={value.Token}
 					onChange={(e) => onChange("Token", e.target.value)}
 					onBlur={() => runRemoteValidation()}
+					className={cn("w-full", dirtyFields.Token && "border-amber-500")}
 				/>
 				{errors.Token && <p className="text-xs text-red-500">{errors.Token}</p>}
 			</div>
 
 			{/* User ID (Emby / Jellyfin) */}
 			{USER_ID_REQUIRED_TYPES.has(value.Type) && (
-				<div
-					className={cn(
-						"space-y-1",
-						(dirtyFields.UserID || errors.UserID) && "rounded-md",
-						errors.UserID
-							? "border border-red-500 p-3"
-							: dirtyFields.UserID && "border border-amber-500 p-3"
-					)}
-				>
+				<div className={cn("space-y-1")}>
 					<div className="flex items-center justify-between">
 						<Label>User ID</Label>
 						{editing && (
@@ -406,7 +393,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						disabled={true}
 						value={value.UserID ?? ""}
 						placeholder="Emby/Jellyfin user id"
-						aria-invalid={!!errors.UserID}
+						className={cn("w-full", dirtyFields.UserID && "border-amber-500")}
 					/>
 					{errors.UserID && <p className="text-xs text-red-500">{errors.UserID}</p>}
 				</div>
@@ -414,15 +401,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 			{/* Season Naming Convention (Plex) */}
 			{SEASON_NAMING_CONVENTION_REQUIRED_TYPES.has(value.Type) && (
-				<div
-					className={cn(
-						"space-y-1",
-						(dirtyFields.SeasonNamingConvention || errors.SeasonNamingConvention) && "rounded-md",
-						errors.SeasonNamingConvention
-							? "border border-red-500 p-3"
-							: dirtyFields.SeasonNamingConvention && "border border-amber-500 p-3"
-					)}
-				>
+				<div className={cn("space-y-1")}>
 					<div className="flex items-center justify-between">
 						<Label>Season Naming Convention</Label>
 						{editing && (
@@ -458,7 +437,10 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						value={value.SeasonNamingConvention}
 						onValueChange={(v) => onChange("SeasonNamingConvention", v)}
 					>
-						<SelectTrigger className="w-full" id="media-server-season-naming-convention-trigger">
+						<SelectTrigger
+							id="media-server-season-naming-convention-trigger"
+							className={cn("w-full", dirtyFields.SeasonNamingConvention && "border-amber-500")}
+						>
 							<SelectValue placeholder="Select convention..." />
 						</SelectTrigger>
 						<SelectContent>
@@ -478,15 +460,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			)}
 
 			{/* Libraries */}
-			<div
-				className={cn(
-					"space-y-3",
-					(dirtyFields.Libraries || errors.Libraries) && "rounded-md",
-					errors.Libraries
-						? "border border-red-500 p-3"
-						: dirtyFields.Libraries && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-3")}>
 				<div className="flex items-center">
 					<Label>Libraries</Label>
 					{editing && (
@@ -522,7 +496,8 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 								"cursor-pointer select-none transition duration-200 px-3 py-1 text-xs font-normal",
 								editing
 									? "bg-secondary text-secondary-foreground hover:bg-red-500 hover:text-white"
-									: "bg-muted text-muted-foreground"
+									: "bg-muted text-muted-foreground",
+								dirtyFields.Libraries && "border-amber-500"
 							)}
 							onClick={() => {
 								if (!editing) return;
@@ -563,7 +538,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						</form>
 					)}
 				</div>
-
 				{errors.Libraries && <p className="text-xs text-red-500">{errors.Libraries}</p>}
 			</div>
 		</Card>

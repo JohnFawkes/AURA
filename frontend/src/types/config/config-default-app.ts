@@ -40,4 +40,7 @@ export const defaultAppConfig = (): AppConfig =>
 			Enabled: false,
 			Providers: [],
 		},
+		SonarrRadarr: {
+			Applications: [{ Type: "", Library: "", URL: "", APIKey: "" }],
+		},
 	}) satisfies AppConfig;

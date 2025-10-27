@@ -5,12 +5,19 @@ import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 
 import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-saved-item";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 
-export const postAddItemToDB = async (saveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
-	log("INFO", "API - DB", "Add", `Adding item with RatingKey ${saveItem.MediaItem.RatingKey} to DB`);
+export const postAddItemToDB = async (
+	saveItem: DBMediaItemWithPosterSets
+): Promise<APIResponse<DBMediaItemWithPosterSets>> => {
+	log(
+		"INFO",
+		"API - DB",
+		"Add",
+		`Adding '${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})' to DB`
+	);
 	try {
-		const response = await apiClient.post<APIResponse<DBSavedItem>>(`/db/add/item`, saveItem);
+		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/db/add/item`, saveItem);
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.Message || "Unknown error adding item to DB");
 		} else {
@@ -18,12 +25,15 @@ export const postAddItemToDB = async (saveItem: DBSavedItem): Promise<APIRespons
 				"INFO",
 				"API - DB",
 				"Add",
-				`Added item with RatingKey ${saveItem.MediaItem.RatingKey} to DB`,
+				`Added '${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})' to DB successfully`,
 				response.data
 			);
 		}
+
 		const { updateMediaItem } = useLibrarySectionsStore.getState();
-		updateMediaItem(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "add");
+		if (response.data.data?.MediaItem) {
+			updateMediaItem(response.data.data.MediaItem, "add");
+		}
 		return response.data;
 	} catch (error) {
 		log(
@@ -33,6 +43,6 @@ export const postAddItemToDB = async (saveItem: DBSavedItem): Promise<APIRespons
 			`Failed to add item to DB: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error
 		);
-		return ReturnErrorMessage<DBSavedItem>(error);
+		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);
 	}
 };

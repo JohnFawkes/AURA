@@ -63,11 +63,11 @@ export const useHomePageStore = create<Home_PageStore>()(
 			 * Retrieves adjacent media item (wrap-around) from the Home page store's
 			 * filteredAndSortedMediaItems array.
 			 */
-			getAdjacentMediaItem: (currentRatingKey: string, direction: Direction): MediaItem | null => {
+			getAdjacentMediaItem: (tmdbID: string, direction: Direction): MediaItem | null => {
 				const mediaItems = get().filteredAndSortedMediaItems || [];
 				if (!mediaItems.length) return null;
 
-				const currentIndex = mediaItems.findIndex((m) => m.RatingKey === currentRatingKey);
+				const currentIndex = mediaItems.findIndex((m) => m.TMDB_ID === tmdbID);
 				if (currentIndex === -1) return null;
 
 				const nextIndex =

@@ -5,42 +5,71 @@ import { toast } from "sonner";
 import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
+import { AppConfigNotificationProviders } from "@/types/config/config-app";
 
-export const postSendTestNotification = async (): Promise<APIResponse<string>> => {
-	log("INFO", "API - Settings", "Notifications", "Sending test notification");
+export async function postSendTestNotification(
+	nProvider: AppConfigNotificationProviders
+): Promise<APIResponse<string>> {
+	log(
+		"INFO",
+		"API - Settings",
+		`Notification ${nProvider.Provider}`,
+		`Posting new ${nProvider.Provider} info to check connection status`
+	);
 	try {
-		const response = await apiClient.post<APIResponse<string>>(`/health/test/notification`);
+		const response = await apiClient.post<APIResponse<string>>(
+			`/config/validate/notification/${nProvider.Provider.toLowerCase()}`,
+			nProvider
+		);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error sending test notification");
+			throw new Error(response.data.error?.Message || `Unknown error posting ${nProvider.Provider} new info`);
 		} else {
-			log("INFO", "API - Settings", "Notifications", "Sent test notification successfully", response.data);
+			log(
+				"INFO",
+				"API - Settings",
+				nProvider.Provider,
+				`Posted ${nProvider.Provider} new info successfully`,
+				response.data
+			);
 		}
 		return response.data;
 	} catch (error) {
 		log(
 			"ERROR",
 			"API - Settings",
-			"Notifications",
-			`Failed to send test notification: ${error instanceof Error ? error.message : "Unknown error"}`,
+			nProvider.Provider,
+			`Failed to post ${nProvider.Provider} new info: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error
 		);
 		return ReturnErrorMessage<string>(error);
 	}
-};
+}
 
-export const sendTestNotification = async (): Promise<{ ok: boolean; message: string }> => {
+export const sendTestNotification = async (
+	nProvider: AppConfigNotificationProviders,
+	showToast = true
+): Promise<{ ok: boolean; message: string }> => {
 	try {
-		const response = await postSendTestNotification();
+		const response = await postSendTestNotification(nProvider);
 		if (response.status === "error") {
-			toast.error(response.error?.Message || "Error sending test notifications. Check logs.");
-			return { ok: false, message: response.error?.Message || "Error sending test notifications. Check logs." };
+			if (showToast) toast.error(response.error?.Message || "Couldn't connect. Check the connection details");
+			return { ok: false, message: response.error?.Message || "API Key invalid" };
 		}
 
-		toast.success(`Successfully sent test notifications`, { duration: 1000 });
-		return { ok: true, message: "Successfully sent test notifications" };
+		if (showToast) toast.success(`Successfully tested ${nProvider.Provider}`, { duration: 1000 });
+		return { ok: true, message: `Successfully tested ${nProvider.Provider}` };
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.error(errorResponse.error?.Message || "Error sending test notifications. Check logs.");
-		return { ok: false, message: errorResponse.error?.Message || "Error sending test notifications. Check logs." };
+		if (showToast)
+			toast.error(
+				errorResponse.error?.Message ||
+					`Couldn't connect to ${nProvider.Provider}. Check the connection details`
+			);
+		return {
+			ok: false,
+			message:
+				errorResponse.error?.Message ||
+				`Couldn't connect to ${nProvider.Provider}. Check the connection details`,
+		};
 	}
 };

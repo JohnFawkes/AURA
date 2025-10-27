@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
 	experimental: {
 		proxyTimeout: 300000,
 	},
+	output: "standalone",
 
 	async rewrites() {
 		return [

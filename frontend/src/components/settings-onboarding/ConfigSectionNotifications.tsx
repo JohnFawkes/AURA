@@ -2,10 +2,15 @@
 
 import { ValidateURL } from "@/helper/validation/validate-url";
 import { sendTestNotification } from "@/services/settings-onboarding/api-notifications-test";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, TestTube, Trash2 } from "lucide-react";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { GetConnectionColor } from "@/components/settings-onboarding/ConfigSectionMediaServer";
+import {
+	CONNECTION_STATUS_COLORS_BG,
+	ConfigConnectionStatus,
+} from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,12 +36,17 @@ interface ConfigSectionNotificationsProps {
 		Enabled?: boolean;
 		Providers?: Array<
 			Partial<
-				Record<string, boolean | { Enabled?: boolean; Webhook?: boolean; UserKey?: boolean; Token?: boolean }>
+				Record<
+					string,
+					| boolean
+					| { Enabled?: boolean; Webhook?: boolean; UserKey?: boolean; Token?: boolean; URL?: boolean }
+				>
 			>
 		>;
 	};
 	onChange: <K extends keyof AppConfigNotifications>(field: K, value: AppConfigNotifications[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
+	configAlreadyLoaded: boolean;
 }
 
 const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify"] as const;
@@ -47,16 +57,22 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 	dirtyFields = {},
 	onChange,
 	errorsUpdate,
+	configAlreadyLoaded,
 }) => {
 	const prevErrorsRef = useRef<string>("");
+	const hasRunInitialValidation = useRef(false);
 
 	// Local select state for adding providers
 	const [newProviderType, setNewProviderType] = useState<string>("Discord");
 
-	const providers = React.useMemo(() => (Array.isArray(value.Providers) ? value.Providers : []), [value.Providers]);
+	const providers = useMemo(() => (Array.isArray(value.Providers) ? value.Providers : []), [value.Providers]);
+
+	// State to track app connection testing
+	const [appConnectionStatus, setAppConnectionStatus] = useState<Record<number, ConfigConnectionStatus>>({});
+	const [remoteTokenErrors, setRemoteTokenErrors] = useState<Record<number, string | null>>({});
 
 	// ----- Validation -----
-	const errors = React.useMemo(() => {
+	const errors = useMemo(() => {
 		const errs: Record<string, string> = {};
 
 		if (value.Enabled) {
@@ -67,42 +83,50 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		}
 
 		providers.forEach((p, idx) => {
-			const prefix = `Providers[${idx}]`;
 			if (value.Enabled && p.Enabled) {
 				if (p.Provider === "Discord") {
 					const discord = p.Discord;
 					const webhook = (discord?.Webhook || "").trim();
 					if (!webhook) {
-						errs[`${prefix}.Discord.Webhook`] = "Webhook URL required.";
+						errs[`Providers.[${idx}].Discord.Webhook`] = "Webhook URL required.";
 					} else if (!/^https?:\/\//i.test(webhook)) {
-						errs[`${prefix}.Discord.Webhook`] = "Webhook must start with http(s)://";
+						errs[`Providers.[${idx}].Discord.Webhook`] = "Webhook must start with http(s)://";
+					}
+					if (remoteTokenErrors[idx]) {
+						errs[`Providers.[${idx}].Discord.Webhook`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
 				} else if (p.Provider === "Pushover") {
 					const push = p.Pushover;
 					if (!(push?.UserKey || "").trim()) {
-						errs[`${prefix}.Pushover.UserKey`] = "User key required.";
+						errs[`Providers.[${idx}].Pushover.UserKey`] = "User key required.";
 					}
 					if (!(push?.Token || "").trim()) {
-						errs[`${prefix}.Pushover.Token`] = "App token required.";
+						errs[`Providers.[${idx}].Pushover.Token`] = "App token required.";
+					}
+					if (remoteTokenErrors[idx]) {
+						errs[`Providers.[${idx}].Pushover.Token`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
 				} else if (p.Provider === "Gotify") {
 					const gotify = p.Gotify;
 					const rawURL = (gotify?.URL || "").trim();
 					if (!rawURL) {
-						errs[`${prefix}.Gotify.URL`] = "URL required.";
+						errs[`Providers.[${idx}].Gotify.URL`] = "URL required.";
 					} else {
 						const urlErr = ValidateURL(rawURL);
-						if (urlErr) errs[`${prefix}.Gotify.URL`] = urlErr;
+						if (urlErr) errs[`Providers.[${idx}].Gotify.URL`] = urlErr;
 					}
 					if (!(gotify?.Token || "").trim()) {
-						errs[`${prefix}.Gotify.Token`] = "App token required.";
+						errs[`Providers.[${idx}].Gotify.Token`] = "App token required.";
+					}
+					if (remoteTokenErrors[idx]) {
+						errs[`Providers.[${idx}].Gotify.Token`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
 				}
 			}
 		});
 
 		return errs;
-	}, [value.Enabled, providers]);
+	}, [value.Enabled, providers, remoteTokenErrors]);
 
 	// Emit errors
 	useEffect(() => {
@@ -204,20 +228,71 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		setProviders(next);
 	};
 
+	const runRemoteValidation = useCallback(
+		async (idx: number, showToast = true) => {
+			const provider = providers[idx];
+			if (!provider || !provider.Enabled) return;
+
+			// Set to unknown while testing
+			setAppConnectionStatus((s) => ({
+				...s,
+				[idx]: { status: "unknown", color: GetConnectionColor("unknown") },
+			}));
+
+			try {
+				const start = Date.now();
+				const { ok, message } = await sendTestNotification(provider, showToast);
+				const elapsed = Date.now() - start;
+				const minDelay = 400;
+
+				if (elapsed < minDelay) {
+					await new Promise((resolve) => setTimeout(resolve, minDelay - elapsed));
+				}
+
+				if (ok) {
+					setRemoteTokenErrors((s) => ({ ...s, [idx]: null }));
+					setAppConnectionStatus((s) => ({ ...s, [idx]: { status: "ok", color: GetConnectionColor("ok") } }));
+				} else {
+					setRemoteTokenErrors((s) => ({ ...s, [idx]: message || "Connection failed" }));
+					setAppConnectionStatus((s) => ({
+						...s,
+						[idx]: { status: "error", color: GetConnectionColor("error") },
+					}));
+				}
+			} catch {
+				setRemoteTokenErrors((s) => ({ ...s, [idx]: "Connection failed" }));
+				setAppConnectionStatus((s) => ({
+					...s,
+					[idx]: { status: "error", color: GetConnectionColor("error") },
+				}));
+			}
+		},
+		[providers]
+	);
+
+	useEffect(() => {
+		if (configAlreadyLoaded && !hasRunInitialValidation.current) {
+			// Run remote validation for all apps that have URL and APIKey set
+			providers.forEach((p, idx) => {
+				if (p.Enabled) {
+					if (p.Provider === "Discord" && p.Discord?.Webhook) {
+						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
+					} else if (p.Provider === "Pushover" && p.Pushover?.UserKey && p.Pushover?.Token) {
+						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
+					} else if (p.Provider === "Gotify" && p.Gotify?.URL && p.Gotify?.Token) {
+						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
+					}
+				}
+			});
+			hasRunInitialValidation.current = true;
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [configAlreadyLoaded, runRemoteValidation]);
+
 	return (
-		<Card className="p-5 space-y-6">
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Notifications</h2>
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={editing}
-					hidden={editing}
-					onClick={() => sendTestNotification()}
-					className="cursor-pointer hover:text-primary"
-				>
-					Test Notifications
-				</Button>
+				<h2 className="text-xl font-semibold text-blue-500">Notifications</h2>
 			</div>
 
 			{/* Global Enabled */}
@@ -247,17 +322,8 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 			</div>
 
 			{/* Providers */}
-			<div
-				className={cn(
-					"space-y-4",
-					(errors["Providers"] || dirtyFields.Providers) && "rounded-md",
-					errors["Providers"]
-						? "border border-red-500 p-3"
-						: dirtyFields.Providers && "border border-amber-500 p-3"
-				)}
-			>
-				<div className="flex items-center justify-between">
-					<Label>Providers</Label>
+			<div className={cn("space-y-4")}>
+				<div className="flex items-center justify-end">
 					{editing && (
 						<div className="flex items-center gap-2">
 							<Select value={newProviderType} onValueChange={(v) => setNewProviderType(v)}>
@@ -280,67 +346,101 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					)}
 				</div>
 
-				{providers.length === 0 && <p className="text-xs text-muted-foreground">No providers added.</p>}
+				{providers.length === 0 && (
+					<p className="text-sm text-muted-foreground">No notification providers added.</p>
+				)}
 
 				{providers.map((p, idx) => {
-					const providerDirty = dirtyFields.Providers?.[idx] as Partial<{
-						Discord?: Partial<AppConfigNotificationDiscord>;
-						Pushover?: Partial<AppConfigNotificationPushover>;
-						Gotify?: Partial<AppConfigNotificationGotify>;
-						Enabled?: boolean;
-					}>;
+					const providerDirty = dirtyFields.Providers?.[idx];
+					const discordDirty =
+						typeof providerDirty?.Discord === "object" && providerDirty?.Discord !== null
+							? providerDirty.Discord
+							: {};
+					const pushoverDirty =
+						typeof providerDirty?.Pushover === "object" && providerDirty?.Pushover !== null
+							? providerDirty.Pushover
+							: {};
+					const gotifyDirty =
+						typeof providerDirty?.Gotify === "object" && providerDirty?.Gotify !== null
+							? providerDirty.Gotify
+							: {};
 					const providerErrorEntries = Object.entries(errors).filter(([k]) =>
-						k.startsWith(`Providers[${idx}]`)
+						k.startsWith(`Providers.[${idx}]`)
 					);
 					const providerErrors = providerErrorEntries.map(([, msg]) => msg);
-
-					// Field-level helpers (key-based)
-					const hasError = (suffix: string) => providerErrorEntries.some(([k]) => k.endsWith(suffix));
-
+					const connStatus = appConnectionStatus[idx] || {
+						status: "unknown",
+						color: "gray-500",
+					};
 					return (
 						<div
 							key={idx}
 							className={cn(
 								"space-y-3 rounded-md border p-3 transition",
-								providerErrors.length
-									? "border-red-500"
-									: providerDirty
-										? "border-amber-500"
-										: "border-muted"
+								providerErrors.length ? "border-red-500" : "border-muted"
 							)}
 						>
 							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-3">
-									<p className="font-medium text-sm">{p.Provider}</p>
+								<div
+									className={cn(
+										"flex items-center gap-3",
+										providerDirty?.Enabled && "rounded-md border border-amber-500"
+									)}
+								>
+									<h2 className={`text-xl font-semibold text-${connStatus.color}`}>{p.Provider}</h2>
+									<span
+										className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connStatus.status]} animate-pulse`}
+										title={`Connection status: ${connStatus.status}`}
+									/>
+
 									<Switch
 										disabled={!editing}
 										checked={p.Enabled}
 										onCheckedChange={(v) => updateProvider(idx, "Enabled", v)}
 									/>
 								</div>
-								{editing && (
+								<div className="flex items-center gap-2">
 									<Button
-										variant="ghost"
-										size="icon"
-										onClick={() => removeProvider(idx)}
-										aria-label="help-notifications-remove-provider"
+										variant="outline"
+										size="sm"
+										disabled={
+											!p.Enabled ||
+											(p.Provider === "Discord" && !p.Discord?.Webhook) ||
+											(p.Provider === "Pushover" &&
+												(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
+											(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token))
+										}
+										hidden={
+											((p.Provider === "Discord" && !p.Discord?.Webhook) ||
+												(p.Provider === "Pushover" &&
+													(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
+												(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token))) &&
+											!editing
+										}
+										onClick={() => {
+											runRemoteValidation(idx);
+										}}
+										aria-label="test-app-connection"
 									>
-										<Trash2 className="h-4 w-4" />
+										<TestTube className="h-4 w-4 mr-1" />{" "}
 									</Button>
-								)}
+									{editing && (
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => removeProvider(idx)}
+											aria-label="help-apps-remove-app"
+											className="bg-red-700"
+										>
+											<Trash2 className="h-4 w-4" />
+										</Button>
+									)}
+								</div>
 							</div>
 
 							{/* Discord Fields */}
 							{p.Provider === "Discord" && p.Enabled && (
-								<div
-									className={cn(
-										"space-y-1",
-										hasError("Discord.Webhook") && "rounded-md",
-										hasError("Discord.Webhook")
-											? "border border-red-500 p-3"
-											: providerDirty?.Discord?.Webhook && "border border-amber-500 p-3"
-									)}
-								>
+								<div className={cn("space-y-1")}>
 									<div className="flex items-center justify-between">
 										<Label>Webhook URL</Label>
 										{editing && (
@@ -365,7 +465,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											const val = e.target.value;
 											updateDiscord(idx, "Webhook", val);
 										}}
-										aria-invalid={providerErrors.some((e) => e.includes("Webhook"))}
+										className={cn(discordDirty?.Webhook && "border border-amber-500 p-3")}
 									/>
 									{providerErrorEntries
 										.filter(([k]) => k.endsWith("Discord.Webhook"))
@@ -380,15 +480,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							{/* Pushover Fields */}
 							{p.Provider === "Pushover" && p.Enabled && (
 								<div className="grid gap-3 md:grid-cols-2">
-									<div
-										className={cn(
-											"space-y-1",
-											hasError("Pushover.UserKey") && "rounded-md",
-											hasError("Pushover.UserKey")
-												? "border border-red-500 p-3"
-												: providerDirty?.Pushover?.UserKey && "border border-amber-500 p-3"
-										)}
-									>
+									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
 											<Label>User Key</Label>
 											{editing && (
@@ -406,7 +498,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											placeholder="User key"
 											value={p.Pushover?.UserKey || ""}
 											onChange={(e) => updatePushover(idx, "UserKey", e.target.value)}
-											aria-invalid={providerErrors.some((e) => e.includes("UserKey"))}
+											className={cn(pushoverDirty?.UserKey && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Pushover.UserKey"))
@@ -416,15 +508,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												</p>
 											))}
 									</div>
-									<div
-										className={cn(
-											"space-y-1",
-											hasError("Pushover.Token") && "rounded-md",
-											hasError("Pushover.Token")
-												? "border border-red-500 p-3"
-												: providerDirty?.Pushover?.Token && "border border-amber-500 p-3"
-										)}
-									>
+									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
 											<Label>App Token</Label>
 											{editing && (
@@ -444,7 +528,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											placeholder="App token"
 											value={p.Pushover?.Token || ""}
 											onChange={(e) => updatePushover(idx, "Token", e.target.value)}
-											aria-invalid={providerErrors.some((e) => e.includes("Token"))}
+											className={cn(pushoverDirty?.Token && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Pushover.Token"))
@@ -460,15 +544,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							{/* Gotify Fields */}
 							{p.Provider === "Gotify" && p.Enabled && (
 								<div className="grid gap-3 md:grid-cols-2">
-									<div
-										className={cn(
-											"space-y-1",
-											hasError("Gotify.URL") && "rounded-md",
-											hasError("Gotify.URL")
-												? "border border-red-500 p-3"
-												: providerDirty?.Gotify?.URL && "border border-amber-500 p-3"
-										)}
-									>
+									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
 											<Label>URL</Label>
 											{editing && (
@@ -492,7 +568,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											placeholder="URL"
 											value={p.Gotify?.URL || ""}
 											onChange={(e) => updateGotify(idx, "URL", e.target.value)}
-											aria-invalid={providerErrors.some((e) => e.includes("URL"))}
+											className={cn(gotifyDirty?.URL && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Gotify.URL"))
@@ -502,15 +578,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												</p>
 											))}
 									</div>
-									<div
-										className={cn(
-											"space-y-1",
-											hasError("Gotify.Token") && "rounded-md",
-											hasError("Gotify.Token")
-												? "border border-red-500 p-3"
-												: providerDirty?.Gotify?.Token && "border border-amber-500 p-3"
-										)}
-									>
+									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
 											<Label>App Token</Label>
 											{editing && (
@@ -533,7 +601,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											placeholder="App token"
 											value={p.Gotify?.Token || ""}
 											onChange={(e) => updateGotify(idx, "Token", e.target.value)}
-											aria-invalid={providerErrors.some((e) => e.includes("Token"))}
+											className={cn(gotifyDirty?.Token && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Gotify.Token"))
@@ -544,10 +612,6 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											))}
 									</div>
 								</div>
-							)}
-
-							{providerErrors.length > 0 && (
-								<p className="text-xs text-red-500">Resolve provider errors above.</p>
 							)}
 						</div>
 					);

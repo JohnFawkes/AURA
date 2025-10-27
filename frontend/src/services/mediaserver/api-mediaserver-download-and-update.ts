@@ -16,7 +16,7 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 		"INFO",
 		"API - Media Server",
 		"Download and Update",
-		`Downloading poster file ${fileName} and updating media item with RatingKey ${mediaItem.RatingKey}`
+		`Downloading poster file ${fileName} and updating '${mediaItem.Title}' (TMDB ID: ${mediaItem.TMDB_ID})`
 	);
 	try {
 		const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/download/file`, {
@@ -32,7 +32,7 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 				"INFO",
 				"API - Media Server",
 				"Download and Update",
-				`Downloaded poster file ${fileName} and updated media item with RatingKey ${mediaItem.RatingKey}`,
+				`Downloaded poster file ${fileName} and updated '${mediaItem.Title}' (TMDB ID: ${mediaItem.TMDB_ID})`,
 				response.data
 			);
 		}
@@ -42,7 +42,7 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 			"ERROR",
 			"API - Media Server",
 			"Download and Update",
-			`Failed to download poster file ${fileName} and update media item with RatingKey ${
+			`Failed to download poster file ${fileName} and update media item '${mediaItem.Title}' (TMDB ID: ${mediaItem.TMDB_ID}): ${
 				mediaItem.RatingKey
 			}: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error

@@ -26,11 +26,11 @@ export const postForceRecheckDBItemForAutoDownload = async (
 		"INFO",
 		"API - DB",
 		"Recheck",
-		`Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID}`,
+		`Forcing recheck for auto-download for ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})`,
 		saveItem
 	);
 	try {
-		const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force/recheck`, {
+		const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force-recheck`, {
 			Item: saveItem,
 		});
 		if (response.data.status === "error") {
@@ -40,7 +40,7 @@ export const postForceRecheckDBItemForAutoDownload = async (
 				"INFO",
 				"API - DB",
 				"Recheck",
-				`Forcing recheck for auto-download for item with ID ${saveItem.MediaItemID} succeeded`,
+				`Forcing recheck for auto-download for ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle}) succeeded`,
 				response.data
 			);
 		}
@@ -50,7 +50,9 @@ export const postForceRecheckDBItemForAutoDownload = async (
 			"ERROR",
 			"API - DB",
 			"Recheck",
-			`Failed to force recheck for auto-download for item with ID ${saveItem.MediaItemID}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to force recheck for auto-download for ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle}): ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`,
 			error
 		);
 		return ReturnErrorMessage<AutodownloadResult>(error);

@@ -7,12 +7,14 @@ export interface LibrarySection {
 }
 
 export interface MediaItem {
+	TMDB_ID: string;
+	LibraryTitle: string;
 	RatingKey: string;
 	Type: "show" | "movie";
-	LibraryTitle: string;
 	Title: string;
 	Year: number;
 	ExistInDatabase: boolean;
+	DBSavedSets?: PosterSetSummary[];
 	Thumb?: string;
 	ContentRating?: string;
 	Summary?: string;
@@ -59,4 +61,10 @@ export interface MediaItemFile {
 	Path: string;
 	Size: number;
 	Duration: number;
+}
+
+export interface PosterSetSummary {
+	PosterSetID: string;
+	PosterSetUser: string;
+	SelectedTypes: string[];
 }

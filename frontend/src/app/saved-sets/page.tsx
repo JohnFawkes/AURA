@@ -48,7 +48,7 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 
-import { extractYearAndMediaItemID } from "@/hooks/search-query";
+import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
@@ -74,8 +74,8 @@ const SavedSetsPage: React.FC = () => {
 		setViewOption,
 		filteredLibraries,
 		setFilteredLibraries,
-		filterAutoDownloadOnly,
-		setFilterAutoDownloadOnly,
+		filterAutoDownload,
+		setFilterAutoDownload,
 		filteredUsers,
 		setFilteredUsers,
 		filteredTypes,
@@ -107,7 +107,7 @@ const SavedSetsPage: React.FC = () => {
 	const [pendingFilters, setPendingFilters] = useState({
 		filteredLibraries,
 		filteredTypes,
-		filterAutoDownloadOnly,
+		filterAutoDownload,
 		filteredUsers,
 		filterMultiSetOnly,
 		userFilterSearch,
@@ -118,24 +118,20 @@ const SavedSetsPage: React.FC = () => {
 		document.title = `aura | Saved Sets`;
 	}, []);
 
-	// Set sortOption to "dateUpdated" if its not title, dateUpdated, year, or library
+	// Set sortOption to "dateDownloaded" if its not title, dateDownloaded, year, or library
 	useEffect(() => {
 		if (
 			sortOption !== "title" &&
-			sortOption !== "dateUpdated" &&
+			sortOption !== "dateDownloaded" &&
 			sortOption !== "year" &&
 			sortOption !== "library"
 		) {
-			setSortOption("dateUpdated");
+			setSortOption("dateDownloaded");
 			setSortOrder("desc");
 		}
 	}, [sortOption, setSortOption, setSortOrder]);
 
-	const {
-		cleanedQuery,
-		year: searchMediaItemYear,
-		mediaItemID: searchMediaItemID,
-	} = extractYearAndMediaItemID(searchQuery);
+	const { searchTMDBID, searchLibrary, searchYear, searchTitle } = extractInfoFromSearchQuery(searchQuery);
 
 	// Fetch saved sets with filters from store
 	const fetchSavedSets = useCallback(async () => {
@@ -143,23 +139,21 @@ const SavedSetsPage: React.FC = () => {
 		isFetchingRef.current = true;
 		try {
 			setLoading(true);
-			// From Search Query
-			// Get the mediaItemID (if any)
-			// Get the mediaItemYear (if any)
 
 			const response = await fetchAllItemFromDBWithFilters(
-				searchMediaItemID,
-				cleanedQuery,
+				searchTMDBID,
+				searchLibrary,
+				searchYear,
+				searchTitle,
 				filteredLibraries,
-				searchMediaItemYear,
-				filterAutoDownloadOnly,
+				filteredTypes,
+				filterAutoDownload,
+				filterMultiSetOnly,
 				filteredUsers,
 				itemsPerPage,
 				currentPage,
 				sortOption,
-				sortOrder,
-				filteredTypes,
-				filterMultiSetOnly
+				sortOrder
 			);
 
 			if (response.status === "error") {
@@ -193,18 +187,19 @@ const SavedSetsPage: React.FC = () => {
 			isFetchingRef.current = false;
 		}
 	}, [
-		searchMediaItemID,
-		cleanedQuery,
+		searchTMDBID,
+		searchLibrary,
+		searchYear,
+		searchTitle,
 		filteredLibraries,
-		searchMediaItemYear,
-		filterAutoDownloadOnly,
+		filteredTypes,
+		filterAutoDownload,
+		filterMultiSetOnly,
 		filteredUsers,
 		itemsPerPage,
 		currentPage,
 		sortOption,
 		sortOrder,
-		filteredTypes,
-		filterMultiSetOnly,
 	]);
 
 	// Load values from store first, then fetch data
@@ -231,41 +226,29 @@ const SavedSetsPage: React.FC = () => {
 	// Calculate total pages
 	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [
-		filteredLibraries.length,
-		filterAutoDownloadOnly,
-		filteredUsers.length,
-		filteredTypes.length,
-		filterMultiSetOnly,
-		cleanedQuery,
-		searchMediaItemYear,
-		searchMediaItemID,
-		setCurrentPage,
-	]);
-
 	// Calculate number of active filters
 	const numberOfActiveFilters = useMemo(() => {
 		let count = 0;
 		if (filteredLibraries.length > 0) count++;
-		if (filterAutoDownloadOnly) count++;
+		if (filterAutoDownload && filterAutoDownload !== "all") count++;
 		if (filteredUsers.length > 0) count++;
 		if (filteredTypes.length > 0) count++;
 		if (filterMultiSetOnly) count++;
-		if (cleanedQuery) count++;
-		if (searchMediaItemYear) count++;
-		if (searchMediaItemID) count++;
+		if (searchTitle) count++;
+		if (searchYear) count++;
+		if (searchLibrary) count++;
+		if (searchTMDBID) count++;
 		return count;
 	}, [
 		filteredLibraries.length,
-		filterAutoDownloadOnly,
+		filterAutoDownload,
 		filteredUsers.length,
 		filteredTypes.length,
 		filterMultiSetOnly,
-		cleanedQuery,
-		searchMediaItemYear,
-		searchMediaItemID,
+		searchTitle,
+		searchYear,
+		searchLibrary,
+		searchTMDBID,
 	]);
 
 	if (loading) {
@@ -297,6 +280,7 @@ const SavedSetsPage: React.FC = () => {
 			const errorResponse = ReturnErrorMessage<unknown>(error);
 			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
 		}
+		fetchSavedSets();
 	};
 
 	const forceRecheckAll = async () => {
@@ -340,6 +324,7 @@ const SavedSetsPage: React.FC = () => {
 		});
 
 		isFetchingRef.current = false;
+		fetchSavedSets();
 	};
 
 	return (
@@ -378,9 +363,9 @@ const SavedSetsPage: React.FC = () => {
 									setFilteredTypes={(types) =>
 										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
 									}
-									filterAutoDownloadOnly={pendingFilters.filterAutoDownloadOnly}
-									setFilterAutoDownloadOnly={(val) =>
-										setPendingFilters((f) => ({ ...f, filterAutoDownloadOnly: val }))
+									filterAutoDownload={pendingFilters.filterAutoDownload}
+									setFilterAutoDownload={(val) =>
+										setPendingFilters((f) => ({ ...f, filterAutoDownload: val }))
 									}
 									userFilterSearch={pendingFilters.userFilterSearch}
 									setUserFilterSearch={(val) =>
@@ -397,7 +382,7 @@ const SavedSetsPage: React.FC = () => {
 									onApplyFilters={() => {
 										setFilteredLibraries(pendingFilters.filteredLibraries);
 										setFilteredTypes(pendingFilters.filteredTypes);
-										setFilterAutoDownloadOnly(pendingFilters.filterAutoDownloadOnly);
+										setFilterAutoDownload(pendingFilters.filterAutoDownload);
 										setFilteredUsers(pendingFilters.filteredUsers);
 										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
 										setUserFilterSearch(pendingFilters.userFilterSearch);
@@ -406,7 +391,7 @@ const SavedSetsPage: React.FC = () => {
 									onResetFilters={() => {
 										setSearchQuery("");
 										setFilteredLibraries([]);
-										setFilterAutoDownloadOnly(false);
+										setFilterAutoDownload("all");
 										setFilteredUsers([]);
 										setFilteredTypes([]);
 										setCurrentPage(1);
@@ -415,15 +400,16 @@ const SavedSetsPage: React.FC = () => {
 										setPendingFilters({
 											filteredLibraries: [],
 											filteredTypes: [],
-											filterAutoDownloadOnly: false,
+											filterAutoDownload: "all",
 											userFilterSearch: "",
 											filteredUsers: [],
 											filterMultiSetOnly: false,
 										});
 									}}
-									searchString={cleanedQuery}
-									searchYear={searchMediaItemYear}
-									searchID={searchMediaItemID}
+									searchString={searchTitle}
+									searchYear={searchYear}
+									searchID={searchTMDBID}
+									searchLibrary={searchLibrary}
 								/>
 							</PopoverContent>
 						</Popover>
@@ -459,9 +445,9 @@ const SavedSetsPage: React.FC = () => {
 									setFilteredTypes={(types) =>
 										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
 									}
-									filterAutoDownloadOnly={pendingFilters.filterAutoDownloadOnly}
-									setFilterAutoDownloadOnly={(val) =>
-										setPendingFilters((f) => ({ ...f, filterAutoDownloadOnly: val }))
+									filterAutoDownload={pendingFilters.filterAutoDownload}
+									setFilterAutoDownload={(val) =>
+										setPendingFilters((f) => ({ ...f, filterAutoDownload: val }))
 									}
 									userFilterSearch={pendingFilters.userFilterSearch}
 									setUserFilterSearch={(val) =>
@@ -478,7 +464,7 @@ const SavedSetsPage: React.FC = () => {
 									onApplyFilters={() => {
 										setFilteredLibraries(pendingFilters.filteredLibraries);
 										setFilteredTypes(pendingFilters.filteredTypes);
-										setFilterAutoDownloadOnly(pendingFilters.filterAutoDownloadOnly);
+										setFilterAutoDownload(pendingFilters.filterAutoDownload);
 										setFilteredUsers(pendingFilters.filteredUsers);
 										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
 										setUserFilterSearch(pendingFilters.userFilterSearch);
@@ -487,7 +473,7 @@ const SavedSetsPage: React.FC = () => {
 									onResetFilters={() => {
 										setSearchQuery("");
 										setFilteredLibraries([]);
-										setFilterAutoDownloadOnly(false);
+										setFilterAutoDownload("all");
 										setFilteredUsers([]);
 										setFilteredTypes([]);
 										setCurrentPage(1);
@@ -496,15 +482,16 @@ const SavedSetsPage: React.FC = () => {
 										setPendingFilters({
 											filteredLibraries: [],
 											filteredTypes: [],
-											filterAutoDownloadOnly: false,
+											filterAutoDownload: "all",
 											userFilterSearch: "",
 											filteredUsers: [],
 											filterMultiSetOnly: false,
 										});
 									}}
-									searchString={cleanedQuery}
-									searchYear={searchMediaItemYear}
-									searchID={searchMediaItemID}
+									searchString={searchTitle}
+									searchYear={searchYear}
+									searchID={searchTMDBID}
+									searchLibrary={searchLibrary}
 								/>
 							</DrawerContent>
 						</Drawer>
@@ -541,8 +528,8 @@ const SavedSetsPage: React.FC = () => {
 				<SortControl
 					options={[
 						{
-							value: "dateUpdated",
-							label: "Date Updated",
+							value: "dateDownloaded",
+							label: "Date Downloaded",
 							ascIcon: <ClockArrowUp />,
 							descIcon: <ClockArrowDown />,
 						},
@@ -645,14 +632,15 @@ const SavedSetsPage: React.FC = () => {
 													<p className="text-md text-muted-foreground">
 														{result.OverAllResultMessage}
 													</p>
-													{result.Sets.map((set, index) => (
-														<div
-															key={`${set.PosterSetID}-${index}`}
-															className="text-xs text-muted-foreground pl-4"
-														>
-															• Set {set.PosterSetID}: {set.Result} - {set.Reason}
-														</div>
-													))}
+													{result.Sets &&
+														result.Sets.map((set, index) => (
+															<div
+																key={`${set.PosterSetID}-${index}`}
+																className="text-xs text-muted-foreground pl-4"
+															>
+																• Set {set.PosterSetID}: {set.Result} - {set.Reason}
+															</div>
+														))}
 												</div>
 											</td>
 											<td className="px-3 py-2">
@@ -694,7 +682,11 @@ const SavedSetsPage: React.FC = () => {
 								filteredLibraries.length > 0
 									? `in ${filteredLibraries.map((lib) => `"${lib}"`).join(", ")}`
 									: null,
-								filterAutoDownloadOnly ? "that are set to Auto Download" : null,
+								filterAutoDownload === "on"
+									? "that are set to Auto Download"
+									: filterAutoDownload === "off"
+										? "that are not set to Auto Download"
+										: null,
 								filteredTypes.length > 0
 									? `with type${filteredTypes.length > 1 ? "s" : ""} ${filteredTypes
 											.map((t) => `"${typeOptions.find((opt) => opt.value === t)?.label || t}"`)
@@ -702,7 +694,7 @@ const SavedSetsPage: React.FC = () => {
 									: null,
 								filteredUsers.length > 0
 									? `for user${filteredUsers.length > 1 ? "s" : ""} ${filteredUsers
-											.map((u) => `"${u}"`)
+											.map((u) => (u === "|||no-user|||" ? '"No User"' : `"${u}"`))
 											.join(", ")}`
 									: null,
 								searchQuery ? `matching "${searchQuery}"` : null,
@@ -718,7 +710,7 @@ const SavedSetsPage: React.FC = () => {
 							onClick={() => {
 								setSearchQuery("");
 								setFilteredLibraries([]);
-								if (setFilterAutoDownloadOnly) setFilterAutoDownloadOnly(false);
+								if (setFilterAutoDownload) setFilterAutoDownload("all");
 								setFilteredUsers([]);
 								setFilteredTypes([]);
 								setCurrentPage(1);
@@ -728,7 +720,7 @@ const SavedSetsPage: React.FC = () => {
 								setPendingFilters({
 									filteredLibraries: [],
 									filteredTypes: [],
-									filterAutoDownloadOnly: false,
+									filterAutoDownload: "all",
 									userFilterSearch: "",
 									filteredUsers: [],
 									filterMultiSetOnly: false,
@@ -832,18 +824,18 @@ const SavedSetsPage: React.FC = () => {
 							<TableHead
 								className="w-[150px] group cursor-pointer select-none"
 								onClick={() => {
-									if (sortOption === "dateUpdated") {
+									if (sortOption === "dateDownloaded") {
 										setSortOrder(sortOrder === "asc" ? "desc" : "asc");
 									} else {
-										setSortOption("dateUpdated");
+										setSortOption("dateDownloaded");
 										setSortOrder("desc");
 									}
 								}}
 							>
 								<span className="inline-flex items-center gap-1">
-									Last Updated
+									Last Downloaded
 									<span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
-										{sortOption === "dateUpdated" ? (
+										{sortOption === "dateDownloaded" ? (
 											sortOrder === "asc" ? (
 												<ClockArrowUp className="h-4 w-4 ml-1" />
 											) : (

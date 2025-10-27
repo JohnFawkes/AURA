@@ -1,7 +1,6 @@
 "use client";
 
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { fetchMediaServerType } from "@/services/mediaserver/api-mediaserver-fetch-type";
 import { Database } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,51 +19,28 @@ import { H1, Lead } from "@/components/ui/typography";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { DBSavedItem } from "@/types/database/db-saved-item";
-import { Guid, MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 type MediaItemDetailsProps = {
-	ratingKey: string;
-	mediaItemType: string;
-	title: string;
-	summary: string;
-	year: number;
-	contentRating: string;
-	seasonCount: number;
-	episodeCount: number;
-	moviePath: string;
-	movieSize: number;
-	movieDuration: number;
-	guids: Guid[];
+	mediaItem?: MediaItem;
 	existsInDB: boolean;
 	onExistsInDBChange?: (existsInDB: boolean) => void;
 	status: string;
-	libraryTitle: string;
 	otherMediaItem: MediaItem | null;
 	posterImageKeys?: string[];
+	serverType: string;
 };
 
 export function MediaItemDetails({
-	ratingKey,
-	mediaItemType,
-	title,
-	summary,
-	year,
-	contentRating,
-	seasonCount,
-	episodeCount,
-	moviePath,
-	movieSize,
-	movieDuration,
-	guids,
+	mediaItem,
 	existsInDB,
 	onExistsInDBChange,
 	status,
-	libraryTitle,
 	otherMediaItem,
 	posterImageKeys,
+	serverType,
 }: MediaItemDetailsProps) {
-	const [serverType, setServerType] = useState<string>("");
 	const [isInDB, setIsInDBLocal] = useState(existsInDB);
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
@@ -76,26 +52,24 @@ export function MediaItemDetails({
 	const touchStartXRef = useRef<number | undefined>(undefined);
 	const mouseStartXRef = useRef<number | undefined>(undefined);
 
+	const title = mediaItem?.Title || "";
+	const year = mediaItem?.Year || 0;
+	const contentRating = mediaItem?.ContentRating || "";
+	const mediaItemType = mediaItem?.Type || "";
+	const summary = mediaItem?.Summary || "";
+	const tmdbID = mediaItem?.TMDB_ID || "";
+	const libraryTitle = mediaItem?.LibraryTitle || "";
+	const seasonCount = mediaItemType === "show" ? mediaItem?.Series?.SeasonCount || 0 : 0;
+	const episodeCount = mediaItemType === "show" ? mediaItem?.Series?.EpisodeCount || 0 : 0;
+	const moviePath = mediaItem?.Movie?.File?.Path || "N/A";
+	const movieSize = mediaItem?.Movie?.File?.Size || 0;
+	const movieDuration = mediaItem?.Movie?.File?.Duration || 0;
+	const guids = mediaItem?.Guids || [];
+
 	// Sync when parent prop changes (e.g. route change or external update)
 	useEffect(() => {
 		setIsInDBLocal(existsInDB);
 	}, [existsInDB]);
-
-	useEffect(() => {
-		const fetchServerType = async () => {
-			try {
-				const response = await fetchMediaServerType();
-				if (!response) {
-					throw new Error("Failed to fetch server type");
-				}
-				const serverType = response.data?.serverType || "Media Server";
-				setServerType(serverType);
-			} catch {
-				setServerType("Media Server");
-			}
-		};
-		fetchServerType();
-	}, []);
 
 	const updateInDB = (next: boolean) => {
 		setIsInDBLocal(next); // local optimistic
@@ -104,39 +78,38 @@ export function MediaItemDetails({
 
 	const handleSavedSetsPageClick = () => {
 		if (isInDB) {
-			setSearchQuery(`${title} y:${year}: id:${ratingKey}:`);
+			setSearchQuery(`${title} Y:${year}: ID:${tmdbID}: L:${libraryTitle}:`);
 			router.push("/saved-sets");
 		}
 	};
 
 	const handleAddToIgnoredClick = async () => {
-		// Create a DBSavedItem
-		const ignoreDBItem: DBSavedItem = {
-			MediaItemID: ratingKey,
-			MediaItem: {
-				Title: title,
-				Year: year,
-				LibraryTitle: libraryTitle,
-				RatingKey: ratingKey,
-				Type: "show",
-				ExistInDatabase: true,
-				Guids: [],
-			},
-			PosterSetID: "",
-			PosterSet: {
-				Title: "",
-				ID: "ignore",
-				Type: "show",
-				User: {
-					Name: "",
+		// Create a DBMediaItemWithPosterSets object to add to DB
+		// with minimal required fields
+		const ignoreDBItem: DBMediaItemWithPosterSets = {
+			TMDB_ID: tmdbID,
+			LibraryTitle: libraryTitle,
+			MediaItem: mediaItem as MediaItem,
+			PosterSets: [
+				{
+					PosterSetID: "ignore",
+					PosterSet: {
+						Title: "",
+						ID: "ignore",
+						Type: mediaItem?.Type as "movie" | "show",
+						User: {
+							Name: "",
+						},
+						DateCreated: new Date().toISOString(),
+						DateUpdated: new Date().toISOString(),
+						Status: "",
+					},
+					LastDownloaded: new Date().toISOString(),
+					SelectedTypes: [],
+					AutoDownload: false,
+					ToDelete: false,
 				},
-				DateCreated: new Date().toISOString(),
-				DateUpdated: new Date().toISOString(),
-				Status: "",
-			},
-			LastDownloaded: new Date().toISOString(),
-			SelectedTypes: [],
-			AutoDownload: false,
+			],
 		};
 		const addToDBResp = await postAddItemToDB(ignoreDBItem);
 		if (addToDBResp.status === "error") {

@@ -8,6 +8,7 @@ export interface AppConfig {
 	TMDB: AppConfigTMDB; // TMDB (The Movie Database) integration settings
 	LabelsAndTags: AppConfigLabelsAndTags; // Labels and tags management settings
 	Notifications: AppConfigNotifications; // Notification settings
+	SonarrRadarr: AppConfigSonarrRadarrApps; // List of Sonarr/Radarr instances to integrate with
 }
 
 export interface AppConfigAuth {
@@ -25,8 +26,8 @@ export interface AppConfigMediaServer {
 	URL: string; // Base URL of the media server
 	Token: string; // Authentication token for accessing the media server
 	Libraries: AppConfigMediaServerLibrary[]; // List of media server libraries to manage
-	UserID?: string; // User ID for accessing the media server (optional for Emby/Jellyfin)
 	SeasonNamingConvention?: string; // Season naming convention (optional for Plex)
+	UserID?: string; // User ID for accessing the media server (optional for Emby/Jellyfin)
 }
 export interface AppConfigMediaServerLibrary {
 	Name: string; // Name of the library
@@ -101,4 +102,14 @@ export interface AppConfigNotificationGotify {
 	Enabled: boolean;
 	URL: string;
 	Token: string;
+}
+
+export interface AppConfigSonarrRadarrApps {
+	Applications: AppConfigSonarrRadarrApp[];
+}
+export interface AppConfigSonarrRadarrApp {
+	Type: string; // Type of service (either "sonarr" or "radarr").
+	Library: string; // Name of the Media Server library associated with this Sonarr/Radarr instance.
+	URL: string; // Base URL of the Sonarr/Radarr server.
+	APIKey: string; // API key for accessing the Sonarr/Radarr server.
 }

@@ -69,9 +69,9 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 	};
 
 	return (
-		<Card className="p-5 space-y-1">
+		<Card className="p-5">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">Images</h2>
+				<h2 className="text-xl font-semibold text-blue-500">Images</h2>
 				<ConfirmDestructiveDialogActionButton
 					hidden={editing}
 					onConfirm={clearTempImagesFolder}
@@ -112,7 +112,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 			{mediaServerType === "Plex" && (
 				<div
 					className={cn(
-						"border rounded-md p-3 transition mb-4",
+						"border rounded-md p-3 transition",
 						"border-muted",
 						dirtyFields.SaveImagesLocally?.Enabled && "border-amber-500"
 					)}
@@ -140,7 +140,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<div
 							className={cn(
 								"",
-								dirtyFields.SaveImagesLocally?.Path && "border border-amber-500 rounded-md p-2"
+								dirtyFields.SaveImagesLocally?.Enabled && "border border-amber-500 rounded-md p-2"
 							)}
 						>
 							<div className="flex items-center justify-between mb-2">

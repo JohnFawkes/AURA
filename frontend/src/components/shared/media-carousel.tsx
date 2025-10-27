@@ -1,5 +1,5 @@
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
-import { User, ZoomInIcon } from "lucide-react";
+import { Database, User, ZoomInIcon } from "lucide-react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,10 +8,13 @@ import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { SetFileCounts } from "@/components/shared/set-file-counts";
 import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Lead } from "@/components/ui/typography";
 
+import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
+import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
@@ -37,6 +40,8 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 		router.push(`/sets/${set.ID}`);
 	};
 
+	const { setSearchQuery } = useSearchQueryStore();
+
 	return (
 		<Carousel
 			opts={{
@@ -48,7 +53,7 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 		>
 			<div className="flex flex-col">
 				<div className="flex flex-row items-center">
-					<div className="flex flex-row items-center">
+					<div className="flex flex-row items-center gap-2">
 						<Link
 							href={`/sets/${set.ID}`}
 							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1"
@@ -59,6 +64,38 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 						>
 							{set.Title}
 						</Link>
+						{mediaItem &&
+							mediaItem.DBSavedSets &&
+							mediaItem.DBSavedSets.map((s) => s.PosterSetID).includes(set.ID) && (
+								<Popover>
+									<PopoverTrigger asChild>
+										<Database
+											className="text-green-500 hover:text-green-600 cursor-pointer active:scale-95"
+											size={20}
+										/>
+									</PopoverTrigger>
+									<PopoverContent
+										side="top"
+										sideOffset={5}
+										className="bg-secondary border border-2 border-primary p-2"
+									>
+										<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
+											<Database
+												className="inline-block mr-2 text-green-500 hover:text-green-600 cursor-pointer active:scale-95"
+												size={16}
+												onClick={(e) => {
+													e.stopPropagation();
+													setSearchQuery(
+														`${mediaItem.Title} Y:${mediaItem.Year}: ID:${mediaItem.TMDB_ID}: L:${mediaItem.LibraryTitle}:`
+													);
+													router.push("/saved-sets");
+												}}
+											/>
+											This exact set is already in your database
+										</div>
+									</PopoverContent>
+								</Popover>
+							)}
 					</div>
 					<div className="ml-auto flex space-x-2">
 						<Link

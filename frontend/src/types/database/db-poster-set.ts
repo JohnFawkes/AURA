@@ -4,7 +4,6 @@ import { PosterSet } from "@/types/media-and-posters/poster-sets";
 export interface DBPosterSetDetail {
 	PosterSetID: string;
 	PosterSet: PosterSet;
-	PosterSetJSON: string;
 	LastDownloaded: string;
 	SelectedTypes: string[];
 	AutoDownload: boolean;
@@ -12,8 +11,8 @@ export interface DBPosterSetDetail {
 }
 
 export interface DBMediaItemWithPosterSets {
-	MediaItemID: string;
+	TMDB_ID: string;
+	LibraryTitle: string;
 	MediaItem: MediaItem;
-	MediaItemJSON: string;
 	PosterSets: DBPosterSetDetail[];
 }

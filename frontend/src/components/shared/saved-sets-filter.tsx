@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
+import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 type FilterContentProps = {
@@ -18,8 +19,8 @@ type FilterContentProps = {
 	typeOptions: { label: string; value: string }[];
 	filteredTypes: string[];
 	setFilteredTypes: (types: string[]) => void;
-	filterAutoDownloadOnly: boolean;
-	setFilterAutoDownloadOnly: (val: boolean) => void;
+	filterAutoDownload: "all" | "on" | "off";
+	setFilterAutoDownload: (val: "all" | "on" | "off") => void;
 	userFilterSearch: string;
 	setUserFilterSearch: (val: string) => void;
 	filterUserOptions: string[];
@@ -32,6 +33,7 @@ type FilterContentProps = {
 	searchString?: string;
 	searchYear?: number;
 	searchID?: string;
+	searchLibrary?: string;
 };
 
 export function FilterContent({
@@ -42,8 +44,8 @@ export function FilterContent({
 	typeOptions,
 	filteredTypes,
 	setFilteredTypes,
-	filterAutoDownloadOnly,
-	setFilterAutoDownloadOnly,
+	filterAutoDownload,
+	setFilterAutoDownload,
 	userFilterSearch,
 	setUserFilterSearch,
 	filterUserOptions,
@@ -56,6 +58,7 @@ export function FilterContent({
 	searchString,
 	searchYear,
 	searchID,
+	searchLibrary,
 }: FilterContentProps) {
 	const { setSearchQuery } = useSearchQueryStore();
 
@@ -79,6 +82,11 @@ export function FilterContent({
 						{searchID && (
 							<div className="text-sm">
 								<span className="font-semibold">ID:</span> {searchID}
+							</div>
+						)}
+						{searchLibrary && (
+							<div className="text-sm">
+								<span className="font-semibold">Library:</span> {searchLibrary}
 							</div>
 						)}
 					</div>
@@ -155,6 +163,46 @@ export function FilterContent({
 					))}
 				</ToggleGroup>
 				<Separator className="my-4 w-full" />
+				{/* AutoDownload Only */}
+				<Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
+				<ToggleGroup
+					type="single"
+					className="flex flex-wrap gap-2 ml-2"
+					value={filterAutoDownload}
+					onValueChange={(val) => setFilterAutoDownload(val as "all" | "on" | "off")}
+				>
+					<Badge
+						variant={filterAutoDownload === "all" ? "default" : "outline"}
+						className={cn(
+							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
+							filterAutoDownload === "all" ? "bg-primary text-primary-foreground" : ""
+						)}
+						onClick={() => setFilterAutoDownload("all")}
+					>
+						Any
+					</Badge>
+					<Badge
+						variant={filterAutoDownload === "on" ? "default" : "outline"}
+						className={cn(
+							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
+							filterAutoDownload === "on" ? "bg-green-500 text-primary-foreground" : ""
+						)}
+						onClick={() => setFilterAutoDownload("on")}
+					>
+						AutoDownload On
+					</Badge>
+					<Badge
+						variant={filterAutoDownload === "off" ? "default" : "outline"}
+						className={cn(
+							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
+							filterAutoDownload === "off" ? "bg-red-500 text-primary-foreground" : ""
+						)}
+						onClick={() => setFilterAutoDownload("off")}
+					>
+						AutoDownload Off
+					</Badge>
+				</ToggleGroup>
+				<Separator className="my-4 w-full" />
 				{/* MultiSet Only */}
 				<Label className="text-md font-semibold mb-1 block">Multi Set Only</Label>
 				<Badge
@@ -170,21 +218,6 @@ export function FilterContent({
 					{filterMultiSetOnly ? "Multi Set Only" : "All Items"}
 				</Badge>
 				<Separator className="my-4 w-full" />
-				{/* AutoDownload Only */}
-				<Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
-				<Badge
-					key={"filter-auto-download-only"}
-					className="cursor-pointer text-sm ml-2 active:scale-95 hover:brightness-120"
-					variant={filterAutoDownloadOnly ? "default" : "outline"}
-					onClick={() => {
-						if (setFilterAutoDownloadOnly) {
-							setFilterAutoDownloadOnly(!filterAutoDownloadOnly);
-						}
-					}}
-				>
-					{filterAutoDownloadOnly ? "AutoDownload Only" : "All Items"}
-				</Badge>
-				<Separator className="my-4 w-full" />
 				{/* Users */}
 				<Label className="text-md font-semibold mb-2 block">Users</Label>
 				<Input
@@ -197,6 +230,7 @@ export function FilterContent({
 					autoFocus={false}
 				/>
 				<div className="flex flex-col gap-1 max-h-48 overflow-y-auto border p-2 rounded-md">
+					{/* All User Option */}
 					<div
 						className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
 							filteredUsers.length === 0 ? "bg-muted" : "hover:bg-muted/60"
@@ -215,10 +249,41 @@ export function FilterContent({
 						</Label>
 						{filteredUsers.length === 0 && <Check className="h-4 w-4 text-primary" />}
 					</div>
+
+					{/* No User Option - only show if present in filterUserOptions */}
+					{filterUserOptions.includes("|||no-user|||") && (
+						<div
+							className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+								filteredUsers.includes("|||no-user|||") ? "bg-muted" : "hover:bg-muted/60"
+							}`}
+							onClick={() => {
+								if (filteredUsers.includes("|||no-user|||")) {
+									setFilteredUsers(filteredUsers.filter((u) => u !== "|||no-user|||"));
+								} else {
+									setFilteredUsers([...filteredUsers, "|||no-user|||"]);
+								}
+							}}
+						>
+							<Checkbox checked={filteredUsers.includes("|||no-user|||")} id={`users-no-user`} />
+							<Label
+								htmlFor={`users-no-user`}
+								className="text-sm flex-1 cursor-pointer truncate"
+								onClick={(e) => e.stopPropagation()}
+							>
+								No User
+							</Label>
+							{filteredUsers.includes("|||no-user|||") && <Check className="h-4 w-4 text-primary" />}
+						</div>
+					)}
+
 					<div className="border-b my-1" />
+
+					{/* List of actual users, excluding "|||no-user|||" */}
 					{filterUserOptions
 						.filter(
-							(user) => !userFilterSearch || user.toLowerCase().includes(userFilterSearch.toLowerCase())
+							(user) =>
+								user !== "|||no-user|||" &&
+								(!userFilterSearch || user.toLowerCase().includes(userFilterSearch.toLowerCase()))
 						)
 						.sort((a, b) => a.localeCompare(b))
 						.map((user) => (

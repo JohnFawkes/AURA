@@ -1,11 +1,28 @@
 services:
     aura:
-        image: ghcr.io/mediux-team/aura:latest
-        container_name: aura
+        image: ghcr.io/mediux-team/aura:latest # Use the latest image from GitHub Container Registry
+        container_name: aura # Name of the container
+
+        # Automatically restart the container if it crashes or the server reboots
         restart: unless-stopped
+
+        ## Synology Users: 1026:100 to use your default user (the main DSM account)
+        ## Unraid Users: 99:100 to use the default Unraid user (nobody)
+        ## Linux Users: You can find your PUID and PGID by running the `id username` command
+        user: "${PUID}:${PGID}" # Optional to run as non-root user
+
         ports:
             - "3000:3000" # Web UI PORT
             - "8888:8888" # API PORT
+
+        # Make sure to change these paths to match your host system
         volumes:
             - /mnt/user/appdata/aura:/config # Config directory
             - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container
+
+        # Add environment variables for PUID, PGID, and UMASK
+        environment:
+            - PUID=99
+            - PGID=100
+            - UMASK=022
+            - TZ=America/New_York # Set your timezone, e.g., America/New_York

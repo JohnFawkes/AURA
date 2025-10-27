@@ -32,8 +32,6 @@ export interface PosterFile {
 export interface PosterFileShow {
 	ID: string;
 	Title: string;
-	//RatingKey?: string;
-	//LibrarySection: string;
 	MediaItem: MediaItem;
 }
 
@@ -48,8 +46,6 @@ export interface PosterFileMovie {
 	ImdbID: string;
 	TraktID: string;
 	ReleaseDate: string;
-	//RatingKey?: string;
-	//LibrarySection: string;
 	MediaItem: MediaItem;
 }
 

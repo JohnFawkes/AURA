@@ -7,10 +7,11 @@ import { APIResponse } from "@/types/api/api-response";
 import { AppConfig } from "@/types/config/config-app";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
-export const fetchConfig = async (): Promise<APIResponse<AppConfig>> => {
+export const fetchConfig = async (reload: boolean = false): Promise<APIResponse<AppConfig>> => {
 	log("INFO", "API - Settings", "Fetch Config", "Fetching app configuration");
 	try {
-		const response = await apiClient.get<APIResponse<AppConfig>>(`/config`);
+		const endpoint = reload ? `/config/reload` : `/config`;
+		const response = await apiClient.get<APIResponse<AppConfig>>(endpoint);
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.Message || "Unknown error fetching app configuration");
 		} else {

@@ -4,6 +4,11 @@ import { checkMediuxNewTokenStatusResult } from "@/services/settings-onboarding/
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { GetConnectionColor } from "@/components/settings-onboarding/ConfigSectionMediaServer";
+import {
+	CONNECTION_STATUS_COLORS_BG,
+	ConfigConnectionStatus,
+} from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,7 +43,10 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
-	const [connectionStatus, setConnectionStatus] = useState<"unknown" | "ok" | "error">("unknown");
+	const [connectionStatus, setConnectionStatus] = useState<ConfigConnectionStatus>({
+		status: "unknown",
+		color: GetConnectionColor("unknown"),
+	});
 
 	// Validation (local + remote)
 	const errors = React.useMemo(() => {
@@ -70,7 +78,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 		async (showToast = true) => {
 			if (!value.Token.trim()) {
 				setRemoteTokenError("Token is required.");
-				setConnectionStatus("error");
+				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
 			}
 
@@ -88,10 +96,10 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 			if (ok) {
 				setRemoteTokenError(null);
-				setConnectionStatus("ok");
+				setConnectionStatus({ status: "ok", color: GetConnectionColor("ok") });
 			} else {
 				setRemoteTokenError(message || "Token invalid");
-				setConnectionStatus("error");
+				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 			}
 		},
 		[value, setRemoteTokenError, setTestingToken]
@@ -105,25 +113,13 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 	}, [configAlreadyLoaded, runRemoteValidation]);
 
 	return (
-		<Card className="p-5 space-y-1">
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<h2 className="text-xl font-semibold">MediUX</h2>
+					<h2 className={`text-xl font-semibold text-${connectionStatus.color}`}>MediUX</h2>
 					<span
-						className={`h-2 w-2 rounded-full ${
-							connectionStatus === "ok"
-								? "bg-green-500"
-								: connectionStatus === "error"
-									? "bg-red-500"
-									: "bg-gray-400"
-						}`}
-						title={
-							connectionStatus === "ok"
-								? "Connection OK"
-								: connectionStatus === "error"
-									? "Connection Error"
-									: "Connection Unknown"
-						}
+						className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connectionStatus.status]} animate-pulse`}
+						title={`Connection status: ${connectionStatus.status}`}
 					/>
 				</div>
 				<Button
@@ -131,21 +127,14 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 					size="sm"
 					hidden={editing}
 					disabled={editing || testingToken}
-					onClick={() => {
-						runRemoteValidation();
-					}}
+					onClick={() => runRemoteValidation()}
 					className="cursor-pointer hover:text-primary"
 				>
 					{testingToken ? "Testing..." : "Test Token"}
 				</Button>
 			</div>
 			{/* Token */}
-			<div
-				className={cn(
-					"space-y-1 border rounded-md p-3 transition",
-					errors.Token ? "border-red-500" : dirtyFields.Token ? "border-amber-500" : "border-muted"
-				)}
-			>
+			<div className={cn("space-y-1 border rounded-md p-3 transition")}>
 				<div className="flex items-center justify-between">
 					<Label>Token</Label>
 					{editing && (
@@ -159,24 +148,16 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 					placeholder="Mediux API token"
 					value={value.Token}
 					onChange={(e) => onChange("Token", e.target.value)}
-					aria-invalid={!!errors.Token}
 					onBlur={() => {
 						runRemoteValidation();
 					}}
+					className={cn(dirtyFields.Token && "border-amber-500")}
 				/>
 				{errors.Token && <p className="text-xs text-red-500">{errors.Token}</p>}
 			</div>
+
 			{/* Download Quality */}
-			<div
-				className={cn(
-					"space-y-1 border rounded-md p-3 transition",
-					errors.DownloadQuality
-						? "border-red-500"
-						: dirtyFields.DownloadQuality
-							? "border-amber-500"
-							: "border-muted"
-				)}
-			>
+			<div className="space-y-1 border rounded-md p-3 transition">
 				<div className="flex items-center justify-between">
 					<Label>Download Quality</Label>
 					{editing && (
@@ -208,7 +189,10 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 					value={value.DownloadQuality}
 					onValueChange={(v) => onChange("DownloadQuality", v as AppConfigMediux["DownloadQuality"])}
 				>
-					<SelectTrigger className="w-full" id="mediux-download-quality-trigger">
+					<SelectTrigger
+						id="mediux-download-quality-trigger"
+						className={cn("w-full", dirtyFields.DownloadQuality && "border-amber-500")}
+					>
 						<SelectValue placeholder="Select quality..." />
 					</SelectTrigger>
 					<SelectContent>

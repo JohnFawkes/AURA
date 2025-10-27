@@ -14,7 +14,7 @@ export const patchSavedItemInDB = async (
 		"INFO",
 		"API - DB",
 		"Update",
-		`Patching DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID}`,
+		`Patching ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle}) in DB`,
 		saveItem
 	);
 	try {
@@ -26,21 +26,21 @@ export const patchSavedItemInDB = async (
 				"INFO",
 				"API - DB",
 				"Update",
-				`Patched DBMediaItemWithPosterSets for item with ID ${saveItem.MediaItemID}`,
+				`Patched ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle}) in DB`,
 				response.data
 			);
 		}
 		const { updateMediaItem } = useLibrarySectionsStore.getState();
-		updateMediaItem(saveItem.MediaItem.RatingKey, saveItem.MediaItem.LibraryTitle, "update");
+		updateMediaItem(saveItem.MediaItem, "update");
 		return response.data;
 	} catch (error) {
 		log(
 			"ERROR",
 			"API - DB",
 			"Update",
-			`Failed to patch DBMediaItemWithPosterSets for item with ID ${
-				saveItem.MediaItemID
-			}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			`Failed to patch ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle}) in DB: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`,
 			error
 		);
 		return ReturnErrorMessage<DBMediaItemWithPosterSets>(error);

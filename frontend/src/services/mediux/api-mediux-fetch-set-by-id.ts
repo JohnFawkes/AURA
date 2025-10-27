@@ -8,7 +8,7 @@ import { PosterSet } from "@/types/media-and-posters/poster-sets";
 
 export const fetchSetByID = async (
 	librarySection: string,
-	itemRatingKey: string,
+	tmdbID: string,
 	setID: string,
 	itemType: "movie" | "show" | "collection"
 ): Promise<APIResponse<PosterSet>> => {
@@ -16,14 +16,14 @@ export const fetchSetByID = async (
 		"INFO",
 		"API - Mediux",
 		"Fetch Set By ID",
-		`Fetching set by ID: ${setID} for itemType: ${itemType}, librarySection: ${librarySection}, itemRatingKey: ${itemRatingKey}`
+		`Fetching set by ID: ${setID} for itemType: ${itemType}, librarySection: ${librarySection}, tmdbID: ${tmdbID}`
 	);
 	try {
 		const response = await apiClient.get<APIResponse<PosterSet>>(`/mediux/sets/get_set/${setID}`, {
 			params: {
 				itemType: itemType,
 				librarySection: librarySection,
-				itemRatingKey: itemRatingKey,
+				tmdbID: tmdbID,
 			},
 		});
 		if (response.data.status === "error") {

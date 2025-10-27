@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 import { log } from "@/lib/logger";
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
+import { LibrarySection, MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 type UpdateType = "add" | "update" | "delete";
 
@@ -20,7 +20,7 @@ interface LibrarySectionsStore {
 	setTimestamp: (timestamp: number) => void;
 
 	removeSection: (sectionTitle: string) => void;
-	updateMediaItem: (ratingKey: string, sectionTitle: string, updateType: UpdateType) => void;
+	updateMediaItem: (mediaItem: MediaItem, updateType: UpdateType) => void;
 
 	getSectionSummaries: () => { title: string; type: string }[];
 
@@ -59,41 +59,41 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 					return { sections: next };
 				}),
 
-			updateMediaItem: (ratingKey, sectionTitle, updateType) => {
+			updateMediaItem: (mediaItem: MediaItem, updateType: UpdateType) => {
 				const { sections } = get();
-				const section = sections[sectionTitle];
+				const section = sections[mediaItem.LibraryTitle];
 				if (!section || !Array.isArray(section.MediaItems)) {
 					log(
 						"ERROR",
 						"librarySections",
 						"updateMediaItem",
-						`Section "${sectionTitle}" not found or has no MediaItems`
+						`Section "${mediaItem.LibraryTitle}" not found or has no MediaItems`
 					);
 					return;
 				}
 
 				const mediaItems = [...section.MediaItems];
-				const idx = mediaItems.findIndex((m) => m.RatingKey === ratingKey);
+				const idx = mediaItems.findIndex((m) => m.TMDB_ID === mediaItem.TMDB_ID);
 				if (idx === -1) {
 					log(
 						"ERROR",
 						"librarySections",
 						"updateMediaItem",
-						`Media item ${ratingKey} not found in section "${sectionTitle}"`
+						`Media item '${mediaItem.Title}' (TMDB ID: ${mediaItem.TMDB_ID}) not found in section "${mediaItem.LibraryTitle}"`
 					);
 					return;
 				}
 
 				if (updateType === "add" || updateType === "update") {
-					mediaItems[idx] = { ...mediaItems[idx], ExistInDatabase: true };
+					mediaItems[idx] = { ...mediaItems[idx], ExistInDatabase: true, DBSavedSets: mediaItem.DBSavedSets };
 				} else if (updateType === "delete") {
-					mediaItems[idx] = { ...mediaItems[idx], ExistInDatabase: false };
+					mediaItems[idx] = { ...mediaItems[idx], ExistInDatabase: false, DBSavedSets: [] };
 				}
 
 				set((state) => ({
 					sections: {
 						...state.sections,
-						[sectionTitle]: {
+						[mediaItem.LibraryTitle]: {
 							...section,
 							MediaItems: mediaItems,
 						},
@@ -104,7 +104,7 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 					"INFO",
 					"librarySections",
 					"updateMediaItem",
-					`Updated media item ${ratingKey} in section "${sectionTitle}" with action "${updateType}"`
+					`Updated media item ${mediaItem.Title} (TMDB ID: ${mediaItem.TMDB_ID}) in section "${mediaItem.LibraryTitle}" with action "${updateType}"`
 				);
 			},
 

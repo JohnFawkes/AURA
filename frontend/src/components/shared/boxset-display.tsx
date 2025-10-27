@@ -99,11 +99,46 @@ export const RenderBoxSetDisplay = ({
 								: (set as MediuxUserShowSet | MediuxUserMovieSet).set_title}
 						</div>
 						{type === "movie" && (set as MediuxUserMovieSet).movie_id.MediaItem?.ExistInDatabase && (
-							<Database className="ml-2 text-green-500" size={20} />
+							<Database
+								className={`ml-2 ${
+									(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
+										(dbSet) => dbSet.PosterSetID === set.id
+									)
+										? "text-green-500"
+										: "text-yellow-500"
+								}`}
+								size={20}
+							/>
 						)}
 						{type === "show" && (set as MediuxUserShowSet).show_id.MediaItem?.ExistInDatabase && (
-							<Database className="ml-2 text-green-500" size={20} />
+							<Database
+								className={`ml-2 ${
+									(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
+										(dbSet) => dbSet.PosterSetID === set.id
+									)
+										? "text-green-500"
+										: "text-yellow-500"
+								}`}
+								size={20}
+							/>
 						)}
+						{type === "collection" &&
+							(set as MediuxUserCollectionSet).movie_posters.some(
+								(mp) => mp.movie.MediaItem?.ExistInDatabase
+							) && (
+								<Database
+									className={`ml-2 ${
+										(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
+											mp.movie.MediaItem?.DBSavedSets?.some(
+												(dbSet) => dbSet.PosterSetID === set.id
+											)
+										)
+											? "text-green-500"
+											: "text-yellow-500"
+									}`}
+									size={20}
+								/>
+							)}
 					</div>
 					<div className="ml-auto flex space-x-2">
 						<DownloadModal

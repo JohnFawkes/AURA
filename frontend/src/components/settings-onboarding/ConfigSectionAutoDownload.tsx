@@ -1,5 +1,7 @@
 "use client";
 
+import cronstrue from "cronstrue";
+
 import React, { useEffect, useRef } from "react";
 
 import Link from "next/link";
@@ -25,26 +27,12 @@ interface ConfigSectionAutoDownloadProps {
 const validateCron = (expr: string): string | null => {
 	const trimmed = expr.trim();
 	if (!trimmed) return "Cron expression is required when enabled.";
-	const parts = trimmed.split(/\s+/);
-	if (parts.length < 5 || parts.length > 6) return "Cron must have 5 or 6 fields.";
-	// Light validation (allow common chars)
-	if (!/^[\d*/,@\-\sA-Za-z]+$/.test(trimmed)) return "Cron contains invalid characters.";
-	return null;
-};
-
-const parseCronToHumanReadable = (cronExpression: string): string => {
-	const parts = cronExpression.split(" ");
-	if (parts.length !== 5) return "Current cron expression is invalid";
-
-	const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-
-	const minuteText = minute === "0" ? "at the start of" : `at minute ${minute}`;
-	const hourText = hour === "*" ? "every hour" : `hour ${hour}`;
-	const dayOfMonthText = dayOfMonth === "*" ? "every day" : `on day ${dayOfMonth}`;
-	const monthText = month === "*" ? "every month" : `in month ${month}`;
-	const dayOfWeekText = dayOfWeek === "*" ? "every day of the week" : `on day ${dayOfWeek} of the week`;
-
-	return `Currently runs ${minuteText} ${hourText}, ${dayOfMonthText}, ${monthText}, and ${dayOfWeekText}.`;
+	try {
+		cronstrue.toString(trimmed);
+		return null;
+	} catch {
+		return "Invalid cron expression. Use a site like crontab.guru to help you create and test your cron expressions.";
+	}
 };
 
 export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps> = ({
@@ -73,8 +61,8 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 	}, [errors, errorsUpdate]);
 
 	return (
-		<Card className="p-5 space-y-1">
-			<h2 className="text-xl font-semibold">Auto Download</h2>
+		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
+			<h2 className="text-xl font-semibold text-blue-500">Auto Download</h2>
 
 			{/* Enabled */}
 			<div
@@ -104,13 +92,7 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 			</div>
 
 			{/* Cron */}
-			<div
-				className={cn(
-					"space-y-1",
-					(value.Cron || errors.Cron || dirtyFields.Cron) && "rounded-md",
-					errors.Cron ? "border border-red-500 p-3" : dirtyFields.Cron && "border border-amber-500 p-3"
-				)}
-			>
+			<div className={cn("space-y-1", "rounded-md")}>
 				<div className="flex items-center justify-between">
 					<Label>Cron Expression</Label>
 					{editing && (
@@ -136,11 +118,11 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 					placeholder="e.g. 0 3 * * *"
 					value={value.Cron}
 					onChange={(e) => onChange("Cron", e.target.value)}
-					aria-invalid={!!errors.Cron}
+					className={cn(dirtyFields.Cron && "border-amber-500")}
 				/>
 				{errors.Cron && <p className="text-xs text-red-500">{errors.Cron}</p>}
 				{value.Enabled && !errors.Cron && value.Cron.trim() && (
-					<p className="text-xs text-muted-foreground">{parseCronToHumanReadable(value.Cron)}</p>
+					<p className="text-xs text-muted-foreground">{cronstrue.toString(value.Cron)}</p>
 				)}
 			</div>
 		</Card>
