@@ -132,7 +132,7 @@ func startRuntimeServices() {
 		os.Exit(1)
 	}
 
-	// Schedule auto-download if enabled
+	// Cron Schedule: AutoDownload (if enabled)
 	cronInstance = cron.New()
 	if api.Global_Config_Loaded && api.Global_Config_Valid && api.Global_Config.AutoDownload.Enabled {
 		_, err := cronInstance.AddFunc(api.Global_Config.AutoDownload.Cron, func() {
@@ -144,7 +144,6 @@ func startRuntimeServices() {
 			logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule AutoDownload cron job")
 		} else {
 			logging.LOGGER.Info().Timestamp().Msg(fmt.Sprintf("AutoDownload set for: %s", api.Global_Config.AutoDownload.Cron))
-			cronInstance.Start()
 		}
 	} else {
 		logging.LOGGER.Warn().Timestamp().Msg("AutoDownload is disabled")
@@ -155,6 +154,18 @@ func startRuntimeServices() {
 		api.Global_Config.Notifications.Enabled {
 		api.SendAppStartNotification()
 	}
+
+	// Cron Schedule: Download Queue Processing (every 1 minute)
+	_, err := cronInstance.AddFunc("@every 1m", func() {
+		api.ProcessDownloadQueue()
+	})
+	if err != nil {
+		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Download Queue Processing cron job")
+	} else {
+		logging.LOGGER.Info().Timestamp().Msg("Download Queue Processing scheduled every 1 minute")
+	}
+
+	cronInstance.Start()
 
 }
 
