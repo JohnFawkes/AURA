@@ -1,3 +1,11 @@
+## [0.9.41] - 2025-10-29
+
+### Added
+
+- Added support for adding items to a download queue for better management of multiple downloads
+
+---
+
 ## [0.9.40] - 2025-10-27
 
 ### Breaking

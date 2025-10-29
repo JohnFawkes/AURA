@@ -83,6 +83,7 @@ const RouteToFunctionMap: { label: string; value: string; section: string }[] = 
 	{ label: "Get Media Server Sections & Items", value: "/api/mediaserver/sections/items", section: "MEDIA" },
 	{ label: "Get Item Content", value: "/api/mediaserver/item", section: "MEDIA" },
 	{ label: "Download and Update", value: "/api/mediaserver/download", section: "MEDIA" },
+	{ label: "Add Item to Download Queue", value: "/api/mediaserver/add-to-queue", section: "MEDIA" },
 
 	// MediUX Routes
 	{ label: "Get All Sets", value: "/api/mediux/sets", section: "MEDIUX" },
