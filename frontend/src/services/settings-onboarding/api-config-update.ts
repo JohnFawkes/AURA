@@ -11,7 +11,7 @@ export const updateConfig = async (newConfig: AppConfig): Promise<APIResponse<Ap
 	try {
 		const response = await apiClient.post<APIResponse<AppConfig>>(`/config/update`, newConfig);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error updating app configuration");
+			throw new Error(response.data.error?.message || "Unknown error updating app configuration");
 		} else {
 			log("INFO", "API - Settings", "Update Config", "Updated app configuration successfully", response.data);
 		}

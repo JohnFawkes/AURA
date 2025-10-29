@@ -19,13 +19,13 @@ export const patchDownloadPosterFileAndUpdateMediaServer = async (
 		`Downloading poster file ${fileName} and updating '${mediaItem.Title}' (TMDB ID: ${mediaItem.TMDB_ID})`
 	);
 	try {
-		const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/download/file`, {
+		const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/download`, {
 			PosterFile: posterFile,
 			MediaItem: mediaItem,
 		});
 		if (response.data.status === "error") {
 			throw new Error(
-				response.data.error?.Message || "Unknown error downloading poster file and updating media server"
+				response.data.error?.message || "Unknown error downloading poster file and updating media server"
 			);
 		} else {
 			log(

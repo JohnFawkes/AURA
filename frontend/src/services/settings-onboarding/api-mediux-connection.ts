@@ -12,7 +12,7 @@ export async function postMediuxNewTokenStatus(mediuxInfo: AppConfigMediux): Pro
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/config/validate/mediux`, mediuxInfo);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error posting mediux new token");
+			throw new Error(response.data.error?.message || "Unknown error posting mediux new token");
 		} else {
 			log("INFO", "API - Settings", "MediUX", "Posted mediux new token successfully", response.data);
 		}
@@ -36,15 +36,15 @@ export const checkMediuxNewTokenStatusResult = async (
 	try {
 		const response = await postMediuxNewTokenStatus(mediuxInfo);
 		if (response.status === "error") {
-			if (showToast) toast.error(response.error?.Message || "Couldn't connect to MediUX. Check the Token");
-			return { ok: false, message: response.error?.Message || "Token invalid" };
+			if (showToast) toast.error(response.error?.message || "Couldn't connect to MediUX. Check the Token");
+			return { ok: false, message: response.error?.message || "Token invalid" };
 		}
 
 		if (showToast) toast.success(`Successfully connected to MediUX`, { duration: 1000 });
 		return { ok: true, message: "Successfully connected to MediUX" };
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		if (showToast) toast.error(errorResponse.error?.Message || "Couldn't connect to MediUX. Check the Token");
-		return { ok: false, message: errorResponse.error?.Message || "Couldn't connect to MediUX. Check the Token" };
+		if (showToast) toast.error(errorResponse.error?.message || "Couldn't connect to MediUX. Check the Token");
+		return { ok: false, message: errorResponse.error?.message || "Couldn't connect to MediUX. Check the Token" };
 	}
 };

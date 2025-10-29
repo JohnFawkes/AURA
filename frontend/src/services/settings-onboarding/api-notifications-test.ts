@@ -17,12 +17,9 @@ export async function postSendTestNotification(
 		`Posting new ${nProvider.Provider} info to check connection status`
 	);
 	try {
-		const response = await apiClient.post<APIResponse<string>>(
-			`/config/validate/notification/${nProvider.Provider.toLowerCase()}`,
-			nProvider
-		);
+		const response = await apiClient.post<APIResponse<string>>(`/config/validate/notification`, nProvider);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || `Unknown error posting ${nProvider.Provider} new info`);
+			throw new Error(response.data.error?.message || `Unknown error posting ${nProvider.Provider} new info`);
 		} else {
 			log(
 				"INFO",
@@ -52,8 +49,8 @@ export const sendTestNotification = async (
 	try {
 		const response = await postSendTestNotification(nProvider);
 		if (response.status === "error") {
-			if (showToast) toast.error(response.error?.Message || "Couldn't connect. Check the connection details");
-			return { ok: false, message: response.error?.Message || "API Key invalid" };
+			if (showToast) toast.error(response.error?.message || "Couldn't connect. Check the connection details");
+			return { ok: false, message: response.error?.message || "API Key invalid" };
 		}
 
 		if (showToast) toast.success(`Successfully tested ${nProvider.Provider}`, { duration: 1000 });
@@ -62,13 +59,13 @@ export const sendTestNotification = async (
 		const errorResponse = ReturnErrorMessage<string>(error);
 		if (showToast)
 			toast.error(
-				errorResponse.error?.Message ||
+				errorResponse.error?.message ||
 					`Couldn't connect to ${nProvider.Provider}. Check the connection details`
 			);
 		return {
 			ok: false,
 			message:
-				errorResponse.error?.Message ||
+				errorResponse.error?.message ||
 				`Couldn't connect to ${nProvider.Provider}. Check the connection details`,
 		};
 	}

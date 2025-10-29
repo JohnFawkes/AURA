@@ -15,7 +15,7 @@ export async function postSonarrRadarrNewAPIKeyStatus(srApp: AppConfigSonarrRada
 			srApp
 		);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || `Unknown error posting ${srApp.Type} new info`);
+			throw new Error(response.data.error?.message || `Unknown error posting ${srApp.Type} new info`);
 		} else {
 			log("INFO", "API - Settings", srApp.Type, `Posted ${srApp.Type} new info successfully`, response.data);
 		}
@@ -39,8 +39,8 @@ export const checkSonarrRadarrNewAPIKeyStatusResult = async (
 	try {
 		const response = await postSonarrRadarrNewAPIKeyStatus(srApp);
 		if (response.status === "error") {
-			if (showToast) toast.error(response.error?.Message || "Couldn't connect. Check the API Key and URL");
-			return { ok: false, message: response.error?.Message || "API Key invalid" };
+			if (showToast) toast.error(response.error?.message || "Couldn't connect. Check the API Key and URL");
+			return { ok: false, message: response.error?.message || "API Key invalid" };
 		}
 
 		if (showToast) toast.success(`Successfully connected to ${srApp.Type} (${srApp.Library})`, { duration: 1000 });
@@ -48,10 +48,10 @@ export const checkSonarrRadarrNewAPIKeyStatusResult = async (
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
 		if (showToast)
-			toast.error(errorResponse.error?.Message || `Couldn't connect to ${srApp.Type}. Check the API Key and URL`);
+			toast.error(errorResponse.error?.message || `Couldn't connect to ${srApp.Type}. Check the API Key and URL`);
 		return {
 			ok: false,
-			message: errorResponse.error?.Message || `Couldn't connect to ${srApp.Type}. Check the API Key and URL`,
+			message: errorResponse.error?.message || `Couldn't connect to ${srApp.Type}. Check the API Key and URL`,
 		};
 	}
 };

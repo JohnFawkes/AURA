@@ -20,7 +20,7 @@ export const patchSavedItemInDB = async (
 	try {
 		const response = await apiClient.patch<APIResponse<DBMediaItemWithPosterSets>>(`/db/update/`, saveItem);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error patching item in DB");
+			throw new Error(response.data.error?.message || "Unknown error patching item in DB");
 		} else {
 			log(
 				"INFO",

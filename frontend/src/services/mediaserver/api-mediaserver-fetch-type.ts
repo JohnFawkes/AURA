@@ -15,9 +15,9 @@ import { APIResponse } from "@/types/api/api-response";
 export const fetchMediaServerType = async (): Promise<APIResponse<{ serverType: string }>> => {
 	log("INFO", "API - Media Server", "Fetch Server Type", "Fetching media server type");
 	try {
-		const response = await apiClient.get<APIResponse<{ serverType: string }>>(`/config/mediaserver/type`);
+		const response = await apiClient.get<APIResponse<{ serverType: string }>>(`/mediaserver/type`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching media server type");
+			throw new Error(response.data.error?.message || "Unknown error fetching media server type");
 		} else {
 			log(
 				"INFO",

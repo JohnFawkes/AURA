@@ -34,7 +34,7 @@ export const postForceRecheckDBItemForAutoDownload = async (
 			Item: saveItem,
 		});
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error forcing recheck for auto-download");
+			throw new Error(response.data.error?.message || "Unknown error forcing recheck for auto-download");
 		} else {
 			log(
 				"INFO",

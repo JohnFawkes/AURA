@@ -12,11 +12,13 @@ export const deleteMediaItemFromDB = async (
 ): Promise<APIResponse<DBMediaItemWithPosterSets>> => {
 	log("INFO", "API - DB", "Delete", `Deleting ${saveItem.MediaItem.Title} from DB`, saveItem);
 	try {
-		const response = await apiClient.delete<APIResponse<DBMediaItemWithPosterSets>>(
-			`/db/delete/mediaitem/${saveItem.MediaItem.TMDB_ID}/${saveItem.MediaItem.LibraryTitle}`
-		);
+		const params = {
+			tmdbID: saveItem.MediaItem.TMDB_ID,
+			libraryTitle: saveItem.MediaItem.LibraryTitle,
+		};
+		const response = await apiClient.delete<APIResponse<DBMediaItemWithPosterSets>>(`/db/delete`, { params });
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error deleting media item from DB");
+			throw new Error(response.data.error?.message || "Unknown error deleting media item from DB");
 		} else {
 			log(
 				"INFO",

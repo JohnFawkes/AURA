@@ -13,7 +13,7 @@ export const fetchConfig = async (reload: boolean = false): Promise<APIResponse<
 		const endpoint = reload ? `/config/reload` : `/config`;
 		const response = await apiClient.get<APIResponse<AppConfig>>(endpoint);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching app configuration");
+			throw new Error(response.data.error?.message || "Unknown error fetching app configuration");
 		} else {
 			log("INFO", "API - Settings", "Fetch Config", "Fetched app configuration successfully", response.data);
 		}

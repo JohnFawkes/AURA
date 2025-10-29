@@ -10,7 +10,7 @@ export const postClearTempImagesFolder = async (): Promise<APIResponse<void>> =>
 	try {
 		const response = await apiClient.post<APIResponse<void>>(`/temp-images/clear`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error clearing temp images folder");
+			throw new Error(response.data.error?.message || "Unknown error clearing temp images folder");
 		} else {
 			log(
 				"INFO",

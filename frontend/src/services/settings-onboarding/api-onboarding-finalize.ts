@@ -9,9 +9,9 @@ import { AppConfig } from "@/types/config/config-app";
 export const finalizeOnboarding = async (newConfig: AppConfig): Promise<APIResponse<AppConfig>> => {
 	log("INFO", "API - Settings", "Onboarding", "Finalizing app configuration", newConfig);
 	try {
-		const response = await apiClient.post<APIResponse<AppConfig>>(`/onboarding/complete`, newConfig);
+		const response = await apiClient.post<APIResponse<AppConfig>>(`/onboarding/finalize`, newConfig);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error finalizing app configuration");
+			throw new Error(response.data.error?.message || "Unknown error finalizing app configuration");
 		} else {
 			log("INFO", "API - Settings", "Onboarding", "Finalized app configuration successfully", response.data);
 		}

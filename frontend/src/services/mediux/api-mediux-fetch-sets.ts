@@ -18,11 +18,15 @@ export const fetchMediuxSets = async (
 		`Fetching Mediux sets for tmdbID: ${tmdbID}, itemType: ${itemType}, librarySection: ${librarySection}`
 	);
 	try {
-		const response = await apiClient.get<APIResponse<PosterSet[]>>(
-			`/mediux/sets/get/${itemType}/${librarySection}/${tmdbID}`
-		);
+		const response = await apiClient.get<APIResponse<PosterSet[]>>(`/mediux/sets`, {
+			params: {
+				itemType: itemType,
+				librarySection: librarySection,
+				tmdbID: tmdbID,
+			},
+		});
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || `Unknown error fetching Mediux sets for tmdbID: ${tmdbID}`);
+			throw new Error(response.data.error?.message || `Unknown error fetching Mediux sets for tmdbID: ${tmdbID}`);
 		} else {
 			log(
 				"INFO",

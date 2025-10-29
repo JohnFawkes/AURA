@@ -17,9 +17,9 @@ export const postAddItemToDB = async (
 		`Adding '${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})' to DB`
 	);
 	try {
-		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/db/add/item`, saveItem);
+		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/db/add`, saveItem);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error adding item to DB");
+			throw new Error(response.data.error?.message || "Unknown error adding item to DB");
 		} else {
 			log(
 				"INFO",

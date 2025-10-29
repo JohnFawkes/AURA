@@ -12,10 +12,10 @@ export async function postMediaServerLibraryOptions(
 ): Promise<APIResponse<string>> {
 	log("INFO", "API - Settings", "Media Server", "Posting media server info to get library options");
 	try {
-		const response = await apiClient.post<APIResponse<string>>(`/config/get/mediaserver/sections`, mediaServerInfo);
+		const response = await apiClient.post<APIResponse<string>>(`/mediaserver/library-options`, mediaServerInfo);
 		if (response.data.status === "error") {
 			throw new Error(
-				response.data.error?.Message || "Unknown error posting media server info to get library options"
+				response.data.error?.message || "Unknown error posting media server info to get library options"
 			);
 		} else {
 			log(
@@ -62,7 +62,7 @@ export const fetchMediaServerLibraryOptions = async (
 		return { ok: true, data };
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
+		toast.error(errorResponse.error?.message || "Couldn't connect to media server. Check the URL and Token", {
 			duration: 1000,
 		});
 		return {

@@ -37,7 +37,7 @@ export const fetchMediaServerLibrarySectionItems = async (
 		});
 		if (response.data.status === "error") {
 			throw new Error(
-				response.data.error?.Message || `Unknown error fetching items for section '${librarySection.Title}'`
+				response.data.error?.message || `Unknown error fetching items for section '${librarySection.Title}'`
 			);
 		} else {
 			log("INFO", "API - Media Server", "Fetch Section Items", `Fetched items for '${librarySection.Title}'`);

@@ -9,9 +9,9 @@ import { MediuxUserFollowHide } from "@/types/mediux/mediux-user-follow-hide";
 export const fetchMediuxUserFollowHides = async (): Promise<APIResponse<MediuxUserFollowHide>> => {
 	log("INFO", "API - Mediux", "Fetch User Follow/Hides", "Fetching user follow/hide data");
 	try {
-		const response = await apiClient.get<APIResponse<MediuxUserFollowHide>>(`/mediux/user/following_hiding`);
+		const response = await apiClient.get<APIResponse<MediuxUserFollowHide>>(`/mediux//user-follow-hiding`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching user follow/hide data");
+			throw new Error(response.data.error?.message || "Unknown error fetching user follow/hide data");
 		} else {
 			log(
 				"INFO",

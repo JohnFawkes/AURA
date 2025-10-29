@@ -8,9 +8,9 @@ import { APIResponse } from "@/types/api/api-response";
 export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 	log("INFO", "API - Logs", "Fetch Log Contents", "Fetching log contents");
 	try {
-		const response = await apiClient.get<APIResponse<string>>(`/logs`);
+		const response = await apiClient.get<APIResponse<string>>(`/log`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching log contents");
+			throw new Error(response.data.error?.message || "Unknown error fetching log contents");
 		} else {
 			log("INFO", "API - Logs", "Fetch Log Contents", "Fetched log contents successfully", response.data);
 		}
@@ -30,9 +30,9 @@ export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 export const postClearOldLogs = async (clearToday: boolean = false): Promise<APIResponse<void>> => {
 	log("INFO", "API - Logs", "Clear Old Logs", `Clearing old logs, clearToday=${clearToday}`);
 	try {
-		const response = await apiClient.post<APIResponse<void>>(`/logs/clear`, { clearToday });
+		const response = await apiClient.post<APIResponse<void>>(`/log/clear`, { clearToday });
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error clearing old logs");
+			throw new Error(response.data.error?.message || "Unknown error clearing old logs");
 		} else {
 			log("INFO", "API - Logs", "Clear Old Logs", "Cleared old logs successfully", response.data);
 		}

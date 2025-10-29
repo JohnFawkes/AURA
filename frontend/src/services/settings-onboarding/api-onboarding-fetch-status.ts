@@ -8,9 +8,9 @@ import { AppOnboardingStatus } from "@/types/config/onboarding";
 
 export const fetchOnboardingStatus = async (): Promise<APIResponse<AppOnboardingStatus>> => {
 	try {
-		const response = await apiClient.get<APIResponse<AppOnboardingStatus>>(`/onboarding/status`);
+		const response = await apiClient.get<APIResponse<AppOnboardingStatus>>(`/config/status`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching onboarding status");
+			throw new Error(response.data.error?.message || "Unknown error fetching onboarding status");
 		}
 		return response.data;
 	} catch (error) {

@@ -9,11 +9,13 @@ import { MediuxUserAllSetsResponse } from "@/types/mediux/mediux-sets";
 export const fetchAllUserSets = async (username: string): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
 	log("INFO", "API - Mediux", "Fetch All User Sets", `Fetching all user sets for ${username}`);
 	try {
-		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>(
-			`/mediux/sets/get_user/sets/${username}`
-		);
+		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>("/mediux/sets-by-user", {
+			params: {
+				username: username,
+			},
+		});
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || `Unknown error fetching all user sets for ${username}`);
+			throw new Error(response.data.error?.message || `Unknown error fetching all user sets for ${username}`);
 		} else {
 			log(
 				"INFO",

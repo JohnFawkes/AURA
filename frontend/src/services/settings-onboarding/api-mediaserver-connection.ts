@@ -12,14 +12,14 @@ export const checkMediaServerConnectionStatus = async (mediaServerInfo: AppConfi
 		const response = await fetchMediaServerConnectionStatus();
 
 		if (response.status === "error") {
-			toast.error(response.error?.Message || "Failed to check media server status");
+			toast.error(response.error?.message || "Failed to check media server status");
 			return;
 		}
 
 		toast.success(`${mediaServerInfo.Type} running with version: ${response.data}`);
 	} catch (error) {
 		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.error(errorResponse.error?.Message || "Failed to check media server status");
+		toast.error(errorResponse.error?.message || "Failed to check media server status");
 	}
 };
 
@@ -28,7 +28,7 @@ export async function fetchMediaServerConnectionStatus(): Promise<APIResponse<st
 	try {
 		const response = await apiClient.get<APIResponse<string>>(`/health/status/mediaserver`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching media server connection status");
+			throw new Error(response.data.error?.message || "Unknown error fetching media server connection status");
 		} else {
 			log(
 				"INFO",
@@ -58,7 +58,7 @@ export async function postMediaServerNewInfoConnectionStatus(
 	try {
 		const response = await apiClient.post<APIResponse<string>>(`/config/validate/mediaserver`, mediaServerInfo);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error posting media server new info");
+			throw new Error(response.data.error?.message || "Unknown error posting media server new info");
 		} else {
 			log("INFO", "API - Settings", "Media Server", "Posted media server new info successfully", response.data);
 		}
@@ -88,13 +88,13 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		if (response.status === "error") {
 			if (showToast && loadingToast) toast.dismiss(loadingToast);
 			if (showToast) {
-				toast.error(response.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
+				toast.error(response.error?.message || "Couldn't connect to media server. Check the URL and Token", {
 					duration: 1000,
 				});
 			}
 			return {
 				ok: false,
-				message: response.error?.Message || "Couldn't connect to media server. Check the URL and Token",
+				message: response.error?.message || "Couldn't connect to media server. Check the URL and Token",
 				data: null,
 			};
 		}
@@ -111,13 +111,13 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 		const errorResponse = ReturnErrorMessage<string>(error);
 		if (showToast) {
 			toast.dismiss();
-			toast.error(errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token", {
+			toast.error(errorResponse.error?.message || "Couldn't connect to media server. Check the URL and Token", {
 				duration: 1000,
 			});
 		}
 		return {
 			ok: false,
-			message: errorResponse.error?.Message || "Couldn't connect to media server. Check the URL and Token",
+			message: errorResponse.error?.message || "Couldn't connect to media server. Check the URL and Token",
 			data: null,
 		};
 	}

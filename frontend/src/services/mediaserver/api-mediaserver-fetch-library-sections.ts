@@ -18,7 +18,7 @@ export const fetchMediaServerLibrarySections = async (): Promise<APIResponse<Lib
 	try {
 		const response = await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/sections/`);
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || "Unknown error fetching all library sections");
+			throw new Error(response.data.error?.message || "Unknown error fetching all library sections");
 		} else {
 			log("INFO", "API - Media Server", "Fetch Library Sections", `Fetched all library sections successfully`);
 		}

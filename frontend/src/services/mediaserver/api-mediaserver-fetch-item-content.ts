@@ -3,7 +3,7 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse, StandardError } from "@/types/api/api-response";
+import { APIResponse, LogErrorInfo } from "@/types/api/api-response";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
 import { MediuxUserFollowHide } from "@/types/mediux/mediux-user-follow-hide";
@@ -18,7 +18,7 @@ export const fetchMediaServerItemContent = async (
 		mediaItem: MediaItem;
 		posterSets: PosterSet[];
 		userFollowHide: MediuxUserFollowHide;
-		error: StandardError | null;
+		error: LogErrorInfo | null;
 	}>
 > => {
 	log(
@@ -29,9 +29,9 @@ export const fetchMediaServerItemContent = async (
 	);
 	try {
 		// Encode sectionTitle to handle spaces and special characters
-		const encodedSectionTitle = encodeURIComponent(sectionTitle);
 		const params = new URLSearchParams({
-			sectionTitle: encodedSectionTitle,
+			ratingKey: ratingKey,
+			sectionTitle: sectionTitle,
 			returnType: returnType,
 		});
 		const response = await apiClient.get<
@@ -40,12 +40,12 @@ export const fetchMediaServerItemContent = async (
 				mediaItem: MediaItem;
 				posterSets: PosterSet[];
 				userFollowHide: MediuxUserFollowHide;
-				error: StandardError | null;
+				error: LogErrorInfo | null;
 			}>
-		>(`/mediaserver/item/${ratingKey}?${params.toString()}`);
+		>(`/mediaserver/item`, { params });
 		if (response.data.status === "error") {
 			throw new Error(
-				response.data.error?.Message || `Unknown error fetching item content for ratingKey ${ratingKey}`
+				response.data.error?.message || `Unknown error fetching item content for ratingKey ${ratingKey}`
 			);
 		} else {
 			log("INFO", "API - Media Server", "Fetch", `Fetched item content for ratingKey ${ratingKey}`);

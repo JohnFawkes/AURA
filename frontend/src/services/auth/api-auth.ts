@@ -21,7 +21,7 @@ export const postLogin = async (password: string): Promise<APIResponse<{ token: 
 		}
 		if (response.data.status === "error") {
 			localStorage.removeItem("aura-auth-token");
-			throw new Error(response.data.error?.Message || "Unknown error during login");
+			throw new Error(response.data.error?.message || "Unknown error during login");
 		} else {
 			log(
 				"INFO",

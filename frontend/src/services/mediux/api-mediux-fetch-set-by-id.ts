@@ -19,15 +19,16 @@ export const fetchSetByID = async (
 		`Fetching set by ID: ${setID} for itemType: ${itemType}, librarySection: ${librarySection}, tmdbID: ${tmdbID}`
 	);
 	try {
-		const response = await apiClient.get<APIResponse<PosterSet>>(`/mediux/sets/get_set/${setID}`, {
+		const response = await apiClient.get<APIResponse<PosterSet>>(`/mediux/set-by-id`, {
 			params: {
+				setID: setID,
 				itemType: itemType,
 				librarySection: librarySection,
 				tmdbID: tmdbID,
 			},
 		});
 		if (response.data.status === "error") {
-			throw new Error(response.data.error?.Message || `Unknown error fetching set by ID: ${setID}`);
+			throw new Error(response.data.error?.message || `Unknown error fetching set by ID: ${setID}`);
 		} else {
 			log("INFO", "API - Mediux", "Fetch Set By ID", `Fetched set by ID: ${setID} successfully`, response.data);
 		}

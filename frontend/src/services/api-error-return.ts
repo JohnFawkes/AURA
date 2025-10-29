@@ -4,20 +4,21 @@ import { APIResponse } from "@/types/api/api-response";
 
 export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	const defaultError = {
-		Message: "",
-		HelpText: "",
-		Function: "",
+		message: "",
+		help: "",
+		function: "",
+		line_number: 0,
+		detail: {},
 	};
 
 	if (error instanceof AxiosError) {
 		return {
 			status: "error",
-			elapsed: "0",
 			error: error.response?.data.error || {
-				Message: error.response?.data.message || error.message,
-				HelpText: "Please check your connection and try again",
-				Function: "AxiosRequest",
-				LineNumber: 0,
+				message: error.response?.data.message || error.message,
+				help: "Please check your connection and try again",
+				function: "AxiosRequest",
+				line_number: 0,
 			},
 		} as APIResponse<T>;
 	}
@@ -25,12 +26,11 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	if (error instanceof Error) {
 		return {
 			status: "error",
-			elapsed: "0",
 			error: {
-				Message: error.message,
-				HelpText: "An unexpected error occurred",
-				Function: error.stack?.split("\n")[1]?.trim() || "Unknown",
-				LineNumber: 0,
+				message: error.message,
+				help: "An unexpected error occurred",
+				function: error.stack?.split("\n")[1]?.trim() || "Unknown",
+				line_number: 0,
 			},
 		} as APIResponse<T>;
 	}
@@ -38,19 +38,17 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	if (typeof error === "string") {
 		return {
 			status: "error",
-			elapsed: "0",
 			error: {
-				Message: error,
-				HelpText: "",
-				Function: "",
-				LineNumber: 0,
+				message: error,
+				help: "",
+				function: "",
+				line_number: 0,
 			},
 		};
 	}
 
 	return {
 		status: "error",
-		elapsed: "0",
 		error: defaultError,
 	} as APIResponse<T>;
 };
