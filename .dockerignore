@@ -3,7 +3,7 @@
 frontend/node_modules
 frontend/dist
 frontend/dist-ssr
-frontend/\*.local
+frontend/*.local
 frontend/.next
 legacy-frontend
 
@@ -13,11 +13,11 @@ legacy-frontend
 
 # Mac files
 
-\*.DS_Store
+*.DS_Store
 
 # Local files
 
-local/\*
+local/*
 frontend/run_frontend
 backend/run_backend
 backend/.air.toml
