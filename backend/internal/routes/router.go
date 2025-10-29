@@ -116,6 +116,7 @@ func AddRoutes(r *chi.Mux) {
 				r.Get("/item", routes_ms.GetItemContent)
 				r.Get("/image", routes_ms.GetImage)
 				r.Patch("/download", routes_ms.DownloadAndUpdate)
+				r.Post("/add-to-queue", routes_ms.AddToDownloadQueue)
 			})
 
 			// Mediux Routes

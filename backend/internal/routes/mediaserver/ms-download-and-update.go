@@ -51,8 +51,9 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 	downloadFileName := api.MediaServer_GetFileDownloadName(posterFile)
 
 	// Response with a success message
-	// time.Sleep(2 * time.Second) // Simulate download time
+	// time.Sleep(1 * time.Second) // Simulate download time
 	// api.Util_Response_SendJSON(w, ld, fmt.Sprintf("Downloaded %s successfully", downloadFileName))
+	// return
 
 	Err = api.CallDownloadAndUpdatePosters(ctx, mediaItem, posterFile)
 	if Err.Message != "" {
