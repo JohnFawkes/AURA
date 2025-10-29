@@ -21,7 +21,6 @@ require (
 
 require (
 	github.com/alexedwards/argon2id v1.0.0
-	github.com/fatih/color v1.18.0
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/jwtauth/v5 v5.3.3
