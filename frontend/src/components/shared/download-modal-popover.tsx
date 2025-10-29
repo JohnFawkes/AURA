@@ -12,7 +12,7 @@ const downloadModalPopoverHelpText = {
 	"add-to-db-only":
 		"Add to Database Only will not download anything. It will only add the set to your database. This is helpful for movies that you have already processed and just want to add the set to your database.",
 	"add-to-queue-only":
-		"Add to Queue Only will not download anything right now. It will only add the set to your download queue to be processed later.",
+		"Add to Queue will add the set to the download queue. This is helpful if you want to quickly add sets without waiting for downloads to finish. Downloads in the queue will be processed the same way as normal downloads. Download queue runs every 1 minute.",
 };
 
 const DownloadModalPopover: React.FC<DownloadModalPopoverProps> = ({ type }) => {
