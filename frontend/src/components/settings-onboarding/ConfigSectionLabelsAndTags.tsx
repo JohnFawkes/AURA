@@ -267,7 +267,11 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												const input = e.currentTarget.elements.namedItem(
 													"addLabel"
 												) as HTMLInputElement;
-												const val = input.value.trim();
+												let val = input.value.trim();
+												if (app.Application && ["Sonarr", "Radarr"].includes(app.Application)) {
+													// Lowercase tags for Sonarr/Radarr
+													val = val.toLowerCase();
+												}
 												if (val && !addLabels.includes(val)) {
 													updateApplication(idx, "Add", [...addLabels, val]);
 												}
@@ -338,7 +342,11 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												const input = e.currentTarget.elements.namedItem(
 													"removeLabel"
 												) as HTMLInputElement;
-												const val = input.value.trim();
+												let val = input.value.trim();
+												if (app.Application && ["Sonarr", "Radarr"].includes(app.Application)) {
+													// Lowercase tags for Sonarr/Radarr
+													val = val.toLowerCase();
+												}
 												if (val && !removeLabels.includes(val)) {
 													updateApplication(idx, "Remove", [...removeLabels, val]);
 												}

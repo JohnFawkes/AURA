@@ -63,7 +63,7 @@ export const refreshPosterSet = async ({
 				);
 
 				if (!resp || resp.status === "error") {
-					log("ERROR", "Saved Sets Shared", "refreshPosterSet", resp?.error?.Message || "Unknown error");
+					log("ERROR", "Saved Sets Shared", "refreshPosterSet", resp?.error?.message || "Unknown error");
 					// Store the first error we encounter
 					if (!hasError) {
 						hasError = true;
@@ -79,7 +79,7 @@ export const refreshPosterSet = async ({
 					set.set.Type
 				);
 				if (!response || response.status === "error") {
-					log("ERROR", "Saved Sets Shared", "refreshPosterSet", response?.error?.Message || "Unknown error");
+					log("ERROR", "Saved Sets Shared", "refreshPosterSet", response?.error?.message || "Unknown error");
 					// Store the first error we encounter
 					if (!hasError) {
 						hasError = true;
@@ -112,17 +112,15 @@ export const refreshPosterSet = async ({
 		} else {
 			setUpdateError(null);
 		}
-	} catch (error) {
+	} catch {
 		// Handle unexpected errors
 		setUpdateError({
 			status: "error",
-			elapsed: "0",
 			error: {
-				Message: "Unexpected error refreshing poster sets",
-				HelpText: "Please try again later",
-				Function: "refreshPosterSet",
-				LineNumber: 0,
-				Details: error instanceof Error ? error.message : String(error),
+				message: "Unexpected error refreshing poster sets",
+				help: "Please try again later",
+				function: "refreshPosterSet",
+				line_number: 0,
 			},
 		});
 	} finally {
@@ -167,7 +165,7 @@ export const handleStopIgnoring = async (
 	setUnignoreLoading(true);
 	const resp = await deleteMediaItemFromDB(savedSet);
 	if (!resp || resp.status === "error") {
-		log("ERROR", "Saved Sets Shared", "handleStopIgnoring", resp?.error?.Message || "Unknown error");
+		log("ERROR", "Saved Sets Shared", "handleStopIgnoring", resp?.error?.message || "Unknown error");
 		setUpdateError(resp);
 		setUnignoreLoading(false);
 		return;
@@ -242,7 +240,7 @@ export const savedSetsConfirmEdit = async ({
 
 	const response = await patchSavedItemInDB(updatedSavedSet);
 	if (!response || response.status === "error") {
-		log("ERROR", "Saved Sets Shared", "savedSetsConfirmEdit", response?.error?.Message || "Unknown error");
+		log("ERROR", "Saved Sets Shared", "savedSetsConfirmEdit", response?.error?.message || "Unknown error");
 		setUpdateError(response);
 		setIsMounted(false);
 		return;
@@ -274,7 +272,7 @@ export const savedSetsConfirmDelete = async ({
 	setIsMounted(true);
 	const resp = await deleteMediaItemFromDB(savedSet);
 	if (!resp || resp.status === "error") {
-		log("ERROR", "Saved Sets Shared", "savedSetsConfirmDelete", resp?.error?.Message || "Unknown error");
+		log("ERROR", "Saved Sets Shared", "savedSetsConfirmDelete", resp?.error?.message || "Unknown error");
 		setUpdateError(resp);
 		setIsMounted(false);
 		return;

@@ -39,8 +39,10 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 	onChange,
 	errorsUpdate,
 }) => {
+	const runRemoteValidationOnceRef = useRef<boolean>(false);
 	const prevErrorsRef = useRef<string>("");
 
+	const [runningRemoteValidation, setRunningRemoteValidation] = useState(false);
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
 	const [connectionStatus, setConnectionStatus] = useState<ConfigConnectionStatus>({
@@ -76,6 +78,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 	const runRemoteValidation = useCallback(
 		async (showToast = true) => {
+			setRunningRemoteValidation(true);
 			if (!value.Token.trim()) {
 				setRemoteTokenError("Token is required.");
 				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
@@ -101,14 +104,17 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				setRemoteTokenError(message || "Token invalid");
 				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 			}
+			setRunningRemoteValidation(false);
 		},
 		[value, setRemoteTokenError, setTestingToken]
 	);
 
 	// If the config is already loaded, we can run validation
 	useEffect(() => {
+		if (runRemoteValidationOnceRef.current) return;
 		if (configAlreadyLoaded) {
 			runRemoteValidation(false);
+			runRemoteValidationOnceRef.current = true;
 		}
 	}, [configAlreadyLoaded, runRemoteValidation]);
 
@@ -117,10 +123,15 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<h2 className={`text-xl font-semibold text-${connectionStatus.color}`}>MediUX</h2>
-					<span
-						className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connectionStatus.status]} animate-pulse`}
-						title={`Connection status: ${connectionStatus.status}`}
-					/>
+					{runningRemoteValidation ? (
+						// Loading Spinner
+						<span className="h-2 w-2 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+					) : (
+						<span
+							className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connectionStatus.status]} animate-pulse`}
+							title={`Connection status: ${connectionStatus.status}`}
+						/>
+					)}
 				</div>
 				<Button
 					variant="outline"

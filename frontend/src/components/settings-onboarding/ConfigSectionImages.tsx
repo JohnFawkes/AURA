@@ -55,16 +55,14 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 	const clearTempImagesFolder = async () => {
 		try {
 			const response = await postClearTempImagesFolder();
-
 			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to clear temp images folder");
+				toast.error(response.error?.message || "Failed to clear temp images folder");
 				return;
 			}
-
 			toast.success(response.data || "Temp images folder cleared successfully");
 		} catch (error) {
 			const errorResponse = ReturnErrorMessage<void>(error);
-			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
+			toast.error(errorResponse.error?.message || "An unexpected error occurred");
 		}
 	};
 

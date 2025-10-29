@@ -63,10 +63,10 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 		try {
 			const response = await postClearOldLogs();
 			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to clear old logs");
+				toast.error(response.error?.message || "Failed to clear old logs");
 				return;
 			}
-			toast.success(response.data || "Old logs cleared");
+			toast.success(response.data || "Old logs cleared successfully");
 		} catch {
 			toast.error("An unexpected error occurred");
 		}
@@ -151,7 +151,7 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 						</ConfirmDestructiveDialogActionButton>
 					</div>
 				</div>
-				<Input disabled value={value.File || ""} placeholder="App Log File Path" />
+				<Input disabled value={value.File || ""} placeholder="aura.log" />
 			</div>
 		</Card>
 	);

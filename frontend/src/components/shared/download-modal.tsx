@@ -571,15 +571,15 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									<PopoverTrigger>
 										<CircleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
 									</PopoverTrigger>
-									<PopoverContent className="w-72 rounded-lg shadow-lg border-2 border-yellow-800 p-2">
+									<PopoverContent className="w-100 rounded-lg shadow-lg border-2 border-yellow-800 p-2 flex flex-col items-center justify-center">
 										<div className="flex items-center mb-2">
 											<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
 											<span className="text-sm text-yellow-600">
-												This media item already exists in your database.
+												This media item already exists in your database
 											</span>
 										</div>
 										<div className="text-xs text-muted-foreground mb-2">
-											You have previously saved it in the following sets:
+											You have previously saved it in the following sets
 										</div>
 										<ul className="space-y-2">
 											{item.MediaItem.DBSavedSets.map((set) => (
@@ -793,7 +793,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			const response = await patchDownloadPosterFileAndUpdateMediaServer(posterFile, mediaItem, fileName);
 			if (response.status === "error") {
 				updateItemProgress(mediaItem.RatingKey, posterFileType, `Failed to download ${fileName}`);
-				throw new Error(response.error?.Message || "Unknown error");
+				throw new Error(response.error?.message || "Unknown error");
 			} else {
 				updateItemProgress(mediaItem.RatingKey, posterFileType, `Finished downloading ${fileName}`);
 			}
@@ -959,9 +959,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								fileName: null,
 								mediaItem: null,
 								message: `Error fetching latest media item for ${item.MediaItemTitle}: ${
-									latestMediaItemResp.error?.HelpText ||
-									latestMediaItemResp.error?.Details ||
-									latestMediaItemResp.error?.Message ||
+									latestMediaItemResp.error?.help ||
+									latestMediaItemResp.error?.detail ||
+									latestMediaItemResp.error?.message ||
 									"Unknown error"
 								}`,
 							},
@@ -1348,7 +1348,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												Number of Images: {selectedSizes.fileCount}
 											</div>
 											<div className="text-sm text-muted-foreground">
-												Total Download Size: {formatDownloadSize(selectedSizes.downloadSize)}
+												Total Download Size: ~{formatDownloadSize(selectedSizes.downloadSize)}
 											</div>
 										</div>
 									) : (

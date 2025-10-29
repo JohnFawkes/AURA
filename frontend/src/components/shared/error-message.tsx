@@ -20,7 +20,6 @@ interface ErrorMessageProps<T> {
 
 export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessageProps<T>) {
 	const [isExpanded, setIsExpanded] = useState(false);
-
 	if (!error?.error) return null;
 
 	const textColorClass = isWarning ? "text-yellow-500" : "text-destructive";
@@ -30,8 +29,8 @@ export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessagePro
 	const getPrettyDetails = () => {
 		return JSON.stringify(
 			Object.fromEntries(
-				error?.error && typeof error.error.Details === "object" && error.error.Details !== null
-					? Object.entries(error.error.Details).map(([key, value]) => {
+				error?.error && typeof error.error.detail === "object" && error.error.detail !== null
+					? Object.entries(error.error.detail).map(([key, value]) => {
 							if (
 								typeof value === "string" &&
 								(value.trim().startsWith("{") || value.trim().startsWith("["))
@@ -63,13 +62,13 @@ export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessagePro
 					<H3 className={cn("text-lg", textColorClass)}>{isWarning ? "Warning" : "Error"}</H3>
 				</div>
 
-				<H4 className={cn("text-md", textColorClass)}>{error.error.Message}</H4>
+				<H4 className={cn("text-md", textColorClass)}>{error.error.message}</H4>
 
-				<Lead className="text-sm text-muted-foreground mt-2">{error.error.HelpText}</Lead>
+				<Lead className="text-sm text-muted-foreground mt-2">{error.error.help}</Lead>
 
-				{(!!error.error.Details ||
-					(!!error.error.Function && error.error.Function !== "" && error.error.Function !== "Unknown") ||
-					(!!error.error.LineNumber && error.error.LineNumber !== 0)) && (
+				{(!!error.error.detail ||
+					(!!error.error.function && error.error.function !== "" && error.error.function !== "Unknown") ||
+					(!!error.error.line_number && error.error.line_number !== 0)) && (
 					<Button
 						variant="outline"
 						onClick={() => setIsExpanded(!isExpanded)}
@@ -85,32 +84,26 @@ export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessagePro
 				{isExpanded && (
 					<div className="mt-3 pt-3 border-t border-border/50">
 						<div className="text-xs text-left text-muted-foreground/80">
-							{error.error.Function &&
-								error.error.Function !== "" &&
-								error.error.Function !== "Unknown" && (
+							{error.error.function &&
+								error.error.function !== "" &&
+								error.error.function !== "Unknown" && (
 									<Lead className="text-sm text-muted-foreground mb-1 break-words whitespace-pre-line">
-										Function: {error.error.Function}
+										Function: {error.error.function}
 									</Lead>
 								)}
 
-							{error.error.LineNumber && error.error.LineNumber !== 0 && (
+							{error.error.line_number && error.error.line_number !== 0 && (
 								<Lead className="text-sm text-muted-foreground mb-1">
-									Line Number: {error.error.LineNumber}
+									Line Number: {error.error.line_number}
 								</Lead>
 							)}
 
-							{error.elapsed && error.elapsed !== "0" && (
-								<Lead className="text-sm text-muted-foreground mb-1">
-									Elapsed Time: {error.elapsed}
-								</Lead>
-							)}
-
-							{error.error.Details && (
+							{error.error.detail && (
 								<>
 									<Lead className="text-sm text-muted-foreground">Details: </Lead>
-									{typeof error.error.Details === "string" ? (
+									{typeof error.error.detail === "string" ? (
 										<pre className="bg-muted/30 rounded p-2 mt-1 whitespace-pre-wrap break-words overflow-x-auto max-h-64 text-xs">
-											{error.error.Details}
+											{error.error.detail}
 										</pre>
 									) : (
 										<>
