@@ -2,35 +2,35 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
-	"net/http"
-	"net/url"
-	"path"
 )
 
 type Interface_MediaServer interface {
 
+	// Initialize the Media Server connection
+	InitializeMediaServerConnection(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo)
+
 	// Get Status of the Media Server
-	GetMediaServerStatus(msConfig Config_MediaServer) (string, logging.StandardError)
+	GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo)
 
 	// Get the library section info
-	FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, logging.StandardError)
+	FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServerLibrary) (bool, logging.LogErrorInfo)
 
 	// Get the library section options
-	FetchLibrarySectionOptions() ([]string, logging.StandardError)
+	FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo)
 
 	// Get the library section items
-	FetchLibrarySectionItems(section LibrarySection, sectionStartIndex string) ([]MediaItem, int, logging.StandardError)
+	FetchLibrarySectionItems(ctx context.Context, section LibrarySection, sectionStartIndex string) ([]MediaItem, int, logging.LogErrorInfo)
 
 	// Get an item's content by Rating Key/ID
-	FetchItemContent(ratingKey string, sectionTitle string) (MediaItem, logging.StandardError)
+	FetchItemContent(ctx context.Context, ratingKey string, sectionTitle string) (MediaItem, logging.LogErrorInfo)
 
 	// Get an image from the media server
-	FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.StandardError)
+	FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo)
 
 	// Use the set to update the item on the media server
-	DownloadAndUpdatePosters(mediaItem MediaItem, file PosterFile) logging.StandardError
+	DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo
 
 	// Use the TMDB ID, type, title and library section to search for the item on the media server
 	//SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError)
@@ -39,7 +39,7 @@ type Interface_MediaServer interface {
 type PlexServer struct{}
 type EmbyJellyServer struct{}
 
-func GetMediaServerInterface(msConfig Config_MediaServer) (Interface_MediaServer, logging.StandardError) {
+func NewMediaServerInterface(ctx context.Context, msConfig Config_MediaServer) (Interface_MediaServer, Config_MediaServer, logging.LogErrorInfo) {
 	if msConfig.Type == "" && msConfig.URL == "" && msConfig.Token == "" {
 		msConfig = Global_Config.MediaServer
 	}
@@ -50,93 +50,12 @@ func GetMediaServerInterface(msConfig Config_MediaServer) (Interface_MediaServer
 	case "Emby", "Jellyfin":
 		interfaceMS = &EmbyJellyServer{}
 	default:
-		Err := logging.NewStandardError()
-		Err.Message = "Unsupported Media Server Type"
-		Err.HelpText = "Ensure the Media Server Type is set to either 'Plex', 'Emby', or 'Jellyfin' in the configuration."
-		return nil, Err
+		_, logAction := logging.AddSubActionToContext(ctx, "Creating Media Server Interface", logging.LevelTrace)
+		logAction.SetError(fmt.Sprintf("Unsupported Media Server Type: '%s'", msConfig.Type),
+			"Ensure the Media Server Type is set to either 'Plex', 'Emby' or 'Jellyfin' in the config file",
+			nil)
+		return nil, msConfig, *logAction.Error
 	}
 
-	return interfaceMS, logging.StandardError{}
-}
-
-func MediaServer_Init(msConfig Config_MediaServer) logging.StandardError {
-	if msConfig.Type == "Plex" {
-		return CheckPlexConnection(msConfig)
-	}
-
-	logging.LOG.Debug(fmt.Sprintf("Initializing UserID for %s Media Server", msConfig.Type))
-
-	Err := logging.NewStandardError()
-
-	// Parse the base URL
-	baseURL, err := url.Parse(msConfig.URL)
-	if err != nil {
-		Err.Message = "Failed to parse base URL"
-		Err.HelpText = "Ensure the Media Server URL is correctly configured in the settings."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": baseURL.String(),
-		}
-		return Err
-	}
-	// Construct the full URL by appending the path
-	baseURL.Path = path.Join(baseURL.Path, "Users")
-	url := baseURL.String()
-
-	// Make a GET request to the Jellyfin/Emby server
-	response, body, Err := MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return Err
-	}
-	defer response.Body.Close()
-
-	var responseSection EmbyJellyUserIDResponse
-	err = json.Unmarshal(body, &responseSection)
-	if err != nil {
-		Err.Message = "Failed to parse Emby/Jellyfin user ID response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": baseURL.String(),
-		}
-		return Err
-	}
-
-	// Find the first Admin user ID
-	for _, user := range responseSection {
-		if user.Policy.IsAdministrator {
-			Global_Config.MediaServer.UserID = user.ID
-			maskedUserID := fmt.Sprintf("****%s", user.ID[len(user.ID)-7:])
-			logging.LOG.Debug(fmt.Sprintf("Found Admin user ID: %s", maskedUserID))
-			return logging.StandardError{}
-		}
-	}
-
-	// If no Admin user is found, return an error
-	Err.Message = "No Admin user found in Emby/Jellyfin user list"
-	Err.HelpText = "Ensure that there is at least one user with Admin privileges in the Emby/Jellyfin server."
-	Err.Details = map[string]any{
-		"request": baseURL.String(),
-	}
-	return Err
-
-}
-
-func CheckPlexConnection(msConfig Config_MediaServer) logging.StandardError {
-	if msConfig.Type != "Plex" {
-		return logging.StandardError{}
-	}
-
-	logging.LOG.Debug("Checking connection to Plex Media Server")
-
-	Err := logging.NewStandardError()
-
-	version, Err := Plex_GetMediaServerStatus(msConfig)
-	if Err.Message != "" {
-		return Err
-	}
-
-	logging.LOG.Info(fmt.Sprintf("Successfully connected to Plex Media Server (Version: %s)", version))
-
-	return logging.StandardError{}
+	return interfaceMS, msConfig, logging.LogErrorInfo{}
 }

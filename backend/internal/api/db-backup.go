@@ -2,15 +2,16 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"time"
 )
 
-func DB_MakeBackup(dbPath string, dbVersion int) logging.StandardError {
-	// Create a StandardError to return
-	Err := logging.NewStandardError()
+func DB_MakeBackup(ctx context.Context, dbPath string, dbVersion int) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating database backup", logging.LevelDebug)
+	defer logAction.Complete()
 
 	// Check if the database file exists
 	// If it doesn't exist, there's nothing to back up
@@ -19,15 +20,15 @@ func DB_MakeBackup(dbPath string, dbVersion int) logging.StandardError {
 	// and let the migration create the database fresh
 	_, err := os.Stat(dbPath)
 	if os.IsNotExist(err) {
-		return Err
+		return logging.LogErrorInfo{}
 	} else if err != nil {
-		Err.Message = "Failed to access database file for backup"
-		Err.HelpText = "Ensure the database file path is correct and accessible."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"path":  dbPath,
-		}
-		return Err
+		logAction.SetError("Failed to stat database file for backup",
+			"Ensure the database path is accessible.",
+			map[string]any{
+				"error": err.Error(),
+				"path":  dbPath,
+			})
+		return *logAction.Error
 	}
 
 	// Create a backup file path with version and timestamp
@@ -35,41 +36,45 @@ func DB_MakeBackup(dbPath string, dbVersion int) logging.StandardError {
 	backupPath := fmt.Sprintf("%s_backup_v%d_%s.db", dbPath[:len(dbPath)-3], dbVersion, timestamp)
 
 	// Copy the database file to the backup location
+	actionBackupFile := logAction.AddSubAction("Backing up database file", logging.LevelTrace)
 	sourceFile, err := os.Open(dbPath)
 	if err != nil {
-		Err.Message = "Failed to open database file for backup"
-		Err.HelpText = "Ensure the database file path is correct and accessible."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"path":  dbPath,
-		}
-		return Err
+		actionBackupFile.SetError("Failed to open source database file for backup",
+			"Ensure the database path is accessible.",
+			map[string]any{
+				"error": err.Error(),
+				"path":  dbPath,
+			})
+		return *actionBackupFile.Error
 	}
 	defer sourceFile.Close()
 
-	destFile, err := os.Create(backupPath)
+	// Create the backup file
+	backupFile, err := os.Create(backupPath)
 	if err != nil {
-		Err.Message = "Failed to create backup file"
-		Err.HelpText = "Ensure the backup file path is correct and writable."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"path":  backupPath,
-		}
-		return Err
+		actionBackupFile.SetError("Failed to create backup database file",
+			"Ensure the destination path is accessible and writable.",
+			map[string]any{
+				"error": err.Error(),
+				"path":  backupPath,
+			})
+		return *actionBackupFile.Error
 	}
-	defer destFile.Close()
+	defer backupFile.Close()
 
 	// Copy the contents from the source file to the destination file
-	_, err = io.Copy(destFile, sourceFile)
+	_, err = io.Copy(backupFile, sourceFile)
 	if err != nil {
-		Err.Message = "Failed to copy database file contents"
-		Err.HelpText = "Ensure the source and destination file paths are correct and accessible."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"path":  backupPath,
-		}
-		return Err
+		actionBackupFile.SetError("Failed to copy database file for backup",
+			"Ensure there is sufficient disk space and permissions.",
+			map[string]any{
+				"error":       err.Error(),
+				"source":      dbPath,
+				"destination": backupPath,
+			})
+		return *actionBackupFile.Error
 	}
-	logging.LOG.Info("Database backup created at: " + backupPath)
-	return Err
+	actionBackupFile.Complete()
+
+	return logging.LogErrorInfo{}
 }

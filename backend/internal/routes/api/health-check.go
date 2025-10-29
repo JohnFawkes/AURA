@@ -2,27 +2,13 @@ package routes_api
 
 import (
 	"aura/internal/api"
+	"aura/internal/logging"
 	"net/http"
-	"time"
 )
 
-// HealthCheck handles HTTP requests for checking the server's health status.
-//
-// Method: GET
-// Endpoints:
-//   - /
-//   - /api
-//   - /api/health
-//
-// It responds with a JSON object containing the server status, elapsed time, and a message.
-// This endpoint can be used for uptime monitoring and basic diagnostics.
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Get the start time
-	startTime := time.Now()
+	_, ld := logging.CreateLoggingContext(r.Context(), "Health Check")
 
-	api.Util_Response_SendJson(w, http.StatusOK, api.JSONResponse{
-		Status:  "success",
-		Elapsed: api.Util_ElapsedTime(startTime),
-		Data:    "Server is online",
-	})
+	ld.Status = logging.StatusSuccess
+	api.Util_Response_SendJSON(w, ld, "Server is online")
 }

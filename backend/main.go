@@ -4,6 +4,7 @@ import (
 	"aura/internal/api"
 	"aura/internal/logging"
 	"aura/internal/routes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,94 +31,103 @@ var cronInstance *cron.Cron
 
 func main() {
 
-	// // Print the banner with application details on startup
-	api.Util_Banner_Print(APP_VERSION, Author, License, APP_PORT)
+	// Print application details
+	PrintDetails()
 
-	// Set the umask if specified in environment
+	// Set umask if specified
 	SetUMask()
 
 	// Load the config
-	api.Config_LoadYamlConfig()
+	api.Config_LoadYamlConfig(context.Background())
+
+	// Print the config details (sanitized)
+	api.Global_Config.PrintDetails()
 
 	// If config loaded, validate it
 	if api.Global_Config_Loaded {
 		api.Global_Config.ValidateConfig()
 	}
 
-	// Set onboarding completion hook (called by /onboarding/apply success)
+	// Set the OnboardingComplete callback to swap routers
 	routes.OnboardingComplete = func() {
-		logging.LOG.Info("Onboarding Complete: Running Preflight")
-		preFlightAfterOnboardErr := finishPreflight()
-		if preFlightAfterOnboardErr.Message != "" {
-			logging.LOG.Error("Preflight failed after onboarding: " + preFlightAfterOnboardErr.Message)
+		valid := finishPreflight()
+		if !valid {
 			return
 		}
 		startRuntimeServices()
-		// Swap to full router (now config is valid)
+		// Swap to the main router
 		activeHandler.Store(routes.NewRouter())
-		logging.LOG.Info("Onboarding complete. Main routes active.")
+		logging.LOGGER.Info().Timestamp().Msg("Onboarding complete. Main routes active.")
 	}
 
 	// Build initial router (either onboarding-only or full)
 	initialRouter := routes.NewRouter()
 	activeHandler.Store(initialRouter)
 
-	// If already valid at startup, run preflight + runtime services
+	// If the config is already loaded and valid, finish preflight
 	if api.Global_Config_Loaded && api.Global_Config_Valid {
-		api.Global_Config.PrintDetails()
-		preFlightErr := finishPreflight()
-		if preFlightErr.Message != "" {
-			// Preflight failed: mark invalid and FALL BACK to onboarding routes
+		valid := finishPreflight()
+		if !valid {
+			// Preflight failed, force onboarding
 			api.Global_Config_Valid = false
-			logging.LOG.Error("Preflight failed on startup: " + preFlightErr.Message)
-			// Swap router so only onboarding endpoints are exposed
 			activeHandler.Store(routes.NewRouter())
 		} else {
 			startRuntimeServices()
-			// Ensure full router (in case initial was onboarding)
+			// Ensure the active handler is set to the main router
 			activeHandler.Store(routes.NewRouter())
 		}
 	}
 
-	// Start HTTP server using dispatch (so we can atomically swap routers)
-	logging.LOG.Info(fmt.Sprintf("Starting HTTP server on :%d", APP_PORT))
+	logging.LOGGER.Info().Timestamp().Int("port", APP_PORT).Bool("full_routes", api.Global_Config_Loaded && api.Global_Config_Valid).Msg("Starting HTTP Server")
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), http.HandlerFunc(dispatch)); err != nil {
-		logging.LOG.Error(fmt.Sprintf("Error starting server: %s", err.Error()))
+		logging.LOGGER.Fatal().Err(err).Msg("Failed to start server")
 	}
 }
 
-// dispatch forwards to the currently active router.
-func dispatch(w http.ResponseWriter, r *http.Request) {
-	h := activeHandler.Load().(http.Handler)
-	h.ServeHTTP(w, r)
+// Finish Preflight
+// Validate MediaServer Connection (Get User ID for Emby/Jellyfin)
+// Validate Mediux Token
+func finishPreflight() bool {
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Finish Preflight")
+	defer ld.Log()
+
+	action := ld.AddAction("Preflight Checks", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, action)
+	defer action.Complete()
+
+	// Validate Media Server Connection
+	_, logErr := api.CallInitializeMediaServerConnection(ctx, api.Global_Config.MediaServer)
+	if logErr.Message != "" {
+		api.Global_Config_MediaServerValid = false
+	}
+
+	// Validate Mediux Token
+	logErr = api.Mediux_ValidateToken(ctx, api.Global_Config.Mediux.Token)
+	if logErr.Message != "" {
+		api.Global_Config_MediuxValid = false
+	}
+
+	// Check if both Media Server and Mediux configs are valid
+	if !api.Global_Config_MediuxValid || !api.Global_Config_MediaServerValid {
+		return false
+	}
+
+	return true
 }
 
-// Called once config becomes valid (either at boot or after onboarding)
+// Start runtime services like:
+// - Preload Sections and Items
+// - Initialize Database
+// - Start Cron Jobs
+// - Send Startup Notification
 func startRuntimeServices() {
 
-	logging.LOG.Info("Fetching all items from the media server")
+	// Preload all sections and items
 	api.GetAllSectionsAndItems()
 
-	// Log the number of items in each section
-	sections := api.Global_Cache_LibraryStore.GetAllSectionsSortedByTitle()
-	for _, section := range sections {
-		sectionTitle := section.Title
-		logging.LOG.Info(fmt.Sprintf("Section '%s' contains %d items", fmt.Sprint(sectionTitle), len(section.MediaItems)))
-
-		// Find the number of items without a TMDB ID
-		countNoTMDB := 0
-		for _, item := range section.MediaItems {
-			if item.TMDB_ID == "" {
-				countNoTMDB++
-			}
-		}
-		if countNoTMDB > 0 {
-			logging.LOG.Warn(fmt.Sprintf("Section '%s' contains %d items without a TMDB ID", fmt.Sprint(sectionTitle), countNoTMDB))
-		}
-	}
-
+	// Initialize the database
 	if ok := api.DB_Init(); !ok {
-		logging.LOG.Error("Database initialization failed; application not fully started.")
+		logging.LOGGER.Error().Timestamp().Msg("Database initialization failed, terminating application.")
 		// Kill Application
 		os.Exit(1)
 	}
@@ -131,52 +141,54 @@ func startRuntimeServices() {
 			}
 		})
 		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to schedule AutoDownload cron: %v", err))
+			logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule AutoDownload cron job")
 		} else {
-			logging.LOG.Info(fmt.Sprintf("AutoDownload set for: %s", api.Global_Config.AutoDownload.Cron))
+			logging.LOGGER.Info().Timestamp().Msg(fmt.Sprintf("AutoDownload set for: %s", api.Global_Config.AutoDownload.Cron))
 			cronInstance.Start()
 		}
+	} else {
+		logging.LOGGER.Warn().Timestamp().Msg("AutoDownload is disabled")
 	}
 
 	// Send notification (only if not dev & notifications enabled)
 	if !strings.Contains(APP_VERSION, "dev") &&
 		api.Global_Config.Notifications.Enabled {
-		if Err := api.SendAppStartNotification(); Err.Message != "" {
-			logging.LOG.ErrorWithLog(Err)
-		}
+		api.SendAppStartNotification()
 	}
+
 }
 
-// Perform token/userID preflight
-func finishPreflight() logging.StandardError {
-	Err := logging.NewStandardError()
-
-	validateMediuxTokenErr := api.Mediux_ValidateToken(api.Global_Config.Mediux.Token)
-	if validateMediuxTokenErr.Message != "" {
-		api.Global_Config_MediuxValid = false
-		logging.LOG.ErrorWithLog(validateMediuxTokenErr)
-	}
-
-	initUserIDErr := api.MediaServer_Init(api.Global_Config.MediaServer)
-	if initUserIDErr.Message != "" {
-		api.Global_Config_MediaServerValid = false
-		logging.LOG.ErrorWithLog(initUserIDErr)
-	}
-
-	// If any errors in preflight, mark config as invalid
-	if !api.Global_Config_MediuxValid || !api.Global_Config_MediaServerValid {
-		logging.LOG.Warn("Configuration invalid after preflight checks")
-		Err.Message = validateMediuxTokenErr.Message + " " + initUserIDErr.Message
-	}
-
-	return Err
+func PrintDetails() {
+	// Print application details
+	logging.LOGGER.Info().
+		Timestamp().
+		Str("version", APP_VERSION).
+		Str("author", Author).
+		Str("license", License).
+		Int("port", APP_PORT).
+		Msg("Starting Aura")
 }
 
 func SetUMask() {
+	_, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Set UMASK")
+	logAction := ld.AddAction("Setting UMASK", logging.LevelInfo)
+	defer func() {
+		if logAction.Result != nil {
+			ld.Log()
+		}
+	}()
+	defer logAction.Complete()
+
 	if umaskStr := os.Getenv("UMASK"); umaskStr != "" {
 		if umask, err := strconv.ParseInt(umaskStr, 8, 0); err == nil {
 			syscall.Umask(int(umask))
-			logging.LOG.Info(fmt.Sprintf("Set umask to %03o", umask))
+			logAction.AppendResult("umask_set", umaskStr)
 		}
 	}
+}
+
+// dispatch forwards to the currently active router.
+func dispatch(w http.ResponseWriter, r *http.Request) {
+	h := activeHandler.Load().(http.Handler)
+	h.ServeHTTP(w, r)
 }

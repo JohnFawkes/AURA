@@ -2,35 +2,35 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-func DB_Migrate_0_to_1(dbPath string) logging.StandardError {
-	logging.LOG.Info("Migrating database from version 0 to version 1...")
-	Err := logging.NewStandardError()
+func DB_Migrate_0_to_1(ctx context.Context, dbPath string) logging.LogErrorInfo {
+	logging.LOGGER.Info().Timestamp().Int("From Version", 0).Int("To Version", 1).Msg("Starting database migration")
 
 	// Create a backup before migration
-	backupErr := DB_MakeBackup(dbPath, 0)
+	backupErr := DB_MakeBackup(ctx, dbPath, 0)
 	if backupErr.Message != "" {
 		return backupErr
 	}
 
 	// Rename SavedItems table to SavedItemsBackup
-	renameSavedItemsTableErr := DB_0_1_RenameSavedItemsTable()
+	renameSavedItemsTableErr := DB_0_1_RenameSavedItemsTable(ctx)
 	if renameSavedItemsTableErr.Message != "" {
 		return renameSavedItemsTableErr
 	}
 
 	// Create new tables: VERSION, MediaItems, PosterSets, SavedItems
-	createBaseTablesErr := DB_CreateBaseTables()
+	createBaseTablesErr := DB_CreateBaseTables(ctx)
 	if createBaseTablesErr.Message != "" {
 		return createBaseTablesErr
 	}
 
 	// Convert old SavedItems data to new format
-	convertOldSavedItemsErr := DB_0_1_ConvertOldSavedItems()
+	convertOldSavedItemsErr := DB_0_1_ConvertOldSavedItems(ctx)
 	if convertOldSavedItemsErr.Message != "" {
 		return convertOldSavedItemsErr
 	}
@@ -39,105 +39,49 @@ func DB_Migrate_0_to_1(dbPath string) logging.StandardError {
 	dropOldTableQuery := `DROP TABLE IF EXISTS SavedItemsBackup;`
 	_, err := db.Exec(dropOldTableQuery)
 	if err != nil {
-		Err.Message = "Failed to drop old SavedItemsBackup table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": dropOldTableQuery,
+		return logging.LogErrorInfo{
+			Message: "Failed to drop old SavedItemsBackup table after migration",
+			Detail: map[string]any{
+				"error": err.Error(),
+			},
 		}
-		return Err
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }
 
-func DB_CreateBaseTables() logging.StandardError {
-	// Create VERSION table
-	createVersionTableErr := DB_CreateVersionTable()
-	if createVersionTableErr.Message != "" {
-		return createVersionTableErr
-	}
-
-	// Create MediaItems table
-	createMediaItemsTableErr := DB_CreateMediaItemsTable()
-	if createMediaItemsTableErr.Message != "" {
-		return createMediaItemsTableErr
-	}
-
-	// Create PosterSets table
-	createPosterSetsTableErr := DB_CreatePosterSetsTable()
-	if createPosterSetsTableErr.Message != "" {
-		return createPosterSetsTableErr
-	}
-
-	// Create new SavedItems table
-	createSavedItemsTableErr := DB_CreateSavedItemsTable()
-	if createSavedItemsTableErr.Message != "" {
-		return createSavedItemsTableErr
-	}
-	return logging.NewStandardError()
-}
-
-func DB_CreateVersionTable() logging.StandardError {
-	logging.LOG.Info("Creating VERSION table...")
-	Err := logging.NewStandardError()
-
-	query := `
-	CREATE TABLE IF NOT EXISTS VERSION (
-		version INTEGER NOT NULL
-	);
-	`
-	_, err := db.Exec(query)
-	if err != nil {
-		Err.Message = "Failed to create VERSION table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": query,
-		}
-		return Err
-	}
-
-	return Err
-}
-
-func DB_0_1_RenameSavedItemsTable() logging.StandardError {
-	logging.LOG.Info("Migration (0-1): Renaming SavedItems table...")
-	Err := logging.NewStandardError()
+func DB_0_1_RenameSavedItemsTable(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Renaming SavedItems Table", logging.LevelDebug)
+	defer logAction.Complete()
 
 	query := `
 	ALTER TABLE SavedItems RENAME TO SavedItemsBackup;
 	`
 	_, err := db.Exec(query)
 	if err != nil {
-		Err.Message = "Failed to rename SavedItems table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
+		logAction.SetError("Failed to rename SavedItems table", "", map[string]any{
 			"error": err.Error(),
-			"query": query,
-		}
-		return Err
+		})
+		return *logAction.Error
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }
 
-func DB_0_1_ConvertOldSavedItems() logging.StandardError {
-	logging.LOG.Info("Migration (0-1): Converting old saved items into new format...")
-	Err := logging.NewStandardError()
+func DB_0_1_ConvertOldSavedItems(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Converting Old SavedItems Data", logging.LevelInfo)
+	defer logAction.Complete()
 
 	// Fetch all entries from the old SavedItemsBackup table
 	fetchAllQuery := `SELECT media_item_id, media_item, poster_set_id, poster_set, selected_types, auto_download, last_update FROM SavedItemsBackup;`
 	rows, err := db.Query(fetchAllQuery)
 	if err != nil {
-		Err.Message = "Failed to fetch data from old SavedItemsBackup table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
+		logAction.SetError("Failed to fetch data from SavedItemsBackup", "", map[string]any{
 			"error": err.Error(),
-			"query": fetchAllQuery,
-		}
-		return Err
+		})
+		return *logAction.Error
 	}
+	defer rows.Close()
 
 	// Read all rows into a slice
 	type OldSavedItem struct {
@@ -155,18 +99,15 @@ func DB_0_1_ConvertOldSavedItems() logging.StandardError {
 	results["SavedItemFails"] = 0
 	results["SavedItemSuccess"] = 0
 
-	WarnErr := logging.NewStandardError()
-
 	for rows.Next() {
 		var item OldSavedItem
 		err := rows.Scan(&item.MediaItemID, &item.MediaItemJSON, &item.PosterSetID, &item.PosterSetJSON, &item.SelectedTypes, &item.AutoDownload, &item.LastUpdate)
 		if err != nil {
-			WarnErr.Message = "Failed to scan row from old SavedItemsBackup table"
-			WarnErr.Details = map[string]any{
-				"error": err.Error(),
-			}
-			DB_Migration_CreateWarningFile(1, WarnErr)
 			results["SavedItemFails"]++
+			DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+				Message: "Failed to scan row from old SavedItemsBackup table",
+				Detail:  map[string]any{"error": err.Error()},
+			})
 			continue
 		}
 		items = append(items, item)
@@ -174,17 +115,20 @@ func DB_0_1_ConvertOldSavedItems() logging.StandardError {
 	rows.Close()
 
 	for _, item := range items {
-		logging.LOG.Debug(fmt.Sprintf("Migration (0-1): Processing SavedItem with MediaItemID: %s and PosterSetID: %s", item.MediaItemID, item.PosterSetID))
+		logging.LOGGER.Debug().Timestamp().Str("Media Item ID", item.MediaItemID).Str("Poster Set ID", item.PosterSetID).Msg("Migration (0-1): Processing Saved Item from DB")
+
 		// Get MediaItem struct from JSON
-		mediaItem, mediaItemErr := DB_0_1_MediaItemJSONToMediaItem(item.MediaItemJSON)
-		if mediaItemErr.Message != "" {
+		mediaItem, mediaItemPassed := DB_0_1_MediaItemJSONToMediaItem(item.MediaItemJSON)
+		if !mediaItemPassed {
+			logging.LOGGER.Warn().Timestamp().Str("Media Item ID", item.MediaItemID).Msg("Migration (0-1): Skipping Saved Item due to invalid MediaItem JSON")
 			results["SavedItemFails"]++
 			continue
 		}
 
 		// Get PosterSet struct from JSON
-		posterSet, posterSetErr := DB_0_1_PosterSetJSONToPosterSet(item.PosterSetJSON)
-		if posterSetErr.Message != "" {
+		posterSet, posterSetPassed := DB_0_1_PosterSetJSONToPosterSet(item.PosterSetJSON)
+		if !posterSetPassed {
+			logging.LOGGER.Warn().Timestamp().Str("Poster Set ID", item.PosterSetID).Msg("Migration (0-1): Skipping Saved Item due to invalid PosterSet JSON")
 			results["SavedItemFails"]++
 			continue
 		}
@@ -225,14 +169,15 @@ func DB_0_1_ConvertOldSavedItems() logging.StandardError {
 
 		// If we still don't have a valid type, skip this item
 		if mediaItem.Type != "movie" && mediaItem.Type != "show" {
-			WarnErr.Message = "MediaItem has invalid Type"
-			WarnErr.HelpText = fmt.Sprintf("Type must be 'movie' or 'show', got '%s'", mediaItem.Type)
-			WarnErr.Details = map[string]any{
-				"MediaItem": mediaItem,
-				"PosterSet": posterSet,
-			}
-			DB_Migration_CreateWarningFile(1, WarnErr)
 			results["SavedItemFails"]++
+			DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+				Message: "MediaItem type is invalid during migration",
+				Help:    fmt.Sprintf("Type must be 'movie' or 'show', got '%s'", mediaItem.Type),
+				Detail: map[string]any{
+					"MediaItem": mediaItem,
+					"PosterSet": posterSet,
+				},
+			})
 			continue
 		}
 
@@ -316,19 +261,21 @@ func DB_0_1_ConvertOldSavedItems() logging.StandardError {
 
 		// Check we have the minimum required information
 		if mediaItem.TMDB_ID == "" || mediaItem.LibraryTitle == "" || partialFound == 1 {
+			logging.LOGGER.Debug().Timestamp().Str("Media Item ID", item.MediaItemID).Str("TMDB ID", mediaItem.TMDB_ID).Msg("Migration (0-1): Trying to get missing Media Item info from cache")
 			// Try and get the media item from the cache
 			mediaItemFromCache, exist := Global_Cache_LibraryStore.GetMediaItemFromSectionByTitleAndYear(mediaItem.LibraryTitle, mediaItem.Title, mediaItem.Year)
 			if exist {
 				mediaItem = *mediaItemFromCache
 			} else {
-				WarnErr.Message = "MediaItem missing TMDB_ID or LibraryTitle"
-				WarnErr.HelpText = fmt.Sprintf("Title: '%s', TMDB_ID: '%s', LibraryTitle: '%s', Year: '%d'", mediaItem.Title, mediaItem.TMDB_ID, mediaItem.LibraryTitle, mediaItem.Year)
-				WarnErr.Details = map[string]any{
-					"MediaItem": mediaItem,
-					"PosterSet": posterSet,
-				}
-				DB_Migration_CreateWarningFile(1, WarnErr)
 				results["SavedItemFails"]++
+				DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+					Message: "Insufficient MediaItem data during migration and not found in cache",
+					Help:    fmt.Sprintf("Title: '%s', TMDB_ID: '%s', LibraryTitle: '%s', Year: '%d'", mediaItem.Title, mediaItem.TMDB_ID, mediaItem.LibraryTitle, mediaItem.Year),
+					Detail: map[string]any{
+						"MediaItem": mediaItem,
+						"PosterSet": posterSet,
+					},
+				})
 				continue
 			}
 		}
@@ -350,35 +297,41 @@ func DB_0_1_ConvertOldSavedItems() logging.StandardError {
 		}
 
 		// Insert all info into the new tables
-		insertErr := DB_InsertAllInfoIntoTables(dbItem)
+		insertErr := DB_InsertAllInfoIntoTables(ctx, dbItem)
 		if insertErr.Message != "" {
 			results["SavedItemFails"]++
-			logging.LOG.Error(fmt.Sprintf("Migration (0-1): Failed to insert SavedItem with MediaItemID: %s and PosterSetID: %s. Error: %s\n%s", item.MediaItemID, item.PosterSetID, insertErr.Message, insertErr.Details))
+			DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+				Message: "Failed to insert migrated SavedItem into new tables",
+				Detail:  insertErr.Detail,
+			})
 			continue
 		}
 
 		results["SavedItemSuccess"]++
-
 	}
 
-	logging.LOG.Info(fmt.Sprintf("Migration (0-1) Results: Success=%d, Fails=%d, Total=%d", results["SavedItemSuccess"], results["SavedItemFails"], results["SavedItemSuccess"]+results["SavedItemFails"]))
-
-	return Err
+	// Convert results to map[string]any for assignment
+	resultAny := make(map[string]any, len(results))
+	for k, v := range results {
+		resultAny[k] = v
+	}
+	logAction.Result = resultAny
+	return logging.LogErrorInfo{}
 }
 
-func DB_0_1_MediaItemJSONToMediaItem(mediaItemJSON string) (MediaItem, logging.StandardError) {
-	WarnErr := logging.NewStandardError()
+func DB_0_1_MediaItemJSONToMediaItem(mediaItemJSON string) (MediaItem, bool) {
 	// Unmarshal media item JSON
 	var mediaItem MediaItem
 	err := json.Unmarshal([]byte(mediaItemJSON), &mediaItem)
 	if err != nil {
-		WarnErr.Message = "Failed to unmarshal MediaItem JSON"
-		WarnErr.Details = map[string]any{
-			"error": err.Error(),
-			"json":  mediaItemJSON,
-		}
-		DB_Migration_CreateWarningFile(1, WarnErr)
-		return mediaItem, WarnErr
+		DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+			Message: "Failed to unmarshal MediaItem JSON during migration",
+			Detail: map[string]any{
+				"error": err.Error(),
+				"json":  mediaItemJSON,
+			},
+		})
+		return MediaItem{}, false
 	}
 
 	// Get the TMDB ID from the Guids
@@ -394,34 +347,32 @@ func DB_0_1_MediaItemJSONToMediaItem(mediaItemJSON string) (MediaItem, logging.S
 	if mediaItem.Type != "movie" && mediaItem.Type != "show" {
 		mediaItem.Type = ""
 	}
-
-	return mediaItem, WarnErr
+	return mediaItem, true
 }
 
-func DB_0_1_PosterSetJSONToPosterSet(posterSetJSON string) (PosterSet, logging.StandardError) {
-	WarnErr := logging.NewStandardError()
+func DB_0_1_PosterSetJSONToPosterSet(posterSetJSON string) (PosterSet, bool) {
 	// Unmarshal poster set JSON
 	var posterSet PosterSet
 	err := json.Unmarshal([]byte(posterSetJSON), &posterSet)
 	if err != nil {
-		WarnErr.Message = "Failed to unmarshal PosterSet JSON"
-		WarnErr.Details = map[string]any{
-			"error": err.Error(),
-			"json":  posterSetJSON,
-		}
-		DB_Migration_CreateWarningFile(1, WarnErr)
-		return posterSet, WarnErr
+		DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+			Message: "Failed to unmarshal PosterSet JSON during migration",
+			Detail: map[string]any{
+				"error": err.Error(),
+				"json":  posterSetJSON,
+			},
+		})
+		return posterSet, false
 	}
 
 	// Check PosterSet ID
 	if posterSet.ID == "" {
-		WarnErr.Message = "PosterSet missing ID"
-		WarnErr.Details = map[string]any{
-			"PosterSet": posterSet,
-		}
-		DB_Migration_CreateWarningFile(1, WarnErr)
-		return posterSet, WarnErr
+		DB_Migration_CreateWarningFile(1, logging.LogErrorInfo{
+			Message: "PosterSet ID is empty during migration",
+			Detail:  map[string]any{"posterSetJSON": posterSetJSON},
+		})
+		return posterSet, false
 	}
 
-	return posterSet, WarnErr
+	return posterSet, true
 }

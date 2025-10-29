@@ -2,7 +2,7 @@ package api
 
 import (
 	"aura/internal/logging"
-	"aura/internal/masking"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,14 +11,13 @@ import (
 	"strings"
 )
 
-func Notification_SendGotifyMessage(provider *Config_Notification_Gotify, message string, imageURL string, title string) logging.StandardError {
-	logging.LOG.Trace("Sending Gotify Notification")
-	Err := logging.NewStandardError()
+func Notification_SendGotifyMessage(ctx context.Context, provider *Config_Notification_Gotify, message string, imageURL string, title string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Gotify Notification", logging.LevelInfo)
+	defer logAction.Complete()
 
 	if provider.URL == "" || provider.Token == "" {
-		Err.Message = "Gotify provider is not properly configured"
-		logging.LOG.ErrorWithLog(Err)
-		return Err
+		logAction.SetError("Missing Gotify configuration", "Please configure the Gotify URL and Token", nil)
+		return *logAction.Error
 	}
 
 	baseEndpoint := strings.TrimRight(provider.URL, "/")
@@ -44,31 +43,22 @@ func Notification_SendGotifyMessage(provider *Config_Notification_Gotify, messag
 
 	resp, httpErr := http.PostForm(gotifyEndpoint, form)
 	if httpErr != nil {
-		Err.Message = "Failed to send Gotify notification: " + httpErr.Error()
-		Err.HelpText = "Ensure the Gotify URL and token are correct and the server is reachable."
-		Err.Details = map[string]any{
-			"gotifyURL":   provider.URL,
-			"gotifyToken": masking.Masking_Token(provider.Token),
-			"error":       httpErr.Error(),
-		}
-		logging.LOG.ErrorWithLog(Err)
-		return Err
+		logAction.SetError("Failed to send Gotify message", "An error occurred while sending the message to Gotify", map[string]any{
+			"error": httpErr.Error(),
+		})
+		return *logAction.Error
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		body, _ := io.ReadAll(resp.Body)
-		Err.Message = "Failed to send Gotify notification"
-		Err.HelpText = "Ensure the Gotify URL and token are correct and the server is reachable."
-		Err.Details = map[string]any{
-			"gotifyURL":    provider.URL,
-			"gotifyToken":  masking.Masking_Token(provider.Token),
-			"statusCode":   resp.StatusCode,
-			"responseBody": strings.TrimSpace(string(body)),
-		}
-		logging.LOG.ErrorWithLog(Err)
-		return Err
+		logAction.SetError("Failed to send Gotify message", "Received non-2xx response from Gotify", map[string]any{
+			"status_code": resp.StatusCode,
+			"response":    string(body),
+		})
+		return *logAction.Error
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
+
 }

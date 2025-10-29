@@ -2,12 +2,14 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 )
 
 func DB_GetAllItemsWithFilter(
+	ctx context.Context,
 	searchTMDBID string,
 	searchLibrary string,
 	searchYear int,
@@ -21,8 +23,10 @@ func DB_GetAllItemsWithFilter(
 	pageNumber int,
 	sortOption string,
 	sortOrder string,
-) ([]DBMediaItemWithPosterSets, int, []string, logging.StandardError) {
-	Err := logging.NewStandardError()
+) ([]DBMediaItemWithPosterSets, int, []string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Getting all DB items with filters", logging.LevelDebug)
+	defer logAction.Complete()
+
 	var returnResult []DBMediaItemWithPosterSets
 	var totalItems int
 	var uniqueUsers []string
@@ -38,18 +42,25 @@ func DB_GetAllItemsWithFilter(
 	if len(tmdbClauses) == 0 {
 		libraryClauses := buildWhereClause_SearchLibrary(searchLibrary, &queryArgs)
 		whereClauses = append(whereClauses, libraryClauses...)
+
 		yearClauses := buildWhereClause_SearchYear(searchYear, &queryArgs)
 		whereClauses = append(whereClauses, yearClauses...)
+
 		titleClauses := buildWhereClause_SearchTitle(searchTitle, &queryArgs)
 		whereClauses = append(whereClauses, titleClauses...)
+
 		librarySectionClauses := buildWhereClause_LibrarySections(librarySections, &queryArgs)
 		whereClauses = append(whereClauses, librarySectionClauses...)
+
 		typeClauses := buildWhereClause_FilteredTypes(filteredTypes, &queryArgs)
 		whereClauses = append(whereClauses, typeClauses...)
+
 		autoDownloadClauses := buildWhereClause_FilterAutoDownload(filterAutodownload)
 		whereClauses = append(whereClauses, autoDownloadClauses...)
+
 		multiSetClauses := buildWhereClause_MultiSetOnly(multisetOnly)
 		whereClauses = append(whereClauses, multiSetClauses...)
+
 		userClauses := buildWhereClause_FilteredUserNames(filteredUsernames, &queryArgs)
 		whereClauses = append(whereClauses, userClauses...)
 	}
@@ -61,7 +72,7 @@ func DB_GetAllItemsWithFilter(
 
 	// --- RUN: Unique Users Query ---
 	uniqueUsersQuery := buildUniqueUsersQuery()
-	uniqueUsers, Err = runUniqueUsersQuery(uniqueUsersQuery, queryArgs)
+	uniqueUsers, Err := runUniqueUsersQuery(uniqueUsersQuery, queryArgs)
 	if Err.Message != "" {
 		return returnResult, totalItems, uniqueUsers, Err
 	}
@@ -84,44 +95,39 @@ LIMIT ? OFFSET ?
 	pageKeysArgs := append([]any{}, queryArgs...)
 	pageKeysArgs = append(pageKeysArgs, itemsPerPage, (pageNumber-1)*itemsPerPage)
 
-	if itemsPerPage > 5 && itemsPerPage < 200 {
-		logging.LOG.Trace(fmt.Sprintf("Executing pageKeysQuery:%s\nwith args: %v", pageKeysQuery, pageKeysArgs))
-	}
-
+	pagesQueryAction := logAction.AddSubAction("Getting Paginated Item Keys From DB", logging.LevelDebug)
 	rows, err := db.Query(pageKeysQuery, pageKeysArgs...)
 	if err != nil {
-		Err.Message = "Failed to query page keys from database"
-		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": pageKeysQuery,
-			"args":  pageKeysArgs,
-		}
-		return returnResult, totalItems, uniqueUsers, Err
+		pagesQueryAction.SetError("Failed to query paginated item keys from database",
+			"Ensure the database is accessible and the query is correct.", map[string]any{
+				"error": err.Error(),
+				"query": pageKeysQuery,
+				"args":  pageKeysArgs,
+			})
+		return returnResult, totalItems, uniqueUsers, *pagesQueryAction.Error
 	}
 	defer rows.Close()
+	pagesQueryAction.Complete()
 
 	// Collect keys for this page
 	pageKeys := make([][2]string, 0, itemsPerPage)
 	for rows.Next() {
 		var tmdbID, libraryTitle string
 		if err := rows.Scan(&tmdbID, &libraryTitle); err != nil {
-			Err.Message = "Failed to scan page key row"
-			Err.HelpText = "Check error details for more information."
-			Err.Details = map[string]any{
+			pagesQueryAction.SetError("Failed to scan row for paginated item keys", "Ensure the database is accessible and the query is correct.", map[string]any{
 				"error": err.Error(),
 				"query": pageKeysQuery,
-			}
-			return nil, totalItems, uniqueUsers, Err
+				"args":  pageKeysArgs,
+			})
+			return nil, totalItems, uniqueUsers, *pagesQueryAction.Error
 		}
 		pageKeys = append(pageKeys, [2]string{tmdbID, libraryTitle})
 	}
 	if len(pageKeys) == 0 {
-		return []DBMediaItemWithPosterSets{}, 0, uniqueUsers, Err
+		return []DBMediaItemWithPosterSets{}, 0, uniqueUsers, logging.LogErrorInfo{}
 	}
 
 	// --- Second Query: Get all poster sets for those keys ---
-	// Build WHERE clause for keys
 	keyClauses := make([]string, 0, len(pageKeys))
 	keyArgs := []any{}
 	for _, key := range pageKeys {
@@ -142,29 +148,28 @@ JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND
 %s
 `, keysWhereSQL, orderByClause)
 
-	if itemsPerPage > 5 && itemsPerPage < 200 {
-		logging.LOG.Trace(fmt.Sprintf("Executing mainQuery:%s\nwith args: %v", mainQuery, keyArgs))
-	}
+	mainQueryAction := logAction.AddSubAction("Getting All Item Details From DB", logging.LevelDebug)
 	mainRows, err := db.Query(mainQuery, keyArgs...)
 	if err != nil {
-		Err.Message = "Failed to query items from database"
-		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": mainQuery,
-			"args":  keyArgs,
-		}
-		return returnResult, totalItems, uniqueUsers, Err
+		mainQueryAction.SetError("Failed to query item details from database",
+			"Ensure the database is accessible and the query is correct.", map[string]any{
+				"error": err.Error(),
+				"query": mainQuery,
+				"args":  keyArgs,
+			})
+		return returnResult, totalItems, uniqueUsers, *mainQueryAction.Error
 	}
 	defer mainRows.Close()
+	mainQueryAction.Complete()
 
 	// --- Group Rows by Media Item ---
-	returnResult, Err = DB_GroupRowsByMediaItem(mainRows, mainQuery)
+	returnResult, Err = DB_GroupRowsByMediaItem(ctx, mainRows, mainQuery)
 	if Err.Message != "" {
 		return returnResult, totalItems, uniqueUsers, Err
 	}
 
 	// --- Get total count of unique items ---
+	countQueryAction := logAction.AddSubAction("Getting Total Count of Unique Items From DB", logging.LevelDebug)
 	countQuery := fmt.Sprintf(`
 SELECT COUNT(DISTINCT s.TMDB_ID || '|' || s.LibraryTitle) as TotalItems
 FROM SavedItems s
@@ -174,16 +179,17 @@ JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND
 `, whereSQL)
 	countRows, err := db.Query(countQuery, queryArgs...)
 	if err != nil {
-		Err.Message = "Failed to query total count from database"
-		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": countQuery,
-			"args":  queryArgs,
-		}
-		return returnResult, totalItems, uniqueUsers, Err
+		countQueryAction.SetError("Failed to query total item count from database",
+			"Ensure the database is accessible and the query is correct.", map[string]any{
+				"error": err.Error(),
+				"query": countQuery,
+				"args":  queryArgs,
+			})
+		return returnResult, totalItems, uniqueUsers, *countQueryAction.Error
 	}
 	defer countRows.Close()
+	countQueryAction.Complete()
+
 	if countRows.Next() {
 		if err := countRows.Scan(&totalItems); err != nil {
 			totalItems = 0
@@ -358,21 +364,21 @@ ORDER BY UserName ASC
 	return uniqueUsersQuery
 }
 
-func runUniqueUsersQuery(uniqueUsersQuery string, queryArgs []any) ([]string, logging.StandardError) {
-	Err := logging.NewStandardError()
+func runUniqueUsersQuery(uniqueUsersQuery string, queryArgs []any) ([]string, logging.LogErrorInfo) {
 	var uniqueUsers []string
 	hasNoUser := false
 
 	rows, err := db.Query(uniqueUsersQuery, queryArgs...)
 	if err != nil {
-		Err.Message = "Failed to query unique users from database"
-		Err.HelpText = "Ensure the database connection is established and the query is correct."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"query": uniqueUsersQuery,
-			"args":  queryArgs,
+		return uniqueUsers, logging.LogErrorInfo{
+			Message: "Failed to query unique users from database",
+			Help:    "Ensure the database is accessible and the query is correct.",
+			Detail: map[string]any{
+				"error": err.Error(),
+				"query": uniqueUsersQuery,
+				"args":  queryArgs,
+			},
 		}
-		return uniqueUsers, Err
 	}
 	defer rows.Close()
 
@@ -389,11 +395,13 @@ func runUniqueUsersQuery(uniqueUsersQuery string, queryArgs []any) ([]string, lo
 	if hasNoUser {
 		uniqueUsers = append(uniqueUsers, "|||no-user|||")
 	}
-	return uniqueUsers, Err
+	return uniqueUsers, logging.LogErrorInfo{}
 }
 
-func DB_GroupRowsByMediaItem(rows *sql.Rows, query string) ([]DBMediaItemWithPosterSets, logging.StandardError) {
-	Err := logging.NewStandardError()
+func DB_GroupRowsByMediaItem(ctx context.Context, rows *sql.Rows, query string) ([]DBMediaItemWithPosterSets, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Grouping rows by media item", logging.LevelTrace)
+	defer logAction.Complete()
+
 	resultOrder := []string{}
 	resultMap := make(map[string]*DBMediaItemWithPosterSets)
 
@@ -426,20 +434,21 @@ func DB_GroupRowsByMediaItem(rows *sql.Rows, query string) ([]DBMediaItemWithPos
 			&autoDownload,
 			&lastDownloaded,
 		); err != nil {
-			Err.Message = "Failed to scan row from database"
-			Err.HelpText = "Check error details for more information."
-			Err.Details = map[string]any{
-				"error": err.Error(),
-				"query": query,
+			return nil, logging.LogErrorInfo{
+				Message: "Failed to scan row from database",
+				Help:    "Ensure the database is accessible and the query is correct.",
+				Detail: map[string]any{
+					"error": err.Error(),
+					"query": query,
+				},
 			}
-			return nil, Err
 		}
 
 		// Unmarshal media item if not already in map
 		mediaItemGroup, exists := resultMap[tmdbID+"|"+libraryTitle]
 		if !exists {
 			var mediaItem MediaItem
-			if Err = UnmarshalMediaItem(mediaItemJSON, &mediaItem); Err.Message != "" {
+			if Err := UnmarshalMediaItem(mediaItemJSON, &mediaItem); Err.Message != "" {
 				return nil, Err
 			}
 			resultOrder = append(resultOrder, tmdbID+"|"+libraryTitle)
@@ -455,7 +464,7 @@ func DB_GroupRowsByMediaItem(rows *sql.Rows, query string) ([]DBMediaItemWithPos
 
 		// Unmarshal poster set
 		var posterSet PosterSet
-		if Err = UnmarshalPosterSet(posterSetJSON, &posterSet); Err.Message != "" {
+		if Err := UnmarshalPosterSet(posterSetJSON, &posterSet); Err.Message != "" {
 			return nil, Err
 		}
 
@@ -479,32 +488,34 @@ func DB_GroupRowsByMediaItem(rows *sql.Rows, query string) ([]DBMediaItemWithPos
 	}
 
 	if rowCount == 0 {
-		return []DBMediaItemWithPosterSets{}, logging.StandardError{}
+		return []DBMediaItemWithPosterSets{}, logging.LogErrorInfo{}
 	} else {
-		logMsg := fmt.Sprintf("Grouped %d rows into %d unique media items", rowCount, len(resultOrder))
-		if rowCount != len(resultOrder) {
-			logMsg += fmt.Sprintf(" (%d multi-set items)", rowCount-len(resultOrder))
-		}
-		logging.LOG.Debug(logMsg)
+		logAction.AppendResult("rows_processed", rowCount)
+		logAction.AppendResult("unique_items", len(resultOrder))
+		logAction.AppendResult("multiset_items", len(resultOrder)-len(resultMap))
 	}
-
 	// Build result slice in order
 	result := make([]DBMediaItemWithPosterSets, 0, len(resultOrder))
 	for _, id := range resultOrder {
 		result = append(result, *resultMap[id])
 	}
 
-	return result, logging.StandardError{}
+	return result, logging.LogErrorInfo{}
 
 }
 
-func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.StandardError) {
+func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.LogErrorInfo) {
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "AutoDownload - Get All Items")
+	logAction := ld.AddAction("Fetching All Items from DB", logging.LevelDebug)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer ld.Log()
+
 	const itemsPerPage = 500 // Use a reasonable batch size
 	var allItems []DBMediaItemWithPosterSets
-	var Err logging.StandardError
 
 	// First, get the total number of items
 	_, totalItems, _, Err := DB_GetAllItemsWithFilter(
+		ctx,
 		"",               // searchTMDBID
 		"",               // searchLibrary
 		0,                // searchYear
@@ -527,6 +538,7 @@ func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.StandardError) {
 
 	for page := 1; page <= numPages; page++ {
 		items, _, _, pageErr := DB_GetAllItemsWithFilter(
+			ctx,
 			"",               // searchTMDBID
 			"",               // searchLibrary
 			0,                // searchYear
@@ -547,5 +559,5 @@ func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.StandardError) {
 		allItems = append(allItems, items...)
 	}
 
-	return allItems, logging.StandardError{}
+	return allItems, logging.LogErrorInfo{}
 }

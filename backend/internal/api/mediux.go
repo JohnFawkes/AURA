@@ -8,6 +8,7 @@ import (
 
 var MediuxThumbsTempImageFolder string
 var MediuxFullTempImageFolder string
+var MediuxBaseURL string = "https://images.mediux.io"
 
 func init() {
 	configPath := os.Getenv("CONFIG_PATH")

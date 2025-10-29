@@ -2,86 +2,70 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 )
 
-func (s *SonarrApp) GetAllTags(app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.StandardError) {
-	return SR_GetAllTags(app)
+func (s *SonarrApp) GetAllTags(ctx context.Context, app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.LogErrorInfo) {
+	return SR_GetAllTags(ctx, app)
 }
 
-func (r *RadarrApp) GetAllTags(app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.StandardError) {
-	return SR_GetAllTags(app)
+func (r *RadarrApp) GetAllTags(ctx context.Context, app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.LogErrorInfo) {
+	return SR_GetAllTags(ctx, app)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_CallGetAllTags(app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.StandardError) {
-	// Make sure all of the required information is set
-	Err := SR_MakeSureAllInfoIsSet(app)
+func SR_CallGetAllTags(ctx context.Context, app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.LogErrorInfo) {
+	srInterface, Err := NewSonarrRadarrInterface(ctx, app)
 	if Err.Message != "" {
 		return nil, Err
 	}
 
-	// Get the appropriate interface
-	interfaceSR, Err := SR_GetSonarrRadarrInterface(app)
-	if Err.Message != "" {
-		return nil, Err
-	}
-
-	return interfaceSR.GetAllTags(app)
+	return srInterface.GetAllTags(ctx, app)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_GetAllTags(app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.StandardError) {
-	Err := logging.NewStandardError()
-	var tags []SonarrRadarrTag
+func SR_GetAllTags(ctx context.Context, app Config_SonarrRadarrApp) ([]SonarrRadarrTag, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching all tags from %s (%s)", app.Type, app.Library), logging.LevelInfo)
+	defer logAction.Complete()
 
-	logging.LOG.Trace(fmt.Sprintf("Getting all tags from %s (%s)", app.Type, app.Library))
+	var allTags []SonarrRadarrTag
 
-	u, _ := url.Parse(app.URL)
+	u, err := url.Parse(app.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return nil, *logAction.Error
+	}
 	u.Path = path.Join(u.Path, "api/v3", "tag")
-	url := u.String()
+	URL := u.String()
 
 	apiHeader := map[string]string{
 		"X-Api-Key": app.APIKey,
 	}
 
-	response, body, Err := MakeHTTPRequest(url, "GET", apiHeader, 60, nil, app.Type)
+	// Make the API Request
+	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodGet, apiHeader, 60, nil, app.Type)
 	if Err.Message != "" {
 		return nil, Err
 	}
-	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
-		Err.Message = fmt.Sprintf("Failed to get tags from %s (%s) instance", app.Type, app.Library)
-		Err.HelpText = fmt.Sprintf("Ensure the %s instance is running and accessible at the configured URL with the correct API Key.", app.Type)
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-			"request":    url,
-			"response":   string(body),
-		}
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Non-200 response from Sonarr/Radarr API", fmt.Sprintf("Status Code: %d, Response: %s", httpResp.StatusCode, string(respBody)), nil)
+		return nil, *logAction.Error
+	}
+
+	// Decode the response
+	Err = DecodeJSONBody(ctx, respBody, &allTags, "Sonarr/Radarr Tags Decoding")
+	if Err.Message != "" {
 		return nil, Err
 	}
 
-	// Parse the response body
-	var parsedBody []SonarrRadarrTag
-	if err := json.Unmarshal(body, &parsedBody); err != nil {
-		Err.Message = fmt.Sprintf("Failed to parse tags from %s (%s) response", app.Type, app.Library)
-		Err.HelpText = "Ensure the Sonarr/Radarr instance is running the correct version and is accessible."
-		Err.Details = map[string]any{
-			"error":    err.Error(),
-			"response": string(body),
-		}
-		return nil, Err
-	}
-
-	tags = parsedBody
-
-	return tags, Err
+	return allTags, logging.LogErrorInfo{}
 }

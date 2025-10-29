@@ -2,113 +2,111 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 )
 
-func (p *PlexServer) FetchLibrarySectionOptions() ([]string, logging.StandardError) {
-	// Fetch the library section from Plex
-	return Plex_FetchLibrarySectionOptions()
+func (p *PlexServer) FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo) {
+	return Plex_FetchLibrarySectionOptions(ctx, msConfig)
 }
 
-func (e *EmbyJellyServer) FetchLibrarySectionOptions() ([]string, logging.StandardError) {
-	// Fetch the library section from Emby/Jellyfin
-	MediaServer_Init(Global_Config.MediaServer)
-	return EJ_FetchLibrarySectionOptions()
+func (e *EmbyJellyServer) FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo) {
+	return EJ_FetchLibrarySectionOptions(ctx, msConfig)
 }
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-func CallFetchLibrarySectionOptions() ([]string, logging.StandardError) {
-	mediaServer, Err := GetMediaServerInterface(Config_MediaServer{})
+func CallFetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo) {
+	mediaServer, msConfig, Err := NewMediaServerInterface(ctx, msConfig)
 	if Err.Message != "" {
 		return nil, Err
 	}
 
-	return mediaServer.FetchLibrarySectionOptions()
+	return mediaServer.FetchLibrarySectionOptions(ctx, msConfig)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func Plex_FetchLibrarySectionOptions() ([]string, logging.StandardError) {
-	Err := logging.NewStandardError()
+func Plex_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Library Section Options from Plex", logging.LevelDebug)
+	defer logAction.Complete()
 
-	// Construct the URL for the Plex server API request
-	url, Err := MakeMediaServerAPIURL("library/sections/all", Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return nil, Err
+	// Construct the URL
+	u, err := url.Parse(msConfig.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return nil, *logAction.Error
 	}
+	u.Path = path.Join(u.Path, "library", "sections", "all")
+	URL := u.String()
+
 	// Make a GET request to the Plex server
-	resp, body, Err := MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		logging.LOG.Error(Err.Message)
-		return nil, Err
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return nil, logErr
 	}
-	defer resp.Body.Close()
+	defer httpResp.Body.Close()
 
 	// Parse the response body into a PlexLibrarySectionsWrapper struct
 	var plexResponse PlexLibrarySectionsWrapper
-	err := json.Unmarshal(body, &plexResponse)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": url.String(),
-		}
-		return nil, Err
+	logErr = DecodeJSONBody(ctx, respBody, &plexResponse, "PlexLibrarySectionsWrapper")
+	if logErr.Message != "" {
+		return nil, logErr
 	}
 
-	var options []string
+	var sectionOptions []string
 	for _, section := range plexResponse.MediaContainer.Directory {
-		options = append(options, section.Title)
-
+		sectionOptions = append(sectionOptions, section.Title)
 	}
 
-	return options, logging.StandardError{}
+	return sectionOptions, logging.LogErrorInfo{}
 }
 
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-func EJ_FetchLibrarySectionOptions() ([]string, logging.StandardError) {
+func EJ_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaServer) ([]string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Library Section Options from %s", msConfig.Type), logging.LevelDebug)
+	defer logAction.Complete()
 
-	url, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items", Global_Config.MediaServer.UserID), Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return nil, Err
-	}
-
-	// Make a GET request to the Emby server
-	response, body, Err := MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		logging.LOG.Error(Err.Message)
-		return nil, Err
-	}
-	defer response.Body.Close()
-
-	Err = logging.NewStandardError()
-
-	var responseSection EmbyJellyLibrarySectionsResponse
-	err := json.Unmarshal(body, &responseSection)
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(msConfig.URL)
 	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return nil, Err
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return nil, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "Users", msConfig.UserID, "Items")
+	URL := u.String()
+
+	// Add header parameters for the request
+	headers := map[string]string{"X-Emby-Token": msConfig.Token}
+
+	// Make a GET request to the Emby/Jellyfin server
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	if logErr.Message != "" {
+		return nil, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into an EmbyJellyLibrarySectionsResponse struct
+	var ejResponse EmbyJellyLibrarySectionsResponse
+	logErr = DecodeJSONBody(ctx, respBody, &ejResponse, "EmbyJellyLibrarySectionsResponse")
+	if logErr.Message != "" {
+		return nil, logErr
 	}
 
-	var options []string
-	for _, item := range responseSection.Items {
+	var sectionOptions []string
+	for _, item := range ejResponse.Items {
 		if item.CollectionType != "tvshows" && item.CollectionType != "movies" {
 			continue
 		}
-		options = append(options, item.Name)
+		sectionOptions = append(sectionOptions, item.Name)
 	}
 
-	return options, logging.StandardError{}
+	return sectionOptions, logging.LogErrorInfo{}
 }

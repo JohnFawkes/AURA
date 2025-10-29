@@ -2,62 +2,31 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
-	"fmt"
-	"net/http"
-
-	"github.com/go-resty/resty/v2"
+	"context"
 )
 
-func Mediux_FetchUserFollowingAndHiding() (UserFollowHide, logging.StandardError) {
+func Mediux_FetchUserFollowingAndHiding(ctx context.Context) (UserFollowHide, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetch User Following And Hiding", logging.LevelInfo)
+	defer logAction.Complete()
+
 	requestBody := Mediux_GenerateUserFollowingAndHidingBody()
-	Err := logging.NewStandardError()
 
-	// Create a new Resty client
-	client := resty.New()
-
-	// Send the GraphQL request to the Mediux API as a POST request
-	response, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Authorization", fmt.Sprintf("Bearer %s", Global_Config.Mediux.Token)).
-		SetBody(requestBody).
-		Post("https://images.mediux.io/graphql")
-	if err != nil {
-		Err.Message = "Failed to send request to Mediux API"
-		Err.HelpText = "Check if the Mediux API is reachable and the token is valid."
-		Err.Details = map[string]any{
-			"error":        err.Error(),
-			"responseBody": string(response.Body()),
-			"statusCode":   response.StatusCode(),
-		}
-		return UserFollowHide{}, Err
-	}
-	// Check if the response status code is not 200 OK
-	if response.StatusCode() != http.StatusOK {
-		Err.Message = "Unexpected response from Mediux API"
-		Err.HelpText = "Check if the Mediux API endpoint is correct and the token is valid."
-		Err.Details = map[string]any{
-			"statusCode":   response.StatusCode(),
-			"responseBody": string(response.Body()),
-		}
+	// Send the GraphQL request
+	resp, Err := Mediux_SendGraphQLRequest(ctx, requestBody)
+	if Err.Message != "" {
 		return UserFollowHide{}, Err
 	}
 
+	// Parse the response body into the appropriate struct based on itemType
 	var responseBody MediuxUserFollowHideResponse
-	err = json.Unmarshal(response.Body(), &responseBody)
-	if err != nil {
-		Err.Message = "Failed to unmarshal response from Mediux API"
-		Err.HelpText = "Ensure the response format matches the expected structure."
-		Err.Details = map[string]any{
-			"error":        err.Error(),
-			"responseBody": string(response.Body()),
-		}
+	Err = DecodeJSONBody(ctx, resp.Body(), &responseBody, "MediuxUserFollowHideResponse")
+	if Err.Message != "" {
 		return UserFollowHide{}, Err
 	}
 
 	data := responseBody.Data
 	if data.Follows == nil && data.Hides == nil {
-		return UserFollowHide{}, logging.StandardError{}
+		return UserFollowHide{}, logging.LogErrorInfo{}
 	}
 
 	// Create a new UserFollowHide object to store the response data
@@ -84,5 +53,5 @@ func Mediux_FetchUserFollowingAndHiding() (UserFollowHide, logging.StandardError
 		}
 	}
 
-	return userFollowHide, logging.StandardError{}
+	return userFollowHide, logging.LogErrorInfo{}
 }

@@ -2,86 +2,83 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
+	"net/http"
 	"net/url"
+	"path"
 )
 
-func (s *SonarrApp) TestConnection(app Config_SonarrRadarrApp) (bool, logging.StandardError) {
-	return SR_TestConnection(app)
+func (s *SonarrApp) TestConnection(ctx context.Context, app Config_SonarrRadarrApp) (bool, logging.LogErrorInfo) {
+	return SR_TestConnection(ctx, app)
 }
 
-func (r *RadarrApp) TestConnection(app Config_SonarrRadarrApp) (bool, logging.StandardError) {
-	return SR_TestConnection(app)
+func (r *RadarrApp) TestConnection(ctx context.Context, app Config_SonarrRadarrApp) (bool, logging.LogErrorInfo) {
+	return SR_TestConnection(ctx, app)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_CallTestConnection(app Config_SonarrRadarrApp) (bool, logging.StandardError) {
-	// Make sure all of the required information is set
-	Err := SR_MakeSureAllInfoIsSet(app)
+func SR_CallTestConnection(ctx context.Context, app Config_SonarrRadarrApp) (bool, logging.LogErrorInfo) {
+	srInterface, Err := NewSonarrRadarrInterface(ctx, app)
 	if Err.Message != "" {
 		return false, Err
 	}
 
-	// Get the appropriate interface
-	interfaceSR, Err := SR_GetSonarrRadarrInterface(app)
-	if Err.Message != "" {
-		return false, Err
-	}
-
-	return interfaceSR.TestConnection(app)
+	return srInterface.TestConnection(ctx, app)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_TestConnection(app Config_SonarrRadarrApp) (bool, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Checking %s (%s) connection", app.Type, app.Library))
+func SR_TestConnection(ctx context.Context, app Config_SonarrRadarrApp) (bool, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Testing %s (%s) Connection", app.Type, app.Library), logging.LevelTrace)
+	defer logAction.Complete()
 
-	u, _ := url.Parse(app.URL)
-	u.Path = "/api/v3/system/status"
-	urlStr := u.String()
+	// Make the URL
+	u, err := url.Parse(app.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{
+			"error": err.Error(),
+			"url":   app.URL,
+		})
+		return false, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "api/v3", "system/status")
+	URL := u.String()
 
+	// Set headers
 	apiHeader := map[string]string{
 		"X-Api-Key": app.APIKey,
 	}
 
-	response, body, Err := MakeHTTPRequest(urlStr, "GET", apiHeader, 60, nil, app.Type)
+	// Make the request
+	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodGet, apiHeader, 60, nil, app.Type)
 	if Err.Message != "" {
-		logging.LOG.Error(fmt.Sprintf("%v", Err))
-		return false, Err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		Err.Message = fmt.Sprintf("Failed to connect to %s (%s) instance", app.Type, app.Library)
-		Err.HelpText = fmt.Sprintf("Ensure the %s instance is running and accessible at the configured URL with the correct API Key.", app.Type)
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-			"request":    urlStr,
-			"response":   string(body),
-		}
 		return false, Err
 	}
 
+	// Check for valid status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Received non-200 status code", "Check the URL and API key are correct", map[string]any{"status_code": httpResp.StatusCode})
+		return false, *logAction.Error
+	}
+
+	// Decode the response
 	type ConnectionInfo struct {
 		Version string `json:"version"`
 	}
-
 	var connInfo ConnectionInfo
-	err := json.Unmarshal(body, &connInfo)
-	if err != nil {
-		Err.Message = fmt.Sprintf("Failed to parse %s (%s) response", app.Type, app.Library)
-		Err.HelpText = fmt.Sprintf("Ensure the %s (%s) instance is returning a valid JSON response.", app.Type, app.Library)
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": urlStr,
-		}
-		return false, Err
+	Err = DecodeJSONBody(ctx, respBody, &connInfo, "ConnectionInfo")
+	if Err.Message != "" {
+		logAction.SetError("Failed to decode response body", Err.Message, nil)
+		return false, *logAction.Error
 	}
-	logging.LOG.Info(fmt.Sprintf("%s (%s) Version: %s", app.Type, app.Library, connInfo.Version))
 
-	return true, logging.StandardError{}
+	logAction.Result = map[string]any{
+		"version": connInfo.Version,
+	}
+
+	return true, logging.LogErrorInfo{}
 }

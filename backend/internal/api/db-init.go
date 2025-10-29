@@ -2,6 +2,7 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -15,7 +16,12 @@ var db *sql.DB
 var LATEST_DB_VERSION = 1
 
 func DB_Init() bool {
-	logging.LOG.Debug("Initializing database...")
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Database - Initialization")
+	defer ld.Log()
+	logAction := ld.AddAction("Initializing Database", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer logAction.Complete()
+
 	var err error
 
 	// Use an environment variable to determine the config path
@@ -32,28 +38,30 @@ func DB_Init() bool {
 	_, statErr := os.Stat(dbPath)
 	dbNew := os.IsNotExist(statErr)
 
+	openAction := logAction.AddSubAction("Opening Database", logging.LevelDebug)
 	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to open database: %v", err))
+		openAction.SetError("Failed to open database", "", map[string]any{
+			"dbPath": dbPath,
+			"error":  err.Error(),
+		})
 		return false
 	}
+	openAction.Complete()
 
 	// If the DB file did not exist, we consider it a new database
 	if dbNew {
-		logging.LOG.Info("Database file not found; creating new database...")
+		logging.LOGGER.Info().Timestamp().Msg("Database file not found, creating new database")
 		// Create new tables: VERSION, MediaItems, PosterSets, SavedItems
-		createBaseTablesErr := DB_CreateBaseTables()
+		createBaseTablesErr := DB_CreateBaseTables(ctx)
 		if createBaseTablesErr.Message != "" {
-			logging.LOG.ErrorWithLog(createBaseTablesErr)
 			return false
 		}
 		// Set version to latest
-		err = DB_UpdateVersionTable(db, LATEST_DB_VERSION)
-		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to set database version: %v", err))
+		updateVersionTableErr := DB_UpdateVersionTable(ctx, db, LATEST_DB_VERSION)
+		if updateVersionTableErr.Message != "" {
 			return false
 		}
-		logging.LOG.Info(fmt.Sprintf("New database initialized with version %d.", LATEST_DB_VERSION))
 		return true
 	}
 
@@ -62,28 +70,24 @@ func DB_Init() bool {
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='VERSION';").Scan(&tableName)
 	if err == sql.ErrNoRows {
 		// If the VERSION table does not exist, run migration from 0 to 1
-		Err := DB_Migrate_0_to_1(dbPath)
+		Err := DB_Migrate_0_to_1(ctx, dbPath)
 		if Err.Message != "" {
-			logging.LOG.ErrorWithLog(Err)
-			DB_UpdateVersionTable(db, 0)
 			return false
 		}
-		err = DB_UpdateVersionTable(db, 1)
-		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to update database version: %v", err))
+		Err = DB_UpdateVersionTable(ctx, db, 1)
+		if Err.Message != "" {
 			return false
 		}
-		logging.LOG.Info(fmt.Sprintf("Database migration to version %d completed successfully.", 1))
 	} else if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to check for VERSION table: %v", err))
+		logging.LOGGER.Error().Err(err).Msg("Failed to check for VERSION table")
 		return false
 	} else {
 		// If the VERSION table exists, check the version and run necessary migrations
 		var version int
 		err = db.QueryRow("SELECT version FROM VERSION;").Scan(&version)
 		if err != nil {
-			logging.LOG.Error(fmt.Sprintf("Failed to get database version: %v", err))
-			DB_UpdateVersionTable(db, 0)
+			logging.LOGGER.Error().Err(err).Msg("Failed to get database version")
+			DB_UpdateVersionTable(ctx, db, 0)
 			return false
 		}
 
@@ -91,35 +95,79 @@ func DB_Init() bool {
 		for v := version; v < LATEST_DB_VERSION; v++ {
 			switch v {
 			case 0:
-				Err := DB_Migrate_0_to_1(dbPath)
+				Err := DB_Migrate_0_to_1(ctx, dbPath)
 				if Err.Message != "" {
-					logging.LOG.ErrorWithLog(Err)
-					DB_UpdateVersionTable(db, v)
+					DB_UpdateVersionTable(ctx, db, v)
 					return false
 				}
 
 			default:
-				logging.LOG.Error(fmt.Sprintf("No migration path for database version %d", v))
+				logging.LOGGER.Error().Msg(fmt.Sprintf("No migration path for database version %d", v))
 				return false
 			}
 
-			err = DB_UpdateVersionTable(db, v+1)
-			if err != nil {
-				logging.LOG.Error(fmt.Sprintf("Failed to update database version: %v", err))
+			Err := DB_UpdateVersionTable(ctx, db, v+1)
+			if Err.Message != "" {
 				return false
 			}
-			logging.LOG.Info(fmt.Sprintf("Database migration to version %d completed successfully.", v+1))
 
 		}
 	}
 
-	logging.LOG.Info("Successfully initialized the database at: " + dbPath)
 	return true
 }
 
-func DB_CreateMediaItemsTable() logging.StandardError {
-	logging.LOG.Info("Creating MediaItems table...")
-	Err := logging.NewStandardError()
+func DB_CreateBaseTables(ctx context.Context) logging.LogErrorInfo {
+	// Create VERSION table
+	createVersionTableErr := DB_CreateVersionTable(ctx)
+	if createVersionTableErr.Message != "" {
+		return createVersionTableErr
+	}
+
+	// Create MediaItems table
+	createMediaItemsTableErr := DB_CreateMediaItemsTable(ctx)
+	if createMediaItemsTableErr.Message != "" {
+		return createMediaItemsTableErr
+	}
+
+	// Create PosterSets table
+	createPosterSetsTableErr := DB_CreatePosterSetsTable(ctx)
+	if createPosterSetsTableErr.Message != "" {
+		return createPosterSetsTableErr
+	}
+
+	// Create new SavedItems table
+	createNewSavedItemsTableErr := DB_CreateSavedItemsTable(ctx)
+	if createNewSavedItemsTableErr.Message != "" {
+		return createNewSavedItemsTableErr
+	}
+	return logging.LogErrorInfo{}
+}
+
+func DB_CreateVersionTable(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating VERSION Table", logging.LevelDebug)
+	defer logAction.Complete()
+
+	query := `
+	CREATE TABLE IF NOT EXISTS VERSION (
+		version INTEGER NOT NULL
+	);
+	`
+	_, err := db.Exec(query)
+	if err != nil {
+		logAction.SetError("Failed to create VERSION table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return logging.LogErrorInfo{}
+}
+
+func DB_CreateMediaItemsTable(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating MediaItems Table", logging.LevelDebug)
+	defer logAction.Complete()
 
 	query := `
 	CREATE TABLE IF NOT EXISTS MediaItems (
@@ -143,21 +191,19 @@ func DB_CreateMediaItemsTable() logging.StandardError {
 );`
 	_, err := db.Exec(query)
 	if err != nil {
-		Err.Message = "Failed to create MediaItems table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
+		logAction.SetError("Failed to create MediaItems table", err.Error(), map[string]any{
 			"error": err.Error(),
 			"query": query,
-		}
-		return Err
+		})
+		return *logAction.Error
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }
 
-func DB_CreatePosterSetsTable() logging.StandardError {
-	logging.LOG.Info("Creating PosterSets table...")
-	Err := logging.NewStandardError()
+func DB_CreatePosterSetsTable(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating PosterSets Table", logging.LevelDebug)
+	defer logAction.Complete()
 
 	query := `
 	CREATE TABLE IF NOT EXISTS PosterSets (
@@ -174,21 +220,19 @@ func DB_CreatePosterSetsTable() logging.StandardError {
 	);`
 	_, err := db.Exec(query)
 	if err != nil {
-		Err.Message = "Failed to create PosterSets table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
+		logAction.SetError("Failed to create PosterSets table", err.Error(), map[string]any{
 			"error": err.Error(),
 			"query": query,
-		}
-		return Err
+		})
+		return *logAction.Error
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }
 
-func DB_CreateSavedItemsTable() logging.StandardError {
-	logging.LOG.Info("Creating SavedItems table...")
-	Err := logging.NewStandardError()
+func DB_CreateSavedItemsTable(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating SavedItems Table", logging.LevelDebug)
+	defer logAction.Complete()
 
 	query := `
 	CREATE TABLE IF NOT EXISTS SavedItems (
@@ -202,14 +246,12 @@ func DB_CreateSavedItemsTable() logging.StandardError {
 `
 	_, err := db.Exec(query)
 	if err != nil {
-		Err.Message = "Failed to create new SavedItems table"
-		Err.HelpText = "Database migration failed"
-		Err.Details = map[string]any{
+		logAction.SetError("Failed to create SavedItems table", err.Error(), map[string]any{
 			"error": err.Error(),
 			"query": query,
-		}
-		return Err
+		})
+		return *logAction.Error
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }

@@ -2,124 +2,130 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"path"
 )
 
-func (p *PlexServer) GetMediaServerStatus(msConfig Config_MediaServer) (string, logging.StandardError) {
-	// Get the status of the Plex server
-	version, Err := Plex_GetMediaServerStatus(msConfig)
-	if Err.Message != "" {
-		return "", Err
-	}
-	return version, logging.StandardError{}
+func (p *PlexServer) GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo) {
+	return Plex_GetMediaServerStatus(ctx, msConfig)
 }
 
-func (e *EmbyJellyServer) GetMediaServerStatus(msConfig Config_MediaServer) (string, logging.StandardError) {
-	//Get the status of the Emby/Jellyfin server
-	version, Err := EJ_GetMediaServerStatus(msConfig)
-	if Err.Message != "" {
-		return "", Err
-	}
-	return version, logging.StandardError{}
+func (e *EmbyJellyServer) GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo) {
+	return EmbyJelly_GetMediaServerStatus(ctx, msConfig)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func Plex_GetMediaServerStatus(msConfig Config_MediaServer) (string, logging.StandardError) {
-	logging.LOG.Trace("Checking Plex server status")
-	Err := logging.NewStandardError()
-
-	baseURL, Err := MakeMediaServerAPIURL("/", msConfig.URL)
-	if Err.Message != "" {
-		return "", Err
+func CallGetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo) {
+	mediaServer, _, err := NewMediaServerInterface(ctx, msConfig)
+	if err.Message != "" || mediaServer == nil {
+		return "", err
 	}
+	return mediaServer.GetMediaServerStatus(ctx, msConfig)
+}
 
-	httpResponse, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "Plex")
-	if Err.Message != "" {
-		return "", Err
-	}
-	defer httpResponse.Body.Close()
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 
-	// Check to see if the Status is OK
-	if httpResponse.StatusCode != 200 {
-		Err.Message = "Failed to connect to Plex server"
-		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL with the correct token."
-		Err.Details = map[string]any{
-			"statusCode": httpResponse.StatusCode,
-			"request":    baseURL.String(),
-		}
-		return "", Err
-	}
+func Plex_GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Checking Plex Connection", logging.LevelDebug)
+	defer logAction.Complete()
 
-	var plexResponse PlexConnectionInfoWrapper
-	err := json.Unmarshal(body, &plexResponse)
+	// Construct the URL for the Plex server API request
+	u, err := url.Parse(msConfig.URL)
 	if err != nil {
-		Err.Message = "Failed to parse Plex server response"
-		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": baseURL.String(),
-		}
-		return "", Err
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return "", *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "/")
+	URL := u.String()
+
+	// Make the HTTP request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return "", logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != 200 {
+		logAction.SetError("Plex server returned non-200 status", fmt.Sprintf("Status Code: %d", httpResp.StatusCode), nil)
+		return "", *logAction.Error
+	}
+
+	// Decode the response body
+	var plexResponse PlexConnectionInfoWrapper
+	logErr = DecodeJSONBody(ctx, respBody, &plexResponse, "PlexConnectionInfoWrapper")
+	if logErr.Message != "" {
+		return "", logErr
 	}
 
 	// Get the server version
 	serverVersion := plexResponse.MediaContainer.Version
+
 	if serverVersion == "" {
-		Err.Message = "Failed to retrieve Plex server version"
-		Err.HelpText = "Ensure the Plex server is running and accessible at the configured URL."
-		Err.Details = map[string]any{
-			"request": baseURL.String(),
-		}
-		return "", Err
+		logAction.SetError("Failed to retrieve Plex server version",
+			"Ensure that the Plex server is running and accessible",
+			map[string]any{
+				"URL": URL,
+			})
+		return "", *logAction.Error
 	}
 
-	return serverVersion, logging.StandardError{}
+	logAction.AppendResult("server_version", serverVersion)
+
+	return serverVersion, logging.LogErrorInfo{}
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func EJ_GetMediaServerStatus(msConfig Config_MediaServer) (string, logging.StandardError) {
-	logging.LOG.Trace("Checking Emby/Jellyfin server status")
-	Err := logging.NewStandardError()
+func EmbyJelly_GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer) (string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Checking %s Connection", msConfig.Type), logging.LevelDebug)
+	defer logAction.Complete()
 
-	baseURL, Err := MakeMediaServerAPIURL("/System/Info", msConfig.URL)
-	if Err.Message != "" {
-		return "", Err
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(msConfig.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return "", *logAction.Error
 	}
+	u.Path = path.Join(u.Path, "/System/Info")
+	URL := u.String()
 
-	response, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return "", Err
+	// Make headers for authentication
+	headers := make(map[string]string)
+	headers["X-Emby-Token"] = msConfig.Token
+
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	if logErr.Message != "" {
+		return "", logErr
 	}
-	defer response.Body.Close()
+	defer httpResp.Body.Close()
 
+	// Decode the response body
 	var statusResponse struct {
 		Version string `json:"Version"`
 	}
-
-	err := json.Unmarshal(body, &statusResponse)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response from media server"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return "", Err
+	logErr = DecodeJSONBody(ctx, respBody, &statusResponse, "EmbyJellyfinStatusResponse")
+	if logErr.Message != "" {
+		return "", logErr
 	}
 
-	status := statusResponse.Version
-
-	if status == "" {
-		Err.Message = "Received empty status from media server"
-		Err.HelpText = "Ensure the media server is running and accessible."
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-		}
-		return "", Err
+	if statusResponse.Version == "" {
+		logAction.SetError("Failed to retrieve Emby/Jellyfin server version",
+			"Ensure that the Emby/Jellyfin server is running and accessible",
+			map[string]any{
+				"URL": URL,
+			})
+		return "", *logAction.Error
 	}
 
-	return status, logging.StandardError{}
+	logAction.AppendResult("server_version", statusResponse.Version)
+
+	return statusResponse.Version, logging.LogErrorInfo{}
 }

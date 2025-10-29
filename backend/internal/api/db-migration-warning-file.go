@@ -7,7 +7,7 @@ import (
 	"path"
 )
 
-func DB_Migration_CreateWarningFile(version int, warning logging.StandardError) {
+func DB_Migration_CreateWarningFile(version int, warning logging.LogErrorInfo) {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "/config"
@@ -17,17 +17,16 @@ func DB_Migration_CreateWarningFile(version int, warning logging.StandardError) 
 	// Create the file if it doesn't exist, else append to it
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to create/open migration warning file: %v", err))
+		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to create or open migration warning file")
 		return
 	}
 	defer file.Close()
 
 	// Write the warning details to the file
-	content := fmt.Sprintf("Message: %s\nItem: %s\nDetails: %v\n", warning.Message, warning.HelpText, warning.Details)
-	logging.LOG.Warn(fmt.Sprintf("Migration Warning (v%d): %s - Details: %v", version, warning.Message, warning.Details))
+	content := fmt.Sprintf("Message: %s\nItem: %s\nDetails: %v\n", warning.Message, warning.Help, warning.Detail)
+	logging.LOGGER.Warn().Timestamp().Int("version", version).Str("filePath", filePath).Interface("content", content).Msg("Database migration warning created")
 
 	if _, err := file.WriteString(content + "\n"); err != nil {
-		logging.LOG.Error(fmt.Sprintf("Failed to write to migration warning file: %v", err))
-		return
+		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to write to migration warning file")
 	}
 }

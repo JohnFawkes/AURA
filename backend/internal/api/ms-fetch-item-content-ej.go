@@ -2,106 +2,107 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
+	"net/http"
 	"net/url"
+	"path"
 )
 
-func EJ_FetchItemContent(ratingKey string, sectionTitle string) (MediaItem, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching item content for rating key: %s", ratingKey))
-	Err := logging.NewStandardError()
+func EJ_FetchItemContent(ctx context.Context, ratingKey string, sectionTitle string) (MediaItem, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetch Item Content from %s for ID '%s'", Global_Config.MediaServer.Type, ratingKey), logging.LevelDebug)
+	defer logAction.Complete()
 
-	baseURL, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", Global_Config.MediaServer.UserID, ratingKey),
-		Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return MediaItem{}, Err
-	}
+	var itemInfo MediaItem
 
-	// Add query parameters
-	params := url.Values{}
-	params.Add("fields", "ShareLevel")
-	params.Add("ExcludeFields", "VideoChapters,VideoMediaSources,MediaStreams")
-	params.Add("Fields", "DateLastContentAdded,PremiereDate,DateCreated,ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
-	baseURL.RawQuery = params.Encode()
-
-	// Make a GET request to the Emby/Jellyfin server
-	response, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return MediaItem{}, Err
-	}
-	defer response.Body.Close()
-
-	var resp EmbyJellyItemContentResponse
-	err := json.Unmarshal(body, &resp)
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
 	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return MediaItem{}, Err
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return itemInfo, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "Users", Global_Config.MediaServer.UserID, "Items", ratingKey)
+	query := u.Query()
+	query.Set("fields", "ShareLevel")
+	query.Set("ExcludeFields", "VideoChapters,VideoMediaSources,MediaStreams")
+	query.Set("Fields", "DateLastContentAdded,PremiereDate,DateCreated,ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+
+	// Make the API request to Emby/Jellyfin
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	if logErr.Message != "" {
+		return itemInfo, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into an EmbyJellyItemContentResponse struct
+	var ejResponse EmbyJellyItemContentResponse
+	logErr = DecodeJSONBody(ctx, respBody, &ejResponse, "EmbyJellyItemContentResponse")
+	if logErr.Message != "" {
+		return itemInfo, logErr
 	}
 
 	// If item doesn't have a TMDB ID, skip it
-	if resp.ProviderIds.Tmdb == "" {
-		Err.Message = "Item does not have a valid TMDB ID"
-		Err.HelpText = "Only items with a valid TMDB ID can be processed."
-		Err.Details = map[string]any{
-			"ratingKey":   ratingKey,
-			"title":       resp.Name,
-			"providerIDs": resp.ProviderIds,
-		}
-		return MediaItem{}, Err
+	if ejResponse.ProviderIds.Tmdb == "" {
+		logAction.SetError("Item does not have a TMDB ID",
+			"Only items with a TMDB ID are supported for fetching item content.",
+			map[string]any{
+				"ID":           ratingKey,
+				"SectionTitle": sectionTitle,
+				"Title":        ejResponse.Name,
+				"ProviderIDs":  ejResponse.ProviderIds,
+			})
+		return itemInfo, *logAction.Error
 	}
 
-	var itemInfo MediaItem
-	itemInfo.RatingKey = resp.ID
-	itemInfo.Type = resp.Type
-	itemInfo.Title = resp.Name
-	itemInfo.Year = resp.ProductionYear
+	itemInfo.RatingKey = ejResponse.ID
+	itemInfo.Type = ejResponse.Type
+	itemInfo.Title = ejResponse.Name
+	itemInfo.Year = ejResponse.ProductionYear
 	itemInfo.LibraryTitle = sectionTitle
-	itemInfo.Thumb = resp.ImageTags.Thumb
-	itemInfo.ContentRating = resp.OfficialRating
-	itemInfo.UpdatedAt = resp.DateCreated.UnixMilli()
-	itemInfo.ReleasedAt = resp.PremiereDate.UnixMilli()
-	itemInfo.Summary = resp.Overview
-	if resp.ProviderIds.Imdb != "" {
-		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "imdb", ID: resp.ProviderIds.Imdb})
+	itemInfo.Thumb = ejResponse.ImageTags.Thumb
+	itemInfo.ContentRating = ejResponse.OfficialRating
+	itemInfo.UpdatedAt = ejResponse.DateCreated.UnixMilli()
+	itemInfo.ReleasedAt = ejResponse.PremiereDate.UnixMilli()
+	itemInfo.Summary = ejResponse.Overview
+	if ejResponse.ProviderIds.Imdb != "" {
+		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "imdb", ID: ejResponse.ProviderIds.Imdb})
 	}
-	if resp.ProviderIds.Tmdb != "" {
-		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "tmdb", ID: resp.ProviderIds.Tmdb})
-		itemInfo.TMDB_ID = resp.ProviderIds.Tmdb
+	if ejResponse.ProviderIds.Tmdb != "" {
+		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "tmdb", ID: ejResponse.ProviderIds.Tmdb})
+		itemInfo.TMDB_ID = ejResponse.ProviderIds.Tmdb
 	}
-	if resp.ProviderIds.Tvdb != "" {
-		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "tvdb", ID: resp.ProviderIds.Tvdb})
+	if ejResponse.ProviderIds.Tvdb != "" {
+		itemInfo.Guids = append(itemInfo.Guids, Guid{Provider: "tvdb", ID: ejResponse.ProviderIds.Tvdb})
 	}
 	itemInfo.Guids = append(itemInfo.Guids, Guid{
 		Provider: "community",
-		Rating:   fmt.Sprintf("%.1f", float64(resp.CommunityRating)),
+		Rating:   fmt.Sprintf("%.1f", float64(ejResponse.CommunityRating)),
 	})
 	itemInfo.Guids = append(itemInfo.Guids, Guid{
 		Provider: "critic",
-		Rating:   fmt.Sprintf("%.1f", float64(resp.CriticRating)/10.0),
+		Rating:   fmt.Sprintf("%.1f", float64(ejResponse.CriticRating)/10.0),
 	})
 
-	if resp.Type == "Movie" {
+	if ejResponse.Type == "Movie" {
 		itemInfo.Type = "movie"
 		itemInfo.Movie = &MediaItemMovie{
 			File: MediaItemFile{
-				Path:     resp.Path,
-				Size:     resp.Size,
-				Duration: resp.RunTimeTicks / 10000,
+				Path:     ejResponse.Path,
+				Size:     ejResponse.Size,
+				Duration: ejResponse.RunTimeTicks / 10000,
 			},
 		}
 	}
-	if resp.Type == "Series" {
+	if ejResponse.Type == "Series" {
 		itemInfo.Type = "show"
-		itemInfo, Err = fetchSeasonsForShow(&itemInfo)
+		itemInfo, Err := fetchSeasonsForShow(ctx, &itemInfo)
 		if Err.Message != "" {
 			return itemInfo, Err
 		}
-		itemInfo.Series.Location = resp.Path
-		itemInfo.Series.SeasonCount = resp.ChildCount
+		itemInfo.Series.Location = ejResponse.Path
+		itemInfo.Series.SeasonCount = ejResponse.ChildCount
 		itemInfo.Series.EpisodeCount = 0
 		for _, season := range itemInfo.Series.Seasons {
 			itemInfo.Series.EpisodeCount += len(season.Episodes)
@@ -109,7 +110,7 @@ func EJ_FetchItemContent(ratingKey string, sectionTitle string) (MediaItem, logg
 
 	}
 
-	existsInDB, posterSets, _ := DB_CheckIfMediaItemExists(itemInfo.TMDB_ID, itemInfo.LibraryTitle)
+	existsInDB, posterSets, _ := DB_CheckIfMediaItemExists(ctx, itemInfo.TMDB_ID, itemInfo.LibraryTitle)
 	if existsInDB {
 		itemInfo.ExistInDatabase = true
 		itemInfo.DBSavedSets = posterSets
@@ -120,41 +121,37 @@ func EJ_FetchItemContent(ratingKey string, sectionTitle string) (MediaItem, logg
 	// Update item in cache
 	Global_Cache_LibraryStore.UpdateMediaItem(itemInfo.LibraryTitle, &itemInfo)
 
-	return itemInfo, logging.StandardError{}
-
+	return itemInfo, logging.LogErrorInfo{}
 }
 
-func fetchSeasonsForShow(itemInfo *MediaItem) (MediaItem, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching seasons for show: %s", itemInfo.Title))
-	Err := logging.NewStandardError()
+func fetchSeasonsForShow(ctx context.Context, itemInfo *MediaItem) (MediaItem, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Seasons for Show '%s' from %s", itemInfo.Title, Global_Config.MediaServer.Type), logging.LevelDebug)
+	defer logAction.Complete()
 
-	baseURL, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Seasons", itemInfo.RatingKey),
-		Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return *itemInfo, Err
-	}
-
-	// Add query parameters
-	params := url.Values{}
-	params.Add("Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,Overview")
-	baseURL.RawQuery = params.Encode()
-
-	// Make a GET request to the Emby/Jellyfin server
-	response, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return *itemInfo, Err
-	}
-	defer response.Body.Close()
-
-	var resp EmbyJellyItemContentChildResponse
-	err := json.Unmarshal(body, &resp)
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
 	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return *itemInfo, Err
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return *itemInfo, *logAction.Error
+	}
+	u.Path = path.Join("Shows", itemInfo.RatingKey, "Seasons")
+	query := u.Query()
+	query.Set("Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,Overview")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+
+	// Make the API request to Emby/Jellyfin
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	if logErr.Message != "" {
+		return *itemInfo, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into an EmbyJellyItemContentChildResponse struct
+	var resp EmbyJellyItemContentChildResponse
+	logErr = DecodeJSONBody(ctx, respBody, &resp, "EmbyJellyItemContentChildResponse")
+	if logErr.Message != "" {
+		return *itemInfo, logErr
 	}
 
 	var seasons []MediaItemSeason
@@ -165,7 +162,7 @@ func fetchSeasonsForShow(itemInfo *MediaItem) (MediaItem, logging.StandardError)
 			Title:        season.Name,
 			Episodes:     []MediaItemEpisode{},
 		}
-		season, Err = fetchEpisodesForSeason(itemInfo.RatingKey, season)
+		season, Err := fetchEpisodesForSeason(ctx, itemInfo.RatingKey, season)
 		if Err.Message != "" {
 			return *itemInfo, Err
 		}
@@ -174,41 +171,37 @@ func fetchSeasonsForShow(itemInfo *MediaItem) (MediaItem, logging.StandardError)
 
 	itemInfo.Series = &MediaItemSeries{Seasons: seasons}
 
-	return *itemInfo, logging.StandardError{}
+	return *itemInfo, logging.LogErrorInfo{}
 }
 
-func fetchEpisodesForSeason(showRatingKey string, season MediaItemSeason) (MediaItemSeason, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching episodes for season: %s", season.Title))
-	Err := logging.NewStandardError()
+func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season MediaItemSeason) (MediaItemSeason, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Episodes for Season %d of Show ID '%s' from %s", season.SeasonNumber, showRatingKey, Global_Config.MediaServer.Type), logging.LevelDebug)
+	defer logAction.Complete()
 
-	baseURL, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Shows/%s/Episodes", showRatingKey),
-		Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return season, Err
-	}
-
-	// Add query parameters
-	params := url.Values{}
-	params.Add("SeasonId", season.RatingKey)
-	params.Add("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks")
-	baseURL.RawQuery = params.Encode()
-
-	// Make a GET request to the Emby/Jellyfin server
-	response, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return season, Err
-	}
-	defer response.Body.Close()
-
-	var resp EmbyJellyItemContentChildResponse
-	err := json.Unmarshal(body, &resp)
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
 	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return season, Err
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return season, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "Shows", showRatingKey, "Episodes")
+	query := u.Query()
+	query.Set("SeasonId", season.RatingKey)
+	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+	// Make the API request to Emby/Jellyfin
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	if logErr.Message != "" {
+		return season, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into an EmbyJellyItemContentChildResponse struct
+	var resp EmbyJellyItemContentChildResponse
+	logErr = DecodeJSONBody(ctx, respBody, &resp, "EmbyJellyItemContentChildResponse")
+	if logErr.Message != "" {
+		return season, logErr
 	}
 
 	for _, episode := range resp.Items {
@@ -230,40 +223,5 @@ func fetchEpisodesForSeason(showRatingKey string, season MediaItemSeason) (Media
 		season.Episodes = append(season.Episodes, episode)
 	}
 
-	return season, logging.StandardError{}
-}
-
-func fetchEpisodeInfo(episode *MediaItemEpisode) (MediaItemEpisode, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching episode info for episode: %s", episode.Title))
-	Err := logging.NewStandardError()
-
-	baseURL, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items/%s", Global_Config.MediaServer.UserID, episode.RatingKey),
-		Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return *episode, Err
-	}
-
-	// Make a GET request to the Emby/Jellyfin server
-	response, body, Err := MakeHTTPRequest(baseURL.String(), "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return *episode, Err
-	}
-	defer response.Body.Close()
-
-	var resp EmbyJellyItemContentResponse
-	err := json.Unmarshal(body, &resp)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return *episode, Err
-	}
-
-	episode.File.Path = resp.Path
-	episode.File.Size = resp.Size
-	episode.File.Duration = resp.RunTimeTicks / 10000
-
-	return *episode, logging.StandardError{}
+	return season, logging.LogErrorInfo{}
 }

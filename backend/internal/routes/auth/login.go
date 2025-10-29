@@ -3,8 +3,6 @@ package routes_auth
 import (
 	"aura/internal/api"
 	"aura/internal/logging"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -29,45 +27,35 @@ type loginRequest struct {
 //
 // If authentication fails, it responds with a 401 Unauthorized error.
 func Login(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
-	Err := logging.NewStandardError()
+	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
+	logAction := ld.AddAction("User Login", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
 
 	if !api.Global_Config.Auth.Enabled {
-		Err.Message = "Authentication disabled"
-		Err.HelpText = "Enable Auth in the server config."
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
+		api.Util_Response_SendJSON(w, ld, "Authentication is disabled")
 		return
 	}
 
 	if GetTokenAuth() == nil {
-		Err.Message = "Auth not initialized"
-		Err.HelpText = "SetTokenAuth was not called at startup."
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
+		logAction.SetError("Auth not initialized", "The authentication system is not set up", nil)
+		api.Util_Response_SendJSON(w, ld, "Authentication system not initialized")
 		return
 	}
 
-	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Err.Message = "Failed to decode request body"
-		Err.HelpText = "Ensure the body is valid JSON: {\"password\":\"...\"}"
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
+	var loginReq loginRequest
+	Err := api.DecodeRequestBodyJSON(ctx, r.Body, &loginReq, "loginRequest")
+	if Err.Message != "" {
+		api.Util_Response_SendJSON(w, ld, nil)
 		return
 	}
 
 	// Compare password
-	ok, err := argon2id.ComparePasswordAndHash(req.Password, api.Global_Config.Auth.Password)
-	if err != nil {
-		Err.Message = "Password verification error"
-		Err.HelpText = "Stored hash may be invalid. Restart application and try again."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
-		return
-	}
-	if !ok {
-		Err.Message = "Invalid credentials"
-		Err.HelpText = "Password incorrect."
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
+	ok, err := argon2id.ComparePasswordAndHash(loginReq.Password, api.Global_Config.Auth.Password)
+	if err != nil || !ok {
+		logAction.SetError("Invalid credentials", "The provided password is incorrect", map[string]any{
+			"error": err,
+		})
+		api.Util_Response_SendJSON(w, ld, "Invalid password")
 		return
 	}
 
@@ -81,16 +69,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Use jwtauth to create token (consistent with verifier)
 	_, signedToken, err := GetTokenAuth().Encode(claims)
 	if err != nil {
-		Err.Message = "Failed to generate token"
-		Err.HelpText = "Check JWT secret configuration."
-		Err.Details = fmt.Sprintf("Error: %s", err.Error())
-		api.Util_Response_SendJsonError(w, api.Util_ElapsedTime(startTime), Err)
+		logAction.SetError("Failed to generate token", "An error occurred while generating the JWT token", map[string]any{
+			"error": err,
+		})
+		api.Util_Response_SendJSON(w, ld, "Failed to generate token")
 		return
 	}
-
-	api.Util_Response_SendJson(w, http.StatusOK, api.JSONResponse{
-		Status:  "success",
-		Elapsed: api.Util_ElapsedTime(startTime),
-		Data:    map[string]any{"token": signedToken},
-	})
+	logAction.AppendResult("token_generated", true)
+	api.Util_Response_SendJSON(w, ld, map[string]any{"token": signedToken})
 }

@@ -2,130 +2,161 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
+	"strconv"
 	"strings"
 	"time"
 )
 
-func Plex_RefreshItem(ratingKey string) logging.StandardError {
-	logging.LOG.Trace(fmt.Sprintf("Refreshing Plex item with rating key: %s", ratingKey))
+// Plex_RefreshItem sends a request to the Plex server to refresh the specified item.
+func Plex_RefreshItem(ctx context.Context, itemRatingKey string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Refreshing Item with Rating Key '%s' on Plex", itemRatingKey), logging.LevelDebug)
+	defer logAction.Complete()
 
-	url := fmt.Sprintf("%s/library/metadata/%s/refresh", Global_Config.MediaServer.URL, ratingKey)
-	response, _, Err := MakeHTTPRequest(url, "PUT", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return Err
+	// Construct the URL for the Plex server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return *logAction.Error
 	}
-	defer response.Body.Close()
+	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, "refresh")
+	URL := u.String()
 
-	if response.StatusCode != http.StatusOK {
-		Err.Message = fmt.Sprintf("Failed to refresh Plex item, received status code: %d", response.StatusCode)
-		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		return Err
+	// Make the API request to Plex
+	httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK && httpResp.StatusCode != http.StatusAccepted {
+		logAction.SetError("Failed to refresh item on Plex",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{
+				"URL":        URL,
+				"StatusCode": httpResp.StatusCode,
+			})
+		return *logAction.Error
 	}
 
-	return logging.StandardError{}
+	return logging.LogErrorInfo{}
 }
 
 // Plex_GetPoster attempts to retrieve the poster for a Plex item by ratingKey.
 // It tries up to 3 times, refreshing the Plex item between attempts if needed.
 // Returns the poster's ratingKey (URL or path) if found, or a StandardError if not.
-func Plex_GetPoster(ratingKey string) (string, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Getting posters for rating key: %s", ratingKey))
-	posterURL := fmt.Sprintf("%s/library/metadata/%s/posters", Global_Config.MediaServer.URL, ratingKey)
-	logging.LOG.Trace(fmt.Sprintf("Poster URL: %s", posterURL))
-	Err := logging.NewStandardError()
+func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string) (string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting Poster for Item with Rating Key '%s' from Plex", itemRatingKey), logging.LevelDebug)
+	defer logAction.Complete()
 
-	var response *http.Response
-	var body []byte
+	if posterType == "backdrop" {
+		posterType = "arts"
+	} else {
+		posterType = "posters"
+	}
+
+	// Make the URL
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse Plex base URL", err.Error(), nil)
+		return "", *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, posterType)
+	URL := u.String()
 
 	// Retry logic for the entire process (up to 3 attempts)
 	for attempt := 1; attempt <= 3; attempt++ {
-		logging.LOG.Trace(fmt.Sprintf("Attempt %d to get posters for rating key: %s", attempt, ratingKey))
-
-		// Make the HTTP request to Plex
-		response, body, Err = MakeHTTPRequest(posterURL, "GET", nil, 60, nil, "MediaServer")
-		if Err.Message != "" {
-			logging.LOG.Trace(fmt.Sprintf("Attempt %d failed: %v", attempt, Err.Message))
+		attemptAction := logAction.AddSubAction(fmt.Sprintf("Attempt %d to fetch poster", attempt), logging.LevelDebug)
+		// Make the API request to Plex
+		response, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+		if logErr.Message != "" {
+			attemptAction.SetError("Failed to make HTTP request to Plex", logErr.Message, nil)
 		} else {
 			defer response.Body.Close()
 
 			// Check if the response status code is OK
 			if response.StatusCode == http.StatusOK {
+
 				// Parse the response body into a PlexGetAllImagesWrapper struct
 				var plexPosters PlexGetAllImagesWrapper
-				err := json.Unmarshal(body, &plexPosters)
-				if err != nil {
-					// JSON parsing failed
-					logging.LOG.Trace(fmt.Sprintf("Failed to parse JSON response: %v", err))
-					Err.Message = "Failed to parse JSON response"
-					Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-					Err.Details = fmt.Sprintf("Error parsing JSON response for rating key: %s - %s", ratingKey, err.Error())
-					// No need to continue processing; break to retry or return error
+				logErr = DecodeJSONBody(ctx, body, &plexPosters, "PlexGetAllImagesWrapper")
+				if logErr.Message != "" {
+					attemptAction.SetError("Failed to decode Plex response", logErr.Message, nil)
 				} else {
 					// Successfully parsed JSON; check for posters
 					if len(plexPosters.MediaContainer.Metadata) > 0 {
 						// Look for the first poster with a provider of "local"
 						for _, poster := range plexPosters.MediaContainer.Metadata {
 							if poster.Provider == "local" && poster.RatingKey != "" {
-								logging.LOG.Trace(fmt.Sprintf("Poster RatingKey: %s", poster.RatingKey))
-								return poster.RatingKey, logging.StandardError{}
+								return poster.RatingKey, logging.LogErrorInfo{}
 							}
 						}
-						// No local posters found, but posters exist
-						Err.Message = "No local posters found for the item"
-						Err.HelpText = "Ensure the item has local posters available."
-						Err.Details = fmt.Sprintf("No local posters found for rating key: %s", ratingKey)
+						// No local poster found, but posters exist
+						attemptAction.AppendWarning("attempt_outcome", "no local posters found")
+						attemptAction.AppendWarning("available_posters", len(plexPosters.MediaContainer.Metadata))
 					} else {
 						// No posters found at all
-						Err.Message = "No posters found for the item"
-						Err.HelpText = "Ensure the item has posters available."
-						Err.Details = fmt.Sprintf("No posters found for rating key: %s", ratingKey)
+						attemptAction.SetError("No posters found", "Plex did not return any posters for this item.", nil)
 					}
 				}
 			} else {
-				// Non-OK status code from Plex
-				Err.Message = fmt.Sprintf("Received status code '%d' from Plex server", response.StatusCode)
-				Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-				Err.Details = fmt.Sprintf("Received status code '%d' for rating key: %s", response.StatusCode, ratingKey)
+				// Non-OK status code
+				attemptAction.SetError("Failed to fetch posters from Plex",
+					fmt.Sprintf("Plex server returned status code %d", response.StatusCode),
+					map[string]any{
+						"URL":        URL,
+						"StatusCode": response.StatusCode,
+					})
 			}
 		}
 
-		// If not the last attempt, refresh the Plex item and retry
+		// If we reach here, the attempt failed; refresh the item before retrying
 		if attempt < 3 {
 			numberOfSeconds := 2
-			logging.LOG.Warn(fmt.Sprintf("Attempt %d to get posters failed: %s", attempt, Err.Message))
-			logging.LOG.Trace(fmt.Sprintf("Retrying to get posters for rating key: %s in %d seconds", ratingKey, numberOfSeconds))
+			attemptAction.AppendWarning("outcome", "retrying after refresh")
+			attemptAction.AppendWarning("wait_seconds", numberOfSeconds)
+			attemptAction.AppendWarning("attempt", attempt)
 			time.Sleep(time.Duration(numberOfSeconds) * time.Second) // Wait before retrying
-			refreshErr := Plex_RefreshItem(ratingKey)
+			refreshErr := Plex_RefreshItem(ctx, itemRatingKey)
 			if refreshErr.Message != "" {
-				logging.LOG.Trace(fmt.Sprintf("Failed to refresh Plex item: %v", refreshErr.Message))
+				attemptAction.SetError("Failed to refresh item on Plex", refreshErr.Message, nil)
 			}
 		} else {
-			// Last attempt failed; log and return error
-			logging.LOG.Error(fmt.Sprintf("All attempts to get posters failed. URL: %s", posterURL))
-			logging.LOG.Error(fmt.Sprintf("Final error: %s", Err.Details))
-			return "", Err
+			attemptAction.AppendResult("final_outcome", "all attempts failed")
+			if attemptAction.Error != nil {
+				return "", *attemptAction.Error
+			}
+			return "", logging.LogErrorInfo{
+				Message: "Failed to retrieve poster after 3 attempts",
+			}
 		}
 	}
 
-	// If all attempts fail, return the last error
-	return "", Err
+	// If we reach here, all attempts failed
+	return "", logging.LogErrorInfo{
+		Message: "Failed to retrieve poster after multiple attempts",
+	}
 }
 
-func Plex_SetPoster(ratingKey, posterKey, posterType string) logging.StandardError {
+func Plex_SetPoster(ctx context.Context, itemRatingKey string, posterKey string, posterType string) logging.LogErrorInfo {
 	// PUT Method is used when saving images locally
 	// PUT Method requires the posterType to be singular (poster or art)
 	//
 	// POST Method is used when not using a local image
 	// POST Method requires the posterType to be plural (posters or arts)
 
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Setting Poster for Item with Rating Key '%s' on Plex", itemRatingKey), logging.LevelDebug)
+	defer logAction.Complete()
+
 	var requestMethod string
 	if strings.HasPrefix(posterKey, "metadata://") {
 		// Local asset, use PUT method
-		requestMethod = "PUT"
+		requestMethod = http.MethodPut
 		if posterType == "backdrop" {
 			posterType = "art"
 		} else {
@@ -133,48 +164,83 @@ func Plex_SetPoster(ratingKey, posterKey, posterType string) logging.StandardErr
 		}
 	} else if strings.HasPrefix(posterKey, "http://") || strings.HasPrefix(posterKey, "https://") {
 		// Remote URL, use POST method
-		requestMethod = "POST"
+		requestMethod = http.MethodPost
 		if posterType == "backdrop" {
 			posterType = "arts"
 		} else {
 			posterType = "posters"
 		}
 	} else {
-		Err := logging.NewStandardError()
-		Err.Message = "Invalid poster key format"
-		Err.HelpText = "The poster key must start with 'metadata://', 'http://', or 'https://'."
-		Err.Details = fmt.Sprintf("Received invalid poster key: %s", posterKey)
-		return Err
+		logAction.SetError("Invalid poster key format",
+			"Poster key must start with 'metadata://' for local assets or 'http(s)://' for remote URLs.",
+			map[string]any{
+				"PosterKey": posterKey,
+			})
+		return *logAction.Error
 	}
 
-	// Use net/url to escape the rating key
-	escapedPosterKey := url.QueryEscape(posterKey)
-
-	// Construct the URL for setting the poster
-	url := fmt.Sprintf("%s/library/metadata/%s/%s?url=%s", Global_Config.MediaServer.URL, ratingKey, posterType, escapedPosterKey)
-
-	logging.LOG.Trace(fmt.Sprintf("Setting %s for rating key '%s' using '%s' method\nURL: %s", posterType, ratingKey, requestMethod, url))
-
-	response, body, Err := MakeHTTPRequest(url, requestMethod, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return Err
+	// Construct the URL for the Plex server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse Plex base URL", err.Error(), nil)
+		return *logAction.Error
 	}
-	defer response.Body.Close()
+	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, posterType)
+	query := u.Query()
+	query.Set("url", posterKey)
+	u.RawQuery = query.Encode()
+	URL := u.String()
 
-	if !strings.HasPrefix(string(body), "/library/metadata/") {
-		Err.Message = "Failed to set poster"
-		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = fmt.Sprintf("Received response: %s", string(body))
-		return Err
+	// Make the API request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, requestMethod, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return logErr
+	}
+	defer httpResp.Body.Close()
+
+	switch requestMethod {
+	case http.MethodPut:
+		if !strings.HasPrefix(string(respBody), "/library/metadata/") {
+			logAction.SetError("Failed to set poster on Plex",
+				"Plex did not return a valid metadata path after setting the poster.",
+				map[string]any{
+					"URL": URL,
+				})
+			return *logAction.Error
+		}
+	case http.MethodPost:
+		// Check the response status code for POST method
+		if httpResp.StatusCode != http.StatusOK {
+			logAction.SetError("Failed to set poster on Plex",
+				"Plex did not return a valid metadata path after setting the poster.",
+				map[string]any{
+					"URL": URL,
+				})
+			return *logAction.Error
+		}
 	}
 
-	return logging.StandardError{}
+	return logging.LogErrorInfo{}
+
 }
 
-func Plex_HandleLabels(item MediaItem) logging.StandardError {
+func Plex_HandleLabels(item MediaItem) {
+	// If there is no applications in the Global Config, exit
+	if len(Global_Config.LabelsAndTags.Applications) == 0 {
+		return
+	}
 
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Plex - Handle Labels")
+	logAction := ld.AddAction("Handle Labels in Plex", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer ld.Log()
+	defer logAction.Complete()
+
+	// If Item Type is not movie or show, exit
 	if item.Type != "movie" && item.Type != "show" {
-		return logging.StandardError{}
+		logAction.AppendWarning("outcome", "skipped")
+		logAction.AppendWarning("reason", "unsupported_item_type")
+		return
 	}
 
 	// Get all of the applications configured for labels and tags
@@ -184,43 +250,47 @@ func Plex_HandleLabels(item MediaItem) logging.StandardError {
 		}
 		// Only proceed if the application is enabled
 		if app.Application == "Plex" && app.Enabled {
+			ctx, subAppAction := logging.AddSubActionToContext(ctx, "Processing Plex Labels", logging.LevelDebug)
+			defer subAppAction.Complete()
 
 			// Check to see there at least one label to add or remove
 			if len(app.Add) == 0 && len(app.Remove) == 0 {
-				return logging.StandardError{}
+				subAppAction.AppendWarning("outcome", "skipped")
+				subAppAction.AppendWarning("reason", "no_labels_to_add_or_remove")
+				continue
 			}
-
-			Err := logging.NewStandardError()
 
 			sectionName := item.LibraryTitle
 			if sectionName == "" {
-				Err.Message = "Library title is empty"
-				Err.HelpText = "Ensure the item exists in Plex and has a valid library title."
-				Err.Details = fmt.Sprintf("No library title found for item '%s'", item.Title)
-				logging.LOG.Error(Err.Message)
-				return Err
+				subAppAction.SetError("Library Section Title is empty",
+					"Cannot handle labels without a valid Library Section Title.",
+					map[string]any{
+						"Item": item,
+					})
+				continue
 			}
 
 			// Get the section ID from the library title
 			sectionID := ""
 			librarySection, found := Global_Cache_LibraryStore.GetSectionByTitle(item.LibraryTitle)
 			if !found {
-				Err.Message = "Library section not found in cache"
-				Err.HelpText = fmt.Sprintf("Ensure the library '%s' exists in Plex and is correctly configured.", sectionName)
-				Err.Details = fmt.Sprintf("Library section '%s' not found in cache", sectionName)
-				logging.LOG.Error(Err.Message)
-				return Err
+				subAppAction.SetError("Library Section not found in cache",
+					"Cannot handle labels without a valid Library Section in cache.",
+					map[string]any{
+						"LibraryTitle": item.LibraryTitle,
+					})
+				continue
 			} else {
 				sectionID = librarySection.ID
-				logging.LOG.Trace(fmt.Sprintf("Found library section ID '%s' for library '%s' in cache", sectionID, sectionName))
 			}
 
 			if sectionID == "" {
-				Err.Message = "Library section ID not found"
-				Err.HelpText = fmt.Sprintf("Ensure the library '%s' exists in Plex and is correctly configured.", sectionName)
-				Err.Details = fmt.Sprintf("No section ID found for library '%s'", sectionName)
-				logging.LOG.Error(Err.Message)
-				return Err
+				subAppAction.SetError("Library Section ID is empty",
+					"Cannot handle labels without a valid Library Section ID.",
+					map[string]any{
+						"LibraryTitle": item.LibraryTitle,
+					})
+				continue
 			}
 
 			// Determine the Type Number based on item.Type
@@ -231,11 +301,12 @@ func Plex_HandleLabels(item MediaItem) logging.StandardError {
 			case "show":
 				typeNumber = 2
 			default:
-				Err.Message = "Unsupported item type for label removal"
-				Err.HelpText = fmt.Sprintf("Label removal is only supported for 'movie' and 'show' item types. Found type: '%s'", item.Type)
-				Err.Details = fmt.Sprintf("Unsupported item type '%s' for item '%s'", item.Type, item.Title)
-				logging.LOG.Error(Err.Message)
-				return Err
+				subAppAction.SetError("Unsupported item type",
+					"Cannot handle labels for unsupported item types.",
+					map[string]any{
+						"ItemType": item.Type,
+					})
+				continue
 			}
 
 			// Make a comma-separated string of labels to remove
@@ -252,7 +323,7 @@ func Plex_HandleLabels(item MediaItem) logging.StandardError {
 			removalParam := ""
 			if labelsToRemove != "" {
 				removalParam = fmt.Sprintf("label%%5B%%5D.tag.tag-=%s", url.QueryEscape(labelsToRemove))
-				logging.LOG.Trace(fmt.Sprintf("Removing label(s) '%s' from: %s (%s)", labelsToRemove, item.Title, item.LibraryTitle))
+				subAppAction.AppendResult("labels_to_remove", app.Remove)
 			}
 
 			// Construct the addition parameter for the URL
@@ -274,12 +345,14 @@ func Plex_HandleLabels(item MediaItem) logging.StandardError {
 				}
 			}
 			if labelsToAdd != "" {
-				logging.LOG.Trace(fmt.Sprintf("Adding label(s) '%s' to: %s (%s)", labelsToAdd, item.Title, item.LibraryTitle))
+				subAppAction.AppendResult("labels_to_add", app.Add)
 			}
 
 			// If no labels to add or remove, return early
 			if removalParam == "" && additionParams == "" {
-				return logging.StandardError{}
+				subAppAction.AppendWarning("outcome", "skipped")
+				subAppAction.AppendWarning("reason", "no labels to add or remove after processing")
+				continue
 			}
 
 			// Combine removal and addition parameters
@@ -291,23 +364,44 @@ func Plex_HandleLabels(item MediaItem) logging.StandardError {
 			} else if additionParams != "" {
 				combinedParams = additionParams
 			} else {
-				// No labels to add or remove
-				return logging.StandardError{}
+				subAppAction.AppendWarning("outcome", "skipped")
+				subAppAction.AppendWarning("reason", "no labels to add or remove after processing")
+				continue
 			}
 
-			// Construct the request URL using the removal parameter
-			requestUrl := fmt.Sprintf("%s/library/sections/%s/all?type=%d&id=%s&%s",
-				Global_Config.MediaServer.URL, sectionID, typeNumber, item.RatingKey, combinedParams)
-
-			// Send the request via PUT
-			response, _, Err := MakeHTTPRequest(requestUrl, "PUT", nil, 60, nil, "MediaServer")
-			if Err.Message != "" {
-				return Err
+			// Construct the URL for the Plex server API request
+			u, err := url.Parse(Global_Config.MediaServer.URL)
+			if err != nil {
+				subAppAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+				continue
 			}
-			defer response.Body.Close()
+			u.Path = path.Join(u.Path, "library", "sections", sectionID, "all")
+			query := u.Query()
+			query.Set("type", strconv.Itoa(typeNumber))
+			query.Set("id", item.RatingKey)
+			// Encode the query parameters
+			u.RawQuery = query.Encode()
+			URL := u.String()
+			URL += "&" + combinedParams
 
-			logging.LOG.Trace(fmt.Sprintf("Label removal response: %s", response.Status))
+			// Make the API request to Plex
+			httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, nil, 60, nil, "Plex")
+			if logErr.Message != "" {
+				subAppAction.SetError("Failed to make HTTP request to Plex", logErr.Message, nil)
+				continue
+			}
+			defer httpResp.Body.Close()
+
+			// Check the response status code
+			if httpResp.StatusCode != http.StatusOK {
+				subAppAction.SetError("Failed to update labels on Plex",
+					fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+					map[string]any{
+						"URL":        URL,
+						"StatusCode": httpResp.StatusCode,
+					})
+				continue
+			}
 		}
 	}
-	return logging.StandardError{}
 }

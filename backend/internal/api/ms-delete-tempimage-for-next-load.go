@@ -2,11 +2,15 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
 	"os"
 )
 
-func DeleteTempImageForNextLoad(file PosterFile, ratingKey string) {
+func DeleteTempImageForNextLoad(ctx context.Context, file PosterFile, ratingKey string) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Delete Temporary Image For Next Load", logging.LevelDebug)
+	defer logAction.Complete()
+
 	if file.Type == "poster" || file.Type == "backdrop" {
 		var tmpFolder string
 		switch Global_Config.MediaServer.Type {
@@ -15,7 +19,8 @@ func DeleteTempImageForNextLoad(file PosterFile, ratingKey string) {
 		case "Emby", "Jellyfin":
 			tmpFolder = EmbyJellyTempImageFolder
 		default:
-			logging.LOG.Error(fmt.Sprintf("Unsupported media server type: %s", Global_Config.MediaServer.Type))
+			logAction.AppendWarning("type", Global_Config.MediaServer.Type)
+			logAction.AppendWarning("message", "Unknown Media Server type, cannot determine temp image folder")
 			return
 		}
 
@@ -24,11 +29,13 @@ func DeleteTempImageForNextLoad(file PosterFile, ratingKey string) {
 		filePath := fmt.Sprintf("%s/%s", tmpFolder, fileName)
 		exists := Util_File_CheckIfFileExists(filePath)
 		if exists {
-			logging.LOG.Trace(fmt.Sprintf("Deleting temporary image %s", fileName))
 			err := os.Remove(filePath)
 			if err != nil {
-				logging.LOG.Error(fmt.Sprintf("Failed to delete temporary image %s: %s", fileName, err.Error()))
+				logAction.AppendWarning("file", filePath)
+				logAction.AppendWarning("error", err.Error())
+				logAction.AppendWarning("message", "Failed to delete temporary image")
 			}
+			logAction.AppendResult("deletedFile", fileName)
 		}
 
 		otherFile := "backdrop"
@@ -40,11 +47,14 @@ func DeleteTempImageForNextLoad(file PosterFile, ratingKey string) {
 		otherFilePath := fmt.Sprintf("%s/%s", tmpFolder, otherFileName)
 		exists = Util_File_CheckIfFileExists(otherFilePath)
 		if exists {
-			logging.LOG.Trace(fmt.Sprintf("Deleting temporary image %s", otherFileName))
 			err := os.Remove(otherFilePath)
 			if err != nil {
-				logging.LOG.Error(fmt.Sprintf("Failed to delete temporary image %s: %s", otherFileName, err.Error()))
+				logAction.AppendWarning("file", otherFilePath)
+				logAction.AppendWarning("error", err.Error())
+				logAction.AppendWarning("message", "Failed to delete temporary image")
 			}
+			logAction.AppendResult("deletedFile", otherFileName)
 		}
 	}
+
 }

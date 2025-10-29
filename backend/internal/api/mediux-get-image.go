@@ -2,13 +2,16 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 )
 
-func Mediux_GetImage(assetID string, formatDate string, qualityParam string) ([]byte, string, logging.StandardError) {
-	Err := logging.NewStandardError()
+func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, qualityParam string) ([]byte, string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Image '%s' from Mediux", assetID), logging.LevelTrace)
+	defer logAction.Complete()
 
 	// Check if the temporary folder has the image
 	fileName := fmt.Sprintf("%s_%s.jpg", assetID, formatDate)
@@ -21,13 +24,13 @@ func Mediux_GetImage(assetID string, formatDate string, qualityParam string) ([]
 		// Convert the image to bytes
 		imageData, err := os.ReadFile(imagePath)
 		if err != nil {
-			Err.Message = "Failed to read image from temporary folder"
-			Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible.", imagePath)
-			Err.Details = map[string]any{
-				"error":   fmt.Sprintf("Error reading image: %v", err),
-				"request": filePath,
-			}
-			return nil, "", Err
+			logAction.SetError("Failed to read image from temporary folder",
+				fmt.Sprintf("Ensure the path %s is accessible.", imagePath),
+				map[string]any{
+					"error":   fmt.Sprintf("Error reading image: %v", err),
+					"request": filePath,
+				})
+			return nil, "", *logAction.Error
 		}
 
 		// Get the image type based on the file extension
@@ -41,69 +44,83 @@ func Mediux_GetImage(assetID string, formatDate string, qualityParam string) ([]
 			imageType = "image/webp"
 		}
 
-		return imageData, imageType, logging.StandardError{}
+		return imageData, imageType, logging.LogErrorInfo{}
 	}
 
 	// If the image does not exist in the temp folder, fetch it from Mediux
 
 	// Construct the URL for the Mediux API request
-	mediuxURL, Err := Mediux_GetImageURL(assetID, formatDate, qualityParam)
+	mediuxURL, Err := Mediux_GetImageURL(ctx, assetID, formatDate, qualityParam)
 	if Err.Message != "" {
 		return nil, "", Err
 	}
 
-	response, body, Err := MakeHTTPRequest(mediuxURL, "GET", nil, 60, nil, "Mediux")
-	if Err.Message != "" {
-		return nil, "", Err
+	// Make the API request to Mediux
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, mediuxURL, http.MethodGet, nil, 60, nil, "Mediux")
+	if logErr.Message != "" {
+		return nil, "", logErr
 	}
-	defer response.Body.Close()
+	defer httpResp.Body.Close()
 
 	// Check if the response body is empty
-	if len(body) == 0 {
-		Err.Message = "Empty response body from Mediux"
-		Err.HelpText = "Ensure the asset ID is valid and the Mediux service is operational."
-		Err.Details = map[string]any{
-			"assetID":    assetID,
-			"formatDate": formatDate,
-		}
-		return nil, "", Err
+	if len(respBody) == 0 {
+		logAction.SetError("Mediux returned an empty image response",
+			"Ensure the asset ID is correct and the image exists on the Mediux server.",
+			map[string]any{
+				"URL": mediuxURL,
+			})
+		return nil, "", *logAction.Error
 	}
 
 	// Get the image type from the response headers
-	imageType := response.Header.Get("Content-Type")
+	imageType := httpResp.Header.Get("Content-Type")
 	if imageType == "" {
-		Err.Message = "Missing Content-Type header in Mediux response"
-		Err.HelpText = "Ensure the Mediux service is returning a valid image type."
-		Err.Details = map[string]any{
-			"assetID":    assetID,
-			"formatDate": formatDate,
-		}
-		return nil, "", Err
+		logAction.SetError("Failed to determine image type from Mediux response",
+			"Ensure the Mediux server is returning a valid image.",
+			map[string]any{
+				"URL": mediuxURL,
+			})
+		return nil, "", *logAction.Error
 	}
 
 	// Handle Cache Images Setting
 	go func() {
 		if Global_Config.Images.CacheImages.Enabled {
+			// Create a new logging data for this goroutine
+			ctx, ld := logging.CreateLoggingContext(context.Background(), "Caching - Mediux Image")
+			logAction := ld.AddAction("Caching Mediux Image", logging.LevelDebug)
+			ctx = logging.WithCurrentAction(ctx, logAction)
+
 			// Add the image to the temporary folder
 			imagePath := path.Join(MediuxThumbsTempImageFolder, fileName)
-			Err = Util_File_CheckFolderExists(MediuxThumbsTempImageFolder)
+			Err = Util_File_CheckFolderExists(ctx, MediuxThumbsTempImageFolder)
 			if Err.Message != "" {
-				logging.LOG.ErrorWithLog(Err)
+				logAction.SetError("Failed to create Mediux thumbs temp image folder",
+					"Ensure the application has permissions to create the temp image folder.",
+					map[string]any{
+						"folder_path": MediuxThumbsTempImageFolder,
+						"error":       Err.Message,
+					})
+				return
 			}
-			err := os.WriteFile(imagePath, body, 0644)
+			writeToFileAction := logAction.AddSubAction("Write Image to Temp Folder", logging.LevelTrace)
+			err := os.WriteFile(imagePath, respBody, 0644)
 			if err != nil {
-				Err.Message = "Failed to write image to temporary folder"
-				Err.HelpText = fmt.Sprintf("Ensure the path %s is accessible and writable.", MediuxThumbsTempImageFolder)
-				Err.Details = map[string]any{
-					"error":   fmt.Sprintf("Error writing image: %v", err),
-					"request": imagePath,
-				}
-				logging.LOG.ErrorWithLog(Err)
+				logAction.SetError("Failed to write image to Mediux thumbs temp image folder",
+					"Ensure the application has write permissions to the temp image folder.",
+					map[string]any{
+						"image_path": imagePath,
+						"error":      err.Error(),
+					})
+				return
 			}
-			logging.LOG.Debug(fmt.Sprintf("Cached image %s to temporary folder", fileName))
+			logAction.AppendResult("image_path", imagePath)
+			writeToFileAction.Complete()
+			logAction.Complete()
+			ld.Log()
 		}
 	}()
 
-	// Return the image data
-	return body, imageType, logging.StandardError{}
+	// Return the image data and type
+	return respBody, imageType, logging.LogErrorInfo{}
 }

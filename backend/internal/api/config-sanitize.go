@@ -1,10 +1,14 @@
 package api
 
 import (
+	"aura/internal/logging"
 	"aura/internal/masking"
+	"context"
 )
 
-func (config *Config) Sanitize() Config {
+func (config *Config) Sanitize(ctx context.Context) Config {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Sanitizing Configuration", logging.LevelTrace)
+	defer logAction.Complete()
 
 	if config == nil {
 		return Config{}

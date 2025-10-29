@@ -2,18 +2,22 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
+	"net/url"
+	"path"
 	"time"
 )
 
-func Mediux_GetImageURL(assetID, dateTimeString, quality string) (string, logging.StandardError) {
-	Err := logging.NewStandardError()
+func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString, quality string) (string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Constructing Mediux Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
+	defer logAction.Complete()
 
 	if assetID == "" {
-		Err.Message = "Missing asset ID"
-		Err.HelpText = "Ensure the asset ID is provided."
-		Err.Details = "Asset ID cannot be empty."
-		return "", Err
+		logAction.SetError("Asset ID is required to construct Mediux URL",
+			"Please provide a valid Asset ID.",
+			nil)
+		return "", *logAction.Error
 	}
 
 	var dateTime time.Time
@@ -34,7 +38,9 @@ func Mediux_GetImageURL(assetID, dateTimeString, quality string) (string, loggin
 				dateTime, err = time.Parse("2006-01-02 15:04:05 -0700 MST", dateTimeString)
 				if err != nil {
 					// If all formats fail, log the error but use current time as fallback
-					logging.LOG.Warn(fmt.Sprintf("Failed to parse dateTime '%s': %v. Using current time as fallback.", dateTimeString, err))
+					logAction.AppendWarning("message", "Failed to parse dateTimeString, defaulting to current time")
+					logAction.AppendWarning("dateTimeString", dateTimeString)
+					logAction.AppendWarning("error", err.Error())
 					dateTime = time.Now()
 				}
 			}
@@ -43,12 +49,12 @@ func Mediux_GetImageURL(assetID, dateTimeString, quality string) (string, loggin
 
 	// Check quality is set to "original" or "thumb"
 	if quality != "original" && quality != "thumb" && quality != "optimized" {
-		Err.Message = "Invalid quality parameter"
-		Err.HelpText = "Quality must be either 'original', 'thumb', or 'optimized'."
-		Err.Details = map[string]any{
-			"quality": quality,
-		}
-		return "", Err
+		logAction.SetError("Invalid quality parameter",
+			"Quality must be either 'original', 'thumb', or 'optimized'.",
+			map[string]any{
+				"quality": quality,
+			})
+		return "", *logAction.Error
 	}
 
 	// Format the date to YYYYMMDDHHMMSS
@@ -56,15 +62,27 @@ func Mediux_GetImageURL(assetID, dateTimeString, quality string) (string, loggin
 
 	qualityParam := ""
 	if quality == "thumb" {
-		qualityParam = "&key=thumb"
+		qualityParam = "thumb"
 	} else if Global_Config.Mediux.DownloadQuality == "optimized" || quality == "optimized" {
 		// If quality is "optimized" or configured as such, use optimized quality
-		qualityParam = "&key=jpg"
+		qualityParam = "jpg"
 	}
 
 	// Construct the Mediux URL
-	mediuxURL := fmt.Sprintf("%s/%s?v=%s%s", "https://images.mediux.io/assets", assetID, dateTimeFormatted, qualityParam)
-	logging.LOG.Trace(fmt.Sprintf("Constructed Mediux URL: %s", mediuxURL))
+	u, err := url.Parse(MediuxBaseURL)
+	if err != nil {
+		logAction.SetError("Failed to parse Mediux base URL", err.Error(), nil)
+		return "", *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "assets", assetID)
+	query := u.Query()
+	query.Set("v", dateTimeFormatted)
+	if qualityParam != "" {
+		query.Set("key", qualityParam)
+	}
+	u.RawQuery = query.Encode()
+	URL := u.String()
+	logAction.AppendResult("url", URL)
 
-	return mediuxURL, logging.StandardError{}
+	return URL, logging.LogErrorInfo{}
 }

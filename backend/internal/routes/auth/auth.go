@@ -4,7 +4,6 @@ import (
 	"aura/internal/api"
 	"aura/internal/logging"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -35,7 +34,6 @@ func GetTokenAuth() *jwtauth.JWTAuth {
 // If authentication is globally disabled in the configuration, it allows all requests to pass through.
 func Authenticator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		// Skip if auth globally disabled
 		if !api.Global_Config.Auth.Enabled {
 			next.ServeHTTP(w, r)
@@ -44,15 +42,21 @@ func Authenticator(next http.Handler) http.Handler {
 
 		// Public login route
 		if r.URL.Path == "/api/login" ||
-			strings.HasPrefix(r.URL.Path, "/api/mediaserver/image/") ||
-			strings.HasPrefix(r.URL.Path, "/api/mediux/image/") {
+			strings.HasPrefix(r.URL.Path, "/api/mediaserver/image") ||
+			strings.HasPrefix(r.URL.Path, "/api/mediux/image") {
 			next.ServeHTTP(w, r)
 			return
 		}
 
+		ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
+		logAction := ld.AddAction("Authenticate Request", logging.LevelInfo)
+		ctx = logging.WithCurrentAction(ctx, logAction)
+		defer logAction.Complete()
+
+		// Ensure TokenAuth is initialized
 		if TokenAuth == nil {
 			sendNotAuthenticatedResponse(w, "Auth not initialized")
-			logging.LOG.Error("Authentication error: tokenAuth is nil")
+			logAction.SetError("Auth not initialized", "The authentication system is not set up", nil)
 			return
 		}
 
@@ -60,25 +64,25 @@ func Authenticator(next http.Handler) http.Handler {
 		_, claims, err := jwtauth.FromContext(r.Context())
 		if err != nil {
 			sendNotAuthenticatedResponse(w, "Invalid or expired token")
-			logging.LOG.Error(fmt.Sprintf("Authentication error: %v", err))
+			logAction.SetError("Invalid or expired token", err.Error(), nil)
 			return
 		}
 
 		if sub, _ := claims["sub"].(string); sub == "" {
 			sendNotAuthenticatedResponse(w, "Invalid token")
-			logging.LOG.Error("Authentication error: missing sub claim")
+			logAction.SetError("Invalid token", "Token missing 'sub' claim", nil)
 			return
 		}
 
-		// Optional: still ensure header shape
+		// Ensure header shape
 		authz := r.Header.Get("Authorization")
 		if authz == "" || !strings.HasPrefix(authz, "Bearer ") {
-			sendNotAuthenticatedResponse(w, "Token is empty")
-			logging.LOG.Error("Authentication error: Token header missing")
+			sendNotAuthenticatedResponse(w, "Invalid Authorization header")
+			logAction.SetError("Invalid Authorization header", "Authorization header missing or malformed", nil)
 			return
 		}
 
-		// All good
+		// Token is valid, proceed to next handler
 		next.ServeHTTP(w, r)
 	})
 }

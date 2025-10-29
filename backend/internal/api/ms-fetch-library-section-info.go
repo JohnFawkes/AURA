@@ -2,41 +2,37 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 )
 
-func (p *PlexServer) FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, logging.StandardError) {
-	return Plex_FetchLibrarySectionInfo(library)
+func (p *PlexServer) FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServerLibrary) (bool, logging.LogErrorInfo) {
+	return Plex_FetchLibrarySectionInfo(ctx, library)
 }
 
-func (e *EmbyJellyServer) FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, logging.StandardError) {
-	return EJ_FetchLibrarySectionInfo(library)
+func (e *EmbyJellyServer) FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServerLibrary) (bool, logging.LogErrorInfo) {
+	return EJ_FetchLibrarySectionInfo(ctx, library)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func CallFetchLibrarySectionInfo() ([]LibrarySection, logging.StandardError) {
-	mediaServer, Err := GetMediaServerInterface(Config_MediaServer{})
+func CallFetchLibrarySectionInfo(ctx context.Context) ([]LibrarySection, logging.LogErrorInfo) {
+	mediaServer, _, Err := NewMediaServerInterface(ctx, Config_MediaServer{})
 	if Err.Message != "" {
 		return nil, Err
 	}
 
 	var allSections []LibrarySection
 	for _, library := range Global_Config.MediaServer.Libraries {
-		found, Err := mediaServer.FetchLibrarySectionInfo(&library)
+		found, Err := mediaServer.FetchLibrarySectionInfo(ctx, &library)
 		if Err.Message != "" {
-			logging.LOG.Warn(Err.Message)
 			continue
 		}
 		if !found {
-			logging.LOG.Warn(fmt.Sprintf("Library section '%s' not found in %s", library.Name, Global_Config.MediaServer.Type))
-			continue
-		}
-		if library.Type != "movie" && library.Type != "show" {
-			logging.LOG.Warn(fmt.Sprintf("Library section '%s' is not a movie/show section", library.Name))
 			continue
 		}
 
@@ -47,91 +43,91 @@ func CallFetchLibrarySectionInfo() ([]LibrarySection, logging.StandardError) {
 		section.Path = library.Path
 		allSections = append(allSections, section)
 	}
-	return allSections, logging.StandardError{}
+	return allSections, logging.LogErrorInfo{}
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func Plex_FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, logging.StandardError) {
-	Err := logging.NewStandardError()
+func Plex_FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServerLibrary) (bool, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetch %s Library Section Info", library.Name), logging.LevelDebug)
+	defer logAction.Complete()
 
 	// Construct the URL for the Plex server API request
-	url, Err := MakeMediaServerAPIURL("library/sections/all", Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return false, Err
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return false, *logAction.Error
 	}
+	u.Path = path.Join(u.Path, "library", "sections", "all")
+	URL := u.String()
 
-	// Make a GET request to the Plex server
-	resp, body, Err := MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return false, Err
+	// Make the API request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return false, logErr
 	}
-	defer resp.Body.Close()
+	defer httpResp.Body.Close()
 
 	// Parse the response body into a PlexLibrarySectionsWrapper struct
 	var plexResponse PlexLibrarySectionsWrapper
-	err := json.Unmarshal(body, &plexResponse)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": url.String(),
-		}
-		return false, Err
+	logErr = DecodeJSONBody(ctx, respBody, &plexResponse, "PlexLibrarySectionsWrapper")
+	if logErr.Message != "" {
+		return false, logErr
 	}
 
 	// Find the library section with the matching Name
+	found := false
 	for _, section := range plexResponse.MediaContainer.Directory {
+		if section.Type != "movie" && section.Type != "show" {
+			continue
+		}
 		if section.Title == library.Name {
 			library.Type = section.Type
 			library.SectionID = section.Key
 			library.Path = section.Location[0].Path
+			found = true
 			break
 		}
 	}
-	if library.SectionID == "" {
-		Err.Message = "Library section not found"
-		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' exists on the Plex server.", library.Name)
-		Err.Details = map[string]any{
-			"request": url.String(),
-		}
-		return false, Err
+	if !found {
+		logAction.SetError("Library section not found", fmt.Sprintf("Ensure the library section '%s' exists on the Plex server.", library.Name), map[string]any{
+			"URL": URL,
+		})
+		return false, *logAction.Error
 	}
 
-	return true, logging.StandardError{}
+	return true, logging.LogErrorInfo{}
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func EJ_FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, logging.StandardError) {
+func EJ_FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServerLibrary) (bool, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetch %s Library Section Info", library.Name), logging.LevelDebug)
+	defer logAction.Complete()
 
-	url, Err := MakeMediaServerAPIURL(fmt.Sprintf("/Users/%s/Items", Global_Config.MediaServer.UserID), Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return false, Err
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return false, *logAction.Error
 	}
+	u.Path = path.Join(u.Path, "Users", Global_Config.MediaServer.UserID, "Items")
+	URL := u.String()
 
 	// Make a GET request to the Emby server
-	response, body, Err := MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		logging.LOG.Error(Err.Message)
-		return false, Err
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "MediaServer")
+	if logErr.Message != "" {
+		return false, logErr
 	}
-	defer response.Body.Close()
+	defer httpResp.Body.Close()
 
-	Err = logging.NewStandardError()
-
+	// Parse the response body into an EmbyJellyLibrarySectionsResponse struct
 	var responseSection EmbyJellyLibrarySectionsResponse
-	err := json.Unmarshal(body, &responseSection)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Emby/Jellyfin server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return false, Err
+	logErr = DecodeJSONBody(ctx, respBody, &responseSection, "EmbyJellyLibrarySectionsResponse")
+	if logErr.Message != "" {
+		return false, logErr
 	}
 
 	found := false
@@ -146,12 +142,10 @@ func EJ_FetchLibrarySectionInfo(library *Config_MediaServerLibrary) (bool, loggi
 			break
 		}
 	}
-
 	if !found {
-		Err.Message = "Library section not found"
-		Err.HelpText = fmt.Sprintf("Ensure the library section '%s' exists on the media server.", library.Name)
-		return false, Err
+		logAction.SetError("Library section not found", fmt.Sprintf("Ensure the library section '%s' exists on the media server.", library.Name), nil)
+		return false, *logAction.Error
 	}
 
-	return true, logging.StandardError{}
+	return true, logging.LogErrorInfo{}
 }

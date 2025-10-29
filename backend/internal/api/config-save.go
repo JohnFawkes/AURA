@@ -2,45 +2,45 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"os"
 	"path"
 
 	"gopkg.in/yaml.v3"
 )
 
-func (config *Config) SaveToFile() logging.StandardError {
-	Err := logging.NewStandardError()
+func (config *Config) SaveToFile(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Saving Config to File", logging.LevelDebug)
+	defer logAction.Complete()
 
+	// Sub-action: Determine config path
+	subActionDeterminePath := logAction.AddSubAction("Determine Config Path", logging.LevelTrace)
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "/config"
 	}
-
-	// Create the config.yaml file in the specified directory
 	yamlFile := path.Join(configPath, "config.yaml")
-
-	config.Logging.File = ""
 	config.MediaServer.UserID = ""
+	subActionDeterminePath.Complete()
 
-	// Save the new config to a file
+	// Sub-action: Marshal config to YAML
+	subActionMarshal := logAction.AddSubAction("Marshal Config to YAML", logging.LevelTrace)
 	data, marshalErr := yaml.Marshal(config)
 	if marshalErr != nil {
-		Err.Message = "Failed to marshal config to YAML"
-		Err.HelpText = "Make sure the config structure is valid."
-		Err.Details = map[string]any{
-			"error": marshalErr.Error(),
-		}
-		return Err
+		subActionMarshal.SetError("Failed to marshal config to YAML", marshalErr.Error(), nil)
+		logAction.Status = logging.StatusError
+		return *subActionMarshal.Error
 	}
-	err := os.WriteFile(yamlFile, data, 0644)
-	if err != nil {
-		Err.Message = "Failed to save config to file"
-		Err.HelpText = "Ensure the application has write permissions to the config directory."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return Err
-	}
+	subActionMarshal.Complete()
 
-	return Err
+	// Sub-action: Write config to file
+	subActionWrite := logAction.AddSubAction("Write Config to File", logging.LevelTrace)
+	if writeErr := os.WriteFile(yamlFile, data, 0644); writeErr != nil {
+		subActionWrite.SetError("Failed to write config to file", writeErr.Error(), nil)
+		logAction.Status = logging.StatusError
+		return *subActionWrite.Error
+	}
+	subActionWrite.Complete()
+
+	return logging.LogErrorInfo{}
 }

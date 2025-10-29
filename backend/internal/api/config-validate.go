@@ -2,6 +2,7 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -13,243 +14,199 @@ import (
 )
 
 func (config *Config) ValidateConfig() {
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Config - Validate")
+	defer ld.Log()
 
-	logging.LOG.Debug("Validating configuration file...")
+	// Top-level action
+	action := ld.AddAction("Validating All Config Sections", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, action)
+	defer action.Complete()
 
-	// Check if config is nil
-	if config == nil {
-		logging.LOG.Error("\tConfig is nil")
-		return
-	}
+	// Sub-action: Auth Config
+	isAuthValid := Config_ValidateAuth(ctx, &config.Auth)
 
-	// Validate Auth configuration
-	isAuthValid, _ := Config_ValidateAuth(config.Auth)
+	// Sub-action: Logging Config
+	isLoggingValid := Config_ValidateLogging(ctx, &config.Logging)
 
-	// Validate Logging configuration
-	isLoggingValid, _, loggingConfig := Config_ValidateLogging(config.Logging)
-	logging.SetLogLevel(loggingConfig.Level)
+	// // Sub-action: MediaServer Config
+	isMediaServerValid := Config_ValidateMediaServer(ctx, &config.MediaServer)
 
-	// Check MediaServer configuration
-	isMediaServerValid, _, mediaServerConfig := Config_ValidateMediaServer(config.MediaServer)
-	config.MediaServer = mediaServerConfig
+	// Sub-action: Mediux Config
+	isMediuxValid := Config_ValidateMediux(ctx, &config.Mediux)
 
-	// Validate Mediux configuration
-	isMediuxValid, _, mediuxConfig := Config_ValidateMediux(config.Mediux)
-	config.Mediux = mediuxConfig
+	// Sub-action: AutoDownload Config
+	isAutoDownloadValid := Config_ValidateAutoDownload(ctx, &config.AutoDownload)
 
-	// Validate AutoDownload configuration
-	isAutoDownloadValid, _, autodownloadConfig := Config_ValidateAutoDownload(config.AutoDownload)
-	config.AutoDownload = autodownloadConfig
+	// Sub-action: Notifications Config
+	isNotificationsValid := Config_ValidateNotifications(ctx, &config.Notifications)
 
-	// Validate Notifications configuration
-	isNotificationsValid, _, notificationsConfig := Config_ValidateNotifications(config.Notifications)
-	config.Notifications = notificationsConfig
+	// Sub-action: SonarrRadarr Config
+	isSonarrRadarrValid := Config_ValidateSonarrRadarr(ctx, &config.SonarrRadarr, config.MediaServer)
 
-	// Validate Sonarr/Radarr configuration
-	isSonarrRadarrValid, _, sonarrRadarrConfig := Config_ValidateSonarrRadarr(config.SonarrRadarr, mediaServerConfig)
-	config.SonarrRadarr = sonarrRadarrConfig
-
-	if isAuthValid {
-		Global_Config.Auth = config.Auth
-	}
-
-	if isLoggingValid {
-		Global_Config.Logging = config.Logging
-	}
-
-	if isMediaServerValid {
-		Global_Config.MediaServer = config.MediaServer
-	}
-
-	if isAutoDownloadValid {
-		Global_Config.AutoDownload = config.AutoDownload
-	}
-
-	if isMediuxValid {
-		Global_Config.Mediux = config.Mediux
-	}
-
-	if isNotificationsValid {
-		Global_Config.Notifications = config.Notifications
-	}
-
-	if isSonarrRadarrValid {
-		Global_Config.SonarrRadarr = config.SonarrRadarr
-	}
-
-	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isAutoDownloadValid || !isMediuxValid || !isNotificationsValid || !isSonarrRadarrValid {
-		logging.LOG.Error("Invalid configuration file. See errors above.")
+	// If any validation failed, set status to error
+	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isMediuxValid || !isAutoDownloadValid || !isNotificationsValid || !isSonarrRadarrValid {
+		ld.Status = logging.StatusError
 		Global_Config_Valid = false
-		return
+	} else {
+		logging.SetLogLevel(config.Logging.Level)
+		ld.Status = logging.StatusSuccess
+		Global_Config_Valid = true
 	}
-
-	Global_Config_Valid = true
 }
 
-func Config_ValidateAuth(Auth Config_Auth) (bool, string) {
+func Config_ValidateAuth(ctx context.Context, Auth *Config_Auth) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Auth Config", logging.LevelTrace)
+	defer logAction.Complete()
+
 	isValid := true
-	var errorMsg string
 
 	if Auth.Enabled {
 		if Auth.Password == "" {
-			errorMsg = "Auth.Password is not set"
-			logging.LOG.Error(errorMsg)
+			logAction.SetError("Auth.Password is not set", "Password must be set when auth is enabled", nil)
 			isValid = false
 		} else {
-			// Check if Password is a valid Argon2id hash
 			_, _, _, err := argon2id.DecodeHash(Auth.Password)
 			if err != nil {
-				errorMsg = "Auth.Password is not a valid Argon2id hash"
-				logging.LOG.Error(errorMsg)
+				logAction.SetError("Auth.Password is not a valid Argon2id hash", err.Error(), nil)
+
 				isValid = false
 			}
 		}
 	}
 
-	return isValid, errorMsg
+	return isValid
 }
 
-func Config_ValidateLogging(Logging Config_Logging) (bool, string, Config_Logging) {
-	isValid := true
-	var errorMsg string
+func Config_ValidateLogging(ctx context.Context, Logging *Config_Logging) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Logging Config", logging.LevelTrace)
+	defer logAction.Complete()
 
+	isValid := true
+
+	// Check if Logging.Level is set
 	if Logging.Level == "" {
-		errorMsg = "Logging.Level is not set, using default level: INFO"
-		logging.LOG.Warn(errorMsg)
-		Logging.Level = "INFO"
+		logAction.SetError("Logging.Level is not set", "Logging level must be specified", nil)
+		isValid = false
 	}
 
+	// Set Logging.Level to uppercase for comparison
+	Logging.Level = strings.ToUpper(Logging.Level)
 	if Logging.Level != "TRACE" && Logging.Level != "DEBUG" && Logging.Level != "INFO" && Logging.Level != "WARN" && Logging.Level != "ERROR" {
-		errorMsg = fmt.Sprintf("\tLogging.Level: '%s'. Must be one of: TRACE, DEBUG, INFO, WARN, ERROR", Logging.Level)
-		logging.LOG.Warn(errorMsg)
-		Logging.Level = "INFO"
+		logAction.SetError("Logging.Level is not a valid level", "Valid levels are TRACE, DEBUG, INFO, WARN, ERROR", nil)
+		isValid = false
 	}
 
-	return isValid, errorMsg, Logging
-
+	return isValid
 }
 
-func Config_ValidateMediaServer(MediaServer Config_MediaServer) (bool, []string, Config_MediaServer) {
+func Config_ValidateMediaServer(ctx context.Context, MediaServer *Config_MediaServer) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating MediaServer Config", logging.LevelTrace)
+	defer logAction.Complete()
+
 	isValid := true
-	var errorMsgs []string
-	var errorMsg string
 
-	if MediaServer.Type == "" {
-		errorMsg = "MediaServer.Type is not set"
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	}
-
-	if MediaServer.URL == "" {
-		errorMsg = "MediaServer.URL is not set"
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	} else if !strings.HasPrefix(MediaServer.URL, "http") {
-		errorMsg = fmt.Sprintf("MediaServer.URL: '%s' must start with http:// or https:// ", MediaServer.URL)
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	}
-
-	if MediaServer.Token == "" {
-		errorMsg = "MediaServer.Token is not set"
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	}
-
-	if len(MediaServer.Libraries) == 0 {
-		errorMsg = "MediaServer.Libraries are not set"
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	}
-
-	if !isValid {
-		logging.LOG.Error("\tMediaServer configuration is invalid. Fix the errors above.")
-		return false, errorMsgs, MediaServer
-	}
-
-	// Set the MediaServer Type to Title Case
+	// Title case the MediaServer.Type
 	MediaServer.Type = cases.Title(language.English).String(MediaServer.Type)
 
-	// If the MediaServer type is not Plex, Emby, or Jellyfin, return an error
-	if MediaServer.Type != "Plex" && MediaServer.Type != "Emby" && MediaServer.Type != "Jellyfin" {
-		errorMsg = fmt.Sprintf("\tMediaServer.Type: '%s'. Must be one of: Plex, Emby, Jellyfin", MediaServer.Type)
-		logging.LOG.Error(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		return false, errorMsgs, MediaServer
+	// Check if MediaServer.Type is set
+	if MediaServer.Type == "" {
+		logAction.SetError("MediaServer.Type is not set", "Media server type must be specified", nil)
+		isValid = false
+	} else if MediaServer.Type != "Plex" && MediaServer.Type != "Emby" && MediaServer.Type != "Jellyfin" {
+		logAction.SetError(fmt.Sprintf("MediaServer.Type: '%s' is not a valid type", MediaServer.Type), "Valid types are Plex, Emby, Jellyfin", nil)
+		isValid = false
 	}
 
-	// If the MediaServer type is Plex, set the SeasonNamingConvention to 2 if not set
-	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention == "" {
-		logging.LOG.Warn("\tMediaServer.SeasonNamingConvention is not set, using default value: 2")
-		MediaServer.SeasonNamingConvention = "2"
+	// Check if MediaServer.URL is set
+	if MediaServer.URL == "" {
+		logAction.SetError("MediaServer.URL is not set", "Media server URL must be specified", nil)
+		isValid = false
+	} else if !strings.HasPrefix(MediaServer.URL, "http://") && !strings.HasPrefix(MediaServer.URL, "https://") {
+		logAction.SetError(fmt.Sprintf("MediaServer.URL: '%s' must start with http:// or https:// ", MediaServer.URL), "", nil)
+		isValid = false
 	}
-	// If the SeasonNamingConvention is not 1 or 2, return an error
-	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention != "1" && MediaServer.SeasonNamingConvention != "2" {
-		errorMsg = fmt.Sprintf("\tBad MediaServer.SeasonNamingConvention: '%s'. Must be one of: 1, 2", MediaServer.SeasonNamingConvention)
-		logging.LOG.Error(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		return false, errorMsgs, MediaServer
+
+	// Check if MediaServer.Token is set
+	if MediaServer.Token == "" {
+		logAction.SetError("MediaServer.Token is not set", "Media server token must be specified", nil)
+		isValid = false
+	}
+
+	// Check if MediaServer.Libraries is set
+	if len(MediaServer.Libraries) == 0 {
+		logAction.SetError("MediaServer.Libraries is not set", "At least one media server library must be specified", nil)
+		isValid = false
+	}
+
+	// If we reach here, return if not valid
+	if !isValid {
+		return isValid
+	}
+
+	// Now that we know the Media Server config is valid, clean up fields and set defaults
+
+	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention == "" {
+		MediaServer.SeasonNamingConvention = "2"
+		logAction.AppendWarning("message", "MediaServer.SeasonNamingConvention not set, defaulting to '2'")
+	} else if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention != "1" && MediaServer.SeasonNamingConvention != "2" {
+		MediaServer.SeasonNamingConvention = "2"
+		logAction.AppendWarning("message", "MediaServer.SeasonNamingConvention invalid, defaulting to '2'")
 	}
 
 	// Trim the trailing slash from the URL
 	MediaServer.URL = strings.TrimSuffix(MediaServer.URL, "/")
 
-	return true, errorMsgs, MediaServer
+	return isValid
 }
 
-func Config_ValidateMediux(Mediux Config_Mediux) (bool, []string, Config_Mediux) {
-	isValid := true
-	var errorMsgs []string
-	var errorMsg string
+func Config_ValidateMediux(ctx context.Context, Mediux *Config_Mediux) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Mediux Config", logging.LevelTrace)
+	defer logAction.Complete()
 
+	isValid := true
+
+	// Check if Mediux.Token is set
 	if Mediux.Token == "" {
-		errorMsg = "\tMediux.Token is not set"
-		logging.LOG.Warn(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
+		logAction.SetError("Mediux.Token is not set", "Mediux token must be specified", nil)
 		isValid = false
 	}
 
+	// Check if Mediux.DownloadQuality is set
 	if Mediux.DownloadQuality == "" {
-		logging.LOG.Warn("\tMediux.DownloadQuality is not set, using default value: optimized")
 		Mediux.DownloadQuality = "optimized"
+		logAction.AppendWarning("message", "Mediux.DownloadQuality not set, defaulting to 'optimized'")
+	} else if Mediux.DownloadQuality != "original" && Mediux.DownloadQuality != "optimized" {
+		Mediux.DownloadQuality = "optimized"
+		logAction.AppendWarning("message", "Mediux.DownloadQuality invalid, defaulting to 'optimized'")
 	}
 
-	if Mediux.DownloadQuality != "original" && Mediux.DownloadQuality != "optimized" {
-		errorMsg = fmt.Sprintf("\tBad Mediux.DownloadQuality: '%s'. Must be one of: original, optimized", Mediux.DownloadQuality)
-		logging.LOG.Error(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
-		isValid = false
-	}
-
-	return isValid, errorMsgs, Mediux
+	return isValid
 }
 
-func Config_ValidateAutoDownload(Autodownload Config_AutoDownload) (bool, []string, Config_AutoDownload) {
+func Config_ValidateAutoDownload(ctx context.Context, AutoDownload *Config_AutoDownload) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating AutoDownload Config", logging.LevelTrace)
+	defer logAction.Complete()
+
 	isValid := true
-	var errorMsgs []string
 
-	if !Autodownload.Enabled {
-		return isValid, errorMsgs, Autodownload
+	// Check if AutoDownload is enabled
+	if !AutoDownload.Enabled {
+		return isValid
 	}
 
-	if Autodownload.Cron == "" {
-		logging.LOG.Warn("\tAutoDownload.Cron is not set, using default value: 0 0 * * *")
-		Autodownload.Cron = "0 0 * * *" // Default to daily at midnight
+	// Check if AutoDownload.Cron is set
+	if AutoDownload.Cron == "" {
+		AutoDownload.Cron = "0 0 * * *"
+		logAction.AppendWarning("message", "AutoDownload.Cron not set, defaulting to '0 0 * * *' (every day at midnight)")
 	}
 
-	if !Config_ValidateCron(Autodownload.Cron) {
-		errorMsg := fmt.Sprintf("\tBad AutoDownload.Cron: '%s'. Must be a valid cron expression. Use something like https://crontab.guru to help you.", Autodownload.Cron)
-		logging.LOG.Error(errorMsg)
-		errorMsgs = append(errorMsgs, errorMsg)
+	// Validate the cron expression
+	if !Config_ValidateCron(AutoDownload.Cron) {
+		logAction.SetError(fmt.Sprintf("AutoDownload.Cron: '%s' is not a valid cron expression", AutoDownload.Cron), "Please provide a valid cron expression", nil)
 		isValid = false
 	}
 
-	return isValid, errorMsgs, Autodownload
+	return isValid
 }
 
 func Config_ValidateCron(cronExpression string) bool {
@@ -257,14 +214,15 @@ func Config_ValidateCron(cronExpression string) bool {
 	return err == nil
 }
 
-func Config_ValidateNotifications(Notifications Config_Notifications) (bool, []string, Config_Notifications) {
+func Config_ValidateNotifications(ctx context.Context, Notifications *Config_Notifications) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Notifications Config", logging.LevelTrace)
+	defer logAction.Complete()
+
 	isValid := true
-	var errorMsgs []string
-	var errorMsg string
 
 	// If the notifications are not enabled, skip validation
-	if !Notifications.Enabled {
-		return isValid, errorMsgs, Notifications
+	if !Notifications.Enabled || len(Notifications.Providers) == 0 {
+		return isValid
 	}
 
 	// If notifications are enabled, validate each provider
@@ -275,15 +233,14 @@ func Config_ValidateNotifications(Notifications Config_Notifications) (bool, []s
 
 		// If the provider name is not set, return an error
 		if provider.Provider == "" {
-			errorMsg = fmt.Sprintf("\tNotifications[%d].Provider is not set", i)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
-			return false, errorMsgs, Notifications
+			logAction.SetError(fmt.Sprintf("\tNotifications[%d].Provider is not set", i), "Provider name must be specified", nil)
+			isValid = false
+			return isValid
 		}
 
 		// If the provider is not enabled, log a warning and continue to the next provider
 		if !provider.Enabled {
-			logging.LOG.Warn(fmt.Sprintf("\tNotifications for %s are disabled", provider.Provider))
+			logAction.AppendWarning("message", fmt.Sprintf("Notifications[%d].Provider '%s' is disabled, skipping validation", i, provider.Provider))
 			continue
 		}
 
@@ -291,64 +248,52 @@ func Config_ValidateNotifications(Notifications Config_Notifications) (bool, []s
 
 		// If the provider is not in the list of valid providers, return an error
 		if !stringSliceContains(validProviders, provider.Provider) {
-			errorMsg = fmt.Sprintf("\tBad Notifications[%d].Provider: '%s'. Must be one of: %v", i, provider.Provider, validProviders)
-			logging.LOG.Error(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
-			return false, errorMsgs, Notifications
+			logAction.SetError(fmt.Sprintf("\tBad Notifications[%d].Provider: '%s'. Must be one of: %v", i, provider.Provider, validProviders), "Please provide a valid provider", nil)
+			isValid = false
 		}
 
 		switch provider.Provider {
 		case "Discord":
 			if provider.Discord.Webhook == "" {
-				errorMsg = fmt.Sprintf("\tNotifications[%d].Webhook URL is not set", i)
-				logging.LOG.Warn(errorMsg)
-				errorMsgs = append(errorMsgs, errorMsg)
-				return false, errorMsgs, Notifications
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].Webhook is not set", i), "Discord webhook must be specified", nil)
+				isValid = false
 			}
 
 		case "Pushover":
 			if provider.Pushover.UserKey == "" {
-				errorMsg = fmt.Sprintf("\tNotifications[%d].UserKey is not set", i)
-				logging.LOG.Warn(errorMsg)
-				errorMsgs = append(errorMsgs, errorMsg)
-				return false, errorMsgs, Notifications
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].UserKey is not set", i), "Pushover UserKey must be specified", nil)
+				isValid = false
 			}
 			if provider.Pushover.Token == "" {
-				errorMsg = fmt.Sprintf("\tNotifications[%d].Token is not set", i)
-				logging.LOG.Warn(errorMsg)
-				errorMsgs = append(errorMsgs, errorMsg)
-				return false, errorMsgs, Notifications
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].Token is not set", i), "Pushover Token must be specified", nil)
+				isValid = false
 			}
 
 		case "Gotify":
 			if provider.Gotify.URL == "" {
-				errorMsg = fmt.Sprintf("\tNotifications[%d].URL is not set", i)
-				logging.LOG.Warn(errorMsg)
-				errorMsgs = append(errorMsgs, errorMsg)
-				return false, errorMsgs, Notifications
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].URL is not set", i), "Gotify URL must be specified", nil)
+				isValid = false
 			}
 			if provider.Gotify.Token == "" {
-				errorMsg = fmt.Sprintf("\tNotifications[%d].Token is not set", i)
-				logging.LOG.Warn(errorMsg)
-				errorMsgs = append(errorMsgs, errorMsg)
-				return false, errorMsgs, Notifications
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].Token is not set", i), "Gotify Token must be specified", nil)
+				isValid = false
 			}
 		}
 
 		Notifications.Providers[i] = provider
-
 	}
 
-	return isValid, errorMsgs, Notifications
+	return isValid
 }
 
-func Config_ValidateSonarrRadarr(apps Config_SonarrRadarr_Apps, mediaServerConfig Config_MediaServer) (bool, []string, Config_SonarrRadarr_Apps) {
+func Config_ValidateSonarrRadarr(ctx context.Context, apps *Config_SonarrRadarr_Apps, mediaServerConfig Config_MediaServer) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating SonarrRadarr Config", logging.LevelTrace)
+	defer logAction.Complete()
+
 	isValid := true
-	var errorMsgs []string
-	var errorMsg string
 
 	if len(apps.Applications) == 0 {
-		return isValid, errorMsgs, apps
+		return isValid
 	}
 
 	for i, app := range apps.Applications {
@@ -358,15 +303,11 @@ func Config_ValidateSonarrRadarr(apps Config_SonarrRadarr_Apps, mediaServerConfi
 
 		// If the app type is not set, return an error
 		if app.Type == "" {
-			errorMsg = fmt.Sprintf("\tSonarrRadarr[%d].Type is not set", i)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tSonarrRadarr[%d].Type is not set", i), "App type must be specified", nil)
 			isValid = false
 		} else if app.Type != "Sonarr" && app.Type != "Radarr" {
 			// If the app type is not Sonarr or Radarr, return an error
-			errorMsg = fmt.Sprintf("\tBad SonarrRadarr[%d].Type: '%s'. Must be one of: Sonarr, Radarr", i, app.Type)
-			logging.LOG.Error(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tBad SonarrRadarr[%d].Type: '%s'. Must be one of: Sonarr, Radarr", i, app.Type), "Invalid app type", nil)
 			isValid = false
 		}
 
@@ -376,43 +317,31 @@ func Config_ValidateSonarrRadarr(apps Config_SonarrRadarr_Apps, mediaServerConfi
 		}
 
 		if app.Library == "" {
-			errorMsg = fmt.Sprintf("\tSonarrRadarr[%d].Library is not set", i)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tSonarrRadarr[%d].Library is not set", i), "Library must be specified", nil)
 			isValid = false
 		} else if !stringSliceContains(libraryNames, app.Library) {
 			// If the library is not in the list of MediaServer libraries, return an error
-			errorMsg = fmt.Sprintf("\tBad SonarrRadarr[%d].Library: '%s'. Must be one of: %v", i, app.Library, libraryNames)
-			logging.LOG.Error(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tBad SonarrRadarr[%d].Library: '%s'. Must be one of: %v", i, app.Library, libraryNames), "Invalid library", nil)
 			isValid = false
 		}
 
 		if app.URL == "" {
-			errorMsg = fmt.Sprintf("\tSonarrRadarr[%d].URL is not set", i)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tSonarrRadarr[%d].URL is not set", i), "App URL must be specified", nil)
 			isValid = false
 		} else if !strings.HasPrefix(app.URL, "http") {
 			// If the URL does not start with http or https, return an error
-			errorMsg = fmt.Sprintf("\tSonarrRadarr[%d].URL: '%s' must start with http:// or https:// ", i, app.URL)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tSonarrRadarr[%d].URL: '%s' must start with http:// or https:// ", i, app.URL), "", nil)
 			isValid = false
 		}
 
 		if app.APIKey == "" {
-			errorMsg = fmt.Sprintf("\tSonarrRadarr[%d].APIKey is not set", i)
-			logging.LOG.Warn(errorMsg)
-			errorMsgs = append(errorMsgs, errorMsg)
+			logAction.SetError(fmt.Sprintf("\tSonarrRadarr[%d].APIKey is not set", i), "App APIKey must be specified", nil)
 			isValid = false
 		}
 
 		// Test Connection to the App
-		valid, Err := SR_CallTestConnection(app)
+		valid, Err := SR_CallTestConnection(ctx, app)
 		if Err.Message != "" || !valid {
-			logging.LOG.Warn(Err.Message)
-			errorMsgs = append(errorMsgs, Err.Message)
 			isValid = false
 		}
 
@@ -420,12 +349,7 @@ func Config_ValidateSonarrRadarr(apps Config_SonarrRadarr_Apps, mediaServerConfi
 		apps.Applications[i] = app
 	}
 
-	if !isValid {
-		logging.LOG.Error("\tSonarrRadarr configuration is invalid. Fix the errors above.")
-		return false, errorMsgs, apps
-	}
-
-	return isValid, errorMsgs, apps
+	return isValid
 }
 
 // stringSliceContains checks if a string is present in a slice of strings.

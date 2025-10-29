@@ -2,65 +2,67 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"strconv"
 	"sync"
 )
 
 // Called in main on startup so that the cache has all sections and items
 func GetAllSectionsAndItems() {
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Get All Sections and Items")
+	defer ld.Log()
+
+	action := ld.AddAction("Fetching All Sections", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, action)
+	defer action.Complete()
 
 	// Get all sections from the media server
-	allSections, Err := CallFetchLibrarySectionInfo()
-	if Err.Message != "" {
-		logging.LOG.Error(Err.Message)
+	allSections, logErr := CallFetchLibrarySectionInfo(ctx)
+	if logErr.Message != "" {
 		return
 	}
 
-	mediaServer, Err := GetMediaServerInterface(Config_MediaServer{})
-	if Err.Message != "" {
-		return
-	}
-
+	// Create a wait group
 	var wg sync.WaitGroup
 
+	// Loop through all libraries in the Media Server config
 	for _, section := range allSections {
 		wg.Add(1)
-		go func(section LibrarySection) {
+		go func(section LibrarySection, ctx context.Context) {
 			defer wg.Done()
 			sectionStartIndex := "0"
 			var allItems []MediaItem
 
 			for {
-				items, totalSize, Err := mediaServer.FetchLibrarySectionItems(section, sectionStartIndex)
+				sectionInfo, Err := CallFetchLibrarySectionItems(ctx, section.ID, section.Title, section.Type, sectionStartIndex)
 				if Err.Message != "" {
-					logging.LOG.Error(Err.Message)
 					break
 				}
 
-				if len(items) == 0 {
+				if len(sectionInfo.MediaItems) == 0 {
 					break
 				}
 
-				allItems = append(allItems, items...)
+				allItems = append(allItems, sectionInfo.MediaItems...)
 
 				section.MediaItems = allItems
 				Global_Cache_LibraryStore.UpdateSection(&section)
 
 				sec, _ := Global_Cache_LibraryStore.GetSectionByTitle(section.Title)
-				logging.LOG.Trace("Current cached items for section " + section.Title + ": " + strconv.Itoa(len(sec.MediaItems)))
+				logging.LOGGER.Info().Timestamp().Int("items", len(sec.MediaItems)).Msgf("Fetched items for section '%s'", section.Title)
 
 				sectionStartIndexInt, err := strconv.Atoi(sectionStartIndex)
 				if err != nil {
-					logging.LOG.Error("Failed to convert sectionStartIndex to int: " + err.Error())
+					logging.LOGGER.Error().Timestamp().Msgf("Failed to convert sectionStartIndex to int: %s", err.Error())
 					break
 				}
 				sectionStartIndex = strconv.Itoa(sectionStartIndexInt + 500)
 
-				if totalSize < sectionStartIndexInt+500 {
+				if sectionInfo.TotalSize < sectionStartIndexInt+500 {
 					break
 				}
 			}
-		}(section)
+		}(section, ctx)
 	}
 
 	wg.Wait()

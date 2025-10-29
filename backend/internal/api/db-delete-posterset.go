@@ -2,54 +2,79 @@ package api
 
 import (
 	"aura/internal/logging"
-	"fmt"
+	"context"
 )
 
-func DB_Delete_PosterSet(posterSetID, tmdbID, libraryTitle string) logging.StandardError {
-	Err := logging.NewStandardError()
+func DB_Delete_PosterSet(ctx context.Context, posterSetID string, tmdbID string, libraryTitle string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Deleting Poster Set from DB", logging.LevelInfo)
+	defer logAction.Complete()
 
 	// Start a DB transaction
+	actionStartTx := logAction.AddSubAction("Start DB Transaction", logging.LevelTrace)
 	tx, err := db.Begin()
 	if err != nil {
-		Err.Message = "Failed to begin database transaction"
-		Err.HelpText = "Check the details for more information"
-		Err.Details = map[string]any{
-			"error":        err.Error(),
-			"posterSet":    posterSetID,
-			"tmdbID":       tmdbID,
-			"libraryTitle": libraryTitle,
-		}
-		return Err
+		actionStartTx.SetError("Failed to begin DB transaction", "Could not start a transaction to delete poster set",
+			map[string]any{
+				"error":        err.Error(),
+				"posterSetID":  posterSetID,
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionStartTx.Error
 	}
+	actionStartTx.Complete()
 
 	// Delete from SavedItems table
+	actionDeleteSavedItems := logAction.AddSubAction("Delete from SavedItems", logging.LevelTrace)
 	_, err = tx.Exec(`DELETE FROM SavedItems WHERE PosterSetID = ? AND TMDB_ID = ? AND LibraryTitle = ?;`, posterSetID, tmdbID, libraryTitle)
 	if err != nil {
 		tx.Rollback()
-		Err.Message = "Failed to delete from SavedItems"
-		Err.HelpText = "Transaction rolled back"
-		Err.Details = map[string]any{"error": err.Error(), "PosterSetID": posterSetID, "TMDB_ID": tmdbID, "LibraryTitle": libraryTitle}
-		return Err
+		actionDeleteSavedItems.SetError("Failed to delete from SavedItems", "Could not delete poster set from SavedItems table",
+			map[string]any{
+				"error":        err.Error(),
+				"posterSetID":  posterSetID,
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionDeleteSavedItems.Error
 	}
+	actionDeleteSavedItems.Complete()
 
 	// Delete from PosterSets table
+	actionDeletePosterSets := logAction.AddSubAction("Delete from PosterSets", logging.LevelTrace)
 	_, err = tx.Exec(`DELETE FROM PosterSets WHERE PosterSetID = ? AND TMDB_ID = ? AND LibraryTitle = ?;`, posterSetID, tmdbID, libraryTitle)
 	if err != nil {
 		tx.Rollback()
-		Err.Message = "Failed to delete from PosterSets"
-		Err.HelpText = "Transaction rolled back"
-		Err.Details = map[string]any{"error": err.Error(), "PosterSetID": posterSetID, "TMDB_ID": tmdbID, "LibraryTitle": libraryTitle}
-		return Err
+		actionDeletePosterSets.SetError("Failed to delete from PosterSets", "Could not delete poster set from PosterSets table",
+			map[string]any{
+				"error":        err.Error(),
+				"posterSetID":  posterSetID,
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionDeletePosterSets.Error
 	}
+	actionDeletePosterSets.Complete()
 
 	// Commit the transaction
+	actionCommitTx := logAction.AddSubAction("Commit DB Transaction", logging.LevelTrace)
 	if err := tx.Commit(); err != nil {
-		Err.Message = "Failed to commit transaction"
-		Err.HelpText = "Check the details for more information"
-		Err.Details = map[string]any{"error": err.Error()}
-		return Err
+		tx.Rollback()
+		actionCommitTx.SetError("Failed to commit DB transaction", "Could not commit the transaction to delete poster set",
+			map[string]any{
+				"error":        err.Error(),
+				"posterSetID":  posterSetID,
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionCommitTx.Error
 	}
+	actionCommitTx.Complete()
 
-	logging.LOG.Info(fmt.Sprintf("Deleted PosterSet '%s' for item (TMDB ID: %s | Library Title: %s) from database", posterSetID, tmdbID, libraryTitle))
-	return Err
+	logAction.AppendResult("action", "deleted poster set from database")
+	logAction.AppendResult("poster_set_id", posterSetID)
+	logAction.AppendResult("tmdb_id", tmdbID)
+	logAction.AppendResult("library_title", libraryTitle)
+
+	return logging.LogErrorInfo{}
 }

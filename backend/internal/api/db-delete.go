@@ -2,62 +2,89 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 )
 
-func DB_DeleteItem(TMDB_ID, LibraryTitle string) logging.StandardError {
-	Err := logging.NewStandardError()
+func DB_DeleteItem(ctx context.Context, tmdbID string, libraryTitle string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Deleting Item from DB", logging.LevelInfo)
+	defer logAction.Complete()
 
 	// Start a DB transaction
+	actionStartTx := logAction.AddSubAction("Start DB Transaction", logging.LevelTrace)
 	tx, err := db.Begin()
 	if err != nil {
-		Err.Message = "Failed to begin database transaction"
-		Err.HelpText = "Check the details for more information"
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"item":    TMDB_ID,
-			"library": LibraryTitle,
-		}
-		return Err
+		actionStartTx.SetError("Failed to begin DB transaction", "Could not start a transaction to delete item",
+			map[string]any{
+				"error":        err.Error(),
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionStartTx.Error
 	}
+	actionStartTx.Complete()
 
 	// Delete from SavedItems table
-	_, err = tx.Exec(`DELETE FROM SavedItems WHERE TMDB_ID = ? AND LibraryTitle = ?;`, TMDB_ID, LibraryTitle)
+	actionDeleteSavedItems := logAction.AddSubAction("Delete from SavedItems", logging.LevelTrace)
+	_, err = tx.Exec(`DELETE FROM SavedItems WHERE TMDB_ID = ? AND LibraryTitle = ?;`, tmdbID, libraryTitle)
 	if err != nil {
 		tx.Rollback()
-		Err.Message = "Failed to delete from SavedItems"
-		Err.HelpText = "Transaction rolled back"
-		Err.Details = map[string]any{"error": err.Error(), "TMDB_ID": TMDB_ID, "LibraryTitle": LibraryTitle}
-		return Err
+		actionDeleteSavedItems.SetError("Failed to delete from SavedItems", "Could not delete item from SavedItems table",
+			map[string]any{
+				"error":        err.Error(),
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionDeleteSavedItems.Error
 	}
+	actionDeleteSavedItems.Complete()
 
 	// Delete from PosterSets table
-	_, err = tx.Exec(`DELETE FROM PosterSets WHERE TMDB_ID = ? AND LibraryTitle = ?;`, TMDB_ID, LibraryTitle)
+	actionDeletePosterSets := logAction.AddSubAction("Delete from PosterSets", logging.LevelTrace)
+	_, err = tx.Exec(`DELETE FROM PosterSets WHERE TMDB_ID = ? AND LibraryTitle = ?;`, tmdbID, libraryTitle)
 	if err != nil {
 		tx.Rollback()
-		Err.Message = "Failed to delete from PosterSets"
-		Err.HelpText = "Transaction rolled back"
-		Err.Details = map[string]any{"error": err.Error(), "TMDB_ID": TMDB_ID, "LibraryTitle": LibraryTitle}
-		return Err
+		actionDeletePosterSets.SetError("Failed to delete from PosterSets", "Could not delete item from PosterSets table",
+			map[string]any{
+				"error":        err.Error(),
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionDeletePosterSets.Error
 	}
+	actionDeletePosterSets.Complete()
 
 	// Delete from MediaItems table
-	_, err = tx.Exec(`DELETE FROM MediaItems WHERE TMDB_ID = ? AND LibraryTitle = ?;`, TMDB_ID, LibraryTitle)
+	actionDeleteMediaItems := logAction.AddSubAction("Delete from MediaItems", logging.LevelTrace)
+	_, err = tx.Exec(`DELETE FROM MediaItems WHERE TMDB_ID = ? AND LibraryTitle = ?;`, tmdbID, libraryTitle)
 	if err != nil {
 		tx.Rollback()
-		Err.Message = "Failed to delete from MediaItems"
-		Err.HelpText = "Transaction rolled back"
-		Err.Details = map[string]any{"error": err.Error(), "TMDB_ID": TMDB_ID, "LibraryTitle": LibraryTitle}
-		return Err
+		actionDeleteMediaItems.SetError("Failed to delete from MediaItems", "Could not delete item from MediaItems table",
+			map[string]any{
+				"error":        err.Error(),
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionDeleteMediaItems.Error
 	}
+	actionDeleteMediaItems.Complete()
 
 	// Commit the transaction
+	actionCommitTx := logAction.AddSubAction("Commit DB Transaction", logging.LevelTrace)
 	if err := tx.Commit(); err != nil {
-		Err.Message = "Failed to commit transaction"
-		Err.HelpText = "Check the details for more information"
-		Err.Details = map[string]any{"error": err.Error()}
-		return Err
+		tx.Rollback()
+		actionCommitTx.SetError("Failed to commit DB transaction", "Could not commit the transaction to delete item",
+			map[string]any{
+				"error":        err.Error(),
+				"tmdbID":       tmdbID,
+				"libraryTitle": libraryTitle,
+			})
+		return *actionCommitTx.Error
 	}
+	actionCommitTx.Complete()
 
-	logging.LOG.Info("Deleted item (TMDB ID: " + TMDB_ID + " | Library Title: " + LibraryTitle + ") from database")
-	return Err
+	logAction.AppendResult("tmdbID", tmdbID)
+	logAction.AppendResult("libraryTitle", libraryTitle)
+	logAction.AppendResult("action", "delete")
+
+	return logging.LogErrorInfo{}
 }

@@ -2,40 +2,61 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
 	"strconv"
 )
 
-func (s *SonarrApp) HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardError {
-	return SR_HandleTags(app, item)
+func (s *SonarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
+	return SR_HandleTags(ctx, app, item)
 }
 
-func (r *RadarrApp) HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardError {
-	return SR_HandleTags(app, item)
+func (r *RadarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
+	return SR_HandleTags(ctx, app, item)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_CallHandleTags(item MediaItem) logging.StandardError {
+func SR_CallHandleTags(ctx context.Context, item MediaItem) logging.LogErrorInfo {
 	if len(Global_Config.SonarrRadarr.Applications) == 0 {
-		return logging.NewStandardError() // No applications configured, nothing to do
+		return logging.LogErrorInfo{}
 	}
+
+	ctx, ld := logging.CreateLoggingContext(ctx, "Sonarr/Radarr - Handle Tags for Media Item")
+	logAction := ld.AddAction(fmt.Sprintf("Handling Tags for %s", item.Title), logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer ld.Log()
+	defer logAction.Complete()
+
+	if item.Type != "movie" && item.Type != "show" {
+		logAction.SetError("Unsupported Media Item Type",
+			"Only media items of type 'movie' or 'show' are supported for tag handling.",
+			map[string]any{
+				"title":   item.Title,
+				"type":    item.Type,
+				"tmdb_id": item.TMDB_ID,
+				"library": item.LibraryTitle,
+			})
+		return *logAction.Error
+	}
+
+	// If the media item doesn't have a TMDB ID or Library Title return
+	if item.TMDB_ID == "" || item.LibraryTitle == "" {
+		logAction.SetError("Missing Required Media Item Information",
+			"Media item must have both TMDB ID and Library Title to handle tags.",
+			map[string]any{
+				"title":         item.Title,
+				"type":          item.Type,
+				"tmdb_id":       item.TMDB_ID,
+				"library_title": item.LibraryTitle,
+			})
+		return *logAction.Error
+	}
+
 	for _, app := range Global_Config.SonarrRadarr.Applications {
-		// If the media item type is not "movie" or "show", return
-		if item.Type != "movie" && item.Type != "show" {
-			logging.LOG.Warn(fmt.Sprintf("Item type '%s' is not 'movie' or 'show', skipping", item.Type))
-			continue
-		}
-
-		// If the media item doesn't have a TMDB ID or Library Title return
-		if item.TMDB_ID == "" || item.LibraryTitle == "" {
-			logging.LOG.Warn("Item is missing TMDB ID or Library Title, skipping tag handling")
-			continue
-		}
-
 		// Make sure all of the required information is set
-		Err := SR_MakeSureAllInfoIsSet(app)
+		Err := SR_MakeSureAllInfoIsSet(ctx, app)
 		if Err.Message != "" {
 			continue
 		}
@@ -45,41 +66,53 @@ func SR_CallHandleTags(item MediaItem) logging.StandardError {
 			continue
 		}
 
+		actionApp := logAction.AddSubAction(fmt.Sprintf("Handling Tags for %s (%s)", app.Type, app.Library), logging.LevelInfo)
+
 		// If the library title doesn't match, skip
 		if app.Library != item.LibraryTitle {
-			logging.LOG.Warn(fmt.Sprintf("%s (%s) does not match item library title '%s', skipping", app.Type, app.Library, item.LibraryTitle))
+			actionApp.AppendWarning("message", fmt.Sprintf("Library title '%s' does not match application library '%s', skipping", item.LibraryTitle, app.Library))
 			continue
 		}
 
-		interfaceSR, Err := SR_GetSonarrRadarrInterface(app)
+		interfaceSR, Err := NewSonarrRadarrInterface(ctx, app)
 		if Err.Message != "" {
-			logging.LOG.Warn(Err.Message)
+			actionApp.SetError("Failed to Get Interface",
+				fmt.Sprintf("Skipping this %s instance because the interface could not be retrieved", app.Type),
+				map[string]any{
+					"error": Err.Message,
+				})
+			continue
+		}
+		Err = interfaceSR.HandleTags(ctx, app, item)
+		if Err.Message != "" {
+			actionApp.SetError("Failed to Handle Tags",
+				fmt.Sprintf("An error occurred while handling tags for this %s instance", app.Type),
+				map[string]any{
+					"error": Err.Message,
+				})
 			continue
 		}
 
-		Err = interfaceSR.HandleTags(app, item)
-		if Err.Message != "" {
-			logging.LOG.Warn(Err.Message)
-		}
 	}
-	return logging.StandardError{}
+	return logging.LogErrorInfo{}
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardError {
-	Err := logging.NewStandardError()
+func SR_HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Handling tags for %s in %s (%s)", item.Title, app.Type, app.Library), logging.LevelInfo)
+	defer logAction.Complete()
 
-	// Get the full item information from Sonarr/Radarr
+	// Get the full information about the Media Item from Sonarr/Radarr
 	tmdbIDInt, _ := strconv.Atoi(item.TMDB_ID)
-	srItem, Err := SR_CallGetItemInfoFromTMDBID(app, tmdbIDInt)
+	srItem, Err := SR_CallGetItemInfoFromTMDBID(ctx, app, tmdbIDInt)
 	if Err.Message != "" {
 		return Err
 	}
 
 	// Get all of the tags from Sonarr/Radarr
-	allAvailableTags, Err := SR_CallGetAllTags(app)
+	allAvailableTags, Err := SR_CallGetAllTags(ctx, app)
 	if Err.Message != "" {
 		return Err
 	}
@@ -114,15 +147,15 @@ func SR_HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardE
 			}
 		}
 
-		// Actually add missing tags to Sonarr/Radarr
+		// If there are tags to add, add them
 		if len(tagsToAdd) > 0 {
-			newTags, Err := SR_CallAddNewTags(app, tagsToAdd)
+			newTags, Err := SR_CallAddNewTags(ctx, app, tagsToAdd)
 			if Err.Message != "" {
-				return Err
+				continue
 			}
 			// Add new tags to availableTagMap
-			for _, tag := range newTags {
-				availableTagMap[tag.Label] = tag
+			for _, newTag := range newTags {
+				availableTagMap[newTag.Label] = newTag
 			}
 		}
 
@@ -132,15 +165,15 @@ func SR_HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardE
 		case "Sonarr":
 			srSonarrItem, ok := srItem.(SR_SonarrItem)
 			if !ok {
-				Err.Message = "srItem is not of type SR_SonarrItem"
-				return Err
+				logAction.SetError("Type Assertion Failed", "Failed to assert type to SR_SonarrItem", nil)
+				return *logAction.Error
 			}
 			currentTagIDs = srSonarrItem.Tags
 		case "Radarr":
 			srRadarrItem, ok := srItem.(SR_RadarrItem)
 			if !ok {
-				Err.Message = "srItem is not of type SR_RadarrItem"
-				return Err
+				logAction.SetError("Type Assertion Failed", "Failed to assert type to SR_RadarrItem", nil)
+				return *logAction.Error
 			}
 			currentTagIDs = srRadarrItem.Tags
 		}
@@ -195,12 +228,13 @@ func SR_HandleTags(app Config_SonarrRadarrApp, item MediaItem) logging.StandardE
 		}
 
 		// Update the item in Sonarr/Radarr with the new tags
-		Err = SR_CallUpdateItemInfo(app, srItem)
+		Err = SR_CallUpdateItemInfo(ctx, app, srItem)
 		if Err.Message != "" {
 			return Err
 		}
-		logging.LOG.Info(fmt.Sprintf("Updated %s (%s) item '%s' with tags: %v", app.Type, app.Library, item.Title, finalTagLabels))
+
+		logAction.AppendResult("final_tags", finalTagLabels)
 	}
 
-	return Err
+	return logging.LogErrorInfo{}
 }

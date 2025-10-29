@@ -3,20 +3,19 @@ package api
 import (
 	"aura/internal/logging"
 	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
-func Notification_SendDiscordMessage(provider *Config_Notification_Discord, message string, imageURL string, title string) logging.StandardError {
-	logging.LOG.Trace("Sending Discord Notification")
-	Err := logging.NewStandardError()
+func Notification_SendDiscordMessage(ctx context.Context, provider *Config_Notification_Discord, message string, imageURL string, title string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Discord Notification", logging.LevelInfo)
+	defer logAction.Complete()
 
 	webhookURL := provider.Webhook
 	if webhookURL == "" {
-		Err.Message = "Discord webhook URL is not configured"
-		Err.HelpText = "Please set the Discord webhook URL in the configuration."
-		return Err
+		logAction.SetError("Missing Webhook URL", "Please configure the Discord webhook URL", nil)
+		return *logAction.Error
 	}
 
 	embed := map[string]any{
@@ -43,34 +42,29 @@ func Notification_SendDiscordMessage(provider *Config_Notification_Discord, mess
 
 	bodyBytes, err := json.Marshal(webhookBody)
 	if err != nil {
-		Err.Message = "Failed to marshal webhook body"
-		Err.HelpText = "Ensure the webhook body is correctly formatted."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-			"body":  webhookBody,
-		}
-		return Err
+		logAction.SetError("Failed to marshal webhook body",
+			"An error occurred while preparing the Discord message",
+			map[string]any{"error": err.Error()})
+		return *logAction.Error
 	}
 
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		Err.Message = "Failed to send webhook request"
-		Err.HelpText = "Ensure the Discord webhook URL is correct and accessible."
-		Err.Details = map[string]any{
-			"error": err.Error(),
-		}
-		return Err
+		logAction.SetError("Failed to send Discord message",
+			"An error occurred while sending the message to Discord",
+			map[string]any{"error": err.Error()})
+		return *logAction.Error
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		Err.Message = fmt.Sprintf("Failed to send Discord notification, received status code: %d", resp.StatusCode)
-		Err.HelpText = "Ensure the Discord webhook URL is correct and the bot has permission to send messages."
-		Err.Details = map[string]any{
-			"responseStatus": resp.Status,
-		}
-		return Err
+		logAction.SetError("Failed to send Discord message",
+			"Received non-204 response from Discord",
+			map[string]any{
+				"status_code": resp.StatusCode,
+			})
+		return *logAction.Error
 	}
 
-	return logging.StandardError{}
+	return logging.LogErrorInfo{}
 }

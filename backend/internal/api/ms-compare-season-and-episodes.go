@@ -1,6 +1,8 @@
 package api
 
 import (
+	"aura/internal/logging"
+	"context"
 	"fmt"
 )
 
@@ -49,7 +51,10 @@ func MS_CheckEpisodePathChanges(dbSavedItem, latestMediaItem MediaItem) bool {
 	return false
 }
 
-func CheckSeasonAdded(seasonNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
+func CheckSeasonAdded(ctx context.Context, seasonNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Checking if season %d was added", seasonNumber), logging.LevelTrace)
+	defer logAction.Complete()
+
 	// First check if the season exists in dbSavedItem
 	seasonExistsInDB := false
 	if dbSavedItem.Series.Seasons != nil {
@@ -68,13 +73,18 @@ func CheckSeasonAdded(seasonNumber int, dbSavedItem, latestMediaItem MediaItem, 
 				// Season was added
 				psFileReasons.ReasonTitle = "Downloading - New Season Added"
 				psFileReasons.ReasonDetails = fmt.Sprintf("Season %s was added", Util_Format_Get2DigitNumber(int64(seasonNumber)))
+				logAction.AppendResult("season_added", psFileReasons)
 				return
 			}
 		}
 	}
+	logAction.AppendResult("season_not_added", fmt.Sprintf("Season %d exists in DB", seasonNumber))
 }
 
-func CheckEpisodeAdded(seasonNumber, episodeNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
+func CheckEpisodeAdded(ctx context.Context, seasonNumber, episodeNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Checking if S%dE%d was added or changed", seasonNumber, episodeNumber), logging.LevelTrace)
+	defer logAction.Complete()
+
 	var episodePathInDB, episodePathInLatest string
 	episodeExistsInDB := false
 
@@ -101,6 +111,7 @@ func CheckEpisodeAdded(seasonNumber, episodeNumber int, dbSavedItem, latestMedia
 					if !episodeExistsInDB {
 						psFileReasons.ReasonTitle = "Downloading - New Episode Added"
 						psFileReasons.ReasonDetails = fmt.Sprintf("S%sE%s was added", Util_Format_Get2DigitNumber(int64(seasonNumber)), Util_Format_Get2DigitNumber(int64(episodeNumber)))
+						logAction.AppendResult("episode_added", psFileReasons)
 						return
 					}
 					break
@@ -114,6 +125,7 @@ func CheckEpisodeAdded(seasonNumber, episodeNumber int, dbSavedItem, latestMedia
 	if episodeExistsInDB && episodePathInDB != "" && episodePathInLatest != "" && episodePathInDB != episodePathInLatest {
 		psFileReasons.ReasonTitle = "Redownloading - Episode Path Changed"
 		psFileReasons.ReasonDetails = fmt.Sprintf("S%sE%s path changed from\n'%s'\nto\n'%s'", Util_Format_Get2DigitNumber(int64(seasonNumber)), Util_Format_Get2DigitNumber(int64(episodeNumber)), episodePathInDB, episodePathInLatest)
+		logAction.AppendResult("episode_path_changed", psFileReasons)
 		return
 	}
 }

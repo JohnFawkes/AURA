@@ -1,8 +1,6 @@
 package api
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func MediaServer_GetFileDownloadName(file PosterFile) string {
 	switch file.Type {

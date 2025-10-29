@@ -2,6 +2,7 @@ package api
 
 import (
 	"aura/internal/logging"
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -22,119 +23,124 @@ func init() {
 	PlexTempImageFolder = path.Join(configPath, "temp-images", "plex")
 }
 
-func (p *PlexServer) FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.StandardError) {
-	// Fetch the image from Plex
-	imageData, Err := Plex_FetchImageFromMediaServer(ratingKey, imageType)
-	if Err.Message != "" {
-		return nil, Err
-	}
-	return imageData, logging.StandardError{}
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+func (p *PlexServer) FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo) {
+	return Plex_FetchImageFromMediaServer(ctx, ratingKey, imageType)
 }
 
-func (e *EmbyJellyServer) FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.StandardError) {
-	// Fetch the image from Emby/Jellyfin
-	imageData, Err := EJ_FetchImageFromMediaServer(ratingKey, imageType)
-	if Err.Message != "" {
-		return nil, Err
-	}
-	return imageData, logging.StandardError{}
+func (e *EmbyJellyServer) FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo) {
+	return EJ_FetchImageFromMediaServer(ctx, ratingKey, imageType)
 }
 
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 
-func Plex_FetchImageFromMediaServer(ratingKey string, imageType string) ([]byte, logging.StandardError) {
-	Err := logging.NewStandardError()
+func CallFetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo) {
+	mediaServer, _, Err := NewMediaServerInterface(ctx, Config_MediaServer{})
+	if Err.Message != "" {
+		return nil, Err
+	}
+
+	return mediaServer.FetchImageFromMediaServer(ctx, ratingKey, imageType)
+}
+
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+
+func Plex_FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Image from Plex Media Server", logging.LevelDebug)
+	defer logAction.Complete()
 
 	// Construct the URL for the Plex server API request
 	if imageType == "backdrop" {
 		imageType = "art"
 	}
-	photoUrl := fmt.Sprintf("/library/metadata/%s/%s", ratingKey, imageType)
-	// Encode the URL for the request
-	encodedPhotoUrl := url.QueryEscape(photoUrl + fmt.Sprintf("/%d", time.Now().Unix()))
-	plexURL := fmt.Sprintf("%s/photo/:/transcode?width=300&height=450&url=%s", Global_Config.MediaServer.URL, encodedPhotoUrl)
-	if imageType == "art" {
-		plexURL = fmt.Sprintf("%s/photo/:/transcode?width=1920&height=1080&url=%s", Global_Config.MediaServer.URL, encodedPhotoUrl)
-	}
 
-	response, body, Err := MakeHTTPRequest(plexURL, "GET", nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return nil, Err
+	// Make the URL
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse Plex base URL", err.Error(), nil)
+		return nil, *logAction.Error
 	}
-	defer response.Body.Close()
+	u.Path = path.Join(u.Path, "library", "metadata", ratingKey, imageType, fmt.Sprintf("%d", time.Now().Unix()))
+	URL := u.String()
 
-	if response.StatusCode != http.StatusOK {
-		Err.Message = "Failed to fetch image from Plex server"
-		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-			"ratingKey":  ratingKey,
-			"imageType":  imageType,
-			"request":    plexURL,
-		}
-		return nil, Err
+	// Make the API request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return nil, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Failed to fetch image from Plex",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{
+				"URL":        URL,
+				"StatusCode": httpResp.StatusCode,
+			})
+		return nil, *logAction.Error
 	}
 
 	// Check if the response body is empty
-	if len(body) == 0 {
-		Err.Message = "Received empty response from Plex server"
-		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-			"ratingKey":  ratingKey,
-			"imageType":  imageType,
-			"request":    plexURL,
-		}
-		return nil, Err
+	if len(respBody) == 0 {
+		logAction.SetError("No image data returned from Plex",
+			"The Plex server returned an empty response body for the requested image.",
+			map[string]any{
+				"URL": URL,
+			})
+		return nil, *logAction.Error
 	}
 
 	// Return the image data
-	return body, logging.StandardError{}
+	return respBody, logging.LogErrorInfo{}
 }
 
-///////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
+func EJ_FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageType string) ([]byte, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Image from %s Media Server", Global_Config.MediaServer.Type), logging.LevelDebug)
+	defer logAction.Complete()
 
-func EJ_FetchImageFromMediaServer(ratingKey, imageType string) ([]byte, logging.StandardError) {
-	Err := logging.NewStandardError()
 	switch imageType {
 	case "poster":
 		imageType = "Primary"
 	case "backdrop":
 		imageType = "Backdrop"
 	default:
-		Err.Message = "Invalid image type"
-		Err.HelpText = "Image type must be either 'poster' or 'backdrop'."
-		Err.Details = map[string]any{
-			"receivedImageType": imageType,
-		}
-		return nil, Err
+		logAction.SetError("Unsupported image type requested",
+			fmt.Sprintf("The image type '%s' is not supported. Use 'poster' or 'backdrop'.", imageType),
+			nil)
+		return nil, *logAction.Error
 	}
 
-	baseURL, Err := MakeMediaServerAPIURL(fmt.Sprintf("Items/%s/Images/%s", ratingKey, imageType), Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return nil, Err
+	// Make the URL
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return nil, *logAction.Error
 	}
+	u.Path = path.Join("Items", ratingKey, "Images", imageType)
+	URL := u.String()
 
-	response, body, Err := MakeHTTPRequest(baseURL.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return nil, Err
+	// Make the API request to Emby/Jellyfin
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	if logErr.Message != "" {
+		return nil, logErr
 	}
-	defer response.Body.Close()
+	defer httpResp.Body.Close()
 
-	// Check if the response is empty
-	if len(body) == 0 {
-		Err.Message = "Received empty response from media server"
-		Err.HelpText = fmt.Sprintf("Ensure the media server is running and the item with rating key %s exists.", ratingKey)
-		Err.Details = map[string]any{
-			"statusCode": response.StatusCode,
-			"ratingKey":  ratingKey,
-			"imageType":  imageType,
-		}
-		return nil, Err
+	// Check if the response body is empty
+	if len(respBody) == 0 {
+		logAction.SetError("No image data returned from Media Server",
+			"The Media Server returned an empty response body for the requested image.",
+			map[string]any{
+				"URL": URL,
+			})
+		return nil, *logAction.Error
 	}
 
 	// Return the image data
-	return body, logging.StandardError{}
+	return respBody, logging.LogErrorInfo{}
 }

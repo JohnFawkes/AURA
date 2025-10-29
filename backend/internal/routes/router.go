@@ -44,6 +44,7 @@ func NewRouter() *chi.Mux {
 
 	// If the route is not found, return a JSON response
 	r.NotFound(routes_api.NotFound)
+	r.MethodNotAllowed(routes_api.MethodNotAllowed)
 
 	return r
 }
@@ -51,117 +52,134 @@ func NewRouter() *chi.Mux {
 // AddRoutes adds all the routes to the given router.
 func AddRoutes(r *chi.Mux) {
 
-	// Basic route to check if the server is running
-	r.Get("/", routes_api.HealthCheck)
-
-	// If config not yet valid, only expose onboarding endpoints.
+	// If Config not yet valid, only expose onboarding routes
 	if !(api.Global_Config_Loaded && api.Global_Config_Valid) {
-		logging.LOG.Warn("Configuration not valid - only onboarding routes available")
+		logging.LOGGER.Info().Timestamp().Msg("Configuration Invalid or not loaded, adding onboarding routes only")
 		addOnboardingRoutes(r)
 		return
 	} else {
-		logging.LOG.Info("Configuration valid - all routes available")
+		logging.LOGGER.Info().Timestamp().Msg("Configuration Valid, adding full routes")
 	}
 
 	routes_auth.SetTokenAuth(jwtauth.New("HS256", []byte(api.Global_Config.Mediux.Token), nil))
 
+	// Basic route to check if the server is running
+	r.Get("/", routes_api.HealthCheck)
+	r.Get("/health", routes_api.HealthCheck)
+
 	r.Route("/api", func(r chi.Router) {
 
+		// Route for Login
 		r.Post("/login", routes_auth.Login)
 
-		// Onboarding Routes
-		r.Get("/onboarding/status", routes_config.OnboardingStatus)
+		// Route for Config Status
+		r.Get("/config/status", routes_config.GetConfigStatus)
 
 		r.Group(func(r chi.Router) {
-
+			// Protected routes
 			r.Use(jwtauth.Verifier(routes_auth.GetTokenAuth()))
 			r.Use(routes_auth.Authenticator)
 
-			// Base API & Health Check Routes
-			// Check if the API is up and running
-			r.Get("/", routes_api.HealthCheck)
-			r.Get("/health", routes_api.HealthCheck)
-
-			r.Get("/health/status/mediaserver", routes_ms.GetStatus)
-
 			// Config Routes
-			r.Get("/config", routes_config.GetSanitizedConfig)
-			r.Get("/config/reload", routes_config.ReloadConfig)
-			r.Get("/config/mediaserver/type", routes_ms.GetType)
-			r.Post("/config/get/mediaserver/sections", routes_ms.GetAllLibrariesOptions)
-			r.Post("/config/update", routes_config.UpdateConfig)
-			r.Post("/config/validate/mediaserver", routes_ms.ValidateNewInfo)
-			r.Post("/config/validate/mediux", routes_mediux.ValidateToken)
-			r.Post("/config/validate/sonarr", routes_sonarr_radarr.TestConnection)
-			r.Post("/config/validate/radarr", routes_sonarr_radarr.TestConnection)
-			r.Post("/config/validate/notification/discord", routes_notification.SendTest)
-			r.Post("/config/validate/notification/gotify", routes_notification.SendTest)
-			r.Post("/config/validate/notification/pushover", routes_notification.SendTest)
+			r.Route("/config", func(r chi.Router) {
+				r.Get("/", routes_config.GetSanitizedConfig)
+				r.Get("/reload", routes_config.ReloadConfig)
+				r.Post("/update", routes_config.UpdateConfig)
 
-			// Log Routes
-			r.Get("/logs", routes_logging.GetCurrentLogFileContents)
-			r.Post("/logs/clear", routes_logging.ClearOldLogs)
+				r.Route("/validate", func(r chi.Router) {
+					r.Post("/mediux", routes_mediux.ValidateToken)
+					r.Post("/mediaserver", routes_ms.ValidateNewInfo)
+					r.Post("/sonarr", routes_sonarr_radarr.TestConnection)
+					r.Post("/radarr", routes_sonarr_radarr.TestConnection)
+					r.Post("/notification", routes_notification.SendTest)
+				})
+			})
 
-			// Clear Temporary Images Route
-			r.Post("/temp-images/clear", routes_tempimages.Clear)
+			// Logging Routes
+			r.Route("/log", func(r chi.Router) {
+				r.Get("/", routes_logging.GetLogFile)
+				r.Post("/clear", routes_logging.ClearLogFile)
+			})
+
+			// Temp Image Routes
+			r.Route("/temp-images", func(r chi.Router) {
+				r.Post("/clear", routes_tempimages.ClearTempImages)
+			})
 
 			// Media Server Routes
-			r.Get("/mediaserver/sections", routes_ms.GetAllSections)
-			r.Get("/mediaserver/sections/items", routes_ms.GetAllSectionItems)
-			r.Get("/mediaserver/item/{ratingKey}", routes_ms.GetItemContent)
-			r.Get("/mediaserver/image/{ratingKey}/{imageType}", routes_ms.GetImage)
-			r.Patch("/mediaserver/download/file", routes_ms.DownloadAndUpdate)
-
-			// Database Routes
-			r.Get("/db/get/all", routes_db.GetAllItems)
-			r.Delete("/db/delete/mediaitem/{tmdbID}/{libraryTitle}", routes_db.DeleteItem)
-			r.Patch("/db/update", routes_db.UpdateItem)
-			r.Post("/db/add/item", routes_db.AddItem)
-			r.Post("/db/force-recheck", routes_autodownload.ForceRecheckItem)
+			r.Route("/mediaserver", func(r chi.Router) {
+				r.Get("/status", routes_ms.GetStatus)
+				r.Get("/type", routes_ms.GetType)
+				r.Post("/library-options", routes_ms.GetAllLibrariesOptions)
+				r.Get("/sections", routes_ms.GetAllSections)
+				r.Get("/sections/items", routes_ms.GetAllSectionItems)
+				r.Get("/item", routes_ms.GetItemContent)
+				r.Get("/image", routes_ms.GetImage)
+				r.Patch("/download", routes_ms.DownloadAndUpdate)
+			})
 
 			// Mediux Routes
-			r.Get("/mediux/sets/get/{itemType}/{librarySection}/{tmdbID}", routes_mediux.GetAllSets)
-			r.Get("/mediux/sets/get_set/{setID}", routes_mediux.GetSetByID)
-			r.Get("/mediux/image/{assetID}", routes_mediux.GetImage)
-			r.Get("/mediux/user/following_hiding", routes_mediux.GetUserFollowingAndHiding)
-			r.Get("/mediux/sets/get_user/sets/{username}", routes_mediux.GetAllUserSets)
+			r.Route("/mediux", func(r chi.Router) {
+				r.Get("/sets", routes_mediux.GetAllSets)
+				r.Get("/sets-by-user", routes_mediux.GetAllUserSets)
+				r.Get("/set-by-id", routes_mediux.GetSetByID)
+				r.Get("/image", routes_mediux.GetImage)
+				r.Get("/user-follow-hiding", routes_mediux.GetUserFollowingAndHiding)
+			})
+
+			// Database Routes
+			r.Route("/db", func(r chi.Router) {
+				r.Get("/get-all", routes_db.GetAllItems)
+				r.Delete("/delete", routes_db.DeleteItem)
+				r.Patch("/update", routes_db.UpdateItem)
+				r.Post("/add", routes_db.AddItem)
+				r.Post("/force-recheck", routes_autodownload.ForceRecheckItem)
+			})
 
 		})
 
 	})
 }
 
+// addOnboardingRoutes adds onboarding routes to the given router.
 func addOnboardingRoutes(r chi.Router) {
+
+	// Base API & Health Check Routes
+	// Check if the API is up and running
+	r.Get("/", routes_api.HealthCheck)
+	r.Get("/health", routes_api.HealthCheck)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 
-			// Base API & Health Check Routes
-			// Check if the API is up and running
-			r.Get("/", routes_api.HealthCheck)
-			r.Get("/health", routes_api.HealthCheck)
-
-			// Onboarding Routes
-			r.Get("/onboarding/status", routes_config.OnboardingStatus)
-
 			// Config Routes
-			r.Post("/config/get/mediaserver/sections", routes_ms.GetAllLibrariesOptions)
-			r.Post("/config/update", routes_config.UpdateConfig)
-			r.Post("/config/validate/mediaserver", routes_ms.ValidateNewInfo)
-			r.Post("/config/validate/mediux", routes_mediux.ValidateToken)
-			r.Post("/config/validate/sonarr", routes_sonarr_radarr.TestConnection)
-			r.Post("/config/validate/radarr", routes_sonarr_radarr.TestConnection)
-			r.Post("/config/validate/notification/discord", routes_notification.SendTest)
-			r.Post("/config/validate/notification/gotify", routes_notification.SendTest)
-			r.Post("/config/validate/notification/pushover", routes_notification.SendTest)
+			r.Route("/config", func(r chi.Router) {
+				r.Get("/", routes_config.GetSanitizedConfig)
+				r.Get("/status", routes_config.GetConfigStatus)
+				r.Post("/reload", routes_config.ReloadConfig)
+				r.Post("/update", routes_config.UpdateConfig)
 
-			// Finalize endpoint: call after last step when config is saved & valid
-			r.Post("/onboarding/complete", func(w http.ResponseWriter, _ *http.Request) {
+				r.Route("/validate", func(r chi.Router) {
+					r.Post("/mediaserver", routes_ms.ValidateNewInfo)
+					r.Post("/mediux", routes_mediux.ValidateToken)
+					r.Post("/sonarr", routes_sonarr_radarr.TestConnection)
+					r.Post("/radarr", routes_sonarr_radarr.TestConnection)
+					r.Post("/notification", routes_notification.SendTest)
+				})
+			})
+
+			r.Post("/mediaserver/library-options", routes_ms.GetAllLibrariesOptions)
+
+			// Finalize Onboarding Route
+			r.Post("/onboarding/finalize", func(w http.ResponseWriter, r *http.Request) {
+				ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
+				logAction := ld.AddAction("Finalize Onboarding", logging.LevelInfo)
+				ctx = logging.WithCurrentAction(ctx, logAction)
+
 				if !(api.Global_Config_Loaded && api.Global_Config_Valid) {
-					api.Util_Response_SendJson(w, 422, api.JSONResponse{
-						Status: "error",
-						Data:   "Config still invalid; cannot finalize.",
-					})
+					logAction.SetError("Configuration is not valid or not loaded", "", nil)
+					ld.Status = logging.StatusError
+					api.Util_Response_SendJSON(w, ld, nil)
 					return
 				}
 
@@ -173,16 +191,11 @@ func addOnboardingRoutes(r chi.Router) {
 					}
 				})
 
-				api.Util_Response_SendJson(w, 200, api.JSONResponse{
-					Status: "success",
-					Data: map[string]any{
-						"finalizeTriggered": triggered,
-					},
+				api.Util_Response_SendJSON(w, ld, map[string]any{
+					"onboarding_finalized": triggered,
 				})
 			})
 
 		})
-
 	})
-
 }

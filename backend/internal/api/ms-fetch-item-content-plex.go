@@ -2,60 +2,65 @@ package api
 
 import (
 	"aura/internal/logging"
-	"encoding/json"
+	"context"
 	"fmt"
 	"net/http"
+	"net/url"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) {
-	url, Err := MakeMediaServerAPIURL(fmt.Sprintf("library/metadata/%s", ratingKey), Global_Config.MediaServer.URL)
-	if Err.Message != "" {
-		return MediaItem{}, Err
-	}
+func Plex_FetchItemContent(ctx context.Context, ratingKey string) (MediaItem, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Item Content for Rating Key '%s' from Plex", ratingKey), logging.LevelTrace)
+	defer logAction.Complete()
+
 	var itemInfo MediaItem
 
-	// Make a GET request to the Plex server
-	resp, body, Err := MakeHTTPRequest(url.String(), http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return itemInfo, Err
+	// Construct the URL for the Plex server API request
+	u, err := url.Parse(Global_Config.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return itemInfo, *logAction.Error
 	}
-	defer resp.Body.Close()
+	u.Path = path.Join(u.Path, "library/metadata", ratingKey)
+	URL := u.String()
 
-	if resp.StatusCode != http.StatusOK {
-		Err.Message = "Failed to fetch item content from Plex server"
-		Err.HelpText = fmt.Sprintf("Ensure the item with rating key %s exists. If it does, check the Plex server logs for more information. If it doesn't, please try refreshing aura from the Home page.", ratingKey)
-		Err.Details = map[string]any{
-			"statusCode": resp.StatusCode,
-			"ratingKey":  ratingKey,
-			"request":    url.String(),
-		}
-		return itemInfo, Err
+	// Make the API request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return itemInfo, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Failed to fetch item content from Plex",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{
+				"URL":        URL,
+				"StatusCode": httpResp.StatusCode,
+			})
+		return itemInfo, *logAction.Error
 	}
 
 	// Parse the response body into a PlexLibraryItemsWrapper struct
 	var plexResponse PlexLibraryItemsWrapper
-	err := json.Unmarshal(body, &plexResponse)
-	if err != nil {
-		Err.Message = "Failed to parse JSON response"
-		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": url.String(),
-		}
-		return itemInfo, Err
+	logErr = DecodeJSONBody(ctx, respBody, &plexResponse, "PlexLibraryItemsWrapper")
+	if logErr.Message != "" {
+		return itemInfo, logErr
 	}
 
+	// Check if any metadata was returned
 	if len(plexResponse.MediaContainer.Metadata) == 0 {
-		Err.Message = "No metadata found for the given rating key"
-		Err.HelpText = "Ensure the rating key is correct and the item exists on the Plex server."
-		Err.Details = map[string]any{
-			"ratingKey": ratingKey,
-		}
-		return itemInfo, Err
+		logAction.SetError("No item found in Plex response",
+			"The Plex server did not return any metadata for the requested item.",
+			map[string]any{
+				"URL": URL,
+			})
+		return itemInfo, *logAction.Error
 	}
 
 	itemInfo.LibraryTitle = plexResponse.MediaContainer.Metadata[0].LibrarySectionTitle
@@ -75,7 +80,8 @@ func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) 
 		itemInfo.ReleasedAt = 0
 	}
 
-	if plexResponse.MediaContainer.Metadata[0].Type == "movie" {
+	switch plexResponse.MediaContainer.Metadata[0].Type {
+	case "movie":
 		itemInfo.Movie = &MediaItemMovie{
 			File: MediaItemFile{
 				Path:     plexResponse.MediaContainer.Metadata[0].Media[0].Part[0].File,
@@ -83,10 +89,8 @@ func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) 
 				Duration: plexResponse.MediaContainer.Metadata[0].Media[0].Part[0].Duration,
 			},
 		}
-	}
-
-	if plexResponse.MediaContainer.Metadata[0].Type == "show" {
-		itemInfo, Err = fetchSeasonsAndEpisodesForShow(&itemInfo)
+	case "show":
+		itemInfo, Err := fetchSeasonsAndEpisodesForShow(ctx, &itemInfo)
 		if Err.Message != "" {
 			return itemInfo, Err
 		}
@@ -96,7 +100,7 @@ func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) 
 	}
 
 	// Extract GUIDs and Ratings from the response
-	guids, _ := getGUIDsAndRatingsFromResponse(plexResponse.MediaContainer.Metadata[0].Guids,
+	guids, _ := getGUIDsAndRatingsFromResponse(ctx, plexResponse.MediaContainer.Metadata[0].Guids,
 		plexResponse.MediaContainer.Metadata[0].Ratings,
 		fmt.Sprintf("%.1f", plexResponse.MediaContainer.Metadata[0].AudienceRating))
 	itemInfo.Guids = guids
@@ -109,17 +113,17 @@ func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) 
 		}
 	}
 	if itemInfo.TMDB_ID == "" {
-		Err.Message = "Item does not have a valid TMDB ID"
-		Err.HelpText = "Only items with a valid TMDB ID can be processed."
-		Err.Details = map[string]any{
-			"ratingKey":   ratingKey,
-			"title":       plexResponse.MediaContainer.Metadata[0].Title,
-			"providerIDs": plexResponse.MediaContainer.Metadata[0].Guids,
-		}
-		return MediaItem{}, Err
+		logAction.SetError("Item does not have a valid TMDB ID",
+			"Ensure the item has a valid TMDB ID in its GUIDs to proceed.",
+			map[string]any{
+				"RatingKey":     itemInfo.RatingKey,
+				"Title":         itemInfo.Title,
+				"ProviderGUIDs": plexResponse.MediaContainer.Metadata[0].Guids,
+			})
+		return itemInfo, *logAction.Error
 	}
 
-	existsInDB, posterSets, _ := DB_CheckIfMediaItemExists(itemInfo.TMDB_ID, itemInfo.LibraryTitle)
+	existsInDB, posterSets, _ := DB_CheckIfMediaItemExists(ctx, itemInfo.TMDB_ID, itemInfo.LibraryTitle)
 	if existsInDB {
 		itemInfo.ExistInDatabase = true
 		itemInfo.DBSavedSets = posterSets
@@ -131,40 +135,39 @@ func Plex_FetchItemContent(ratingKey string) (MediaItem, logging.StandardError) 
 	Global_Cache_LibraryStore.UpdateMediaItem(itemInfo.LibraryTitle, &itemInfo)
 
 	// Return the populated itemInfo struct
-	return itemInfo, logging.StandardError{}
+	return itemInfo, logging.LogErrorInfo{}
 }
 
-func fetchSeasonsAndEpisodesForShow(itemInfo *MediaItem) (MediaItem, logging.StandardError) {
-	logging.LOG.Trace(fmt.Sprintf("Fetching seasons and episodes for show: %s", itemInfo.Title))
-	Err := logging.NewStandardError()
+func fetchSeasonsAndEpisodesForShow(ctx context.Context, itemInfo *MediaItem) (MediaItem, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Seasons and Episodes for Show '%s' from Plex", itemInfo.Title), logging.LevelTrace)
+	defer logAction.Complete()
 
-	url := fmt.Sprintf("%s/library/metadata/%s/allLeaves",
-		Global_Config.MediaServer.URL, itemInfo.RatingKey)
-
-	// Make a GET request to fetch all leaves (episodes)
-	response, body, Err := MakeHTTPRequest(url, http.MethodGet, nil, 60, nil, "MediaServer")
-	if Err.Message != "" {
-		return *itemInfo, Err
-	}
-	defer response.Body.Close()
-
-	// Parse the response body into a PlexResponseWrapper struct
-	var responseSection PlexLibraryItemsWrapper
-	err := json.Unmarshal(body, &responseSection)
+	// Make the URL
+	u, err := url.Parse(Global_Config.MediaServer.URL)
 	if err != nil {
-		Err.Message = "Failed to parse JSON response for all leaves"
-		Err.HelpText = "Ensure the Plex server is returning a valid JSON response."
-		Err.Details = map[string]any{
-			"error":   err.Error(),
-			"request": url,
-		}
-		logging.LOG.Warn(err.Error())
-		return *itemInfo, Err
+		logAction.SetError("Failed to parse Plex base URL", err.Error(), nil)
+		return *itemInfo, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "library", "metadata", itemInfo.RatingKey, "allLeaves")
+	URL := u.String()
+
+	// Make the API request to Plex
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return *itemInfo, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into a PlexLibraryItemsWrapper struct
+	var plexResponse PlexLibraryItemsWrapper
+	logErr = DecodeJSONBody(ctx, respBody, &plexResponse, "PlexLibraryItemsWrapper")
+	if logErr.Message != "" {
+		return *itemInfo, logErr
 	}
 
 	// Group episodes by season number
 	seasonsMap := make(map[int]*MediaItemSeason)
-	for _, video := range responseSection.MediaContainer.Metadata {
+	for _, video := range plexResponse.MediaContainer.Metadata {
 		seasonNum := video.ParentIndex
 		episode := MediaItemEpisode{
 			RatingKey:     video.RatingKey,
@@ -199,10 +202,12 @@ func fetchSeasonsAndEpisodesForShow(itemInfo *MediaItem) (MediaItem, logging.Sta
 	})
 
 	itemInfo.Series = &MediaItemSeries{Seasons: seasons}
-	return *itemInfo, logging.StandardError{}
+	return *itemInfo, logging.LogErrorInfo{}
 }
 
-func getGUIDsAndRatingsFromResponse(plexGUIDS []PlexTagField, plexRatings []PlexRatings, audienceRating string) ([]Guid, error) {
+func getGUIDsAndRatingsFromResponse(ctx context.Context, plexGUIDS []PlexTagField, plexRatings []PlexRatings, audienceRating string) ([]Guid, error) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Processing GUIDs and Ratings from Plex Response", logging.LevelTrace)
+	defer logAction.Complete()
 
 	// Example Ratings From GUIDS:
 	// type PlexRatings struct {

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"aura/internal/logging"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -190,27 +188,11 @@ func (c *LibraryCache) GetMediaItemFromSectionByTitleAndYear(sectionTitle, itemT
 	for _, item := range section.MediaItems {
 		cleanedTitle := CleanStringForComparison(stripYearFromTitle(item.Title))
 		if cleanedTitle == cleanedSearchTitle && item.Year == year {
-			logging.LOG.Trace(fmt.Sprintf("Found MediaItem in Cache by Title/Year: '%s' (%d) in Section '%s'", item.Title, item.Year, sectionTitle))
 			return &item, true
 		}
 	}
 
 	return &MediaItem{}, false
-}
-
-// Print all media item titles in the cache for a specific section
-func (c *LibraryCache) PrintMediaItemsInSection(sectionTitle string) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	section, exists := c.sections[sectionTitle]
-	if !exists {
-		return
-	}
-
-	for _, item := range section.MediaItems {
-		logging.LOG.Trace(fmt.Sprintf("%s - %s (%s)", sectionTitle, item.Title, item.TMDB_ID))
-	}
 }
 
 // IsEmpty checks if the cache is empty
