@@ -7,6 +7,7 @@ import {
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
 	LogOutIcon,
+	Logs,
 	Search as SearchIcon,
 	Settings as SettingsIcon,
 } from "lucide-react";
@@ -358,6 +359,13 @@ export default function Navbar() {
 							>
 								<FileCogIcon className="w-6 h-6 mr-2" />
 								Settings
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+								onClick={() => router.push("/logs")}
+							>
+								<Logs className="w-6 h-6 mr-2" />
+								Logs
 							</DropdownMenuItem>
 							{isAuthed && status?.currentSetup.Auth.Enabled && (
 								<>
