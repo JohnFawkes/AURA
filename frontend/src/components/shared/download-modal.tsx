@@ -3,13 +3,15 @@
 import { posterSetToFormItem } from "@/helper/download-modal/poster-set-to-form-item";
 import { formatDownloadSize } from "@/helper/format-download-size";
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
+import { postAddToQueue } from "@/services/mediaserver/api-mediaserver-add-to-queue";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, Download, Loader, TriangleAlert, X } from "lucide-react";
+import { CircleAlert, Download, ListEnd, Loader, TriangleAlert, X } from "lucide-react";
 import { z } from "zod";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import React from "react";
 import { ControllerRenderProps, useForm, useWatch } from "react-hook-form";
 
 import Link from "next/link";
@@ -82,6 +84,7 @@ type AssetProgress = {
 	specialSeasonPoster?: string;
 	titlecard?: string;
 	addToDB?: string;
+	addToQueue?: string;
 	// Number of Files Failed
 	seasonPosterFailed?: number;
 	titlecardFailed?: number;
@@ -117,7 +120,6 @@ const formSchema = z
 			z.object({
 				types: z.array(z.enum(Object.keys(AssetTypes) as [AssetType, ...AssetType[]])),
 				autodownload: z.boolean().optional(),
-				futureUpdatesOnly: z.boolean().optional(),
 				source: z.enum(["movie", "collection"]).optional(),
 				addToDBOnly: z.boolean().optional(),
 			})
@@ -215,6 +217,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	// State - Duplicate Media Items
 	const [duplicates, setDuplicates] = useState<DuplicateMap>({});
+
+	// State - Add to Queue Only
+	const [addToQueueOnly, setAddToQueueOnly] = useState(false);
 
 	// User Preferences
 	const { downloadDefaults } = useUserPreferencesStore();
@@ -349,6 +354,25 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// 		),
 	// 	});
 	// }, [formItems, form, autoDownloadDefault, downloadDefaults]);
+
+	useEffect(() => {
+		// If all the form items are set to "Add to Database Only", change button text
+		if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types.length === 0)) {
+			setAddToQueueOnly(false);
+		}
+
+		if (addToQueueOnly) {
+			setButtonTexts((prev) => ({
+				...prev,
+				download: "Add to Queue",
+			}));
+		} else {
+			setButtonTexts((prev) => ({
+				...prev,
+				download: "Download",
+			}));
+		}
+	}, [addToQueueOnly, watchSelectedOptions]);
 
 	useEffect(() => {
 		const dups = findDuplicateMediaItems(formItems);
@@ -875,6 +899,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
 			log("INFO", "Download Modal", "Debug Info", "Progress Values:", progressValues);
 			log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
+			log("INFO", "Download Modal", "Debug Info", "Add to Queue Only:", addToQueueOnly);
 
 			updateProgressValue(1); // Reset progress to 0 at the start
 
@@ -1028,7 +1053,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 					}
 					updateProgressValue(progressRef.current + progressIncrementRef.current);
-					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 					continue;
 				}
 
@@ -1050,6 +1074,52 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					`Selected Types for ${item.MediaItemTitle}:`,
 					selectedTypes
 				);
+
+				if (addToQueueOnly) {
+					const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
+					log(
+						"INFO",
+						"Download Modal",
+						"Debug Info",
+						`Adding ${item.MediaItemTitle} to download queue only.`,
+						{ createdSavedItem }
+					);
+					const addToQueueResp = await postAddToQueue(createdSavedItem.dbItem);
+					if (addToQueueResp.status === "error") {
+						log(
+							"INFO",
+							"Download Modal",
+							"Debug Info",
+							`Error adding ${item.MediaItemTitle} to download queue:`,
+							addToQueueResp.error
+						);
+						setProgressValues((prev) => ({
+							...prev,
+							progressColor: "red",
+							warningMessages: {
+								...prev.warningMessages,
+								[item.MediaItemTitle]: {
+									posterFile: null,
+									posterFileType: null,
+									fileName: null,
+									mediaItem: null,
+									message: `Error adding ${item.MediaItemTitle} to download queue: ${addToQueueResp.error?.message || addToQueueResp.error || "Unknown error"}`,
+								},
+							},
+						}));
+						updateItemProgress(item.MediaItemRatingKey, "addToQueue", "Failed to add to queue");
+					} else {
+						log(
+							"INFO",
+							"Download Modal",
+							"Debug Info",
+							`Successfully added ${item.MediaItemTitle} to download queue.`
+						);
+						updateItemProgress(item.MediaItemRatingKey, "addToQueue", "Added to queue");
+					}
+					updateProgressValue(progressRef.current + progressIncrementRef.current);
+					continue;
+				}
 
 				for (const type of selectedTypes) {
 					switch (type) {
@@ -1336,42 +1406,89 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									</div>
 								)}
 
-								{/* Total Size of Selected Types */}
-								{
-									// Only show if not all items are set to "Add to DB Only"
-									selectedSizes.fileCount > 0 &&
-									formItems.some(
-										(item) => !watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
-									) ? (
-										<div>
-											<div className="text-sm text-muted-foreground">
-												Number of Images: {selectedSizes.fileCount}
-											</div>
-											<div className="text-sm text-muted-foreground">
-												Total Download Size: ~{formatDownloadSize(selectedSizes.downloadSize)}
-											</div>
-										</div>
-									) : (
-										// If all items are set to "Add to DB Only", show a message
+								{/* Add to Queue 
+									Only show this button if at least one item has types selected for download and not set to Add to DB Only
+								*/}
+								{formItems.some(
+									(item) =>
+										watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length > 0 &&
+										!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+								) && (
+									<FormItem className="flex items-center space-x-2 mb-4">
+										<FormControl>
+											<Checkbox
+												checked={addToQueueOnly}
+												onCheckedChange={(checked) => setAddToQueueOnly(checked ? true : false)}
+											/>
+										</FormControl>
+										<FormLabel className="text-md font-normal cursor-pointer">
+											Add to Queue
+										</FormLabel>
+										<DownloadModalPopover type="add-to-queue-only" />
+									</FormItem>
+								)}
+								<div>
+									{/* Number of Images and Total Download Size (only if there are images to download) */}
+									{selectedSizes.fileCount > 0 &&
 										formItems.some(
-											(item) => watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+											(item) => !watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
 										) && (
-											<div className="text-sm text-muted-foreground">
-												Will add{" "}
-												{
-													formItems.filter(
+											<>
+												<div className="text-sm text-muted-foreground">
+													Number of Images: {selectedSizes.fileCount}
+												</div>
+												<div className="text-sm text-muted-foreground">
+													Total Download Size: ~
+													{formatDownloadSize(selectedSizes.downloadSize)}
+												</div>
+											</>
+										)}
+
+									{/* Always show the database-only message if any item is set to Add to DB Only or has types selected */}
+									{formItems.some(
+										(item) => watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+									) && (
+										<div className="text-sm text-muted-foreground mt-1">
+											* Will add{" "}
+											{(() => {
+												const titles = formItems
+													.filter(
 														(item) =>
-															watchSelectedOptions?.[item.MediaItemRatingKey]
-																?.addToDBOnly ||
-															watchSelectedOptions?.[item.MediaItemRatingKey]?.types
-																?.length > 0
-													).length
-												}{" "}
-												items to the database without downloading any images.
-											</div>
-										)
-									)
-								}
+															watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+													)
+													.map((item) => item.MediaItemTitle);
+
+												if (titles.length === 0) return "";
+												if (titles.length === 1)
+													return (
+														<span className="font-medium text-yellow-500">{`'${titles[0]}' `}</span>
+													);
+												if (titles.length === 2)
+													return (
+														<>
+															<span className="font-medium text-yellow-500">{`'${titles[0]}'`}</span>
+															{" and "}
+															<span className="font-medium text-yellow-500">{`'${titles[1]}' `}</span>
+														</>
+													);
+
+												return (
+													<>
+														{titles.slice(0, -1).map((title, idx) => (
+															<Fragment key={title}>
+																<span className="font-medium text-yellow-500">{`'${title}'`}</span>
+																{idx < titles.length - 2 ? ", " : ""}
+															</Fragment>
+														))}
+														{" and "}
+														<span className="font-medium text-yellow-500">{`'${titles[titles.length - 1]}' `}</span>
+													</>
+												);
+											})()}
+											to database without downloading any images.
+										</div>
+									)}
+								</div>
 
 								{/* Progress Bar */}
 								{progressValues.value > 0 && (
@@ -1464,6 +1581,13 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																label="Add to DB"
 															/>
 														)}
+														{progress.addToQueue && (
+															<DownloadModalProgressItem
+																key={`${itemKey}-addToQueue`}
+																status={progress.addToQueue}
+																label="Add to Download Queue"
+															/>
+														)}
 													</div>
 												);
 											})}
@@ -1475,8 +1599,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										<Accordion type="single" collapsible defaultValue="warnings">
 											<AccordionItem value="warnings">
 												<AccordionTrigger className="text-destructive">
-													Failed Downloads (
-													{Object.keys(progressValues.warningMessages).length})
+													Errors ({Object.keys(progressValues.warningMessages).length})
 												</AccordionTrigger>
 												<AccordionContent>
 													<div className="flex flex-col space-y-2">
@@ -1583,14 +1706,19 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														isMounted
 													}
 												>
-													{buttonTexts.download.startsWith("Downloading") ? (
+													{buttonTexts.download.startsWith("Downloading") ||
+													buttonTexts.download.startsWith("Adding") ? (
 														<>
 															<Loader className="mr-2 h-4 w-4 animate-spin" />
 															{buttonTexts.download}
 														</>
 													) : (
 														<>
-															<Download className="mr-2 h-4 w-4" />
+															{buttonTexts.download === "Download" ? (
+																<Download className="mr-2 h-4 w-4" />
+															) : (
+																<ListEnd className="mr-2 h-4 w-4" />
+															)}
 															{buttonTexts.download}
 														</>
 													)}

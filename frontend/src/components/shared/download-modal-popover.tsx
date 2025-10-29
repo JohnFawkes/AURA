@@ -1,7 +1,7 @@
 import { PopoverHelp } from "@/components/shared/popover-help";
 
 export interface DownloadModalPopoverProps {
-	type: "autodownload" | "future-updated-only" | "add-to-db-only";
+	type: "autodownload" | "future-updated-only" | "add-to-db-only" | "add-to-queue-only";
 }
 
 const downloadModalPopoverHelpText = {
@@ -11,6 +11,8 @@ const downloadModalPopoverHelpText = {
 		"Future Updates Only will not download anything right now. This is helpful if you have already downloaded the set and just want future updates to be applied.",
 	"add-to-db-only":
 		"Add to Database Only will not download anything. It will only add the set to your database. This is helpful for movies that you have already processed and just want to add the set to your database.",
+	"add-to-queue-only":
+		"Add to Queue Only will not download anything right now. It will only add the set to your download queue to be processed later.",
 };
 
 const DownloadModalPopover: React.FC<DownloadModalPopoverProps> = ({ type }) => {
