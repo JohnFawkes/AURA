@@ -268,7 +268,7 @@ const SavedSetsPage: React.FC = () => {
 			const response = await postForceRecheckDBItemForAutoDownload(item);
 
 			if (response.status === "error") {
-				toast.error(response.error?.Message || "Failed to recheck item");
+				toast.error(response.error?.message || "Failed to recheck item");
 				return;
 			}
 
@@ -278,7 +278,7 @@ const SavedSetsPage: React.FC = () => {
 			}));
 		} catch (error) {
 			const errorResponse = ReturnErrorMessage<unknown>(error);
-			toast.error(errorResponse.error?.Message || "An unexpected error occurred");
+			toast.error(errorResponse.error?.message || "An unexpected error occurred");
 		}
 		fetchSavedSets();
 	};
@@ -576,97 +576,79 @@ const SavedSetsPage: React.FC = () => {
 
 			{Object.keys(recheckStatus).length > 0 && (
 				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-2">Recheck Status:</h3>
-					<div className="rounded-md border">
-						<table className="w-full divide-y divide-border">
-							<thead className="bg-muted/50">
-								<tr>
-									<th className="px-3 py-2 text-left text-sm font-medium text-muted-foreground w-[200px]">
-										Title
-									</th>
-									<th className="px-3 py-2 text-left text-sm font-medium text-muted-foreground w-[80px]">
-										Status
-									</th>
-									<th className="px-3 py-2 text-left text-sm font-medium text-muted-foreground">
-										Details
-									</th>
-									<th className="px-3 py-2 text-right">
+					<h3 className="text-lg font-semibold mb-2 ml-1">Recheck Status:</h3>
+					<div className="grid grid-cols-1 gap-2">
+						{Object.entries(recheckStatus)
+							.sort(([, a], [, b]) => a.MediaItemTitle.localeCompare(b.MediaItemTitle))
+							.map(([title, result]) => (
+								<div key={title} className="rounded-md border p-3 flex flex-col gap-2 bg-background">
+									<div className="flex justify-between items-center">
+										<div className="flex items-center gap-2">
+											<span className="font-semibold">{result.MediaItemTitle}</span>
+										</div>
+										<div className="flex items-center gap-2">
+											<Badge
+												className={cn(
+													"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium",
+													{
+														"bg-green-100 text-green-700":
+															result.OverAllResult === "Success",
+														"bg-yellow-100 text-yellow-700":
+															result.OverAllResult === "Warn",
+														"bg-red-100 text-red-700": result.OverAllResult === "Error",
+														"bg-gray-100 text-gray-700": result.OverAllResult === "Skipped",
+													}
+												)}
+											>
+												{result.OverAllResult}
+											</Badge>
+										</div>
+									</div>
+									<p className="text-sm text-muted-foreground">{result.OverAllResultMessage}</p>
+									{result.Sets &&
+										result.Sets.map((set, index) => (
+											<div
+												key={`${set.PosterSetID}-${index}`}
+												className="text-xs text-muted-foreground pl-2"
+											>
+												• Set {set.PosterSetID}: {set.Result} - {set.Reason}
+											</div>
+										))}
+									<div className="flex justify-end gap-2 mt-2">
 										<Button
 											variant="ghost"
 											size="icon"
-											onClick={() => setRecheckStatus({})}
-											className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-red-500"
+											onClick={async () => {
+												const item = savedSets.find((set) => set.MediaItem.Title === title);
+												if (!item) return;
+												setRecheckStatus((prev) => {
+													const newStatus = { ...prev };
+													delete newStatus[title];
+													return newStatus;
+												});
+												await handleRecheckItem(title, item);
+											}}
+											className="h-6 w-6 text-muted-foreground hover:text-red-500"
+										>
+											<RefreshIcon className="h-4 w-4" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => {
+												setRecheckStatus((prev) => {
+													const newStatus = { ...prev };
+													delete newStatus[title];
+													return newStatus;
+												});
+											}}
+											className="h-6 w-6 text-muted-foreground hover:text-red-500"
 										>
 											<XCircle className="h-4 w-4" />
 										</Button>
-									</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-border">
-								{Object.entries(recheckStatus)
-									// Sort entries by MediaItemTitle
-									.sort(([, a], [, b]) => a.MediaItemTitle.localeCompare(b.MediaItemTitle))
-									.map(([title, result]) => (
-										<tr key={title}>
-											<td className="px-3 py-2 text-sm">{result.MediaItemTitle}</td>
-											<td className="px-3 py-2">
-												<Badge
-													className={cn(
-														"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium active:scale-95 hover:brightness-120 ",
-														{
-															"bg-green-100 text-green-700":
-																result.OverAllResult === "Success",
-															"bg-yellow-100 text-yellow-700":
-																result.OverAllResult === "Warn",
-															"bg-red-100 text-red-700": result.OverAllResult === "Error",
-															"bg-gray-100 text-gray-700":
-																result.OverAllResult === "Skipped",
-														}
-													)}
-												>
-													{result.OverAllResult}
-												</Badge>
-											</td>
-											<td className="px-3 py-2">
-												<div className="space-y-1">
-													<p className="text-md text-muted-foreground">
-														{result.OverAllResultMessage}
-													</p>
-													{result.Sets &&
-														result.Sets.map((set, index) => (
-															<div
-																key={`${set.PosterSetID}-${index}`}
-																className="text-xs text-muted-foreground pl-4"
-															>
-																• Set {set.PosterSetID}: {set.Result} - {set.Reason}
-															</div>
-														))}
-												</div>
-											</td>
-											<td className="px-3 py-2">
-												<RefreshIcon
-													className="h-4 w-4 cursor-pointer text-primary-dynamic hover:text-primary"
-													onClick={async () => {
-														const item = savedSets.find(
-															(set) => set.MediaItem.Title === title
-														);
-														if (!item) return;
-														// Remove the item from the recheck status list
-														setRecheckStatus((prev) => {
-															const newStatus = {
-																...prev,
-															};
-															delete newStatus[title];
-															return newStatus;
-														});
-														await handleRecheckItem(title, item);
-													}}
-												/>
-											</td>
-										</tr>
-									))}
-							</tbody>
-						</table>
+									</div>
+								</div>
+							))}
 					</div>
 					<Separator className="my-4 w-full" />
 				</div>
