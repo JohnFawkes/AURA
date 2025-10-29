@@ -58,7 +58,7 @@ export default function Navbar() {
 	const pathName = usePathname();
 	// Page Logic
 	const isHomePage = pathName === "/";
-	const isMediaPage = pathName.startsWith("/media/");
+	const isMediaPage = pathName.startsWith("/media-item") || pathName.startsWith("/media-item/");
 	//const isSettingsPage = pathName === "/settings" || pathName === "/settings/";
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
@@ -242,8 +242,7 @@ export default function Navbar() {
 	// When clicking on a dropdown result (non-homepage), set the mediaStore and navigate
 	const handleResultClick = (result: MediaItem) => {
 		setMediaItem(result);
-		//router.push(formatMediaItemUrl(result));
-		router.push("/media/");
+		router.push("/media-item/");
 	};
 
 	// Handle Logout
@@ -297,7 +296,7 @@ export default function Navbar() {
 								>
 									<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
 										<Image
-											src={`/api/mediaserver/image/${result.RatingKey}/poster`}
+											src={`/api/mediaserver/image?ratingKey=${result.RatingKey}&imageType=poster`}
 											alt={result.Title}
 											fill
 											className="object-cover"

@@ -284,7 +284,7 @@ const ShowFullSetDetails: React.FC<{
 			const backdropSet = posterSets.find((set) => set.Backdrop);
 			if (backdropSet && backdropSet.Backdrop) {
 				setBackdropURL(
-					`/api/mediux/image/${backdropSet.Backdrop.ID}?modifiedDate=${backdropSet.Backdrop.Modified}&quality=optimized`
+					`/api/mediux/image/?assetID=${backdropSet.Backdrop.ID}&modifiedDate=${backdropSet.Backdrop.Modified}&quality=optimized`
 				);
 			}
 		} else {
@@ -328,7 +328,7 @@ const ShowFullSetDetails: React.FC<{
 			);
 			if (ratingKeysArray.length > 0) {
 				const randomRatingKey = ratingKeysArray[Math.floor(Math.random() * ratingKeysArray.length)];
-				setBackdropURL(`/api/mediaserver/image/${randomRatingKey}/backdrop`);
+				setBackdropURL(`/api/mediaserver/image?ratingKey=${randomRatingKey}&imageType=backdrop`);
 			}
 		}
 	}, [posterSets]);

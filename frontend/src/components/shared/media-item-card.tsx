@@ -27,7 +27,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ mediaItem }) => {
 	const handleCardClick = (mediaItem: MediaItem) => {
 		setMediaItem(mediaItem);
 		//router.push(formatMediaItemUrl(mediaItem));
-		router.push("/media/");
+		router.push("/media-item/");
 	};
 
 	return (

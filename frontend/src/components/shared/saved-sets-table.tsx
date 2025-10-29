@@ -138,7 +138,7 @@ const SavedSetsTableRow: React.FC<{
 					{
 						<Link
 							//href={formatMediaItemUrl(savedSet.MediaItem)}
-							href={"/media/"}
+							href={"/media-item/"}
 							className="text-primary hover:underline"
 							onClick={() => {
 								setMediaItem(savedSet.MediaItem);

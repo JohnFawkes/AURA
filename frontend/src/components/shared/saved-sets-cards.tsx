@@ -215,7 +215,7 @@ const SavedSetsCard: React.FC<{
 				<H4>
 					<Link
 						//href={formatMediaItemUrl(savedSet.MediaItem)}
-						href={"/media/"}
+						href={"/media-item/"}
 						className="text-primary hover:underline"
 						onClick={() => {
 							setMediaItem(savedSet.MediaItem);

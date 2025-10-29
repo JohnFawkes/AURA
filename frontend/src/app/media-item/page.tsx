@@ -168,6 +168,7 @@ const MediaItemPage = () => {
 				}
 
 				const mediaItemPageResponse = resp.data;
+				const errorResponse = resp.data?.error;
 
 				if (!mediaItemPageResponse) {
 					setError(ReturnErrorMessage("No data found in response from server."));
@@ -180,12 +181,12 @@ const MediaItemPage = () => {
 				const mediaItemResponse = mediaItemPageResponse.mediaItem;
 				const posterSetsResponse = mediaItemPageResponse.posterSets;
 				const userFollowHideResponse = mediaItemPageResponse.userFollowHide;
-				const errorResponse = mediaItemPageResponse.error;
 
 				log("INFO", "Media Item Page", "Fetch", `Server Type: ${serverTypeResponse}`, { serverTypeResponse });
 				log("INFO", "Media Item Page", "Fetch", `Full Media Item Response`, { mediaItemResponse });
 				log("INFO", "Media Item Page", "Fetch", `Poster Sets Response`, { posterSetsResponse });
 				log("INFO", "Media Item Page", "Fetch", `User Follow/Hide Response`, { userFollowHideResponse });
+				log("INFO", "Media Item Page", "Fetch", `Error Response`, { errorResponse });
 
 				// Check to see if the serverTypeResponse is valid
 				// Valid types are "Plex", "Emby", "Jellyfin"
@@ -253,13 +254,12 @@ const MediaItemPage = () => {
 					setHasError(true);
 					setError({
 						status: "error",
-						elapsed: "0",
 						error: {
-							Message: errorResponse?.Message || "No poster sets found for this media item.",
-							HelpText: errorResponse?.HelpText || "",
-							Details: errorResponse?.Details ?? undefined,
-							Function: "", // Fill if you have it
-							LineNumber: undefined,
+							message: errorResponse?.message || "No poster sets found for this media item.",
+							help: errorResponse?.help || "",
+							detail: errorResponse?.detail ?? undefined,
+							function: errorResponse?.function || "Unknown",
+							line_number: errorResponse?.line_number || 0,
 						},
 					});
 				}
@@ -538,7 +538,7 @@ const MediaItemPage = () => {
 	return (
 		<>
 			<DimmedBackground
-				backdropURL={`/api/mediaserver/image/${mediaItem?.RatingKey}/backdrop?cb=${imageVersion}`}
+				backdropURL={`/api/mediaserver/image?ratingKey=${mediaItem?.RatingKey}&imageType=backdrop&cb=${imageVersion}`}
 			/>
 
 			{/* Header */}

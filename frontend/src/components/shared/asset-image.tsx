@@ -35,9 +35,9 @@ export function AssetImage({ image, aspect = "poster", className, imageClassName
 					typeof image === "string"
 						? image
 						: "ID" in image && "Modified" in image
-							? `/api/mediux/image/${image.ID}?modifiedDate=${image.Modified}`
+							? `/api/mediux/image?assetID=${image.ID}&modifiedDate=${image.Modified}`
 							: "RatingKey" in image
-								? `/api/mediaserver/image/${image.RatingKey}/${aspect}`
+								? `/api/mediaserver/image?ratingKey=${image.RatingKey}&imageType=${aspect}`
 								: ""
 				}
 				alt={typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""}

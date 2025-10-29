@@ -164,7 +164,7 @@ export function MediaItemDetails({
 						}}
 					>
 						<AssetImage
-							image={`/api/mediaserver/image/${posterImageKeys[currentPosterIndex]}/poster?cb=${Date.now()}`}
+							image={`/api/mediaserver/image?ratingKey=${posterImageKeys[currentPosterIndex]}&imageType=poster&cb=${Date.now()}`}
 							className="w-[200px] h-auto transition-transform hover:scale-105 select-none"
 						/>
 					</div>
@@ -226,11 +226,10 @@ export function MediaItemDetails({
 						Also available in{" "}
 						<Link
 							//href={formatMediaItemUrl(otherMediaItem)}
-							href={"/media/"}
+							href={"/media-item/"}
 							onClick={() => {
 								setMediaItem(otherMediaItem);
-								//router.push(formatMediaItemUrl(otherMediaItem));
-								router.push("/media/");
+								router.push("/media-item/");
 							}}
 							className="text-primary-dynamic hover:text-primary underline"
 						>
