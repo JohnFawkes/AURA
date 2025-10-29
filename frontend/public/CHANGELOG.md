@@ -1,3 +1,18 @@
+## [0.9.40] - 2025-10-27
+
+### Breaking
+
+- Updated log storage format to JSONL, previous log files will not be compatible
+
+### Added
+
+- Revamped the logging system to use JSONL format for better structure and parsing
+- Revamped the Logs page to display structured log entries with expandable details
+- Added ability to export individual log entries as JSON files
+- Logs will also now auto-rotate based on size and age to manage disk space better
+
+---
+
 ## [0.9.30] - 2025-10-03
 
 ### Added
