@@ -1,16 +1,47 @@
-// Define the error structure
-export interface StandardError {
-	Message: string; // Error message
-	HelpText: string; // Helpful suggestion for the user
-	Function?: string; // Function where error occurred
-	LineNumber?: number; // Line number where error occurred
-	Details?: string | Record<string, unknown>; // Optional additional details
-}
-
 // Define the main API response structure
 export interface APIResponse<T> {
 	status: string; // 'success' | 'error' | 'warn'
-	elapsed: string; // Time taken to process request
 	data?: T; // Optional response data
-	error?: StandardError; // Optional error information
+	error?: LogErrorInfo; // Optional error information
+}
+
+export interface LogData {
+	status: string;
+	level: string;
+	message: string;
+	name: string;
+	timestamp: string;
+	elapsed_us: number;
+	route?: LogRouteInfo;
+	actions?: LogAction[];
+	time: string;
+}
+
+export interface LogRouteInfo {
+	method: string;
+	path: string;
+	params: Record<string, string>;
+	ip: string;
+	response_bytes: number;
+}
+
+export interface LogAction {
+	name: string;
+	status: string;
+	level?: string;
+	warnings?: Record<string, unknown>;
+	result?: Record<string, unknown>;
+	error?: LogErrorInfo;
+	timestamp: string;
+	elapsed_us: number;
+	sub_actions?: LogAction[];
+}
+
+// Define the error structure
+export interface LogErrorInfo {
+	function: string;
+	line_number: number;
+	message: string;
+	detail?: Record<string, unknown>;
+	help?: string;
 }
