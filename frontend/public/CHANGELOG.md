@@ -1,3 +1,11 @@
+## [0.9.42] - 2025-10-30
+
+### Fixed
+
+- [#104](https://github.com/mediux-team/AURA/issues/104) - Fixed issue with padding on download modal causing misalignment
+
+---
+
 ## [0.9.41] - 2025-10-29
 
 ### Added
