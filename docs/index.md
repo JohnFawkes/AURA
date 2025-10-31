@@ -9,6 +9,10 @@ permalink: /
 # <img src="https://raw.githubusercontent.com/mediux-team/aura/master/frontend/public/aura_word_logo.svg" alt="aura Logo" width="130" />
 
 [![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/mediux-team/aura/master/version.json)](https://github.com/mediux-team/aura/pkgs/container/aura)
+[![Build](https://img.shields.io/github/actions/workflow/status/mediux-team/aura/aura.yml?label=Latest%20Build&logo=githubactions)](https://github.com/mediux-team/aura/actions/workflows/docker.yml)
+[![Beta Build](https://img.shields.io/github/actions/workflow/status/mediux-team/aura/aura-beta.yml?label=Beta%20Build&logo=githubactions)](https://github.com/mediux-team/aura/actions/workflows/docker.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/mmoosem13/aura?label=Docker%20Pulls&logo=docker)](https://github.com/mediux-team/aura/pkgs/container/aura)
+![GHCR](https://img.shields.io/badge/dynamic/json?label=GitHub%20Pulls&logo=Github&url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmediux-team%2Faura%2Faura&query=downloadCount)
 
 **aura** (Automated Utility for Retrieval of Assets) is a visual tool for managing Mediux image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
 
