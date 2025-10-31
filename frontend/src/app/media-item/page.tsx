@@ -13,10 +13,10 @@ import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
+import { MediaItemDetails } from "@/components/shared/media-item-details";
 import { MediaItemFilter } from "@/components/shared/media-item-filters";
-import { MediaItemDetails } from "@/components/shared/media_item_details";
 import { PopoverHelp } from "@/components/shared/popover-help";
-import { SortControl } from "@/components/shared/select_sort";
+import { SortControl } from "@/components/shared/select-sort";
 import { Button } from "@/components/ui/button";
 
 import { cn } from "@/lib/cn";
@@ -602,12 +602,14 @@ const MediaItemPage = () => {
 												label: "Date Updated",
 												ascIcon: <CalendarArrowUp />,
 												descIcon: <CalendarArrowDown />,
+												type: "date",
 											},
 											{
 												value: "user",
 												label: "User Name",
 												ascIcon: <ArrowDownAZ />,
 												descIcon: <ArrowDownZA />,
+												type: "string",
 											},
 											...(mediaItem?.Type === "movie"
 												? [
@@ -616,6 +618,7 @@ const MediaItemPage = () => {
 															label: "Number in Collection",
 															ascIcon: <ArrowDown01 />,
 															descIcon: <ArrowDown10 />,
+															type: "number" as const,
 														},
 													]
 												: []),
@@ -626,12 +629,14 @@ const MediaItemPage = () => {
 															label: "Number of Seasons",
 															ascIcon: <ArrowDown01 />,
 															descIcon: <ArrowDown10 />,
+															type: "number" as const,
 														},
 														{
 															value: "numberOfTitlecards",
 															label: "Number of Titlecards",
 															ascIcon: <ArrowDown01 />,
 															descIcon: <ArrowDown10 />,
+															type: "number" as const,
 														},
 													]
 												: []),
