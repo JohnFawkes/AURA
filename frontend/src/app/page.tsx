@@ -3,22 +3,33 @@
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchMediaServerLibrarySectionItems } from "@/services/mediaserver/api-mediaserver-fetch-library-section-items";
 import { fetchMediaServerLibrarySections } from "@/services/mediaserver/api-mediaserver-fetch-library-sections";
-import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp } from "lucide-react";
+import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, Filter } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
+import { FilterHome } from "@/components/shared/filter-home";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { HomeMediaItemCardSkeletonGrid } from "@/components/shared/media-item-card-skeleton";
 import { RefreshButton } from "@/components/shared/refresh-button";
-import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
-import { SortControl } from "@/components/shared/select_sort";
-import { Badge } from "@/components/ui/badge";
+import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
+import { SortControl } from "@/components/shared/select-sort";
+import { Button } from "@/components/ui/button";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
-import { ToggleGroup } from "@/components/ui/toggle-group";
+import { Separator } from "@/components/ui/separator";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { MAX_CACHE_DURATION, useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
@@ -52,6 +63,9 @@ export default function Home() {
 	const [sectionProgress, setSectionProgress] = useState<{
 		[key: string]: { loaded: number; total: number };
 	}>({});
+
+	// Wide screen detection
+	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
 
 	// State to track the HomePageStore values
 	const {
@@ -95,6 +109,16 @@ export default function Home() {
 			setSortOrder("desc");
 		}
 	}, [sortOption, setSortOption, setSortOrder]);
+
+	// Change isWideScreen on window resize
+	useEffect(() => {
+		const handleResize = () => {
+			setIsWideScreen(window.innerWidth >= 1300);
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	// Fetch data from cache or API
 	const getMediaItems = useCallback(
@@ -289,6 +313,14 @@ export default function Home() {
 
 	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
 
+	// Calculate number of active filters
+	const numberOfActiveFilters = useMemo(() => {
+		let count = 0;
+		if (filteredLibraries.length > 0) count++;
+		if (filterInDB !== "all") count++;
+		return count;
+	}, [filteredLibraries, filterInDB]);
+
 	return (
 		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
 			{!fullyLoaded && librarySections.length > 0 ? (
@@ -323,64 +355,93 @@ export default function Home() {
 				</div>
 			) : (
 				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
-					{/* Filter Section */}
-					<div className="flex flex-col sm:flex-row mb-4 mt-2">
-						<Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
-							Filters:
-						</Label>
-						<ToggleGroup
-							type="multiple"
-							className="flex flex-wrap sm:flex-nowrap gap-2"
-							value={filteredLibraries}
-							onValueChange={setFilteredLibraries}
-						>
-							{[...librarySections]
-								.sort((a, b) => a.Title.localeCompare(b.Title))
-								.map((section) => (
-									<Badge
-										key={section.ID}
-										className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
-										variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
-										onClick={() => {
-											if (filteredLibraries.includes(section.Title)) {
-												setFilteredLibraries(
-													filteredLibraries.filter((lib: string) => lib !== section.Title)
-												);
-												setCurrentPage(1);
-											} else {
-												setFilteredLibraries([...filteredLibraries, section.Title]);
-												setCurrentPage(1);
-											}
-										}}
+					{/* Row 1: Filter Icon (left), Autodownload (right) */}
+					<div className="w-full flex items-center justify-between mb-2 mt-2">
+						<div>
+							{isWideScreen ? (
+								<Popover>
+									<PopoverTrigger asChild>
+										<div>
+											<Button
+												variant="outline"
+												className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
+											>
+												Filters
+												{numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+												<Filter className="h-5 w-5" />
+											</Button>
+										</div>
+									</PopoverTrigger>
+									<PopoverContent
+										side="right"
+										align="start"
+										className="w-[350px] p-2 bg-background border border-primary"
 									>
-										{section.Title}
-									</Badge>
-								))}
-
-							<Badge
-								key={"filter-in-db"}
-								className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
-									filterInDB === "inDB"
-										? "bg-green-600 text-white"
-										: filterInDB === "notInDB"
-											? "bg-red-600 text-white"
-											: ""
-								}`}
-								variant={filterInDB !== "all" ? "default" : "outline"}
-								onClick={() => {
-									const currentIdx = FILTER_IN_DB_OPTIONS.indexOf(filterInDB);
-									const nextIdx = (currentIdx + 1) % FILTER_IN_DB_OPTIONS.length;
-									setFilterInDB(FILTER_IN_DB_OPTIONS[nextIdx]);
-									setCurrentPage(1);
-								}}
-							>
-								{filterInDB === "all"
-									? "All Items"
-									: filterInDB === "notInDB"
-										? "Items Not in DB"
-										: "Items In DB"}
-							</Badge>
-						</ToggleGroup>
+										<FilterHome
+											librarySections={librarySections.map((section) => ({
+												label: section.Title,
+												value: section.Title,
+											}))}
+											filteredLibraries={filteredLibraries}
+											setFilteredLibraries={setFilteredLibraries}
+											filterInDB={filterInDB}
+											setFilterInDB={setFilterInDB}
+											inDBOptions={FILTER_IN_DB_OPTIONS.map((option) => ({
+												label:
+													option === "all"
+														? "All Items"
+														: option === "inDB"
+															? "Items In DB"
+															: "Items Not in DB",
+												value: option,
+											}))}
+										/>
+									</PopoverContent>
+								</Popover>
+							) : (
+								<Drawer direction="left">
+									<DrawerTrigger asChild>
+										<Button
+											variant="outline"
+											className={cn(
+												numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1"
+											)}
+										>
+											Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+											<Filter className="h-5 w-5" />
+										</Button>
+									</DrawerTrigger>
+									<DrawerContent>
+										<DrawerHeader className="my-0">
+											<DrawerTitle className="mb-0">Filters</DrawerTitle>
+											<DrawerDescription className="mb-0">
+												Use the options below to filter your media items.
+											</DrawerDescription>
+										</DrawerHeader>
+										<Separator className="my-1 w-full" />
+										<FilterHome
+											librarySections={librarySections.map((section) => ({
+												label: section.Title,
+												value: section.Title,
+											}))}
+											filteredLibraries={filteredLibraries}
+											setFilteredLibraries={setFilteredLibraries}
+											filterInDB={filterInDB}
+											setFilterInDB={setFilterInDB}
+											inDBOptions={FILTER_IN_DB_OPTIONS.map((option) => ({
+												label:
+													option === "all"
+														? "All Items"
+														: option === "inDB"
+															? "Items In DB"
+															: "Items Not in DB",
+												value: option,
+											}))}
+										/>
+									</DrawerContent>
+								</Drawer>
+							)}
+						</div>
 					</div>
 					{/* Sorting controls */}
 					<SortControl
@@ -390,6 +451,7 @@ export default function Home() {
 								label: "Date Added",
 								ascIcon: <ClockArrowUp />,
 								descIcon: <ClockArrowDown />,
+								type: "date",
 							},
 							...(hasUpdatedAt
 								? [
@@ -398,6 +460,7 @@ export default function Home() {
 											label: "Date Updated",
 											ascIcon: <ClockArrowUp />,
 											descIcon: <ClockArrowDown />,
+											type: "date" as const,
 										},
 									]
 								: []),
@@ -406,8 +469,15 @@ export default function Home() {
 								label: "Date Released",
 								ascIcon: <ClockArrowUp />,
 								descIcon: <ClockArrowDown />,
+								type: "date",
 							},
-							{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+							{
+								value: "title",
+								label: "Title",
+								ascIcon: <ArrowDownAZ />,
+								descIcon: <ArrowDownZA />,
+								type: "string",
+							},
 						]}
 						sortOption={sortOption}
 						sortOrder={sortOrder}

@@ -11,7 +11,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-type FilterContentProps = {
+type SavedSetsFilterProps = {
 	getSectionSummaries: () => { title?: string }[];
 	librarySectionsLoaded: boolean;
 	filteredLibraries: string[];
@@ -36,7 +36,7 @@ type FilterContentProps = {
 	searchLibrary?: string;
 };
 
-export function FilterContent({
+export function SavedSetsFilter({
 	getSectionSummaries,
 	librarySectionsLoaded,
 	filteredLibraries,
@@ -59,7 +59,7 @@ export function FilterContent({
 	searchYear,
 	searchID,
 	searchLibrary,
-}: FilterContentProps) {
+}: SavedSetsFilterProps) {
 	const { setSearchQuery } = useSearchQueryStore();
 
 	return (

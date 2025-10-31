@@ -20,14 +20,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
+import { SavedSetsFilter } from "@/components/shared/filter-saved-sets";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
-import { FilterContent } from "@/components/shared/saved-sets-filter";
 import SavedSetsTableRow from "@/components/shared/saved-sets-table";
-import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
-import { SortControl } from "@/components/shared/select_sort";
-import { ViewControl } from "@/components/shared/select_view";
+import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
+import { SortControl } from "@/components/shared/select-sort";
+import { ViewControl } from "@/components/shared/select-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -350,7 +350,7 @@ const SavedSetsPage: React.FC = () => {
 								align="start"
 								className="w-[350px] p-2 bg-background border border-primary"
 							>
-								<FilterContent
+								<SavedSetsFilter
 									getSectionSummaries={getSectionSummaries}
 									librarySectionsLoaded={librarySectionsLoaded}
 									typeOptions={typeOptions}
@@ -432,7 +432,7 @@ const SavedSetsPage: React.FC = () => {
 									</DrawerDescription>
 								</DrawerHeader>
 								<Separator className="my-1 w-full" />
-								<FilterContent
+								<SavedSetsFilter
 									getSectionSummaries={getSectionSummaries}
 									librarySectionsLoaded={librarySectionsLoaded}
 									typeOptions={typeOptions}
@@ -532,15 +532,29 @@ const SavedSetsPage: React.FC = () => {
 							label: "Date Downloaded",
 							ascIcon: <ClockArrowUp />,
 							descIcon: <ClockArrowDown />,
+							type: "date",
 						},
-						{ value: "title", label: "Title", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+						{
+							value: "title",
+							label: "Title",
+							ascIcon: <ArrowDownAZ />,
+							descIcon: <ArrowDownZA />,
+							type: "string",
+						},
 						{
 							value: "year",
 							label: "Year",
 							ascIcon: <CalendarArrowUp />,
 							descIcon: <CalendarArrowDown />,
+							type: "number",
 						},
-						{ value: "library", label: "Library", ascIcon: <ArrowDownAZ />, descIcon: <ArrowDownZA /> },
+						{
+							value: "library",
+							label: "Library",
+							ascIcon: <ArrowDownAZ />,
+							descIcon: <ArrowDownZA />,
+							type: "string",
+						},
 					]}
 					sortOption={sortOption}
 					sortOrder={sortOrder}

@@ -13,8 +13,8 @@ import { RenderBoxSetDisplay } from "@/components/shared/boxset-display";
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
-import { SelectItemsPerPage } from "@/components/shared/select_items_per_page";
-import { SortControl } from "@/components/shared/select_sort";
+import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
+import { SortControl } from "@/components/shared/select-sort";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -892,6 +892,7 @@ const UserSetPage = () => {
 													label: "Date Updated",
 													ascIcon: <ClockArrowUp />,
 													descIcon: <ClockArrowDown />,
+													type: "date" as const,
 												},
 
 												{
@@ -899,6 +900,7 @@ const UserSetPage = () => {
 													label: "Title",
 													ascIcon: <ArrowDownAZ />,
 													descIcon: <ArrowDownZA />,
+													type: "string" as const,
 												},
 											]}
 											sortOption={sortOption}
