@@ -224,7 +224,16 @@ function FilterHomeContent({
 						{FILTER_IN_DB_OPTIONS.map((option) => (
 							<Badge
 								key={option}
-								className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
+								className={cn(
+									"cursor-pointer text-sm active:scale-95 hover:brightness-120",
+									filterInDB === option && option === "all" && "bg-primary text-primary-foreground",
+									filterInDB === option &&
+										option === "inDB" &&
+										"bg-green-500 text-primary-foreground",
+									filterInDB === option &&
+										option === "notInDB" &&
+										"bg-red-500 text-primary-foreground"
+								)}
 								variant={filterInDB === option ? "default" : "outline"}
 								onClick={() => {
 									if (filterInDB === option) {
