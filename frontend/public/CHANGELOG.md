@@ -1,3 +1,11 @@
+## [0.9.44] - 2025-11-01
+
+### Fixed
+
+- Add image validation and loading state to DimmedBackground component
+
+---
+
 ## [0.9.43] - 2025-10-31
 
 ### Fixed
