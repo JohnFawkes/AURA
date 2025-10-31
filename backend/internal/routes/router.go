@@ -126,6 +126,7 @@ func AddRoutes(r *chi.Mux) {
 				r.Get("/set-by-id", routes_mediux.GetSetByID)
 				r.Get("/image", routes_mediux.GetImage)
 				r.Get("/user-follow-hiding", routes_mediux.GetUserFollowingAndHiding)
+				r.Get("/check-link", routes_mediux.CheckMediuxLink)
 			})
 
 			// Database Routes

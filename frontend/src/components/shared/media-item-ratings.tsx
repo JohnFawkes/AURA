@@ -1,4 +1,10 @@
+import apiClient from "@/services/api-client";
+
+import { useEffect, useState } from "react";
+
 import { AssetImage } from "@/components/shared/asset-image";
+
+import { log } from "@/lib/logger";
 
 import { Guid } from "@/types/media-and-posters/media-item-and-library";
 
@@ -41,6 +47,8 @@ type MediaItemRatingsProps = {
 };
 
 export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatingsProps) {
+	const [mediuxURL, setMediuxURL] = useState<string>("");
+
 	const guidMap: { [provider: string]: ProviderInfo } = {};
 
 	const convertTitleToSlug = (title: string): string => {
@@ -81,6 +89,24 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 	});
 	const tmdbID = guids?.find((g) => g.Provider === "tmdb")?.ID;
 
+	// On Load -- Set the Mediux URL
+	useEffect(() => {
+		async function fetchMediuxURL() {
+			if (tmdbID && (mediaItemType === "movie" || mediaItemType === "show")) {
+				const response = await apiClient.get<{
+					data: { status: string; exists: boolean; url: string };
+				}>(`/mediux/check-link?itemType=${mediaItemType}&tmdbID=${tmdbID}`);
+				if (response.data.data.url) {
+					setMediuxURL(response.data.data.url);
+				}
+				log("INFO", "MediaItemRatings", "Fetched MediUX URL", `Found: ${response.data.data.exists}`, {
+					response: response.data.data,
+				});
+			}
+		}
+		fetchMediuxURL();
+	}, [tmdbID, mediaItemType]);
+
 	return (
 		<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
 			{Object.entries(guidMap).map(([provider, info]) => (
@@ -118,13 +144,8 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 				</div>
 			))}
 
-			{tmdbID && (
-				<a
-					href={`https://mediux.io/${mediaItemType}/${tmdbID}`}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="border-none"
-				>
+			{tmdbID && mediuxURL && (
+				<a href={mediuxURL} target="_blank" rel="noopener noreferrer" className="border-none">
 					<AssetImage
 						image={"/mediux_logo.svg"}
 						aspect="logo"
