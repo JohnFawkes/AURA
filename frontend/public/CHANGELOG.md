@@ -1,3 +1,19 @@
+## [0.9.42] - 2025-10-31
+
+### Added
+
+- Standardized Filters on Home Screen to match Saved Sets and Logs page filters
+- Combined Sort and Filter into one section for better UX
+
+### Fixed
+
+- Fixed Docker Pulls badge link in README
+- Fixed issue on Saved Sets page DB Query where pagination was not working correctly when multiple poster sets exist for a media item
+- Fixed issue on Saved Sets page where sort order was not being reset when changed
+- Fixed text on Logs Filter drawer description
+
+---
+
 ## [0.9.42] - 2025-10-30
 
 ### Fixed
