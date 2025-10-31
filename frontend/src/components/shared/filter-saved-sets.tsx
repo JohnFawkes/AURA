@@ -1,42 +1,79 @@
-import { Check } from "lucide-react";
+import {
+	ArrowDownAZ,
+	ArrowDownZA,
+	CalendarArrowDown,
+	CalendarArrowUp,
+	Check,
+	ClockArrowDown,
+	ClockArrowUp,
+	Filter,
+	SortDescIcon,
+} from "lucide-react";
 
+import { useEffect, useMemo, useState } from "react";
+
+import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
+import { SortControl } from "@/components/shared/select-sort";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
+import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+
 type SavedSetsFilterProps = {
-	getSectionSummaries: () => { title?: string }[];
+	getSectionSummaries: () => { title?: string; type?: string }[];
 	librarySectionsLoaded: boolean;
 	filteredLibraries: string[];
 	setFilteredLibraries: (libs: string[]) => void;
+
 	typeOptions: { label: string; value: string }[];
 	filteredTypes: string[];
 	setFilteredTypes: (types: string[]) => void;
+
 	filterAutoDownload: "all" | "on" | "off";
 	setFilterAutoDownload: (val: "all" | "on" | "off") => void;
-	userFilterSearch: string;
-	setUserFilterSearch: (val: string) => void;
+
 	filterUserOptions: string[];
 	filteredUsers: string[];
 	setFilteredUsers: (users: string[]) => void;
-	filterMultiSetOnly?: boolean;
-	setFilterMultiSetOnly?: (val: boolean) => void;
-	onApplyFilters: () => void;
-	onResetFilters: () => void;
-	searchString?: string;
-	searchYear?: number;
-	searchID?: string;
+
+	filterMultiSetOnly: boolean;
+	setFilterMultiSetOnly: (val: boolean) => void;
+
+	searchTMDBID?: string;
 	searchLibrary?: string;
+	searchYear?: number;
+	searchTitle?: string;
+
+	// Sorting
+	sortOption: string;
+	setSortOption: (option: string) => void;
+	sortOrder: "asc" | "desc";
+	setSortOrder: (order: "asc" | "desc") => void;
+
+	// Items Per Page
+	setCurrentPage: (page: number) => void;
+	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
+	setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
 };
 
-export function SavedSetsFilter({
+function SavedSetsFilterContent({
 	getSectionSummaries,
 	librarySectionsLoaded,
 	filteredLibraries,
@@ -46,32 +83,132 @@ export function SavedSetsFilter({
 	setFilteredTypes,
 	filterAutoDownload,
 	setFilterAutoDownload,
-	userFilterSearch,
-	setUserFilterSearch,
 	filterUserOptions,
 	filteredUsers,
 	setFilteredUsers,
 	filterMultiSetOnly,
 	setFilterMultiSetOnly,
-	onApplyFilters,
-	onResetFilters,
-	searchString,
-	searchYear,
-	searchID,
+
+	searchTMDBID,
 	searchLibrary,
+	searchYear,
+	searchTitle,
+
+	sortOption,
+	setSortOption,
+	sortOrder,
+	setSortOrder,
+
+	setCurrentPage,
+	itemsPerPage,
+	setItemsPerPage,
 }: SavedSetsFilterProps) {
 	const { setSearchQuery } = useSearchQueryStore();
 
+	const [userFilterSearch, setUserFilterSearch] = useState<string>("");
+	const [pendingFilterLibraries, setPendingFilterLibraries] = useState<string[]>(filteredLibraries);
+	const [pendingFilterAutoDownload, setPendingFilterAutoDownload] = useState<"all" | "on" | "off">(
+		filterAutoDownload
+	);
+	const [pendingFilterTypes, setPendingFilterTypes] = useState<string[]>(filteredTypes);
+	const [pendingFilterMultiSetOnly, setPendingFilterMultiSetOnly] = useState<boolean>(filterMultiSetOnly);
+	const [pendingFilteredUsers, setPendingFilteredUsers] = useState<string[]>(filteredUsers);
+
+	const handleResetFilters = () => {
+		setSearchQuery("");
+		setFilteredLibraries([]);
+		setPendingFilterLibraries([]);
+		setFilteredTypes([]);
+		setPendingFilterTypes([]);
+		setFilterAutoDownload("all");
+		setPendingFilterAutoDownload("all");
+		setFilteredUsers([]);
+		setPendingFilteredUsers([]);
+		setFilterMultiSetOnly(false);
+		setPendingFilterMultiSetOnly(false);
+		setCurrentPage(1);
+		setUserFilterSearch("");
+	};
+
+	const handleApplyFilters = () => {
+		setCurrentPage(1);
+		setFilteredLibraries(pendingFilterLibraries);
+		setFilteredTypes(pendingFilterTypes);
+		setFilterAutoDownload(pendingFilterAutoDownload);
+		setFilterMultiSetOnly(pendingFilterMultiSetOnly);
+		setFilteredUsers(pendingFilteredUsers);
+	};
+
 	return (
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
+			{/* Sort Header */}
+			<div className="flex items-center justify-center mb-0 mt-0">
+				<Label className="text-lg font-semibold">Sort</Label>
+			</div>
+			<Separator className="my-2 w-full" />
+			{/* Sort Control */}
+			<SortControl
+				options={[
+					{
+						value: "dateDownloaded",
+						label: "Date Downloaded",
+						ascIcon: <ClockArrowUp />,
+						descIcon: <ClockArrowDown />,
+						type: "date",
+					},
+					{
+						value: "title",
+						label: "Title",
+						ascIcon: <ArrowDownAZ />,
+						descIcon: <ArrowDownZA />,
+						type: "string",
+					},
+					{
+						value: "year",
+						label: "Year",
+						ascIcon: <CalendarArrowUp />,
+						descIcon: <CalendarArrowDown />,
+						type: "number",
+					},
+					{
+						value: "library",
+						label: "Library",
+						ascIcon: <ArrowDownAZ />,
+						descIcon: <ArrowDownZA />,
+						type: "string",
+					},
+				]}
+				sortOption={sortOption}
+				sortOrder={sortOrder}
+				setSortOption={setSortOption}
+				setSortOrder={setSortOrder}
+			/>
+			{/* Items Per Page Selection */}
+			<div className="flex items-center mb-4">
+				<SelectItemsPerPage
+					setCurrentPage={setCurrentPage}
+					itemsPerPage={itemsPerPage}
+					setItemsPerPage={setItemsPerPage}
+				/>
+			</div>
+
+			<Separator className="my-2 w-full" />
+			<Separator className="my-1 w-full" />
+
+			{/* Filters Header */}
+			<div className="flex items-center justify-center mb-0">
+				<Label className="text-lg font-semibold">Filters</Label>
+			</div>
+			<Separator className="my-2 w-full" />
+
 			{/* Search Info */}
-			{(searchString || searchYear || searchID) && (
+			{(searchTitle || searchYear || searchTMDBID || searchLibrary) && (
 				<div className="p-2 bg-secondary rounded-md">
 					<Label className="text-md font-semibold mb-1 block">Current Search</Label>
 					<div className="flex flex-col gap-1">
-						{searchString && (
+						{searchTitle && (
 							<div className="text-sm">
-								<span className="font-semibold">Search:</span> {searchString}
+								<span className="font-semibold">Search:</span> {searchTitle}
 							</div>
 						)}
 						{typeof searchYear === "number" && searchYear > 0 && (
@@ -79,9 +216,9 @@ export function SavedSetsFilter({
 								<span className="font-semibold">Year:</span> {searchYear}
 							</div>
 						)}
-						{searchID && (
+						{searchTMDBID && (
 							<div className="text-sm">
-								<span className="font-semibold">ID:</span> {searchID}
+								<span className="font-semibold">ID:</span> {searchTMDBID}
 							</div>
 						)}
 						{searchLibrary && (
@@ -110,7 +247,7 @@ export function SavedSetsFilter({
 							type="multiple"
 							className="flex flex-wrap gap-2 ml-2"
 							value={filteredLibraries}
-							onValueChange={setFilteredLibraries}
+							onValueChange={setPendingFilterLibraries}
 						>
 							{getSectionSummaries()
 								.map((section) => section.title || "Unknown Library")
@@ -119,14 +256,14 @@ export function SavedSetsFilter({
 									<Badge
 										key={section}
 										className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
-										variant={filteredLibraries.includes(section) ? "default" : "outline"}
+										variant={pendingFilterLibraries.includes(section) ? "default" : "outline"}
 										onClick={() => {
-											if (filteredLibraries.includes(section)) {
-												setFilteredLibraries(
-													filteredLibraries.filter((lib) => lib !== section)
+											if (pendingFilterLibraries.includes(section)) {
+												setPendingFilterLibraries(
+													pendingFilterLibraries.filter((lib) => lib !== section)
 												);
 											} else {
-												setFilteredLibraries([...filteredLibraries, section]);
+												setPendingFilterLibraries([...pendingFilterLibraries, section]);
 											}
 										}}
 									>
@@ -142,19 +279,19 @@ export function SavedSetsFilter({
 				<ToggleGroup
 					type="multiple"
 					className="flex flex-wrap gap-2 ml-2"
-					value={filteredTypes}
-					onValueChange={setFilteredTypes}
+					value={pendingFilterTypes}
+					onValueChange={setPendingFilterTypes}
 				>
 					{typeOptions.map((type) => (
 						<Badge
 							key={type.value}
 							className="cursor-pointer text-sm active:scale-95 hover:brightness-120s"
-							variant={filteredTypes.includes(type.value) ? "default" : "outline"}
+							variant={pendingFilterTypes.includes(type.value) ? "default" : "outline"}
 							onClick={() => {
-								if (filteredTypes.includes(type.value)) {
-									setFilteredTypes(filteredTypes.filter((t) => t !== type.value));
+								if (pendingFilterTypes.includes(type.value)) {
+									setPendingFilterTypes(pendingFilterTypes.filter((t) => t !== type.value));
 								} else {
-									setFilteredTypes([...filteredTypes, type.value]);
+									setPendingFilterTypes([...pendingFilterTypes, type.value]);
 								}
 							}}
 						>
@@ -168,36 +305,36 @@ export function SavedSetsFilter({
 				<ToggleGroup
 					type="single"
 					className="flex flex-wrap gap-2 ml-2"
-					value={filterAutoDownload}
-					onValueChange={(val) => setFilterAutoDownload(val as "all" | "on" | "off")}
+					value={pendingFilterAutoDownload}
+					onValueChange={(val) => setPendingFilterAutoDownload(val as "all" | "on" | "off")}
 				>
 					<Badge
-						variant={filterAutoDownload === "all" ? "default" : "outline"}
+						variant={pendingFilterAutoDownload === "all" ? "default" : "outline"}
 						className={cn(
 							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
-							filterAutoDownload === "all" ? "bg-primary text-primary-foreground" : ""
+							pendingFilterAutoDownload === "all" ? "bg-primary text-primary-foreground" : ""
 						)}
-						onClick={() => setFilterAutoDownload("all")}
+						onClick={() => setPendingFilterAutoDownload("all")}
 					>
 						Any
 					</Badge>
 					<Badge
-						variant={filterAutoDownload === "on" ? "default" : "outline"}
+						variant={pendingFilterAutoDownload === "on" ? "default" : "outline"}
 						className={cn(
 							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
-							filterAutoDownload === "on" ? "bg-green-500 text-primary-foreground" : ""
+							pendingFilterAutoDownload === "on" ? "bg-green-500 text-primary-foreground" : ""
 						)}
-						onClick={() => setFilterAutoDownload("on")}
+						onClick={() => setPendingFilterAutoDownload("on")}
 					>
 						AutoDownload On
 					</Badge>
 					<Badge
-						variant={filterAutoDownload === "off" ? "default" : "outline"}
+						variant={pendingFilterAutoDownload === "off" ? "default" : "outline"}
 						className={cn(
 							"cursor-pointer text-sm active:scale-95 hover:brightness-120",
-							filterAutoDownload === "off" ? "bg-red-500 text-primary-foreground" : ""
+							pendingFilterAutoDownload === "off" ? "bg-red-500 text-primary-foreground" : ""
 						)}
-						onClick={() => setFilterAutoDownload("off")}
+						onClick={() => setPendingFilterAutoDownload("off")}
 					>
 						AutoDownload Off
 					</Badge>
@@ -208,14 +345,14 @@ export function SavedSetsFilter({
 				<Badge
 					key={"filter-multi-set-only"}
 					className="cursor-pointer text-sm ml-2 active:scale-95 hover:brightness-120"
-					variant={filterMultiSetOnly ? "default" : "outline"}
+					variant={pendingFilterMultiSetOnly ? "default" : "outline"}
 					onClick={() => {
-						if (setFilterMultiSetOnly) {
-							setFilterMultiSetOnly(!filterMultiSetOnly);
+						if (setPendingFilterMultiSetOnly) {
+							setPendingFilterMultiSetOnly(!pendingFilterMultiSetOnly);
 						}
 					}}
 				>
-					{filterMultiSetOnly ? "Multi Set Only" : "All Items"}
+					{pendingFilterMultiSetOnly ? "Multi Set Only" : "All Items"}
 				</Badge>
 				<Separator className="my-4 w-full" />
 				{/* Users */}
@@ -233,13 +370,13 @@ export function SavedSetsFilter({
 					{/* All User Option */}
 					<div
 						className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-							filteredUsers.length === 0 ? "bg-muted" : "hover:bg-muted/60"
+							pendingFilteredUsers.length === 0 ? "bg-muted" : "hover:bg-muted/60"
 						}`}
 						onClick={() => {
-							setFilteredUsers([]);
+							setPendingFilteredUsers([]);
 						}}
 					>
-						<Checkbox checked={filteredUsers.length === 0} id={`users-all`} />
+						<Checkbox checked={pendingFilteredUsers.length === 0} id={`users-all`} />
 						<Label
 							htmlFor={`users-all`}
 							className="text-sm flex-1 cursor-pointer truncate"
@@ -247,24 +384,24 @@ export function SavedSetsFilter({
 						>
 							All User
 						</Label>
-						{filteredUsers.length === 0 && <Check className="h-4 w-4 text-primary" />}
+						{pendingFilteredUsers.length === 0 && <Check className="h-4 w-4 text-primary" />}
 					</div>
 
 					{/* No User Option - only show if present in filterUserOptions */}
 					{filterUserOptions.includes("|||no-user|||") && (
 						<div
 							className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-								filteredUsers.includes("|||no-user|||") ? "bg-muted" : "hover:bg-muted/60"
+								pendingFilteredUsers.includes("|||no-user|||") ? "bg-muted" : "hover:bg-muted/60"
 							}`}
 							onClick={() => {
-								if (filteredUsers.includes("|||no-user|||")) {
-									setFilteredUsers(filteredUsers.filter((u) => u !== "|||no-user|||"));
+								if (pendingFilteredUsers.includes("|||no-user|||")) {
+									setPendingFilteredUsers(pendingFilteredUsers.filter((u) => u !== "|||no-user|||"));
 								} else {
-									setFilteredUsers([...filteredUsers, "|||no-user|||"]);
+									setPendingFilteredUsers([...pendingFilteredUsers, "|||no-user|||"]);
 								}
 							}}
 						>
-							<Checkbox checked={filteredUsers.includes("|||no-user|||")} id={`users-no-user`} />
+							<Checkbox checked={pendingFilteredUsers.includes("|||no-user|||")} id={`users-no-user`} />
 							<Label
 								htmlFor={`users-no-user`}
 								className="text-sm flex-1 cursor-pointer truncate"
@@ -272,7 +409,9 @@ export function SavedSetsFilter({
 							>
 								No User
 							</Label>
-							{filteredUsers.includes("|||no-user|||") && <Check className="h-4 w-4 text-primary" />}
+							{pendingFilteredUsers.includes("|||no-user|||") && (
+								<Check className="h-4 w-4 text-primary" />
+							)}
 						</div>
 					)}
 
@@ -290,19 +429,19 @@ export function SavedSetsFilter({
 							<div
 								key={user}
 								className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-									filteredUsers.includes(user) ? "bg-muted" : "hover:bg-muted/60"
+									pendingFilteredUsers.includes(user) ? "bg-muted" : "hover:bg-muted/60"
 								}`}
 								onClick={() => {
 									let newUsers;
-									if (filteredUsers.includes(user)) {
-										newUsers = filteredUsers.filter((u) => u !== user);
+									if (pendingFilteredUsers.includes(user)) {
+										newUsers = pendingFilteredUsers.filter((u) => u !== user);
 									} else {
-										newUsers = [...filteredUsers, user];
+										newUsers = [...pendingFilteredUsers, user];
 									}
-									setFilteredUsers(newUsers);
+									setPendingFilteredUsers(newUsers);
 								}}
 							>
-								<Checkbox checked={filteredUsers.includes(user)} id={`user-${user}`} />
+								<Checkbox checked={pendingFilteredUsers.includes(user)} id={`user-${user}`} />
 								<Label
 									htmlFor={`user-${user}`}
 									className="text-sm flex-1 cursor-pointer truncate"
@@ -310,7 +449,7 @@ export function SavedSetsFilter({
 								>
 									{user}
 								</Label>
-								{filteredUsers.includes(user) && <Check className="h-4 w-4 text-primary" />}
+								{pendingFilteredUsers.includes(user) && <Check className="h-4 w-4 text-primary" />}
 							</div>
 						))}
 				</div>
@@ -319,7 +458,7 @@ export function SavedSetsFilter({
 			{/* Apply Filters Button */}
 			<Button
 				className="w-full mt-2 cursor-pointer hover:brightness-120 active:scale-95"
-				onClick={onApplyFilters}
+				onClick={handleApplyFilters}
 			>
 				Apply Filters
 			</Button>
@@ -328,10 +467,182 @@ export function SavedSetsFilter({
 			<Button
 				variant={"destructive"}
 				className="w-full cursor-pointer hover:brightness-120 active:scale-95"
-				onClick={onResetFilters}
+				onClick={handleResetFilters}
 			>
 				Reset Filters
 			</Button>
 		</div>
+	);
+}
+
+export function FilterSavedSets({
+	getSectionSummaries,
+	librarySectionsLoaded,
+	filteredLibraries,
+	setFilteredLibraries,
+	typeOptions,
+	filteredTypes,
+	setFilteredTypes,
+	filterAutoDownload,
+	setFilterAutoDownload,
+
+	filterUserOptions,
+	filteredUsers,
+	setFilteredUsers,
+	filterMultiSetOnly,
+	setFilterMultiSetOnly,
+
+	searchTMDBID,
+	searchLibrary,
+	searchYear,
+	searchTitle,
+
+	sortOption,
+	setSortOption,
+	sortOrder,
+	setSortOrder,
+
+	setCurrentPage,
+	itemsPerPage,
+	setItemsPerPage,
+}: SavedSetsFilterProps) {
+	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+
+	// Change isWideScreen on window resize
+	useEffect(() => {
+		const handleResize = () => {
+			setIsWideScreen(window.innerWidth >= 1300);
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	// Calculate number of active filters
+	const numberOfActiveFilters = useMemo(() => {
+		let count = 0;
+		if (filteredLibraries.length > 0) count++;
+		if (filterAutoDownload && filterAutoDownload !== "all") count++;
+		if (filteredUsers.length > 0) count++;
+		if (filteredTypes.length > 0) count++;
+		if (filterMultiSetOnly) count++;
+		if (searchTitle) count++;
+		if (searchYear) count++;
+		if (searchLibrary) count++;
+		if (searchTMDBID) count++;
+		return count;
+	}, [
+		filteredLibraries.length,
+		filterAutoDownload,
+		filteredUsers.length,
+		filteredTypes.length,
+		filterMultiSetOnly,
+		searchTitle,
+		searchYear,
+		searchLibrary,
+		searchTMDBID,
+	]);
+
+	return (
+		<>
+			{isWideScreen ? (
+				<Popover>
+					<PopoverTrigger asChild>
+						<div>
+							<Button
+								variant="outline"
+								className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+							>
+								<SortDescIcon className="h-5 w-5" />
+								Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+								<Filter className="h-5 w-5" />
+							</Button>
+						</div>
+					</PopoverTrigger>
+					<PopoverContent
+						side="right"
+						align="start"
+						className="w-[350px] p-2 bg-background border border-primary"
+					>
+						<SavedSetsFilterContent
+							getSectionSummaries={getSectionSummaries}
+							librarySectionsLoaded={librarySectionsLoaded}
+							typeOptions={typeOptions}
+							filterUserOptions={filterUserOptions}
+							filteredLibraries={filteredLibraries}
+							setFilteredLibraries={setFilteredLibraries}
+							filteredTypes={filteredTypes}
+							setFilteredTypes={setFilteredTypes}
+							filterAutoDownload={filterAutoDownload}
+							setFilterAutoDownload={setFilterAutoDownload}
+							filteredUsers={filteredUsers}
+							setFilteredUsers={setFilteredUsers}
+							filterMultiSetOnly={filterMultiSetOnly}
+							setFilterMultiSetOnly={setFilterMultiSetOnly}
+							searchTitle={searchTitle}
+							searchYear={searchYear}
+							searchTMDBID={searchTMDBID}
+							searchLibrary={searchLibrary}
+							sortOption={sortOption}
+							setSortOption={setSortOption}
+							sortOrder={sortOrder}
+							setSortOrder={setSortOrder}
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
+						/>
+					</PopoverContent>
+				</Popover>
+			) : (
+				<Drawer direction="left">
+					<DrawerTrigger asChild>
+						<Button
+							variant="outline"
+							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+						>
+							<SortDescIcon className="h-5 w-5" />
+							Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+							<Filter className="h-5 w-5" />
+						</Button>
+					</DrawerTrigger>
+					<DrawerContent>
+						<DrawerHeader className="my-0">
+							<DrawerTitle className="mb-0">Sort & Filter</DrawerTitle>
+							<DrawerDescription className="mb-0">
+								Use the options below to sort and filter your saved sets.
+							</DrawerDescription>
+						</DrawerHeader>
+						<Separator className="my-1 w-full" />
+						<SavedSetsFilterContent
+							getSectionSummaries={getSectionSummaries}
+							librarySectionsLoaded={librarySectionsLoaded}
+							typeOptions={typeOptions}
+							filterUserOptions={filterUserOptions}
+							filteredLibraries={filteredLibraries}
+							setFilteredLibraries={setFilteredLibraries}
+							filteredTypes={filteredTypes}
+							setFilteredTypes={setFilteredTypes}
+							filterAutoDownload={filterAutoDownload}
+							setFilterAutoDownload={setFilterAutoDownload}
+							filteredUsers={filteredUsers}
+							setFilteredUsers={setFilteredUsers}
+							filterMultiSetOnly={filterMultiSetOnly}
+							setFilterMultiSetOnly={setFilterMultiSetOnly}
+							searchTitle={searchTitle}
+							searchYear={searchYear}
+							searchTMDBID={searchTMDBID}
+							searchLibrary={searchLibrary}
+							sortOption={sortOption}
+							setSortOption={setSortOption}
+							sortOrder={sortOrder}
+							setSortOrder={setSortOrder}
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
+						/>
+					</DrawerContent>
+				</Drawer>
+			)}
+		</>
 	);
 }

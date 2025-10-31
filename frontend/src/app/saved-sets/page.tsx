@@ -6,39 +6,25 @@ import { AutodownloadResult, postForceRecheckDBItemForAutoDownload } from "@/ser
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
-	CalendarArrowDown,
-	CalendarArrowUp,
 	ClockArrowDown,
 	ClockArrowUp,
-	Filter,
 	RefreshCcw as RefreshIcon,
 	XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
-import { SavedSetsFilter } from "@/components/shared/filter-saved-sets";
+import { FilterSavedSets } from "@/components/shared/filter-saved-sets";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
 import SavedSetsTableRow from "@/components/shared/saved-sets-table";
-import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
-import { SortControl } from "@/components/shared/select-sort";
 import { ViewControl } from "@/components/shared/select-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -90,8 +76,7 @@ const SavedSetsPage: React.FC = () => {
 
 	// User Filter Options: all unique users from the savedSets
 	const [filterUserOptions, setFilterUserOptions] = useState<string[]>([]);
-	// User Filter Search: for searching within the user filter options
-	const [userFilterSearch, setUserFilterSearch] = useState("");
+
 	// Selected Types Options
 	const typeOptions = [
 		{ label: "Poster", value: "poster" },
@@ -103,15 +88,6 @@ const SavedSetsPage: React.FC = () => {
 	const [totalItems, setTotalItems] = useState(0);
 	// Is Wide Screen: for showing/hiding the ViewControl
 	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
-
-	const [pendingFilters, setPendingFilters] = useState({
-		filteredLibraries,
-		filteredTypes,
-		filterAutoDownload,
-		filteredUsers,
-		filterMultiSetOnly,
-		userFilterSearch,
-	});
 
 	// Set the Document Title
 	useEffect(() => {
@@ -226,31 +202,6 @@ const SavedSetsPage: React.FC = () => {
 	// Calculate total pages
 	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-	// Calculate number of active filters
-	const numberOfActiveFilters = useMemo(() => {
-		let count = 0;
-		if (filteredLibraries.length > 0) count++;
-		if (filterAutoDownload && filterAutoDownload !== "all") count++;
-		if (filteredUsers.length > 0) count++;
-		if (filteredTypes.length > 0) count++;
-		if (filterMultiSetOnly) count++;
-		if (searchTitle) count++;
-		if (searchYear) count++;
-		if (searchLibrary) count++;
-		if (searchTMDBID) count++;
-		return count;
-	}, [
-		filteredLibraries.length,
-		filterAutoDownload,
-		filteredUsers.length,
-		filteredTypes.length,
-		filterMultiSetOnly,
-		searchTitle,
-		searchYear,
-		searchLibrary,
-		searchTMDBID,
-	]);
-
 	if (loading) {
 		return <Loader className="mt-10" message="Loading saved sets..." />;
 	}
@@ -332,171 +283,35 @@ const SavedSetsPage: React.FC = () => {
 			{/* Row 1: Filter Icon (left), Autodownload (right) */}
 			<div className="w-full flex items-center justify-between mb-2">
 				<div>
-					{isWideScreen ? (
-						<Popover>
-							<PopoverTrigger asChild>
-								<div>
-									<Button
-										variant="outline"
-										className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
-									>
-										Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-										<Filter className="h-5 w-5" />
-									</Button>
-								</div>
-							</PopoverTrigger>
-							<PopoverContent
-								side="right"
-								align="start"
-								className="w-[350px] p-2 bg-background border border-primary"
-							>
-								<SavedSetsFilter
-									getSectionSummaries={getSectionSummaries}
-									librarySectionsLoaded={librarySectionsLoaded}
-									typeOptions={typeOptions}
-									filterUserOptions={filterUserOptions}
-									filteredLibraries={pendingFilters.filteredLibraries}
-									setFilteredLibraries={(libs) =>
-										setPendingFilters((f) => ({ ...f, filteredLibraries: libs }))
-									}
-									filteredTypes={pendingFilters.filteredTypes}
-									setFilteredTypes={(types) =>
-										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
-									}
-									filterAutoDownload={pendingFilters.filterAutoDownload}
-									setFilterAutoDownload={(val) =>
-										setPendingFilters((f) => ({ ...f, filterAutoDownload: val }))
-									}
-									userFilterSearch={pendingFilters.userFilterSearch}
-									setUserFilterSearch={(val) =>
-										setPendingFilters((f) => ({ ...f, userFilterSearch: val }))
-									}
-									filteredUsers={pendingFilters.filteredUsers}
-									setFilteredUsers={(users) =>
-										setPendingFilters((f) => ({ ...f, filteredUsers: users }))
-									}
-									filterMultiSetOnly={pendingFilters.filterMultiSetOnly}
-									setFilterMultiSetOnly={(val) =>
-										setPendingFilters((f) => ({ ...f, filterMultiSetOnly: val }))
-									}
-									onApplyFilters={() => {
-										setFilteredLibraries(pendingFilters.filteredLibraries);
-										setFilteredTypes(pendingFilters.filteredTypes);
-										setFilterAutoDownload(pendingFilters.filterAutoDownload);
-										setFilteredUsers(pendingFilters.filteredUsers);
-										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
-										setUserFilterSearch(pendingFilters.userFilterSearch);
-										setCurrentPage(1);
-									}}
-									onResetFilters={() => {
-										setSearchQuery("");
-										setFilteredLibraries([]);
-										setFilterAutoDownload("all");
-										setFilteredUsers([]);
-										setFilteredTypes([]);
-										setCurrentPage(1);
-										setFilterMultiSetOnly(false);
-										setUserFilterSearch("");
-										setPendingFilters({
-											filteredLibraries: [],
-											filteredTypes: [],
-											filterAutoDownload: "all",
-											userFilterSearch: "",
-											filteredUsers: [],
-											filterMultiSetOnly: false,
-										});
-									}}
-									searchString={searchTitle}
-									searchYear={searchYear}
-									searchID={searchTMDBID}
-									searchLibrary={searchLibrary}
-								/>
-							</PopoverContent>
-						</Popover>
-					) : (
-						<Drawer direction="left">
-							<DrawerTrigger asChild>
-								<Button
-									variant="outline"
-									className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-								>
-									Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-									<Filter className="h-5 w-5" />
-								</Button>
-							</DrawerTrigger>
-							<DrawerContent>
-								<DrawerHeader className="my-0">
-									<DrawerTitle className="mb-0">Filters</DrawerTitle>
-									<DrawerDescription className="mb-0">
-										Use the options below to filter your saved sets.
-									</DrawerDescription>
-								</DrawerHeader>
-								<Separator className="my-1 w-full" />
-								<SavedSetsFilter
-									getSectionSummaries={getSectionSummaries}
-									librarySectionsLoaded={librarySectionsLoaded}
-									typeOptions={typeOptions}
-									filterUserOptions={filterUserOptions}
-									filteredLibraries={pendingFilters.filteredLibraries}
-									setFilteredLibraries={(libs) =>
-										setPendingFilters((f) => ({ ...f, filteredLibraries: libs }))
-									}
-									filteredTypes={pendingFilters.filteredTypes}
-									setFilteredTypes={(types) =>
-										setPendingFilters((f) => ({ ...f, filteredTypes: types }))
-									}
-									filterAutoDownload={pendingFilters.filterAutoDownload}
-									setFilterAutoDownload={(val) =>
-										setPendingFilters((f) => ({ ...f, filterAutoDownload: val }))
-									}
-									userFilterSearch={pendingFilters.userFilterSearch}
-									setUserFilterSearch={(val) =>
-										setPendingFilters((f) => ({ ...f, userFilterSearch: val }))
-									}
-									filteredUsers={pendingFilters.filteredUsers}
-									setFilteredUsers={(users) =>
-										setPendingFilters((f) => ({ ...f, filteredUsers: users }))
-									}
-									filterMultiSetOnly={pendingFilters.filterMultiSetOnly}
-									setFilterMultiSetOnly={(val) =>
-										setPendingFilters((f) => ({ ...f, filterMultiSetOnly: val }))
-									}
-									onApplyFilters={() => {
-										setFilteredLibraries(pendingFilters.filteredLibraries);
-										setFilteredTypes(pendingFilters.filteredTypes);
-										setFilterAutoDownload(pendingFilters.filterAutoDownload);
-										setFilteredUsers(pendingFilters.filteredUsers);
-										setFilterMultiSetOnly(pendingFilters.filterMultiSetOnly);
-										setUserFilterSearch(pendingFilters.userFilterSearch);
-										setCurrentPage(1);
-									}}
-									onResetFilters={() => {
-										setSearchQuery("");
-										setFilteredLibraries([]);
-										setFilterAutoDownload("all");
-										setFilteredUsers([]);
-										setFilteredTypes([]);
-										setCurrentPage(1);
-										setFilterMultiSetOnly(false);
-										setUserFilterSearch("");
-										setPendingFilters({
-											filteredLibraries: [],
-											filteredTypes: [],
-											filterAutoDownload: "all",
-											userFilterSearch: "",
-											filteredUsers: [],
-											filterMultiSetOnly: false,
-										});
-									}}
-									searchString={searchTitle}
-									searchYear={searchYear}
-									searchID={searchTMDBID}
-									searchLibrary={searchLibrary}
-								/>
-							</DrawerContent>
-						</Drawer>
-					)}
+					<FilterSavedSets
+						getSectionSummaries={getSectionSummaries}
+						librarySectionsLoaded={librarySectionsLoaded}
+						filteredLibraries={filteredLibraries}
+						setFilteredLibraries={setFilteredLibraries}
+						typeOptions={typeOptions}
+						filteredTypes={filteredTypes}
+						setFilteredTypes={setFilteredTypes}
+						filterAutoDownload={filterAutoDownload}
+						setFilterAutoDownload={setFilterAutoDownload}
+						filterUserOptions={filterUserOptions}
+						filteredUsers={filteredUsers}
+						setFilteredUsers={setFilteredUsers}
+						filterMultiSetOnly={filterMultiSetOnly}
+						setFilterMultiSetOnly={setFilterMultiSetOnly}
+						searchTitle={searchTitle}
+						searchYear={searchYear}
+						searchTMDBID={searchTMDBID}
+						searchLibrary={searchLibrary}
+						sortOption={sortOption}
+						sortOrder={sortOrder}
+						setSortOption={setSortOption}
+						setSortOrder={setSortOrder}
+						setCurrentPage={setCurrentPage}
+						itemsPerPage={itemsPerPage}
+						setItemsPerPage={setItemsPerPage}
+					/>
 				</div>
+
 				<div>
 					{savedSets &&
 						savedSets.some((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)) && (
@@ -523,55 +338,8 @@ const SavedSetsPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Row 2: SortControl (full width) */}
-			<div className="w-full mb-2">
-				<SortControl
-					options={[
-						{
-							value: "dateDownloaded",
-							label: "Date Downloaded",
-							ascIcon: <ClockArrowUp />,
-							descIcon: <ClockArrowDown />,
-							type: "date",
-						},
-						{
-							value: "title",
-							label: "Title",
-							ascIcon: <ArrowDownAZ />,
-							descIcon: <ArrowDownZA />,
-							type: "string",
-						},
-						{
-							value: "year",
-							label: "Year",
-							ascIcon: <CalendarArrowUp />,
-							descIcon: <CalendarArrowDown />,
-							type: "number",
-						},
-						{
-							value: "library",
-							label: "Library",
-							ascIcon: <ArrowDownAZ />,
-							descIcon: <ArrowDownZA />,
-							type: "string",
-						},
-					]}
-					sortOption={sortOption}
-					sortOrder={sortOrder}
-					setSortOption={setSortOption}
-					setSortOrder={setSortOrder}
-				/>
-			</div>
-
-			{/* Row 3: ItemsPerPage (left), ViewControl (right) */}
-			<div className="w-full flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<SelectItemsPerPage
-						setCurrentPage={setCurrentPage}
-						itemsPerPage={itemsPerPage}
-						setItemsPerPage={setItemsPerPage}
-					/>
-				</div>
+			{/* Row 2: ViewControl (right) */}
+			<div className="w-full flex items-center justify-end mb-0">
 				{isWideScreen && (
 					<ViewControl
 						options={[
@@ -586,7 +354,7 @@ const SavedSetsPage: React.FC = () => {
 				)}
 			</div>
 
-			<Separator className="my-4 w-full" />
+			<Separator className="mt-0 my-4 w-full" />
 
 			{Object.keys(recheckStatus).length > 0 && (
 				<div className="w-full">
@@ -711,16 +479,6 @@ const SavedSetsPage: React.FC = () => {
 								setFilteredTypes([]);
 								setCurrentPage(1);
 								if (filterMultiSetOnly) setFilterMultiSetOnly(false);
-								setUserFilterSearch("");
-								// Reset pending filters as well
-								setPendingFilters({
-									filteredLibraries: [],
-									filteredTypes: [],
-									filterAutoDownload: "all",
-									userFilterSearch: "",
-									filteredUsers: [],
-									filterMultiSetOnly: false,
-								});
 							}}
 							className="text-sm"
 						>

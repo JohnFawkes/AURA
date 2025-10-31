@@ -130,7 +130,7 @@ export const refreshPosterSet = async ({
 
 export const renderTypeBadges = (savedSet: DBMediaItemWithPosterSets) => {
 	// Flatten all SelectedTypes arrays from every poster set.
-	const allTypes = savedSet.PosterSets.flatMap((set) => set.SelectedTypes);
+	const allTypes = savedSet.PosterSets.flatMap((set) => (Array.isArray(set.SelectedTypes) ? set.SelectedTypes : []));
 	const uniqueTypes = Array.from(new Set(allTypes));
 	return uniqueTypes.map((type) => {
 		if (!type) return null;

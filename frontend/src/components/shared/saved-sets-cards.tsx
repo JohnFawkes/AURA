@@ -41,6 +41,7 @@ export function hasSelectedTypesOverlapOnAutoDownload(
 	const typeToAutoDownloadSet = new Map<string, boolean>();
 	for (const set of posterSets) {
 		if (!set.AutoDownload) continue;
+		if (!Array.isArray(set.SelectedTypes)) continue;
 		for (const type of set.SelectedTypes) {
 			if (type && typeToAutoDownloadSet.has(type)) {
 				return true;

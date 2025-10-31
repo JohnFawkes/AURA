@@ -3,9 +3,8 @@
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchMediaServerLibrarySectionItems } from "@/services/mediaserver/api-mediaserver-fetch-library-section-items";
 import { fetchMediaServerLibrarySections } from "@/services/mediaserver/api-mediaserver-fetch-library-sections";
-import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, Filter } from "lucide-react";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
@@ -13,23 +12,9 @@ import { FilterHome } from "@/components/shared/filter-home";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { HomeMediaItemCardSkeletonGrid } from "@/components/shared/media-item-card-skeleton";
 import { RefreshButton } from "@/components/shared/refresh-button";
-import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
-import { SortControl } from "@/components/shared/select-sort";
-import { Button } from "@/components/ui/button";
-import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 
-import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { MAX_CACHE_DURATION, useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
@@ -39,7 +24,6 @@ import { searchMediaItems } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
-import { FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 export default function Home() {
 	useEffect(() => {
@@ -63,9 +47,6 @@ export default function Home() {
 	const [sectionProgress, setSectionProgress] = useState<{
 		[key: string]: { loaded: number; total: number };
 	}>({});
-
-	// Wide screen detection
-	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
 
 	// State to track the HomePageStore values
 	const {
@@ -109,16 +90,6 @@ export default function Home() {
 			setSortOrder("desc");
 		}
 	}, [sortOption, setSortOption, setSortOrder]);
-
-	// Change isWideScreen on window resize
-	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
 
 	// Fetch data from cache or API
 	const getMediaItems = useCallback(
@@ -313,14 +284,6 @@ export default function Home() {
 
 	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
 
-	// Calculate number of active filters
-	const numberOfActiveFilters = useMemo(() => {
-		let count = 0;
-		if (filteredLibraries.length > 0) count++;
-		if (filterInDB !== "all") count++;
-		return count;
-	}, [filteredLibraries, filterInDB]);
-
 	return (
 		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
 			{!fullyLoaded && librarySections.length > 0 ? (
@@ -355,149 +318,25 @@ export default function Home() {
 				</div>
 			) : (
 				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
-					{/* Row 1: Filter Icon (left), Autodownload (right) */}
-					<div className="w-full flex items-center justify-between mb-2 mt-2">
-						<div>
-							{isWideScreen ? (
-								<Popover>
-									<PopoverTrigger asChild>
-										<div>
-											<Button
-												variant="outline"
-												className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
-											>
-												Filters
-												{numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-												<Filter className="h-5 w-5" />
-											</Button>
-										</div>
-									</PopoverTrigger>
-									<PopoverContent
-										side="right"
-										align="start"
-										className="w-[350px] p-2 bg-background border border-primary"
-									>
-										<FilterHome
-											librarySections={librarySections.map((section) => ({
-												label: section.Title,
-												value: section.Title,
-											}))}
-											filteredLibraries={filteredLibraries}
-											setFilteredLibraries={setFilteredLibraries}
-											filterInDB={filterInDB}
-											setFilterInDB={setFilterInDB}
-											inDBOptions={FILTER_IN_DB_OPTIONS.map((option) => ({
-												label:
-													option === "all"
-														? "All Items"
-														: option === "inDB"
-															? "Items In DB"
-															: "Items Not in DB",
-												value: option,
-											}))}
-										/>
-									</PopoverContent>
-								</Popover>
-							) : (
-								<Drawer direction="left">
-									<DrawerTrigger asChild>
-										<Button
-											variant="outline"
-											className={cn(
-												numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1"
-											)}
-										>
-											Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-											<Filter className="h-5 w-5" />
-										</Button>
-									</DrawerTrigger>
-									<DrawerContent>
-										<DrawerHeader className="my-0">
-											<DrawerTitle className="mb-0">Filters</DrawerTitle>
-											<DrawerDescription className="mb-0">
-												Use the options below to filter your media items.
-											</DrawerDescription>
-										</DrawerHeader>
-										<Separator className="my-1 w-full" />
-										<FilterHome
-											librarySections={librarySections.map((section) => ({
-												label: section.Title,
-												value: section.Title,
-											}))}
-											filteredLibraries={filteredLibraries}
-											setFilteredLibraries={setFilteredLibraries}
-											filterInDB={filterInDB}
-											setFilterInDB={setFilterInDB}
-											inDBOptions={FILTER_IN_DB_OPTIONS.map((option) => ({
-												label:
-													option === "all"
-														? "All Items"
-														: option === "inDB"
-															? "Items In DB"
-															: "Items Not in DB",
-												value: option,
-											}))}
-										/>
-									</DrawerContent>
-								</Drawer>
-							)}
-						</div>
-					</div>
-					{/* Sorting controls */}
-					<SortControl
-						options={[
-							{
-								value: "dateAdded",
-								label: "Date Added",
-								ascIcon: <ClockArrowUp />,
-								descIcon: <ClockArrowDown />,
-								type: "date",
-							},
-							...(hasUpdatedAt
-								? [
-										{
-											value: "dateUpdated",
-											label: "Date Updated",
-											ascIcon: <ClockArrowUp />,
-											descIcon: <ClockArrowDown />,
-											type: "date" as const,
-										},
-									]
-								: []),
-							{
-								value: "dateReleased",
-								label: "Date Released",
-								ascIcon: <ClockArrowUp />,
-								descIcon: <ClockArrowDown />,
-								type: "date",
-							},
-							{
-								value: "title",
-								label: "Title",
-								ascIcon: <ArrowDownAZ />,
-								descIcon: <ArrowDownZA />,
-								type: "string",
-							},
-						]}
-						sortOption={sortOption}
-						sortOrder={sortOrder}
-						setSortOption={(value) => {
-							setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
-							if (value === "title") setSortOrder("asc");
-							else if (value === "dateUpdated") setSortOrder("desc");
-							else if (value === "dateAdded") setSortOrder("desc");
-							else if (value === "dateReleased") setSortOrder("desc");
-						}}
-						setSortOrder={setSortOrder}
-					/>
-					{/* Items Per Page Selection */}
-					<div className="flex items-center mb-4">
-						<SelectItemsPerPage
+					{/* Filter & Sort Controls */}
+					<div className="w-full flex items-center justify-center mb-4 mt-4">
+						<FilterHome
+							librarySections={librarySections}
+							filteredLibraries={filteredLibraries}
+							setFilteredLibraries={setFilteredLibraries}
+							filterInDB={filterInDB}
+							setFilterInDB={setFilterInDB}
+							hasUpdatedAt={hasUpdatedAt}
+							sortOption={sortOption}
+							setSortOption={setSortOption}
+							sortOrder={sortOrder}
+							setSortOrder={setSortOrder}
 							setCurrentPage={setCurrentPage}
 							itemsPerPage={itemsPerPage}
 							setItemsPerPage={setItemsPerPage}
 						/>
 					</div>
+
 					{/* Grid of Cards */}
 					<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
 						{paginatedItems.length === 0 && fullyLoaded && (searchQuery || filteredLibraries.length > 0) ? (
