@@ -9,6 +9,7 @@ export type SortOption = {
 	label: string;
 	ascIcon: React.ReactNode;
 	descIcon: React.ReactNode;
+	type: "string" | "number" | "date";
 };
 
 type SortControlProps = {
@@ -38,7 +39,12 @@ export const SortControl: React.FC<SortControlProps> = ({
 			<Select
 				onValueChange={(value) => {
 					setSortOption(value);
-					// Optionally set default order per option here if needed
+					const newSelected = options.find((opt) => opt.value === value);
+					if (newSelected?.type === "string") {
+						setSortOrder("asc"); // A-Z for strings
+					} else {
+						setSortOrder("desc"); // High to low for number/date
+					}
 				}}
 				value={sortOption}
 			>
