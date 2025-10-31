@@ -519,8 +519,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		);
 
 		return (
-			<FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2 space-y-0">
-				<FormControl>
+			<FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
+				<FormControl className="mt-1">
 					<Checkbox
 						checked={isChecked}
 						disabled={isDisabled}
