@@ -45,8 +45,11 @@ func Plex_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaS
 	u.Path = path.Join(u.Path, "library", "sections", "all")
 	URL := u.String()
 
+	// Add the token as a header
+	headers := map[string]string{"X-Plex-Token": msConfig.Token}
+
 	// Make a GET request to the Plex server
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
 	if logErr.Message != "" {
 		return nil, logErr
 	}

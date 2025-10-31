@@ -44,8 +44,11 @@ func Plex_GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer)
 	u.Path = path.Join(u.Path, "/")
 	URL := u.String()
 
+	// Add the token as a header
+	headers := map[string]string{"X-Plex-Token": msConfig.Token}
+
 	// Make the HTTP request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
 	if logErr.Message != "" {
 		return "", logErr
 	}
