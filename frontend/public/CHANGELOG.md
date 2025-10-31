@@ -1,3 +1,11 @@
+## [0.9.43] - 2025-10-31
+
+### Fixed
+
+- Fixed issue with Plex token not being sent in headers for FetchLibrarySectionOptions and GetMediaServerStatus requests
+
+---
+
 ## [0.9.42] - 2025-10-31
 
 ### Added
