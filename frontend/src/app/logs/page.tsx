@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
 import { ErrorMessage } from "@/components/shared/error-message";
+import { LogsFilter } from "@/components/shared/filter-logs";
 import Loader from "@/components/shared/loader";
-import { LogsFilter } from "@/components/shared/logs-filter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -289,7 +289,7 @@ export default function LogsPage() {
 										<DrawerHeader className="my-0">
 											<DrawerTitle className="mb-0">Filters</DrawerTitle>
 											<DrawerDescription className="mb-0">
-												Use the options below to filter your saved sets.
+												Use the options below to filter your logs.
 											</DrawerDescription>
 										</DrawerHeader>
 										<Separator className="my-1 w-full" />
