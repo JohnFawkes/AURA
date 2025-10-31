@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
-import { MediaItemRatings } from "@/components/shared/media_item_ratings";
+import { MediaItemRatings } from "@/components/shared/media-item-ratings";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
