@@ -1,63 +1,65 @@
 name: Docker Image CI and Release for aura Beta
 
 on:
-    workflow_dispatch:
-    push:
-        branches:
-            - "master"
-            - "beta*"
-        paths:
-            - "backend/**"
-            - "frontend/**"
-            - "VERSION.txt"
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+      - "beta*"
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "VERSION.txt"
 
 jobs:
-    release:
-        runs-on: ubuntu-latest
+  release:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-            - name: Docker info
-              run: docker info
+      - name: Docker info
+        run: docker info
 
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v2
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.PAT }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT }}
 
-            - name: Log in to Docker Hub
-              uses: docker/login-action@v2
-              with:
-                  username: ${{ secrets.DOCKERHUB_USERNAME }}
-                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-            - name: Extract Version
-              id: extract_version
-              run: |
-                  if [[ -f VERSION.txt ]]; then
-                    APP_VERSION=$(cat VERSION.txt)
-                    if [[ "${{ github.ref_name }}" == beta* ]]; then
-                      APP_VERSION="${APP_VERSION}-beta"
-                    fi
-                    echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
-                  else
-                    echo "APP_VERSION=dev" >> $GITHUB_ENV
-                  fi
+      - name: Extract Version
+        id: extract_version
+        run: |
+          if [[ -f VERSION.txt ]]; then
+            APP_VERSION=$(cat VERSION.txt)
+            if [[ "${{ github.ref_name }}" == beta* ]]; then
+              APP_VERSION="${APP_VERSION}-beta"
+            fi
+            echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          else
+            echo "APP_VERSION=dev" >> $GITHUB_ENV
+          fi
 
-            - name: Build Docker image
-              run: |
-                  docker buildx build . \
-                    --platform linux/amd64,linux/arm64 \
-                    --build-arg APP_VERSION=${{ env.APP_VERSION }} \
-                    --tag ghcr.io/mediux-team/aura:beta \
-                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aura:beta \
-                    --tag ghcr.io/mediux-team/aura:${{ env.APP_VERSION }} \
-                    --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aura:${{ env.APP_VERSION }} \
-                    --push
+      - name: Build Docker image
+        run: |
+          docker buildx build . \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg APP_VERSION=${{ env.APP_VERSION }} \
+            --tag ghcr.io/mediux-team/aura:beta \
+            --tag ghcr.io/mediux/aura:beta \
+            --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aura:beta \
+            --tag ghcr.io/mediux-team/aura:${{ env.APP_VERSION }} \
+            --tag ghcr.io/mediux/aura:${{ env.APP_VERSION }} \
+            --tag docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aura:${{ env.APP_VERSION }} \
+            --push
