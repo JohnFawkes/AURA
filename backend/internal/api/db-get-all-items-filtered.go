@@ -86,6 +86,11 @@ SELECT s.TMDB_ID, s.LibraryTitle
 FROM SavedItems s
 JOIN MediaItems m ON s.TMDB_ID = m.TMDB_ID AND s.LibraryTitle = m.LibraryTitle
 JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND s.LibraryTitle = p.LibraryTitle
+JOIN (
+    SELECT TMDB_ID, LibraryTitle, MAX(LastDownloaded) AS MaxLastDownloaded
+    FROM PosterSets
+    GROUP BY TMDB_ID, LibraryTitle
+) p_max ON p.TMDB_ID = p_max.TMDB_ID AND p.LibraryTitle = p_max.LibraryTitle AND p.LastDownloaded = p_max.MaxLastDownloaded
 %s
 GROUP BY s.TMDB_ID, s.LibraryTitle
 %s
@@ -96,6 +101,8 @@ LIMIT ? OFFSET ?
 	pageKeysArgs = append(pageKeysArgs, itemsPerPage, (pageNumber-1)*itemsPerPage)
 
 	pagesQueryAction := logAction.AddSubAction("Getting Paginated Item Keys From DB", logging.LevelDebug)
+	pagesQueryAction.AppendResult("query", pageKeysQuery)
+	pagesQueryAction.AppendResult("query_args", pageKeysArgs)
 	rows, err := db.Query(pageKeysQuery, pageKeysArgs...)
 	if err != nil {
 		pagesQueryAction.SetError("Failed to query paginated item keys from database",
@@ -149,6 +156,8 @@ JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND
 `, keysWhereSQL, orderByClause)
 
 	mainQueryAction := logAction.AddSubAction("Getting All Item Details From DB", logging.LevelDebug)
+	mainQueryAction.AppendResult("query", mainQuery)
+	mainQueryAction.AppendResult("query_args", keyArgs)
 	mainRows, err := db.Query(mainQuery, keyArgs...)
 	if err != nil {
 		mainQueryAction.SetError("Failed to query item details from database",
@@ -169,7 +178,6 @@ JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND
 	}
 
 	// --- Get total count of unique items ---
-	countQueryAction := logAction.AddSubAction("Getting Total Count of Unique Items From DB", logging.LevelDebug)
 	countQuery := fmt.Sprintf(`
 SELECT COUNT(DISTINCT s.TMDB_ID || '|' || s.LibraryTitle) as TotalItems
 FROM SavedItems s
@@ -177,6 +185,9 @@ JOIN MediaItems m ON s.TMDB_ID = m.TMDB_ID AND s.LibraryTitle = m.LibraryTitle
 JOIN PosterSets p ON s.PosterSetID = p.PosterSetID AND s.TMDB_ID = p.TMDB_ID AND s.LibraryTitle = p.LibraryTitle
 %s
 `, whereSQL)
+	countQueryAction := logAction.AddSubAction("Getting Total Count of Unique Items From DB", logging.LevelDebug)
+	countQueryAction.AppendResult("query", countQuery)
+	countQueryAction.AppendResult("query_args", queryArgs)
 	countRows, err := db.Query(countQuery, queryArgs...)
 	if err != nil {
 		countQueryAction.SetError("Failed to query total item count from database",
