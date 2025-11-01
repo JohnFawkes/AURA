@@ -9,7 +9,7 @@ import (
 
 func CheckMediuxLink(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
-	logAction := ld.AddAction("Check Mediux Link", logging.LevelInfo)
+	logAction := ld.AddAction("Check Mediux Link", logging.LevelTrace)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
 	// Parse query parameters
