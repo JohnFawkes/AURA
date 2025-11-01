@@ -1,3 +1,13 @@
+## [0.9.45] - 2025-11-01
+
+### Added
+
+- Added 🎉 emojis to changelog headings for better visibility
+- Added border to dialog content for better visual distinction
+- Updated all filters to use dialog for better visual consistency
+
+---
+
 ## [0.9.44] - 2025-11-01
 
 ### Added
