@@ -506,7 +506,7 @@ export function FilterSavedSets({
 	itemsPerPage,
 	setItemsPerPage,
 }: SavedSetsFilterProps) {
-	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+	const [isWideScreen, setIsWideScreen] = useState(false);
 
 	// Change isWideScreen on window resize
 	useEffect(() => {

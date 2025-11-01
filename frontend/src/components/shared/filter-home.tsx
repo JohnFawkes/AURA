@@ -270,7 +270,7 @@ export function FilterHome({
 	itemsPerPage,
 	setItemsPerPage,
 }: HomeFilterProps) {
-	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+	const [isWideScreen, setIsWideScreen] = useState(false);
 
 	// Change isWideScreen on window resize
 	useEffect(() => {
@@ -295,16 +295,14 @@ export function FilterHome({
 			{isWideScreen ? (
 				<Popover>
 					<PopoverTrigger asChild>
-						<div>
-							<Button
-								variant="outline"
-								className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-							>
-								<SortDescIcon className="h-5 w-5" />
-								Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-								<Filter className="h-5 w-5" />
-							</Button>
-						</div>
+						<Button
+							variant="outline"
+							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+						>
+							<SortDescIcon className="h-5 w-5" />
+							Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+							<Filter className="h-5 w-5" />
+						</Button>
 					</PopoverTrigger>
 					<PopoverContent
 						side="right"

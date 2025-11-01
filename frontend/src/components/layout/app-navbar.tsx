@@ -99,7 +99,7 @@ export default function Navbar() {
 	const { setMediaItem } = useMediaStore();
 
 	// Check if the screen is mobile
-	const [isMobile, setIsMobile] = useState(false);
+	const [isWideScreen, setIsWideScreen] = useState(false);
 
 	// Onboarding Status Check on mount and path change
 	useEffect(() => {
@@ -127,42 +127,38 @@ export default function Navbar() {
 		}
 	}, [status, pathName, router, hasHydrated, isOnboardingPage]);
 
+	// Change isWideScreen on window resize
 	useEffect(() => {
 		const handleResize = () => {
-			const isNowMobile = window.innerWidth < 768;
-			setIsMobile(isNowMobile);
-
-			// Update the Logo based on the screen size
-			setLogoSrc(isNowMobile ? "/aura_logo.svg" : "/aura_word_logo.svg");
-
-			let username = "";
-			// Update the placeholder text based on the page and screen size
-			if (isUserPage) {
-				const parts = pathName.split("/");
-				username = parts[parts.length - 1] || parts[parts.length - 2] || "";
-			}
-			if (isSavedSetsPage) {
-				setPlaceholderText(
-					isNowMobile ? placeholderTexts.savedSets.mobile : placeholderTexts.savedSets.desktop
-				);
-			} else if (isUserPage) {
-				setPlaceholderText(
-					isNowMobile
-						? `${placeholderTexts.user.mobile} ${username}`
-						: `${placeholderTexts.user.desktop} ${username}`
-				);
-			} else {
-				setPlaceholderText(isNowMobile ? placeholderTexts.home.mobile : placeholderTexts.home.desktop);
-			}
+			setIsWideScreen(window.innerWidth >= 1300);
 		};
-
-		handleResize(); // Set initial state
-
+		handleResize();
 		window.addEventListener("resize", handleResize);
-		return () => {
-			window.removeEventListener("resize", handleResize);
-		};
-	}, [isHomePage, isSavedSetsPage, isUserPage, pathName]);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	useEffect(() => {
+		// Update the Logo based on the screen size
+		setLogoSrc(isWideScreen ? "/aura_word_logo.svg" : "/aura_logo.svg");
+
+		let username = "";
+		// Update the placeholder text based on the page and screen size
+		if (isUserPage) {
+			const parts = pathName.split("/");
+			username = parts[parts.length - 1] || parts[parts.length - 2] || "";
+		}
+		if (isSavedSetsPage) {
+			setPlaceholderText(isWideScreen ? placeholderTexts.savedSets.desktop : placeholderTexts.savedSets.mobile);
+		} else if (isUserPage) {
+			setPlaceholderText(
+				isWideScreen
+					? `${placeholderTexts.user.desktop} ${username}`
+					: `${placeholderTexts.user.mobile} ${username}`
+			);
+		} else {
+			setPlaceholderText(isWideScreen ? placeholderTexts.home.desktop : placeholderTexts.home.mobile);
+		}
+	}, [isHomePage, isSavedSetsPage, isUserPage, isWideScreen, pathName]);
 
 	// Debounce updating
 	useEffect(() => {
@@ -336,7 +332,7 @@ export default function Navbar() {
 						/>
 					</>
 				)}
-				{(!isMediaPage || !isMobile) && (
+				{(!isMediaPage || isWideScreen) && (
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							asChild

@@ -48,7 +48,7 @@ export function MediaItemFilter({
 	handleShowSetsWithTitleCardsOnly,
 }: MediaItemFilterProps) {
 	// Is Wide Screen State
-	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+	const [isWideScreen, setIsWideScreen] = useState(false);
 
 	useEffect(() => {
 		const handleResize = () => {

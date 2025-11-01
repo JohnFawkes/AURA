@@ -87,7 +87,7 @@ const SavedSetsPage: React.FC = () => {
 	]; // Total Items: Total items matching filters in DB (for pagination)
 	const [totalItems, setTotalItems] = useState(0);
 	// Is Wide Screen: for showing/hiding the ViewControl
-	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+	const [isWideScreen, setIsWideScreen] = useState(false);
 
 	// Set the Document Title
 	useEffect(() => {
