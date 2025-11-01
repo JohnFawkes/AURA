@@ -82,7 +82,7 @@ func (ld *LogData) Log() {
 		event.Interface("route", ld.Route)
 	}
 
-	event.Msg(ld.Name)
+	event.Msg(ld.Message)
 }
 
 // getHighestActionLevel recursively finds the highest log level among actions and sub-actions.

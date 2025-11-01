@@ -68,7 +68,7 @@ func AddSubActionToContext(ctx context.Context, name, level string) (context.Con
 func NewLogData(name string) *LogData {
 	return &LogData{
 		Status:    "",
-		Name:      name,
+		Message:   name,
 		Timestamp: time.Now(),
 		Route:     nil,
 		Actions:   []*LogAction{},

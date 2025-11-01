@@ -234,7 +234,7 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 			}
 			if entry.Route == nil && len(entry.Actions) != 0 {
 				// If there is no Route info but Actions are present, append Action Name to possible_actions_paths
-				actionName := entry.Actions[0].Name
+				actionName := entry.Message
 				if _, exists := possible_actions_paths[actionName]; !exists {
 					possible_actions_paths[actionName] = structActionLabelSection{
 						Label:   actionName,
@@ -247,9 +247,6 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 	}
-
-	// Get the total number of log entries before pagination
-	totalNumberOfLogEntries := len(logEntries)
 
 	// Apply Log Level Filter
 	if len(filteredLogLevels) > 0 {
@@ -312,18 +309,14 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 				}
-
 			} else {
-				// Check Action Names
-				for _, action := range entry.Actions {
+				// Check Background Task Name
+				if entry.Message != "" {
 					for _, actionFilter := range filteredActions {
-						if strings.EqualFold(action.Name, actionFilter) {
+						if strings.EqualFold(entry.Message, actionFilter) {
 							entryMatches = true
 							break
 						}
-					}
-					if entryMatches {
-						break
 					}
 				}
 			}
@@ -333,6 +326,14 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 		}
 		logEntries = filteredEntries
 	}
+
+	// Sort log entries by timestamp descending
+	for i, j := 0, len(logEntries)-1; i < j; i, j = i+1, j-1 {
+		logEntries[i], logEntries[j] = logEntries[j], logEntries[i]
+	}
+
+	// Get the total number of log entries before pagination
+	totalNumberOfLogEntries := len(logEntries)
 
 	// Apply Pagination
 	startIndex := (pageNumber - 1) * itemsPerPage

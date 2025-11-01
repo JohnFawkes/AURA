@@ -21,7 +21,7 @@ const (
 type LogData struct {
 	Level               string        `json:"level,omitempty"` // Optional level for UI filtering (e.g. "trace", "debug","info","warn","error")
 	Status              string        `json:"status"`          // Status: "success", "error", or "warn"
-	Name                string        `json:"name"`            // Human name for the overall operation: "Add to DB", "Fetch All Media Items" or Route.Path
+	Message             string        `json:"message"`         // Human name for the overall operation: "Add to DB", "Fetch All Media Items" or Route.Path
 	Timestamp           time.Time     `json:"timestamp"`       // When the operation started
 	ElapsedMicroseconds int64         `json:"elapsed_us"`      // Elapsed time in microseconds
 	Route               *LogRouteInfo `json:"route,omitempty"` // Optional route metadata (nil for background jobs)
