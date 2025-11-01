@@ -1,8 +1,8 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, Settings } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Link from "next/link";
 
@@ -10,15 +10,14 @@ import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup } from "@/components/ui/toggle-group";
@@ -29,105 +28,15 @@ import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 type MediaItemFilterProps = {
-	numberOfActiveFilters: number;
+	numberOfActiveFilters?: number;
 	hiddenCount: number;
 	showHiddenUsers: boolean;
 	handleShowHiddenUsers: (val: boolean) => void;
 	hasTitleCards: boolean;
 	showOnlyTitlecardSets: boolean;
 	handleShowSetsWithTitleCardsOnly: (val: boolean) => void;
+	showOnlyDownloadDefaults: boolean;
 };
-
-export function MediaItemFilter({
-	numberOfActiveFilters,
-	hiddenCount,
-	showHiddenUsers,
-	handleShowHiddenUsers,
-	hasTitleCards,
-	showOnlyTitlecardSets,
-	handleShowSetsWithTitleCardsOnly,
-}: MediaItemFilterProps) {
-	// Is Wide Screen State
-	const [isWideScreen, setIsWideScreen] = useState(false);
-
-	useEffect(() => {
-		const handleResize = () => {
-			if (window.innerWidth < 1300) {
-				setIsWideScreen(false);
-			} else {
-				setIsWideScreen(true);
-			}
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
-
-	return (
-		<div>
-			{isWideScreen ? (
-				<Popover>
-					<PopoverTrigger asChild>
-						<div>
-							<Button
-								variant="outline"
-								className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
-							>
-								Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-								<Filter className="h-5 w-5" />
-							</Button>
-						</div>
-					</PopoverTrigger>
-					<PopoverContent
-						side="right"
-						align="start"
-						className="w-[350px] p-2 bg-background border border-primary"
-					>
-						<MediaItemFilterContent
-							numberOfActiveFilters={numberOfActiveFilters}
-							hiddenCount={hiddenCount}
-							showHiddenUsers={showHiddenUsers}
-							handleShowHiddenUsers={handleShowHiddenUsers}
-							hasTitleCards={hasTitleCards}
-							showOnlyTitlecardSets={showOnlyTitlecardSets}
-							handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
-						/>
-					</PopoverContent>
-				</Popover>
-			) : (
-				<Drawer direction="left">
-					<DrawerTrigger asChild>
-						<Button
-							variant="outline"
-							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-						>
-							Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-							<Filter className="h-5 w-5" />
-						</Button>
-					</DrawerTrigger>
-					<DrawerContent>
-						<DrawerHeader className="my-0">
-							<DrawerTitle className="mb-0">Filters</DrawerTitle>
-							<DrawerDescription className="mb-0">
-								Use the options below to filter the poster sets.
-							</DrawerDescription>
-						</DrawerHeader>
-						<Separator className="my-1 w-full" />
-						<MediaItemFilterContent
-							numberOfActiveFilters={numberOfActiveFilters}
-							hiddenCount={hiddenCount}
-							showHiddenUsers={showHiddenUsers}
-							handleShowHiddenUsers={handleShowHiddenUsers}
-							hasTitleCards={hasTitleCards}
-							showOnlyTitlecardSets={showOnlyTitlecardSets}
-							handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
-						/>
-					</DrawerContent>
-				</Drawer>
-			)}
-		</div>
-	);
-}
 
 function MediaItemFilterContent({
 	hiddenCount,
@@ -272,5 +181,52 @@ function MediaItemFilterContent({
 				<Separator className="my-4 w-full" />
 			</div>
 		</div>
+	);
+}
+
+export function MediaItemFilter({
+	numberOfActiveFilters = 0,
+	hiddenCount,
+	showHiddenUsers,
+	handleShowHiddenUsers,
+	hasTitleCards,
+	showOnlyTitlecardSets,
+	handleShowSetsWithTitleCardsOnly,
+	showOnlyDownloadDefaults,
+}: MediaItemFilterProps) {
+	// State - Open/Close Modal
+	const [modalOpen, setModalOpen] = useState(false);
+
+	return (
+		<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+			<DialogTrigger asChild>
+				<Button
+					variant="outline"
+					className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+				>
+					<Settings className="h-5 w-5" />
+					Preferences & Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+					<Filter className="h-5 w-5" />
+				</Button>
+			</DialogTrigger>
+			<DialogContent className="overflow-y-auto border border-primary sm:max-w-[700px] ">
+				<DialogHeader>
+					<DialogTitle>Preferences & Filters</DialogTitle>
+					<DialogDescription>
+						Use the options below to choose your preferences and filter the poster sets.
+					</DialogDescription>
+				</DialogHeader>
+				<Separator className="my-1 w-full" />
+				<MediaItemFilterContent
+					hiddenCount={hiddenCount}
+					showHiddenUsers={showHiddenUsers}
+					handleShowHiddenUsers={handleShowHiddenUsers}
+					hasTitleCards={hasTitleCards}
+					showOnlyTitlecardSets={showOnlyTitlecardSets}
+					handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
+					showOnlyDownloadDefaults={showOnlyDownloadDefaults}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

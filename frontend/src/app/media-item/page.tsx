@@ -11,10 +11,10 @@ import { useRouter } from "next/navigation";
 
 import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
 import { ErrorMessage } from "@/components/shared/error-message";
+import { MediaItemFilter } from "@/components/shared/filter-media-item";
 import Loader from "@/components/shared/loader";
 import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaItemDetails } from "@/components/shared/media-item-details";
-import { MediaItemFilter } from "@/components/shared/media-item-filters";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { SortControl } from "@/components/shared/select-sort";
 import { Button } from "@/components/ui/button";
@@ -484,7 +484,7 @@ const MediaItemPage = () => {
 		}
 	};
 
-	// Number of active filters
+	// Calculate number of active filters
 	const numberOfActiveFilters = useMemo(() => {
 		let count = 0;
 		if (!showHiddenUsers) count++;
@@ -591,6 +591,7 @@ const MediaItemPage = () => {
 									}
 									showOnlyTitlecardSets={showOnlyTitlecardSets}
 									handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
+									showOnlyDownloadDefaults={showOnlyDownloadDefaults}
 								/>
 
 								{/* Right column: sort options */}
