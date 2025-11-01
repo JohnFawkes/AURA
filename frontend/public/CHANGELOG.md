@@ -3,6 +3,7 @@
 ### Fixed
 
 - Add image validation and loading state to DimmedBackground component
+- Include timestamp in download queue JSON file names to handle multiple sets
 
 ---
 

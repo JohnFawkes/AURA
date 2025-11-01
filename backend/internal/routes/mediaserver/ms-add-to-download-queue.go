@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 func AddToDownloadQueue(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +95,8 @@ func CreateJSONFileInDownloadQueueDir(ctx context.Context, saveItem api.DBMediaI
 	}
 
 	// Check if the file already exists
-	fileName := path.Join(queueFolderPath, fmt.Sprintf("%s_%s.json", strings.ReplaceAll(saveItem.LibraryTitle, " ", "_"), saveItem.TMDB_ID))
+	timeStamp := time.Now().Unix()
+	fileName := path.Join(queueFolderPath, fmt.Sprintf("%s_%s_%d.json", strings.ReplaceAll(saveItem.LibraryTitle, " ", "_"), saveItem.TMDB_ID, timeStamp))
 	exists := api.Util_File_CheckIfFileExists(fileName)
 	if exists {
 		logAction.AppendWarning("message", "Download queue file already exists, skipping creation")
