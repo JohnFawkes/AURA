@@ -300,7 +300,10 @@ function LogList({
 														const url = URL.createObjectURL(blob);
 														const link = document.createElement("a");
 														link.href = url;
-														link.download = `log-${log.message}-${log.status}.json`;
+														const downloadName = mainLabel
+															? mainLabel.replace(/\s+/g, "_").toLowerCase()
+															: "";
+														link.download = `log-${downloadName}-${log.status}.json`;
 														document.body.appendChild(link);
 														link.click();
 														document.body.removeChild(link);
