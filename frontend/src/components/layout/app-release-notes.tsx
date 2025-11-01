@@ -7,16 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const funLabels = [
-	"Awesome!",
-	"Great!",
-	"Neat!",
-	"Splendid!",
-	"Let’s go!",
-	"Cool!",
-	"Nice!",
-	"Got it!",
-	"Yay!",
-	"All set!",
+	"🎉 Awesome!",
+	"🌟 Fantastic!",
+	"🚀 Super!",
+	"💡 Brilliant!",
+	"✅ Excellent!",
+	"✨ Wonderful!",
+	"🏆 Splendid!",
+	"🎊 Yay!",
+	"👍 Right on!",
+	"💃 Fab!",
+	"👏 Great!",
+	"😎 Nice!",
+	"🍬 Sweet!",
+	"🆒 Cool!",
+	"🧩 Neat!",
+	"🔔 All set!",
+	"🏁 Let’s go!",
+	"👌 Got it!",
+	"🙏 Thanks!",
+	"🥂 Cheers!",
 ];
 
 export function ReleaseNotesDialog({
