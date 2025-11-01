@@ -595,7 +595,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									<PopoverTrigger>
 										<CircleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
 									</PopoverTrigger>
-									<PopoverContent className="w-100 rounded-lg shadow-lg border-2 border-yellow-800 p-2 flex flex-col items-center justify-center">
+									<PopoverContent className="max-w-[400px] rounded-lg shadow-lg border-2 border-yellow-800 p-2 flex flex-col items-center justify-center">
 										<div className="flex items-center mb-2">
 											<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
 											<span className="text-sm text-yellow-600">
@@ -645,7 +645,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										<PopoverTrigger>
 											<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
 										</PopoverTrigger>
-										<PopoverContent className="w-60">
+										<PopoverContent className="max-w-[400px] w-60">
 											<div className="text-sm text-yellow-500">
 												This item is selected in the{" "}
 												{isDuplicate.selectedType === "movie" ? "Movie Set" : "Collection Set"}.
@@ -1372,7 +1372,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 			<DialogPortal>
 				<DialogOverlay />
-				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] border border-primary">
+				<DialogContent
+					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+				>
 					<DialogHeader>
 						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
 						<DialogDescription>{setAuthor}</DialogDescription>

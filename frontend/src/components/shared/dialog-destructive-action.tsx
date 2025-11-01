@@ -14,6 +14,8 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 
+import { cn } from "@/lib/cn";
+
 interface ConfirmDestructiveDialogActionProps {
 	children: React.ReactNode; // Button label
 	onConfirm: () => void | Promise<void>;
@@ -62,7 +64,9 @@ export function ConfirmDestructiveDialogActionButton({
 					{children}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="border border-red-500">
+			<DialogContent
+				className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-red-500")}
+			>
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>{description}</DialogDescription>

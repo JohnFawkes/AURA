@@ -18,6 +18,7 @@ import {
 	savedSetsConfirmDelete,
 	savedSetsConfirmEdit,
 } from "@/components/shared/saved-sets-shared";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -177,7 +178,9 @@ const SavedSetsCard: React.FC<{
 							</DropdownMenuItem>
 
 							{savedSet.PosterSets.some(
-								(set) => set.AutoDownload || savedSet.MediaItem.Type === "movie"
+								(set) =>
+									(set.AutoDownload || savedSet.MediaItem.Type === "movie") &&
+									set.PosterSetID !== "ignore"
 							) && (
 								<DropdownMenuItem
 									className="cursor-pointer"
@@ -264,7 +267,11 @@ const SavedSetsCard: React.FC<{
 				) ? (
 					<div className="flex flex-wrap gap-2">{renderTypeBadges(savedSet)}</div>
 				) : (
-					<P className="text-sm text-muted-foreground">No types selected.</P>
+					<div className="flex flex-wrap gap-2">
+						<Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
+							No Selected Types
+						</Badge>
+					</div>
 				)}
 			</CardContent>
 

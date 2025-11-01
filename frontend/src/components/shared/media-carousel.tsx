@@ -52,27 +52,24 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 			className="w-full"
 		>
 			<div className="flex flex-col">
-				<div className="flex flex-row items-center">
-					<div className="flex flex-row items-center gap-2">
-						<Link
-							href={`/sets/${set.ID}`}
-							className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1"
-							onClick={(e) => {
-								e.stopPropagation();
-								goToSetPage();
-							}}
-						>
-							{set.Title}
-						</Link>
+				<div className="flex flex-row items-center justify-between mb-1">
+					<Link
+						href={`/sets/${set.ID}`}
+						className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1 w-3/4"
+						onClick={(e) => {
+							e.stopPropagation();
+							goToSetPage();
+						}}
+					>
+						{set.Title}
+					</Link>
+					<div className={cn("ml-auto flex space-x-2", set.Title.length > 29 && "mb-5 xs:mb-0")}>
 						{mediaItem &&
 							mediaItem.DBSavedSets &&
 							mediaItem.DBSavedSets.map((s) => s.PosterSetID).includes(set.ID) && (
 								<Popover>
 									<PopoverTrigger asChild>
-										<Database
-											className="text-green-500 hover:text-green-600 cursor-pointer active:scale-95"
-											size={20}
-										/>
+										<Database className="h-5 w-5 sm:h-7 sm:w-7 text-green-500 hover:text-green-600 cursor-pointer active:scale-95" />
 									</PopoverTrigger>
 									<PopoverContent
 										side="top"
@@ -96,8 +93,6 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 									</PopoverContent>
 								</Popover>
 							)}
-					</div>
-					<div className="ml-auto flex space-x-2">
 						<Link
 							href={`/sets/${set.ID}`}
 							className="btn"
@@ -106,7 +101,7 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 								goToSetPage();
 							}}
 						>
-							<ZoomInIcon className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+							<ZoomInIcon className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
 						</Link>
 						<DownloadModal
 							setType={set.Type}

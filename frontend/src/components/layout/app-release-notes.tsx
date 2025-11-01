@@ -6,6 +6,8 @@ import { ChangelogMarkdown } from "@/components/shared/changelog-markdown";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+import { cn } from "@/lib/cn";
+
 const funLabels = [
 	"🎉 Awesome!",
 	"🌟 Fantastic!",
@@ -42,7 +44,9 @@ export function ReleaseNotesDialog({
 	const randomLabel = useMemo(() => funLabels[Math.floor(Math.random() * funLabels.length)], []);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-2xl border border-primary">
+			<DialogContent
+				className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+			>
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold">What's New?</DialogTitle>
 				</DialogHeader>

@@ -551,7 +551,9 @@ export function FilterSavedSets({
 					<Filter className="h-5 w-5" />
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="overflow-y-auto border border-primary sm:max-w-[700px] ">
+			<DialogContent
+				className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+			>
 				<DialogHeader>
 					<DialogTitle>Sort & Filter</DialogTitle>
 					<DialogDescription> Use the options below to sort and filter your saved sets.</DialogDescription>

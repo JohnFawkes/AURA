@@ -396,9 +396,14 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 		<Dialog open={open} onOpenChange={onClose}>
 			<DialogContent
 				className={cn(
-					"overflow-y-auto max-h-[80vh] sm:max-w-[500px]",
-					onlyIgnore ? "border border-yellow-500" : "border border-primary",
-					allToDelete && "border border-red-500"
+					"z-50",
+					"max-h-[80vh] overflow-y-auto",
+					"sm:max-w-[700px]",
+					onlyIgnore
+						? "border border-yellow-500"
+						: allToDelete
+							? "border border-red-500"
+							: "border border-primary"
 				)}
 			>
 				<DialogHeader>
@@ -559,7 +564,9 @@ export interface SavedSetDeleteModalProps {
 
 export const SavedSetDeleteModal: React.FC<SavedSetDeleteModalProps> = ({ open, onClose, title, confirmDelete }) => (
 	<Dialog open={open} onOpenChange={onClose}>
-		<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] border border-red-500">
+		<DialogContent
+			className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-red-500")}
+		>
 			<DialogHeader>
 				<DialogTitle>Confirm Delete</DialogTitle>
 				<DialogDescription>
@@ -607,11 +614,7 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
 	const { setMediaItem } = useMediaStore();
 
-	const onlyIgnore =
-		savedSet.PosterSets.length === 1 &&
-		(savedSet.PosterSets[0].PosterSetID === "ignore" ||
-			!Array.isArray(savedSet.PosterSets[0].SelectedTypes) ||
-			savedSet.PosterSets[0].SelectedTypes.length === 0);
+	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
 
 	if (onlyIgnore) {
 		return (
