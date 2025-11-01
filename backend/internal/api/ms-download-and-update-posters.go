@@ -453,10 +453,11 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 	// Encode the image data as Base64
 	base64ImageData := base64.StdEncoding.EncodeToString(imageData)
 
-	// Make a POST request to the Emby/Jellyfin server
-	headers := map[string]string{
-		"Content-Type": "image/jpeg",
-	}
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
+	// Add Content-Type Header
+	headers["Content-Type"] = "image/jpeg"
 
 	// Make a POST request to upload the image
 	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodPost, headers, 60, []byte(base64ImageData), Global_Config.MediaServer.Type)

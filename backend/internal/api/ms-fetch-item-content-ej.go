@@ -29,8 +29,11 @@ func EJ_FetchItemContent(ctx context.Context, ratingKey string, sectionTitle str
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return itemInfo, logErr
 	}
@@ -140,8 +143,11 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *MediaItem) (MediaItem, l
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return *itemInfo, logErr
 	}
@@ -190,8 +196,12 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season Me
 	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks")
 	u.RawQuery = query.Encode()
 	URL := u.String()
+
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return season, logErr
 	}

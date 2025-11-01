@@ -48,11 +48,8 @@ func SR_CallUpdateItemInfo(ctx context.Context, app Config_SonarrRadarrApp, item
 	u.Path = path.Join(u.Path, "api/v3", urlEndPoint, fmt.Sprintf("%d", itemID))
 	URL := u.String()
 
-	// Set headers
-	apiHeader := map[string]string{
-		"X-Api-Key":    app.APIKey,
-		"Content-Type": "application/json",
-	}
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Api-Key", app.APIKey)
 
 	// Marshal the item to JSON
 	payload, err := json.Marshal(item)
@@ -62,7 +59,7 @@ func SR_CallUpdateItemInfo(ctx context.Context, app Config_SonarrRadarrApp, item
 	}
 
 	// Make the request
-	httpResp, _, Err := MakeHTTPRequest(ctx, URL, http.MethodPut, apiHeader, 60, payload, app.Type)
+	httpResp, _, Err := MakeHTTPRequest(ctx, URL, http.MethodPut, headers, 60, payload, app.Type)
 	if Err.Message != "" {
 		return Err
 	}

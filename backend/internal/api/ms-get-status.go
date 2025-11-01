@@ -45,10 +45,10 @@ func Plex_GetMediaServerStatus(ctx context.Context, msConfig Config_MediaServer)
 	URL := u.String()
 
 	// Add the token as a header
-	headers := map[string]string{"X-Plex-Token": msConfig.Token}
+	headers := MakeAuthHeader("X-Plex-Token", msConfig.Token)
 
 	// Make the HTTP request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return "", logErr
 	}
@@ -101,10 +101,9 @@ func EmbyJelly_GetMediaServerStatus(ctx context.Context, msConfig Config_MediaSe
 	URL := u.String()
 
 	// Make headers for authentication
-	headers := make(map[string]string)
-	headers["X-Emby-Token"] = msConfig.Token
+	headers := MakeAuthHeader("X-Emby-Token", msConfig.Token)
 
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, msConfig.Type)
 	if logErr.Message != "" {
 		return "", logErr
 	}

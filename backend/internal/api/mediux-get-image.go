@@ -55,8 +55,12 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, qua
 		return nil, "", Err
 	}
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
+
 	// Make the API request to Mediux
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, mediuxURL, http.MethodGet, nil, 60, nil, "Mediux")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, mediuxURL, http.MethodGet, headers, 60, nil, "MediUX")
+
 	if logErr.Message != "" {
 		return nil, "", logErr
 	}

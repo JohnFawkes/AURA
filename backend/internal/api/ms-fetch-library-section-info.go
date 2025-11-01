@@ -62,8 +62,11 @@ func Plex_FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServ
 	u.Path = path.Join(u.Path, "library", "sections", "all")
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return false, logErr
 	}
@@ -116,8 +119,11 @@ func EJ_FetchLibrarySectionInfo(ctx context.Context, library *Config_MediaServer
 	u.Path = path.Join(u.Path, "Users", Global_Config.MediaServer.UserID, "Items")
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make a GET request to the Emby server
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "MediaServer")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return false, logErr
 	}

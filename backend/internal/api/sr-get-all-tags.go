@@ -46,12 +46,11 @@ func SR_GetAllTags(ctx context.Context, app Config_SonarrRadarrApp) ([]SonarrRad
 	u.Path = path.Join(u.Path, "api/v3", "tag")
 	URL := u.String()
 
-	apiHeader := map[string]string{
-		"X-Api-Key": app.APIKey,
-	}
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Api-Key", app.APIKey)
 
 	// Make the API Request
-	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodGet, apiHeader, 60, nil, app.Type)
+	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, app.Type)
 	if Err.Message != "" {
 		return nil, Err
 	}

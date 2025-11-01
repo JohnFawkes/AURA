@@ -28,8 +28,11 @@ func Plex_FetchItemContent(ctx context.Context, ratingKey string) (MediaItem, lo
 	u.Path = path.Join(u.Path, "library/metadata", ratingKey)
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return itemInfo, logErr
 	}
@@ -151,8 +154,11 @@ func fetchSeasonsAndEpisodesForShow(ctx context.Context, itemInfo *MediaItem) (M
 	u.Path = path.Join(u.Path, "library", "metadata", itemInfo.RatingKey, "allLeaves")
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return *itemInfo, logErr
 	}

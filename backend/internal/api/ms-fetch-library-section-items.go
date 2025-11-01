@@ -73,8 +73,11 @@ func Plex_FetchLibrarySectionItems(ctx context.Context, section LibrarySection, 
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the HTTP request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return nil, 0, logErr
 	}
@@ -201,8 +204,12 @@ func EJ_FetchLibrarySectionItems(ctx context.Context, section LibrarySection, se
 	query.Add("Limit", limit)
 	u.RawQuery = query.Encode()
 	URL := u.String()
+
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make the HTTP request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "MediaServer")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return nil, 0, logErr
 	}
@@ -292,8 +299,11 @@ func SplitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make a GET request to the Emby server
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "MediaServer")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return nil, logErr
 	}

@@ -62,12 +62,11 @@ func SR_GetItemInfoFromTMDBID(ctx context.Context, app Config_SonarrRadarrApp, t
 	URL := u.String()
 	actionGetURL.Complete()
 
-	apiHeader := map[string]string{
-		"X-Api-Key": app.APIKey,
-	}
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Api-Key", app.APIKey)
 
 	// Make the API Request
-	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, "GET", apiHeader, 60, nil, app.Type)
+	httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, "GET", headers, 60, nil, app.Type)
 	if Err.Message != "" {
 		return nil, Err
 	}
@@ -115,7 +114,7 @@ func SR_GetItemInfoFromTMDBID(ctx context.Context, app Config_SonarrRadarrApp, t
 	URL = u.String()
 
 	// Make the API Request for full details
-	httpResp, respBody, Err = MakeHTTPRequest(ctx, URL, "GET", apiHeader, 60, nil, app.Type)
+	httpResp, respBody, Err = MakeHTTPRequest(ctx, URL, "GET", headers, 60, nil, app.Type)
 	if Err.Message != "" {
 		return nil, Err
 	}

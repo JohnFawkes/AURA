@@ -10,23 +10,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
 
 // MakeHTTPRequest function to handle HTTP requests
-func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string]string, timeout int, body []byte, tokenType string) (*http.Response, []byte, logging.LogErrorInfo) {
-	urlTitle := tokenType
-	if urlTitle == "" {
-		if tokenType == "MediaServer" {
-			urlTitle = Global_Config.MediaServer.Type
-		} else {
-			urlTitle = getURLTitle(url)
-		}
-	}
-
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Making %s request to %s", method, urlTitle), logging.LevelTrace)
+func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string]string, timeout int, body []byte, siteName string) (*http.Response, []byte, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Making %s request to %s", method, siteName), logging.LevelTrace)
 	defer logAction.Complete()
 
 	// Create a context with a timeout
@@ -37,11 +27,13 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 	// Create a new request with context
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
 	if err != nil {
-		logAction.SetError("Failed to create HTTP request", err.Error(), map[string]any{
-			"method": method,
-			"url":    url,
-			"error":  err.Error(),
-		})
+		logAction.SetError(fmt.Sprintf("Failed to create %s request to %s", method, siteName),
+			"Check error and try again",
+			map[string]any{
+				"method": method,
+				"url":    url,
+				"error":  err.Error(),
+			})
 		return nil, nil, *logAction.Error
 	}
 
@@ -50,31 +42,14 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 	req.Header.Set("X-Request", "mediux-aura")
 	req.Header.Set("Accept", "application/json")
 
-	// Add headers to the request
-	if tokenType == "MediaServer" {
-		if strings.ToLower(Global_Config.MediaServer.Type) == "plex" {
-			req.Header.Set("X-Plex-Token", Global_Config.MediaServer.Token)
-		} else if strings.ToLower(Global_Config.MediaServer.Type) == "emby" {
-			req.Header.Set("X-Emby-Token", Global_Config.MediaServer.Token)
-		} else if strings.ToLower(Global_Config.MediaServer.Type) == "jellyfin" {
-			req.Header.Set("X-Emby-Token", Global_Config.MediaServer.Token)
-		}
-	} else if strings.ToLower(tokenType) == "tmdb" {
-		req.Header.Set("Authorization", "Bearer "+Global_Config.TMDB.APIKey)
-	} else if strings.ToLower(tokenType) == "mediux" {
-		req.Header.Set("Authorization", "Bearer "+Global_Config.Mediux.Token)
-	} else if strings.ToLower(tokenType) == "plex" {
-		req.Header.Set("X-Plex-Token", Global_Config.MediaServer.Token)
-	} else if strings.ToLower(tokenType) == "emby" {
-		req.Header.Set("X-Emby-Token", Global_Config.MediaServer.Token)
-	} else if strings.ToLower(tokenType) == "jellyfin" {
-		req.Header.Set("X-Emby-Token", Global_Config.MediaServer.Token)
-	}
-
 	if len(headers) > 0 {
 		for key, value := range headers {
 			req.Header.Add(key, value)
-			logAction.AppendResult("headers_added", map[string]any{key: masking.Masking_Token(value)})
+			maskedValue := value
+			if strings.Contains(strings.ToLower(key), "token") || strings.Contains(strings.ToLower(key), "authorization") {
+				maskedValue = masking.Masking_Token(value)
+			}
+			logAction.AppendResult("headers_added", map[string]any{key: maskedValue})
 		}
 	}
 
@@ -100,11 +75,13 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 	// Send the HTTP request
 	resp, err := client.Do(req)
 	if err != nil {
-		logAction.SetError("Failed to send HTTP request", "Check connection and try again", map[string]any{
-			"method": method,
-			"url":    url,
-			"error":  err.Error(),
-		})
+		logAction.SetError(fmt.Sprintf("Failed to send %s request to %s", method, siteName),
+			"Check error and try again",
+			map[string]any{
+				"method": method,
+				"url":    url,
+				"error":  err.Error(),
+			})
 		return nil, nil, *logAction.Error
 	}
 
@@ -112,12 +89,14 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		resp.Body.Close()
-		logAction.SetError("Failed to read HTTP response body", "Check response and try again", map[string]any{
-			"method":      method,
-			"url":         url,
-			"error":       err.Error(),
-			"status_code": resp.StatusCode,
-		})
+		logAction.SetError(fmt.Sprintf("Failed to read response body from %s", siteName),
+			"Check error and try again",
+			map[string]any{
+				"method":      method,
+				"url":         url,
+				"error":       err.Error(),
+				"status_code": resp.StatusCode,
+			})
 		return nil, nil, *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -127,6 +106,15 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 
 	// Return the response
 	return resp, respBody, logging.LogErrorInfo{}
+}
+
+func MakeAuthHeader(key string, value string) map[string]string {
+	headers := make(map[string]string)
+	if strings.ToLower(key) == "authorization" && !strings.HasPrefix(strings.ToLower(value), "bearer ") {
+		value = "Bearer " + value
+	}
+	headers[key] = value
+	return headers
 }
 
 func DecodeJSONBody(ctx context.Context, body []byte, v any, structName string) logging.LogErrorInfo {
@@ -171,12 +159,4 @@ func DecodeRequestBodyJSON(ctx context.Context, r io.ReadCloser, v any, structNa
 		return *logAction.Error
 	}
 	return logging.LogErrorInfo{}
-}
-
-func getURLTitle(rawURL string) string {
-	parsedURL, err := url.ParseRequestURI(rawURL)
-	if err != nil {
-		return ""
-	}
-	return parsedURL.Host
 }

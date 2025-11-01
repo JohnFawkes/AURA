@@ -26,8 +26,11 @@ func Plex_RefreshItem(ctx context.Context, itemRatingKey string) logging.LogErro
 	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, "refresh")
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, nil, 60, nil, "Plex")
+	httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return logErr
 	}
@@ -69,11 +72,14 @@ func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string
 	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, posterType)
 	URL := u.String()
 
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Retry logic for the entire process (up to 3 attempts)
 	for attempt := 1; attempt <= 3; attempt++ {
 		attemptAction := logAction.AddSubAction(fmt.Sprintf("Attempt %d to fetch poster", attempt), logging.LevelDebug)
 		// Make the API request to Plex
-		response, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+		response, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 		if logErr.Message != "" {
 			attemptAction.SetError("Failed to make HTTP request to Plex", logErr.Message, nil)
 		} else {
@@ -191,8 +197,11 @@ func Plex_SetPoster(ctx context.Context, itemRatingKey string, posterKey string,
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, requestMethod, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, requestMethod, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return logErr
 	}
@@ -384,8 +393,11 @@ func Plex_HandleLabels(item MediaItem) {
 			URL := u.String()
 			URL += "&" + combinedParams
 
+			// Make the Auth Headers for Request
+			headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 			// Make the API request to Plex
-			httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, nil, 60, nil, "Plex")
+			httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, headers, 60, nil, "Plex")
 			if logErr.Message != "" {
 				subAppAction.SetError("Failed to make HTTP request to Plex", logErr.Message, nil)
 				continue

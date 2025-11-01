@@ -28,11 +28,10 @@ func Mediux_ValidateToken(ctx context.Context, token string) logging.LogErrorInf
 	u.Path = path.Join(u.Path, "users", "me")
 	URL := u.String()
 
-	// Add the authorization header
-	headers := make(map[string]string)
-	headers["Authorization"] = "Bearer " + token
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("Authorization", token)
 
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 30, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 30, nil, "MediUX")
 	if logErr.Message != "" {
 		return logErr
 	}

@@ -47,9 +47,8 @@ func SR_AddNewTags(ctx context.Context, app Config_SonarrRadarrApp, tags []strin
 	u.Path = path.Join(u.Path, "api/v3", "tag")
 	URL := u.String()
 
-	apiHeader := map[string]string{
-		"X-Api-Key": app.APIKey,
-	}
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Api-Key", app.APIKey)
 
 	for _, tag := range tags {
 		actionLog := logAction.AddSubAction(fmt.Sprintf("Adding new tag '%s' to %s (%s)", tag, app.Type, app.Library), logging.LevelInfo)
@@ -59,7 +58,7 @@ func SR_AddNewTags(ctx context.Context, app Config_SonarrRadarrApp, tags []strin
 		tagBody, _ := json.Marshal(tagData)
 
 		// Make the API Request
-		httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodPost, apiHeader, 60, tagBody, app.Type)
+		httpResp, respBody, Err := MakeHTTPRequest(ctx, URL, http.MethodPost, headers, 60, tagBody, app.Type)
 		if Err.Message != "" {
 			actionLog.SetError(
 				fmt.Sprintf("Failed to add tag '%s' to %s (%s)", tag, app.Type, app.Library),

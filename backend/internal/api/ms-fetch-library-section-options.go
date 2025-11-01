@@ -45,11 +45,11 @@ func Plex_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaS
 	u.Path = path.Join(u.Path, "library", "sections", "all")
 	URL := u.String()
 
-	// Add the token as a header
-	headers := map[string]string{"X-Plex-Token": msConfig.Token}
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", msConfig.Token)
 
 	// Make a GET request to the Plex server
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return nil, logErr
 	}
@@ -86,11 +86,11 @@ func EJ_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaSer
 	u.Path = path.Join(u.Path, "Users", msConfig.UserID, "Items")
 	URL := u.String()
 
-	// Add header parameters for the request
-	headers := map[string]string{"X-Emby-Token": msConfig.Token}
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", msConfig.Token)
 
 	// Make a GET request to the Emby/Jellyfin server
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, msConfig.Type)
 	if logErr.Message != "" {
 		return nil, logErr
 	}

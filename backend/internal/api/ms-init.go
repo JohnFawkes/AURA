@@ -51,12 +51,11 @@ func EJ_InitializeMediaServerConnection(ctx context.Context, msConfig *Config_Me
 	u.Path = path.Join(u.Path, "Users")
 	URL := u.String()
 
-	// Make header map
-	headers := make(map[string]string)
-	headers["X-Emby-Token"] = msConfig.Token
+	// Make headers for authentication
+	headers := MakeAuthHeader("X-Emby-Token", msConfig.Token)
 
 	// Make the HTTP request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, "GET", headers, 60, nil, "")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, "GET", headers, 60, nil, msConfig.Type)
 	if logErr.Message != "" {
 		return "", logErr
 	}

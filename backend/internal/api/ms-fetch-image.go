@@ -67,8 +67,11 @@ func Plex_FetchImageFromMediaServer(ctx context.Context, ratingKey string, image
 	u.Path = path.Join(u.Path, "library", "metadata", ratingKey, imageType, fmt.Sprintf("%d", time.Now().Unix()))
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Plex
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 	if logErr.Message != "" {
 		return nil, logErr
 	}
@@ -124,8 +127,11 @@ func EJ_FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageTy
 	u.Path = path.Join("Items", ratingKey, "Images", imageType)
 	URL := u.String()
 
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
+
 	// Make the API request to Emby/Jellyfin
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, Global_Config.MediaServer.Type)
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
 		return nil, logErr
 	}
