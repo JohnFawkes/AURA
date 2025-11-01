@@ -1,9 +1,16 @@
 ## [0.9.44] - 2025-11-01
 
+### Added
+
+- Logs Page will now remember filter settings between visits using local storage
+- Added backend pagination support for log entries to improve performance on large log files
+- Added backend filtering support for log levels, statuses, and actions to enhance log retrieval
+
 ### Fixed
 
 - Add image validation and loading state to DimmedBackground component
 - Include timestamp in download queue JSON file names to handle multiple sets
+- Removed frontend log filtering logic to rely solely on backend filtering for consistency and performance
 
 ---
 
