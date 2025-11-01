@@ -569,7 +569,7 @@ const MediaItemPage = () => {
 					{posterSets && posterSets.length > 0 && mediaItem && (
 						<>
 							<div
-								className="flex flex-row w-full justify-between mb-4 sm:flex-row sm:items-center gap-4"
+								className="flex flex-col w-full mb-4 gap-4 justify-center items-center sm:justify-between sm:items-center sm:flex-row"
 								style={{
 									background: "oklch(0.16 0.0202 282.55)",
 									opacity: "0.95",
