@@ -97,7 +97,7 @@ func AddRoutes(r *chi.Mux) {
 
 			// Logging Routes
 			r.Route("/log", func(r chi.Router) {
-				r.Get("/", routes_logging.GetLogFile)
+				r.Get("/", routes_logging.GetLogContents)
 				r.Post("/clear", routes_logging.ClearLogFile)
 			})
 

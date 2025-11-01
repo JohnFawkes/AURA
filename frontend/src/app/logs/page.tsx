@@ -1,183 +1,90 @@
 "use client";
 
-import { fetchLogContents, postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
-import { EllipsisIcon, Filter, SaveIcon } from "lucide-react";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import {
+	FetchLogContentsResponse,
+	fetchLogContents,
+	postClearOldLogs,
+} from "@/services/settings-onboarding/api-logs-actions";
+import { EllipsisIcon, SaveIcon, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 
+import { CustomPagination } from "@/components/shared/custom-pagination";
 import { ErrorMessage } from "@/components/shared/error-message";
-import { LogsFilter } from "@/components/shared/filter-logs";
+import { FilterLogs } from "@/components/shared/filter-logs";
 import Loader from "@/components/shared/loader";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Small } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
-import { log } from "@/lib/logger";
+import { useLogsPageStore } from "@/lib/stores/page-store-logs";
 
 import { APIResponse, LogAction, LogData } from "@/types/api/api-response";
 
-function parseLogs(rawLogs: string): LogData[] {
-	try {
-		return rawLogs
-			.split("\n")
-			.map((line) => {
-				try {
-					const obj = JSON.parse(line);
-					// Optionally validate obj here
-					return obj as LogData;
-				} catch {
-					return undefined;
-				}
-			})
-			.filter((log): log is LogData => !!log);
-	} catch {
-		return [];
-	}
-}
-
-const RouteToFunctionMap: { label: string; value: string; section: string }[] = [
-	{ label: "User Login", value: "/api/login", section: "AUTH" },
-
-	// Config Routes
-	{ label: "Get Config", value: "/api/config", section: "CONFIG" },
-	{ label: "Get Config Status", value: "/api/config/status", section: "CONFIG" },
-	{ label: "Reload Config", value: "/api/config/reload", section: "CONFIG" },
-	{ label: "Update Config", value: "/api/config/update", section: "CONFIG" },
-	{ label: "Validate Mediux Token", value: "/api/config/validate/mediux", section: "CONFIG" },
-	{ label: "Validate Media Server Info", value: "/api/config/validate/mediaserver", section: "CONFIG" },
-	{ label: "Validate Sonarr Connection", value: "/api/config/validate/sonarr", section: "CONFIG" },
-	{ label: "Validate Radarr Connection", value: "/api/config/validate/radarr", section: "CONFIG" },
-	{ label: "Test Notifications", value: "/api/config/validate/notification", section: "CONFIG" },
-
-	// Logging Routes
-	{ label: "Get Logs", value: "/api/log", section: "LOGS" },
-	{ label: "Clear Logs", value: "/api/log/clear", section: "LOGS" },
-
-	// Temp Images Routes
-	{ label: "Clear Temp Images", value: "/api/temp-images/clear", section: "TEMP IMAGES" },
-
-	// Media Server Routes
-	{ label: "Get Media Server Status", value: "/api/mediaserver/status", section: "MEDIA" },
-	{ label: "Get Media Server Type", value: "/api/mediaserver/type", section: "MEDIA" },
-	{ label: "Get Media Server Library Options", value: "/api/mediaserver/library-options", section: "MEDIA" },
-	{ label: "Get Media Server Library Sections", value: "/api/mediaserver/sections", section: "MEDIA" },
-	{ label: "Get Media Server Sections & Items", value: "/api/mediaserver/sections/items", section: "MEDIA" },
-	{ label: "Get Item Content", value: "/api/mediaserver/item", section: "MEDIA" },
-	{ label: "Download and Update", value: "/api/mediaserver/download", section: "MEDIA" },
-	{ label: "Add Item to Download Queue", value: "/api/mediaserver/add-to-queue", section: "MEDIA" },
-
-	// MediUX Routes
-	{ label: "Get All Sets", value: "/api/mediux/sets", section: "MEDIUX" },
-	{ label: "Get Sets From User", value: "/api/mediux/sets-by-user", section: "MEDIUX" },
-	{ label: "Get Set by ID", value: "/api/mediux/set-by-id", section: "MEDIUX" },
-	{ label: "Get Images From Set", value: "/api/mediux/image", section: "MEDIUX" },
-	{ label: "Get User Following/Hiding Sets", value: "/api/mediux/user-follow-hiding", section: "MEDIUX" },
-
-	// Database Routes
-	{ label: "Get All Items", value: "/api/db/get-all", section: "DATABASE" },
-	{ label: "Delete Item", value: "/api/db/delete", section: "DATABASE" },
-	{ label: "Update Item", value: "/api/db/update", section: "DATABASE" },
-	{ label: "Add Item", value: "/api/db/add", section: "DATABASE" },
-	{ label: "Force Recheck on Item", value: "/api/db/force-recheck", section: "DATABASE" },
-];
-
-function getFunctionFromRoute(route: string | undefined): string {
-	if (!route) return "Background Task";
-	const mapping = RouteToFunctionMap.find((map) => map.value === route);
-	return mapping ? mapping.label : route;
-}
-
 export default function LogsPage() {
-	const [logEntries, setLogEntries] = useState<LogData[]>([]);
+	// States - Loading & Error
 	const [loading, setLoading] = useState<boolean>(true);
-	const [error, setError] = useState<APIResponse<string> | null>(null);
-	const [isMounted, setIsMounted] = useState(false);
+	const [error, setError] = useState<APIResponse<FetchLogContentsResponse> | null>(null);
 
-	// Is Wide Screen:
-	const [isWideScreen, setIsWideScreen] = useState(false);
+	// States - Responses and Data
+	const [logEntries, setLogEntries] = useState<LogData[]>([]);
+	const [totalLogEntries, setTotalLogEntries] = useState<number>(0);
+	const [possibleActionsPaths, setPossibleActionsPaths] = useState<
+		Record<string, { label: string; section: string }>
+	>({});
 
-	const [numberOfActiveFilters, setNumberOfActiveFilters] = useState(0);
-	const [levelsFilter, setLevelsFilter] = useState<string[]>([]);
-	const [statusFilter, setStatusFilter] = useState<string[]>([]);
-	const [actionsOptions, setActionsOptions] = useState<{ label: string; value: string; section: string }[]>([]);
-	const [actionsFilter, setActionsFilter] = useState<string[]>([]);
+	// States - Filters & Pagination
+	const {
+		levelsFilter,
+		setLevelsFilter,
+		statusFilter,
+		setStatusFilter,
+		actionsFilter,
+		setActionsFilter,
+		currentPage,
+		setCurrentPage,
+		itemsPerPage,
+		setItemsPerPage,
+	} = useLogsPageStore();
 
 	useEffect(() => {
 		document.title = "aura | Logs";
 	}, []);
 
 	useEffect(() => {
-		if (isMounted) return;
-		setIsMounted(true);
-
 		const fetchLogs = async () => {
 			try {
 				setLoading(true);
-				const response = await fetchLogContents();
+				const response = await fetchLogContents(
+					levelsFilter,
+					statusFilter,
+					actionsFilter,
+					itemsPerPage,
+					currentPage
+				);
 				if (response.status === "error") {
 					setError(response);
 					setLogEntries([]);
+					setPossibleActionsPaths({});
+					setTotalLogEntries(0);
 					return;
 				}
+				const logEntries = response.data?.log_entries || [];
 
-				const logsString = response.data || "";
-				if (logsString.trim() === "") {
-					setLogEntries([]);
-					setError(null);
-					return;
-				}
-
-				const parsedLogs = parseLogs(logsString).sort((a, b) => {
-					const aTime = new Date(a.timestamp || a.time).getTime();
-					const bTime = new Date(b.timestamp || b.time).getTime();
-					return bTime - aTime; // newest first
-				});
-				setLogEntries(parsedLogs);
-
-				// Extract unique action names for the actions filter
-				const actionNamesSet = new Set<string>();
-				parsedLogs.forEach((log) => {
-					if (!log.route && (!Array.isArray(log.actions) || log.actions.length === 0)) {
-						return;
-					}
-					if (log.route?.path) {
-						const label = getFunctionFromRoute(log.route.path);
-						actionNamesSet.add(label);
-					} else {
-						actionNamesSet.add(log.message || "Background Task");
-					}
-				});
-				const actionOptions = Array.from(actionNamesSet)
-					.sort()
-					.map((name) => ({
-						label: name,
-						value: name,
-						section:
-							name === "Background Task"
-								? "BACKGROUND"
-								: RouteToFunctionMap.find((map) => map.label === name)?.section || "AURA BACKGROUND",
-					}));
-				setActionsOptions(actionOptions);
-
+				setLogEntries(logEntries);
+				setPossibleActionsPaths(response.data?.possible_actions_paths || {});
+				setTotalLogEntries(response.data?.total_log_entries || 0);
 				setError(null);
 			} catch (error) {
 				setError({
@@ -191,13 +98,15 @@ export default function LogsPage() {
 					},
 				});
 				setLogEntries([]);
+				setPossibleActionsPaths({});
+				setTotalLogEntries(0);
 			} finally {
 				setLoading(false);
 			}
 		};
 
 		fetchLogs();
-	}, [isMounted]);
+	}, [actionsFilter, currentPage, itemsPerPage, levelsFilter, statusFilter]);
 
 	const clearLogsFromToday = async () => {
 		try {
@@ -207,34 +116,16 @@ export default function LogsPage() {
 				return;
 			}
 			toast.success(response.data || "Logs from today cleared successfully");
-			setIsMounted(false); // Reset the component to refetch logs
+			setLogEntries([]);
+			setTotalLogEntries(0);
+			setCurrentPage(1);
 		} catch {
 			toast.error("An unexpected error occurred");
 		}
 	};
 
-	useEffect(() => {
-		let count = 0;
-		if (levelsFilter.length > 0) count++;
-		if (statusFilter.length > 0) count++;
-		if (actionsFilter.length > 0) count++;
-		log("INFO", "Logs Page", "Filters", "Number of active filters: " + count, {
-			levelsFilter,
-			statusFilter,
-			actionsFilter,
-		});
-		setNumberOfActiveFilters(count);
-	}, [levelsFilter, statusFilter, actionsFilter]);
-
-	// Change isWideScreen on window resize
-	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+	// Calculate total pages
+	const totalPages = Math.ceil(totalLogEntries / itemsPerPage);
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
@@ -243,68 +134,19 @@ export default function LogsPage() {
 					<div className="flex flex-col md:flex-row md:items-center md:justify-between w-full space-y-2 md:space-y-0">
 						<h2 className="text-lg font-medium text-center md:text-left">Application Logs</h2>
 						<div className="flex flex-row justify-center md:justify-end space-x-2">
-							{isWideScreen ? (
-								<Popover>
-									<PopoverTrigger asChild>
-										<div>
-											<Button
-												variant="outline"
-												className={cn(numberOfActiveFilters > 0 && "ring-2 ring-primary")}
-											>
-												Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-												<Filter className="h-5 w-5" />
-											</Button>
-										</div>
-									</PopoverTrigger>
-									<PopoverContent
-										side="right"
-										align="start"
-										className="w-[450px] p-2 bg-background border border-primary"
-									>
-										<LogsFilter
-											levelsFilter={levelsFilter}
-											setLevelsFilter={setLevelsFilter}
-											statusFilter={statusFilter}
-											setStatusFilter={setStatusFilter}
-											actionsOptions={actionsOptions}
-											actionsFilter={actionsFilter}
-											setActionsFilter={setActionsFilter}
-										/>
-									</PopoverContent>
-								</Popover>
-							) : (
-								<Drawer direction="left">
-									<DrawerTrigger asChild>
-										<Button
-											variant="outline"
-											className={cn(
-												numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1"
-											)}
-										>
-											Filters {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-											<Filter className="h-5 w-5" />
-										</Button>
-									</DrawerTrigger>
-									<DrawerContent>
-										<DrawerHeader className="my-0">
-											<DrawerTitle className="mb-0">Filters</DrawerTitle>
-											<DrawerDescription className="mb-0">
-												Use the options below to filter your logs.
-											</DrawerDescription>
-										</DrawerHeader>
-										<Separator className="my-1 w-full" />
-										<LogsFilter
-											levelsFilter={levelsFilter}
-											setLevelsFilter={setLevelsFilter}
-											statusFilter={statusFilter}
-											setStatusFilter={setStatusFilter}
-											actionsOptions={actionsOptions}
-											actionsFilter={actionsFilter}
-											setActionsFilter={setActionsFilter}
-										/>
-									</DrawerContent>
-								</Drawer>
-							)}
+							<FilterLogs
+								levelsFilter={levelsFilter}
+								setLevelsFilter={setLevelsFilter}
+								statusFilter={statusFilter}
+								setStatusFilter={setStatusFilter}
+								actionsOptions={possibleActionsPaths}
+								actionsFilter={actionsFilter}
+								setActionsFilter={setActionsFilter}
+								setCurrentPage={setCurrentPage}
+								itemsPerPage={itemsPerPage}
+								setItemsPerPage={setItemsPerPage}
+							/>
+
 							<Button variant="destructive" onClick={clearLogsFromToday}>
 								Clear Today's Logs
 							</Button>
@@ -317,13 +159,73 @@ export default function LogsPage() {
 						<Loader />
 					) : error ? (
 						<ErrorMessage error={error} />
+					) : (!logEntries || logEntries.length === 0) && !error && !loading ? (
+						<div className="w-full">
+							<ErrorMessage
+								error={ReturnErrorMessage<string>(
+									[
+										`No Log Entries found`,
+										levelsFilter.length > 0
+											? `with level${levelsFilter.length > 1 ? "s" : ""} ${levelsFilter
+													.map((lvl) => `"${lvl}"`)
+													.join(", ")}`
+											: null,
+										statusFilter.length > 0
+											? `with status${statusFilter.length > 1 ? "es" : ""} ${statusFilter
+													.map((st) => `"${st}"`)
+													.join(", ")}`
+											: null,
+										actionsFilter.length > 0
+											? `with action${actionsFilter.length > 1 ? "s" : ""} ${actionsFilter
+													.map((act) => {
+														if (
+															act.startsWith("/api") &&
+															possibleActionsPaths[act]?.label
+														) {
+															return `"${possibleActionsPaths[act].label}"`;
+														}
+														return `"${act}"`;
+													})
+													.join(", ")}`
+											: null,
+									]
+										.filter(Boolean)
+										.join("\n")
+								)}
+							/>
+							<div className="text-center text-muted-foreground mt-4">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										setLevelsFilter([]);
+										setStatusFilter([]);
+										setActionsFilter([]);
+										setCurrentPage(1);
+									}}
+									className="text-sm"
+								>
+									<XCircle className="inline mr-1" />
+									Clear All Filters
+								</Button>
+							</div>
+						</div>
 					) : (
-						<LogList
-							logEntries={logEntries}
-							levelsFilter={levelsFilter}
-							statusFilter={statusFilter}
-							actionsFilter={actionsFilter}
-						/>
+						<>
+							<LogList logEntries={logEntries} possibleActionsPaths={possibleActionsPaths} />
+
+							{/* Pagination */}
+							{itemsPerPage && (
+								<CustomPagination
+									currentPage={currentPage}
+									totalPages={totalPages}
+									setCurrentPage={setCurrentPage}
+									scrollToTop={true}
+									filterItemsLength={totalLogEntries}
+									itemsPerPage={itemsPerPage}
+								/>
+							)}
+						</>
 					)}
 				</CardContent>
 			</Card>
@@ -345,63 +247,20 @@ function formatElapsedMicroseconds(us: number): string {
 	return `${(us / 1_000_000).toFixed(2)} s`;
 }
 
-function actionOrSubActionHasStatus(actions: LogAction[] | undefined, statusFilter: string[]): boolean {
-	if (!actions || statusFilter.length === 0) return true;
-	return actions.some(
-		(action) =>
-			statusFilter.includes(action.status) ||
-			(action.sub_actions && actionOrSubActionHasStatus(action.sub_actions, statusFilter))
-	);
-}
-
-function actionOrSubActionHasLevel(actions: LogAction[] | undefined, levelsFilter: string[]): boolean {
-	if (!actions || levelsFilter.length === 0) return true;
-	return actions.some(
-		(action) =>
-			(action.level && levelsFilter.includes(action.level)) ||
-			(action.sub_actions && actionOrSubActionHasLevel(action.sub_actions, levelsFilter))
-	);
-}
-
 function LogList({
 	logEntries,
-	levelsFilter,
-	statusFilter,
-	actionsFilter,
+	possibleActionsPaths,
 }: {
 	logEntries: LogData[];
-	levelsFilter: string[];
-	statusFilter: string[];
-	actionsFilter: string[];
+	possibleActionsPaths: Record<string, { label: string; section: string }>;
 }) {
-	const filteredLogEntries = logEntries.filter((log: LogData) => {
-		// Ignore logs without route or actions
-		if (!log.route && (!Array.isArray(log.actions) || log.actions.length === 0)) return false;
-
-		// Apply levels filter (recursive)
-		if (levelsFilter.length > 0 && !actionOrSubActionHasLevel(log.actions, levelsFilter)) return false;
-
-		// Apply status filter (recursive)
-		if (statusFilter.length > 0 && !actionOrSubActionHasStatus(log.actions, statusFilter)) return false;
-
-		// Apply actions filter
-		if (actionsFilter.length > 0) {
-			const actionName = log.route ? getFunctionFromRoute(log.route.path) : log.message || "Background Task";
-			if (!actionsFilter.includes(actionName)) return false;
-		}
-		return true;
-	});
-
-	if (filteredLogEntries.length === 0) {
-		return <div className="text-muted-foreground">No structured logs available.</div>;
-	}
-
 	return (
 		<div className="space-y-1">
-			{filteredLogEntries.map((log, idx) => {
-				const baseLabel = getFunctionFromRoute(log.route?.path);
-				let mainLabel = baseLabel;
-				if (mainLabel === "Background Task" && log.actions && log.actions.length > 0) {
+			{logEntries.map((log, idx) => {
+				let mainLabel = "";
+				if (log.route?.path) {
+					mainLabel = possibleActionsPaths[log.route.path].label || log.route.path;
+				} else if (log.actions && log.actions.length > 0) {
 					mainLabel = log.message || log.actions[0].name || "Background Task";
 				}
 

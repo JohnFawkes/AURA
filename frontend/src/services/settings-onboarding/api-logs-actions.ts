@@ -3,12 +3,32 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
+import { APIResponse, LogData } from "@/types/api/api-response";
 
-export const fetchLogContents = async (): Promise<APIResponse<string>> => {
+export interface FetchLogContentsResponse {
+	total_log_entries: number;
+	possible_actions_paths: Record<string, { label: string; section: string }>;
+	log_entries: LogData[];
+}
+
+export const fetchLogContents = async (
+	filteredLogLevels: string[],
+	filteredStatuses: string[],
+	filteredActions: string[],
+	itemsPerPage: number,
+	pageNumber: number
+): Promise<APIResponse<FetchLogContentsResponse>> => {
 	log("INFO", "API - Logs", "Fetch Log Contents", "Fetching log contents");
 	try {
-		const response = await apiClient.get<APIResponse<string>>(`/log`);
+		const response = await apiClient.get<APIResponse<FetchLogContentsResponse>>(`/log`, {
+			params: {
+				filteredLogLevels: filteredLogLevels.join(","),
+				filteredStatuses: filteredStatuses.join(","),
+				filteredActions: filteredActions.join(","),
+				itemsPerPage,
+				pageNumber,
+			},
+		});
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.message || "Unknown error fetching log contents");
 		} else {
@@ -23,7 +43,7 @@ export const fetchLogContents = async (): Promise<APIResponse<string>> => {
 			`Failed to fetch log contents: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error
 		);
-		return ReturnErrorMessage<string>(error);
+		return ReturnErrorMessage<FetchLogContentsResponse>(error);
 	}
 };
 

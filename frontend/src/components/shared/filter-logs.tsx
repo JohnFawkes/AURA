@@ -1,20 +1,27 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Filter, View } from "lucide-react";
 
+import { useEffect, useMemo, useState } from "react";
+
+import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
-type LogsFilterProps = {
-	levelsFilter: string[];
-	setLevelsFilter: (levels: string[]) => void;
-	statusFilter: string[];
-	setStatusFilter: (status: string[]) => void;
-	actionsOptions: { label: string; value: string; section: string }[];
-	actionsFilter: string[];
-	setActionsFilter: (actions: string[]) => void;
-};
+import { cn } from "@/lib/cn";
+
+import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 const levelsOptions = [
 	{ label: "TRACE", value: "trace" },
@@ -30,7 +37,23 @@ const statusOptions = [
 	{ label: "Error", value: "error" },
 ];
 
-export function LogsFilter({
+type LogsFilterProps = {
+	levelsFilter: string[];
+	setLevelsFilter: (levels: string[]) => void;
+
+	statusFilter: string[];
+	setStatusFilter: (status: string[]) => void;
+
+	actionsOptions: Record<string, { label: string; section: string }>;
+	actionsFilter: string[];
+	setActionsFilter: (actions: string[]) => void;
+
+	setCurrentPage: (page: number) => void;
+	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
+	setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+};
+
+function LogsFilterContent({
 	levelsFilter,
 	setLevelsFilter,
 	statusFilter,
@@ -38,21 +61,64 @@ export function LogsFilter({
 	actionsOptions,
 	actionsFilter,
 	setActionsFilter,
+	setCurrentPage,
+	itemsPerPage,
+	setItemsPerPage,
 }: LogsFilterProps) {
+	const [pendingLevelsFilter, setPendingLevelsFilter] = useState<string[]>(levelsFilter);
+	const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(statusFilter);
+	const [pendingActionsFilter, setPendingActionsFilter] = useState<string[]>(actionsFilter);
+
+	const handleResetFilters = () => {
+		setPendingLevelsFilter([]);
+		setPendingStatusFilter([]);
+		setPendingActionsFilter([]);
+		setLevelsFilter([]);
+		setStatusFilter([]);
+		setActionsFilter([]);
+		setCurrentPage(1);
+	};
+
+	const handleApplyFilters = () => {
+		setCurrentPage(1);
+		setLevelsFilter(pendingLevelsFilter);
+		setStatusFilter(pendingStatusFilter);
+		setActionsFilter(pendingActionsFilter);
+	};
+
+	// Group actions by section for rendering
+	const actionsGroupedBySection = useMemo(() => {
+		const grouped: Record<string, { label: string; value: string }[]> = {};
+		Object.entries(actionsOptions).forEach(([path, info]) => {
+			const section = info.section;
+			if (!grouped[section]) grouped[section] = [];
+			grouped[section].push({ label: info.label, value: path });
+		});
+		return grouped;
+	}, [actionsOptions]);
+
 	return (
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
+			{/* Items Per Page Selection */}
+			<div className="flex items-center mb-4">
+				<SelectItemsPerPage
+					setCurrentPage={setCurrentPage}
+					itemsPerPage={itemsPerPage}
+					setItemsPerPage={setItemsPerPage}
+				/>
+			</div>
 			{/* Log Levels Filter */}
 			<Label className="text-md font-semibold mb-2 block">Log Levels</Label>
 			<div className="flex flex-col gap-1 max-h-56 overflow-y-auto border p-2 rounded-md">
 				<div
 					className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-						levelsFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
+						pendingLevelsFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
 					}`}
 					onClick={() => {
-						setLevelsFilter([]);
+						setPendingLevelsFilter([]);
 					}}
 				>
-					<Checkbox checked={levelsFilter.length === 0} id={`levels-all`} />
+					<Checkbox checked={pendingLevelsFilter.length === 0} id={`levels-all`} />
 					<Label
 						htmlFor={`levels-all`}
 						className="text-sm flex-1 cursor-pointer truncate"
@@ -60,25 +126,25 @@ export function LogsFilter({
 					>
 						All Levels
 					</Label>
-					{levelsFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
+					{pendingLevelsFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
 				</div>
 				{levelsOptions.map((level) => (
 					<div
 						key={level.value}
 						className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-							levelsFilter.includes(level.value) ? "bg-muted" : "hover:bg-muted/60"
+							pendingLevelsFilter.includes(level.value) ? "bg-muted" : "hover:bg-muted/60"
 						}`}
 						onClick={() => {
 							let newLevels;
-							if (levelsFilter.includes(level.value)) {
-								newLevels = levelsFilter.filter((l) => l !== level.value);
+							if (pendingLevelsFilter.includes(level.value)) {
+								newLevels = pendingLevelsFilter.filter((l) => l !== level.value);
 							} else {
-								newLevels = [...levelsFilter, level.value];
+								newLevels = [...pendingLevelsFilter, level.value];
 							}
-							setLevelsFilter(newLevels);
+							setPendingLevelsFilter(newLevels);
 						}}
 					>
-						<Checkbox checked={levelsFilter.includes(level.value)} id={`level-${level.value}`} />
+						<Checkbox checked={pendingLevelsFilter.includes(level.value)} id={`level-${level.value}`} />
 						<Label
 							htmlFor={`level-${level.value}`}
 							className="text-sm flex-1 cursor-pointer truncate"
@@ -86,7 +152,7 @@ export function LogsFilter({
 						>
 							{level.label}
 						</Label>
-						{levelsFilter.includes(level.value) && <Check className="h-4 w-4 text-primary" />}
+						{pendingLevelsFilter.includes(level.value) && <Check className="h-4 w-4 text-primary" />}
 					</div>
 				))}
 			</div>
@@ -96,13 +162,13 @@ export function LogsFilter({
 			<div className="flex flex-col gap-1 max-h-56 overflow-y-auto border p-2 rounded-md">
 				<div
 					className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-						statusFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
+						pendingStatusFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
 					}`}
 					onClick={() => {
-						setStatusFilter([]);
+						setPendingStatusFilter([]);
 					}}
 				>
-					<Checkbox checked={statusFilter.length === 0} id={`status-all`} />
+					<Checkbox checked={pendingStatusFilter.length === 0} id={`status-all`} />
 					<Label
 						htmlFor={`status-all`}
 						className="text-sm flex-1 cursor-pointer truncate"
@@ -110,25 +176,25 @@ export function LogsFilter({
 					>
 						All Statuses
 					</Label>
-					{statusFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
+					{pendingStatusFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
 				</div>
 				{statusOptions.map((status) => (
 					<div
 						key={status.value}
 						className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-							statusFilter.includes(status.value) ? "bg-muted" : "hover:bg-muted/60"
+							pendingStatusFilter.includes(status.value) ? "bg-muted" : "hover:bg-muted/60"
 						}`}
 						onClick={() => {
 							let newStatus;
-							if (statusFilter.includes(status.value)) {
-								newStatus = statusFilter.filter((s) => s !== status.value);
+							if (pendingStatusFilter.includes(status.value)) {
+								newStatus = pendingStatusFilter.filter((s) => s !== status.value);
 							} else {
-								newStatus = [...statusFilter, status.value];
+								newStatus = [...pendingStatusFilter, status.value];
 							}
-							setStatusFilter(newStatus);
+							setPendingStatusFilter(newStatus);
 						}}
 					>
-						<Checkbox checked={statusFilter.includes(status.value)} id={`status-${status.value}`} />
+						<Checkbox checked={pendingStatusFilter.includes(status.value)} id={`status-${status.value}`} />
 						<Label
 							htmlFor={`status-${status.value}`}
 							className="text-sm flex-1 cursor-pointer truncate"
@@ -136,7 +202,7 @@ export function LogsFilter({
 						>
 							{status.label}
 						</Label>
-						{statusFilter.includes(status.value) && <Check className="h-4 w-4 text-primary" />}
+						{pendingStatusFilter.includes(status.value) && <Check className="h-4 w-4 text-primary" />}
 					</div>
 				))}
 			</div>
@@ -147,13 +213,13 @@ export function LogsFilter({
 			<div className="flex flex-col gap-1 max-h-56 overflow-y-auto border p-2 rounded-md">
 				<div
 					className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-						actionsFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
+						pendingActionsFilter.length === 0 ? "bg-muted" : "hover:bg-muted/60"
 					}`}
 					onClick={() => {
-						setActionsFilter([]);
+						setPendingActionsFilter([]);
 					}}
 				>
-					<Checkbox checked={actionsFilter.length === 0} id={`actions-all`} />
+					<Checkbox checked={pendingActionsFilter.length === 0} id={`actions-all`} />
 					<Label
 						htmlFor={`actions-all`}
 						className="text-sm flex-1 cursor-pointer truncate"
@@ -161,37 +227,35 @@ export function LogsFilter({
 					>
 						All Actions
 					</Label>
-					{actionsFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
+					{pendingActionsFilter.length === 0 && <Check className="h-4 w-4 text-primary" />}
 				</div>
 				{/* Group actions by section */}
-				{Array.from(
-					new Set(actionsOptions.sort((a, b) => a.section.localeCompare(b.section)).map((a) => a.section))
-				).map((section) => (
-					<div key={section}>
-						<Separator className="my-2 w-full" />
-						<Label className="text-xs font-semibold mb-1 block uppercase text-muted-foreground">
-							{section.replace(/_/g, " ")}
-						</Label>
-						{actionsOptions
-							.filter((a) => a.section === section)
-							.map((action) => (
+				{Object.entries(actionsGroupedBySection)
+					.sort(([a], [b]) => a.localeCompare(b))
+					.map(([section, actions]) => (
+						<div key={section}>
+							<Separator className="my-2 w-full" />
+							<Label className="text-xs font-semibold mb-1 block uppercase text-muted-foreground">
+								{section.replace(/_/g, " ")}
+							</Label>
+							{actions.map((action) => (
 								<div
 									key={action.value}
 									className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-										actionsFilter.includes(action.value) ? "bg-muted" : "hover:bg-muted/60"
+										pendingActionsFilter.includes(action.value) ? "bg-muted" : "hover:bg-muted/60"
 									}`}
 									onClick={() => {
 										let newActions;
-										if (actionsFilter.includes(action.value)) {
-											newActions = actionsFilter.filter((a) => a !== action.value);
+										if (pendingActionsFilter.includes(action.value)) {
+											newActions = pendingActionsFilter.filter((a) => a !== action.value);
 										} else {
-											newActions = [...actionsFilter, action.value];
+											newActions = [...pendingActionsFilter, action.value];
 										}
-										setActionsFilter(newActions);
+										setPendingActionsFilter(newActions);
 									}}
 								>
 									<Checkbox
-										checked={actionsFilter.includes(action.value)}
+										checked={pendingActionsFilter.includes(action.value)}
 										id={`action-${action.value}`}
 									/>
 									<Label
@@ -201,12 +265,139 @@ export function LogsFilter({
 									>
 										{action.label}
 									</Label>
-									{actionsFilter.includes(action.value) && <Check className="h-4 w-4 text-primary" />}
+									{pendingActionsFilter.includes(action.value) && (
+										<Check className="h-4 w-4 text-primary" />
+									)}
 								</div>
 							))}
-					</div>
-				))}
+						</div>
+					))}
 			</div>
+
+			{/* Apply Filters Button */}
+			<Button
+				className="w-full mt-2 cursor-pointer hover:brightness-120 active:scale-95"
+				onClick={handleApplyFilters}
+			>
+				Apply Filters
+			</Button>
+
+			{/* Reset Filters Button */}
+			<Button
+				variant={"destructive"}
+				className="w-full cursor-pointer hover:brightness-120 active:scale-95"
+				onClick={handleResetFilters}
+			>
+				Reset Filters
+			</Button>
 		</div>
+	);
+}
+
+export function FilterLogs({
+	levelsFilter,
+	setLevelsFilter,
+	statusFilter,
+	setStatusFilter,
+	actionsOptions,
+	actionsFilter,
+	setActionsFilter,
+	setCurrentPage,
+	itemsPerPage,
+	setItemsPerPage,
+}: LogsFilterProps) {
+	const [isWideScreen, setIsWideScreen] = useState(typeof window !== "undefined" ? window.innerWidth >= 1300 : false);
+
+	// Change isWideScreen on window resize
+	useEffect(() => {
+		const handleResize = () => {
+			setIsWideScreen(window.innerWidth >= 1300);
+		};
+		handleResize();
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
+
+	// Calculate number of active filters
+	const numberOfActiveFilters = useMemo(() => {
+		let count = 0;
+		if (levelsFilter.length > 0) count++;
+		if (statusFilter.length > 0) count++;
+		if (actionsFilter.length > 0) count++;
+		return count;
+	}, [levelsFilter, statusFilter, actionsFilter]);
+
+	return (
+		<>
+			{isWideScreen ? (
+				<Popover>
+					<PopoverTrigger asChild>
+						<div>
+							<Button
+								variant="outline"
+								className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+							>
+								<View className="h-5 w-5" />
+								View & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+								<Filter className="h-5 w-5" />
+							</Button>
+						</div>
+					</PopoverTrigger>
+					<PopoverContent
+						side="right"
+						align="start"
+						className="w-[350px] p-2 bg-background border border-primary"
+					>
+						<LogsFilterContent
+							levelsFilter={levelsFilter}
+							setLevelsFilter={setLevelsFilter}
+							statusFilter={statusFilter}
+							setStatusFilter={setStatusFilter}
+							actionsOptions={actionsOptions}
+							actionsFilter={actionsFilter}
+							setActionsFilter={setActionsFilter}
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
+						/>
+					</PopoverContent>
+				</Popover>
+			) : (
+				<Drawer direction="left">
+					<DrawerTrigger asChild>
+						<Button
+							variant="outline"
+							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+						>
+							<View className="h-5 w-5" />
+							View & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+							<Filter className="h-5 w-5" />
+						</Button>
+					</DrawerTrigger>
+					<DrawerContent>
+						<DrawerHeader className="my-0">
+							<DrawerTitle className="mb-0">View & Filter</DrawerTitle>
+							<DrawerDescription className="mb-0">
+								Use the options below to change the number of logs displayed and filter logs by level,
+								status, or action/path.
+							</DrawerDescription>
+						</DrawerHeader>
+						<Separator className="my-1 w-full" />
+						<LogsFilterContent
+							levelsFilter={levelsFilter}
+							setLevelsFilter={setLevelsFilter}
+							statusFilter={statusFilter}
+							setStatusFilter={setStatusFilter}
+							actionsOptions={actionsOptions}
+							actionsFilter={actionsFilter}
+							setActionsFilter={setActionsFilter}
+							setCurrentPage={setCurrentPage}
+							itemsPerPage={itemsPerPage}
+							setItemsPerPage={setItemsPerPage}
+						/>
+					</DrawerContent>
+				</Drawer>
+			)}
+		</>
 	);
 }
