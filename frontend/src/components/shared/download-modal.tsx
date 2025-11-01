@@ -1372,7 +1372,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 			<DialogPortal>
 				<DialogOverlay />
-				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
+				<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] border border-primary">
 					<DialogHeader>
 						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
 						<DialogDescription>{setAuthor}</DialogDescription>

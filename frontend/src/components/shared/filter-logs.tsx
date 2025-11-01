@@ -2,21 +2,20 @@
 
 import { Check, Filter, View } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/cn";
@@ -51,6 +50,8 @@ type LogsFilterProps = {
 	setCurrentPage: (page: number) => void;
 	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
 	setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+
+	setModalOpen?: (open: boolean) => void;
 };
 
 function LogsFilterContent({
@@ -64,6 +65,7 @@ function LogsFilterContent({
 	setCurrentPage,
 	itemsPerPage,
 	setItemsPerPage,
+	setModalOpen,
 }: LogsFilterProps) {
 	const [pendingLevelsFilter, setPendingLevelsFilter] = useState<string[]>(levelsFilter);
 	const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(statusFilter);
@@ -77,6 +79,7 @@ function LogsFilterContent({
 		setStatusFilter([]);
 		setActionsFilter([]);
 		setCurrentPage(1);
+		if (setModalOpen) setModalOpen(false);
 	};
 
 	const handleApplyFilters = () => {
@@ -84,6 +87,7 @@ function LogsFilterContent({
 		setLevelsFilter(pendingLevelsFilter);
 		setStatusFilter(pendingStatusFilter);
 		setActionsFilter(pendingActionsFilter);
+		if (setModalOpen) setModalOpen(false);
 	};
 
 	// Group actions by section for rendering
@@ -306,17 +310,8 @@ export function FilterLogs({
 	itemsPerPage,
 	setItemsPerPage,
 }: LogsFilterProps) {
-	const [isWideScreen, setIsWideScreen] = useState(false);
-
-	// Change isWideScreen on window resize
-	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+	// State - Open/Close Modal
+	const [modalOpen, setModalOpen] = useState(false);
 
 	// Calculate number of active filters
 	const numberOfActiveFilters = useMemo(() => {
@@ -328,76 +323,40 @@ export function FilterLogs({
 	}, [levelsFilter, statusFilter, actionsFilter]);
 
 	return (
-		<>
-			{isWideScreen ? (
-				<Popover>
-					<PopoverTrigger asChild>
-						<div>
-							<Button
-								variant="outline"
-								className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-							>
-								<View className="h-5 w-5" />
-								View & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-								<Filter className="h-5 w-5" />
-							</Button>
-						</div>
-					</PopoverTrigger>
-					<PopoverContent
-						side="right"
-						align="start"
-						className="w-[350px] p-2 bg-background border border-primary"
-					>
-						<LogsFilterContent
-							levelsFilter={levelsFilter}
-							setLevelsFilter={setLevelsFilter}
-							statusFilter={statusFilter}
-							setStatusFilter={setStatusFilter}
-							actionsOptions={actionsOptions}
-							actionsFilter={actionsFilter}
-							setActionsFilter={setActionsFilter}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</PopoverContent>
-				</Popover>
-			) : (
-				<Drawer direction="left">
-					<DrawerTrigger asChild>
-						<Button
-							variant="outline"
-							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-						>
-							<View className="h-5 w-5" />
-							View & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-							<Filter className="h-5 w-5" />
-						</Button>
-					</DrawerTrigger>
-					<DrawerContent>
-						<DrawerHeader className="my-0">
-							<DrawerTitle className="mb-0">View & Filter</DrawerTitle>
-							<DrawerDescription className="mb-0">
-								Use the options below to change the number of logs displayed and filter logs by level,
-								status, or action/path.
-							</DrawerDescription>
-						</DrawerHeader>
-						<Separator className="my-1 w-full" />
-						<LogsFilterContent
-							levelsFilter={levelsFilter}
-							setLevelsFilter={setLevelsFilter}
-							statusFilter={statusFilter}
-							setStatusFilter={setStatusFilter}
-							actionsOptions={actionsOptions}
-							actionsFilter={actionsFilter}
-							setActionsFilter={setActionsFilter}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</DrawerContent>
-				</Drawer>
-			)}
-		</>
+		<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+			<DialogTrigger asChild>
+				<Button
+					variant="outline"
+					className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+				>
+					<View className="h-5 w-5" />
+					View & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+					<Filter className="h-5 w-5" />
+				</Button>
+			</DialogTrigger>
+			<DialogContent className="overflow-y-auto border border-primary sm:max-w-[700px] ">
+				<DialogHeader>
+					<DialogTitle>View & Filter</DialogTitle>
+					<DialogDescription>
+						Use the options below to change the number of logs displayed and filter logs by level, status,
+						or action/path.
+					</DialogDescription>
+				</DialogHeader>
+				<Separator className="my-1 w-full" />
+				<LogsFilterContent
+					levelsFilter={levelsFilter}
+					setLevelsFilter={setLevelsFilter}
+					statusFilter={statusFilter}
+					setStatusFilter={setStatusFilter}
+					actionsOptions={actionsOptions}
+					actionsFilter={actionsFilter}
+					setActionsFilter={setActionsFilter}
+					setCurrentPage={setCurrentPage}
+					itemsPerPage={itemsPerPage}
+					setItemsPerPage={setItemsPerPage}
+					setModalOpen={setModalOpen}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -10,7 +10,7 @@ import {
 	SortDescIcon,
 } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { SortControl } from "@/components/shared/select-sort";
@@ -18,16 +18,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
@@ -71,6 +70,8 @@ type SavedSetsFilterProps = {
 	setCurrentPage: (page: number) => void;
 	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
 	setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+
+	setModalOpen?: (open: boolean) => void;
 };
 
 function SavedSetsFilterContent({
@@ -102,6 +103,8 @@ function SavedSetsFilterContent({
 	setCurrentPage,
 	itemsPerPage,
 	setItemsPerPage,
+
+	setModalOpen,
 }: SavedSetsFilterProps) {
 	const { setSearchQuery } = useSearchQueryStore();
 
@@ -128,6 +131,7 @@ function SavedSetsFilterContent({
 		setPendingFilterMultiSetOnly(false);
 		setCurrentPage(1);
 		setUserFilterSearch("");
+		if (setModalOpen) setModalOpen(false);
 	};
 
 	const handleApplyFilters = () => {
@@ -137,6 +141,7 @@ function SavedSetsFilterContent({
 		setFilterAutoDownload(pendingFilterAutoDownload);
 		setFilterMultiSetOnly(pendingFilterMultiSetOnly);
 		setFilteredUsers(pendingFilteredUsers);
+		if (setModalOpen) setModalOpen(false);
 	};
 
 	return (
@@ -506,17 +511,8 @@ export function FilterSavedSets({
 	itemsPerPage,
 	setItemsPerPage,
 }: SavedSetsFilterProps) {
-	const [isWideScreen, setIsWideScreen] = useState(false);
-
-	// Change isWideScreen on window resize
-	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+	// State - Open/Close Modal
+	const [modalOpen, setModalOpen] = useState(false);
 
 	// Calculate number of active filters
 	const numberOfActiveFilters = useMemo(() => {
@@ -544,105 +540,52 @@ export function FilterSavedSets({
 	]);
 
 	return (
-		<>
-			{isWideScreen ? (
-				<Popover>
-					<PopoverTrigger asChild>
-						<div>
-							<Button
-								variant="outline"
-								className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-							>
-								<SortDescIcon className="h-5 w-5" />
-								Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-								<Filter className="h-5 w-5" />
-							</Button>
-						</div>
-					</PopoverTrigger>
-					<PopoverContent
-						side="right"
-						align="start"
-						className="w-[350px] p-2 bg-background border border-primary"
-					>
-						<SavedSetsFilterContent
-							getSectionSummaries={getSectionSummaries}
-							librarySectionsLoaded={librarySectionsLoaded}
-							typeOptions={typeOptions}
-							filterUserOptions={filterUserOptions}
-							filteredLibraries={filteredLibraries}
-							setFilteredLibraries={setFilteredLibraries}
-							filteredTypes={filteredTypes}
-							setFilteredTypes={setFilteredTypes}
-							filterAutoDownload={filterAutoDownload}
-							setFilterAutoDownload={setFilterAutoDownload}
-							filteredUsers={filteredUsers}
-							setFilteredUsers={setFilteredUsers}
-							filterMultiSetOnly={filterMultiSetOnly}
-							setFilterMultiSetOnly={setFilterMultiSetOnly}
-							searchTitle={searchTitle}
-							searchYear={searchYear}
-							searchTMDBID={searchTMDBID}
-							searchLibrary={searchLibrary}
-							sortOption={sortOption}
-							setSortOption={setSortOption}
-							sortOrder={sortOrder}
-							setSortOrder={setSortOrder}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</PopoverContent>
-				</Popover>
-			) : (
-				<Drawer direction="left">
-					<DrawerTrigger asChild>
-						<Button
-							variant="outline"
-							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-						>
-							<SortDescIcon className="h-5 w-5" />
-							Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-							<Filter className="h-5 w-5" />
-						</Button>
-					</DrawerTrigger>
-					<DrawerContent>
-						<DrawerHeader className="my-0">
-							<DrawerTitle className="mb-0">Sort & Filter</DrawerTitle>
-							<DrawerDescription className="mb-0">
-								Use the options below to sort and filter your saved sets.
-							</DrawerDescription>
-						</DrawerHeader>
-						<Separator className="my-1 w-full" />
-						<SavedSetsFilterContent
-							getSectionSummaries={getSectionSummaries}
-							librarySectionsLoaded={librarySectionsLoaded}
-							typeOptions={typeOptions}
-							filterUserOptions={filterUserOptions}
-							filteredLibraries={filteredLibraries}
-							setFilteredLibraries={setFilteredLibraries}
-							filteredTypes={filteredTypes}
-							setFilteredTypes={setFilteredTypes}
-							filterAutoDownload={filterAutoDownload}
-							setFilterAutoDownload={setFilterAutoDownload}
-							filteredUsers={filteredUsers}
-							setFilteredUsers={setFilteredUsers}
-							filterMultiSetOnly={filterMultiSetOnly}
-							setFilterMultiSetOnly={setFilterMultiSetOnly}
-							searchTitle={searchTitle}
-							searchYear={searchYear}
-							searchTMDBID={searchTMDBID}
-							searchLibrary={searchLibrary}
-							sortOption={sortOption}
-							setSortOption={setSortOption}
-							sortOrder={sortOrder}
-							setSortOrder={setSortOrder}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</DrawerContent>
-				</Drawer>
-			)}
-		</>
+		<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+			<DialogTrigger asChild>
+				<Button
+					variant="outline"
+					className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+				>
+					<SortDescIcon className="h-5 w-5" />
+					Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+					<Filter className="h-5 w-5" />
+				</Button>
+			</DialogTrigger>
+			<DialogContent className="overflow-y-auto border border-primary sm:max-w-[700px] ">
+				<DialogHeader>
+					<DialogTitle>Sort & Filter</DialogTitle>
+					<DialogDescription> Use the options below to sort and filter your saved sets.</DialogDescription>
+				</DialogHeader>
+				<Separator className="my-1 w-full" />
+				<SavedSetsFilterContent
+					getSectionSummaries={getSectionSummaries}
+					librarySectionsLoaded={librarySectionsLoaded}
+					typeOptions={typeOptions}
+					filterUserOptions={filterUserOptions}
+					filteredLibraries={filteredLibraries}
+					setFilteredLibraries={setFilteredLibraries}
+					filteredTypes={filteredTypes}
+					setFilteredTypes={setFilteredTypes}
+					filterAutoDownload={filterAutoDownload}
+					setFilterAutoDownload={setFilterAutoDownload}
+					filteredUsers={filteredUsers}
+					setFilteredUsers={setFilteredUsers}
+					filterMultiSetOnly={filterMultiSetOnly}
+					setFilterMultiSetOnly={setFilterMultiSetOnly}
+					searchTitle={searchTitle}
+					searchYear={searchYear}
+					searchTMDBID={searchTMDBID}
+					searchLibrary={searchLibrary}
+					sortOption={sortOption}
+					setSortOption={setSortOption}
+					sortOrder={sortOrder}
+					setSortOrder={setSortOrder}
+					setCurrentPage={setCurrentPage}
+					itemsPerPage={itemsPerPage}
+					setItemsPerPage={setItemsPerPage}
+					setModalOpen={setModalOpen}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -2,22 +2,21 @@
 
 import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, Filter, SortDescIcon } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { SortControl } from "@/components/shared/select-sort";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 
@@ -270,17 +269,8 @@ export function FilterHome({
 	itemsPerPage,
 	setItemsPerPage,
 }: HomeFilterProps) {
-	const [isWideScreen, setIsWideScreen] = useState(false);
-
-	// Change isWideScreen on window resize
-	useEffect(() => {
-		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
-		};
-		handleResize();
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, []);
+	// State - Open/Close Modal
+	const [modalOpen, setModalOpen] = useState(false);
 
 	// Calculate number of active filters
 	const numberOfActiveFilters = useMemo(() => {
@@ -291,79 +281,39 @@ export function FilterHome({
 	}, [filteredLibraries, filterInDB]);
 
 	return (
-		<>
-			{isWideScreen ? (
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-						>
-							<SortDescIcon className="h-5 w-5" />
-							Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-							<Filter className="h-5 w-5" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent
-						side="right"
-						align="start"
-						className="w-[350px] p-2 bg-background border border-primary"
-					>
-						<FilterHomeContent
-							librarySections={librarySections}
-							filteredLibraries={filteredLibraries}
-							setFilteredLibraries={setFilteredLibraries}
-							filterInDB={filterInDB}
-							setFilterInDB={setFilterInDB}
-							hasUpdatedAt={hasUpdatedAt}
-							sortOption={sortOption}
-							setSortOption={setSortOption}
-							sortOrder={sortOrder}
-							setSortOrder={setSortOrder}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</PopoverContent>
-				</Popover>
-			) : (
-				<Drawer direction="left">
-					<DrawerTrigger asChild>
-						<Button
-							variant="outline"
-							className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-						>
-							<SortDescIcon className="h-5 w-5" />
-							Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-							<Filter className="h-5 w-5" />
-						</Button>
-					</DrawerTrigger>
-					<DrawerContent>
-						<DrawerHeader className="my-0">
-							<DrawerTitle className="mb-0">Sort & Filter</DrawerTitle>
-							<DrawerDescription className="mb-0">
-								Use the options below to sort and filter your media items.
-							</DrawerDescription>
-						</DrawerHeader>
-						<Separator className="my-1 w-full" />
-						<FilterHomeContent
-							librarySections={librarySections}
-							filteredLibraries={filteredLibraries}
-							setFilteredLibraries={setFilteredLibraries}
-							filterInDB={filterInDB}
-							setFilterInDB={setFilterInDB}
-							hasUpdatedAt={hasUpdatedAt}
-							sortOption={sortOption}
-							setSortOption={setSortOption}
-							sortOrder={sortOrder}
-							setSortOrder={setSortOrder}
-							setCurrentPage={setCurrentPage}
-							itemsPerPage={itemsPerPage}
-							setItemsPerPage={setItemsPerPage}
-						/>
-					</DrawerContent>
-				</Drawer>
-			)}
-		</>
+		<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+			<DialogTrigger asChild>
+				<Button
+					variant="outline"
+					className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
+				>
+					<SortDescIcon className="h-5 w-5" />
+					Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+					<Filter className="h-5 w-5" />
+				</Button>
+			</DialogTrigger>
+			<DialogContent className="overflow-y-auto border border-primary sm:max-w-[700px] ">
+				<DialogHeader>
+					<DialogTitle>Sort & Filter</DialogTitle>
+					<DialogDescription>Use the options below to sort and filter your media items.</DialogDescription>
+				</DialogHeader>
+				<Separator className="my-1 w-full" />
+				<FilterHomeContent
+					librarySections={librarySections}
+					filteredLibraries={filteredLibraries}
+					setFilteredLibraries={setFilteredLibraries}
+					filterInDB={filterInDB}
+					setFilterInDB={setFilterInDB}
+					hasUpdatedAt={hasUpdatedAt}
+					sortOption={sortOption}
+					setSortOption={setSortOption}
+					sortOrder={sortOrder}
+					setSortOrder={setSortOrder}
+					setCurrentPage={setCurrentPage}
+					itemsPerPage={itemsPerPage}
+					setItemsPerPage={setItemsPerPage}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

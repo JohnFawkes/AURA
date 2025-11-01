@@ -22,6 +22,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
@@ -393,7 +394,13 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 
 	return (
 		<Dialog open={open} onOpenChange={onClose}>
-			<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
+			<DialogContent
+				className={cn(
+					"overflow-y-auto max-h-[80vh] sm:max-w-[500px]",
+					onlyIgnore ? "border border-yellow-500" : "border border-primary",
+					allToDelete && "border border-red-500"
+				)}
+			>
 				<DialogHeader>
 					<DialogTitle>{onlyIgnore ? "Ignored Item" : "Edit Saved Set"}</DialogTitle>
 					<DialogDescription>
@@ -521,7 +528,10 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 				<DialogFooter>
 					<Button
 						variant="outline"
-						className="hover:text-primary active:scale-95 hover:brightness-120"
+						className={cn(
+							"active:scale-95 hover:brightness-120",
+							onlyIgnore ? "hover:text-yellow-500" : "hover:text-primary"
+						)}
 						onClick={onClose}
 					>
 						Cancel
@@ -549,7 +559,7 @@ export interface SavedSetDeleteModalProps {
 
 export const SavedSetDeleteModal: React.FC<SavedSetDeleteModalProps> = ({ open, onClose, title, confirmDelete }) => (
 	<Dialog open={open} onOpenChange={onClose}>
-		<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] ">
+		<DialogContent className="overflow-y-auto max-h-[80vh] sm:max-w-[500px] border border-red-500">
 			<DialogHeader>
 				<DialogTitle>Confirm Delete</DialogTitle>
 				<DialogDescription>

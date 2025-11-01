@@ -42,7 +42,7 @@ export function ReleaseNotesDialog({
 	const randomLabel = useMemo(() => funLabels[Math.floor(Math.random() * funLabels.length)], []);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-2xl">
+			<DialogContent className="max-w-2xl border border-primary">
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold">What's New?</DialogTitle>
 				</DialogHeader>

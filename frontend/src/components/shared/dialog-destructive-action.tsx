@@ -62,7 +62,7 @@ export function ConfirmDestructiveDialogActionButton({
 					{children}
 				</Button>
 			</DialogTrigger>
-			<DialogContent>
+			<DialogContent className="border border-red-500">
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>{description}</DialogDescription>
