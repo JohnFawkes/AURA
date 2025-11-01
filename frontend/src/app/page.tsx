@@ -287,33 +287,49 @@ export default function Home() {
 	return (
 		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
 			{!fullyLoaded && librarySections.length > 0 ? (
-				<div className="w-full flex flex-col items-center justify-center min-h-screen">
+				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
 					{/* Progress bars */}
-					<div className="w-full flex flex-col items-center">
-						{librarySections.map((section) => {
-							const progressInfo = sectionProgress[section.ID];
-							const percentage =
-								progressInfo && progressInfo.total > 0
-									? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
-									: 0;
+					<div className="flex flex-col items-center w-full px-4">
+						{[...librarySections]
+							.sort((a, b) => {
+								const progressA = sectionProgress[a.ID];
+								const percentA =
+									progressA && progressA.total > 0
+										? Math.min((progressA.loaded / progressA.total) * 100, 100)
+										: 0;
+								const progressB = sectionProgress[b.ID];
+								const percentB =
+									progressB && progressB.total > 0
+										? Math.min((progressB.loaded / progressB.total) * 100, 100)
+										: 0;
+								return percentB - percentA; // Sort descending
+							})
+							.map((section) => {
+								const progressInfo = sectionProgress[section.ID];
+								const percentage =
+									progressInfo && progressInfo.total > 0
+										? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
+										: 0;
 
-							if (Math.round(percentage) !== 100) {
 								return (
-									<div key={section.ID} className="mb-6 w-full max-w-xl flex flex-col items-center">
+									<div
+										key={section.ID}
+										className="mb-6 w-full max-w-xl flex flex-col items-center px-2"
+									>
 										<Label className="text-lg font-semibold text-center mb-2">
 											Loading {section.Title}
 										</Label>
-										<Progress value={percentage} className="w-full h-4 rounded-full" />
+										<Progress value={percentage} className="w-full max-w-lg h-2 rounded-full" />
 										<span className="mt-2 text-base text-muted-foreground font-medium">
 											{Math.round(percentage)}%
+											{typeof progressInfo?.total === "number" && progressInfo.total > 0
+												? ` - ${progressInfo.loaded} / ${progressInfo.total} items`
+												: ""}
 										</span>
 									</div>
 								);
-							}
-							return null;
-						})}
+							})}
 					</div>
-
 					<HomeMediaItemCardSkeletonGrid />
 				</div>
 			) : (
