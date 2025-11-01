@@ -19,6 +19,7 @@ const (
 
 // LogData is the base element used for both HTTP routes and background jobs.
 type LogData struct {
+	Level               string        `json:"level,omitempty"` // Optional level for UI filtering (e.g. "trace", "debug","info","warn","error")
 	Status              string        `json:"status"`          // Status: "success", "error", or "warn"
 	Name                string        `json:"name"`            // Human name for the overall operation: "Add to DB", "Fetch All Media Items" or Route.Path
 	Timestamp           time.Time     `json:"timestamp"`       // When the operation started
