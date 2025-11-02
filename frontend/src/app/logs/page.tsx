@@ -129,11 +129,17 @@ export default function LogsPage() {
 
 	return (
 		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			<Card className="w-full flex-1">
+			<Card className="w-full">
 				<CardHeader>
 					<div className="flex flex-col md:flex-row md:items-center md:justify-between w-full space-y-2 md:space-y-0">
-						<h2 className="text-lg font-medium text-center md:text-left">Application Logs</h2>
-						<div className="flex flex-row justify-center md:justify-end space-x-2">
+						<h2 className="text-lg font-medium text-center md:text-left whitespace-nowrap">
+							Application Logs
+						</h2>
+						<div
+							className={cn(
+								"flex flex-row flex-wrap justify-center md:justify-end space-y-2 space-x-2 px-2 w-full max-w-full"
+							)}
+						>
 							<FilterLogs
 								levelsFilter={levelsFilter}
 								setLevelsFilter={setLevelsFilter}
