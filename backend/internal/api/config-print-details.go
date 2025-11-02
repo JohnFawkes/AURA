@@ -17,6 +17,7 @@ func (config *Config) PrintDetails() {
 
 	event.Timestamp().
 		Interface("Authentication Details", sanitizedConfig.Auth).
+		Interface("Logging", sanitizedConfig.Logging).
 		Interface("Media Server", sanitizedConfig.MediaServer).
 		Interface("Mediux", sanitizedConfig.Mediux).
 		Interface("Auto Download", sanitizedConfig.AutoDownload).
