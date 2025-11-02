@@ -36,7 +36,6 @@ export default function LogsPage() {
 	// States - Loading & Error
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<APIResponse<FetchLogContentsResponse> | null>(null);
-
 	// States - Responses and Data
 	const [logEntries, setLogEntries] = useState<LogData[]>([]);
 	const [totalLogEntries, setTotalLogEntries] = useState<number>(0);
@@ -128,7 +127,7 @@ export default function LogsPage() {
 	const totalPages = Math.ceil(totalLogEntries / itemsPerPage);
 
 	return (
-		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
+		<div className="container mx-auto px-2 py-4 min-h-screen flex flex-col items-center">
 			<Card className="w-full">
 				<CardHeader>
 					<div className="flex flex-col md:flex-row md:items-center md:justify-between w-full space-y-2 md:space-y-0">
@@ -137,7 +136,7 @@ export default function LogsPage() {
 						</h2>
 						<div
 							className={cn(
-								"flex flex-row flex-wrap justify-center md:justify-end space-y-2 space-x-2 px-2 w-full max-w-full"
+								"flex flex-row flex-wrap justify-center md:justify-end gap-2 px-2 w-full max-w-full"
 							)}
 						>
 							<FilterLogs
@@ -237,20 +236,6 @@ export default function LogsPage() {
 			</Card>
 		</div>
 	);
-}
-
-function formatBytes(bytes: number): string {
-	if (bytes === 0) return "0 Bytes";
-	const k = 1024;
-	const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
-
-function formatElapsedMicroseconds(us: number): string {
-	if (us < 1000) return `${us} µs`;
-	if (us < 1_000_000) return `${(us / 1000).toFixed(2)} ms`;
-	return `${(us / 1_000_000).toFixed(2)} s`;
 }
 
 function LogList({
@@ -384,11 +369,7 @@ function LogList({
 							{Array.isArray(log.actions) && log.actions.length > 0 && (
 								<Accordion type="multiple">
 									{log.actions.map((action: LogAction, i: number) => [
-										<LogActionAccordion
-											key={action.name + action.timestamp + i}
-											action={action}
-											isSubAction={false}
-										/>,
+										<LogActionAccordion key={action.name + action.timestamp + i} action={action} />,
 										<Separator
 											key={"sep-" + action.name + action.timestamp + i}
 											className="my-2"
@@ -404,6 +385,130 @@ function LogList({
 	);
 }
 
+function LogActionAccordion({ action }: { action: any }) {
+	const hasExpandableContent =
+		(action.sub_actions && action.sub_actions.length > 0) ||
+		action.result !== undefined ||
+		action.warnings !== undefined;
+
+	return (
+		<AccordionItem value={action.name + (action.timestamp || "")}>
+			{hasExpandableContent ? (
+				<AccordionTrigger
+					className={cn(
+						"flex flex-col items-start gap-1",
+						{ "cursor-pointer": action.sub_actions && action.sub_actions.length > 0 },
+						"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline"
+					)}
+				>
+					<LogActionHeader action={action} />
+				</AccordionTrigger>
+			) : (
+				<div
+					className={cn(
+						"flex flex-col items-start gap-1 align-top my-2",
+						{ "cursor-pointer": action.sub_actions && action.sub_actions.length > 0 },
+						"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline"
+					)}
+				>
+					<LogActionHeader action={action} />
+				</div>
+			)}
+
+			{hasExpandableContent && (
+				<AccordionContent>
+					{action.result && (
+						<div className="text-xs mt-1">
+							Results:
+							<pre className="rounded p-2 mt-1 text-xs overflow-x-auto max-h-40 whitespace-pre break-words w-full">
+								{JSON.stringify(action.result, null, 2)}
+							</pre>
+						</div>
+					)}
+					{action.warnings && (
+						<div className="text-xs text-yellow-600 mt-1">
+							Warnings:
+							<pre className="rounded p-2 mt-1 text-xs overflow-x-auto max-h-40 whitespace-pre break-words w-full">
+								{JSON.stringify(action.warnings, null, 2)}
+							</pre>
+						</div>
+					)}
+					{action.sub_actions && action.sub_actions.length > 0 && (
+						<AccordionContent>
+							<Accordion type="multiple" className="border-muted">
+								{action.sub_actions.map((sub: LogAction, idx: number) => (
+									<LogActionAccordion key={idx} action={sub} />
+								))}
+							</Accordion>
+						</AccordionContent>
+					)}
+				</AccordionContent>
+			)}
+		</AccordionItem>
+	);
+}
+
+function LogActionHeader({ action }: { action: LogAction }) {
+	return (
+		<>
+			<div className="font-medium text-sm">{action.name}</div>
+			<div className="flex flex-row gap-2 text-xs text-muted-foreground flex-wrap">
+				{action.level && (
+					<span
+						className={
+							action.level === "error"
+								? "text-red-500"
+								: action.level === "warn"
+									? "text-yellow-600"
+									: action.level === "info"
+										? "text-blue-600"
+										: action.level === "debug"
+											? "text-green-600"
+											: "text-purple-600"
+						}
+					>
+						{action.level?.toUpperCase()}
+					</span>
+				)}
+				{action.level && action.status && " • "}
+				{action.status && (
+					<span
+						className={
+							action.status === "error"
+								? "text-red-500"
+								: action.status === "warn"
+									? "text-yellow-600"
+									: "text-green-600"
+						}
+					>
+						{action.status.toUpperCase()}
+					</span>
+				)}
+			</div>
+			<div className="text-xs text-muted-foreground">
+				{action.timestamp && <>{formatFullTimestamp(action.timestamp)}</>}
+				{action.timestamp && action.elapsed_us !== undefined && " • "}
+				{action.elapsed_us !== undefined && <>{formatElapsedMicroseconds(action.elapsed_us)}</>}
+			</div>
+			{action.error && <div className="text-xs text-red-500 mt-1">Error: {action.error.message}</div>}
+		</>
+	);
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes === 0) return "0 Bytes";
+	const k = 1024;
+	const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function formatElapsedMicroseconds(us: number): string {
+	if (us < 1000) return `${us} µs`;
+	if (us < 1_000_000) return `${(us / 1000).toFixed(2)} ms`;
+	return `${(us / 1_000_000).toFixed(2)} s`;
+}
+
 function formatFullTimestamp(dateString: string): string {
 	const d = new Date(dateString);
 	const pad = (n: number, z = 2) => String(n).padStart(z, "0");
@@ -411,91 +516,4 @@ function formatFullTimestamp(dateString: string): string {
 	const am_pm = hours >= 12 ? "PM" : "AM";
 	const hour12 = hours % 12 === 0 ? 12 : hours % 12;
 	return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${d.getFullYear()} ${pad(hour12)}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${am_pm}`;
-}
-
-function LogActionAccordion({ action, isSubAction }: { action: LogAction; isSubAction?: boolean }) {
-	return (
-		<AccordionItem className={cn(isSubAction ? "ml-4" : "")} value={action.name + (action.timestamp || "")}>
-			<AccordionTrigger
-				hideChevron={action.sub_actions === undefined || action.sub_actions.length === 0}
-				className={cn(
-					{ "cursor-pointer": action.sub_actions && action.sub_actions.length > 0 },
-					"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline"
-				)}
-			>
-				<div className="flex flex-col w-full">
-					<div className="font-medium">{action.name}</div>
-					<div className="flex flex-col w-full">
-						<div className="text-xs text-muted-foreground">
-							{action.level && (
-								<span
-									className={
-										action.level === "error"
-											? "text-red-500"
-											: action.level === "warn"
-												? "text-yellow-600"
-												: action.level === "info"
-													? "text-blue-600"
-													: action.level === "debug"
-														? "text-green-600"
-														: "text-purple-600"
-									}
-								>
-									{action.level?.toUpperCase() || ""}
-								</span>
-							)}
-							{/* Only show • if both level and status exist */}
-							{action.level && action.status && " • "}
-							{action.status && (
-								<span
-									className={
-										action.status === "error"
-											? "text-red-500"
-											: action.status === "warn"
-												? "text-yellow-600"
-												: "text-green-600"
-									}
-								>
-									{action.status.toUpperCase() || ""}
-								</span>
-							)}
-						</div>
-						<div className="text-xs text-muted-foreground">
-							{action.timestamp && <>{formatFullTimestamp(action.timestamp)}</>}
-							{/* Only show • if both timestamp and elapsed_us exist */}
-							{action.timestamp && action.elapsed_us !== undefined && " • "}
-							{action.elapsed_us !== undefined && <>{formatElapsedMicroseconds(action.elapsed_us)}</>}
-						</div>
-						{action.warnings && Object.keys(action.warnings).length > 0 && (
-							<div className="text-xs text-yellow-600 mt-1">
-								Warnings:
-								<pre className="rounded p-2 mt-1 text-xs overflow-x-auto max-h-40 whitespace-pre-wrap break-words">
-									{JSON.stringify(action.warnings, null, 2)}
-								</pre>
-							</div>
-						)}
-						{action.result && Object.keys(action.result).length > 0 && (
-							<div className="text-xs mt-1">
-								Results:{" "}
-								<pre className="rounded p-2 mt-1 text-xs overflow-x-auto max-h-40 whitespace-pre-wrap break-words">
-									{JSON.stringify(action.result, null, 2)}
-								</pre>
-							</div>
-						)}
-						{action.error && <div className="text-xs text-red-500 mt-1">Error: {action.error.message}</div>}
-					</div>
-				</div>
-			</AccordionTrigger>
-			{action.sub_actions && action.sub_actions.length > 0 && (
-				<AccordionContent>
-					{/* Recursively render sub-actions if present */}
-					<Accordion type="multiple" className="ml-2 border-l-2 border-muted">
-						{action.sub_actions.map((sub: LogAction, idx: number) => (
-							<LogActionAccordion key={idx} action={sub} isSubAction={true} />
-						))}
-					</Accordion>
-				</AccordionContent>
-			)}
-		</AccordionItem>
-	);
 }
