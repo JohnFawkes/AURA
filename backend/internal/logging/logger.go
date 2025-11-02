@@ -13,7 +13,17 @@ func (ld *LogData) Complete() {
 
 	// Complete all actions
 	for _, action := range ld.Actions {
-		action.Complete()
+		completeAllSubActions(action)
+	}
+}
+
+func completeAllSubActions(action *LogAction) {
+	action.Complete()
+	for _, sub := range action.SubActions {
+		sub.Complete()
+		if len(sub.SubActions) > 0 {
+			completeAllSubActions(sub)
+		}
 	}
 }
 
@@ -35,9 +45,7 @@ func (ld *LogData) Log() {
 		filteredActions = ld.Actions
 	} else {
 		for _, action := range ld.Actions {
-			if action.Level == LevelWarn {
-				hasWarn = true
-			}
+			hasWarn = action.Level == LevelWarn || checkActionsForWarnings(action.SubActions)
 			if int(LogLevel) <= LogLevelToInt(action.Level) {
 				filteredActions = append(filteredActions, action)
 			}
@@ -83,6 +91,20 @@ func (ld *LogData) Log() {
 	}
 
 	event.Msg(ld.Message)
+}
+
+func checkActionsForWarnings(actions []*LogAction) bool {
+	for _, action := range actions {
+		if action.Level == LevelWarn {
+			return true
+		}
+		if len(action.SubActions) > 0 {
+			if checkActionsForWarnings(action.SubActions) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // getHighestActionLevel recursively finds the highest log level among actions and sub-actions.
