@@ -6,6 +6,7 @@ import {
 	ArrowRightCircle,
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
+	ListOrdered,
 	LogOutIcon,
 	Logs,
 	Search as SearchIcon,
@@ -347,6 +348,13 @@ export default function Navbar() {
 							>
 								<BookmarkIcon className="w-6 h-6 mr-2" />
 								Saved Sets
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+								onClick={() => router.push("/download-queue")}
+							>
+								<ListOrdered className="w-6 h-6 mr-2" />
+								Download Queue
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
