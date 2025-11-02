@@ -57,6 +57,7 @@ func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting Poster for Item with Rating Key '%s' from Plex", itemRatingKey), logging.LevelDebug)
 	defer logAction.Complete()
 
+	// Adjust posterType for URL construction
 	if posterType == "backdrop" {
 		posterType = "arts"
 	} else {
@@ -75,24 +76,34 @@ func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string
 	// Make Auth Headers for Request
 	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
 
+	var lastErrorMsg string
+	var lastErrorDetail map[string]any
+
 	// Retry logic for the entire process (up to 3 attempts)
 	for attempt := 1; attempt <= 3; attempt++ {
 		attemptAction := logAction.AddSubAction(fmt.Sprintf("Attempt %d to fetch poster", attempt), logging.LevelDebug)
 		// Make the API request to Plex
 		response, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
 		if logErr.Message != "" {
-			attemptAction.SetError("Failed to make HTTP request to Plex", logErr.Message, nil)
+			attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+				"error": logErr.Message,
+			})
+			lastErrorMsg = logErr.Message
+			lastErrorDetail = logErr.Detail
 		} else {
 			defer response.Body.Close()
 
 			// Check if the response status code is OK
 			if response.StatusCode == http.StatusOK {
-
 				// Parse the response body into a PlexGetAllImagesWrapper struct
 				var plexPosters PlexGetAllImagesWrapper
 				logErr = DecodeJSONBody(ctx, body, &plexPosters, "PlexGetAllImagesWrapper")
 				if logErr.Message != "" {
-					attemptAction.SetError("Failed to decode Plex response", logErr.Message, nil)
+					attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+						"error": logErr.Message,
+					})
+					lastErrorMsg = logErr.Message
+					lastErrorDetail = logErr.Detail
 				} else {
 					// Successfully parsed JSON; check for posters
 					if len(plexPosters.MediaContainer.Metadata) > 0 {
@@ -103,50 +114,54 @@ func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string
 							}
 						}
 						// No local poster found, but posters exist
-						attemptAction.AppendWarning("attempt_outcome", "no local posters found")
-						attemptAction.AppendWarning("available_posters", len(plexPosters.MediaContainer.Metadata))
+						attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+							"error":             "No local posters found; available posters are remote URLs.",
+							"available_posters": len(plexPosters.MediaContainer.Metadata),
+						})
+						lastErrorMsg = "No local posters found; available posters are remote URLs."
+						lastErrorDetail = map[string]any{
+							"available_posters": len(plexPosters.MediaContainer.Metadata),
+						}
 					} else {
 						// No posters found at all
-						attemptAction.SetError("No posters found", "Plex did not return any posters for this item.", nil)
+						attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+							"error": "Plex did not return any posters for this item.",
+						})
+						lastErrorMsg = "Plex did not return any posters for this item."
+						lastErrorDetail = nil
 					}
 				}
 			} else {
 				// Non-OK status code
-				attemptAction.SetError("Failed to fetch posters from Plex",
-					fmt.Sprintf("Plex server returned status code %d", response.StatusCode),
-					map[string]any{
-						"URL":        URL,
-						"StatusCode": response.StatusCode,
-					})
+				attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+					"error":       "Plex server returned non-OK status code",
+					"status_code": response.StatusCode,
+				})
+				lastErrorMsg = "Plex server returned non-OK status code"
+				lastErrorDetail = map[string]any{
+					"status_code": response.StatusCode,
+				}
 			}
 		}
 
 		// If we reach here, the attempt failed; refresh the item before retrying
 		if attempt < 3 {
 			numberOfSeconds := 2
-			attemptAction.AppendWarning("outcome", "retrying after refresh")
-			attemptAction.AppendWarning("wait_seconds", numberOfSeconds)
-			attemptAction.AppendWarning("attempt", attempt)
 			time.Sleep(time.Duration(numberOfSeconds) * time.Second) // Wait before retrying
 			refreshErr := Plex_RefreshItem(ctx, itemRatingKey)
 			if refreshErr.Message != "" {
-				attemptAction.SetError("Failed to refresh item on Plex", refreshErr.Message, nil)
-			}
-		} else {
-			attemptAction.AppendResult("final_outcome", "all attempts failed")
-			if attemptAction.Error != nil {
-				return "", *attemptAction.Error
-			}
-			return "", logging.LogErrorInfo{
-				Message: "Failed to retrieve poster after 3 attempts",
+				attemptAction.AppendWarning("refresh_error", map[string]any{
+					"error": refreshErr.Message,
+				})
+				lastErrorMsg = refreshErr.Message
+				lastErrorDetail = refreshErr.Detail
 			}
 		}
 	}
 
-	// If we reach here, all attempts failed
-	return "", logging.LogErrorInfo{
-		Message: "Failed to retrieve poster after multiple attempts",
-	}
+	// All attempts failed, set error only now
+	logAction.SetError(lastErrorMsg, "Failed to retrieve poster after 3 attempts. Check logs and try again", lastErrorDetail)
+	return "", *logAction.Error
 }
 
 func Plex_SetPoster(ctx context.Context, itemRatingKey string, posterKey string, posterType string) logging.LogErrorInfo {
