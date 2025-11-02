@@ -4,6 +4,10 @@
 
 - Plex Only: Try to dynamically get the season path from episodes on file (falls back to Season 1 or Season 01 - based on Season Naming Conventions)
 
+### Fixed
+
+- Changed exported log file name for clarity
+
 ---
 
 ## [0.9.45] - 2025-11-01
