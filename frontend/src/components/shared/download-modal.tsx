@@ -3,7 +3,7 @@
 import { posterSetToFormItem } from "@/helper/download-modal/poster-set-to-form-item";
 import { formatDownloadSize } from "@/helper/format-download-size";
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { postAddToQueue } from "@/services/mediaserver/api-mediaserver-add-to-queue";
+import { postAddToQueue } from "@/services/download-queue/api-queue-add";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";

@@ -16,10 +16,7 @@ export const postAddToQueue = async (
 		`Adding '${dbItem.MediaItem.Title}' (TMDB ID: ${dbItem.MediaItem.TMDB_ID}) to the download queue`
 	);
 	try {
-		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(
-			`/mediaserver/add-to-queue`,
-			dbItem
-		);
+		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/download-queue/add`, dbItem);
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.message || "Unknown error while adding to download queue");
 		} else {

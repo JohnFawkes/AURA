@@ -8,6 +8,7 @@ import (
 	routes_autodownload "aura/internal/routes/autodownload"
 	routes_config "aura/internal/routes/config"
 	routes_db "aura/internal/routes/db"
+	routes_download_queue "aura/internal/routes/download-queue"
 	routes_logging "aura/internal/routes/logging"
 	routes_ms "aura/internal/routes/mediaserver"
 	routes_mediux "aura/internal/routes/mediux"
@@ -116,7 +117,11 @@ func AddRoutes(r *chi.Mux) {
 				r.Get("/item", routes_ms.GetItemContent)
 				r.Get("/image", routes_ms.GetImage)
 				r.Patch("/download", routes_ms.DownloadAndUpdate)
-				r.Post("/add-to-queue", routes_ms.AddToDownloadQueue)
+			})
+
+			// Download Queue Routes
+			r.Route("/download-queue", func(r chi.Router) {
+				r.Post("/add", routes_download_queue.AddToDownloadQueue)
 			})
 
 			// Mediux Routes

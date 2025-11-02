@@ -1,4 +1,4 @@
-package routes_ms
+package routes_download_queue
 
 import (
 	"aura/internal/api"
