@@ -142,7 +142,28 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			} else {
 				seasonNumber = Util_Format_Get2DigitNumber(int64(file.Season.Number))
 			}
-			newFilePath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
+			// Try and get the season folder from the first episode
+			seasonPath := ""
+		foundSeasonPath:
+			for _, season := range mediaItem.Series.Seasons {
+				if season.SeasonNumber == file.Season.Number {
+					if len(season.Episodes) > 0 {
+						for _, episode := range season.Episodes {
+							if episode.File.Path != "" {
+								episodeFilePath := episode.File.Path
+								seasonPath = path.Dir(episodeFilePath)
+								getFilePathAction.AppendResult("season_path", fmt.Sprintf("found season path from S%d E%d", episode.SeasonNumber, episode.EpisodeNumber))
+								break foundSeasonPath
+							}
+						}
+					}
+				}
+			}
+			if seasonPath == "" {
+				seasonPath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
+				getFilePathAction.AppendResult("season_path", "built season path from series path and season number")
+			}
+			newFilePath = seasonPath
 			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
 		case "titlecard":
 			// For titlecards, get the file path from Plex

@@ -1,3 +1,11 @@
+## [0.9.46] - 2025-11-01
+
+### Added
+
+- Plex Only: Try to dynamically get the season path from episodes on file (falls back to Season 1 or Season 01 - based on Season Naming Conventions)
+
+---
+
 ## [0.9.45] - 2025-11-01
 
 ### Added
