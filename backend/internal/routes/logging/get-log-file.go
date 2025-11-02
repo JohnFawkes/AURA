@@ -103,9 +103,14 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Label:   "Download and Update",
 		Section: "MEDIA",
 	},
-	"/api/mediaserver/add-to-queue": {
+	// Download Queue Routes
+	"/api/download-queue/add": {
 		Label:   "Add Item to Download Queue",
-		Section: "MEDIA",
+		Section: "DOWNLOAD QUEUE",
+	},
+	"/api/download-queue/get-results": {
+		Label:   "Get Download Queue Results",
+		Section: "DOWNLOAD QUEUE",
 	},
 	// MediUX Routes
 	"/api/mediux/sets": {

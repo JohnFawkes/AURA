@@ -122,6 +122,7 @@ func AddRoutes(r *chi.Mux) {
 			// Download Queue Routes
 			r.Route("/download-queue", func(r chi.Router) {
 				r.Post("/add", routes_download_queue.AddToDownloadQueue)
+				r.Get("/get-results", routes_download_queue.GetDownloadQueueResults)
 			})
 
 			// Mediux Routes
