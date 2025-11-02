@@ -88,7 +88,10 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Handle any labels and tags asynchronously
-	go api.SR_CallHandleTags(context.Background(), saveItem.MediaItem)
+	go func() {
+		api.Plex_HandleLabels(saveItem.MediaItem)
+		api.SR_CallHandleTags(context.Background(), saveItem.MediaItem)
+	}()
 
 	api.Util_Response_SendJSON(w, ld, saveItem)
 }

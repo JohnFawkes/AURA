@@ -204,7 +204,11 @@ func ProcessDownloadQueue() {
 		}
 
 		// Handle any labels and tags asynchronously
-		go SR_CallHandleTags(context.Background(), latestMediaItem)
+		go func() {
+			Plex_HandleLabels(latestMediaItem)
+			SR_CallHandleTags(context.Background(), latestMediaItem)
+		}()
+
 		subAction.Complete()
 		ld.Log()
 	}

@@ -373,11 +373,6 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 		return Err
 	}
 
-	// Handle Labels in a separate go routine for quicker finish
-	go func() {
-		Plex_HandleLabels(mediaItem)
-	}()
-
 	return logging.LogErrorInfo{}
 }
 

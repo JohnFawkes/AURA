@@ -249,6 +249,11 @@ func Plex_SetPoster(ctx context.Context, itemRatingKey string, posterKey string,
 }
 
 func Plex_HandleLabels(item MediaItem) {
+	// If the Global Config Media Server is not Plex, exit
+	if Global_Config.MediaServer.Type != "Plex" {
+		return
+	}
+
 	// If there is no applications in the Global Config, exit
 	if len(Global_Config.LabelsAndTags.Applications) == 0 {
 		return

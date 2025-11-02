@@ -34,10 +34,5 @@ func Plex_UpdatePosterViaMediuxURL(ctx context.Context, item MediaItem, file Pos
 	// Set the Poster using the MediUX URL
 	Plex_SetPoster(ctx, itemRatingKey, mediuxURL, file.Type)
 
-	// Handle Labels in a separate go routine for quicker finish
-	go func() {
-		Plex_HandleLabels(item)
-	}()
-
 	return logging.LogErrorInfo{}
 }
