@@ -17,6 +17,9 @@ func ProcessDownloadQueue() {
 
 	// Get the download-queue folder path
 	queueFolderPath := GetDownloadQueueFolderPath(ctx)
+	if queueFolderPath == "" {
+		return
+	}
 
 	// Read all JSON files in the download-queue folder
 	files, err := os.ReadDir(queueFolderPath)
@@ -78,6 +81,8 @@ func ProcessDownloadQueue() {
 			ld.Log()
 			continue
 		}
+		subAction.AppendResult("media_item_title", latestMediaItem.Title)
+		subAction.AppendResult("media_item_library", latestMediaItem.LibraryTitle)
 
 		// Process each poster set in the queue item
 		for _, posterSet := range queueItem.PosterSets {
@@ -117,8 +122,9 @@ func ProcessDownloadQueue() {
 				if Err.Message != "" {
 					subAction.AppendWarning(downloadFileName, "Failed to download and update poster")
 					result = "warning"
+				} else {
+					DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Poster, latestMediaItem.RatingKey)
 				}
-				DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Poster, latestMediaItem.RatingKey)
 			}
 			if backdropSelected && posterSet.PosterSet.Backdrop != nil {
 				downloadFileName := MediaServer_GetFileDownloadName(*posterSet.PosterSet.Backdrop)
@@ -126,8 +132,9 @@ func ProcessDownloadQueue() {
 				if Err.Message != "" {
 					subAction.AppendWarning(downloadFileName, "Failed to download and update backdrop")
 					result = "warning"
+				} else {
+					DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Backdrop, latestMediaItem.RatingKey)
 				}
-				DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Backdrop, latestMediaItem.RatingKey)
 			}
 			if seasonSelected || specialSeasonSelected {
 				for _, seasonPoster := range posterSet.PosterSet.SeasonPosters {
@@ -137,15 +144,18 @@ func ProcessDownloadQueue() {
 						if Err.Message != "" {
 							subAction.AppendWarning(downloadFileName, "Failed to download and update season poster")
 							result = "warning"
+						} else {
+							DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
 						}
 					} else if specialSeasonSelected && seasonPoster.Season.Number == 0 {
 						Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, seasonPoster)
 						if Err.Message != "" {
 							subAction.AppendWarning(downloadFileName, "Failed to download and update special season poster")
 							result = "warning"
+						} else {
+							DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
 						}
 					}
-					DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
 				}
 			}
 			if titlecardSelected {
@@ -155,8 +165,9 @@ func ProcessDownloadQueue() {
 					if Err.Message != "" {
 						subAction.AppendWarning(downloadFileName, "Failed to download and update title card")
 						result = "warning"
+					} else {
+						DeleteTempImageForNextLoad(ctx, titleCard, latestMediaItem.RatingKey)
 					}
-					DeleteTempImageForNextLoad(ctx, titleCard, latestMediaItem.RatingKey)
 				}
 			}
 		}
@@ -187,19 +198,19 @@ func ProcessDownloadQueue() {
 		case "success":
 			err := os.Remove(filePath)
 			if err != nil {
-				logAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to delete processed file")
+				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to delete processed file")
 			}
 		case "warning":
 			newPath := path.Join(queueFolderPath, fmt.Sprintf("warning_%s", file.Name()))
 			err := os.Rename(filePath, newPath)
 			if err != nil {
-				logAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename warning file")
+				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename warning file")
 			}
 		case "error":
 			newPath := path.Join(queueFolderPath, fmt.Sprintf("error_%s", file.Name()))
 			err := os.Rename(filePath, newPath)
 			if err != nil {
-				logAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename error file")
+				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename error file")
 			}
 		}
 
