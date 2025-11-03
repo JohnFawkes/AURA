@@ -1,3 +1,21 @@
+## [0.9.47] - 2025-11-02
+
+### Added
+
+- Added a new Download Queue Page to help manage failed and in-progress downloads. You can redownload items with warnings or errors, and remove files from the queue.
+- Added notifications for Download Queue events so you are informed of progress and issues as they happen.
+- Added logging details to App Startup to help diagnose issues during initialization.
+
+### Fixed
+
+- Fixed issue with download queue not processing multiple downloads correctly when queued in quick succession.
+- Fixed issue with Logs Page not showing up correctly on mobile devices.
+- Fixed error handling when Plex doesn't return posters the first time.
+- Changed Plex/Sonarr/Radarr label and tag handling to only occur when items are added to the database, instead of during every file download.
+- Moved database queue route logic to a separate function for better organization.
+
+---
+
 ## [0.9.46] - 2025-11-01
 
 ### Added
