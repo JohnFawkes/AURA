@@ -12,13 +12,22 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 	logAction := ld.AddAction("Add Item To Database", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
+	type AddItemRequestBody struct {
+		SaveItem      api.DBMediaItemWithPosterSets `json:"saveItem"`
+		LargeDataSize bool                          `json:"largeDataSize"`
+	}
+
 	// Parse the request body to get the DBMediaItemWithPosterSets
-	var saveItem api.DBMediaItemWithPosterSets
-	Err := api.DecodeRequestBodyJSON(ctx, r.Body, &saveItem, "DBMediaItemWithPosterSets")
+	var reqBody AddItemRequestBody
+	Err := api.DecodeRequestBodyJSON(ctx, r.Body, &reqBody, "AddItemRequestBody")
 	if Err.Message != "" {
 		api.Util_Response_SendJSON(w, ld, nil)
 		return
 	}
+	saveItem := reqBody.SaveItem
+	largeDataSize := reqBody.LargeDataSize
+
+	logAction.AppendResult("large", largeDataSize)
 
 	// Validate the JSON structure
 	validateAction := logAction.AddSubAction("Validate Save Item", logging.LevelDebug)
@@ -69,6 +78,36 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 	// logging.LOGGER.Info().Timestamp().Str("title", saveItem.MediaItem.Title).Str("library", saveItem.LibraryTitle).Msgf("Adding %s to database successfully", saveItem.MediaItem.Title)
 	// api.Util_Response_SendJSON(w, ld, saveItem)
 	// return
+
+	if largeDataSize {
+		// For large data sizes, we omitted the actual poster images to reduce payload size
+		// So we need to get the poster data again
+		for i := range saveItem.PosterSets {
+			var fullSet api.PosterSet
+			switch saveItem.PosterSets[i].PosterSet.Type {
+			case "show":
+				fullSet, Err = api.Mediux_FetchShowSetByID(ctx, saveItem.LibraryTitle, saveItem.TMDB_ID, saveItem.PosterSets[i].PosterSetID)
+				if Err.Message != "" {
+					api.Util_Response_SendJSON(w, ld, nil)
+					return
+				}
+			case "movie":
+				fullSet, Err = api.Mediux_FetchMovieSetByID(ctx, saveItem.LibraryTitle, saveItem.TMDB_ID, saveItem.PosterSets[i].PosterSetID)
+				if Err.Message != "" {
+					api.Util_Response_SendJSON(w, ld, nil)
+					return
+				}
+			case "collection":
+				fullSet, Err = api.Mediux_FetchCollectionSetByID(ctx, saveItem.LibraryTitle, saveItem.TMDB_ID, saveItem.PosterSets[i].PosterSetID)
+				if Err.Message != "" {
+					api.Util_Response_SendJSON(w, ld, nil)
+					return
+				}
+			}
+			// Update the PosterSet with full data
+			saveItem.PosterSets[i].PosterSet = fullSet
+		}
+	}
 
 	// Save the item to the database
 	Err = api.DB_InsertAllInfoIntoTables(ctx, saveItem)

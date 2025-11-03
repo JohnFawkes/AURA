@@ -10,14 +10,32 @@ import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 export const postAddItemToDB = async (
 	saveItem: DBMediaItemWithPosterSets
 ): Promise<APIResponse<DBMediaItemWithPosterSets>> => {
+	let largeDataSize = false;
+	if (JSON.stringify(saveItem.PosterSets).length / 1024 / 1024 > 10) {
+		largeDataSize = true;
+		saveItem.PosterSets.forEach((posterSet) => {
+			posterSet.PosterSet.Poster = undefined;
+			posterSet.PosterSet.OtherPosters = [];
+			posterSet.PosterSet.Backdrop = undefined;
+			posterSet.PosterSet.OtherBackdrops = [];
+			posterSet.PosterSet.SeasonPosters = [];
+			posterSet.PosterSet.TitleCards = [];
+		});
+	}
 	log(
 		"INFO",
 		"API - DB",
 		"Add",
-		`Adding '${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})' to DB`
+		`Adding '${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})' to DB`,
+		{
+			"Large Data Size": largeDataSize,
+		}
 	);
 	try {
-		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/db/add`, saveItem);
+		const response = await apiClient.post<APIResponse<DBMediaItemWithPosterSets>>(`/db/add`, {
+			saveItem,
+			largeDataSize,
+		});
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.message || "Unknown error adding item to DB");
 		} else {
