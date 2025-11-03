@@ -108,7 +108,7 @@ const DownloadQueuePage: React.FC = () => {
 								{inProgressEntries.length === 0 ? (
 									<p className="text-gray-500">No entries in progress.</p>
 								) : (
-									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
 										{inProgressEntries.map((entry) => (
 											<DownloadQueueEntry
 												key={entry.TMDB_ID}
@@ -136,7 +136,7 @@ const DownloadQueuePage: React.FC = () => {
 								{errorEntries.length === 0 ? (
 									<p className="text-gray-500">No error entries.</p>
 								) : (
-									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
 										{errorEntries.map((entry) => (
 											<DownloadQueueEntry
 												key={entry.TMDB_ID}
@@ -164,7 +164,7 @@ const DownloadQueuePage: React.FC = () => {
 								{warningEntries.length === 0 ? (
 									<p className="text-gray-500">No warning entries.</p>
 								) : (
-									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+									<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  gap-2">
 										{warningEntries.map((entry) => (
 											<DownloadQueueEntry
 												key={entry.TMDB_ID}
