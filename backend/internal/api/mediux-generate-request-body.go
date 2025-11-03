@@ -20,6 +20,8 @@ query shows_by_id($tmdbID: ID!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			show_set {
 				id
 				set_title
@@ -34,6 +36,8 @@ query shows_by_id($tmdbID: ID!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			show_set {
 				id
 				set_title
@@ -50,6 +54,8 @@ query shows_by_id($tmdbID: ID!) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				show_set {
 					id
 					set_title
@@ -70,6 +76,8 @@ query shows_by_id($tmdbID: ID!) {
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					show_set {
 						id
 						set_title
@@ -124,6 +132,8 @@ query movies_by_id($tmdbID: ID!) {
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					collection_set{
 						id
 						set_title
@@ -138,6 +148,8 @@ query movies_by_id($tmdbID: ID!) {
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					collection_set{
 						id
 						set_title
@@ -154,6 +166,8 @@ query movies_by_id($tmdbID: ID!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			movie_set{
 				id
 				set_title
@@ -168,6 +182,8 @@ query movies_by_id($tmdbID: ID!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			movie_set{
 				id
 				set_title
@@ -206,6 +222,8 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				show_set {
 					id
 				}
@@ -214,6 +232,8 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				show_set {
 					id
 				}
@@ -226,6 +246,8 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					show_set {
 						id
 					}
@@ -242,6 +264,8 @@ query show_sets_by_id($showSetID: ID!, $showSetIDString: GraphQLStringOrFloat) {
 						id
 						modified_on
 						filesize
+						src
+						blurhash
 						show_set {
 							id
 						}
@@ -286,6 +310,8 @@ query movie_sets_by_id($movieSetID: ID!, $movieSetIDString: GraphQLStringOrFloat
 				id
 				modified_on	
 				filesize
+				src
+				blurhash
 				movie_set {
 					id
 				}
@@ -294,6 +320,8 @@ query movie_sets_by_id($movieSetID: ID!, $movieSetIDString: GraphQLStringOrFloat
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				movie_set {
 					id
 				}
@@ -339,6 +367,8 @@ query collection_sets_by_id($collectionSetID: ID!, $collectionSetIDString: Graph
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					collection_set {
 						id
 					}
@@ -347,6 +377,8 @@ query collection_sets_by_id($collectionSetID: ID!, $collectionSetIDString: Graph
 					id
 					modified_on
 					filesize
+					src
+					blurhash
 					collection_set {
 						id
 					}
@@ -413,16 +445,22 @@ query user_sets($username: String!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 		}
 		show_backdrop{
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 		}
 		season_posters{
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			season {
 				season_number
 			}
@@ -431,6 +469,8 @@ query user_sets($username: String!) {
 			id
 			modified_on	
 			filesize
+			src
+			blurhash
 			episode {
 				episode_title
 				episode_number
@@ -464,11 +504,15 @@ query user_sets($username: String!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 		}
 		movie_backdrop{
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 		}
 	}
 	collection_sets(limit: 10000, filter: { user_created: { username: { _eq: $username } } }) {
@@ -483,6 +527,8 @@ query user_sets($username: String!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			movie{
 				id
 				date_updated
@@ -500,6 +546,8 @@ query user_sets($username: String!) {
 			id
 			modified_on
 			filesize
+			src
+			blurhash
 			movie{
 				id
 				date_updated
@@ -553,11 +601,15 @@ query user_sets($username: String!) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 			}
 			movie_backdrop{
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 			}
 		}
 		show_sets{
@@ -581,16 +633,22 @@ query user_sets($username: String!) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 			}
 			show_backdrop{
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 			}
 			season_posters{
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				season {
 					season_number
 				}
@@ -599,6 +657,8 @@ query user_sets($username: String!) {
 				id
 				modified_on	
 				filesize
+				src
+				blurhash
 				episode {
 					episode_title
 					episode_number
@@ -617,6 +677,8 @@ query user_sets($username: String!) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				movie{
 					id
 					date_updated
@@ -634,6 +696,8 @@ query user_sets($username: String!) {
 				id
 				modified_on
 				filesize
+				src
+				blurhash
 				movie{
 					id
 					date_updated

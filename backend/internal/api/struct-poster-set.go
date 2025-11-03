@@ -25,6 +25,8 @@ type PosterFile struct {
 	Type     string             `json:"Type"`
 	Modified time.Time          `json:"Modified"`
 	FileSize int64              `json:"FileSize"`
+	Src      string             `json:"Src"`
+	Blurhash string             `json:"Blurhash"`
 	Movie    *PosterFileMovie   `json:"Movie,omitempty"`
 	Show     *PosterFileShow    `json:"Show,omitempty"`
 	Season   *PosterFileSeason  `json:"Season,omitempty"`

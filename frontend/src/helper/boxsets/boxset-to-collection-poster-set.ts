@@ -23,6 +23,8 @@ export const BoxsetCollectionToPosterSet = (collectionSet: MediuxUserCollectionS
 					Type: "poster",
 					Modified: firstPoster.modified_on,
 					FileSize: Number(firstPoster.filesize),
+					Src: firstPoster.src,
+					Blurhash: firstPoster.blurhash,
 					Movie: convertCollectionMovieToPosterFileMovie(firstPoster.movie),
 				}
 			: undefined,
@@ -33,6 +35,8 @@ export const BoxsetCollectionToPosterSet = (collectionSet: MediuxUserCollectionS
 					Type: "backdrop",
 					Modified: firstBackdrop.modified_on,
 					FileSize: Number(firstBackdrop.filesize),
+					Src: firstBackdrop.src,
+					Blurhash: firstBackdrop.blurhash,
 					Movie: convertCollectionMovieToPosterFileMovie(firstBackdrop.movie),
 				}
 			: undefined,
@@ -42,6 +46,8 @@ export const BoxsetCollectionToPosterSet = (collectionSet: MediuxUserCollectionS
 			Type: "poster",
 			Modified: poster.modified_on,
 			FileSize: Number(poster.filesize),
+			Src: poster.src,
+			Blurhash: poster.blurhash,
 			Movie: convertCollectionMovieToPosterFileMovie(poster.movie),
 		})),
 		// Add remaining backdrops to OtherBackdrops
@@ -50,6 +56,8 @@ export const BoxsetCollectionToPosterSet = (collectionSet: MediuxUserCollectionS
 			Type: "backdrop",
 			Modified: backdrop.modified_on,
 			FileSize: Number(backdrop.filesize),
+			Src: backdrop.src,
+			Blurhash: backdrop.blurhash,
 			Movie: convertCollectionMovieToPosterFileMovie(backdrop.movie),
 		})),
 		Status: firstPoster.movie.status ?? "none",

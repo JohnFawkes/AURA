@@ -124,10 +124,16 @@ type MediuxMovieCollectionMovie struct {
 	Backdrops   []MediuxMovieCollectionImages `json:"backdrops,omitempty"`
 }
 
+type MediuxBaseImage struct {
+	ID         string    `json:"id"`
+	ModifiedOn time.Time `json:"modified_on"`
+	FileSize   string    `json:"filesize"`
+	Src        string    `json:"src"`
+	Blurhash   string    `json:"blurhash"`
+}
+
 type MediuxMovieCollectionImages struct {
-	ID            string        `json:"id"`
-	ModifiedOn    time.Time     `json:"modified_on"`
-	FileSize      string        `json:"filesize"`
+	MediuxBaseImage
 	CollectionSet MediuxSetInfo `json:"collection_set"`
 }
 
@@ -140,17 +146,13 @@ type MediuxSetInfo struct {
 }
 
 type MediuxMoviePosterSetImages struct {
-	ID         string         `json:"id"`
-	ModifiedOn time.Time      `json:"modified_on"`
-	FileSize   string         `json:"filesize"`
-	MovieSet   *MediuxSetInfo `json:"movie_set,omitempty"`
+	MediuxBaseImage
+	MovieSet *MediuxSetInfo `json:"movie_set,omitempty"`
 }
 
 type MediuxShowPosterSetImages struct {
-	ID         string         `json:"id"`
-	ModifiedOn time.Time      `json:"modified_on"`
-	FileSize   string         `json:"filesize"`
-	ShowSet    *MediuxSetInfo `json:"show_set,omitempty"`
+	MediuxBaseImage
+	ShowSet *MediuxSetInfo `json:"show_set,omitempty"`
 }
 
 type MediuxShowSeasons struct {
@@ -190,8 +192,8 @@ type MediuxUserShowSet struct {
 	DateCreated   time.Time                `json:"date_created"`
 	DateUpdated   time.Time                `json:"date_updated"`
 	ShowID        MediuxUserShow           `json:"show_id"`
-	ShowPoster    []MediuxUserImage        `json:"show_poster"`
-	ShowBackdrop  []MediuxUserImage        `json:"show_backdrop"`
+	ShowPoster    []MediuxBaseImage        `json:"show_poster"`
+	ShowBackdrop  []MediuxBaseImage        `json:"show_backdrop"`
 	SeasonPosters []MediuxUserSeasonPoster `json:"season_posters"`
 	Titlecards    []MediuxUserTitlecard    `json:"titlecards"`
 }
@@ -203,8 +205,8 @@ type MediuxUserMovieSet struct {
 	DateCreated   time.Time         `json:"date_created"`
 	DateUpdated   time.Time         `json:"date_updated"`
 	MovieID       MediuxUserMovie   `json:"movie_id"`
-	MoviePoster   []MediuxUserImage `json:"movie_poster"`
-	MovieBackdrop []MediuxUserImage `json:"movie_backdrop"`
+	MoviePoster   []MediuxBaseImage `json:"movie_poster"`
+	MovieBackdrop []MediuxBaseImage `json:"movie_backdrop"`
 }
 
 type MediuxUserCollectionSet struct {
@@ -254,26 +256,16 @@ type MediuxUserMovie struct {
 	Slug        string    `json:"slug"`
 }
 
-type MediuxUserImage struct {
-	ID         string    `json:"id"`
-	ModifiedOn time.Time `json:"modified_on"`
-	Filesize   string    `json:"filesize"`
-}
-
 type MediuxUserSeasonPoster struct {
-	ID         string    `json:"id"`
-	ModifiedOn time.Time `json:"modified_on"`
-	Filesize   string    `json:"filesize"`
-	Season     struct {
+	MediuxBaseImage
+	Season struct {
 		SeasonNumber int `json:"season_number"`
 	} `json:"season"`
 }
 
 type MediuxUserTitlecard struct {
-	ID         string    `json:"id"`
-	ModifiedOn time.Time `json:"modified_on"`
-	Filesize   string    `json:"filesize"`
-	Episode    struct {
+	MediuxBaseImage
+	Episode struct {
 		EpisodeTitle  string `json:"episode_title"`
 		EpisodeNumber int    `json:"episode_number"`
 		SeasonID      struct {
@@ -283,10 +275,8 @@ type MediuxUserTitlecard struct {
 }
 
 type MediuxUserCollectionMovie struct {
-	ID         string    `json:"id"`
-	ModifiedOn time.Time `json:"modified_on"`
-	Filesize   string    `json:"filesize"`
-	Movie      struct {
+	MediuxBaseImage
+	Movie struct {
 		ID          string    `json:"id"`
 		DateUpdated time.Time `json:"date_updated"`
 		Status      string    `json:"status"`

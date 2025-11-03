@@ -25,6 +25,8 @@ export const BoxsetShowToPosterSet = (showSet: MediuxUserShowSet) => {
 						Type: "poster",
 						Modified: showSet.show_poster[0].modified_on,
 						FileSize: Number(showSet.show_poster[0].filesize),
+						Src: showSet.show_poster[0].src,
+						Blurhash: showSet.show_poster[0].blurhash,
 						Show: showDetails,
 					}
 				: undefined,
@@ -35,6 +37,8 @@ export const BoxsetShowToPosterSet = (showSet: MediuxUserShowSet) => {
 						Type: "backdrop",
 						Modified: showSet.show_backdrop[0].modified_on,
 						FileSize: Number(showSet.show_backdrop[0].filesize),
+						Src: showSet.show_backdrop[0].src,
+						Blurhash: showSet.show_backdrop[0].blurhash,
 						Show: showDetails,
 					}
 				: undefined,
@@ -43,6 +47,8 @@ export const BoxsetShowToPosterSet = (showSet: MediuxUserShowSet) => {
 			Type: "seasonPoster",
 			Modified: poster.modified_on,
 			FileSize: Number(poster.filesize),
+			Src: poster.src,
+			Blurhash: poster.blurhash,
 			Show: showDetails,
 			Season: {
 				Number: poster.season.season_number,
@@ -53,6 +59,8 @@ export const BoxsetShowToPosterSet = (showSet: MediuxUserShowSet) => {
 			Type: "titlecard",
 			Modified: titlecard.modified_on,
 			FileSize: Number(titlecard.filesize),
+			Src: titlecard.src,
+			Blurhash: titlecard.blurhash,
 			Show: showDetails,
 			Episode: {
 				Title: titlecard.episode.episode_title,

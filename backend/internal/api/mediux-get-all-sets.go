@@ -170,6 +170,8 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					Type:     "poster",
 					Modified: poster.ModifiedOn,
 					FileSize: parseFileSize(poster.FileSize),
+					Src:      poster.Src,
+					Blurhash: poster.Blurhash,
 					Show: &PosterFileShow{
 						ID:        show.ID,
 						Title:     show.Title,
@@ -204,6 +206,8 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					Type:     "backdrop",
 					Modified: backdrop.ModifiedOn,
 					FileSize: parseFileSize(backdrop.FileSize),
+					Src:      backdrop.Src,
+					Blurhash: backdrop.Blurhash,
 					Show: &PosterFileShow{
 						ID:        show.ID,
 						Title:     show.Title,
@@ -267,6 +271,8 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 						Type:     seasonType,
 						Modified: poster.ModifiedOn,
 						FileSize: parseFileSize(poster.FileSize),
+						Src:      poster.Src,
+						Blurhash: poster.Blurhash,
 						Show: &PosterFileShow{
 							ID:        show.ID,
 							Title:     show.Title,
@@ -321,6 +327,8 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 							Type:     "titlecard",
 							Modified: titlecard.ModifiedOn,
 							FileSize: parseFileSize(titlecard.FileSize),
+							Src:      titlecard.Src,
+							Blurhash: titlecard.Blurhash,
 							Show: &PosterFileShow{
 								ID:        show.ID,
 								Title:     show.Title,
@@ -408,6 +416,8 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 					Type:     "poster",
 					Modified: poster.ModifiedOn,
 					FileSize: parseFileSize(poster.FileSize),
+					Src:      poster.Src,
+					Blurhash: poster.Blurhash,
 					Movie: &PosterFileMovie{
 						ID:          movie.ID,
 						Title:       movie.Title,
@@ -452,6 +462,8 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 					Type:     "backdrop",
 					Modified: backdrop.ModifiedOn,
 					FileSize: parseFileSize(backdrop.FileSize),
+					Src:      backdrop.Src,
+					Blurhash: backdrop.Blurhash,
 					Movie: &PosterFileMovie{
 						ID:          movie.ID,
 						Title:       movie.Title,
@@ -532,6 +544,8 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 						Type:     "poster",
 						Modified: poster.ModifiedOn,
 						FileSize: parseFileSize(poster.FileSize),
+						Src:      poster.Src,
+						Blurhash: poster.Blurhash,
 						Movie: &PosterFileMovie{
 							ID:          movie.ID,
 							Title:       movie.Title,
@@ -586,6 +600,8 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 						Type:     "backdrop",
 						Modified: backdrop.ModifiedOn,
 						FileSize: parseFileSize(backdrop.FileSize),
+						Src:      backdrop.Src,
+						Blurhash: backdrop.Blurhash,
 						Movie: &PosterFileMovie{
 							ID:          movie.ID,
 							Title:       movie.Title,

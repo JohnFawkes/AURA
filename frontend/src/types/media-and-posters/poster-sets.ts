@@ -23,6 +23,8 @@ export interface PosterFile {
 	Type: string;
 	Modified: string;
 	FileSize: number;
+	Src: string;
+	Blurhash: string;
 	Movie?: PosterFileMovie;
 	Show?: PosterFileShow;
 	Season?: PosterFileSeason;

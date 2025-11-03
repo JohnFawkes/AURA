@@ -93,21 +93,17 @@ export interface MediuxUserImage {
 	id: string;
 	modified_on: string;
 	filesize: string;
+	src: string;
+	blurhash: string;
 }
 
-export interface MediuxUserSeasonPoster {
-	id: string;
-	modified_on: string;
-	filesize: string;
+export interface MediuxUserSeasonPoster extends MediuxUserImage {
 	season: {
 		season_number: number;
 	};
 }
 
-export interface MediuxUserTitlecard {
-	id: string;
-	modified_on: string;
-	filesize: string;
+export interface MediuxUserTitlecard extends MediuxUserImage {
 	episode: {
 		episode_title: string;
 		episode_number: number;
@@ -117,9 +113,6 @@ export interface MediuxUserTitlecard {
 	};
 }
 
-export interface MediuxUserCollectionMovie {
-	id: string;
-	modified_on: string;
-	filesize: string;
+export interface MediuxUserCollectionMovie extends MediuxUserImage {
 	movie: MediuxUserMovie;
 }

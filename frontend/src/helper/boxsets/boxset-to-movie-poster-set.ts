@@ -44,6 +44,8 @@ export const BoxsetMovieToPosterSet = (movieSet: MediuxUserMovieSet) => {
 					Type: "poster",
 					Modified: poster.modified_on,
 					FileSize: Number(poster.filesize) || 0,
+					Src: poster.src,
+					Blurhash: poster.blurhash,
 					Movie: movie_details,
 				}
 			: undefined,
@@ -53,6 +55,8 @@ export const BoxsetMovieToPosterSet = (movieSet: MediuxUserMovieSet) => {
 					Type: "backdrop",
 					Modified: backdrop.modified_on,
 					FileSize: Number(backdrop.filesize) || 0,
+					Src: backdrop.src,
+					Blurhash: backdrop.blurhash,
 					Movie: movie_details,
 				}
 			: undefined,
