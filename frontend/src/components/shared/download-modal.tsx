@@ -1043,7 +1043,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									posterFileType: null,
 									fileName: null,
 									mediaItem: null,
-									message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error}`,
+									message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error?.message || addToDBResp.error || "Unknown error"}`,
 								},
 							},
 						}));
@@ -1310,7 +1310,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								posterFileType: null,
 								fileName: null,
 								mediaItem: null,
-								message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error}`,
+								message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error?.message || addToDBResp.error || "Unknown error"}`,
 							},
 						},
 					}));
