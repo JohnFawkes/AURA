@@ -1,3 +1,18 @@
+## [0.9.48] - 2025-11-02
+
+### Added
+
+- [#108](https://github.com/mediux-team/AURA/issues/108) MediUX images that have a Blurhash will now show a Blurhash placeholder while loading for a better user experience.
+- [#110](https://github.com/mediux-team/AURA/issues/110) Added support for custom Webhook notification provider
+
+### Fixed
+
+- [#106](https://github.com/mediux-team/AURA/issues/106) Fixed issue where images for Download Queue were not showing centered correctly on larger screens
+- [#107](https://github.com/mediux-team/AURA/issues/107) Fixed issue where season posters were not being downloaded when in Download Queue
+- [#109](https://github.com/mediux-team/AURA/issues/109) Fixed issue where large poster sets were not being added to the database.
+
+---
+
 ## [0.9.47] - 2025-11-02
 
 ### Added
