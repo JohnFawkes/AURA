@@ -14,7 +14,12 @@ export function JumpToTop() {
 	const [isVisible, setIsVisible] = useState(false);
 	const pathName = usePathname();
 
-	const isRefreshPage = pathName === "/" || pathName === "/saved-sets" || pathName === "/saved-sets/";
+	const isRefreshPage =
+		pathName === "/" ||
+		pathName === "/saved-sets" ||
+		pathName === "/saved-sets/" ||
+		pathName === "/download-queue" ||
+		pathName === "/download-queue/";
 	const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {

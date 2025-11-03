@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import DownloadQueueEntry from "@/components/shared/download-queue-entry";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
+import { RefreshButton } from "@/components/shared/refresh-button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { H3 } from "@/components/ui/typography";
 
@@ -178,6 +179,9 @@ const DownloadQueuePage: React.FC = () => {
 					)}
 				</Accordion>
 			</div>
+
+			{/* Refresh Button */}
+			<RefreshButton onClick={() => fetchQueueEntries()} />
 		</div>
 	);
 };
