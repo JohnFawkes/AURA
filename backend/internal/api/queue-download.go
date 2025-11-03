@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 )
+
+type FileIssues struct {
+	Errors   []string
+	Warnings []string
+}
 
 func ProcessDownloadQueue() {
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Download Queue Processing")
@@ -35,6 +41,8 @@ func ProcessDownloadQueue() {
 		return
 	}
 
+	fileIssuesMap := make(map[string]FileIssues)
+
 	// Process each file
 	for _, file := range files {
 		if file.IsDir() || path.Ext(file.Name()) != ".json" {
@@ -50,14 +58,20 @@ func ProcessDownloadQueue() {
 		subAction := ld.AddAction(fmt.Sprintf("Processing file: %s", file.Name()), logging.LevelInfo)
 		ctx = logging.WithCurrentAction(ctx, subAction)
 
-		filePath := path.Join(queueFolderPath, file.Name())
-		result := "success"
+		// Create an array of errors and warning for each file
+		fileErrors := []string{}
+		fileWarnings := []string{}
 
+		filePath := path.Join(queueFolderPath, file.Name())
+
+		// Read and parse the JSON file
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to read file")
-			result = "error"
+			fileErrors = append(fileErrors, fmt.Sprintf("Failed to read file: %s", err.Error()))
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", "")
 			ld.Log()
 			continue
 		}
@@ -66,108 +80,125 @@ func ProcessDownloadQueue() {
 		err = json.Unmarshal(data, &queueItem)
 		if err != nil {
 			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to parse JSON")
-			result = "error"
+			fileErrors = append(fileErrors, fmt.Sprintf("Failed to parse JSON: %s", err.Error()))
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", "")
 			ld.Log()
 			continue
 		}
+
+		// Ensure there is at least one poster set
+		if len(queueItem.PosterSets) == 0 {
+			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "No poster sets found in queue item")
+			fileErrors = append(fileErrors, "No poster sets found in queue item")
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
+			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, "")
+			ld.Log()
+			continue
+		}
+
+		// Get the first poster set
+		posterSet := queueItem.PosterSets[0]
 
 		// Fetch the latest media item data
 		latestMediaItem, Err := CallFetchItemContent(ctx, queueItem.MediaItem.RatingKey, queueItem.MediaItem.LibraryTitle)
 		if Err.Message != "" {
 			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to fetch latest media item data")
-			result = "error"
+			fileErrors = append(fileErrors, fmt.Sprintf("Failed to fetch latest data for '%s (%s): %s", latestMediaItem.Title, latestMediaItem.LibraryTitle, Err.Message))
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
 			ld.Log()
 			continue
 		}
 		subAction.AppendResult("media_item_title", latestMediaItem.Title)
 		subAction.AppendResult("media_item_library", latestMediaItem.LibraryTitle)
 
-		// Process each poster set in the queue item
-		for _, posterSet := range queueItem.PosterSets {
-			if len(posterSet.SelectedTypes) == 0 {
-				subAction.AppendWarning(fmt.Sprintf("posterset_%s", posterSet.PosterSetID), "No selected types for poster set")
-				result = "warning"
-				subAction.Complete()
-				ld.Log()
-				continue
-			}
+		if len(posterSet.SelectedTypes) == 0 {
+			subAction.AppendWarning(fmt.Sprintf("posterset_%s", posterSet.PosterSetID), "No selected types for poster set")
+			fileWarnings = append(fileWarnings, "No selected types for poster set")
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
+			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
+			ld.Log()
+			continue
+		}
 
-			// Check if the selected types contains each image type
-			posterSelected := false
-			backdropSelected := false
-			seasonSelected := false
-			specialSeasonSelected := false
-			titlecardSelected := false
-			for _, selectedType := range posterSet.SelectedTypes {
-				switch selectedType {
-				case "poster":
-					posterSelected = true
-				case "backdrop":
-					backdropSelected = true
-				case "season":
-					seasonSelected = true
-				case "special_season":
-					specialSeasonSelected = true
-				case "titlecard":
-					titlecardSelected = true
-				}
+		// Check if the selected types contains each image type
+		posterSelected := false
+		backdropSelected := false
+		seasonSelected := false
+		specialSeasonSelected := false
+		titlecardSelected := false
+		for _, selectedType := range posterSet.SelectedTypes {
+			switch selectedType {
+			case "poster":
+				posterSelected = true
+			case "backdrop":
+				backdropSelected = true
+			case "season":
+				seasonSelected = true
+			case "special_season":
+				specialSeasonSelected = true
+			case "titlecard":
+				titlecardSelected = true
 			}
+		}
 
-			// Download and update each selected type
-			if posterSelected && posterSet.PosterSet.Poster != nil {
-				downloadFileName := MediaServer_GetFileDownloadName(*posterSet.PosterSet.Poster)
-				Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, *posterSet.PosterSet.Poster)
-				if Err.Message != "" {
-					subAction.AppendWarning(downloadFileName, "Failed to download and update poster")
-					result = "warning"
-				} else {
-					DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Poster, latestMediaItem.RatingKey)
-				}
+		// Download and update each selected type
+		if posterSelected && posterSet.PosterSet.Poster != nil {
+			downloadFileName := MediaServer_GetFileDownloadName(*posterSet.PosterSet.Poster)
+			Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, *posterSet.PosterSet.Poster)
+			if Err.Message != "" {
+				subAction.AppendWarning(downloadFileName, "Failed to download and update poster")
+				fileWarnings = append(fileWarnings, fmt.Sprintf("Poster Download: %s", Err.Message))
+			} else {
+				DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Poster, latestMediaItem.RatingKey)
 			}
-			if backdropSelected && posterSet.PosterSet.Backdrop != nil {
-				downloadFileName := MediaServer_GetFileDownloadName(*posterSet.PosterSet.Backdrop)
-				Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, *posterSet.PosterSet.Backdrop)
-				if Err.Message != "" {
-					subAction.AppendWarning(downloadFileName, "Failed to download and update backdrop")
-					result = "warning"
-				} else {
-					DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Backdrop, latestMediaItem.RatingKey)
-				}
+		}
+		if backdropSelected && posterSet.PosterSet.Backdrop != nil {
+			downloadFileName := MediaServer_GetFileDownloadName(*posterSet.PosterSet.Backdrop)
+			Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, *posterSet.PosterSet.Backdrop)
+			if Err.Message != "" {
+				subAction.AppendWarning(downloadFileName, "Failed to download and update backdrop")
+				fileWarnings = append(fileWarnings, fmt.Sprintf("Backdrop Download: %s", Err.Message))
+			} else {
+				DeleteTempImageForNextLoad(ctx, *posterSet.PosterSet.Backdrop, latestMediaItem.RatingKey)
 			}
-			if seasonSelected || specialSeasonSelected {
-				for _, seasonPoster := range posterSet.PosterSet.SeasonPosters {
-					downloadFileName := MediaServer_GetFileDownloadName(seasonPoster)
-					if seasonSelected && seasonPoster.Season.Number > 0 {
-						Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, seasonPoster)
-						if Err.Message != "" {
-							subAction.AppendWarning(downloadFileName, "Failed to download and update season poster")
-							result = "warning"
-						} else {
-							DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
-						}
-					} else if specialSeasonSelected && seasonPoster.Season.Number == 0 {
-						Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, seasonPoster)
-						if Err.Message != "" {
-							subAction.AppendWarning(downloadFileName, "Failed to download and update special season poster")
-							result = "warning"
-						} else {
-							DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
-						}
-					}
-				}
-			}
-			if titlecardSelected {
-				for _, titleCard := range posterSet.PosterSet.TitleCards {
-					downloadFileName := MediaServer_GetFileDownloadName(titleCard)
-					Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, titleCard)
+		}
+		if seasonSelected || specialSeasonSelected {
+			for _, seasonPoster := range posterSet.PosterSet.SeasonPosters {
+				downloadFileName := MediaServer_GetFileDownloadName(seasonPoster)
+				if seasonSelected && seasonPoster.Season.Number > 0 {
+					Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, seasonPoster)
 					if Err.Message != "" {
-						subAction.AppendWarning(downloadFileName, "Failed to download and update title card")
-						result = "warning"
+						subAction.AppendWarning(downloadFileName, fmt.Sprintf("Failed to download and update season %d poster", seasonPoster.Season.Number))
+						fileWarnings = append(fileWarnings, fmt.Sprintf("Season %d Poster Download: %s", seasonPoster.Season.Number, Err.Message))
 					} else {
-						DeleteTempImageForNextLoad(ctx, titleCard, latestMediaItem.RatingKey)
+						DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
 					}
+				} else if specialSeasonSelected && seasonPoster.Season.Number == 0 {
+					Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, seasonPoster)
+					if Err.Message != "" {
+						subAction.AppendWarning(downloadFileName, "Failed to download and update special season poster")
+						fileWarnings = append(fileWarnings, fmt.Sprintf("Special Season Poster Download: %s", Err.Message))
+					} else {
+						DeleteTempImageForNextLoad(ctx, seasonPoster, latestMediaItem.RatingKey)
+					}
+				}
+			}
+		}
+		if titlecardSelected {
+			for _, titleCard := range posterSet.PosterSet.TitleCards {
+				downloadFileName := MediaServer_GetFileDownloadName(titleCard)
+				Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, titleCard)
+				if Err.Message != "" {
+					subAction.AppendWarning(downloadFileName, fmt.Sprintf("Failed to download and update S%dE%d title card", titleCard.Episode.SeasonNumber, titleCard.Episode.EpisodeNumber))
+					fileWarnings = append(fileWarnings, fmt.Sprintf("S%dE%d Title Card Download: %s", titleCard.Episode.SeasonNumber, titleCard.Episode.EpisodeNumber, Err.Message))
+				} else {
+					DeleteTempImageForNextLoad(ctx, titleCard, latestMediaItem.RatingKey)
 				}
 			}
 		}
@@ -176,8 +207,10 @@ func ProcessDownloadQueue() {
 		Err = DB_InsertAllInfoIntoTables(ctx, queueItem)
 		if Err.Message != "" {
 			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to insert item into database")
-			result = "error"
+			fileErrors = append(fileErrors, fmt.Sprintf("Database Insert Failed: %s", Err.Message))
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
 			ld.Log()
 			continue
 		}
@@ -194,28 +227,24 @@ func ProcessDownloadQueue() {
 		}
 
 		// Post-Processing: Remove or Rename processed files
-		switch result {
-		case "success":
-			err := os.Remove(filePath)
-			if err != nil {
-				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to delete processed file")
-			}
-		case "warning":
-			newPath := path.Join(queueFolderPath, fmt.Sprintf("warning_%s", file.Name()))
-			err := os.Rename(filePath, newPath)
-			if err != nil {
-				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename warning file")
-			}
-		case "error":
+		var finalErr error
+		if len(fileErrors) > 0 {
 			newPath := path.Join(queueFolderPath, fmt.Sprintf("error_%s", file.Name()))
-			err := os.Rename(filePath, newPath)
-			if err != nil {
-				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to rename error file")
-			}
+			finalErr = os.Rename(filePath, newPath)
+		} else if len(fileWarnings) > 0 {
+			newPath := path.Join(queueFolderPath, fmt.Sprintf("warning_%s", file.Name()))
+			finalErr = os.Rename(filePath, newPath)
+		} else {
+			finalErr = os.Remove(filePath)
+		}
+		if finalErr != nil {
+			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to process file (rename/delete)")
 		}
 
 		// Handle any labels and tags asynchronously
 		go func() {
+			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
+			SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
 			Plex_HandleLabels(latestMediaItem)
 			SR_CallHandleTags(context.Background(), latestMediaItem)
 		}()
@@ -247,4 +276,82 @@ func GetDownloadQueueFolderPath(ctx context.Context) string {
 	}
 
 	return queueFolderPath
+}
+
+func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID string) {
+	if len(Global_Config.Notifications.Providers) == 0 {
+		return
+	}
+
+	result := ""
+	if len(fileIssues.Errors) > 0 {
+		result = "Error"
+	} else if len(fileIssues.Warnings) > 0 {
+		result = "Warning"
+	} else {
+		result = "Success"
+	}
+
+	notificationTitle := ""
+	messageBody := ""
+
+	if itemTitle == "" {
+		itemTitle = "Unknown Title"
+	}
+	if posterSetID == "" {
+		posterSetID = "Unknown Set ID"
+	}
+
+	switch result {
+	case "Success":
+		notificationTitle = "Download Queue - Success"
+		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSetID)
+	case "Warning":
+		notificationTitle = "Download Queue - Warning"
+		messageBody = fmt.Sprintf("%s (Set: %s)\n\nWarnings:\n%s", itemTitle, posterSetID, strings.Join(fileIssues.Warnings, "\n"))
+	case "Error":
+		notificationTitle = "Download Queue - Error"
+		messageBody = fmt.Sprintf("%s (Set: %s)\n\nErrors:\n%s", itemTitle, posterSetID, strings.Join(fileIssues.Errors, "\n"))
+		if len(fileIssues.Warnings) > 0 {
+			messageBody = fmt.Sprintf("%s\n\nWarnings:\n%s", messageBody, strings.Join(fileIssues.Warnings, "\n"))
+		}
+	}
+
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send Download Queue Update")
+	logAction := ld.AddAction("Sending Download Queue Notification", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer ld.Log()
+	defer logAction.Complete()
+
+	// Send notification using all configured providers
+	for _, provider := range Global_Config.Notifications.Providers {
+		if provider.Enabled {
+			switch provider.Provider {
+			case "Discord":
+				Notification_SendDiscordMessage(
+					ctx,
+					provider.Discord,
+					messageBody,
+					"",
+					notificationTitle,
+				)
+			case "Pushover":
+				Notification_SendPushoverMessage(
+					ctx,
+					provider.Pushover,
+					messageBody,
+					"",
+					notificationTitle,
+				)
+			case "Gotify":
+				Notification_SendGotifyMessage(
+					ctx,
+					provider.Gotify,
+					messageBody,
+					"",
+					notificationTitle,
+				)
+			}
+		}
+	}
 }
