@@ -85,6 +85,7 @@ export interface AppConfigNotificationProviders {
 	Discord?: AppConfigNotificationDiscord;
 	Pushover?: AppConfigNotificationPushover;
 	Gotify?: AppConfigNotificationGotify;
+	Webhook?: AppConfigNotificationWebhook;
 }
 
 export interface AppConfigNotificationDiscord {
@@ -102,6 +103,12 @@ export interface AppConfigNotificationGotify {
 	Enabled: boolean;
 	URL: string;
 	Token: string;
+}
+
+export interface AppConfigNotificationWebhook {
+	Enabled: boolean;
+	URL: string;
+	Headers: { [key: string]: string }; // Key-value pairs for custom headers
 }
 
 export interface AppConfigSonarrRadarrApps {

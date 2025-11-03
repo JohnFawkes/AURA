@@ -5,6 +5,7 @@ import (
 	"aura/internal/logging"
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -680,6 +681,59 @@ func checkConfigDifferences_Notifications(ctx context.Context, oldNotifications 
 						} else {
 							newProv.Gotify.Token = oldProv.Gotify.Token
 						}
+					}
+				}
+
+			case "Webhook":
+				var oldURL, newURL string
+				if oldProv.Webhook != nil {
+					oldURL = strings.TrimSpace(oldProv.Webhook.URL)
+				}
+				if newProv.Webhook != nil {
+					newURL = strings.TrimSpace(newProv.Webhook.URL)
+				}
+				if oldURL != newURL {
+					logAction.AppendResult("Notifications.Webhook.URL changed", fmt.Sprintf("from '%v' to '%v'", oldURL, newURL))
+					logging.LOGGER.Info().
+						Timestamp().
+						Str("old_webhook_url", oldURL).
+						Str("new_webhook_url", newURL).
+						Msg("Notifications.Webhook.URL changed")
+					changed = true
+				}
+
+				// Custom Headers
+				oldHeaders := make(map[string]string)
+				newHeaders := make(map[string]string)
+				if oldProv.Webhook != nil {
+					maps.Copy(oldHeaders, oldProv.Webhook.Headers)
+				}
+				if newProv.Webhook != nil {
+					maps.Copy(newHeaders, newProv.Webhook.Headers)
+				}
+				// Check for changes
+				for k, oldV := range oldHeaders {
+					newV, ok := newHeaders[k]
+					if !ok || oldV != newV {
+						logAction.AppendResult("Notifications.Webhook.Header changed", fmt.Sprintf("Header '%s' changed from '%s' to '%s'", k, oldV, newV))
+						logging.LOGGER.Info().
+							Timestamp().
+							Str("header_key", k).
+							Str("old_value", oldV).
+							Str("new_value", newV).
+							Msg("Notifications.Webhook.Header changed")
+						changed = true
+					}
+				}
+				for k, newV := range newHeaders {
+					if _, ok := oldHeaders[k]; !ok {
+						logAction.AppendResult("Notifications.Webhook.Header added", fmt.Sprintf("Header '%s' added with value '%s'", k, newV))
+						logging.LOGGER.Info().
+							Timestamp().
+							Str("header_key", k).
+							Str("new_value", newV).
+							Msg("Notifications.Webhook.Header added")
+						changed = true
 					}
 				}
 			default:

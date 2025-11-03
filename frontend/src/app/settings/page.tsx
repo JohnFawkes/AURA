@@ -34,6 +34,7 @@ import {
 	AppConfigNotificationDiscord,
 	AppConfigNotificationGotify,
 	AppConfigNotificationPushover,
+	AppConfigNotificationWebhook,
 } from "@/types/config/config-app";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
@@ -56,7 +57,15 @@ type NotificationsDirty = {
 		Partial<
 			Record<
 				string,
-				boolean | { Enabled?: boolean; Webhook?: boolean; UserKey?: boolean; Token?: boolean; URL?: boolean }
+				| boolean
+				| {
+						Enabled?: boolean;
+						Webhook?: boolean;
+						UserKey?: boolean;
+						Token?: boolean;
+						URL?: boolean;
+						Headers?: Record<string, boolean>;
+				  }
 			>
 		>
 	>;
@@ -255,11 +264,18 @@ const SettingsPage: React.FC = () => {
 					const dirtyObj: Partial<
 						Record<
 							string,
-							{ Enabled?: boolean; Webhook?: boolean; UserKey?: boolean; Token?: boolean; URL?: boolean }
+							{
+								Enabled?: boolean;
+								Webhook?: boolean;
+								UserKey?: boolean;
+								Token?: boolean;
+								URL?: boolean;
+								Headers?: Record<string, boolean>;
+							}
 						>
 					> = {};
 
-					for (const key of ["Discord", "Pushover", "Gotify"] as const) {
+					for (const key of ["Discord", "Pushover", "Gotify", "Webhook"] as const) {
 						if (prov[key] && orig?.[key]) {
 							const fieldDirty: {
 								Enabled?: boolean;
@@ -267,6 +283,7 @@ const SettingsPage: React.FC = () => {
 								UserKey?: boolean;
 								URL?: boolean;
 								Token?: boolean;
+								Headers?: Record<string, boolean>;
 							} = {};
 							if (key === "Discord") {
 								const discordKeys = ["Enabled", "Webhook"] as const;
@@ -298,6 +315,29 @@ const SettingsPage: React.FC = () => {
 										fieldDirty[subKey] = true;
 									}
 								}
+							} else if (key === "Webhook") {
+								const webhookKeys = ["Enabled", "URL"] as const;
+								for (const subKey of webhookKeys) {
+									if (
+										(prov[key] as AppConfigNotificationWebhook)[subKey] !==
+										(orig[key] as AppConfigNotificationWebhook)[subKey]
+									) {
+										fieldDirty[subKey] = true;
+									}
+								}
+								// Deep compare Headers
+								const newHeaders = (prov[key] as AppConfigNotificationWebhook).Headers ?? {};
+								const origHeaders = (orig[key] as AppConfigNotificationWebhook).Headers ?? {};
+								const headersDirty: Record<string, boolean> = {};
+								const allHeaderKeys = Array.from(
+									new Set([...Object.keys(newHeaders), ...Object.keys(origHeaders)])
+								);
+								for (const hKey of allHeaderKeys) {
+									if (newHeaders[hKey] !== origHeaders[hKey]) {
+										headersDirty[hKey] = true;
+									}
+								}
+								fieldDirty.Headers = Object.keys(headersDirty).length > 0 ? headersDirty : undefined;
 							}
 							if (Object.keys(fieldDirty).length > 0) {
 								dirtyObj[key] = fieldDirty;
@@ -659,6 +699,8 @@ const SettingsPage: React.FC = () => {
 															Webhook?: boolean;
 															UserKey?: boolean;
 															Token?: boolean;
+															URL?: boolean;
+															Headers?: Record<string, boolean>;
 													  }
 												>
 											>[];

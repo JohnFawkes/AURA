@@ -26,6 +26,7 @@ import {
 	AppConfigNotificationGotify,
 	AppConfigNotificationProviders,
 	AppConfigNotificationPushover,
+	AppConfigNotificationWebhook,
 	AppConfigNotifications,
 } from "@/types/config/config-app";
 
@@ -39,7 +40,14 @@ interface ConfigSectionNotificationsProps {
 				Record<
 					string,
 					| boolean
-					| { Enabled?: boolean; Webhook?: boolean; UserKey?: boolean; Token?: boolean; URL?: boolean }
+					| {
+							Enabled?: boolean;
+							Webhook?: boolean;
+							UserKey?: boolean;
+							Token?: boolean;
+							URL?: boolean;
+							Headers?: Record<string, boolean>;
+					  }
 				>
 			>
 		>;
@@ -49,7 +57,7 @@ interface ConfigSectionNotificationsProps {
 	configAlreadyLoaded: boolean;
 }
 
-const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify"] as const;
+const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify", "Webhook"] as const;
 
 export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProps> = ({
 	value,
@@ -64,6 +72,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
 	// Local select state for adding providers
 	const [newProviderType, setNewProviderType] = useState<string>("Discord");
+
+	// State to track editing header keys
+	const [editingHeaderKeys, setEditingHeaderKeys] = useState<Record<number, Record<string, string>>>({});
 
 	const providers = useMemo(() => (Array.isArray(value.Providers) ? value.Providers : []), [value.Providers]);
 
@@ -121,6 +132,15 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					if (remoteTokenErrors[idx]) {
 						errs[`Providers.[${idx}].Gotify.Token`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
+				} else if (p.Provider === "Webhook") {
+					const webhook = p.Webhook;
+					const rawURL = (webhook?.URL || "").trim();
+					if (!rawURL) {
+						errs[`Providers.[${idx}].Webhook.URL`] = "URL required.";
+					} else {
+						const urlErr = ValidateURL(rawURL);
+						if (urlErr) errs[`Providers.[${idx}].Webhook.URL`] = urlErr;
+					}
 				}
 			}
 		});
@@ -156,12 +176,20 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 				Enabled: true,
 				Pushover: { Enabled: true, UserKey: "", Token: "" },
 			};
-		} else {
+		} else if (type === "Gotify") {
 			newEntry = {
 				Provider: "Gotify",
 				Enabled: true,
 				Gotify: { Enabled: true, URL: "", Token: "" },
 			};
+		} else if (type === "Webhook") {
+			newEntry = {
+				Provider: "Webhook",
+				Enabled: true,
+				Webhook: { Enabled: true, URL: "", Headers: {} },
+			};
+		} else {
+			return;
 		}
 		setProviders([...providers, newEntry]);
 	};
@@ -228,6 +256,21 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		setProviders(next);
 	};
 
+	const updateWebhook = <K extends keyof AppConfigNotificationWebhook>(
+		idx: number,
+		field: K,
+		val: AppConfigNotificationWebhook[K]
+	) => {
+		const prov = providers[idx];
+		if (!prov.Webhook) return;
+		const next = providers.slice();
+		next[idx] = {
+			...prov,
+			Webhook: { ...prov.Webhook, [field]: val },
+		};
+		setProviders(next);
+	};
+
 	const runRemoteValidation = useCallback(
 		async (idx: number, showToast = true) => {
 			const provider = providers[idx];
@@ -281,6 +324,8 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
 					} else if (p.Provider === "Gotify" && p.Gotify?.URL && p.Gotify?.Token) {
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
+					} else if (p.Provider === "Webhook" && p.Webhook?.URL) {
+						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
 					}
 				}
 			});
@@ -313,7 +358,8 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					{editing && (
 						<PopoverHelp ariaLabel="help-notifications-enabled">
 							<p className="mb-2">
-								Turn on to send events through enabled providers (Discord, Pushover, Gotify).
+								Turn on to send events through enabled providers (Discord, Pushover, Gotify, Custom
+								Webhook).
 							</p>
 							<p className="text-muted-foreground">Each provider can also be enabled individually.</p>
 						</PopoverHelp>
@@ -364,6 +410,10 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 						typeof providerDirty?.Gotify === "object" && providerDirty?.Gotify !== null
 							? providerDirty.Gotify
 							: {};
+					const webhookDirty =
+						typeof providerDirty?.Webhook === "object" && providerDirty?.Webhook !== null
+							? providerDirty.Webhook
+							: {};
 					const providerErrorEntries = Object.entries(errors).filter(([k]) =>
 						k.startsWith(`Providers.[${idx}]`)
 					);
@@ -408,13 +458,15 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 											(p.Provider === "Discord" && !p.Discord?.Webhook) ||
 											(p.Provider === "Pushover" &&
 												(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
-											(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token))
+											(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token)) ||
+											(p.Provider === "Webhook" && !p.Webhook?.URL)
 										}
 										hidden={
 											((p.Provider === "Discord" && !p.Discord?.Webhook) ||
 												(p.Provider === "Pushover" &&
 													(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
-												(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token))) &&
+												(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token)) ||
+												(p.Provider === "Webhook" && !p.Webhook?.URL)) &&
 											!editing
 										}
 										onClick={() => {
@@ -610,6 +662,153 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 													{msg}
 												</p>
 											))}
+									</div>
+								</div>
+							)}
+
+							{/* Webhook Fields */}
+							{p.Provider === "Webhook" && p.Enabled && (
+								<div className={cn("space-y-1")}>
+									<div className="flex items-center justify-between">
+										<Label>URL</Label>
+										{editing && (
+											<PopoverHelp ariaLabel="help-notifications-webhook-url">
+												<p className="mb-2 font-medium">Custom Webhook URL</p>
+												<p className="text-muted-foreground">
+													The URL to send POST requests to for notifications.
+												</p>
+											</PopoverHelp>
+										)}
+									</div>
+									<Input
+										disabled={!editing}
+										placeholder="https://example.com/webhook"
+										value={p.Webhook?.URL || ""}
+										onChange={(e) => {
+											const val = e.target.value;
+											updateWebhook(idx, "URL", val);
+										}}
+										className={cn(webhookDirty?.URL && "border border-amber-500 p-3")}
+									/>
+									{providerErrorEntries
+										.filter(([k]) => k.endsWith("Webhook.URL"))
+										.map(([, msg], i) => (
+											<p key={i} className="text-xs text-red-500">
+												{msg}
+											</p>
+										))}
+
+									{/* Headers Input */}
+									<div className="flex items-center justify-between mt-2">
+										<Label>Custom Headers</Label>
+										{editing && (
+											<PopoverHelp ariaLabel="help-notifications-webhook-headers">
+												<p className="mb-2 font-medium">Custom Headers</p>
+												<p className="text-muted-foreground">
+													Add any custom headers to include in the webhook POST request. Enter
+													as key/value pairs.
+												</p>
+											</PopoverHelp>
+										)}
+									</div>
+									<div className="space-y-2">
+										{Object.entries(p.Webhook?.Headers || {}).map(([key, value], i) => (
+											<div key={key + i} className="flex gap-2 items-center justify-between">
+												<Input
+													disabled={!editing}
+													placeholder="Header Name"
+													value={
+														editingHeaderKeys[idx]?.[key] !== undefined
+															? editingHeaderKeys[idx][key]
+															: key
+													}
+													onChange={(e) => {
+														const val = e.target.value;
+														setEditingHeaderKeys((prev) => ({
+															...prev,
+															[idx]: {
+																...(prev[idx] || {}),
+																[key]: val,
+															},
+														}));
+													}}
+													onBlur={(e) => {
+														const rawKey = e.target.value.trim();
+														const newKey = rawKey.replace(/\s+/g, "_");
+														if (newKey && newKey !== key) {
+															const headers = { ...(p.Webhook?.Headers || {}) };
+															headers[newKey] = headers[key];
+															delete headers[key];
+															updateWebhook(idx, "Headers", headers);
+															// Clean up local state for this key
+															setEditingHeaderKeys((prev) => {
+																const next = { ...(prev[idx] || {}) };
+																delete next[key];
+																return { ...prev, [idx]: next };
+															});
+														} else {
+															// Clean up local state if unchanged
+															setEditingHeaderKeys((prev) => {
+																const next = { ...(prev[idx] || {}) };
+																delete next[key];
+																return { ...prev, [idx]: next };
+															});
+														}
+													}}
+													className={cn(
+														"w-1/2",
+														webhookDirty?.Headers?.[key] && "border border-amber-500 p-3"
+													)}
+												/>
+												<Input
+													disabled={!editing}
+													placeholder="Header Value"
+													value={value}
+													onChange={(e) => {
+														const headers = { ...(p.Webhook?.Headers || {}) };
+														headers[key] = e.target.value;
+														updateWebhook(idx, "Headers", headers);
+													}}
+													className={cn(
+														"w-1/2",
+														webhookDirty?.Headers?.[key] && "border border-amber-500 p-3"
+													)}
+												/>
+												{editing && (
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => {
+															const headers = { ...(p.Webhook?.Headers || {}) };
+															delete headers[key];
+															updateWebhook(idx, "Headers", headers);
+														}}
+														aria-label="Remove header"
+														className="bg-red-700"
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										))}
+										{editing && (
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													const headers = { ...(p.Webhook?.Headers || {}) };
+													let i = 1;
+													let newKey = "Header";
+													while (headers[newKey + i]) i++;
+													headers[newKey + i] = "";
+													updateWebhook(idx, "Headers", headers);
+												}}
+											>
+												<Plus className="h-4 w-4 mr-1" />
+												Add Header
+											</Button>
+										)}
 									</div>
 								</div>
 							)}

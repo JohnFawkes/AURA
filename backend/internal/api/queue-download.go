@@ -351,6 +351,14 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 					"",
 					notificationTitle,
 				)
+			case "Webhook":
+				Notification_SendWebhookMessage(
+					ctx,
+					provider.Webhook,
+					messageBody,
+					"",
+					notificationTitle,
+				)
 			}
 		}
 	}

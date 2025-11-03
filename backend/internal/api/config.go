@@ -112,6 +112,7 @@ type Config_Notification_Provider struct {
 	Discord  *Config_Notification_Discord  `yaml:"Discord,omitempty"`  // Discord notification settings
 	Pushover *Config_Notification_Pushover `yaml:"Pushover,omitempty"` // Pushover notification settings
 	Gotify   *Config_Notification_Gotify   `yaml:"Gotify,omitempty"`   // Gotify notification settings
+	Webhook  *Config_Notification_Webhook  `yaml:"Webhook,omitempty"`  // Webhook notification settings
 }
 
 type Config_Notification_Discord struct {
@@ -126,6 +127,11 @@ type Config_Notification_Pushover struct {
 type Config_Notification_Gotify struct {
 	URL   string `yaml:"URL,omitempty"`   // URL for the Gotify notification provider.
 	Token string `yaml:"Token,omitempty"` // Token for the Gotify notification provider.
+}
+
+type Config_Notification_Webhook struct {
+	URL     string            `yaml:"URL,omitempty"`     // URL for the Webhook notification provider.
+	Headers map[string]string `yaml:"Headers,omitempty"` // Headers for the Webhook notification provider.
 }
 
 type Config_SonarrRadarr_Apps struct {

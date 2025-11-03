@@ -151,6 +151,24 @@ func SendTest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+	case "Webhook":
+		// Validate Webhook provider
+		if nProvider.Webhook == nil || nProvider.Webhook.URL == "" {
+			logAction.SetError("Invalid Webhook Provider",
+				"Ensure the Webhook provider is properly configured",
+				map[string]any{
+					"provider": nProvider.Provider,
+					"url":      masking.Masking_WebhookURL(nProvider.Webhook.URL),
+				})
+			api.Util_Response_SendJSON(w, ld, nil)
+			return
+		}
+		Err := api.Notification_SendWebhookMessage(ctx, nProvider.Webhook, startMessage, imageURL, title)
+		if Err.Message != "" {
+			api.Util_Response_SendJSON(w, ld, nil)
+			return
+		}
+
 	default:
 		logAction.SetError("Unsupported Notification Provider",
 			"The specified notification provider is not supported for test notifications",

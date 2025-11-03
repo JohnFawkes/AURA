@@ -590,6 +590,14 @@ func SendFileDownloadNotification(itemTitle, posterSetID string, psFile PosterFi
 					imageURL,
 					psFile.ReasonTitle,
 				)
+			case "Webhook":
+				Notification_SendWebhookMessage(
+					ctx,
+					provider.Webhook,
+					messageBody,
+					imageURL,
+					psFile.ReasonTitle,
+				)
 			}
 		}
 	}

@@ -244,7 +244,7 @@ func Config_ValidateNotifications(ctx context.Context, Notifications *Config_Not
 			continue
 		}
 
-		validProviders := []string{"Discord", "Pushover", "Gotify"}
+		validProviders := []string{"Discord", "Pushover", "Gotify", "Webhook"}
 
 		// If the provider is not in the list of valid providers, return an error
 		if !stringSliceContains(validProviders, provider.Provider) {
@@ -276,6 +276,11 @@ func Config_ValidateNotifications(ctx context.Context, Notifications *Config_Not
 			}
 			if provider.Gotify.Token == "" {
 				logAction.SetError(fmt.Sprintf("\tNotifications[%d].Token is not set", i), "Gotify Token must be specified", nil)
+				isValid = false
+			}
+		case "Webhook":
+			if provider.Webhook.URL == "" {
+				logAction.SetError(fmt.Sprintf("\tNotifications[%d].URL is not set", i), "Webhook URL must be specified", nil)
 				isValid = false
 			}
 		}

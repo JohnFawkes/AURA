@@ -328,6 +328,13 @@ Notifications:
           Gotify:
               URL: YOUR_GOTIFY_SERVER_URL
               Token: YOUR_GOTIFY_APP_TOKEN
+        - Provider: "Webhook"
+          Enabled: true
+          Webhook:
+              URL: "https://your-webhook-url.com/endpoint"
+              Headers:
+                  Some-Header: "HeaderValue"
+                  Another-Header: "AnotherValue"
 ```
 
 ### Structure

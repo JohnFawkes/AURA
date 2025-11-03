@@ -35,6 +35,8 @@ func SendAppStartNotification() {
 				Notification_SendPushoverMessage(ctx, provider.Pushover, startMessage, imageURL, title)
 			case "Gotify":
 				Notification_SendGotifyMessage(ctx, provider.Gotify, startMessage, imageURL, title)
+			case "Webhook":
+				Notification_SendWebhookMessage(ctx, provider.Webhook, startMessage, imageURL, title)
 			}
 		}
 	}
