@@ -66,13 +66,12 @@ func SR_CallHandleTags(ctx context.Context, item MediaItem) logging.LogErrorInfo
 			continue
 		}
 
-		actionApp := logAction.AddSubAction(fmt.Sprintf("Handling Tags for %s (%s)", app.Type, app.Library), logging.LevelInfo)
-
 		// If the library title doesn't match, skip
 		if app.Library != item.LibraryTitle {
-			actionApp.AppendWarning("message", fmt.Sprintf("Library title '%s' does not match application library '%s', skipping", item.LibraryTitle, app.Library))
 			continue
 		}
+
+		actionApp := logAction.AddSubAction(fmt.Sprintf("Handling Tags for %s (%s)", app.Type, app.Library), logging.LevelInfo)
 
 		interfaceSR, Err := NewSonarrRadarrInterface(ctx, app)
 		if Err.Message != "" {
