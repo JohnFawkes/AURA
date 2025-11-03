@@ -138,9 +138,9 @@ func ProcessDownloadQueue() {
 				posterSelected = true
 			case "backdrop":
 				backdropSelected = true
-			case "season":
+			case "seasonPoster":
 				seasonSelected = true
-			case "special_season":
+			case "specialSeasonPoster":
 				specialSeasonSelected = true
 			case "titlecard":
 				titlecardSelected = true
