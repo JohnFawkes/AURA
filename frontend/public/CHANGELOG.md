@@ -1,3 +1,22 @@
+## [0.9.49] - 2025-11-02
+
+### Breaking
+
+- If you use Plex as your Media Server, the config option for Season Naming Convention has been moved under the Images -> SaveImagesLocally section. Please update your configuration accordingly. View the [documentation](https://mediux-team.github.io/AURA/config#saveimageslocallyseasonnamingconvention) for more details.
+
+### Added
+
+- Added support for Episode Naming Convention under the Images -> SaveImagesLocally section for Plex Media Servers. This allows you to customize how episode files are named when saving images locally. View the [documentation](https://mediux-team.github.io/AURA/config#saveimageslocallyepisodenamingconvention) for more details.
+- Added new Not Found (404) page for better user experience when navigating to invalid routes.
+- Added new Error (500) page for better user experience when the application encounters server errors.
+- Added Browser Source Mapping for easier debugging of frontend issues.
+
+### Fixed
+
+- Fixed issue where adding first Notification provider would throw an error due to undefined config state
+
+---
+
 ## [0.9.48] - 2025-11-02
 
 ### Added
