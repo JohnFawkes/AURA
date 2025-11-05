@@ -257,10 +257,10 @@ const SettingsPage: React.FC = () => {
 
 			// --- Notifications dirty tracking ---
 			if (section === "Notifications" && field === "Providers") {
-				const originalProviders = initialConfig.Notifications.Providers;
+				const originalProviders = initialConfig.Notifications?.Providers ?? [];
 				const newProviders = value as AppConfig["Notifications"]["Providers"];
 				const dirtyProviders = newProviders.map((prov, idx) => {
-					const orig = originalProviders[idx];
+					const orig = originalProviders[idx] ?? {};
 					const dirtyObj: Partial<
 						Record<
 							string,

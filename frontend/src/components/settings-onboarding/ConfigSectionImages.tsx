@@ -11,25 +11,42 @@ import { PopoverHelp } from "@/components/shared/popover-help";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
 import { AppConfigImages } from "@/types/config/config-app";
 
+const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
+const EPISODE_NAMING_CONVENTION_OPTIONS = ["match", "static"];
+
 interface ConfigSectionImagesProps {
 	value: AppConfigImages;
 	editing: boolean;
 	dirtyFields?: {
 		CacheImages?: { Enabled?: boolean };
-		SaveImagesLocally?: { Enabled?: boolean; Path?: boolean };
+		SaveImagesLocally?: {
+			Enabled?: boolean;
+			Path?: boolean;
+			SeasonNamingConvention?: boolean;
+			EpisodeNamingConvention?: boolean;
+		};
 	};
 	onChange: <K extends keyof AppConfigImages, F extends keyof AppConfigImages[K]>(
 		group: K,
 		field: F,
 		value: AppConfigImages[K][F]
 	) => void;
-	errorsUpdate?: (errors: Record<string, string>) => void;
+	errorsUpdate?: (errors: Partial<Record<keyof AppConfigImages, string>>) => void;
 	mediaServerType?: string;
 }
 
@@ -65,6 +82,44 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 			toast.error(errorResponse.error?.message || "An unexpected error occurred");
 		}
 	};
+
+	const errors = React.useMemo<Partial<Record<keyof AppConfigImages, string>>>(() => {
+		const errs: Partial<Record<keyof AppConfigImages, string>> = {};
+
+		// If Media Server Type is Plex, validate SaveImagesLocally.SeasonNamingConvention and EpisodeNamingConvention
+		if (mediaServerType && mediaServerType === "Plex" && value.SaveImagesLocally.Enabled) {
+			if (!value.SaveImagesLocally.SeasonNamingConvention) {
+				errs.SaveImagesLocally = "Season naming convention is required.";
+			} else {
+				if (!SEASON_NAMING_CONVENTION_OPTIONS.includes(value.SaveImagesLocally.SeasonNamingConvention)) {
+					errs.SaveImagesLocally = `Season naming convention must be one of: ${SEASON_NAMING_CONVENTION_OPTIONS.join(", ")}.`;
+				}
+			}
+
+			if (!value.SaveImagesLocally.EpisodeNamingConvention) {
+				errs.SaveImagesLocally = "Episode naming convention is required.";
+			} else {
+				if (!EPISODE_NAMING_CONVENTION_OPTIONS.includes(value.SaveImagesLocally.EpisodeNamingConvention)) {
+					errs.SaveImagesLocally = `Episode naming convention must be one of: ${EPISODE_NAMING_CONVENTION_OPTIONS.join(", ")}.`;
+				}
+			}
+		}
+
+		return errs;
+	}, [
+		value.SaveImagesLocally.SeasonNamingConvention,
+		value.SaveImagesLocally.EpisodeNamingConvention,
+		mediaServerType,
+	]);
+
+	// Emit errors upward
+	useEffect(() => {
+		if (!errorsUpdate) return;
+		const serialized = JSON.stringify(errors);
+		if (serialized === prevErrorsRef.current) return;
+		prevErrorsRef.current = serialized;
+		errorsUpdate(errors);
+	}, [errors, errorsUpdate]);
 
 	return (
 		<Card className="p-5">
@@ -120,7 +175,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<div className="flex items-center gap-2">
 							<Switch
 								disabled={!editing}
-								checked={value.SaveImagesLocally.Enabled}
+								checked={!!value.SaveImagesLocally.Enabled}
 								onCheckedChange={(v) => onChange("SaveImagesLocally", "Enabled", v)}
 							/>
 							{editing && (
@@ -137,7 +192,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 					{value.SaveImagesLocally.Enabled && (
 						<div
 							className={cn(
-								"",
+								"mt-2",
 								dirtyFields.SaveImagesLocally?.Enabled && "border border-amber-500 rounded-md p-2"
 							)}
 						>
@@ -156,7 +211,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 							<Input
 								type="text"
 								disabled={!editing}
-								value={value.SaveImagesLocally.Path}
+								value={value.SaveImagesLocally.Path || ""}
 								onChange={(e) => onChange("SaveImagesLocally", "Path", e.target.value)}
 								className={cn(
 									"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
@@ -164,6 +219,126 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 								)}
 								placeholder="/path/to/images"
 							/>
+						</div>
+					)}
+
+					{mediaServerType === "Plex" && value.SaveImagesLocally.Enabled && (
+						<div className={cn("space-y-1 mt-4")}>
+							<div className="flex items-center justify-between">
+								<Label>Season Naming Convention</Label>
+								{editing && (
+									<PopoverHelp ariaLabel="help-media-server-season-naming-convention">
+										<div className="space-y-3">
+											<div>
+												<p className="font-medium mb-1">Season Naming Convention</p>
+												<p className="text-muted-foreground">
+													How Plex season folders / labels are formatted.
+												</p>
+											</div>
+											<ul className="space-y-1">
+												<li className="flex items-center gap-2">
+													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono ">
+														1
+													</span>
+													<span>Season 1</span>
+												</li>
+												<li className="flex items-center gap-2">
+													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono">
+														2
+													</span>
+													<span>Season 01 (zero‑padded)</span>
+												</li>
+											</ul>
+											<p className="text-muted-foreground">
+												Used for display / folder naming logic.
+											</p>
+										</div>
+									</PopoverHelp>
+								)}
+							</div>
+							<Select
+								disabled={!editing}
+								value={value.SaveImagesLocally.SeasonNamingConvention || ""}
+								onValueChange={(v) => onChange("SaveImagesLocally", "SeasonNamingConvention", v)}
+							>
+								<SelectTrigger
+									id="media-server-season-naming-convention-trigger"
+									className={cn(
+										"w-full",
+										dirtyFields.SaveImagesLocally?.SeasonNamingConvention && "border-amber-500"
+									)}
+								>
+									<SelectValue placeholder="Select convention..." />
+								</SelectTrigger>
+								<SelectContent>
+									{SEASON_NAMING_CONVENTION_OPTIONS.map((o) => (
+										<SelectItem key={o} value={o}>
+											{o}
+										</SelectItem>
+									))}
+									<SelectScrollUpButton />
+									<SelectScrollDownButton />
+								</SelectContent>
+							</Select>
+						</div>
+					)}
+
+					{mediaServerType === "Plex" && value.SaveImagesLocally.Enabled && (
+						<div className={cn("space-y-1 mt-4")}>
+							<div className="flex items-center justify-between">
+								<Label>Episode Naming Convention</Label>
+								{editing && (
+									<PopoverHelp ariaLabel="help-media-server-episode-naming-convention">
+										<div className="space-y-3">
+											<div>
+												<p className="font-medium mb-1">Episode Naming Convention</p>
+												<p className="text-muted-foreground">
+													How Plex episode files are named.
+												</p>
+											</div>
+											<ul className="space-y-1">
+												<li className="flex items-center gap-2">
+													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono ">
+														match
+													</span>
+													<span>Some Episode Title S01E01.jpg</span>
+												</li>
+												<li className="flex items-center gap-2">
+													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono">
+														static
+													</span>
+													<span>S01E01.jpg</span>
+												</li>
+											</ul>
+											<p className="text-muted-foreground">Used for file naming logic.</p>
+										</div>
+									</PopoverHelp>
+								)}
+							</div>
+							<Select
+								disabled={!editing}
+								value={value.SaveImagesLocally.EpisodeNamingConvention || ""}
+								onValueChange={(v) => onChange("SaveImagesLocally", "EpisodeNamingConvention", v)}
+							>
+								<SelectTrigger
+									id="media-server-episode-naming-convention-trigger"
+									className={cn(
+										"w-full",
+										dirtyFields.SaveImagesLocally?.EpisodeNamingConvention && "border-amber-500"
+									)}
+								>
+									<SelectValue placeholder="Select convention..." />
+								</SelectTrigger>
+								<SelectContent>
+									{EPISODE_NAMING_CONVENTION_OPTIONS.map((o) => (
+										<SelectItem key={o} value={o}>
+											{o}
+										</SelectItem>
+									))}
+									<SelectScrollUpButton />
+									<SelectScrollDownButton />
+								</SelectContent>
+							</Select>
 						</div>
 					)}
 				</div>

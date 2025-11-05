@@ -48,12 +48,11 @@ type Config_Logging struct {
 }
 
 type Config_MediaServer struct {
-	Type                   string                      `yaml:"Type"`                             // Type of media server (e.g., plex, emby, jellyfin).
-	URL                    string                      `yaml:"URL"`                              // Base URL of the media server. This is either the IP:Port or the domain name (e.g., plex.domain.com).
-	Token                  string                      `yaml:"Token"`                            // Authentication token for accessing the media server.
-	Libraries              []Config_MediaServerLibrary `yaml:"Libraries,omitempty"`              // List of media server libraries to manage.
-	SeasonNamingConvention string                      `yaml:"SeasonNamingConvention,omitempty"` // Season naming convention for the media server. Only needed for Plex. Will default to 2
-	UserID                 string                      `yaml:"UserID,omitempty"`                 // User ID for accessing the media server. This is used for Emby and Jellyfin servers.
+	Type      string                      `yaml:"Type"`                // Type of media server (e.g., plex, emby, jellyfin).
+	URL       string                      `yaml:"URL"`                 // Base URL of the media server. This is either the IP:Port or the domain name (e.g., plex.domain.com).
+	Token     string                      `yaml:"Token"`               // Authentication token for accessing the media server.
+	Libraries []Config_MediaServerLibrary `yaml:"Libraries,omitempty"` // List of media server libraries to manage.
+	UserID    string                      `yaml:"UserID,omitempty"`    // User ID for accessing the media server. This is used for Emby and Jellyfin servers.
 }
 type Config_MediaServerLibrary struct {
 	Name      string `yaml:"Name,omitempty"`      // Name of the library.
@@ -82,8 +81,10 @@ type Config_CacheImages struct {
 }
 
 type Config_SaveImagesLocally struct {
-	Enabled bool   `yaml:"Enabled"`        // Whether to save images next to their content.
-	Path    string `yaml:"Path,omitempty"` // By default, this is set to alongside the content. If set, this will override that behavior and save all images to this path.
+	Enabled                 bool   `yaml:"Enabled"`                           // Whether to save images next to their content.
+	Path                    string `yaml:"Path,omitempty"`                    // By default, this is set to alongside the content. If set, this will override that behavior and save all images to this path.
+	SeasonNamingConvention  string `yaml:"SeasonNamingConvention,omitempty"`  // Season naming convention for the media server. Only needed for Plex. Will default to 2
+	EpisodeNamingConvention string `yaml:"EpisodeNamingConvention,omitempty"` // Episode naming convention for the media server. Only needed for Plex. Will default to match
 }
 
 type Config_TMDB struct {

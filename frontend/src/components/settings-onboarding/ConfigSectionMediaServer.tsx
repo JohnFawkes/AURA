@@ -42,8 +42,6 @@ interface ConfigSectionMediaServerProps {
 
 const SERVER_TYPES = ["Plex", "Emby", "Jellyfin"];
 const USER_ID_REQUIRED_TYPES = new Set<string>(["Emby", "Jellyfin"]);
-const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
-const SEASON_NAMING_CONVENTION_REQUIRED_TYPES = new Set<string>(["Plex"]);
 
 export function GetConnectionColor(status: "unknown" | "ok" | "error"): "green-500" | "red-500" | "gray-500" {
 	switch (status) {
@@ -119,14 +117,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			errs.UserID = "User ID should be set automatically after URL & Token are valid.";
 		}
 
-		// Season naming
-		if (
-			SEASON_NAMING_CONVENTION_REQUIRED_TYPES.has(typeNormalized) &&
-			!SEASON_NAMING_CONVENTION_OPTIONS.includes((value.SeasonNamingConvention ?? "").trim())
-		) {
-			errs.SeasonNamingConvention = "Season naming convention is required for this server type.";
-		}
-
 		// Libraries
 		if (libraries.length === 0) {
 			errs.Libraries = "Add at least one library.";
@@ -147,15 +137,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		}
 
 		return errs;
-	}, [
-		typeNormalized,
-		value.URL,
-		value.Token,
-		value.UserID,
-		value.SeasonNamingConvention,
-		libraries,
-		remoteTokenError,
-	]);
+	}, [typeNormalized, value.URL, value.Token, value.UserID, libraries, remoteTokenError]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -396,66 +378,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						className={cn("w-full", dirtyFields.UserID && "border-amber-500")}
 					/>
 					{errors.UserID && <p className="text-xs text-red-500">{errors.UserID}</p>}
-				</div>
-			)}
-
-			{/* Season Naming Convention (Plex) */}
-			{SEASON_NAMING_CONVENTION_REQUIRED_TYPES.has(value.Type) && (
-				<div className={cn("space-y-1")}>
-					<div className="flex items-center justify-between">
-						<Label>Season Naming Convention</Label>
-						{editing && (
-							<PopoverHelp ariaLabel="help-media-server-season-naming-convention">
-								<div className="space-y-3">
-									<div>
-										<p className="font-medium mb-1">Season Naming Convention</p>
-										<p className="text-muted-foreground">
-											How Plex season folders / labels are formatted.
-										</p>
-									</div>
-									<ul className="space-y-1">
-										<li className="flex items-center gap-2">
-											<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono ">
-												1
-											</span>
-											<span>Season 1</span>
-										</li>
-										<li className="flex items-center gap-2">
-											<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono">
-												2
-											</span>
-											<span>Season 01 (zero‑padded)</span>
-										</li>
-									</ul>
-									<p className="text-muted-foreground">Used for display / folder naming logic.</p>
-								</div>
-							</PopoverHelp>
-						)}
-					</div>
-					<Select
-						disabled={!editing}
-						value={value.SeasonNamingConvention}
-						onValueChange={(v) => onChange("SeasonNamingConvention", v)}
-					>
-						<SelectTrigger
-							id="media-server-season-naming-convention-trigger"
-							className={cn("w-full", dirtyFields.SeasonNamingConvention && "border-amber-500")}
-						>
-							<SelectValue placeholder="Select convention..." />
-						</SelectTrigger>
-						<SelectContent>
-							{SEASON_NAMING_CONVENTION_OPTIONS.map((o) => (
-								<SelectItem key={o} value={o}>
-									{o}
-								</SelectItem>
-							))}
-							<SelectScrollUpButton />
-							<SelectScrollDownButton />
-						</SelectContent>
-					</Select>
-					{errors.SeasonNamingConvention && (
-						<p className="text-xs text-red-500">{errors.SeasonNamingConvention}</p>
-					)}
 				</div>
 			)}
 

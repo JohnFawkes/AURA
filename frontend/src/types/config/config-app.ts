@@ -26,7 +26,6 @@ export interface AppConfigMediaServer {
 	URL: string; // Base URL of the media server
 	Token: string; // Authentication token for accessing the media server
 	Libraries: AppConfigMediaServerLibrary[]; // List of media server libraries to manage
-	SeasonNamingConvention?: string; // Season naming convention (optional for Plex)
 	UserID?: string; // User ID for accessing the media server (optional for Emby/Jellyfin)
 }
 export interface AppConfigMediaServerLibrary {
@@ -57,6 +56,8 @@ export interface AppConfigCacheImages {
 export interface AppConfigSaveImagesLocally {
 	Enabled: boolean; // Whether to save images locally.
 	Path: string; // Path to save images locally. If empty, images will be saved next to content.
+	SeasonNamingConvention: string; // Naming convention for season images.
+	EpisodeNamingConvention: string; // Naming convention for episode images.
 }
 
 export interface AppConfigTMDB {

@@ -135,7 +135,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 		case "backdrop":
 			newFileName = "backdrop.jpg"
 		case "seasonPoster", "specialSeasonPoster":
-			seasonNumberConvention := Global_Config.MediaServer.SeasonNamingConvention
+			seasonNumberConvention := Global_Config.Images.SaveImagesLocally.SeasonNamingConvention
 			var seasonNumber string
 			if seasonNumberConvention == "1" {
 				seasonNumber = fmt.Sprintf("%d", file.Season.Number)
@@ -166,12 +166,35 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			newFilePath = seasonPath
 			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
 		case "titlecard":
+			episodeNamingConvention := Global_Config.Images.SaveImagesLocally.EpisodeNamingConvention
 			// For titlecards, get the file path from Plex
 			episodePath := Plex_GetEpisodePathFromPlex(mediaItem, file)
 			if episodePath != "" {
 				newFilePath = path.Dir(episodePath)
-				newFileName = path.Base(episodePath)
-				newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
+				switch episodeNamingConvention {
+				case "match":
+					newFileName = path.Base(episodePath)
+					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
+				case "static":
+					var seasonNumber string
+					var episodeNumber string
+					if Global_Config.Images.SaveImagesLocally.SeasonNamingConvention == "1" {
+						seasonNumber = fmt.Sprintf("%d", file.Episode.SeasonNumber)
+						episodeNumber = fmt.Sprintf("%d", file.Episode.EpisodeNumber)
+					} else {
+						seasonNumber = Util_Format_Get2DigitNumber(int64(file.Episode.SeasonNumber))
+						episodeNumber = Util_Format_Get2DigitNumber(int64(file.Episode.EpisodeNumber))
+					}
+					newFileName = fmt.Sprintf("S%sE%s.jpg", seasonNumber, episodeNumber)
+				default:
+					getFilePathAction.SetError("Invalid Episode Naming Convention",
+						"EpisodeNamingConvention must be either 'match' or 'static'",
+						map[string]any{
+							"EpisodeNamingConvention": episodeNamingConvention,
+							"SeasonNamingConvention":  Global_Config.Images.SaveImagesLocally.SeasonNamingConvention,
+						})
+					return *getFilePathAction.Error
+				}
 			} else {
 				getFilePathAction.SetError("Failed to determine file path for titlecard",
 					"Could not find episode path in Plex data",

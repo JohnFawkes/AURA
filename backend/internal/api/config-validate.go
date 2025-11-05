@@ -37,6 +37,9 @@ func (config *Config) ValidateConfig() {
 	// Sub-action: AutoDownload Config
 	isAutoDownloadValid := Config_ValidateAutoDownload(ctx, &config.AutoDownload)
 
+	// Sub-action: Images Config
+	isImagesValid := Config_ValidateImages(ctx, &config.Images, config.MediaServer)
+
 	// Sub-action: Notifications Config
 	isNotificationsValid := Config_ValidateNotifications(ctx, &config.Notifications)
 
@@ -44,7 +47,9 @@ func (config *Config) ValidateConfig() {
 	isSonarrRadarrValid := Config_ValidateSonarrRadarr(ctx, &config.SonarrRadarr, config.MediaServer)
 
 	// If any validation failed, set status to error
-	if !isAuthValid || !isLoggingValid || !isMediaServerValid || !isMediuxValid || !isAutoDownloadValid || !isNotificationsValid || !isSonarrRadarrValid {
+	if !isAuthValid || !isLoggingValid || !isMediaServerValid ||
+		!isMediuxValid || !isAutoDownloadValid ||
+		!isImagesValid || !isNotificationsValid || !isSonarrRadarrValid {
 		ld.Status = logging.StatusError
 		Global_Config_Valid = false
 	} else {
@@ -144,15 +149,6 @@ func Config_ValidateMediaServer(ctx context.Context, MediaServer *Config_MediaSe
 	}
 
 	// Now that we know the Media Server config is valid, clean up fields and set defaults
-
-	if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention == "" {
-		MediaServer.SeasonNamingConvention = "2"
-		logAction.AppendWarning("message", "MediaServer.SeasonNamingConvention not set, defaulting to '2'")
-	} else if MediaServer.Type == "Plex" && MediaServer.SeasonNamingConvention != "1" && MediaServer.SeasonNamingConvention != "2" {
-		MediaServer.SeasonNamingConvention = "2"
-		logAction.AppendWarning("message", "MediaServer.SeasonNamingConvention invalid, defaulting to '2'")
-	}
-
 	// Trim the trailing slash from the URL
 	MediaServer.URL = strings.TrimSuffix(MediaServer.URL, "/")
 
@@ -212,6 +208,46 @@ func Config_ValidateAutoDownload(ctx context.Context, AutoDownload *Config_AutoD
 func Config_ValidateCron(cronExpression string) bool {
 	_, err := cron.ParseStandard(cronExpression)
 	return err == nil
+}
+
+func Config_ValidateImages(ctx context.Context, Images *Config_Images, msConfig Config_MediaServer) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Images Config", logging.LevelTrace)
+	defer logAction.Complete()
+
+	isValid := true
+
+	// If Images.SaveImagesLocally.Enabled is true, validate the SeasonNamingConvention and EpisodeNamingConvention
+	if Images.SaveImagesLocally.Enabled {
+		if msConfig.Type != "Plex" {
+			return isValid
+		}
+
+		validSeasonNamingConventions := []string{"1", "2"}
+		validEpisodeNamingConventions := []string{"match", "static"}
+
+		if !stringSliceContains(validSeasonNamingConventions, Images.SaveImagesLocally.SeasonNamingConvention) {
+			if msConfig.Type == "Plex" && Images.SaveImagesLocally.SeasonNamingConvention == "" {
+				Images.SaveImagesLocally.SeasonNamingConvention = "2"
+				logAction.AppendWarning("message", "Images.SaveImagesLocally.SeasonNamingConvention not set, defaulting to '2'")
+			} else if msConfig.Type == "Plex" && Images.SaveImagesLocally.SeasonNamingConvention != "1" && Images.SaveImagesLocally.SeasonNamingConvention != "2" {
+				Images.SaveImagesLocally.SeasonNamingConvention = "2"
+				logAction.AppendWarning("message", "Images.SaveImagesLocally.SeasonNamingConvention invalid, defaulting to '2'")
+			}
+		}
+
+		Images.SaveImagesLocally.EpisodeNamingConvention = strings.ToLower(Images.SaveImagesLocally.EpisodeNamingConvention)
+		if !stringSliceContains(validEpisodeNamingConventions, Images.SaveImagesLocally.EpisodeNamingConvention) {
+			if msConfig.Type == "Plex" && Images.SaveImagesLocally.EpisodeNamingConvention == "" {
+				Images.SaveImagesLocally.EpisodeNamingConvention = "match"
+				logAction.AppendWarning("message", "Images.SaveImagesLocally.EpisodeNamingConvention not set, defaulting to 'match'")
+			} else if msConfig.Type == "Plex" && Images.SaveImagesLocally.EpisodeNamingConvention != "match" && Images.SaveImagesLocally.EpisodeNamingConvention != "static" {
+				Images.SaveImagesLocally.EpisodeNamingConvention = "match"
+				logAction.AppendWarning("message", "Images.SaveImagesLocally.EpisodeNamingConvention invalid, defaulting to 'match'")
+			}
+		}
+
+	}
+	return isValid
 }
 
 func Config_ValidateNotifications(ctx context.Context, Notifications *Config_Notifications) bool {

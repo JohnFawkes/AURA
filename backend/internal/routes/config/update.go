@@ -31,7 +31,7 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	mediaServerChanged, mediaServerValid := checkConfigDifferences_MediaServer(ctx, api.Global_Config.MediaServer, &newConfig.MediaServer)
 	mediuxChanged, mediuxValid := checkConfigDifferences_Mediux(ctx, api.Global_Config.Mediux, &newConfig.Mediux)
 	autoDownloadChanged, autoDownloadValid := checkConfigDifferences_Autodownload(ctx, api.Global_Config.AutoDownload, &newConfig.AutoDownload)
-	imagesChanged, imagesValid := checkConfigDifferences_Images(ctx, api.Global_Config.Images, &newConfig.Images)
+	imagesChanged, imagesValid := checkConfigDifferences_Images(ctx, api.Global_Config.Images, &newConfig.Images, newConfig.MediaServer)
 	tmdbChanged, tmdbValid := checkConfigDifferences_TMDB(ctx, api.Global_Config.TMDB, &newConfig.TMDB)
 	labelsAndTagsChanged, labelsAndTagsValid := checkConfigDifferences_LabelsAndTags(ctx, api.Global_Config.LabelsAndTags, &newConfig.LabelsAndTags)
 	notificationsChanged, notificationsValid := checkConfigDifferences_Notifications(ctx, api.Global_Config.Notifications, &newConfig.Notifications)
@@ -213,16 +213,6 @@ func checkConfigDifferences_MediaServer(ctx context.Context, oldMediaServer api.
 			changed = true
 		}
 
-		if oldMediaServer.SeasonNamingConvention != newMediaServer.SeasonNamingConvention {
-			logAction.AppendResult("MediaServer.SeasonNamingConvention changed", fmt.Sprintf("from '%s' to '%s'", oldMediaServer.SeasonNamingConvention, newMediaServer.SeasonNamingConvention))
-			logging.LOGGER.Info().
-				Timestamp().
-				Str("old_season_naming_convention", oldMediaServer.SeasonNamingConvention).
-				Str("new_season_naming_convention", newMediaServer.SeasonNamingConvention).
-				Msg("MediaServer.SeasonNamingConvention changed")
-			changed = true
-		}
-
 		if oldMediaServer.UserID != newMediaServer.UserID {
 			logAction.AppendResult("MediaServer.UserID changed", fmt.Sprintf("from '%v' to '%v'", oldMediaServer.UserID, newMediaServer.UserID))
 			logging.LOGGER.Info().
@@ -304,7 +294,7 @@ func checkConfigDifferences_Autodownload(ctx context.Context, oldAutoDownload ap
 }
 
 // checkConfigDifferences_Images compares old and new Images configurations.
-func checkConfigDifferences_Images(ctx context.Context, oldImages api.Config_Images, newImages *api.Config_Images) (changed, newValid bool) {
+func checkConfigDifferences_Images(ctx context.Context, oldImages api.Config_Images, newImages *api.Config_Images, msConfig api.Config_MediaServer) (changed, newValid bool) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Check Config Differences: Images", logging.LevelTrace)
 	defer logAction.Complete()
 	changed = false
@@ -339,7 +329,28 @@ func checkConfigDifferences_Images(ctx context.Context, oldImages api.Config_Ima
 				Msg("Images.SaveImagesLocally.Path changed")
 			changed = true
 		}
+
+		if oldImages.SaveImagesLocally.SeasonNamingConvention != newImages.SaveImagesLocally.SeasonNamingConvention {
+			logAction.AppendResult("Images.SaveImagesLocally.SeasonNamingConvention changed", fmt.Sprintf("from '%s' to '%s'", oldImages.SaveImagesLocally.SeasonNamingConvention, newImages.SaveImagesLocally.SeasonNamingConvention))
+			logging.LOGGER.Info().
+				Timestamp().
+				Str("old_season_naming_convention", oldImages.SaveImagesLocally.SeasonNamingConvention).
+				Str("new_season_naming_convention", newImages.SaveImagesLocally.SeasonNamingConvention).
+				Msg("Images.SaveImagesLocally.SeasonNamingConvention changed")
+			changed = true
+		}
+
+		if oldImages.SaveImagesLocally.EpisodeNamingConvention != newImages.SaveImagesLocally.EpisodeNamingConvention {
+			logAction.AppendResult("Images.SaveImagesLocally.EpisodeNamingConvention changed", fmt.Sprintf("from '%s' to '%s'", oldImages.SaveImagesLocally.EpisodeNamingConvention, newImages.SaveImagesLocally.EpisodeNamingConvention))
+			logging.LOGGER.Info().
+				Timestamp().
+				Str("old_episode_naming_convention", oldImages.SaveImagesLocally.EpisodeNamingConvention).
+				Str("new_episode_naming_convention", newImages.SaveImagesLocally.EpisodeNamingConvention).
+				Msg("Images.SaveImagesLocally.EpisodeNamingConvention changed")
+			changed = true
+		}
 	}
+	newValid = api.Config_ValidateImages(ctx, newImages, msConfig)
 	return changed, newValid
 }
 

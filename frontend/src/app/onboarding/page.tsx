@@ -253,7 +253,7 @@ const OnboardingPage = () => {
 				),
 			},
 			{
-				key: "sonarrandradarr",
+				key: "sonarr_and_radarr",
 				title: "Sonarr/Radarr",
 				optional: true,
 				render: () => (
@@ -269,7 +269,7 @@ const OnboardingPage = () => {
 				),
 			},
 			{
-				key: "labelsandtags",
+				key: "labels_and_tags",
 				title: "Labels & Tags",
 				optional: true,
 				render: () => (
