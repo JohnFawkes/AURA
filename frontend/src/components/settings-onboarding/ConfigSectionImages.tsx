@@ -107,9 +107,10 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 
 		return errs;
 	}, [
+		mediaServerType,
+		value.SaveImagesLocally.Enabled,
 		value.SaveImagesLocally.SeasonNamingConvention,
 		value.SaveImagesLocally.EpisodeNamingConvention,
-		mediaServerType,
 	]);
 
 	// Emit errors upward
