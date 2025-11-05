@@ -132,6 +132,15 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 		return []PosterSet{}
 	}
 
+	var baseMinMediaItem = MediaItem{
+		TMDB_ID:      tmdbID,
+		LibraryTitle: cachedItem.LibraryTitle,
+		RatingKey:    cachedItem.RatingKey,
+		Type:         "show",
+		Title:        cachedItem.Title,
+		Year:         cachedItem.Year,
+	}
+
 	// If the show struct is basically empty, short-circuit
 	if show.ID == "" &&
 		len(show.Posters) == 0 &&
@@ -175,7 +184,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					Show: &PosterFileShow{
 						ID:        show.ID,
 						Title:     show.Title,
-						MediaItem: *cachedItem,
+						MediaItem: baseMinMediaItem,
 					},
 				}
 
@@ -211,7 +220,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					Show: &PosterFileShow{
 						ID:        show.ID,
 						Title:     show.Title,
-						MediaItem: *cachedItem,
+						MediaItem: baseMinMediaItem,
 					},
 				}
 				if ps, exists := showSetMap[setInfo.ID]; exists {
@@ -264,7 +273,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					if !seasonExists {
 						seasonItem = &MediaItem{} // Create a new empty MediaItem
 					} else {
-						seasonItem = cachedItem // Use existing cached item
+						seasonItem = &baseMinMediaItem // Use existing cached item
 					}
 					newPoster := PosterFile{
 						ID:       poster.ID,
@@ -319,7 +328,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 						if !episodeExists {
 							episodeItem = &MediaItem{} // Create a new empty MediaItem
 						} else {
-							episodeItem = cachedItem // Use existing cached item
+							episodeItem = &baseMinMediaItem // Use existing cached item
 						}
 
 						newTitlecard := PosterFile{
@@ -400,6 +409,15 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 		return nil
 	}
 
+	baseMinMediaItem := MediaItem{
+		TMDB_ID:      tmdbID,
+		LibraryTitle: cachedItem.LibraryTitle,
+		RatingKey:    cachedItem.RatingKey,
+		Type:         "movie",
+		Title:        cachedItem.Title,
+		Year:         cachedItem.Year,
+	}
+
 	logAction.AppendResult("movie", map[string]any{
 		"id":        movie.ID,
 		"title":     movie.Title,
@@ -429,7 +447,7 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 						ImdbID:      movie.ImdbID,
 						TraktID:     movie.TraktID,
 						ReleaseDate: movie.ReleaseDate,
-						MediaItem:   *cachedItem,
+						MediaItem:   baseMinMediaItem,
 					},
 				}
 
@@ -475,7 +493,7 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 						ImdbID:      movie.ImdbID,
 						TraktID:     movie.TraktID,
 						ReleaseDate: movie.ReleaseDate,
-						MediaItem:   *cachedItem,
+						MediaItem:   baseMinMediaItem,
 					},
 				}
 				if ps, exists := movieSetMap[setInfo.ID]; exists {
@@ -534,6 +552,15 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 			})
 		}
 
+		baseMinMediaItem := MediaItem{
+			TMDB_ID:      movie.ID,
+			LibraryTitle: cachedItem.LibraryTitle,
+			RatingKey:    cachedItem.RatingKey,
+			Type:         "movie",
+			Title:        cachedItem.Title,
+			Year:         cachedItem.Year,
+		}
+
 		if len(movie.Posters) > 0 {
 			for _, poster := range movie.Posters {
 				if poster.CollectionSet.ID != "" {
@@ -557,7 +584,7 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 							ImdbID:      movie.ImdbID,
 							TraktID:     movie.TraktID,
 							ReleaseDate: movie.ReleaseDate,
-							MediaItem:   *cachedItem,
+							MediaItem:   baseMinMediaItem,
 						},
 					}
 
@@ -613,7 +640,7 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 							ImdbID:      movie.ImdbID,
 							TraktID:     movie.TraktID,
 							ReleaseDate: movie.ReleaseDate,
-							MediaItem:   *cachedItem,
+							MediaItem:   baseMinMediaItem,
 						},
 					}
 
