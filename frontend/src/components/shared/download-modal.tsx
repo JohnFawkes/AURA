@@ -1177,6 +1177,13 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											"Debug Info",
 											`Skipping Season ${sp.Season?.Number} for ${item.MediaItemTitle} - Season does not exist in latest media item.`
 										);
+										setSelectedSizes((prev) => ({
+											...prev,
+											fileCount: prev.fileCount - 1,
+											downloadSize: sp.FileSize
+												? prev.downloadSize - sp.FileSize
+												: prev.downloadSize,
+										}));
 										continue;
 									}
 									await downloadPosterFileAndUpdateMediaServer(
@@ -1261,6 +1268,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												"Debug Info",
 												`Skipping Title Card for S${tc.Episode.SeasonNumber}E${tc.Episode.EpisodeNumber} - Episode does not exist in latest media item.`
 											);
+											setSelectedSizes((prev) => ({
+												...prev,
+												fileCount: prev.fileCount - 1,
+												downloadSize: prev.downloadSize - tc.FileSize!,
+											}));
 											continue;
 										}
 										await downloadPosterFileAndUpdateMediaServer(
