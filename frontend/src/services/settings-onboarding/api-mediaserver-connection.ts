@@ -7,50 +7,6 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { AppConfigMediaServer } from "@/types/config/config-app";
 
-export const checkMediaServerConnectionStatus = async (mediaServerInfo: AppConfigMediaServer) => {
-	try {
-		const response = await fetchMediaServerConnectionStatus();
-
-		if (response.status === "error") {
-			toast.error(response.error?.message || "Failed to check media server status");
-			return;
-		}
-
-		toast.success(`${mediaServerInfo.Type} running with version: ${response.data}`);
-	} catch (error) {
-		const errorResponse = ReturnErrorMessage<string>(error);
-		toast.error(errorResponse.error?.message || "Failed to check media server status");
-	}
-};
-
-export async function fetchMediaServerConnectionStatus(): Promise<APIResponse<string>> {
-	log("INFO", "API - Settings", "Media Server", "Fetching media server connection status");
-	try {
-		const response = await apiClient.get<APIResponse<string>>(`/health/status/mediaserver`);
-		if (response.data.status === "error") {
-			throw new Error(response.data.error?.message || "Unknown error fetching media server connection status");
-		} else {
-			log(
-				"INFO",
-				"API - Settings",
-				"Media Server",
-				"Fetched media server connection status successfully",
-				response.data
-			);
-		}
-		return response.data;
-	} catch (error) {
-		log(
-			"ERROR",
-			"API - Settings",
-			"Media Server",
-			`Failed to fetch media server connection status: ${error instanceof Error ? error.message : "Unknown error"}`,
-			error
-		);
-		return ReturnErrorMessage<string>(error);
-	}
-}
-
 export async function postMediaServerNewInfoConnectionStatus(
 	mediaServerInfo: AppConfigMediaServer
 ): Promise<APIResponse<string>> {
