@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
 		proxyTimeout: 300000,
 	},
 	output: "standalone",
+	productionBrowserSourceMaps: true,
+	poweredByHeader: false,
 
 	async rewrites() {
 		return [
