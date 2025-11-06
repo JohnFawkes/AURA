@@ -242,38 +242,42 @@ function LogsFilterContent({
 							<Label className="text-xs font-semibold mb-1 block uppercase text-muted-foreground">
 								{section.replace(/_/g, " ")}
 							</Label>
-							{actions.map((action) => (
-								<div
-									key={action.value}
-									className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
-										pendingActionsFilter.includes(action.value) ? "bg-muted" : "hover:bg-muted/60"
-									}`}
-									onClick={() => {
-										let newActions;
-										if (pendingActionsFilter.includes(action.value)) {
-											newActions = pendingActionsFilter.filter((a) => a !== action.value);
-										} else {
-											newActions = [...pendingActionsFilter, action.value];
-										}
-										setPendingActionsFilter(newActions);
-									}}
-								>
-									<Checkbox
-										checked={pendingActionsFilter.includes(action.value)}
-										id={`action-${action.value}`}
-									/>
-									<Label
-										htmlFor={`action-${action.value}`}
-										className="text-sm flex-1 cursor-pointer truncate"
-										onClick={(e) => e.stopPropagation()}
+							{actions
+								.sort((a, b) => a.label.localeCompare(b.label))
+								.map((action) => (
+									<div
+										key={action.value}
+										className={`flex items-center space-x-2 px-2 py-1 rounded cursor-pointer transition-colors ${
+											pendingActionsFilter.includes(action.value)
+												? "bg-muted"
+												: "hover:bg-muted/60"
+										}`}
+										onClick={() => {
+											let newActions;
+											if (pendingActionsFilter.includes(action.value)) {
+												newActions = pendingActionsFilter.filter((a) => a !== action.value);
+											} else {
+												newActions = [...pendingActionsFilter, action.value];
+											}
+											setPendingActionsFilter(newActions);
+										}}
 									>
-										{action.label}
-									</Label>
-									{pendingActionsFilter.includes(action.value) && (
-										<Check className="h-4 w-4 text-primary" />
-									)}
-								</div>
-							))}
+										<Checkbox
+											checked={pendingActionsFilter.includes(action.value)}
+											id={`action-${action.value}`}
+										/>
+										<Label
+											htmlFor={`action-${action.value}`}
+											className="text-sm flex-1 cursor-pointer truncate"
+											onClick={(e) => e.stopPropagation()}
+										>
+											{action.label}
+										</Label>
+										{pendingActionsFilter.includes(action.value) && (
+											<Check className="h-4 w-4 text-primary" />
+										)}
+									</div>
+								))}
 						</div>
 					))}
 			</div>
