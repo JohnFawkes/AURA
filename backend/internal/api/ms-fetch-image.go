@@ -53,10 +53,18 @@ func Plex_FetchImageFromMediaServer(ctx context.Context, ratingKey string, image
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Image from Plex Media Server", logging.LevelDebug)
 	defer logAction.Complete()
 
-	// Construct the URL for the Plex server API request
+	// Use "art" for backdrops
+	width := "300"
+	height := "450"
 	if imageType == "backdrop" {
 		imageType = "art"
+		width = "1280"
+		height = "720"
 	}
+
+	// Build the photo path and encode it
+	photoPath := path.Join("/library/metadata", ratingKey, imageType, fmt.Sprintf("%d", time.Now().Unix()))
+	encodedPhotoPath := url.QueryEscape(photoPath)
 
 	// Make the URL
 	u, err := url.Parse(Global_Config.MediaServer.URL)
@@ -64,8 +72,14 @@ func Plex_FetchImageFromMediaServer(ctx context.Context, ratingKey string, image
 		logAction.SetError("Failed to parse Plex base URL", err.Error(), nil)
 		return nil, *logAction.Error
 	}
-	u.Path = path.Join(u.Path, "library", "metadata", ratingKey, imageType, fmt.Sprintf("%d", time.Now().Unix()))
+	u.Path = "/photo/:/transcode"
+	query := u.Query()
+	query.Set("width", width)
+	query.Set("height", height)
+	u.RawQuery = query.Encode()
 	URL := u.String()
+
+	URL = fmt.Sprintf("%s&url=%s", URL, encodedPhotoPath)
 
 	// Make the Auth Headers for Request
 	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
@@ -136,6 +150,17 @@ func EJ_FetchImageFromMediaServer(ctx context.Context, ratingKey string, imageTy
 		return nil, logErr
 	}
 	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Failed to fetch image from Emby/Jellyfin",
+			fmt.Sprintf("%s server returned status code %d", Global_Config.MediaServer.Type, httpResp.StatusCode),
+			map[string]any{
+				"URL":        URL,
+				"StatusCode": httpResp.StatusCode,
+			})
+		return nil, *logAction.Error
+	}
 
 	// Check if the response body is empty
 	if len(respBody) == 0 {

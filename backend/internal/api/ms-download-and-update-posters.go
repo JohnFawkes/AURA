@@ -37,77 +37,42 @@ func CallDownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file
 
 func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo {
 	if !Global_Config.Images.SaveImagesLocally.Enabled {
-		Err := Plex_UpdatePosterViaMediuxURL(ctx, mediaItem, file)
+		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {
 			return Err
 		}
 		return logging.LogErrorInfo{}
 	}
 
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Downloading and Updating Poster in Plex", logging.LevelInfo)
+	var posterImageType string
+	switch file.Type {
+	case "poster":
+		posterImageType = "Poster"
+	case "backdrop":
+		posterImageType = "Backdrop"
+	case "seasonPoster", "specialSeasonPoster":
+		posterImageType = fmt.Sprintf("Season %d Poster", file.Season.Number)
+	case "titlecard":
+		posterImageType = fmt.Sprintf("S%dE%d Titlecard", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)
+	}
+
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating %s in Plex", posterImageType), logging.LevelInfo)
 	defer logAction.Complete()
 
-	// Check if the temporary folder has the image
-	// If it does, we don't need to download it again
-	// If it doesn't, we need to download it
-	// The image is saved in the temp-images/mediux/full folder with the file ID as the name
+	// Get the Image from MediUX
+	// Mediux_GetImage will handle checking the temp folder and caching based on config
 	formatDate := file.Modified.Format("20060102150405")
-	fileName := fmt.Sprintf("%s_%s.jpg", file.ID, formatDate)
-	filePath := path.Join(MediuxFullTempImageFolder, fileName)
-	exists := Util_File_CheckIfFileExists(filePath)
-	var imageData []byte
-	if !exists {
-		downloadImageAction := logAction.AddSubAction(fmt.Sprintf("Downloading Poster Image '%s' from Mediux", file.ID), logging.LevelDebug)
-		// Check if the temporary folder exists
-		Err := Util_File_CheckFolderExists(ctx, MediuxFullTempImageFolder)
-		if Err.Message != "" {
-			return Err
-		}
-
-		// Download the image from Mediux
-		imageData, _, Err = Mediux_GetImage(ctx, file.ID, formatDate, "original")
-		if Err.Message != "" {
-			return Err
-		}
-
-		// Add the image to the temporary folder
-		err := os.WriteFile(filePath, imageData, 0644)
-		if err != nil {
-			downloadImageAction.SetError("Failed to save image to temporary folder",
-				fmt.Sprintf("Ensure the path %s is accessible.", filePath),
-				map[string]any{
-					"error":   fmt.Sprintf("Error saving image: %v", err),
-					"request": filePath,
-				})
-			return *downloadImageAction.Error
-		}
-		downloadImageAction.Complete()
-	} else {
-		readImageAction := logAction.AddSubAction(fmt.Sprintf("Reading Poster Image '%s' from Temporary Folder", file.ID), logging.LevelDebug)
-		var err error
-		// Read the image from the temporary folder
-		imageData, err = os.ReadFile(filePath)
-		if err != nil {
-			readImageAction.SetError("Failed to read image from temporary folder",
-				fmt.Sprintf("Ensure the path %s is accessible.", filePath),
-				map[string]any{
-					"error":   fmt.Sprintf("Error reading image: %v", err),
-					"request": filePath,
-				})
-			return *readImageAction.Error
-		}
-		readImageAction.Complete()
+	imageData, _, Err := Mediux_GetImage(ctx, file.ID, formatDate, MediuxImageQualityOriginal)
+	if Err.Message != "" {
+		return Err
 	}
 
 	// Check the Plex Item type
 	// If it is a movie or show, handle the poster/backdrop/seasonPoster/titlecard accordingly
-
 	newFilePath := ""
 	newFileName := ""
 
-	getFilePathAction := logAction.AddSubAction(fmt.Sprintf("Determining File Path for %s (%s)", file.Type, mediaItem.Title), logging.LevelDebug)
-	var Err logging.LogErrorInfo
-
+	getFilePathAction := logAction.AddSubAction(fmt.Sprintf("Determining File Path for %s (%s)", posterImageType, mediaItem.Title), logging.LevelDebug)
 	switch mediaItem.Type {
 	case "movie":
 		// If item.Movie is nil, get the movie from the library
@@ -329,23 +294,6 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	createFileAction.AppendResult("saved_file_path", path.Join(newFilePath, newFileName))
 	createFileAction.Complete()
 
-	// If cacheImages is False, delete the image from the temporary folder
-	// 		This is to prevent the temporary folder from getting too large
-	if !Global_Config.Images.CacheImages.Enabled {
-		deleteTempImageAction := logAction.AddSubAction("Deleting Temporary Image File", logging.LevelDebug)
-		err := os.Remove(filePath)
-		if err != nil {
-			deleteTempImageAction.SetError("Failed to delete temporary image file", "Ensure the file can be deleted",
-				map[string]any{
-					"error": err.Error(),
-					"path":  filePath,
-				})
-			return *deleteTempImageAction.Error
-		}
-		deleteTempImageAction.AppendResult("message", fmt.Sprintf("Temporary image file %s deleted", filePath))
-		deleteTempImageAction.Complete()
-	}
-
 	// Determine the itemRatingKey
 	getRatingKeyAction := logAction.AddSubAction("Determining Item Rating Key for Poster Update", logging.LevelDebug)
 	itemRatingKey := Plex_GetItemRatingKey(mediaItem, file)
@@ -363,7 +311,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	// When the Path is set, the image is saved in a different location than Plex expects it to be.
 	// So we need to upload the image to Plex via the Mediux URL.
 	if isCustomLocalPath {
-		Err := Plex_UpdatePosterViaMediuxURL(ctx, mediaItem, file)
+		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {
 			return Err
 		}
@@ -384,7 +332,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 
 	// If failedOnGetPosters is true, use the Mediux URL to set the poster
 	if failedToGetPosterKey {
-		Err := Plex_UpdatePosterViaMediuxURL(ctx, mediaItem, file)
+		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {
 			return Err
 		}
@@ -400,7 +348,20 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 }
 
 func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating Poster in %s", Global_Config.MediaServer.Type), logging.LevelInfo)
+
+	var posterImageType string
+	switch file.Type {
+	case "poster":
+		posterImageType = "Poster"
+	case "backdrop":
+		posterImageType = "Backdrop"
+	case "seasonPoster", "specialSeasonPoster":
+		posterImageType = fmt.Sprintf("Season %d Poster", file.Season.Number)
+	case "titlecard":
+		posterImageType = fmt.Sprintf("S%dE%d Titlecard", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)
+	}
+
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating %s in %s", posterImageType, Global_Config.MediaServer.Type), logging.LevelInfo)
 	defer logAction.Complete()
 
 	// Get the Item Rating Key from Emby/Jellyfin
@@ -414,56 +375,12 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 		return *logAction.Error
 	}
 
-	// Check if the temporary folder has the image
-	// If it does, we don't need to download it again
-	// If it doesn't, we need to download it
-	// The image is saved in the temp-images/mediux/full folder with the file ID as the name
+	// Get the Image from MediUX
+	// Mediux_GetImage will handle checking the temp folder and caching based on config
 	formatDate := file.Modified.Format("20060102150405")
-	fileName := fmt.Sprintf("%s_%s.jpg", file.ID, formatDate)
-	filePath := path.Join(MediuxFullTempImageFolder, fileName)
-	exists := Util_File_CheckIfFileExists(filePath)
-	var imageData []byte
-	if !exists {
-		downloadImageAction := logAction.AddSubAction(fmt.Sprintf("Downloading Poster Image '%s' from Mediux", file.ID), logging.LevelDebug)
-		// Check if the temporary folder exists
-		Err := Util_File_CheckFolderExists(ctx, MediuxFullTempImageFolder)
-		if Err.Message != "" {
-			return Err
-		}
-
-		// Download the image from Mediux
-		imageData, _, Err = Mediux_GetImage(ctx, file.ID, formatDate, "original")
-		if Err.Message != "" {
-			return Err
-		}
-
-		// Add the image to the temporary folder
-		err := os.WriteFile(filePath, imageData, 0644)
-		if err != nil {
-			downloadImageAction.SetError("Failed to save image to temporary folder",
-				fmt.Sprintf("Ensure the path %s is accessible.", filePath),
-				map[string]any{
-					"error":   fmt.Sprintf("Error saving image: %v", err),
-					"request": filePath,
-				})
-			return *downloadImageAction.Error
-		}
-		downloadImageAction.Complete()
-	} else {
-		readImageAction := logAction.AddSubAction(fmt.Sprintf("Reading Poster Image '%s' from Temporary Folder", file.ID), logging.LevelDebug)
-		var err error
-		// Read the image from the temporary folder
-		imageData, err = os.ReadFile(filePath)
-		if err != nil {
-			readImageAction.SetError("Failed to read image from temporary folder",
-				fmt.Sprintf("Ensure the path %s is accessible.", filePath),
-				map[string]any{
-					"error":   fmt.Sprintf("Error reading image: %v", err),
-					"request": filePath,
-				})
-			return *readImageAction.Error
-		}
-		readImageAction.Complete()
+	imageData, _, Err := Mediux_GetImage(ctx, file.ID, formatDate, MediuxImageQualityOriginal)
+	if Err.Message != "" {
+		return Err
 	}
 
 	var posterType string

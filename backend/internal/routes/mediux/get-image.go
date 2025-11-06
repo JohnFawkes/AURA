@@ -34,6 +34,15 @@ func GetImage(w http.ResponseWriter, r *http.Request) {
 		api.Util_Response_SendJSON(w, ld, nil)
 		return
 	}
+	var imageQuality api.MediuxImageQuality
+	switch quality {
+	case "thumb":
+		imageQuality = api.MediuxImageQualityThumb
+	case "optimized":
+		imageQuality = api.MediuxImageQualityOptimized
+	case "original":
+		imageQuality = api.MediuxImageQualityOriginal
+	}
 
 	// Get the modified date from the URL query parameters
 	var modifiedDateTime time.Time
@@ -71,7 +80,7 @@ func GetImage(w http.ResponseWriter, r *http.Request) {
 	}
 	actionGetQueryParams.Complete()
 
-	imageData, imageType, Err := api.Mediux_GetImage(ctx, assetID, formatDate, quality)
+	imageData, imageType, Err := api.Mediux_GetImage(ctx, assetID, formatDate, imageQuality)
 	if Err.Message != "" {
 		api.Util_Response_SendJSON(w, ld, nil)
 		return

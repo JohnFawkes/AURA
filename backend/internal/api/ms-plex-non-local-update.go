@@ -5,15 +5,15 @@ import (
 	"context"
 )
 
-func Plex_UpdatePosterViaMediuxURL(ctx context.Context, item MediaItem, file PosterFile) logging.LogErrorInfo {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Update Poster via MediUX URL", logging.LevelInfo)
+func Plex_UpdateImageViaMediuxURL(ctx context.Context, item MediaItem, file PosterFile) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Update Image via MediUX URL", logging.LevelInfo)
 	defer logAction.Complete()
 
 	// Determine the itemRatingKey
 	itemRatingKey := Plex_GetItemRatingKey(item, file)
 	if itemRatingKey == "" {
 		logAction.SetError("Failed to determine Rating Key for item",
-			"Cannot update poster without a valid Rating Key",
+			"Cannot update image without a valid Rating Key",
 			map[string]any{
 				"Item": item,
 				"File": file,
@@ -23,7 +23,7 @@ func Plex_UpdatePosterViaMediuxURL(ctx context.Context, item MediaItem, file Pos
 	logAction.AppendResult("item_rating_key", itemRatingKey)
 
 	// Get the Image URL from MediUX
-	mediuxURL, Err := Mediux_GetImageURL(ctx, file.ID, file.Modified.String(), "original")
+	mediuxURL, Err := Mediux_GetImageURL(ctx, file.ID, file.Modified.String(), MediuxImageQualityOriginal)
 	if Err.Message != "" {
 		return Err
 	}

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString, quality string) (string, logging.LogErrorInfo) {
+func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, imageQuality MediuxImageQuality) (string, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Constructing Mediux Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
 	defer logAction.Complete()
 
@@ -48,11 +48,11 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString, quality st
 	}
 
 	// Check quality is set to "original" or "thumb"
-	if quality != "original" && quality != "thumb" && quality != "optimized" {
+	if imageQuality != MediuxImageQualityOriginal && imageQuality != MediuxImageQualityThumb && imageQuality != MediuxImageQualityOptimized {
 		logAction.SetError("Invalid quality parameter",
 			"Quality must be either 'original', 'thumb', or 'optimized'.",
 			map[string]any{
-				"quality": quality,
+				"imageQuality": imageQuality,
 			})
 		return "", *logAction.Error
 	}
@@ -61,10 +61,17 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString, quality st
 	dateTimeFormatted := dateTime.Format("20060102150405")
 
 	qualityParam := ""
-	if quality == "thumb" {
+	switch imageQuality {
+	case MediuxImageQualityThumb:
 		qualityParam = "thumb"
-	} else if Global_Config.Mediux.DownloadQuality == "optimized" || quality == "optimized" {
-		// If quality is "optimized" or configured as such, use optimized quality
+	case MediuxImageQualityOptimized:
+		qualityParam = "jpg"
+	case MediuxImageQualityOriginal:
+		// Leave qualityParam as empty for original
+	}
+
+	// Override qualityParam based on global config if it is set to optimized
+	if imageQuality != MediuxImageQualityThumb && Global_Config.Mediux.DownloadQuality == "optimized" {
 		qualityParam = "jpg"
 	}
 
@@ -82,7 +89,11 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString, quality st
 	}
 	u.RawQuery = query.Encode()
 	URL := u.String()
-	logAction.AppendResult("url", URL)
 
+	// Append Values
+	logAction.AppendResult("url", URL)
+	logAction.AppendResult("imageQuality", imageQuality)
+
+	// Return the constructed URL
 	return URL, logging.LogErrorInfo{}
 }
