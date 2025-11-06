@@ -60,15 +60,6 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 }) => {
 	const prevErrorsRef = useRef<string>("{}");
 
-	useEffect(() => {
-		const errors: Record<string, string> = {};
-		if (!errorsUpdate) return;
-		const serialized = JSON.stringify(errors);
-		if (serialized === prevErrorsRef.current) return;
-		prevErrorsRef.current = serialized;
-		errorsUpdate(errors);
-	}, [errorsUpdate]);
-
 	const clearTempImagesFolder = async () => {
 		try {
 			const response = await postClearTempImagesFolder();
