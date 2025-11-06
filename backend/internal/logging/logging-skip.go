@@ -32,6 +32,7 @@ func ShouldSkipLogging(request *http.Request, ld *LogData) bool {
 		`^/api/mediaserver/image.*$`,
 		`^/api/mediux/image.*$`,
 		`^/api/config/status.*$`,
+		`^/api/mediux/check-link.*$`,
 	}
 
 	if ld != nil {
