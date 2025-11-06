@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type structActionLabelSection struct {
@@ -17,6 +18,7 @@ type structActionLabelSection struct {
 	Section string `json:"section"`
 }
 
+var possibleActionsMutex sync.Mutex
 var possible_actions_paths = map[string]structActionLabelSection{
 	// Login & Auth
 	"/api/login": {
@@ -96,11 +98,23 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Section: "MEDIA",
 	},
 	"/api/mediaserver/item": {
-		Label:   "Get Item Content",
+		Label:   "Item - Get Content",
 		Section: "MEDIA",
 	},
 	"/api/mediaserver/download": {
 		Label:   "Download and Update",
+		Section: "MEDIA",
+	},
+	"/api/mediaserver/collection-items": {
+		Label:   "Collections - Get Items",
+		Section: "MEDIA",
+	},
+	"/api/mediaserver/collection-children": {
+		Label:   "Collections - Get Children",
+		Section: "MEDIA",
+	},
+	"/api/mediaserver/download-collection": {
+		Label:   "Collections - Download Images",
 		Section: "MEDIA",
 	},
 	// Download Queue Routes
@@ -240,12 +254,14 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 			if entry.Route == nil && len(entry.Actions) != 0 {
 				// If there is no Route info but Actions are present, append Action Name to possible_actions_paths
 				actionName := entry.Message
+				possibleActionsMutex.Lock()
 				if _, exists := possible_actions_paths[actionName]; !exists {
 					possible_actions_paths[actionName] = structActionLabelSection{
 						Label:   actionName,
 						Section: "AURA BACKGROUND TASK",
 					}
 				}
+				possibleActionsMutex.Unlock()
 			}
 			logEntries = append(logEntries, &entry)
 		} else {
