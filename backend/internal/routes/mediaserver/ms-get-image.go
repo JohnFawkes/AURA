@@ -36,7 +36,7 @@ func GetImage(w http.ResponseWriter, r *http.Request) {
 	// If the image does not exist, then get it from the media server
 	imageData, Err := api.CallFetchImageFromMediaServer(ctx, ratingKey, imageType)
 	if Err.Message != "" {
-		api.Util_Response_SendJSON(w, nil, Err)
+		api.Util_Response_SendJSON(w, ld, nil)
 		return
 	}
 
