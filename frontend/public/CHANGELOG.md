@@ -1,3 +1,22 @@
+## [0.9.50] - 2025-11-06
+
+### Added
+
+- Added Collections Page to handle applying Posters and Backdrops to a Collection within Plex. This is a Plex exclusive feature (for now).
+- Added aura logo to blank images for better user experience when images are missing.
+
+### Fixed
+
+- Fixed issue with Autodownload not filtering out Seasons/Titlecards that are not present on Media Server.
+- Fixed issue where trying to enable "Save Images Locally" during initial onboarding would cause error.
+- Fixed issue where Media Server images were no longer being downscaled correctly.
+- Fixed issue where Cache Images would cause smaller images to be used even when Mediux.DownloadQuality was set to "original".
+- Fixed issue where fetching image from Media Server would not throw an error if the media item did not exist.
+- Fixed Documentation to show how to manually edit Config file for MediaServer.Libraries Section.
+- Fixed issue where Log Filter actions were not sorted within the Group.
+
+---
+
 ## [0.9.49] - 2025-11-02
 
 ### Breaking
