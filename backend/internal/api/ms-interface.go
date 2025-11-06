@@ -34,6 +34,15 @@ type Interface_MediaServer interface {
 
 	// Use the TMDB ID, type, title and library section to search for the item on the media server
 	//SearchForItemAndGetRatingKey(tmdbID, itemType, itemTitle, librarySection string) (string, logging.StandardError)
+
+	// Get the movie collection items
+	FetchMovieCollectionItems(ctx context.Context, librarySection LibrarySection) ([]CollectionItem, logging.LogErrorInfo)
+
+	// Get the movie collection item children
+	FetchMovieCollectionItemChildren(ctx context.Context, collectionItem *CollectionItem) logging.LogErrorInfo
+
+	// Download and update the collection image
+	DownloadAndUpdateCollectionImage(ctx context.Context, collectionItem CollectionItem, file PosterFile) logging.LogErrorInfo
 }
 
 type PlexServer struct{}

@@ -255,7 +255,7 @@ const MediaItemPage = () => {
 					setError({
 						status: "error",
 						error: {
-							message: errorResponse?.message || "No poster sets found for this media item.",
+							message: errorResponse?.message || `No poster sets found for '${mediaItemResponse.Title}'`,
 							help: errorResponse?.help || "",
 							detail: errorResponse?.detail ?? undefined,
 							function: errorResponse?.function || "Unknown",
@@ -541,9 +541,9 @@ const MediaItemPage = () => {
 				backdropURL={`/api/mediaserver/image?ratingKey=${mediaItem?.RatingKey}&imageType=backdrop&cb=${imageVersion}`}
 			/>
 
-			{/* Header */}
 			<div className="p-4 lg:p-6">
 				<div className="pb-6">
+					{/* Header */}
 					<MediaItemDetails
 						mediaItem={mediaItem || undefined}
 						existsInDB={existsInDB}
@@ -558,6 +558,8 @@ const MediaItemPage = () => {
 							].filter(Boolean) as string[]
 						}
 					/>
+
+					{/* Loading and Error States */}
 					{isLoading && (
 						<div className={cn("mt-4 flex flex-col items-center", hasError ? "hidden" : "block")}>
 							<Loader message={loadingMessage} />

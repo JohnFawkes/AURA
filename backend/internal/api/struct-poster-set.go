@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+type CollectionSet struct {
+	ID        string       `json:"ID"`
+	Title     string       `json:"Title"`
+	User      SetUser      `json:"User"`
+	Posters   []PosterFile `json:"Posters"`
+	Backdrops []PosterFile `json:"Backdrops"`
+}
+
 type PosterSet struct {
 	ID             string       `json:"ID"`
 	Title          string       `json:"Title"`

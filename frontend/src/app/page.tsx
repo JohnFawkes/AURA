@@ -20,7 +20,7 @@ import { MAX_CACHE_DURATION, useLibrarySectionsStore } from "@/lib/stores/global
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchMediaItems } from "@/hooks/search-query";
+import { searchItems } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
@@ -262,7 +262,12 @@ export default function Home() {
 			}
 
 			// Filter out items by search
-			const filteredItems = searchMediaItems(items, searchQuery);
+			const filteredItems = searchItems(items, searchQuery, {
+				getTitle: (item) => item.Title,
+				getYear: (item) => item.Year,
+				getLibraryTitle: (item) => item.LibraryTitle,
+				getID: (item) => item.TMDB_ID || item.RatingKey,
+			});
 
 			// Store the filtered items in local storage
 			setFilteredAndSortedMediaItems(filteredItems);

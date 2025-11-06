@@ -19,7 +19,9 @@ export function JumpToTop() {
 		pathName === "/saved-sets" ||
 		pathName === "/saved-sets/" ||
 		pathName === "/download-queue" ||
-		pathName === "/download-queue/";
+		pathName === "/download-queue/" ||
+		pathName.startsWith("/collections") ||
+		pathName.startsWith("/collections/");
 	const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
 
 	useEffect(() => {

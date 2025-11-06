@@ -44,6 +44,31 @@ type MediuxCollectionSetResponse struct {
 	} `json:"data"`
 }
 
+type MediuxCollectionImagesByMovieIDs_Response struct {
+	Data struct {
+		Movies []MediuxCollectionImageByMovieIDs_Movie `json:"movies"`
+	} `json:"data"`
+}
+
+type MediuxCollectionImageByMovieIDs_Movie struct {
+	ID           string                                      `json:"id"`
+	Title        string                                      `json:"title"`
+	CollectionID *MediuxCollectionImageByMovieIDs_Collection `json:"collection_id,omitempty"`
+}
+
+type MediuxCollectionImageByMovieIDs_Collection struct {
+	ID             string                                   `json:"id"`
+	CollectionName string                                   `json:"collection_name"`
+	Posters        []MediuxCollectionImageByMovieIDs_Images `json:"posters,omitempty"`
+	Backdrops      []MediuxCollectionImageByMovieIDs_Images `json:"backdrops,omitempty"`
+}
+
+type MediuxCollectionImageByMovieIDs_Images struct {
+	MediuxBaseImage
+	UploadedBy    MediuxUserCreated `json:"uploaded_by"`
+	CollectionSet MediuxSetInfo     `json:"collection_set"`
+}
+
 type MediuxMovieSetByID struct {
 	ID          string            `json:"id"`
 	SetTitle    string            `json:"set_title,omitempty"`

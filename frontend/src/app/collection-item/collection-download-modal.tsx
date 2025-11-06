@@ -1,0 +1,439 @@
+"use client";
+
+import { CollectionItem } from "@/app/collections/page";
+import { formatDownloadSize } from "@/helper/format-download-size";
+import { patchDownloadCollectionImageAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
+import { CollectionSet } from "@/services/mediaserver/api-mediaserver-fetch-collection-children";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, Download, LoaderIcon, X } from "lucide-react";
+import { z } from "zod";
+
+import { useMemo, useRef, useState } from "react";
+import React from "react";
+import { useForm, useWatch } from "react-hook-form";
+
+import Link from "next/link";
+
+import { AssetImage } from "@/components/shared/asset-image";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogOverlay,
+	DialogPortal,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Progress } from "@/components/ui/progress";
+
+import { cn } from "@/lib/cn";
+import { log } from "@/lib/logger";
+
+import { PosterFile } from "@/types/media-and-posters/poster-sets";
+
+export interface CollectionsDownloadModalProps {
+	collectionItem: CollectionItem;
+	collectionItemSet: CollectionSet;
+}
+
+const downloadSchema = z.object({
+	poster: z.boolean(),
+	backdrop: z.boolean(),
+});
+
+const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ collectionItem, collectionItemSet }) => {
+	const [isMounted, setIsMounted] = useState(false);
+
+	// Cancel Button Text
+	const [cancelButtonText, setCancelButtonText] = useState<string>("Cancel");
+
+	// Download Button Text
+	const [downloadButtonText, setDownloadButtonText] = useState<string>("Download");
+
+	const [progress, setProgress] = useState<{
+		poster_progress?: string;
+		backdrop_progress?: string;
+	}>({});
+
+	const [errors, setErrors] = useState<{
+		poster_error?: string;
+		backdrop_error?: string;
+	}>({});
+
+	const posterImage = collectionItemSet.Posters?.[0] || null;
+	const backdropImage = collectionItemSet.Backdrops?.[0] || null;
+
+	const form = useForm({
+		resolver: zodResolver(downloadSchema),
+		defaultValues: {
+			poster: !!posterImage,
+			backdrop: !!backdropImage,
+		},
+	});
+
+	const selectedValues = useWatch({ control: form.control });
+
+	const numberOfImagesSelected = useMemo(() => {
+		let count = 0;
+		if (selectedValues.poster) count += 1;
+		if (selectedValues.backdrop) count += 1;
+		return count;
+	}, [selectedValues.poster, selectedValues.backdrop]);
+
+	const sizeOfImagesSelected = useMemo(() => {
+		let size = 0;
+		if (selectedValues.poster && posterImage) size += posterImage.FileSize || 0;
+		if (selectedValues.backdrop && backdropImage) size += backdropImage.FileSize || 0;
+		return formatDownloadSize(size);
+	}, [selectedValues.poster, selectedValues.backdrop, posterImage, backdropImage]);
+
+	// Function - Close Modal
+	const handleClose = () => {
+		form.reset();
+		// Reset progress and errors
+		setProgress({});
+		setErrors({});
+		resetProgressValues();
+		progressDownloadRef.current = 0;
+	};
+
+	type ProgressValues = {
+		value: number;
+		color: string;
+	};
+
+	// Download Progress
+	const [progressValues, setProgressValues] = useState<ProgressValues>({
+		value: 0,
+		color: "",
+	});
+
+	// Add this with your other state declarations
+	const progressRef = useRef(0);
+	const progressIncrementRef = useRef(0);
+	const progressDownloadRef = useRef(0);
+
+	const updateProgressValue = (value: number) => {
+		// Update the ref immediately
+		progressRef.current = Math.min(value, 100);
+
+		// Update the state
+		setProgressValues((prev) => ({
+			...prev,
+			value: progressRef.current,
+		}));
+	};
+
+	const resetProgressValues = () => {
+		progressRef.current = 0;
+		progressIncrementRef.current = 0;
+		progressDownloadRef.current = 0;
+		setProgressValues({
+			value: 0,
+			color: "",
+		});
+	};
+
+	const downloadImageFileAndApply = async (
+		imageType: "poster" | "backdrop",
+		collectionItem: CollectionItem,
+		posterImage: PosterFile
+	) => {
+		let isDone = false;
+		let interval: NodeJS.Timeout | undefined; // Declare interval here
+
+		try {
+			setProgress((prev) => ({
+				...prev,
+				[`${imageType}_progress`]: `Downloading ${imageType}...`,
+			}));
+
+			const targetProgress = progressRef.current + progressIncrementRef.current;
+			let currentProgress = progressRef.current;
+
+			// Start progress animation
+			interval = setInterval(() => {
+				if (currentProgress < targetProgress && !isDone) {
+					currentProgress += 1;
+					updateProgressValue(currentProgress);
+				}
+			}, 50);
+
+			const response = await patchDownloadCollectionImageAndUpdateMediaServer(
+				imageType,
+				collectionItem,
+				posterImage
+			);
+			if (response.status === "error") {
+				throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
+			}
+
+			// Mark as done and set progress to target
+			isDone = true;
+			clearInterval(interval);
+			updateProgressValue(targetProgress);
+
+			setProgress((prev) => ({
+				...prev,
+				[`${imageType}_progress`]: `Downloaded ${imageType.charAt(0).toUpperCase() + imageType.slice(1)}`,
+			}));
+		} catch {
+			isDone = true;
+			if (interval) clearInterval(interval);
+			setProgress((prev) => ({
+				...prev,
+				[`${imageType}_progress`]: `Failed to download ${imageType}`,
+			}));
+			setErrors((prev) => ({
+				...prev,
+				[`${imageType}_error`]: `Failed to download ${imageType}.`,
+			}));
+		} finally {
+			updateProgressValue(progressRef.current + progressIncrementRef.current);
+		}
+	};
+
+	const onSubmit = async (data: z.infer<typeof downloadSchema>) => {
+		if (isMounted) return;
+
+		if (!data.poster && !data.backdrop) {
+			return;
+		}
+
+		setIsMounted(true);
+
+		try {
+			// Reset errors and progress
+			setErrors({});
+			setProgress({});
+			resetProgressValues();
+			progressDownloadRef.current = 0;
+
+			log("INFO", "Collections Download Modal", "Debug Info", "Form submitted with data:", {
+				data,
+				collectionItem,
+				collectionItemSet,
+			});
+			log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
+			updateProgressValue(1);
+
+			// Progress Increment Calculation
+			const totalItemsToDownload =
+				(data.poster && posterImage ? 1 : 0) + (data.backdrop && backdropImage ? 1 : 0);
+			progressIncrementRef.current = 95 / (totalItemsToDownload * 2); // Multiply by 2 for start and end progress
+
+			if (data.poster && posterImage) {
+				await downloadImageFileAndApply("poster", collectionItem, posterImage);
+			}
+
+			if (data.backdrop && backdropImage) {
+				await downloadImageFileAndApply("backdrop", collectionItem, backdropImage);
+			}
+
+			updateProgressValue(100);
+		} catch (error) {
+			log("ERROR", "Collections Download Modal", "Debug Info", "Download Error:", error);
+		} finally {
+			setIsMounted(false);
+			setDownloadButtonText("Download");
+			setCancelButtonText("Close");
+		}
+	};
+
+	return (
+		<Dialog
+			onOpenChange={(open) => {
+				if (!open) {
+					handleClose();
+				}
+			}}
+		>
+			<DialogTrigger asChild>
+				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+			</DialogTrigger>
+			<DialogPortal>
+				<DialogOverlay />
+				<DialogContent
+					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+				>
+					<DialogHeader>
+						<DialogTitle>{collectionItemSet.Title}</DialogTitle>
+						<DialogDescription>{collectionItemSet.User?.Name}</DialogDescription>
+						<DialogDescription>Library: {collectionItem.LibraryTitle}</DialogDescription>
+						<DialogDescription>
+							<Link
+								href={"/"}
+								className="hover:text-primary transition-colors text-sm text-muted-foreground"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								Collection ID: {collectionItemSet.ID}
+							</Link>
+						</DialogDescription>
+					</DialogHeader>
+
+					<Form {...form}>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								{posterImage && (
+									<FormField
+										control={form.control}
+										name="poster"
+										render={({ field }) => (
+											<FormItem className="flex flex-col items-center border rounded-md p-4">
+												<FormLabel className="font-medium mb-2">Poster</FormLabel>
+												<FormControl>
+													<Checkbox checked={field.value} onCheckedChange={field.onChange} />
+												</FormControl>
+												{posterImage && (
+													<AssetImage
+														image={posterImage}
+														aspect="poster"
+														className="w-42 h-auto mt-2 rounded shadow"
+													/>
+												)}
+											</FormItem>
+										)}
+									/>
+								)}
+								{backdropImage && (
+									<FormField
+										control={form.control}
+										name="backdrop"
+										render={({ field }) => (
+											<FormItem className="flex flex-col items-center border rounded-md p-4">
+												<FormLabel className="font-medium mb-2">Backdrop</FormLabel>
+												<FormControl>
+													<Checkbox checked={field.value} onCheckedChange={field.onChange} />
+												</FormControl>
+												{backdropImage && (
+													<AssetImage
+														image={backdropImage}
+														aspect="backdrop"
+														className="w-full"
+													/>
+												)}
+											</FormItem>
+										)}
+									/>
+								)}
+							</div>
+
+							{numberOfImagesSelected > 0 ? (
+								<>
+									<div className="text-sm text-muted-foreground">
+										Number of Images: {numberOfImagesSelected}
+									</div>
+									<div className="text-sm text-muted-foreground">
+										Total Download Size: ~{sizeOfImagesSelected}
+									</div>
+								</>
+							) : (
+								<div className="text-sm text-destructive">
+									No image types selected for download. Please select at least one image type to
+									download.
+								</div>
+							)}
+
+							{progressValues.value > 0 && (
+								<div className="w-full">
+									<div className="flex items-center justify-between">
+										<Progress
+											value={progressValues.value}
+											className={`flex-1 
+												rounded-md ${progressValues.value < 100 ? "animate-pulse" : ""}
+												${progressValues.color ? `[&>div]:bg-${progressValues.color}-500` : ""}`}
+										/>
+										<span className="ml-2 text-sm text-muted-foreground">
+											{Math.round(progressValues.value)}%
+										</span>
+									</div>
+
+									{(progress.poster_progress || progress.backdrop_progress) && (
+										<div className="space-y-1 mt-2">
+											<div className="text-xs font-semibold mb-1">Progress</div>
+											{progress.poster_progress && (
+												<div>{getProgressStatus(progress.poster_progress)}</div>
+											)}
+											{progress.backdrop_progress && (
+												<div>{getProgressStatus(progress.backdrop_progress)}</div>
+											)}
+										</div>
+									)}
+
+									{(errors.poster_error || errors.backdrop_error) && (
+										<div className="space-y-1 mt-2">
+											<div className="text-xs font-semibold mb-1 text-red-600">Errors</div>
+											{errors.poster_error && (
+												<div className="text-red-600 flex items-center gap-1">
+													<X className="mr-1 h-4 w-4" />
+													Poster: {errors.poster_error}
+												</div>
+											)}
+											{errors.backdrop_error && (
+												<div className="text-red-600 flex items-center gap-1">
+													<X className="mr-1 h-4 w-4" />
+													Backdrop: {errors.backdrop_error}
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+							)}
+
+							<DialogFooter>
+								<DialogClose asChild>
+									<Button variant="ghost" type="button" onClick={handleClose}>
+										{cancelButtonText}
+									</Button>
+								</DialogClose>
+								<Button type="submit" disabled={!form.watch("poster") && !form.watch("backdrop")}>
+									{downloadButtonText}
+								</Button>
+							</DialogFooter>
+						</form>
+					</Form>
+				</DialogContent>
+			</DialogPortal>
+		</Dialog>
+	);
+};
+
+// Helper for status styling and icon
+const getProgressStatus = (status?: string) => {
+	if (!status) return null;
+	const lower = status.toLowerCase();
+	if (lower.startsWith("downloading")) {
+		return (
+			<span className="flex items-center gap-1 text-muted-foreground">
+				<LoaderIcon className="mr-1 animate-spin h-4 w-4" />
+				{status}
+			</span>
+		);
+	}
+	if (lower.startsWith("downloaded")) {
+		return (
+			<span className="flex items-center gap-1 text-green-600">
+				<Check className="mr-1 h-4 w-4" />
+				{status}
+			</span>
+		);
+	}
+	if (lower.startsWith("failed")) {
+		return (
+			<span className="flex items-center gap-1 text-red-600">
+				<X className="mr-1 h-4 w-4" />
+				{status}
+			</span>
+		);
+	}
+	return <span>{status}</span>;
+};
+
+export default CollectionsDownloadModal;

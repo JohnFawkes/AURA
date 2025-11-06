@@ -6,6 +6,7 @@ import {
 	ArrowRightCircle,
 	Bookmark as BookmarkIcon,
 	FileCog as FileCogIcon,
+	LayoutGrid,
 	ListOrdered,
 	LogOutIcon,
 	Logs,
@@ -27,13 +28,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
+import { useCollectionStore } from "@/lib/stores/global-store-collection-store";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
+import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchMediaItems } from "@/hooks/search-query";
+import { searchItems } from "@/hooks/search-query";
 
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
@@ -65,6 +68,10 @@ export default function Navbar() {
 	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
 	const isUserPage = pathName.startsWith("/user/");
 	const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";
+	const isLogsPage = pathName === "/logs" || pathName === "/logs/";
+	const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
+	const isCollectionsPage = pathName === "/collections" || pathName === "/collections/";
+	const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
 
 	// Auth State
 	const [isAuthed, setIsAuthed] = useState(false);
@@ -81,6 +88,10 @@ export default function Navbar() {
 	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
 	const nextMediaItem = useHomePageStore((state) => state.nextMediaItem);
 	const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
+
+	// Collection Item Page Store
+	const nextCollectionItem = useCollectionsPageStore((state) => state.nextCollectionItem);
+	const previousCollectionItem = useCollectionsPageStore((state) => state.previousCollectionItem);
 
 	// Onboarding Store
 	const { fetchStatus } = useOnboardingStore();
@@ -116,7 +127,7 @@ export default function Navbar() {
 		if (status) {
 			// If needs setup and not on onboarding page, redirect to onboarding
 			if (status.needsSetup) {
-				if (!isOnboardingPage) {
+				if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
 					router.replace("/onboarding");
 				}
 			} else if (!status.needsSetup) {
@@ -126,7 +137,7 @@ export default function Navbar() {
 				}
 			}
 		}
-	}, [status, pathName, router, hasHydrated, isOnboardingPage]);
+	}, [status, pathName, router, hasHydrated, isOnboardingPage, isLogsPage, isChangeLogPage]);
 
 	// Change isWideScreen on window resize
 	useEffect(() => {
@@ -197,8 +208,13 @@ export default function Navbar() {
 				}
 
 				const query = searchQuery.trim().toLowerCase();
-				const results = searchMediaItems(allMediaItems, query, 10);
-				setSearchResults(results);
+				const results = searchItems(allMediaItems, query, {
+					getTitle: (item) => item.Title,
+					getYear: (item) => item.Year,
+					getLibraryTitle: (item) => item.LibraryTitle,
+					getID: (item) => item.TMDB_ID || item.RatingKey,
+				});
+				setSearchResults(results.slice(0, 10)); // Limit to 10 results
 			} catch {
 				setSearchResults([]);
 			}
@@ -284,34 +300,39 @@ export default function Navbar() {
 						onBlur={() => setShowDropdown(false)}
 					/>
 					{/* Dropdown results (unchanged) */}
-					{!isHomePage && !isSavedSetsPage && !isUserPage && showDropdown && searchResults.length > 0 && (
-						<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
-							{searchResults.map((result) => (
-								<div
-									key={result.RatingKey}
-									onMouseDown={() => handleResultClick(result)}
-									className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
-								>
-									<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
-										<Image
-											src={`/api/mediaserver/image?ratingKey=${result.RatingKey}&imageType=poster`}
-											alt={result.Title}
-											fill
-											className="object-cover"
-											loading="lazy"
-											unoptimized
-										/>
+					{!isHomePage &&
+						!isSavedSetsPage &&
+						!isUserPage &&
+						!isCollectionsPage &&
+						showDropdown &&
+						searchResults.length > 0 && (
+							<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
+								{searchResults.map((result) => (
+									<div
+										key={result.RatingKey}
+										onMouseDown={() => handleResultClick(result)}
+										className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
+									>
+										<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
+											<Image
+												src={`/api/mediaserver/image?ratingKey=${result.RatingKey}&imageType=poster`}
+												alt={result.Title}
+												fill
+												className="object-cover"
+												loading="lazy"
+												unoptimized
+											/>
+										</div>
+										<div>
+											<p className="font-medium text-sm md:text-base">{result.Title}</p>
+											<p className="text-xs text-muted-foreground">
+												{result.LibraryTitle} · {result.Year}
+											</p>
+										</div>
 									</div>
-									<div>
-										<p className="font-medium text-sm md:text-base">{result.Title}</p>
-										<p className="text-xs text-muted-foreground">
-											{result.LibraryTitle} · {result.Year}
-										</p>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
+								))}
+							</div>
+						)}
 				</div>
 			</div>
 
@@ -333,6 +354,24 @@ export default function Navbar() {
 						/>
 					</>
 				)}
+				{isCollectionItemPage && (
+					<>
+						<ArrowLeftCircle
+							className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+							onClick={() => {
+								if (previousCollectionItem)
+									useCollectionStore.setState({ collectionItem: previousCollectionItem });
+							}}
+						/>
+						<ArrowRightCircle
+							className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+							onClick={() => {
+								if (nextCollectionItem)
+									useCollectionStore.setState({ collectionItem: nextCollectionItem });
+							}}
+						/>
+					</>
+				)}
 				{(!isMediaPage || isWideScreen) && (
 					<DropdownMenu>
 						<DropdownMenuTrigger
@@ -342,28 +381,41 @@ export default function Navbar() {
 							<SettingsIcon className="w-8 h-8 ml-2" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-								onClick={() => router.push("/saved-sets")}
-							>
-								<BookmarkIcon className="w-6 h-6 mr-2" />
-								Saved Sets
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-								onClick={() => router.push("/download-queue")}
-							>
-								<ListOrdered className="w-6 h-6 mr-2" />
-								Download Queue
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-								onClick={() => router.push("/settings")}
-							>
-								<FileCogIcon className="w-6 h-6 mr-2" />
-								Settings
-							</DropdownMenuItem>
+							{status && !status.needsSetup && (
+								<>
+									<DropdownMenuItem
+										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+										onClick={() => router.push("/saved-sets")}
+									>
+										<BookmarkIcon className="w-6 h-6 mr-2" />
+										Saved Sets
+									</DropdownMenuItem>
+									{status.currentSetup.MediaServer.Type === "Plex" && (
+										<DropdownMenuItem
+											className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+											onClick={() => router.push("/collections")}
+										>
+											<LayoutGrid className="w-6 h-6 mr-2" />
+											Collections
+										</DropdownMenuItem>
+									)}
+									<DropdownMenuItem
+										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+										onClick={() => router.push("/download-queue")}
+									>
+										<ListOrdered className="w-6 h-6 mr-2" />
+										Download Queue
+									</DropdownMenuItem>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+										onClick={() => router.push("/settings")}
+									>
+										<FileCogIcon className="w-6 h-6 mr-2" />
+										Settings
+									</DropdownMenuItem>
+								</>
+							)}
 							<DropdownMenuItem
 								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
 								onClick={() => router.push("/logs")}

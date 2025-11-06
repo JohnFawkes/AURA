@@ -720,3 +720,51 @@ query user_sets($username: String!) {
 		},
 	}
 }
+
+func Mediux_GenerateCollectionImagesByMovieIDsBody(tmdbIDs []string) map[string]any {
+	return map[string]any{
+		"query": `
+query collections_images_by_movie_ids($ids: [String!]) {
+  movies(filter: {id: {_in: $ids}}) {
+    id
+    title
+    collection_id {
+      id
+      collection_name
+      posters {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        uploaded_by {
+          username
+        }
+        collection_set{
+          id
+          set_title
+        }
+      }
+      backdrops {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        uploaded_by {
+          username
+        }
+        collection_set{
+          id
+          set_title
+        }
+      }
+    }
+  }
+}
+`,
+		"variables": map[string]any{
+			"ids": tmdbIDs,
+		},
+	}
+}

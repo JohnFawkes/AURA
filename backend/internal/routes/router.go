@@ -117,6 +117,9 @@ func AddRoutes(r *chi.Mux) {
 				r.Get("/item", routes_ms.GetItemContent)
 				r.Get("/image", routes_ms.GetImage)
 				r.Patch("/download", routes_ms.DownloadAndUpdate)
+				r.Get("/collection-items", routes_ms.GetCollectionItems)
+				r.Post("/collection-children", routes_ms.GetAllCollectionChildren)
+				r.Patch("/download-collection", routes_ms.DownloadAndUpdateCollection)
 			})
 
 			// Download Queue Routes
@@ -175,6 +178,12 @@ func addOnboardingRoutes(r chi.Router) {
 					r.Post("/radarr", routes_sonarr_radarr.TestConnection)
 					r.Post("/notification", routes_notification.SendTest)
 				})
+			})
+
+			// Logging Routes
+			r.Route("/log", func(r chi.Router) {
+				r.Get("/", routes_logging.GetLogContents)
+				r.Post("/clear", routes_logging.ClearLogFile)
 			})
 
 			r.Post("/mediaserver/library-options", routes_ms.GetAllLibrariesOptions)
