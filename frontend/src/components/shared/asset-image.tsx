@@ -70,6 +70,7 @@ function decodeBlurhashToDataURL(blurhash: string): string | undefined {
 
 export function AssetImage({ image, aspect = "poster", className, imageClassName, priority = false }: AssetImageProps) {
 	const [imageLoaded, setImageLoaded] = useState(false);
+	const [imageError, setImageError] = useState(false);
 
 	// Decode blurhash string to data URL client-side
 	const blurDataURL = useMemo(() => {
@@ -78,56 +79,81 @@ export function AssetImage({ image, aspect = "poster", className, imageClassName
 		return decodeBlurhashToDataURL(blurhash);
 	}, [image]);
 
+	const imageSrc =
+		typeof image === "string"
+			? image
+			: "ID" in image && "Modified" in image
+				? `/api/mediux/image?assetID=${image.ID}&modifiedDate=${image.Modified}`
+				: "RatingKey" in image
+					? `/api/mediaserver/image?ratingKey=${image.RatingKey}&imageType=${aspect}`
+					: "";
+
 	const imageContent = (
 		<>
-			<Image
-				src={
-					typeof image === "string"
-						? image
-						: "ID" in image && "Modified" in image
-							? `/api/mediux/image?assetID=${image.ID}&modifiedDate=${image.Modified}`
-							: "RatingKey" in image
-								? `/api/mediaserver/image?ratingKey=${image.RatingKey}&imageType=${aspect}`
-								: ""
-				}
-				alt={typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""}
-				fill
-				sizes={getImageSizes(aspect)}
-				className={cn(
-					"object-cover",
-					"border border-transparent hover:border-primary-dynamic/30",
-					"rounded-sm",
-					"transition-all duration-300",
-					imageClassName
-				)}
-				unoptimized
-				loading="lazy"
-				draggable={false}
-				style={{ userSelect: "none" }}
-				priority={priority}
-				placeholder={blurDataURL ? "blur" : undefined}
-				blurDataURL={blurDataURL}
-				onLoad={() => setImageLoaded(true)}
-			/>
+			{!imageError ? (
+				<Image
+					src={imageSrc}
+					alt={typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""}
+					fill
+					sizes={getImageSizes(aspect)}
+					className={cn(
+						"object-cover",
+						"border border-transparent hover:border-primary-dynamic/30",
+						"rounded-sm",
+						"transition-all duration-300",
+						imageClassName
+					)}
+					unoptimized
+					loading="lazy"
+					draggable={false}
+					style={{ userSelect: "none" }}
+					priority={priority}
+					placeholder={blurDataURL ? "blur" : undefined}
+					blurDataURL={blurDataURL}
+					onLoad={() => setImageLoaded(true)}
+					onError={() => setImageError(true)}
+				/>
+			) : (
+				<div
+					className={cn(
+						"flex items-center justify-center w-full h-full bg-muted text-muted-foreground",
+						getAspectRatioClass(aspect)
+					)}
+				>
+					<div className="flex flex-col items-center">
+						<span className="text-xs">No Image Available</span>
+						<Image
+							src="/aura_logo.svg"
+							alt="Aura Logo"
+							width={40}
+							height={40}
+							className="mt-1 opacity-70"
+							draggable={false}
+						/>
+					</div>
+
+					<Skeleton
+						className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))}
+					/>
+				</div>
+			)}
 			{/* Overlay that fades out when image loads, revealing the sharp image underneath */}
-			{blurDataURL && !imageLoaded && (
+			{blurDataURL && !imageLoaded && !imageError && (
 				<Skeleton className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))} />
 			)}
 		</>
 	);
 
 	return (
-		<>
-			<div className={cn("relative flex flex-col", className)}>
-				<div
-					className={cn(
-						"relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
-						getAspectRatioClass(aspect)
-					)}
-				>
-					{imageContent}
-				</div>
+		<div className={cn("relative flex flex-col", className)}>
+			<div
+				className={cn(
+					"relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
+					getAspectRatioClass(aspect)
+				)}
+			>
+				{imageContent}
 			</div>
-		</>
+		</div>
 	);
 }
