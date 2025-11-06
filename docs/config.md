@@ -88,8 +88,10 @@ MediaServer:
   URL: http://localhost:32400
   Token: your_token_here
   Libraries:
-    - "Movies"
-    - "TV Shows"
+    - Name: 4K Movies
+    - Name: Movies
+    - Name: 4K Series
+    - Name: Series
 ```
 
 -- **Example for Emby**:
@@ -100,8 +102,8 @@ MediaServer:
   URL: http://localhost:8096
   Token: your_token_here
   Libraries:
-    - "Movies"
-    - "TV Shows"
+    - Name: Movies
+    - Name: TV Shows
 ```
 
 -- **Example for Jellyfin**:
@@ -112,8 +114,8 @@ MediaServer:
   URL: http://localhost:8096
   Token: your_token_here
   Libraries:
-    - "Movies"
-    - "TV Shows"
+    - Name: Movies
+    - Name: TV Shows
 ```
 
 ### Type
