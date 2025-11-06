@@ -1,8 +1,6 @@
 package api
 
 import (
-	"aura/internal/logging"
-	"context"
 	"fmt"
 )
 
@@ -51,49 +49,45 @@ func MS_CheckEpisodePathChanges(dbSavedItem, latestMediaItem MediaItem) bool {
 	return false
 }
 
-func CheckSeasonAdded(ctx context.Context, seasonNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Checking if season %d was added", seasonNumber), logging.LevelTrace)
-	defer logAction.Complete()
-
+func CheckSeasonExistsAndAdded(seasonNumber int, dbSavedItem, latestMediaItem MediaItem) (existsInDB, existsInLatest bool) {
 	// First check if the season exists in dbSavedItem
-	seasonExistsInDB := false
+	existsInDB = false
+	existsInLatest = false
+
 	if dbSavedItem.Series.Seasons != nil {
 		for _, season := range dbSavedItem.Series.Seasons {
 			if season.SeasonNumber == seasonNumber {
-				seasonExistsInDB = true
+				existsInDB = true
 				break
 			}
 		}
 	}
 
-	// If season doesn't exist in DB, check if it exists in latest
-	if !seasonExistsInDB {
+	if !existsInDB {
 		for _, season := range latestMediaItem.Series.Seasons {
 			if season.SeasonNumber == seasonNumber {
-				// Season was added
-				psFileReasons.ReasonTitle = "Downloading - New Season Added"
-				psFileReasons.ReasonDetails = fmt.Sprintf("Season %s was added", Util_Format_Get2DigitNumber(int64(seasonNumber)))
-				logAction.AppendResult("season_added", psFileReasons)
-				return
+				existsInLatest = true
+				return existsInDB, existsInLatest // Season was added, download it
 			}
 		}
 	}
-	logAction.AppendResult("season_not_added", fmt.Sprintf("Season %d exists in DB", seasonNumber))
+
+	// Season doesn't exist in DB or latest (skip download)
+	return existsInDB, existsInLatest
 }
 
-func CheckEpisodeAdded(ctx context.Context, seasonNumber, episodeNumber int, dbSavedItem, latestMediaItem MediaItem, psFileReasons *PosterFileWithReason) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Checking if S%dE%d was added or changed", seasonNumber, episodeNumber), logging.LevelTrace)
-	defer logAction.Complete()
-
+func CheckEpisodeExistsAddedAndPath(seasonNumber, episodeNumber int, dbSavedItem, latestMediaItem MediaItem) (existsInDB, existsInLatest bool, pathChanged string) {
+	existsInDB = false
+	existsInLatest = false
+	pathChanged = ""
 	var episodePathInDB, episodePathInLatest string
-	episodeExistsInDB := false
 
 	// Find episode in DB
 	for _, season := range dbSavedItem.Series.Seasons {
 		if season.SeasonNumber == seasonNumber {
 			for _, episode := range season.Episodes {
 				if episode.EpisodeNumber == episodeNumber {
-					episodeExistsInDB = true
+					existsInDB = true
 					episodePathInDB = episode.File.Path
 					break
 				}
@@ -108,12 +102,7 @@ func CheckEpisodeAdded(ctx context.Context, seasonNumber, episodeNumber int, dbS
 			for _, episode := range season.Episodes {
 				if episode.EpisodeNumber == episodeNumber {
 					episodePathInLatest = episode.File.Path
-					if !episodeExistsInDB {
-						psFileReasons.ReasonTitle = "Downloading - New Episode Added"
-						psFileReasons.ReasonDetails = fmt.Sprintf("S%sE%s was added", Util_Format_Get2DigitNumber(int64(seasonNumber)), Util_Format_Get2DigitNumber(int64(episodeNumber)))
-						logAction.AppendResult("episode_added", psFileReasons)
-						return
-					}
+					existsInLatest = true
 					break
 				}
 			}
@@ -121,11 +110,13 @@ func CheckEpisodeAdded(ctx context.Context, seasonNumber, episodeNumber int, dbS
 		}
 	}
 
-	// If episode exists in both, check if path changed
-	if episodeExistsInDB && episodePathInDB != "" && episodePathInLatest != "" && episodePathInDB != episodePathInLatest {
-		psFileReasons.ReasonTitle = "Redownloading - Episode Path Changed"
-		psFileReasons.ReasonDetails = fmt.Sprintf("S%sE%s path changed from\n'%s'\nto\n'%s'", Util_Format_Get2DigitNumber(int64(seasonNumber)), Util_Format_Get2DigitNumber(int64(episodeNumber)), episodePathInDB, episodePathInLatest)
-		logAction.AppendResult("episode_path_changed", psFileReasons)
-		return
+	// If the episode exists in both, check if path changed
+	if existsInDB && existsInLatest {
+		// Check if the path has changed
+		if episodePathInDB != "" && episodePathInLatest != "" && episodePathInDB != episodePathInLatest {
+			pathChanged = fmt.Sprintf("S%sE%s path changed from\n'%s'\nto\n'%s'", Util_Format_Get2DigitNumber(int64(seasonNumber)), Util_Format_Get2DigitNumber(int64(episodeNumber)), episodePathInDB, episodePathInLatest)
+		}
 	}
+
+	return existsInDB, existsInLatest, pathChanged
 }

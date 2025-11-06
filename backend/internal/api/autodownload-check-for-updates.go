@@ -88,12 +88,16 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		var setResult AutoDownloadSetResult
 		setResult.PosterSetID = dbPosterSet.PosterSetID
 
+		actionResultMap := make(map[string]any)
+
 		// If AutoDownload false and rating key has not changed
 		if !dbPosterSet.AutoDownload && !ratingKeyChanged {
 			setResult.Result = "Skipped"
 			setResult.Reason = "Auto download is not selected"
 			result.Sets = append(result.Sets, setResult)
-			logAction.AppendResult("set_"+dbPosterSet.PosterSetID, "Auto download is not selected")
+			actionResultMap["status"] = "skipped"
+			actionResultMap["status_reason"] = "Auto download is not selected"
+			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		}
 
@@ -102,7 +106,9 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			setResult.Result = "Skipped"
 			setResult.Reason = "No selected types"
 			result.Sets = append(result.Sets, setResult)
-			logAction.AppendResult("set_"+dbPosterSet.PosterSetID, "No selected types")
+			actionResultMap["status"] = "skipped"
+			actionResultMap["status_reason"] = "No selected types"
+			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		}
 
@@ -112,12 +118,14 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			setResult.Result = "Error"
 			setResult.Reason = fmt.Sprintf("Error fetching updated set - %s", Err.Message)
 			result.Sets = append(result.Sets, setResult)
-			logAction.AppendResult("set_"+dbPosterSet.PosterSetID, fmt.Sprintf("Error fetching updated set - %s", Err.Message))
+			actionResultMap["status"] = "error"
+			actionResultMap["status_reason"] = setResult.Reason
+			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		}
 
 		// Check to see if Last Downloaded is greater than Poster Set Last Updated
-		posterSetDateNewer := Time_IsLastDownloadedBeforeLatestPosterSetDate(ctx, dbPosterSet.LastDownloaded, latestSet.DateUpdated)
+		posterSetDateNewer := Time_IsLastDownloadedBeforeLatestPosterSetDate(dbPosterSet.LastDownloaded, latestSet.DateUpdated)
 		var formattedLastDownloaded string
 		lastDownloadedTime, err := time.Parse("2006-01-02T15:04:05Z07:00", dbPosterSet.LastDownloaded)
 		if err == nil {
@@ -131,17 +139,29 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		// Check if any episode paths have changed
 		episodePathChanges := MS_CheckEpisodePathChanges(dbSavedItem.MediaItem, latestMediaItem)
 
+		actionResultMap["reasons"] = map[string]any{
+			"poster_set_updated":     posterSetDateNewer,
+			"rating_key_changed":     ratingKeyChanged,
+			"added_seasons_episodes": addedSeasonOrEpisodes,
+			"episode_path_changes":   episodePathChanges,
+		}
+		reasonsResultMap := actionResultMap["reasons"].(map[string]any)
+
 		if !posterSetDateNewer && !addedSeasonOrEpisodes && !ratingKeyChanged && !episodePathChanges {
 			setResult.Result = "Skipped"
 			setResult.Reason = "No updates to poster set, seasons/episodes or rating key"
 			result.Sets = append(result.Sets, setResult)
-			logAction.AppendResult("set_"+dbPosterSet.PosterSetID, fmt.Sprintf("Skipping set - Last downloaded on %s, no updates to poster set, seasons/episodes or rating key", formattedLastDownloaded))
+			actionResultMap["status"] = "skipped"
+			actionResultMap["status_reason"] = fmt.Sprintf("Skipping set - Last downloaded on %s, no updates to poster set, seasons/episodes or rating key", formattedLastDownloaded)
+			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		}
 
 		updateReasons := []string{}
 		if posterSetDateNewer {
 			updateReasons = append(updateReasons, "Poster set updated")
+			reasonsResultMap["poster_set_date_updated"] = latestSet.DateUpdated
+			reasonsResultMap["poster_set_last_downloaded"] = dbPosterSet.LastDownloaded
 		}
 		if addedSeasonOrEpisodes {
 			updateReasons = append(updateReasons, "New seasons or episodes added")
@@ -153,7 +173,7 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			updateReasons = append(updateReasons, "Episode path changes detected")
 		}
 		updateReason := strings.Join(updateReasons, " and ")
-		logAction.AppendResult("set_"+dbPosterSet.PosterSetID, fmt.Sprintf("Updating set - %s", updateReason))
+		reasonsResultMap["full_reason"] = updateReason
 
 		// Check if the selected types contains each image type
 		posterSelected := false
@@ -175,24 +195,33 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 				titlecardSelected = true
 			}
 		}
+		actionResultMap["selected_types"] = dbPosterSet.SelectedTypes
+
+		determineFilesSubAction := logAction.AddSubAction("Determining Files to Download", logging.LevelDebug)
+		determineFilesSubActionResultMap := make(map[string]any)
+		determineFilesSubActionResultMap["files"] = map[string]any{}
+		filesMap := determineFilesSubActionResultMap["files"].(map[string]any)
 
 		filesToDownload := []PosterFileWithReason{}
+		filesMap["poster"] = map[string]string{}
+		posterMap := filesMap["poster"].(map[string]string)
 		if posterSelected {
-			posterFileReason := AutoDownload_ShouldDownloadFile(ctx, dbPosterSet, *latestSet.Poster, dbSavedItem.MediaItem, latestMediaItem)
+			posterFileReason := AutoDownload_ShouldDownloadFile(dbPosterSet, *latestSet.Poster, dbSavedItem.MediaItem, latestMediaItem)
 			if posterFileReason.ReasonTitle != "" && posterFileReason.ReasonDetails != "" {
 				if ratingKeyChanged {
 					posterFileReason.ReasonTitle = "Redownloading"
 					posterFileReason.ReasonDetails = "Rating key changed and " + posterFileReason.ReasonDetails
 				}
-				if posterFileReason.ReasonDetails != "" {
-					filesToDownload = append(filesToDownload, posterFileReason)
-					logAction.AppendResult(fmt.Sprintf("set_%s_poster", dbPosterSet.PosterSetID),
-						fmt.Sprintf("Queuing poster file for download - %s", posterFileReason.ReasonDetails))
-				}
+				filesToDownload = append(filesToDownload, posterFileReason)
+				posterMap["action"] = "download"
+				posterMap["action_reason"] = posterFileReason.ReasonDetails
 			}
 		}
+
+		filesMap["backdrop"] = map[string]string{}
+		backdropMap := filesMap["backdrop"].(map[string]string)
 		if backdropSelected {
-			backdropFileReason := AutoDownload_ShouldDownloadFile(ctx, dbPosterSet, *latestSet.Backdrop, dbSavedItem.MediaItem, latestMediaItem)
+			backdropFileReason := AutoDownload_ShouldDownloadFile(dbPosterSet, *latestSet.Backdrop, dbSavedItem.MediaItem, latestMediaItem)
 			if backdropFileReason.ReasonTitle != "" && backdropFileReason.ReasonDetails != "" {
 				if ratingKeyChanged {
 					backdropFileReason.ReasonTitle = "Redownloading"
@@ -200,47 +229,60 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 				}
 				if backdropFileReason.ReasonDetails != "" {
 					filesToDownload = append(filesToDownload, backdropFileReason)
-					logAction.AppendResult(fmt.Sprintf("set_%s_backdrop", dbPosterSet.PosterSetID),
-						fmt.Sprintf("Queuing backdrop file for download - %s", backdropFileReason.ReasonDetails))
+					backdropMap["action"] = "download"
+					backdropMap["action_reason"] = backdropFileReason.ReasonDetails
 				}
 			}
 		}
-		for _, season := range latestSet.SeasonPosters {
-			if season.Season.Number == 0 {
-				if specialSeasonSelected {
-					specialSeasonFileReason := AutoDownload_ShouldDownloadFile(ctx, dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem)
-					if specialSeasonFileReason.ReasonTitle != "" && specialSeasonFileReason.ReasonDetails != "" {
-						if ratingKeyChanged {
-							specialSeasonFileReason.ReasonTitle = "Redownloading"
-							specialSeasonFileReason.ReasonDetails = "Rating key changed and " + specialSeasonFileReason.ReasonDetails
-						}
-						if specialSeasonFileReason.ReasonDetails != "" {
-							filesToDownload = append(filesToDownload, specialSeasonFileReason)
-							logAction.AppendResult(fmt.Sprintf("set_%s_season_s0", dbPosterSet.PosterSetID),
-								fmt.Sprintf("Queuing special season poster file for download - %s", specialSeasonFileReason.ReasonDetails))
-						}
-					}
+		if seasonSelected {
+			for _, season := range latestSet.SeasonPosters {
+				if season.Season.Number == 0 {
+					continue
 				}
-			} else {
-				if seasonSelected {
-					seasonFileReason := AutoDownload_ShouldDownloadFile(ctx, dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem)
-					if seasonFileReason.ReasonTitle != "" && seasonFileReason.ReasonDetails != "" {
-						if ratingKeyChanged {
-							seasonFileReason.ReasonTitle = "Redownloading"
-							seasonFileReason.ReasonDetails = "Rating key changed and " + seasonFileReason.ReasonDetails
-						}
-						if seasonFileReason.ReasonDetails != "" {
-							filesToDownload = append(filesToDownload, seasonFileReason)
-							logAction.AppendResult(fmt.Sprintf("set_%s_season_s%d", dbPosterSet.PosterSetID, season.Season.Number),
-								fmt.Sprintf("Queuing season poster file for download - %s", seasonFileReason.ReasonDetails))
-						}
+				filesMap[fmt.Sprintf("season_s%d", season.Season.Number)] = map[string]string{}
+				seasonMap := filesMap[fmt.Sprintf("season_s%d", season.Season.Number)].(map[string]string)
+				seasonFileReason := AutoDownload_ShouldDownloadFile(dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem)
+				if seasonFileReason.ReasonTitle != "" && seasonFileReason.ReasonDetails != "" {
+					if ratingKeyChanged {
+						seasonFileReason.ReasonTitle = "Redownloading"
+						seasonFileReason.ReasonDetails = "Rating key changed and " + seasonFileReason.ReasonDetails
+					}
+					if seasonFileReason.ReasonDetails != "" {
+						filesToDownload = append(filesToDownload, seasonFileReason)
+						seasonMap["action"] = "download"
+						seasonMap["action_reason"] = seasonFileReason.ReasonDetails
 					}
 				}
 			}
 		}
+
+		if specialSeasonSelected {
+			for _, season := range latestSet.SeasonPosters {
+				if season.Season.Number != 0 {
+					continue
+				}
+				filesMap[fmt.Sprintf("season_s%d", season.Season.Number)] = map[string]string{}
+				seasonMap := filesMap[fmt.Sprintf("season_s%d", season.Season.Number)].(map[string]string)
+				seasonFileReason := AutoDownload_ShouldDownloadFile(dbPosterSet, season, dbSavedItem.MediaItem, latestMediaItem)
+				if seasonFileReason.ReasonTitle != "" && seasonFileReason.ReasonDetails != "" {
+					if ratingKeyChanged {
+						seasonFileReason.ReasonTitle = "Redownloading"
+						seasonFileReason.ReasonDetails = "Rating key changed and " + seasonFileReason.ReasonDetails
+					}
+					if seasonFileReason.ReasonDetails != "" {
+						filesToDownload = append(filesToDownload, seasonFileReason)
+						seasonMap["action"] = "download"
+						seasonMap["action_reason"] = seasonFileReason.ReasonDetails
+					}
+				}
+			}
+		}
+
 		if titlecardSelected {
 			for _, titlecard := range latestSet.TitleCards {
-				titlecardFileReason := AutoDownload_ShouldDownloadFile(ctx, dbPosterSet, titlecard, dbSavedItem.MediaItem, latestMediaItem)
+				filesMap[fmt.Sprintf("titlecard_s%de%d", titlecard.Episode.SeasonNumber, titlecard.Episode.EpisodeNumber)] = map[string]string{}
+				titlecardMap := filesMap[fmt.Sprintf("titlecard_s%de%d", titlecard.Episode.SeasonNumber, titlecard.Episode.EpisodeNumber)].(map[string]string)
+				titlecardFileReason := AutoDownload_ShouldDownloadFile(dbPosterSet, titlecard, dbSavedItem.MediaItem, latestMediaItem)
 				if titlecardFileReason.ReasonTitle != "" && titlecardFileReason.ReasonDetails != "" {
 					if ratingKeyChanged {
 						titlecardFileReason.ReasonTitle = "Redownloading"
@@ -248,8 +290,8 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 					}
 					if titlecardFileReason.ReasonDetails != "" {
 						filesToDownload = append(filesToDownload, titlecardFileReason)
-						logAction.AppendResult(fmt.Sprintf("set_%s_titlecard_s%d_e%d", dbPosterSet.PosterSetID, titlecard.Episode.SeasonNumber, titlecard.Episode.EpisodeNumber),
-							fmt.Sprintf("Queuing titlecard file for download - %s", titlecardFileReason.ReasonDetails))
+						titlecardMap["action"] = "download"
+						titlecardMap["action_reason"] = titlecardFileReason.ReasonDetails
 					}
 				}
 			}
@@ -259,28 +301,49 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			setResult.Result = "Skipped"
 			setResult.Reason = fmt.Sprintf("No files to download for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID)
 			result.Sets = append(result.Sets, setResult)
-			logAction.AppendResult("files_to_download", setResult.Reason)
+			actionResultMap["files_to_download"] = 0
+			actionResultMap["status"] = "skipped"
+			actionResultMap["status_reason"] = setResult.Reason
+			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		} else {
-			logAction.AppendResult("files_to_download", fmt.Sprintf("Downloading %d files for set '%s'", len(filesToDownload), dbPosterSet.PosterSetID))
+			actionResultMap["files_to_download"] = len(filesToDownload)
 		}
+		determineFilesSubAction.Complete()
 
 		// Go through each file and download it
 		for _, file := range filesToDownload {
-			// Add in the reason for download to the log and file modified and last downloaded
-			logAction.AppendResult("file_"+file.File.ID, fmt.Sprintf("Downloading file type %s - %s", file.File.Type, file.ReasonDetails))
-			logAction.AppendResult("file_"+file.File.ID+"_modified", file.File.Modified.Format("2006-01-02 15:04:05"))
-			logAction.AppendResult("file_"+file.File.ID+"_last_downloaded", dbPosterSet.LastDownloaded)
+
+			var fileMapID string
+			switch file.File.Type {
+			case "poster":
+				fileMapID = "poster"
+			case "backdrop":
+				fileMapID = "backdrop"
+			case "seasonPoster", "specialSeasonPoster":
+				fileMapID = fmt.Sprintf("season_s%d", file.File.Season.Number)
+			case "titlecard":
+				fileMapID = fmt.Sprintf("titlecard_s%de%d", file.File.Episode.SeasonNumber, file.File.Episode.EpisodeNumber)
+			default:
+				fileMapID = "unknown"
+			}
+			fileMap := filesMap[fileMapID].(map[string]string)
+			fileMap["file_modified"] = file.File.Modified.Format("2006-01-02 15:04:05")
+			fileMap["file_last_downloaded"] = dbPosterSet.LastDownloaded
+			fileMap["id"] = file.File.ID
+			fileMap["download_reason"] = file.ReasonDetails
 
 			Err = CallDownloadAndUpdatePosters(ctx, latestMediaItem, file.File)
 			if Err.Message != "" {
 				setResult.Result = "Error"
 				setResult.Reason = fmt.Sprintf("Error downloading '%s' for '%s' in set '%s' - %s", file.File.Type, dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, Err.Message)
 				result.Sets = append(result.Sets, setResult)
+				fileMap["download_status"] = "error"
+				fileMap["download_error"] = setResult.Reason
 				logAction.AppendResult(fmt.Sprintf("file_download_error_%s", file.File.ID), setResult.Reason)
 				continue
 			}
-			logAction.AppendResult("file_"+file.File.ID, fmt.Sprintf("Downloaded file type %s", file.File.Type))
+			fileMap["download_status"] = "success"
 
 			// Send a notification to all configured providers
 			// Do this using go func so that it runs asynchronously
@@ -307,6 +370,7 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		setResult.Reason = fmt.Sprintf("Successfully downloaded files for '%s' in set '%s'", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID)
 		result.Sets = append(result.Sets, setResult)
 		logAction.AppendResult("set_completed", setResult.Reason)
+		logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 	}
 
 	// Set overall result based on the results of the sets
@@ -471,39 +535,72 @@ func AutoDownload_CheckMovieForKeyChanges(ctx context.Context, dbSavedItem DBMed
 	return result
 }
 
-func AutoDownload_ShouldDownloadFile(ctx context.Context, dbPosterSet DBPosterSetDetail, file PosterFile, dbSavedItem, latestMediaItem MediaItem) PosterFileWithReason {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Checking if file should be downloaded", logging.LevelDebug)
-	defer logAction.Complete()
-
+func AutoDownload_ShouldDownloadFile(dbPosterSet DBPosterSetDetail, file PosterFile, dbSavedItem, latestMediaItem MediaItem) PosterFileWithReason {
 	var psFile PosterFileWithReason
 	psFile.File = file
 	psFile.ReasonTitle = ""
 	psFile.ReasonDetails = ""
 
-	// Check if file was modified after last download
-	fileUpdated := Time_IsLastDownloadedBeforeLatestPosterSetDate(ctx, dbPosterSet.LastDownloaded, file.Modified)
+	// Do the following checks to see if the file should be downloaded:
+	// 1. Check if the File has been updated since the last download
+	//		If has been updated:
+	//			If the file is a Poster or Backdrop, download the file
+	//			If the file is a Season Poster or Titlecard, check to see if the episode exists in the latest media item. If it does, download the file
+	//
+	// 2. For Season Posters and Titlecards, check if new seasons/episodes were added
+	//		If new seasons/episodes were added, download the file
 
-	// If the file was updated, download it
-	if fileUpdated {
-		psFile.ReasonTitle = "Downloading - File Updated"
-		psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
-		return psFile
-	}
+	// Check if the File has been updated since the last download
+	fileUpdated := Time_IsLastDownloadedBeforeLatestPosterSetDate(dbPosterSet.LastDownloaded, file.Modified)
 
-	// For season posters and titlecards, also check if new seasons/episodes were added
-	// If so, download the file
-	// If not, also check if the season/episode path has changed
-	// If so, download the file
-	// If none of these conditions are met, do not download the file
 	switch file.Type {
+	case "poster", "backdrop":
+		if fileUpdated {
+			psFile.ReasonTitle = "Downloading - File Updated"
+			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			return psFile
+		}
 	case "seasonPoster", "specialSeasonPoster":
-		CheckSeasonAdded(ctx, file.Season.Number, dbSavedItem, latestMediaItem, &psFile)
-		return psFile
+		// For season posters, check if the season exists in the latest media item
+		existsInDB, existsInLatest := CheckSeasonExistsAndAdded(file.Season.Number, dbSavedItem, latestMediaItem)
+
+		if fileUpdated && existsInLatest {
+			psFile.ReasonTitle = "Downloading - File Updated"
+			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			return psFile
+		} else if !fileUpdated && !existsInDB && existsInLatest {
+			psFile.ReasonTitle = "Downloading - New Season Added"
+			psFile.ReasonDetails = fmt.Sprintf("Season %d added to %s", file.Season.Number, latestMediaItem.Title)
+			return psFile
+		}
+		logging.LOGGER.Debug().Timestamp().
+			Bool("exists_in_db", existsInDB).Bool("exists_in_latest", existsInLatest).
+			Bool("file_updated", fileUpdated).
+			Int("season_number", file.Season.Number).
+			Msg("Skipping season poster")
 	case "titlecard":
-		CheckEpisodeAdded(ctx, file.Episode.SeasonNumber, file.Episode.EpisodeNumber, dbSavedItem, latestMediaItem, &psFile)
-	default:
-		return PosterFileWithReason{}
+		// For titlecards, check if the episode exists in the latest media item
+		existsInDB, existsInLatest, pathChanged := CheckEpisodeExistsAddedAndPath(file.Episode.SeasonNumber, file.Episode.EpisodeNumber, dbSavedItem, latestMediaItem)
+		if fileUpdated && existsInLatest {
+			psFile.ReasonTitle = "Downloading - File Updated"
+			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			return psFile
+		} else if !fileUpdated && !existsInDB && existsInLatest {
+			psFile.ReasonTitle = "Downloading - New Episode Added"
+			psFile.ReasonDetails = fmt.Sprintf("Episode S%02dE%02d added to %s", file.Episode.SeasonNumber, file.Episode.EpisodeNumber, latestMediaItem.Title)
+			return psFile
+		} else if !fileUpdated && existsInDB && existsInLatest && pathChanged != "" {
+			psFile.ReasonTitle = "Downloading - Episode Path Changed"
+			psFile.ReasonDetails = pathChanged
+			return psFile
+		}
+		logging.LOGGER.Debug().Timestamp().
+			Bool("exists_in_db", existsInDB).Bool("exists_in_latest", existsInLatest).
+			Bool("file_updated", fileUpdated).
+			Str("episode_number", fmt.Sprintf("S%02dE%02d", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)).
+			Msg("Skipping titlecard")
 	}
+
 	return psFile
 }
 
