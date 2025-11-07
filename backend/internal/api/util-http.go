@@ -42,12 +42,27 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 	req.Header.Set("X-Request", "mediux-aura")
 	req.Header.Set("Accept", "application/json")
 
+	possibleSensitiveHeaders := []string{
+		"authorization",
+		"api-key",
+		"x-api-key",
+		"x-auth-token",
+		"x-access-token",
+		"access-token",
+		"token",
+		"authentication",
+	}
+
 	if len(headers) > 0 {
 		for key, value := range headers {
 			req.Header.Add(key, value)
 			maskedValue := value
-			if strings.Contains(strings.ToLower(key), "token") || strings.Contains(strings.ToLower(key), "authorization") {
-				maskedValue = masking.Masking_Token(value)
+			lowerKey := strings.ToLower(key)
+			for _, sensitive := range possibleSensitiveHeaders {
+				if strings.Contains(lowerKey, sensitive) {
+					maskedValue = masking.Masking_Token(value)
+					break
+				}
 			}
 			logAction.AppendResult("headers_added", map[string]any{key: maskedValue})
 		}
