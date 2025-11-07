@@ -265,34 +265,50 @@ export default function CollectionsPage() {
 
 						{/* Grid of Cards */}
 						<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-							{paginatedItems.map((item) => (
-								<Card
-									key={item.RatingKey}
-									className="relative items-center cursor-pointer hover:shadow-xl transition-shadow"
-									style={{ backgroundColor: "var(--card)" }}
-									onClick={() => handleCardClick(item)}
-								>
-									{/* Poster Image */}
-									<AssetImage
-										image={`/api/mediaserver/image?ratingKey=${item.RatingKey}&imageType=poster`}
-										className="w-[170px] h-auto transition-transform hover:scale-105"
+							{paginatedItems.length === 0 &&
+							fullyLoaded &&
+							(searchQuery || filteredLibraries.length > 0) ? (
+								<div className="col-span-full text-center text-red-500">
+									<ErrorMessage
+										error={ReturnErrorMessage<string>(
+											`No collection items found${searchQuery ? ` matching "${searchQuery}"` : ""} in ${
+												filteredLibraries.length > 0
+													? filteredLibraries.join(", ")
+													: "any library"
+											}`
+										)}
 									/>
+								</div>
+							) : (
+								paginatedItems.map((item) => (
+									<Card
+										key={item.RatingKey}
+										className="relative items-center cursor-pointer hover:shadow-xl transition-shadow"
+										style={{ backgroundColor: "var(--card)" }}
+										onClick={() => handleCardClick(item)}
+									>
+										{/* Poster Image */}
+										<AssetImage
+											image={`/api/mediaserver/image?ratingKey=${item.RatingKey}&imageType=poster`}
+											className="w-[170px] h-auto transition-transform hover:scale-105"
+										/>
 
-									{/* Title */}
-									<H4 className="text-center font-semibold mb-2 px-2">
-										{item.Title.length > 55 ? `${item.Title.slice(0, 55)}...` : item.Title}
-									</H4>
+										{/* Title */}
+										<H4 className="text-center font-semibold mb-2 px-2">
+											{item.Title.length > 55 ? `${item.Title.slice(0, 55)}...` : item.Title}
+										</H4>
 
-									<div className="flex justify-center gap-2">
-										<Badge variant="default" className="mt-2 mb-2">
-											{item.ChildCount} Items
-										</Badge>
-										<Badge variant="default" className="mt-2 mb-2">
-											{item.LibraryTitle}
-										</Badge>
-									</div>
-								</Card>
-							))}
+										<div className="flex justify-center gap-2">
+											<Badge variant="default" className="mt-2 mb-2">
+												{item.ChildCount} Items
+											</Badge>
+											<Badge variant="default" className="mt-2 mb-2">
+												{item.LibraryTitle}
+											</Badge>
+										</div>
+									</Card>
+								))
+							)}
 						</div>
 
 						{/* Pagination */}
