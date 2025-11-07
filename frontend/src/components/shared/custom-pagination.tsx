@@ -40,6 +40,9 @@ export function CustomPagination({
 			<div className="w-full flex justify-center items-center text-sm mt-4 text-muted-foreground">
 				<span>
 					{(() => {
+						if (filterItemsLength === 0) {
+							return "No Results";
+						}
 						const start = currentPage * itemsPerPage - itemsPerPage + 1;
 						const end = filterItemsLength
 							? Math.min(currentPage * itemsPerPage, filterItemsLength)
