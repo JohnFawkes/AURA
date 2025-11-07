@@ -82,13 +82,16 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 		return "", *logAction.Error
 	}
 	u.Path = path.Join(u.Path, "assets", assetID)
-	query := u.Query()
-	query.Set("v", dateTimeFormatted)
+	var queryStr string
 	if qualityParam != "" {
-		query.Set("key", qualityParam)
+		queryStr = fmt.Sprintf("v=%s&key=%s", dateTimeFormatted, qualityParam)
+	} else {
+		queryStr = fmt.Sprintf("v=%s", dateTimeFormatted)
 	}
-	u.RawQuery = query.Encode()
+	u.RawQuery = queryStr
 	URL := u.String()
+
+	logging.LOGGER.Warn().Timestamp().Msgf("URL: %s", URL)
 
 	// Append Values
 	logAction.AppendResult("url", URL)
