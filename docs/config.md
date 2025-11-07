@@ -15,10 +15,15 @@ aura uses a `config.yaml` file for configuration. You can setup the configuratio
    - You can create a new file named `config.yaml` in the root directory of your aura installation.
 
 2. **Edit the `config.yaml` File**:
-   - Open the `config.yaml` file in a text editor of your choice.
-   - Modify the configuration settings according to your needs.
+
+   - Open `config.yaml` in your preferred text editor.
+   - Modify the configuration settings according to your needs. Be sure to replace all placeholder values (e.g., `YOUR_API_KEY_HERE`, `YOUR_SERVER_URL`) with your actual credentials and URLs.
+
 3. **Place the `config.yaml` File**:
+
    - Place your configuration file in the `/config` directory on your Docker container.
+
+> **Note:** Always keep your configuration file secure and do not share sensitive information publicly.
 
 ---
 
@@ -31,7 +36,7 @@ aura uses a `config.yaml` file for configuration. You can setup the configuratio
 ```yaml
 Auth:
   Enable: true
-  Password: $argon2id$v=19$m=16,t=2,p=1$Wlp5RGd4dTNkdmVGVDRkMg$2QEi6FDa4BWDxuGrzhjuVw
+  Password: YOUR_ARGON2ID_HASH_HERE
 ```
 
 While this password authentication method is effective, it is important to keep your password secure and not share it with others. For enhanced security, consider using solutions like [Authentik](https://goauthentik.io/) or [Authelia](https://www.authelia.com/).  
@@ -51,6 +56,7 @@ While this password authentication method is effective, it is important to keep 
 - **Description**: The password hash used to authenticate user.
 - **Details**: This password is used to authenticate user when they log in to the application. It is recommended to use a strong, unique password for this purpose. You can generate a new Argon2id hash using tools like [Argon2 Online](https://argon2.online/). You can use the default settings.
   ![Argon2 Online](assets/argon2-online.png)
+- **Note**: Replace `YOUR_ARGON2ID_HASH_HERE` with the actual Argon2id hash of your desired password.
 
 ---
 
@@ -85,8 +91,8 @@ Logging:
 ```yaml
 MediaServer:
   Type: Plex
-  URL: http://localhost:32400
-  Token: your_token_here
+  URL: YOUR_PLEX_SERVER_URL_HERE
+  Token: YOUR_PLEX_API_TOKEN_HERE
   Libraries:
     - Name: 4K Movies
     - Name: Movies
@@ -99,8 +105,8 @@ MediaServer:
 ```yaml
 MediaServer:
   Type: Emby
-  URL: http://localhost:8096
-  Token: your_token_here
+  URL: YOUR_EMBY_SERVER_URL_HERE
+  Token: YOUR_EMBY_API_TOKEN_HERE
   Libraries:
     - Name: Movies
     - Name: TV Shows
@@ -111,8 +117,8 @@ MediaServer:
 ```yaml
 MediaServer:
   Type: Jellyfin
-  URL: http://localhost:8096
-  Token: your_token_here
+  URL: YOUR_JELLYFIN_SERVER_URL_HERE
+  Token: YOUR_JELLYFIN_API_TOKEN_HERE
   Libraries:
     - Name: Movies
     - Name: TV Shows
@@ -128,7 +134,7 @@ MediaServer:
 
 - **Description**: The URL of the media server.
 - **Details**: This option specifies the URL of the media server that aura will interact with.
-- **Note**: Make sure to include the protocol (e.g., `http://` or `https://`) in the URL.
+- **Note**: Replace `YOUR_PLEX_SERVER_URL_HERE`, `YOUR_EMBY_SERVER_URL_HERE`, or `YOUR_JELLYFIN_SERVER_URL_HERE` with the actual URL of your media server. Make sure to include the protocol (e.g., `http://` or `https://`) in the URL.
 - **Example**: `http://localhost:32400`, `https://my-emby-server.com`, or `http://jellyfin.example.com`.
 
 ### Token
@@ -151,7 +157,7 @@ MediaServer:
 
 ```yaml
 Mediux:
-  APIKey: your_mediux_api_key_here
+  APIKey: YOUR_MEDIUX_API_KEY_HERE
   DownloadQuality: optimized
 ```
 
@@ -242,6 +248,7 @@ Images:
 - **Details:**
   - If set to a valid path, images will be saved to that directory.
   - If left empty, images will be saved next to the media content.
+  - Ensure the specified path is added to your docker volume mounts.
   - Ensure the specified path is writable by the application.
 
 ## SaveImagesLocally.SeasonNamingConvention
@@ -287,16 +294,16 @@ LabelsAndTags:
 ### Applications
 
 - **Description**:  
-  An array of label/tag configuration blocks, one per supported application (currently only Plex is supported).
+  An array of label/tag configuration blocks, one per supported application.
 - **Fields**:
-  - `Application`: The name of the application (e.g., `Plex`).
+  - `Application`: The name of the application (e.g., `Plex`, `Sonarr` or `Radarr`).
   - `Enabled`: Set to `true` to enable label/tag management for this application.
   - `Add`: A list of labels/tags to add to items after processing.
   - `Remove`: A list of labels/tags to remove from items after processing.
 
 #### Example Use Case
 
-If you want Aura to add the labels `Overlay` and `4K` to your Plex items, and remove the label `OldLabel`, your config would look like:
+If you want Aura to add the labels `Overlay` and `aura` to your Plex items, and remove the label `OldLabel`, your config would look like:
 
 ```yaml
 LabelsAndTags:
@@ -305,9 +312,21 @@ LabelsAndTags:
       Enabled: true
       Add:
         - "Overlay"
-        - "4K"
+        - "aura"
       Remove:
         - "OldLabel"
+    - Application: Sonarr
+      Enabled: true
+      Add:
+        - aura
+      Remove:
+        - "some-old-label"
+    - Application: Radarr
+      Enabled: true
+      Add:
+        - aura
+      Remove:
+        - "some-old-label"
 ```
 
 #### Notes
@@ -315,6 +334,7 @@ LabelsAndTags:
 - You can leave `Add` or `Remove` empty if you only want to add or only want to remove labels.
 - Only applications with `Enabled: true` will be processed.
 - This structure is extensible for future support of other applications (such as Sonarr or Radarr).
+- Any tags for Sonarr/Radarr have to be in lowercase.
 
 ---
 
@@ -331,7 +351,7 @@ Notifications:
     - Provider: "Discord"
       Enabled: true
       Discord:
-        Webhook: "https://discord.com/api/webhooks/123456789/abcdefghijklmnopqrstuvwxyz"
+        Webhook: YOUR_DISCORD_WEBHOOK_URL
     - Provider: "Pushover"
       Enabled: true
       Pushover:
@@ -345,7 +365,7 @@ Notifications:
     - Provider: "Webhook"
       Enabled: true
       Webhook:
-        URL: "https://your-webhook-url.com/endpoint"
+        URL: YOUR_WEBHOOK_URL
         Headers:
           Some-Header: "HeaderValue"
           Another-Header: "AnotherValue"
@@ -369,5 +389,55 @@ Notifications:
 | Pushover.UserKey | yes (when Provider=Pushover & Enabled) | Your user key                                |
 | Gotify.URL       | yes (when Provider=Gotify & Enabled)   | Base URL for your Gotify server              |
 | Gotify.Token     | yes (when Provider=Gotify & Enabled)   | Your Gotify app token                        |
+
+**Note**: Replace any `YOUR_...` placeholders with your actual configuration values. For URL fields, ensure you include the full URL with the appropriate protocol (e.g., `http://` or `https://`).
+
+---
+
+## Sonarr and Radarr Integration
+
+- **Example**:
+
+```yaml
+SonarrRadarr:
+  Applications:
+    - Type: Sonarr
+      Library: Series
+      URL: YOUR_SONARR_URL
+      APIKey: YOUR_SONARR_API_TOKEN
+    - Type: Sonarr
+      Library: 4K Series
+      URL: YOUR_SONARR_URL
+      APIKey: YOUR_SONARR_API_TOKEN
+    - Type: Radarr
+      Library: Movies
+      URL: YOUR_RADARR_URL
+      APIKey: YOUR_RADARR_API_TOKEN
+    - Type: Radarr
+      Library: 4K Movies
+      URL: YOUR_RADARR_URL
+      APIKey: YOUR_RADARR_API_TOKEN
+```
+
+Aura can interact with Sonarr and Radarr to add tags to your Sonarr/Radarr items after processing. This is useful for organizing your media library, marking items for automation, or integrating with other tools.
+
+### Type
+
+- **Options**: `Sonarr`, `Radarr`
+- **Description**: The type of application you are configuring.
+- **Details**: This option specifies whether you are configuring Sonarr or Radarr. Depending on your choice, aura will use the appropriate API and methods to manage tags.
+
+### URL
+
+- **Description**: The URL of the Sonarr or Radarr server.
+- **Details**: This option specifies the URL of the Sonarr or Radarr server that aura will interact with.
+- **Note**: Replace `YOUR_SONARR_URL` or `YOUR_RADARR_URL` with the actual URL of your Sonarr or Radarr server. Make sure to include the protocol (e.g., `http://` or `https://`) in the URL.
+- **Example**: `http://localhost:8989`, `https://my-sonarr-server.com`, or `http://my-radarr-server.com`.
+
+### APIKey
+
+- **Description**: The API key for the Sonarr or Radarr server.
+- **Details**: This option specifies the API key required to access the Sonarr or Radarr server's API. You can obtain this key from your Sonarr or Radarr server's settings.
+- **Note**: The API key is necessary for aura to authenticate and perform actions on your Sonarr or Radarr server. Make sure to keep this key secure and do not share it publicly.
 
 ---
