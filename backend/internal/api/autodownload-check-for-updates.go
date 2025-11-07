@@ -126,13 +126,7 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 
 		// Check to see if Last Downloaded is greater than Poster Set Last Updated
 		posterSetDateNewer := Time_IsLastDownloadedBeforeLatestPosterSetDate(dbPosterSet.LastDownloaded, latestSet.DateUpdated)
-		var formattedLastDownloaded string
-		lastDownloadedTime, err := time.Parse("2006-01-02T15:04:05Z07:00", dbPosterSet.LastDownloaded)
-		if err == nil {
-			formattedLastDownloaded = lastDownloadedTime.Format("2006-01-02 15:04:05")
-		} else {
-			formattedLastDownloaded = dbPosterSet.LastDownloaded
-		}
+		formattedLastDownloaded := formatDateString(dbPosterSet.LastDownloaded)
 
 		// Check if more seasons or episodes were added
 		addedSeasonOrEpisodes := MS_AddedMoreSeasonsOrEpisodes(dbSavedItem.MediaItem, latestMediaItem)
@@ -152,7 +146,8 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			setResult.Reason = "No updates to poster set, seasons/episodes or rating key"
 			result.Sets = append(result.Sets, setResult)
 			actionResultMap["status"] = "skipped"
-			actionResultMap["status_reason"] = fmt.Sprintf("Skipping set - Last downloaded on %s, no updates to poster set, seasons/episodes or rating key", formattedLastDownloaded)
+			actionResultMap["status_reason"] = fmt.Sprintf("Skipping set - Last downloaded on %s (Last Update: %s), no updates to poster set, seasons/episodes or rating key",
+				formattedLastDownloaded, latestSet.DateUpdated.Format("2006-01-02 15:04:05"))
 			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
 			continue
 		}
@@ -553,11 +548,13 @@ func AutoDownload_ShouldDownloadFile(dbPosterSet DBPosterSetDetail, file PosterF
 	// Check if the File has been updated since the last download
 	fileUpdated := Time_IsLastDownloadedBeforeLatestPosterSetDate(dbPosterSet.LastDownloaded, file.Modified)
 
+	formattedLastDownloaded := formatDateString(dbPosterSet.LastDownloaded)
+
 	switch file.Type {
 	case "poster", "backdrop":
 		if fileUpdated {
 			psFile.ReasonTitle = "Downloading - File Updated"
-			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			psFile.ReasonDetails = fmt.Sprintf("File Updated:\t%s\nLast Download:\t%s", file.Modified.Format("2006-01-02 15:04:05"), formattedLastDownloaded)
 			return psFile
 		}
 	case "seasonPoster", "specialSeasonPoster":
@@ -566,24 +563,19 @@ func AutoDownload_ShouldDownloadFile(dbPosterSet DBPosterSetDetail, file PosterF
 
 		if fileUpdated && existsInLatest {
 			psFile.ReasonTitle = "Downloading - File Updated"
-			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			psFile.ReasonDetails = fmt.Sprintf("File Updated:\t%s\nLast Download:\t%s", file.Modified.Format("2006-01-02 15:04:05"), formattedLastDownloaded)
 			return psFile
 		} else if !fileUpdated && !existsInDB && existsInLatest {
 			psFile.ReasonTitle = "Downloading - New Season Added"
 			psFile.ReasonDetails = fmt.Sprintf("Season %d added to %s", file.Season.Number, latestMediaItem.Title)
 			return psFile
 		}
-		logging.LOGGER.Debug().Timestamp().
-			Bool("exists_in_db", existsInDB).Bool("exists_in_latest", existsInLatest).
-			Bool("file_updated", fileUpdated).
-			Int("season_number", file.Season.Number).
-			Msg("Skipping season poster")
 	case "titlecard":
 		// For titlecards, check if the episode exists in the latest media item
 		existsInDB, existsInLatest, pathChanged := CheckEpisodeExistsAddedAndPath(file.Episode.SeasonNumber, file.Episode.EpisodeNumber, dbSavedItem, latestMediaItem)
 		if fileUpdated && existsInLatest {
 			psFile.ReasonTitle = "Downloading - File Updated"
-			psFile.ReasonDetails = fmt.Sprintf("File updated on %s (last download was %s)", file.Modified.Format("2006-01-02 15:04:05"), dbPosterSet.LastDownloaded)
+			psFile.ReasonDetails = fmt.Sprintf("File Updated:\t%s\nLast Download:\t%s", file.Modified.Format("2006-01-02 15:04:05"), formattedLastDownloaded)
 			return psFile
 		} else if !fileUpdated && !existsInDB && existsInLatest {
 			psFile.ReasonTitle = "Downloading - New Episode Added"
@@ -594,11 +586,6 @@ func AutoDownload_ShouldDownloadFile(dbPosterSet DBPosterSetDetail, file PosterF
 			psFile.ReasonDetails = pathChanged
 			return psFile
 		}
-		logging.LOGGER.Debug().Timestamp().
-			Bool("exists_in_db", existsInDB).Bool("exists_in_latest", existsInLatest).
-			Bool("file_updated", fileUpdated).
-			Str("episode_number", fmt.Sprintf("S%02dE%02d", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)).
-			Msg("Skipping titlecard")
 	}
 
 	return psFile
@@ -698,4 +685,28 @@ func SendFileDownloadNotification(itemTitle, posterSetID string, psFile PosterFi
 			}
 		}
 	}
+}
+
+// Helper Function to format a date string from various formats to "YYYY-MM-DD HH:MM:SS"
+// If parsing fails, returns the original string.
+func formatDateString(dateStr string) string {
+	if dateStr == "" {
+		return ""
+	}
+
+	formats := []string{
+		time.RFC3339,                    // "2006-01-02T15:04:05Z07:00"
+		"2006-01-02T15:04:05Z",          // "2025-11-02T16:49:55Z"
+		"2006-01-02 15:04:05",           // "2025-11-02 16:49:55"
+		"2006-01-02",                    // "2025-11-02"
+		"2006-01-02T15:04:05.000Z07:00", // with milliseconds
+		"2006-01-02T15:04:05.000Z",      // with milliseconds and Z
+	}
+
+	for _, layout := range formats {
+		if t, err := time.Parse(layout, dateStr); err == nil {
+			return t.Format("2006-01-02 15:04:05")
+		}
+	}
+	return dateStr
 }
