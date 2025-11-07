@@ -103,6 +103,12 @@ func Plex_FetchMovieCollectionItems(ctx context.Context, librarySection LibraryS
 //////////////////////////////////////////////////////////////////////
 
 func EJ_FetchMovieCollectionItems(ctx context.Context, librarySection LibrarySection) ([]CollectionItem, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx,
+		fmt.Sprintf("Getting all collections for '%s' (ID: %s)", librarySection.Title, librarySection.ID), logging.LevelDebug)
+	defer logAction.Complete()
+
+	logAction.SetError(fmt.Sprintf("Function not implemented for %s 🚧", Global_Config.MediaServer.Type), "Hopefully coming soon! 🦄", nil)
+
 	var collectionItems []CollectionItem
 	return collectionItems, logging.LogErrorInfo{}
 }
