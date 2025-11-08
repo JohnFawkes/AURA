@@ -1,3 +1,15 @@
+## [0.9.51] - 2025-11-07
+
+### Added
+
+- Added WebSocket support for real-time updates on download queue status. Backup HTTP endpoint for download queue status.
+
+### Fixed
+
+- Fixed issue where download modal was not selecting correct default image type based on user preferences.
+
+---
+
 ## [0.9.50] - 2025-11-06
 
 ### Added
