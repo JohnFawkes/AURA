@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -156,13 +157,20 @@ func startRuntimeServices() {
 	}
 
 	// Cron Schedule: Download Queue Processing (every 1 minute)
-	_, err := cronInstance.AddFunc("@every 1m", func() {
+	_, err := cronInstance.AddFunc("* * * * *", func() {
 		api.ProcessDownloadQueue()
 	})
 	if err != nil {
 		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Download Queue Processing cron job")
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Time = time.Now()
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Status = api.DOWNLOAD_QUEUE_LAST_STATUS_ERROR
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Message = "Failed to schedule Download Queue Processing"
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Errors = []string{err.Error()}
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Warnings = []string{}
 	} else {
 		logging.LOGGER.Info().Timestamp().Msg("Download Queue Processing scheduled every 1 minute")
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Time = time.Now()
+		api.DOWNLOAD_QUEUE_LATEST_INFO.Status = api.DOWNLOAD_QUEUE_LAST_STATUS_IDLE
 	}
 
 	cronInstance.Start()

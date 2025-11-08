@@ -8,11 +8,30 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 type FileIssues struct {
 	Errors   []string
 	Warnings []string
+}
+
+type DownloadQueueStatus string
+
+const (
+	DOWNLOAD_QUEUE_LAST_STATUS_SUCCESS    DownloadQueueStatus = "Success"
+	DOWNLOAD_QUEUE_LAST_STATUS_WARNING    DownloadQueueStatus = "Warning"
+	DOWNLOAD_QUEUE_LAST_STATUS_ERROR      DownloadQueueStatus = "Error"
+	DOWNLOAD_QUEUE_LAST_STATUS_IDLE       DownloadQueueStatus = "Idle - Queue Empty"
+	DOWNLOAD_QUEUE_LAST_STATUS_PROCESSING DownloadQueueStatus = "Processing"
+)
+
+var DOWNLOAD_QUEUE_LATEST_INFO struct {
+	Time     time.Time
+	Status   DownloadQueueStatus
+	Message  string
+	Warnings []string
+	Errors   []string
 }
 
 func ProcessDownloadQueue() {
@@ -24,15 +43,19 @@ func ProcessDownloadQueue() {
 	// Get the download-queue folder path
 	queueFolderPath := GetDownloadQueueFolderPath(ctx)
 	if queueFolderPath == "" {
+		logging.LOGGER.Warn().Timestamp().Msg("Download Queue folder does not exist or is inaccessible")
 		return
 	}
 
 	// Read all JSON files in the download-queue folder
 	files, err := os.ReadDir(queueFolderPath)
 	if err != nil {
+		logging.LOGGER.Warn().Timestamp().Msg("Failed to read download queue folder")
 		logAction.SetError("Failed to read download queue folder",
 			"Ensure that the download-queue folder exists and is accessible",
 			map[string]any{"error": err.Error()})
+		DOWNLOAD_QUEUE_LATEST_INFO.Status = DOWNLOAD_QUEUE_LAST_STATUS_ERROR
+		DOWNLOAD_QUEUE_LATEST_INFO.Errors = []string{fmt.Sprintf("%s:%s", logAction.Error.Message, err.Error())}
 		return
 	}
 
@@ -58,6 +81,12 @@ func ProcessDownloadQueue() {
 		subAction := ld.AddAction(fmt.Sprintf("Processing file: %s", file.Name()), logging.LevelInfo)
 		ctx = logging.WithCurrentAction(ctx, subAction)
 
+		// Reset the DOWNLOAD_QUEUE_LATEST_INFO for this file
+		DOWNLOAD_QUEUE_LATEST_INFO.Status = DOWNLOAD_QUEUE_LAST_STATUS_PROCESSING
+		DOWNLOAD_QUEUE_LATEST_INFO.Message = ""
+		DOWNLOAD_QUEUE_LATEST_INFO.Errors = []string{}
+		DOWNLOAD_QUEUE_LATEST_INFO.Warnings = []string{}
+
 		// Create an array of errors and warning for each file
 		fileErrors := []string{}
 		fileWarnings := []string{}
@@ -71,7 +100,7 @@ func ProcessDownloadQueue() {
 			fileErrors = append(fileErrors, fmt.Sprintf("Failed to read file: %s", err.Error()))
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", "")
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", DBPosterSetDetail{})
 			ld.Log()
 			continue
 		}
@@ -83,7 +112,7 @@ func ProcessDownloadQueue() {
 			fileErrors = append(fileErrors, fmt.Sprintf("Failed to parse JSON: %s", err.Error()))
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", "")
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], "", DBPosterSetDetail{})
 			ld.Log()
 			continue
 		}
@@ -94,7 +123,7 @@ func ProcessDownloadQueue() {
 			fileErrors = append(fileErrors, "No poster sets found in queue item")
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, "")
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, DBPosterSetDetail{})
 			ld.Log()
 			continue
 		}
@@ -109,19 +138,20 @@ func ProcessDownloadQueue() {
 			fileErrors = append(fileErrors, fmt.Sprintf("Failed to fetch latest data for '%s (%s): %s", latestMediaItem.Title, latestMediaItem.LibraryTitle, Err.Message))
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, posterSet)
 			ld.Log()
 			continue
 		}
 		subAction.AppendResult("media_item_title", latestMediaItem.Title)
 		subAction.AppendResult("media_item_library", latestMediaItem.LibraryTitle)
+		DOWNLOAD_QUEUE_LATEST_INFO.Message = fmt.Sprintf("%s (%s)", latestMediaItem.Title, posterSet.PosterSetID)
 
 		if len(posterSet.SelectedTypes) == 0 {
-			subAction.AppendWarning(fmt.Sprintf("posterset_%s", posterSet.PosterSetID), "No selected types for poster set")
+			subAction.AppendWarning(fmt.Sprintf("poster_set_%s", posterSet.PosterSetID), "No selected types for poster set")
 			fileWarnings = append(fileWarnings, "No selected types for poster set")
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet)
 			ld.Log()
 			continue
 		}
@@ -210,7 +240,7 @@ func ProcessDownloadQueue() {
 			fileErrors = append(fileErrors, fmt.Sprintf("Database Insert Failed: %s", Err.Message))
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			subAction.Complete()
-			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
+			go SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet)
 			ld.Log()
 			continue
 		}
@@ -244,7 +274,7 @@ func ProcessDownloadQueue() {
 		// Handle any labels and tags asynchronously
 		go func() {
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet.PosterSetID)
+			SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet)
 			Plex_HandleLabels(latestMediaItem)
 			SR_CallHandleTags(context.Background(), latestMediaItem)
 		}()
@@ -252,7 +282,6 @@ func ProcessDownloadQueue() {
 		subAction.Complete()
 		ld.Log()
 	}
-
 }
 
 func GetDownloadQueueFolderPath(ctx context.Context) string {
@@ -278,18 +307,14 @@ func GetDownloadQueueFolderPath(ctx context.Context) string {
 	return queueFolderPath
 }
 
-func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID string) {
-	if len(Global_Config.Notifications.Providers) == 0 {
-		return
-	}
-
-	result := ""
+func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle string, posterSet DBPosterSetDetail) {
+	var result DownloadQueueStatus
 	if len(fileIssues.Errors) > 0 {
-		result = "Error"
+		result = DOWNLOAD_QUEUE_LAST_STATUS_ERROR
 	} else if len(fileIssues.Warnings) > 0 {
-		result = "Warning"
+		result = DOWNLOAD_QUEUE_LAST_STATUS_WARNING
 	} else {
-		result = "Success"
+		result = DOWNLOAD_QUEUE_LAST_STATUS_SUCCESS
 	}
 
 	notificationTitle := ""
@@ -298,23 +323,38 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 	if itemTitle == "" {
 		itemTitle = "Unknown Title"
 	}
-	if posterSetID == "" {
-		posterSetID = "Unknown Set ID"
+	var imageURL string
+	if posterSet.PosterSetID == "" {
+		posterSet.PosterSetID = "Unknown Set ID"
+	} else {
+		imageURL = getImageURLFromPosterSet(posterSet.PosterSet)
 	}
 
 	switch result {
 	case "Success":
 		notificationTitle = "Download Queue - Success"
-		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSetID)
+		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.PosterSetID)
 	case "Warning":
 		notificationTitle = "Download Queue - Warning"
-		messageBody = fmt.Sprintf("%s (Set: %s)\n\nWarnings:\n%s", itemTitle, posterSetID, strings.Join(fileIssues.Warnings, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)\n\nWarnings:\n%s", itemTitle, posterSet.PosterSetID, strings.Join(fileIssues.Warnings, "\n"))
 	case "Error":
 		notificationTitle = "Download Queue - Error"
-		messageBody = fmt.Sprintf("%s (Set: %s)\n\nErrors:\n%s", itemTitle, posterSetID, strings.Join(fileIssues.Errors, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)\n\nErrors:\n%s", itemTitle, posterSet.PosterSetID, strings.Join(fileIssues.Errors, "\n"))
 		if len(fileIssues.Warnings) > 0 {
 			messageBody = fmt.Sprintf("%s\n\nWarnings:\n%s", messageBody, strings.Join(fileIssues.Warnings, "\n"))
 		}
+	}
+
+	// Update the Global DOWNLOAD_QUEUE_LAST_STATUS variable
+	DOWNLOAD_QUEUE_LATEST_INFO.Time = time.Now()
+	DOWNLOAD_QUEUE_LATEST_INFO.Status = result
+	DOWNLOAD_QUEUE_LATEST_INFO.Message = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.PosterSetID)
+	DOWNLOAD_QUEUE_LATEST_INFO.Errors = fileIssues.Errors
+	DOWNLOAD_QUEUE_LATEST_INFO.Warnings = fileIssues.Warnings
+
+	// Check if there are any notification providers configured
+	if len(Global_Config.Notifications.Providers) == 0 {
+		return
 	}
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send Download Queue Update")
@@ -332,7 +372,7 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 					ctx,
 					provider.Discord,
 					messageBody,
-					"",
+					imageURL,
 					notificationTitle,
 				)
 			case "Pushover":
@@ -340,7 +380,7 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 					ctx,
 					provider.Pushover,
 					messageBody,
-					"",
+					imageURL,
 					notificationTitle,
 				)
 			case "Gotify":
@@ -348,7 +388,7 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 					ctx,
 					provider.Gotify,
 					messageBody,
-					"",
+					imageURL,
 					notificationTitle,
 				)
 			case "Webhook":
@@ -356,10 +396,37 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle, posterSetID
 					ctx,
 					provider.Webhook,
 					messageBody,
-					"",
+					imageURL,
 					notificationTitle,
 				)
 			}
 		}
 	}
+}
+
+func getImageURLFromPosterSet(posterSet PosterSet) string {
+
+	// First we try to get the Poster Image URL
+	// If not found, we try Backdrop
+	// If not found, we try Season Posters
+	// If not found, we try Title Cards
+	// If none found, return empty string
+	if posterSet.Poster.Src != "" {
+		return Mediux_GetImageURLFromSrc(posterSet.Poster.Src)
+	} else if posterSet.Backdrop.Src != "" {
+		return Mediux_GetImageURLFromSrc(posterSet.Backdrop.Src)
+	} else if len(posterSet.SeasonPosters) > 0 {
+		for _, seasonPoster := range posterSet.SeasonPosters {
+			if seasonPoster.Src != "" {
+				return Mediux_GetImageURLFromSrc(seasonPoster.Src)
+			}
+		}
+	} else if len(posterSet.TitleCards) > 0 {
+		for _, titleCard := range posterSet.TitleCards {
+			if titleCard.Src != "" {
+				return Mediux_GetImageURLFromSrc(titleCard.Src)
+			}
+		}
+	}
+	return ""
 }

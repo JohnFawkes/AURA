@@ -91,12 +91,23 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 	u.RawQuery = queryStr
 	URL := u.String()
 
-	logging.LOGGER.Warn().Timestamp().Msgf("URL: %s", URL)
-
 	// Append Values
 	logAction.AppendResult("url", URL)
 	logAction.AppendResult("imageQuality", imageQuality)
 
 	// Return the constructed URL
 	return URL, logging.LogErrorInfo{}
+}
+
+func Mediux_GetImageURLFromSrc(src string) string {
+	if src == "" {
+		return ""
+	}
+	// Construct the Mediux URL
+	u, err := url.Parse(MediuxBaseURL)
+	if err != nil {
+		return ""
+	}
+	u.Path = path.Join(u.Path, "assets", src)
+	return u.String() + "&key=thumb"
 }

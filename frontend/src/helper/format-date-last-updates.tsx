@@ -32,3 +32,18 @@ export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedStrin
 		return "Invalid Date";
 	}
 };
+
+export const formatExactDateTime = (dateString: string) => {
+	try {
+		if (!dateString) {
+			return "Invalid Date";
+		}
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) throw new Error();
+
+		const pad = (n: number) => n.toString().padStart(2, "0");
+		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+	} catch {
+		return "Invalid Date";
+	}
+};
