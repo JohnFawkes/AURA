@@ -336,24 +336,23 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		name: "selectedOptionsByItem",
 	});
 
-	// // Reset form on mount
-	// useEffect(() => {
-	// 	console.warn("Resetting on mount");
-	// 	form.reset({
-	// 		selectedOptionsByItem: formItems.reduce(
-	// 			(acc, item) => {
-	// 				acc[item.MediaItemRatingKey] = {
-	// 					types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-	// 					autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
-	// 					addToDBOnly: false,
-	// 					source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
-	// 				};
-	// 				return acc;
-	// 			},
-	// 			{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
-	// 		),
-	// 	});
-	// }, [formItems, form, autoDownloadDefault, downloadDefaults]);
+	// Reset form on mount
+	useEffect(() => {
+		form.reset({
+			selectedOptionsByItem: formItems.reduce(
+				(acc, item) => {
+					acc[item.MediaItemRatingKey] = {
+						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
+						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
+						addToDBOnly: false,
+						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
+					};
+					return acc;
+				},
+				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
+			),
+		});
+	}, [formItems, form, autoDownloadDefault, downloadDefaults]);
 
 	useEffect(() => {
 		// If all the form items are set to "Add to Database Only", change button text
