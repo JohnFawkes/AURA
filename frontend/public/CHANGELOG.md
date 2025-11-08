@@ -2,7 +2,7 @@
 
 ### Added
 
-- Added WebSocket support for real-time updates on download queue status. Backup HTTP endpoint for download queue status.
+- Added new route and function to get status of last download in the download queue.
 
 ### Fixed
 

@@ -125,7 +125,6 @@ func AddRoutes(r *chi.Mux) {
 			// Download Queue Routes
 			r.Route("/download-queue", func(r chi.Router) {
 				r.Get("/status", routes_download_queue.GetDownloadQueueLastStatus)
-				r.Get("/status-ws", routes_download_queue.DownloadQueueStatusWS)
 				r.Post("/add", routes_download_queue.AddToDownloadQueue)
 				r.Get("/get-results", routes_download_queue.GetDownloadQueueResults)
 				r.Delete("/delete", routes_download_queue.DeleteFromDownloadQueue)

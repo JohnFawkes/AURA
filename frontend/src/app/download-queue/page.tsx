@@ -4,7 +4,7 @@ import { formatExactDateTime } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchDownloadQueueEntries } from "@/services/download-queue/fetch-queue-entries";
 import { DownloadQueueStatus, fetchDownloadQueueStatus } from "@/services/download-queue/get-status";
-import { Globe, Wifi } from "lucide-react";
+import { Globe } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -16,7 +16,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { H3 } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
-import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
@@ -43,7 +42,6 @@ const DownloadQueuePage: React.FC = () => {
 	// States - Loading & Error
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
-	const [webSocketConnected, setWebSocketConnected] = useState(false);
 
 	// Set the Document Title
 	useEffect(() => {
@@ -83,7 +81,6 @@ const DownloadQueuePage: React.FC = () => {
 
 	useEffect(() => {
 		const fetchStatus = async () => {
-			if (webSocketConnected) return;
 			try {
 				const statusResponse = await fetchDownloadQueueStatus();
 				if (statusResponse.status === "error") {
@@ -113,45 +110,6 @@ const DownloadQueuePage: React.FC = () => {
 		const interval = setInterval(fetchStatus, 1000 * 2); // Refresh every 2 seconds
 
 		return () => clearInterval(interval);
-	}, [webSocketConnected]);
-
-	useEffect(() => {
-		let ws: WebSocket | null = null;
-		let isMounted = true;
-
-		const connectWebSocket = () => {
-			ws = new WebSocket("ws://localhost:8888/api/download-queue/status-ws");
-
-			ws.onopen = () => {
-				log("INFO", "Download Queue WS", "Connection", "WebSocket connection established");
-				setWebSocketConnected(true);
-			};
-
-			ws.onmessage = (event) => {
-				try {
-					const status = JSON.parse(event.data);
-					if (isMounted) setQueueStatus(status);
-				} finally {
-					// No-op
-				}
-			};
-
-			ws.onerror = () => {
-				if (isMounted) setWebSocketConnected(false);
-			};
-
-			ws.onclose = () => {
-				if (isMounted) setWebSocketConnected(false);
-				if (isMounted) setTimeout(connectWebSocket, 1000 * 10);
-			};
-		};
-
-		connectWebSocket();
-
-		return () => {
-			isMounted = false;
-			if (ws) ws.close();
-		};
 	}, []);
 
 	useEffect(() => {
@@ -198,15 +156,9 @@ const DownloadQueuePage: React.FC = () => {
 			{typeof secondsToNextRun === "number" && (
 				<div className="w-full max-w-4xl mb-2 text-xs text-muted-foreground text-right flex items-center justify-end gap-2">
 					<span className="font-mono">Next Run: {secondsToNextRun}s</span>
-					{webSocketConnected ? (
-						<span title="WebSocket Connected">
-							<Wifi className="inline-block h-4 w-4 text-green-500" />
-						</span>
-					) : (
-						<span title="HTTP Polling">
-							<Globe className="inline-block h-4 w-4 text-blue-500" />
-						</span>
-					)}
+					<span title="HTTP Polling">
+						<Globe className="inline-block h-4 w-4 text-blue-500" />
+					</span>
 				</div>
 			)}
 			<pre
