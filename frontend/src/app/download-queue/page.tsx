@@ -120,7 +120,7 @@ const DownloadQueuePage: React.FC = () => {
 		let isMounted = true;
 
 		const connectWebSocket = () => {
-			ws = new WebSocket("ws://127.0.0.1:8888/api/download-queue/status-ws");
+			ws = new WebSocket("ws://localhost:8888/api/download-queue/status-ws");
 
 			ws.onopen = () => {
 				log("INFO", "Download Queue WS", "Connection", "WebSocket connection established");
