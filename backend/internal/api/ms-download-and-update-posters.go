@@ -36,6 +36,9 @@ func CallDownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file
 //////////////////////////////////////////////////////////////////////
 
 func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo {
+	// Return Success for testing
+	// return logging.LogErrorInfo{}
+
 	if !Global_Config.Images.SaveImagesLocally.Enabled {
 		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {

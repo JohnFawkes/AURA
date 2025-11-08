@@ -74,11 +74,6 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 	validateAction.Complete()
 
-	// Response with a success message
-	// logging.LOGGER.Info().Timestamp().Str("title", saveItem.MediaItem.Title).Str("library", saveItem.LibraryTitle).Msgf("Adding %s to database successfully", saveItem.MediaItem.Title)
-	// api.Util_Response_SendJSON(w, ld, saveItem)
-	// return
-
 	if largeDataSize {
 		// For large data sizes, we omitted the actual poster images to reduce payload size
 		// So we need to get the poster data again

@@ -13,6 +13,9 @@ func DB_InsertAllInfoIntoTables(ctx context.Context, item DBMediaItemWithPosterS
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Adding Item into Database", logging.LevelInfo)
 	defer logAction.Complete()
 
+	// Return Success for testing
+	// return logging.LogErrorInfo{}
+
 	// Start a DB transaction
 	actionBeginTx := logAction.AddSubAction("Start DB Transaction", logging.LevelTrace)
 	tx, err := db.Begin()
