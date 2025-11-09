@@ -1,3 +1,11 @@
+## [0.9.53] - 2025-11-09
+
+### Added
+
+- Added a view density slider to allow users to customize the size of Images in the carousel views. This setting is saved in User Preferences.
+
+---
+
 ## [0.9.52] - 2025-11-09
 
 ### Added
