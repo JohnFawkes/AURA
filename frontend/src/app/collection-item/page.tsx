@@ -69,6 +69,7 @@ export default function CollectionItemPage() {
 	const { sortOrder, setSortOrder, sortOption, setSortOption, showHiddenUsers, setShowHiddenUsers } =
 		useCollectionItemPageStore();
 
+	// Collections Page Store (for adjacent items)
 	const { setNextCollectionItem, setPreviousCollectionItem, getAdjacentCollectionItem } = useCollectionsPageStore();
 
 	// Set document title

@@ -1,5 +1,9 @@
 ## [0.9.52] - 2025-11-09
 
+### Added
+
+- [#112](https://github.com/mediux-team/AURA/issues/112) - Collections Page will now respect User Preferences for Download Defaults when opening the Collections Download Modal.
+
 ### Fixed
 
 - [#113](https://github.com/mediux-team/AURA/issues/113) - Fixed issue where Collections with no media items were being shown on the Collections Page.

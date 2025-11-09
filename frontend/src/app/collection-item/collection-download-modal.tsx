@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Download, LoaderIcon, X } from "lucide-react";
 import { z } from "zod";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import React from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -34,6 +34,7 @@ import { Progress } from "@/components/ui/progress";
 
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { PosterFile } from "@/types/media-and-posters/poster-sets";
 
@@ -66,16 +67,27 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 		backdrop_error?: string;
 	}>({});
 
+	// User Preferences
+	const { downloadDefaults } = useUserPreferencesStore();
+
 	const posterImage = collectionItemSet.Posters?.[0] || null;
 	const backdropImage = collectionItemSet.Backdrops?.[0] || null;
 
 	const form = useForm({
 		resolver: zodResolver(downloadSchema),
 		defaultValues: {
-			poster: !!posterImage,
-			backdrop: !!backdropImage,
+			poster: downloadDefaults.includes("poster") && !!posterImage,
+			backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
 		},
 	});
+
+	// Reset form on mount
+	useEffect(() => {
+		form.reset({
+			poster: downloadDefaults.includes("poster") && !!posterImage,
+			backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
+		});
+	}, [form, downloadDefaults, posterImage, backdropImage]);
 
 	const selectedValues = useWatch({ control: form.control });
 
@@ -246,6 +258,16 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 		}
 	};
 
+	const logInfoForPage = () => {
+		log("INFO", "Collections Download Modal", "Debug Info", "Rendering with props:", {
+			collectionItem,
+			collectionItemSet,
+			posterImage,
+			backdropImage,
+			downloadDefaults,
+		});
+	};
+
 	return (
 		<Dialog
 			onOpenChange={(open) => {
@@ -263,7 +285,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
 				>
 					<DialogHeader>
-						<DialogTitle>{collectionItemSet.Title}</DialogTitle>
+						<DialogTitle onClick={logInfoForPage}>{collectionItemSet.Title}</DialogTitle>
 						<DialogDescription>{collectionItemSet.User?.Name}</DialogDescription>
 						<DialogDescription>Library: {collectionItem.LibraryTitle}</DialogDescription>
 						<DialogDescription>
