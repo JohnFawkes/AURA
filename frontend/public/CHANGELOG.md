@@ -1,3 +1,11 @@
+## [0.9.52] - 2025-11-09
+
+### Fixed
+
+- [#113](https://github.com/mediux-team/AURA/issues/113) - Fixed issue where Collections with no media items were being shown on the Collections Page.
+
+---
+
 ## [0.9.51] - 2025-11-07
 
 ### Added

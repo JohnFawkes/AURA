@@ -84,7 +84,7 @@ func Plex_FetchMovieCollectionItems(ctx context.Context, librarySection LibraryS
 
 	for _, collection := range plexResponse.MediaContainer.Metadata {
 		var collectionItem CollectionItem
-		if collection.Type != "collection" {
+		if collection.Type != "collection" || collection.ChildCount < 1 {
 			continue
 		}
 

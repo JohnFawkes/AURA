@@ -197,6 +197,9 @@ export default function CollectionsPage() {
 		const filterAndSortItems = async () => {
 			let items = [...collectionItems];
 
+			// Filter out items with no ChildCount
+			items = items.filter((item) => item.ChildCount > 0);
+
 			// Sort items by Title
 			if (sortOption === "title") {
 				if (sortOrder === "asc") {
