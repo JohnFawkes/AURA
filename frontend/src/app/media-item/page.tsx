@@ -731,13 +731,12 @@ const MediaItemPage = () => {
 
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredPosterSets ?? []).map((set) => (
-									<div key={set.ID} className="pb-6">
-										<MediaCarousel
-											set={set}
-											mediaItem={mediaItem}
-											onMediaItemChange={handleMediaItemChange}
-										/>
-									</div>
+									<MediaCarousel
+										key={set.ID}
+										set={set}
+										mediaItem={mediaItem}
+										onMediaItemChange={handleMediaItemChange}
+									/>
 								))}
 							</div>
 						</>

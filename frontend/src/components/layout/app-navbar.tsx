@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
+import { ViewDensitySlider } from "@/components/shared/view-density-context";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -142,7 +143,7 @@ export default function Navbar() {
 	// Change isWideScreen on window resize
 	useEffect(() => {
 		const handleResize = () => {
-			setIsWideScreen(window.innerWidth >= 1300);
+			setIsWideScreen(window.innerWidth >= 950);
 		};
 		handleResize();
 		window.addEventListener("resize", handleResize);
@@ -414,6 +415,11 @@ export default function Navbar() {
 										<FileCogIcon className="w-6 h-6 mr-2" />
 										Settings
 									</DropdownMenuItem>
+									{isWideScreen && (
+										<DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
+											<ViewDensitySlider />
+										</DropdownMenuItem>
+									)}
 								</>
 							)}
 							<DropdownMenuItem

@@ -8,7 +8,7 @@ import DownloadModal, { DownloadModalProps } from "@/components/shared/download-
 import { ErrorMessage } from "@/components/shared/error-message";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { H1, Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
@@ -152,8 +152,6 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 												);
 											})}
 										</CarouselContent>
-										<CarouselNext className="right-2 bottom-0" />
-										<CarouselPrevious className="right-8 bottom-0" />
 									</Carousel>
 								</AccordionContent>
 							</AccordionItem>
@@ -191,8 +189,6 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 															</CarouselItem>
 														))}
 													</CarouselContent>
-													<CarouselNext className="right-2 bottom-0" />
-													<CarouselPrevious className="right-8 bottom-0" />
 												</Carousel>
 											</div>
 										))}
@@ -245,8 +241,6 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 																			</CarouselItem>
 																		))}
 																	</CarouselContent>
-																	<CarouselNext className="right-2 bottom-0" />
-																	<CarouselPrevious className="right-8 bottom-0" />
 																</Carousel>
 															</AccordionContent>
 														</AccordionItem>

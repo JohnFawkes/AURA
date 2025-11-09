@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { SetFileCounts } from "@/components/shared/set-file-counts";
-import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent } from "@/components/ui/carousel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Lead } from "@/components/ui/typography";
 
@@ -129,8 +129,6 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 			<CarouselContent>
 				<CarouselDisplay sets={[set] as PosterSet[]} />
 			</CarouselContent>
-			<CarouselNext className="right-2 bottom-0" />
-			<CarouselPrevious className="right-8 bottom-0" />
 		</Carousel>
 	);
 }

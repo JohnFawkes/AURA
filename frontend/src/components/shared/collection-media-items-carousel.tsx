@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
@@ -36,8 +36,6 @@ export function CollectionMediaItemsCarousel({ mediaItems }: { mediaItems: Media
 					</CarouselItem>
 				))}
 			</CarouselContent>
-			<CarouselNext className="right-2 bottom-0" />
-			<CarouselPrevious className="right-8 bottom-0" />
 		</Carousel>
 	);
 }

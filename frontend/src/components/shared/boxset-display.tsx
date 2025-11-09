@@ -9,7 +9,7 @@ import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent } from "@/components/ui/carousel";
 import { Lead } from "@/components/ui/typography";
 
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
@@ -162,8 +162,6 @@ export const RenderBoxSetDisplay = ({
 			<CarouselContent>
 				<CarouselDisplay sets={posterSets as PosterSet[]} />
 			</CarouselContent>
-			<CarouselNext className="right-2 bottom-0" />
-			<CarouselPrevious className="right-8 bottom-0" />
 		</Carousel>
 	);
 };

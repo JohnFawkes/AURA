@@ -55,7 +55,7 @@ export function CollectionItemDetails({ collectionItem }: CollectionItemDetailsP
 						<AccordionTrigger className="text-primary font-semibold">
 							View {collectionItem.MediaItems.length} Media Items
 						</AccordionTrigger>
-						<AccordionContent className="pb-6">
+						<AccordionContent>
 							<CollectionMediaItemsCarousel mediaItems={collectionItem.MediaItems} />
 						</AccordionContent>
 					</AccordionItem>

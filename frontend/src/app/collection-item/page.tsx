@@ -24,7 +24,7 @@ import Loader from "@/components/shared/loader";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { SortControl } from "@/components/shared/select-sort";
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Lead, P } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
@@ -452,73 +452,70 @@ export default function CollectionItemPage() {
 
 							<div className="divide-y divide-primary-dynamic/20 space-y-6">
 								{(filteredCollectionItemSets ?? []).map((set) => (
-									<div key={set.ID} className="pb-6">
-										<Carousel
-											opts={{
-												align: "start",
-												dragFree: true,
-												slidesToScroll: "auto",
-											}}
-											className="w-full"
-										>
-											<div className="flex flex-col">
-												<div className="flex flex-row items-center justify-between mb-1">
-													<P className="text-primary-dynamic text-md font-semibold ml-1 w-3/4">
-														{set.Title}
-													</P>
-													<div
-														className={cn(
-															"ml-auto flex space-x-2",
-															set.Title.length > 29 && "mb-5 xs:mb-0"
-														)}
-													>
-														<CollectionsDownloadModal
-															collectionItem={collectionItem}
-															collectionItemSet={set}
-														/>
-													</div>
-												</div>
-												<div className="text-md text-muted-foreground mb-1 flex items-center">
-													<User />
-													<Link
-														href={`/user/${set.User.Name}`}
-														className="hover:text-primary cursor-pointer underline"
-													>
-														{set.User.Name}
-													</Link>
-												</div>
-												<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
-													Last Update:{" "}
-													{formatLastUpdatedDate(
-														set.Posters[0]?.Modified || "",
-														set.Backdrops[0]?.Modified || ""
+									<Carousel
+										key={set.ID}
+										opts={{
+											align: "start",
+											dragFree: true,
+											slidesToScroll: "auto",
+										}}
+										className="w-full"
+									>
+										<div className="flex flex-col">
+											<div className="flex flex-row items-center justify-between mb-1">
+												<P className="text-primary-dynamic text-md font-semibold ml-1 w-3/4">
+													{set.Title}
+												</P>
+												<div
+													className={cn(
+														"ml-auto flex space-x-2",
+														set.Title.length > 29 && "mb-5 xs:mb-0"
 													)}
-												</Lead>
+												>
+													<CollectionsDownloadModal
+														collectionItem={collectionItem}
+														collectionItemSet={set}
+													/>
+												</div>
 											</div>
-											<CarouselContent>
-												<CarouselItem key={`${set.ID}`}>
-													{set.Posters.length > 0 && set.Posters[0] && set.Posters[0].ID && (
+											<div className="text-md text-muted-foreground mb-1 flex items-center">
+												<User />
+												<Link
+													href={`/user/${set.User.Name}`}
+													className="hover:text-primary cursor-pointer underline"
+												>
+													{set.User.Name}
+												</Link>
+											</div>
+											<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
+												Last Update:{" "}
+												{formatLastUpdatedDate(
+													set.Posters[0]?.Modified || "",
+													set.Backdrops[0]?.Modified || ""
+												)}
+											</Lead>
+										</div>
+										<CarouselContent>
+											<CarouselItem key={`${set.ID}`}>
+												{set.Posters.length > 0 && set.Posters[0] && set.Posters[0].ID && (
+													<AssetImage
+														image={set.Posters[0]}
+														aspect="poster"
+														className={`w-full`}
+													/>
+												)}
+												{set.Backdrops.length > 0 &&
+													set.Backdrops[0] &&
+													set.Backdrops[0].ID && (
 														<AssetImage
-															image={set.Posters[0]}
-															aspect="poster"
+															image={set.Backdrops[0]}
+															aspect="backdrop"
 															className={`w-full`}
 														/>
 													)}
-													{set.Backdrops.length > 0 &&
-														set.Backdrops[0] &&
-														set.Backdrops[0].ID && (
-															<AssetImage
-																image={set.Backdrops[0]}
-																aspect="backdrop"
-																className={`w-full`}
-															/>
-														)}
-												</CarouselItem>
-											</CarouselContent>
-											<CarouselNext className="right-2 bottom-0" />
-											<CarouselPrevious className="right-8 bottom-0" />
-										</Carousel>
-									</div>
+											</CarouselItem>
+										</CarouselContent>
+									</Carousel>
 								))}
 							</div>
 						</>

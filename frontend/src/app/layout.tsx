@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import AppFooter from "@/components/layout/app-footer";
 import Navbar from "@/components/layout/app-navbar";
 import { JumpToTop } from "@/components/shared/jump-to-top";
+import { ViewDensityProvider } from "@/components/shared/view-density-context";
 
 import { gabarito } from "../../public/fonts/Gabarito";
 import "./globals.css";
@@ -20,11 +21,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			</head>
 			<body className={`${gabarito.className}`}>
 				<ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
-					{/* Navbar */}
-					<Navbar />
+					<ViewDensityProvider>
+						{/* Navbar */}
+						<Navbar />
 
-					{/* Main Content */}
-					<main className="min-h-screen"> {children}</main>
+						{/* Main Content */}
+						<main className="min-h-screen"> {children}</main>
+					</ViewDensityProvider>
 
 					{/* Footer */}
 					<AppFooter version={process.env.NEXT_PUBLIC_APP_VERSION} />
