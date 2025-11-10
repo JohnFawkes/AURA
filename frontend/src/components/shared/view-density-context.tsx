@@ -59,9 +59,10 @@ export function ViewDensitySlider({ className }: { className?: string }) {
 
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
-			<GalleryHorizontalEnd className="h-4 w-4 text-muted-foreground" />
+			<GalleryHorizontalEnd className="h-4 w-4 text-muted-foreground mr-2" />
+			View Density
 			<Slider
-				className="w-46"
+				className="w-24"
 				value={[densityStep]}
 				min={0}
 				max={2}
