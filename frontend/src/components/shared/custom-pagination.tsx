@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import { Input } from "@/components/ui/input";
 import {
 	Pagination,
@@ -34,6 +36,17 @@ export function CustomPagination({
 			window.scrollTo({ top: 0, behavior: "smooth" });
 		}
 	};
+
+	useEffect(() => {
+		// Reset to first page if filterItemsLength changes and currentPage is out of bounds
+		if (filterItemsLength !== undefined) {
+			const maxPage = Math.ceil(filterItemsLength / itemsPerPage);
+			if (currentPage > maxPage) {
+				setCurrentPage(1);
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filterItemsLength]);
 
 	return (
 		<>
