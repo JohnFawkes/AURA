@@ -9,14 +9,16 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+var mediuxRestyClient = resty.New().
+	SetHeader("Content-Type", "application/json").
+	SetHeader("User-Agent", "aura/1.0").
+	SetHeader("X-Request", "mediux-aura")
+
 func Mediux_SendGraphQLRequest(ctx context.Context, requestBody map[string]any) (*resty.Response, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Send GraphQL Request to Mediux", logging.LevelTrace)
 	defer logAction.Complete()
 
-	client := resty.New()
-
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
+	resp, err := mediuxRestyClient.R().
 		SetHeader("Authorization", fmt.Sprintf("Bearer %s", Global_Config.Mediux.Token)).
 		SetBody(requestBody).
 		Post("https://images.mediux.io/graphql")
