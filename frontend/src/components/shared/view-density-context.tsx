@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, Minimize2 } from "lucide-react";
+import { GalleryHorizontalEnd } from "lucide-react";
 
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -59,7 +59,7 @@ export function ViewDensitySlider({ className }: { className?: string }) {
 
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
-			<Minimize2 className="h-4 w-4 text-muted-foreground" />
+			<GalleryHorizontalEnd className="h-4 w-4 text-muted-foreground" />
 			<Slider
 				className="w-46"
 				value={[densityStep]}
@@ -69,7 +69,6 @@ export function ViewDensitySlider({ className }: { className?: string }) {
 				onValueChange={(values) => setDensityStep(values[0] as DensityStep)}
 				aria-label="Adjust view density"
 			/>
-			<Maximize2 className="h-4 w-4 text-muted-foreground" />
 		</div>
 	);
 }
