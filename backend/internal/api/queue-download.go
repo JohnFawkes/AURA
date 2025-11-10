@@ -275,7 +275,7 @@ func ProcessDownloadQueue() {
 		go func() {
 			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
 			SendDownloadQueueNotification(fileIssuesMap[file.Name()], latestMediaItem.Title, posterSet)
-			Plex_HandleLabels(latestMediaItem)
+			Plex_HandleLabels(latestMediaItem, posterSet.SelectedTypes)
 			SR_CallHandleTags(context.Background(), latestMediaItem)
 		}()
 

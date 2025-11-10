@@ -96,10 +96,11 @@ type Config_LabelsAndTags struct {
 }
 
 type Config_LabelsAndTagsProvider struct {
-	Application string   `yaml:"Application,omitempty"`
-	Enabled     bool     `yaml:"Enabled,omitempty"`
-	Add         []string `yaml:"Add,omitempty"`
-	Remove      []string `yaml:"Remove,omitempty"`
+	Application               string   `yaml:"Application,omitempty"`
+	Enabled                   bool     `yaml:"Enabled,omitempty"`
+	Add                       []string `yaml:"Add,omitempty"`
+	Remove                    []string `yaml:"Remove,omitempty"`
+	AddLabelsForSelectedTypes bool     `yaml:"AddLabelsForSelectedTypes,omitempty"`
 }
 
 type Config_Notifications struct {

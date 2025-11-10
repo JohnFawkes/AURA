@@ -123,7 +123,23 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 
 	// Handle any labels and tags asynchronously
 	go func() {
-		api.Plex_HandleLabels(saveItem.MediaItem)
+		var selectedTypes []string
+		if len(saveItem.PosterSets) > 1 {
+			// If there are multiple poster sets, we append all unique selected types
+			typeSet := make(map[string]struct{})
+			for _, ps := range saveItem.PosterSets {
+				for _, t := range ps.SelectedTypes {
+					typeSet[t] = struct{}{}
+				}
+			}
+			for t := range typeSet {
+				selectedTypes = append(selectedTypes, t)
+			}
+		} else if len(saveItem.PosterSets) == 1 {
+			// If only one poster set, use its selected types
+			selectedTypes = saveItem.PosterSets[0].SelectedTypes
+		}
+		api.Plex_HandleLabels(saveItem.MediaItem, selectedTypes)
 		api.SR_CallHandleTags(context.Background(), saveItem.MediaItem)
 	}()
 

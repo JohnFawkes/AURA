@@ -248,7 +248,7 @@ func Plex_SetPoster(ctx context.Context, itemRatingKey string, posterKey string,
 
 }
 
-func Plex_HandleLabels(item MediaItem) {
+func Plex_HandleLabels(item MediaItem, selectedTypes []string) {
 	// If the Global Config Media Server is not Plex, exit
 	if Global_Config.MediaServer.Type != "Plex" {
 		return
@@ -372,9 +372,28 @@ func Plex_HandleLabels(item MediaItem) {
 						labelsToAdd += ","
 					}
 				}
+				if app.AddLabelsForSelectedTypes && len(selectedTypes) > 0 {
+					for _, label := range selectedTypes {
+						additionParams += "&"
+						switch label {
+						case "poster":
+							label = "aura-poster"
+						case "backdrop":
+							label = "aura-backdrop"
+						case "seasonPoster":
+							label = "aura-season-poster"
+						case "specialSeasonPoster":
+							label = "aura-special-season-poster"
+						case "titlecard":
+							label = "aura-titlecard"
+						}
+						additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape(label))
+						labelsToAdd += "," + label
+					}
+				}
 			}
 			if labelsToAdd != "" {
-				subAppAction.AppendResult("labels_to_add", app.Add)
+				subAppAction.AppendResult("labels_to_add", strings.Split(labelsToAdd, ","))
 			}
 
 			// If no labels to add or remove, return early
