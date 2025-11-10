@@ -16,6 +16,8 @@ query shows_by_id($tmdbID: ID!) {
 		imdb_id
 		trakt_id
 		slug
+		poster_path
+		backdrop_path
 		posters {
 			id
 			modified_on
@@ -114,6 +116,8 @@ query movies_by_id($tmdbID: ID!) {
 		imdb_id
 		trakt_id
 		slug
+		poster_path
+		backdrop_path
 		collection_id{
 			id
 			collection_name
@@ -128,6 +132,8 @@ query movies_by_id($tmdbID: ID!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 				posters{
 					id
 					modified_on
@@ -306,6 +312,8 @@ query movie_sets_by_id($movieSetID: ID!, $movieSetIDString: GraphQLStringOrFloat
 			imdb_id
 			trakt_id
 			slug
+			poster_path
+			backdrop_path
 			posters(filter: { movie_set: { id: { _eq: $movieSetIDString } } }) {
 				id
 				modified_on	
@@ -363,6 +371,8 @@ query collection_sets_by_id($collectionSetID: ID!, $collectionSetIDString: Graph
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 				posters (filter: { collection_set: { id: { _eq: $collectionSetIDString } } }) {
 					id
 					modified_on
@@ -440,6 +450,8 @@ query user_sets($username: String!) {
 			imdb_id
 			trakt_id
 			slug
+			poster_path	
+			backdrop_path
 		}
 		show_poster{
 			id
@@ -499,6 +511,8 @@ query user_sets($username: String!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 		}
 		movie_poster{
 			id
@@ -540,6 +554,8 @@ query user_sets($username: String!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 			}
 		}
 		movie_backdrops{
@@ -559,6 +575,8 @@ query user_sets($username: String!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 			}
 		}
 	}
@@ -596,6 +614,8 @@ query user_sets($username: String!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path
+				backdrop_path
 			}
 			movie_poster{
 				id
@@ -628,6 +648,8 @@ query user_sets($username: String!) {
 				imdb_id
 				trakt_id
 				slug
+				poster_path	
+				backdrop_path
 			}
 			show_poster{
 				id
@@ -690,6 +712,8 @@ query user_sets($username: String!) {
 					imdb_id
 					trakt_id
 					slug
+					poster_path
+					backdrop_path
 				}
 			}
 			movie_backdrops{
@@ -709,6 +733,8 @@ query user_sets($username: String!) {
 					imdb_id
 					trakt_id
 					slug
+					poster_path
+					backdrop_path
 				}
 			}
 		}

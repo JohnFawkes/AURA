@@ -13,19 +13,21 @@ type CollectionSet struct {
 }
 
 type PosterSet struct {
-	ID             string       `json:"ID"`
-	Title          string       `json:"Title"`
-	Type           string       `json:"Type"`
-	User           SetUser      `json:"User"`
-	DateCreated    time.Time    `json:"DateCreated"`
-	DateUpdated    time.Time    `json:"DateUpdated"`
-	Poster         *PosterFile  `json:"Poster,omitempty"`
-	OtherPosters   []PosterFile `json:"OtherPosters,omitempty"` // User for movie collections
-	Backdrop       *PosterFile  `json:"Backdrop,omitempty"`
-	OtherBackdrops []PosterFile `json:"OtherBackdrops,omitempty"` // User for movie collections
-	SeasonPosters  []PosterFile `json:"SeasonPosters,omitempty"`
-	TitleCards     []PosterFile `json:"TitleCards,omitempty"`
-	Status         string       `json:"Status,omitempty"`
+	ID                string       `json:"ID"`
+	Title             string       `json:"Title"`
+	Type              string       `json:"Type"`
+	User              SetUser      `json:"User"`
+	DateCreated       time.Time    `json:"DateCreated"`
+	DateUpdated       time.Time    `json:"DateUpdated"`
+	Poster            *PosterFile  `json:"Poster,omitempty"`
+	OtherPosters      []PosterFile `json:"OtherPosters,omitempty"` // User for movie collections
+	Backdrop          *PosterFile  `json:"Backdrop,omitempty"`
+	OtherBackdrops    []PosterFile `json:"OtherBackdrops,omitempty"` // User for movie collections
+	SeasonPosters     []PosterFile `json:"SeasonPosters,omitempty"`
+	TitleCards        []PosterFile `json:"TitleCards,omitempty"`
+	Status            string       `json:"Status,omitempty"`
+	TMDB_PosterPath   string       `json:"TMDB_PosterPath,omitempty"`
+	TMDB_BackdropPath string       `json:"TMDB_BackdropPath,omitempty"`
 }
 
 type PosterFile struct {

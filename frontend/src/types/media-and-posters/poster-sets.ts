@@ -16,6 +16,8 @@ export interface PosterSet {
 	SeasonPosters?: PosterFile[];
 	TitleCards?: PosterFile[];
 	Status: string;
+	TMDB_PosterPath?: string;
+	TMDB_BackdropPath?: string;
 }
 
 export interface PosterFile {

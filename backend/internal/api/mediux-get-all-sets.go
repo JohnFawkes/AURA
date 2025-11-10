@@ -192,13 +192,15 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					ps.Poster = &newPoster
 				} else {
 					newPosterSet := &PosterSet{
-						ID:          setInfo.ID,
-						Title:       setInfo.SetTitle,
-						Type:        "show",
-						User:        SetUser{Name: setInfo.UserCreated.Username},
-						DateCreated: setInfo.DateCreated,
-						DateUpdated: setInfo.DateUpdated,
-						Status:      show.Status,
+						ID:                setInfo.ID,
+						Title:             setInfo.SetTitle,
+						Type:              "show",
+						User:              SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated:       setInfo.DateCreated,
+						DateUpdated:       setInfo.DateUpdated,
+						Status:            show.Status,
+						TMDB_PosterPath:   show.TMDB_Poster,
+						TMDB_BackdropPath: show.TMDB_Backdrop,
 					}
 					newPosterSet.Poster = &newPoster
 					showSetMap[setInfo.ID] = newPosterSet
@@ -227,13 +229,15 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					ps.Backdrop = &newBackdrop
 				} else {
 					newPosterSet := &PosterSet{
-						ID:          setInfo.ID,
-						Title:       setInfo.SetTitle,
-						Type:        "show",
-						User:        SetUser{Name: setInfo.UserCreated.Username},
-						DateCreated: setInfo.DateCreated,
-						DateUpdated: setInfo.DateUpdated,
-						Status:      show.Status,
+						ID:                setInfo.ID,
+						Title:             setInfo.SetTitle,
+						Type:              "show",
+						User:              SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated:       setInfo.DateCreated,
+						DateUpdated:       setInfo.DateUpdated,
+						Status:            show.Status,
+						TMDB_PosterPath:   show.TMDB_Poster,
+						TMDB_BackdropPath: show.TMDB_Backdrop,
 					}
 					newPosterSet.Backdrop = &newBackdrop
 					showSetMap[setInfo.ID] = newPosterSet
@@ -295,13 +299,15 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 						ps.SeasonPosters = append(ps.SeasonPosters, newPoster)
 					} else {
 						newPosterSet := &PosterSet{
-							ID:          setInfo.ID,
-							Title:       setInfo.SetTitle,
-							Type:        "show",
-							User:        SetUser{Name: setInfo.UserCreated.Username},
-							DateCreated: setInfo.DateCreated,
-							DateUpdated: setInfo.DateUpdated,
-							Status:      show.Status,
+							ID:                setInfo.ID,
+							Title:             setInfo.SetTitle,
+							Type:              "show",
+							User:              SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated:       setInfo.DateCreated,
+							DateUpdated:       setInfo.DateUpdated,
+							Status:            show.Status,
+							TMDB_PosterPath:   show.TMDB_Poster,
+							TMDB_BackdropPath: show.TMDB_Backdrop,
 						}
 						newPosterSet.SeasonPosters = []PosterFile{newPoster}
 						showSetMap[setInfo.ID] = newPosterSet
@@ -353,13 +359,15 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 							ps.TitleCards = append(ps.TitleCards, newTitlecard)
 						} else {
 							newPosterSet := &PosterSet{
-								ID:          setInfo.ID,
-								Title:       setInfo.SetTitle,
-								Type:        "show",
-								User:        SetUser{Name: setInfo.UserCreated.Username},
-								DateCreated: setInfo.DateCreated,
-								DateUpdated: setInfo.DateUpdated,
-								Status:      show.Status,
+								ID:                setInfo.ID,
+								Title:             setInfo.SetTitle,
+								Type:              "show",
+								User:              SetUser{Name: setInfo.UserCreated.Username},
+								DateCreated:       setInfo.DateCreated,
+								DateUpdated:       setInfo.DateUpdated,
+								Status:            show.Status,
+								TMDB_PosterPath:   show.TMDB_Poster,
+								TMDB_BackdropPath: show.TMDB_Backdrop,
 							}
 							newPosterSet.TitleCards = []PosterFile{newTitlecard}
 							showSetMap[setInfo.ID] = newPosterSet
@@ -456,13 +464,15 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 					ps.Poster = &newPoster
 				} else {
 					newPosterSet := &PosterSet{
-						ID:          setInfo.ID,
-						Title:       setInfo.SetTitle,
-						Type:        "movie",
-						User:        SetUser{Name: setInfo.UserCreated.Username},
-						DateCreated: setInfo.DateCreated,
-						DateUpdated: setInfo.DateUpdated,
-						Status:      movie.Status,
+						ID:                setInfo.ID,
+						Title:             setInfo.SetTitle,
+						Type:              "movie",
+						User:              SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated:       setInfo.DateCreated,
+						DateUpdated:       setInfo.DateUpdated,
+						Status:            movie.Status,
+						TMDB_PosterPath:   movie.TMDB_Poster,
+						TMDB_BackdropPath: movie.TMDB_Backdrop,
 					}
 					newPosterSet.Poster = &newPoster
 					movieSetMap[setInfo.ID] = newPosterSet
@@ -500,13 +510,15 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 					ps.Backdrop = &newBackdrop
 				} else {
 					newPosterSet := &PosterSet{
-						ID:          setInfo.ID,
-						Title:       setInfo.SetTitle,
-						Type:        "movie",
-						User:        SetUser{Name: setInfo.UserCreated.Username},
-						DateCreated: setInfo.DateCreated,
-						DateUpdated: setInfo.DateUpdated,
-						Status:      movie.Status,
+						ID:                setInfo.ID,
+						Title:             setInfo.SetTitle,
+						Type:              "movie",
+						User:              SetUser{Name: setInfo.UserCreated.Username},
+						DateCreated:       setInfo.DateCreated,
+						DateUpdated:       setInfo.DateUpdated,
+						Status:            movie.Status,
+						TMDB_PosterPath:   movie.TMDB_Poster,
+						TMDB_BackdropPath: movie.TMDB_Backdrop,
 					}
 					newPosterSet.Backdrop = &newBackdrop
 					movieSetMap[setInfo.ID] = newPosterSet
@@ -598,13 +610,15 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 					} else {
 						// Create a new PosterSet
 						newPosterSet := &PosterSet{
-							ID:          setInfo.ID,
-							Title:       setInfo.SetTitle,
-							Type:        "collection",
-							User:        SetUser{Name: setInfo.UserCreated.Username},
-							DateCreated: setInfo.DateCreated,
-							DateUpdated: setInfo.DateUpdated,
-							Status:      movie.Status,
+							ID:                setInfo.ID,
+							Title:             setInfo.SetTitle,
+							Type:              "collection",
+							User:              SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated:       setInfo.DateCreated,
+							DateUpdated:       setInfo.DateUpdated,
+							Status:            movie.Status,
+							TMDB_PosterPath:   movie.TMDB_Poster,
+							TMDB_BackdropPath: movie.TMDB_Backdrop,
 						}
 						if mainMovieID == movie.ID {
 							newPosterSet.Poster = &newPoster
@@ -652,13 +666,15 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 						}
 					} else {
 						newPosterSet := &PosterSet{
-							ID:          setInfo.ID,
-							Title:       setInfo.SetTitle,
-							Type:        "collection",
-							User:        SetUser{Name: setInfo.UserCreated.Username},
-							DateCreated: setInfo.DateCreated,
-							DateUpdated: setInfo.DateUpdated,
-							Status:      movie.Status,
+							ID:                setInfo.ID,
+							Title:             setInfo.SetTitle,
+							Type:              "collection",
+							User:              SetUser{Name: setInfo.UserCreated.Username},
+							DateCreated:       setInfo.DateCreated,
+							DateUpdated:       setInfo.DateUpdated,
+							Status:            movie.Status,
+							TMDB_PosterPath:   movie.TMDB_Poster,
+							TMDB_BackdropPath: movie.TMDB_Backdrop,
 						}
 						if mainMovieID == movie.ID {
 							newPosterSet.Backdrop = &newBackdrop

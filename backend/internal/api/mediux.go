@@ -97,35 +97,39 @@ type MediuxShowSetByID struct {
 }
 
 type MediuxMovieByID struct {
-	ID           string                       `json:"id"`
-	DateUpdated  time.Time                    `json:"date_updated"`
-	Status       string                       `json:"status"`
-	Title        string                       `json:"title"`
-	Tagline      string                       `json:"tagline"`
-	ReleaseDate  string                       `json:"release_date"`
-	TvdbID       string                       `json:"tvdb_id"`
-	ImdbID       string                       `json:"imdb_id"`
-	TraktID      string                       `json:"trakt_id"`
-	Slug         string                       `json:"slug"`
-	CollectionID *MediuxMovieCollectionID     `json:"collection_id,omitempty"`
-	Posters      []MediuxMoviePosterSetImages `json:"posters,omitempty"`
-	Backdrops    []MediuxMoviePosterSetImages `json:"backdrops,omitempty"`
+	ID            string                       `json:"id"`
+	DateUpdated   time.Time                    `json:"date_updated"`
+	Status        string                       `json:"status"`
+	Title         string                       `json:"title"`
+	Tagline       string                       `json:"tagline"`
+	ReleaseDate   string                       `json:"release_date"`
+	TvdbID        string                       `json:"tvdb_id"`
+	ImdbID        string                       `json:"imdb_id"`
+	TraktID       string                       `json:"trakt_id"`
+	Slug          string                       `json:"slug"`
+	TMDB_Poster   string                       `json:"poster_path,omitempty"`
+	TMDB_Backdrop string                       `json:"backdrop_path,omitempty"`
+	CollectionID  *MediuxMovieCollectionID     `json:"collection_id,omitempty"`
+	Posters       []MediuxMoviePosterSetImages `json:"posters,omitempty"`
+	Backdrops     []MediuxMoviePosterSetImages `json:"backdrops,omitempty"`
 }
 
 type MediuxShowByID struct {
-	ID           string                      `json:"id"`
-	DateUpdated  time.Time                   `json:"date_updated"`
-	Status       string                      `json:"status"`
-	Title        string                      `json:"title"`
-	Tagline      string                      `json:"tagline"`
-	FirstAirDate string                      `json:"first_air_date"`
-	TvdbID       string                      `json:"tvdb_id"`
-	ImdbID       string                      `json:"imdb_id"`
-	TraktID      string                      `json:"trakt_id"`
-	Slug         string                      `json:"slug"`
-	Posters      []MediuxShowPosterSetImages `json:"posters,omitempty"`
-	Backdrops    []MediuxShowPosterSetImages `json:"backdrops,omitempty"`
-	Seasons      []MediuxShowSeasons         `json:"seasons,omitempty"`
+	ID            string                      `json:"id"`
+	DateUpdated   time.Time                   `json:"date_updated"`
+	Status        string                      `json:"status"`
+	Title         string                      `json:"title"`
+	Tagline       string                      `json:"tagline"`
+	FirstAirDate  string                      `json:"first_air_date"`
+	TvdbID        string                      `json:"tvdb_id"`
+	ImdbID        string                      `json:"imdb_id"`
+	TraktID       string                      `json:"trakt_id"`
+	Slug          string                      `json:"slug"`
+	TMDB_Poster   string                      `json:"poster_path,omitempty"`
+	TMDB_Backdrop string                      `json:"backdrop_path,omitempty"`
+	Posters       []MediuxShowPosterSetImages `json:"posters,omitempty"`
+	Backdrops     []MediuxShowPosterSetImages `json:"backdrops,omitempty"`
+	Seasons       []MediuxShowSeasons         `json:"seasons,omitempty"`
 }
 
 type MediuxMovieCollectionID struct {
@@ -135,18 +139,20 @@ type MediuxMovieCollectionID struct {
 }
 
 type MediuxMovieCollectionMovie struct {
-	ID          string                        `json:"id"`
-	DateUpdated time.Time                     `json:"date_updated"`
-	Status      string                        `json:"status"`
-	Title       string                        `json:"title"`
-	Tagline     string                        `json:"tagline"`
-	ReleaseDate string                        `json:"release_date"`
-	TvdbID      string                        `json:"tvdb_id"`
-	ImdbID      string                        `json:"imdb_id"`
-	TraktID     string                        `json:"trakt_id"`
-	Slug        string                        `json:"slug"`
-	Posters     []MediuxMovieCollectionImages `json:"posters,omitempty"`
-	Backdrops   []MediuxMovieCollectionImages `json:"backdrops,omitempty"`
+	ID            string                        `json:"id"`
+	DateUpdated   time.Time                     `json:"date_updated"`
+	Status        string                        `json:"status"`
+	Title         string                        `json:"title"`
+	Tagline       string                        `json:"tagline"`
+	ReleaseDate   string                        `json:"release_date"`
+	TvdbID        string                        `json:"tvdb_id"`
+	ImdbID        string                        `json:"imdb_id"`
+	TraktID       string                        `json:"trakt_id"`
+	Slug          string                        `json:"slug"`
+	TMDB_Poster   string                        `json:"poster_path,omitempty"`
+	TMDB_Backdrop string                        `json:"backdrop_path,omitempty"`
+	Posters       []MediuxMovieCollectionImages `json:"posters,omitempty"`
+	Backdrops     []MediuxMovieCollectionImages `json:"backdrops,omitempty"`
 }
 
 type MediuxBaseImage struct {
@@ -163,11 +169,13 @@ type MediuxMovieCollectionImages struct {
 }
 
 type MediuxSetInfo struct {
-	ID          string            `json:"id"`
-	SetTitle    string            `json:"set_title,omitempty"`
-	UserCreated MediuxUserCreated `json:"user_created"`
-	DateCreated time.Time         `json:"date_created"`
-	DateUpdated time.Time         `json:"date_updated"`
+	ID            string            `json:"id"`
+	SetTitle      string            `json:"set_title,omitempty"`
+	UserCreated   MediuxUserCreated `json:"user_created"`
+	DateCreated   time.Time         `json:"date_created"`
+	DateUpdated   time.Time         `json:"date_updated"`
+	TMDB_Poster   string            `json:"poster_path,omitempty"`
+	TMDB_Backdrop string            `json:"backdrop_path,omitempty"`
 }
 
 type MediuxMoviePosterSetImages struct {
@@ -256,29 +264,33 @@ type MediuxUserBoxset struct {
 }
 
 type MediuxUserShow struct {
-	ID           string    `json:"id"`
-	DateUpdated  time.Time `json:"date_updated"`
-	Status       string    `json:"status"`
-	Title        string    `json:"title"`
-	Tagline      string    `json:"tagline"`
-	FirstAirDate string    `json:"first_air_date"`
-	TvdbID       string    `json:"tvdb_id"`
-	ImdbID       string    `json:"imdb_id"`
-	TraktID      string    `json:"trakt_id"`
-	Slug         string    `json:"slug"`
+	ID            string    `json:"id"`
+	DateUpdated   time.Time `json:"date_updated"`
+	Status        string    `json:"status"`
+	Title         string    `json:"title"`
+	Tagline       string    `json:"tagline"`
+	FirstAirDate  string    `json:"first_air_date"`
+	TvdbID        string    `json:"tvdb_id"`
+	ImdbID        string    `json:"imdb_id"`
+	TraktID       string    `json:"trakt_id"`
+	Slug          string    `json:"slug"`
+	TMDB_Poster   string    `json:"poster_path,omitempty"`
+	TMDB_Backdrop string    `json:"backdrop_path,omitempty"`
 }
 
 type MediuxUserMovie struct {
-	ID          string    `json:"id"`
-	DateUpdated time.Time `json:"date_updated"`
-	Status      string    `json:"status"`
-	Title       string    `json:"title"`
-	Tagline     string    `json:"tagline"`
-	ReleaseDate string    `json:"release_date"`
-	TvdbID      string    `json:"tvdb_id"`
-	ImdbID      string    `json:"imdb_id"`
-	TraktID     string    `json:"trakt_id"`
-	Slug        string    `json:"slug"`
+	ID            string    `json:"id"`
+	DateUpdated   time.Time `json:"date_updated"`
+	Status        string    `json:"status"`
+	Title         string    `json:"title"`
+	Tagline       string    `json:"tagline"`
+	ReleaseDate   string    `json:"release_date"`
+	TvdbID        string    `json:"tvdb_id"`
+	ImdbID        string    `json:"imdb_id"`
+	TraktID       string    `json:"trakt_id"`
+	Slug          string    `json:"slug"`
+	TMDB_Poster   string    `json:"poster_path,omitempty"`
+	TMDB_Backdrop string    `json:"backdrop_path,omitempty"`
 }
 
 type MediuxUserSeasonPoster struct {
@@ -302,15 +314,17 @@ type MediuxUserTitlecard struct {
 type MediuxUserCollectionMovie struct {
 	MediuxBaseImage
 	Movie struct {
-		ID          string    `json:"id"`
-		DateUpdated time.Time `json:"date_updated"`
-		Status      string    `json:"status"`
-		Title       string    `json:"title"`
-		Tagline     string    `json:"tagline"`
-		ReleaseDate string    `json:"release_date"`
-		TvdbID      string    `json:"tvdb_id"`
-		ImdbID      string    `json:"imdb_id"`
-		TraktID     string    `json:"trakt_id"`
-		Slug        string    `json:"slug"`
+		ID            string    `json:"id"`
+		DateUpdated   time.Time `json:"date_updated"`
+		Status        string    `json:"status"`
+		Title         string    `json:"title"`
+		Tagline       string    `json:"tagline"`
+		ReleaseDate   string    `json:"release_date"`
+		TvdbID        string    `json:"tvdb_id"`
+		ImdbID        string    `json:"imdb_id"`
+		TraktID       string    `json:"trakt_id"`
+		Slug          string    `json:"slug"`
+		TMDB_Poster   string    `json:"poster_path,omitempty"`
+		TMDB_Backdrop string    `json:"backdrop_path,omitempty"`
 	} `json:"movie"`
 }

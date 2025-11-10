@@ -16,6 +16,8 @@ const createBaseItem = (set: PosterSet): FormItemDisplay => ({
 		DateCreated: set.DateCreated,
 		DateUpdated: set.DateUpdated,
 		Status: set.Status,
+		TMDB_PosterPath: set.TMDB_PosterPath,
+		TMDB_BackdropPath: set.TMDB_BackdropPath,
 	},
 });
 

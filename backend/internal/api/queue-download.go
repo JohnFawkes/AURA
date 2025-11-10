@@ -406,22 +406,45 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle string, post
 
 func getImageURLFromPosterSet(posterSet PosterSet) string {
 
-	// First we try to get the Poster Image URL
-	// If not found, we try Backdrop
-	// If not found, we try Season Posters
-	// If not found, we try Title Cards
-	// If none found, return empty string
-	if posterSet.Poster.Src != "" {
+	// Order for Image Selection:
+	// 1. Poster Set Poster
+	// 2. TMDB Poster
+	// 3. Poster Set Backdrop
+	// 4. TMDB Backdrop
+	// 5. Poster Set Season Posters (first available)
+	// 6. Poster Set Title Cards (first available)
+
+	// Check Poster Set Poster
+	if posterSet.Poster != nil && posterSet.Poster.Src != "" {
 		return Mediux_GetImageURLFromSrc(posterSet.Poster.Src)
-	} else if posterSet.Backdrop.Src != "" {
+	}
+
+	// Check if the Poster Set has a TMDB Poster
+	if posterSet.TMDB_PosterPath != "" {
+		return fmt.Sprintf("https://image.tmdb.org/t/p/w200%s", posterSet.TMDB_PosterPath)
+	}
+
+	// Check Poster Set Backdrop
+	if posterSet.Backdrop != nil && posterSet.Backdrop.Src != "" {
 		return Mediux_GetImageURLFromSrc(posterSet.Backdrop.Src)
-	} else if len(posterSet.SeasonPosters) > 0 {
+	}
+
+	// Check if the Poster Set has a TMDB Backdrop
+	if posterSet.TMDB_BackdropPath != "" {
+		return fmt.Sprintf("https://image.tmdb.org/t/p/w400%s", posterSet.TMDB_BackdropPath)
+	}
+
+	// Check Poster Set Season Posters
+	if len(posterSet.SeasonPosters) > 0 {
 		for _, seasonPoster := range posterSet.SeasonPosters {
 			if seasonPoster.Src != "" {
 				return Mediux_GetImageURLFromSrc(seasonPoster.Src)
 			}
 		}
-	} else if len(posterSet.TitleCards) > 0 {
+	}
+
+	// Check Poster Set Title Cards
+	if len(posterSet.TitleCards) > 0 {
 		for _, titleCard := range posterSet.TitleCards {
 			if titleCard.Src != "" {
 				return Mediux_GetImageURLFromSrc(titleCard.Src)
