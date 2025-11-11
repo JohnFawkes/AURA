@@ -657,12 +657,12 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 	if (layout === "card") {
 		return (
 			<div className="w-full">
-				<span className="text-sm text-muted-foreground mb-1 block">{heading}</span>
+				<span className="text-sm text-muted-foreground">{heading}</span>
 				<ul className="flex flex-col gap-1">
 					{sets.map((ps) => (
 						<li
 							key={ps.PosterSetID}
-							className="flex flex-row items-center justify-between rounded-sm px-2 py-1 hover:bg-muted/50"
+							className="flex flex-row items-center justify-between rounded-sm hover:bg-muted/50"
 						>
 							<Link
 								href={`/sets/${ps.PosterSetID}`}
@@ -676,7 +676,7 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 							</Link>
 							<Link
 								href={`/user/${ps.PosterSet.User.Name}`}
-								className="text-primary hover:underline text-xs text-right truncate ml-4"
+								className="text-primary hover:underline text-xs text-right"
 							>
 								{ps.PosterSet.User.Name || ""}
 							</Link>

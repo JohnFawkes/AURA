@@ -20,6 +20,7 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import { FilterSavedSets } from "@/components/shared/filter-saved-sets";
 import Loader from "@/components/shared/loader";
 import { RefreshButton } from "@/components/shared/refresh-button";
+import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import SavedSetsCard from "@/components/shared/saved-sets-cards";
 import SavedSetsTableRow from "@/components/shared/saved-sets-table";
 import { ViewControl } from "@/components/shared/select-view";
@@ -623,7 +624,7 @@ const SavedSetsPage: React.FC = () => {
 
 			{/* Card View */}
 			{viewOption === "card" && (
-				<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
+				<ResponsiveGrid size="larger">
 					{savedSets &&
 						savedSets.length > 0 &&
 						savedSets.map((savedSet) => (
@@ -634,7 +635,7 @@ const SavedSetsPage: React.FC = () => {
 								handleRecheckItem={handleRecheckItem}
 							/>
 						))}
-				</div>
+				</ResponsiveGrid>
 			)}
 
 			{/* Pagination */}

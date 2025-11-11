@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { H4, P } from "@/components/ui/typography";
+import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
@@ -94,7 +94,7 @@ const SavedSetsCard: React.FC<{
 	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
 
 	return (
-		<Card className="relative w-full max-w-md mx-auto mb-4">
+		<Card className="relative w-full max-w-md mx-auto">
 			<CardHeader>
 				{isRefreshing && (
 					<div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
@@ -204,23 +204,24 @@ const SavedSetsCard: React.FC<{
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
-				{/* Middle: Image */}
-				<div className="flex justify-center mt-6">
-					<AssetImage
-						image={savedSet.MediaItem}
-						className="w-[170px] h-auto transition-transform hover:scale-105"
-					/>
-				</div>
 			</CardHeader>
 
+			{/* Middle: Image */}
+			<div className="flex justify-center">
+				<AssetImage
+					image={savedSet.MediaItem}
+					className="w-[90%] h-auto transition-transform hover:scale-105"
+				/>
+			</div>
+
 			{/* Content */}
-			<CardContent>
+			<CardContent className="p-0 ml-2 mr-2">
 				{/* Title */}
 				<H4>
 					<Link
 						//href={formatMediaItemUrl(savedSet.MediaItem)}
 						href={"/media-item/"}
-						className="text-primary hover:underline"
+						className="text-primary hover:underline text-md"
 						onClick={() => {
 							setMediaItem(savedSet.MediaItem);
 						}}
@@ -229,39 +230,45 @@ const SavedSetsCard: React.FC<{
 					</Link>
 				</H4>
 
-				{/* Year */}
-				<P className="text-sm text-muted-foreground">Year: {savedSet.MediaItem.Year}</P>
+				<div className="flex flex-col gap-1 mb-2">
+					{/* Year and Library */}
+					<span className="text-xs sm:text-sm text-muted-foreground inline-block">
+						{savedSet.MediaItem.Year} · {savedSet.MediaItem.LibraryTitle}
+					</span>
 
-				{/* Library Title */}
-				<P className="text-sm text-muted-foreground">Library: {savedSet.MediaItem.LibraryTitle}</P>
-
-				{/* Last Downloaded */}
-				<P className="text-sm text-muted-foreground">
-					Last Downloaded:{" "}
-					{(() => {
-						const latestTimestamp = Math.max(
-							...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())
-						);
-						const latestDate = new Date(latestTimestamp);
-						return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString("en-US", {
-							hour: "numeric",
-							minute: "numeric",
-							second: "numeric",
-							hour12: true,
-						})}`;
-					})()}
-				</P>
+					{/* Last Downloaded */}
+					<span className="text-xs sm:text-sm text-muted-foreground inline-block">
+						Last Downloaded:
+						<br />
+						{(() => {
+							const latestTimestamp = Math.max(
+								...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())
+							);
+							const latestDate = new Date(latestTimestamp);
+							return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString(
+								"en-US",
+								{
+									hour: "numeric",
+									minute: "numeric",
+									second: "numeric",
+									hour12: true,
+								}
+							)}`;
+						})()}
+					</span>
+				</div>
 
 				<SavedSetsList
 					savedSet={savedSet}
-					layout="table"
+					layout="card"
 					onUpdate={onUpdate}
 					unignoreLoading={unignoreLoading}
 					setUnignoreLoading={setUnignoreLoading}
 					setUpdateError={setUpdateError}
 				/>
-				<Separator className="my-4" />
 
+				{/* Selected Types Badges */}
+				<Separator className="my-4" />
 				{savedSet.PosterSets.some(
 					(set) => Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
 				) ? (
