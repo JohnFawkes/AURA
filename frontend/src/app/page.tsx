@@ -3,6 +3,7 @@
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchMediaServerLibrarySectionItems } from "@/services/mediaserver/api-mediaserver-fetch-library-section-items";
 import { fetchMediaServerLibrarySections } from "@/services/mediaserver/api-mediaserver-fetch-library-sections";
+import { Loader } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -16,6 +17,7 @@ import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { MAX_CACHE_DURATION, useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
@@ -325,7 +327,21 @@ export default function Home() {
 										<Label className="text-lg font-semibold text-center mb-2">
 											Loading {section.Title}
 										</Label>
-										<Progress value={percentage} className="w-full max-w-lg h-2 rounded-full" />
+										<Progress
+											value={percentage}
+											className={cn(
+												"w-full max-w-lg h-2 rounded-md overflow-hidden",
+												percentage < 100 && "animate-pulse",
+												percentage >= 0 && percentage < 20 && "[&>div]:bg-yellow-100",
+												percentage >= 20 && percentage < 40 && "[&>div]:bg-yellow-300",
+												percentage >= 40 && percentage < 60 && "[&>div]:bg-green-200",
+												percentage >= 60 && percentage < 80 && "[&>div]:bg-green-300",
+												percentage >= 80 && percentage < 100 && "[&>div]:bg-green-400",
+												percentage === 100 && "[&>div]:bg-green-500"
+											)}
+										/>
+
+										{percentage < 100 && <Loader className="animate-spin mt-2" />}
 										<span className="mt-2 text-base text-muted-foreground font-medium">
 											{Math.round(percentage)}%
 											{typeof progressInfo?.total === "number" && progressInfo.total > 0
