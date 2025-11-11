@@ -1,3 +1,16 @@
+## [0.9.56] - 2025-11-11
+
+### Added
+
+- Added support for Collections in Emby and Jellyfin media servers.
+- Changed the Carousel within Collections to be a Responsive Grid for viewing more items at once.
+
+### Fixed
+
+- Fixed issue with Emby/Jellyfin where downloading a Backdrop image would cause it to be uploaded but not selected.
+
+---
+
 ## [0.9.55] - 2025-11-11
 
 ### Fixed
