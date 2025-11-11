@@ -3,10 +3,7 @@ package api
 import (
 	"aura/internal/logging"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -351,17 +348,21 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 }
 
 func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo {
-
 	var posterImageType string
+	var posterType string
 	switch file.Type {
 	case "poster":
 		posterImageType = "Poster"
+		posterType = "Primary"
 	case "backdrop":
 		posterImageType = "Backdrop"
+		posterType = "Backdrop"
 	case "seasonPoster", "specialSeasonPoster":
 		posterImageType = fmt.Sprintf("Season %d Poster", file.Season.Number)
+		posterType = "Primary"
 	case "titlecard":
 		posterImageType = fmt.Sprintf("S%dE%d Titlecard", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)
+		posterType = "Primary"
 	}
 
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating %s in %s", posterImageType, Global_Config.MediaServer.Type), logging.LevelInfo)
@@ -386,63 +387,55 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 		return Err
 	}
 
-	var posterType string
-	if file.Type == "backdrop" {
-		posterType = "Backdrop"
+	// If the posterType is Backdrop, we need to set the index to 0 to replace the current backdrop
+	// First we will get the list of current images
+	if posterType == "Backdrop" {
+		currentImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, mediaItem.RatingKey, "Current")
+		if logErr.Message != "" {
+			return logErr
+		}
+
+		// Upload the new image
+		logErr = EJ_UploadImage(ctx, mediaItem.Title, mediaItem.RatingKey, file, imageData)
+		if logErr.Message != "" {
+			return logErr
+		}
+
+		if len(currentImages) != 0 {
+			// Get the list of images again to find the new one
+			newImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, mediaItem.RatingKey, "New")
+			if logErr.Message != "" {
+				return logErr
+			}
+
+			// Find the new image by comparing currentImages and newImages
+			newImageItem := EJ_FindNewImage(currentImages, newImages, posterType)
+			if newImageItem.ImageTag == "" {
+				logAction.SetError("Failed to find new image tag after upload",
+					"Ensure the image was uploaded successfully",
+					map[string]any{
+						"currentImages": currentImages,
+						"newImages":     newImages,
+					})
+				return *logAction.Error
+			}
+
+			// Now we change the image index to 0, if it's not already 0
+			if newImageItem.ImageIndex != 0 {
+				logErr = EJ_ChangeImageIndex(ctx, mediaItem.Title, mediaItem.RatingKey, newImageItem)
+				if logErr.Message != "" {
+					return logErr
+				}
+			}
+		}
 	} else {
-		posterType = "Primary"
+		// For Primary images, just upload the image
+		logErr := EJ_UploadImage(ctx, mediaItem.Title, mediaItem.RatingKey, file, imageData)
+		if logErr.Message != "" {
+			return logErr
+		}
 	}
 
-	// Make the URL
-	uploadAction := logAction.AddSubAction(fmt.Sprintf("Uploading %s Image to %s", posterType, Global_Config.MediaServer.Type), logging.LevelDebug)
-	defer uploadAction.Complete()
-
-	u, err := url.Parse(Global_Config.MediaServer.URL)
-	if err != nil {
-		uploadAction.SetError("Failed to parse Media Server URL",
-			"Ensure the Media Server URL is valid",
-			map[string]any{
-				"error": err.Error(),
-			})
-		return *uploadAction.Error
-	}
-	u.Path = path.Join(u.Path, "Items", itemRatingKey, "Images", posterType)
-	URL := u.String()
-
-	// Encode the image data as Base64
-	base64ImageData := base64.StdEncoding.EncodeToString(imageData)
-
-	// Make the Auth Headers for Request
-	headers := MakeAuthHeader("X-Emby-Token", Global_Config.MediaServer.Token)
-
-	// Add Content-Type Header
-	headers["Content-Type"] = "image/jpeg"
-
-	// Make a POST request to upload the image
-	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodPost, headers, 60, []byte(base64ImageData), Global_Config.MediaServer.Type)
-	if logErr.Message != "" {
-		uploadAction.SetError("Failed to upload image to Emby/Jellyfin",
-			"Ensure the Emby/Jellyfin server is reachable and the API key is valid",
-			map[string]any{
-				"error":        logErr.Detail,
-				"responseBody": respBody,
-			})
-		return *uploadAction.Error
-	}
-	defer httpResp.Body.Close()
-
-	if httpResp.StatusCode != 200 && httpResp.StatusCode != 204 {
-		uploadAction.SetError("Failed to upload image to Emby/Jellyfin",
-			"Ensure the Emby/Jellyfin server is reachable and the API key is valid",
-			map[string]any{
-				"error":        logErr.Detail,
-				"responseBody": respBody,
-			})
-		return *uploadAction.Error
-	}
-
-	uploadAction.AppendResult("status_code", httpResp.StatusCode)
-	uploadAction.AppendResult("message", fmt.Sprintf("%s uploaded to %s for item '%s'", strings.ToTitle(file.Type), Global_Config.MediaServer.Type, mediaItem.Title))
-	uploadAction.Complete()
+	logAction.Complete()
 	return logging.LogErrorInfo{}
 }

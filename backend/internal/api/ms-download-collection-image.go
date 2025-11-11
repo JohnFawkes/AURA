@@ -61,5 +61,77 @@ func Plex_DownloadAndUpdateCollectionImage(ctx context.Context, collectionItem C
 //////////////////////////////////////////////////////////////////////
 
 func EmbyJelly_DownloadAndUpdateCollectionImage(ctx context.Context, collectionItem CollectionItem, file PosterFile) logging.LogErrorInfo {
+	var posterImageType string
+	var posterType string
+	switch file.Type {
+	case "poster":
+		posterImageType = "Poster"
+		posterType = "Primary"
+	case "backdrop":
+		posterImageType = "Backdrop"
+		posterType = "Backdrop"
+	}
+
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating %s in %s", posterImageType, Global_Config.MediaServer.Type), logging.LevelInfo)
+	defer logAction.Complete()
+
+	// Get the Image from MediUX
+	// Mediux_GetImage will handle checking the temp folder and caching based on config
+	formatDate := file.Modified.Format("20060102150405")
+	imageData, _, Err := Mediux_GetImage(ctx, file.ID, formatDate, MediuxImageQualityOriginal)
+	if Err.Message != "" {
+		return Err
+	}
+
+	// If the posterType is Backdrop, we need to set the index to 0 to replace the current backdrop
+	// First we will get the list of current images
+	if posterType == "Backdrop" {
+		currentImages, logErr := EJ_GetCurrentImages(ctx, collectionItem.Title, collectionItem.RatingKey, "Current")
+		if logErr.Message != "" {
+			return logErr
+		}
+
+		// Upload the new image
+		logErr = EJ_UploadImage(ctx, collectionItem.Title, collectionItem.RatingKey, file, imageData)
+		if logErr.Message != "" {
+			return logErr
+		}
+
+		if len(currentImages) != 0 {
+			// Get the list of images again to find the new one
+			newImages, logErr := EJ_GetCurrentImages(ctx, collectionItem.Title, collectionItem.RatingKey, "New")
+			if logErr.Message != "" {
+				return logErr
+			}
+
+			// Find the new image by comparing currentImages and newImages
+			newImageItem := EJ_FindNewImage(currentImages, newImages, posterType)
+			if newImageItem.ImageTag == "" {
+				logAction.SetError("Failed to find new image tag after upload",
+					"Ensure the image was uploaded successfully",
+					map[string]any{
+						"currentImages": currentImages,
+						"newImages":     newImages,
+					})
+				return *logAction.Error
+			}
+
+			// Now we change the image index to 0, if it's not already 0
+			if newImageItem.ImageIndex != 0 {
+				logErr = EJ_ChangeImageIndex(ctx, collectionItem.Title, collectionItem.RatingKey, newImageItem)
+				if logErr.Message != "" {
+					return logErr
+				}
+			}
+		}
+	} else {
+		// For Primary images, just upload the image
+		logErr := EJ_UploadImage(ctx, collectionItem.Title, collectionItem.RatingKey, file, imageData)
+		if logErr.Message != "" {
+			return logErr
+		}
+	}
+
+	logAction.Complete()
 	return logging.LogErrorInfo{}
 }
