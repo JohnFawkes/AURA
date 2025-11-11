@@ -54,8 +54,8 @@ func Plex_FetchImageFromMediaServer(ctx context.Context, ratingKey string, image
 	defer logAction.Complete()
 
 	// Use "art" for backdrops
-	width := "300"
-	height := "450"
+	width := "600"
+	height := "900"
 	if imageType == "backdrop" {
 		imageType = "art"
 		width = "1280"
