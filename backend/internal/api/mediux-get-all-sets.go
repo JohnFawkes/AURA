@@ -133,12 +133,14 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 	}
 
 	var baseMinMediaItem = MediaItem{
-		TMDB_ID:      tmdbID,
-		LibraryTitle: cachedItem.LibraryTitle,
-		RatingKey:    cachedItem.RatingKey,
-		Type:         "show",
-		Title:        cachedItem.Title,
-		Year:         cachedItem.Year,
+		TMDB_ID:         tmdbID,
+		LibraryTitle:    cachedItem.LibraryTitle,
+		RatingKey:       cachedItem.RatingKey,
+		Type:            "show",
+		Title:           cachedItem.Title,
+		Year:            cachedItem.Year,
+		ExistInDatabase: cachedItem.ExistInDatabase,
+		DBSavedSets:     cachedItem.DBSavedSets,
 	}
 
 	// If the show struct is basically empty, short-circuit
@@ -418,12 +420,14 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 	}
 
 	baseMinMediaItem := MediaItem{
-		TMDB_ID:      tmdbID,
-		LibraryTitle: cachedItem.LibraryTitle,
-		RatingKey:    cachedItem.RatingKey,
-		Type:         "movie",
-		Title:        cachedItem.Title,
-		Year:         cachedItem.Year,
+		TMDB_ID:         tmdbID,
+		LibraryTitle:    cachedItem.LibraryTitle,
+		RatingKey:       cachedItem.RatingKey,
+		Type:            "movie",
+		Title:           cachedItem.Title,
+		Year:            cachedItem.Year,
+		ExistInDatabase: cachedItem.ExistInDatabase,
+		DBSavedSets:     cachedItem.DBSavedSets,
 	}
 
 	logAction.AppendResult("movie", map[string]any{
@@ -565,12 +569,14 @@ func processMovieCollection(ctx context.Context, tmdbID, librarySection, mainMov
 		}
 
 		baseMinMediaItem := MediaItem{
-			TMDB_ID:      movie.ID,
-			LibraryTitle: cachedItem.LibraryTitle,
-			RatingKey:    cachedItem.RatingKey,
-			Type:         "movie",
-			Title:        cachedItem.Title,
-			Year:         cachedItem.Year,
+			TMDB_ID:         movie.ID,
+			LibraryTitle:    cachedItem.LibraryTitle,
+			RatingKey:       cachedItem.RatingKey,
+			Type:            "movie",
+			Title:           cachedItem.Title,
+			Year:            cachedItem.Year,
+			ExistInDatabase: cachedItem.ExistInDatabase,
+			DBSavedSets:     cachedItem.DBSavedSets,
 		}
 
 		if len(movie.Posters) > 0 {
