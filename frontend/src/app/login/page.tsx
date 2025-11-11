@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
+
 export default function LoginPage() {
 	useEffect(() => {
 		document.title = "aura | Login";
@@ -24,12 +26,19 @@ export default function LoginPage() {
 	const [loading, setLoading] = useState(false);
 	const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+	// Get Onboarding Status
+	const status = useOnboardingStore((state) => state.status);
+	const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
+
 	useEffect(() => {
 		const token = localStorage.getItem("aura-auth-token");
 		if (token && token.length > 0 && token !== "null" && token !== "undefined") {
 			router.replace("/");
+		} else if (hasHydrated && status && status.currentSetup.Auth.Enabled === false) {
+			// If onboarding is complete and auth is disabled, redirect to /
+			router.replace("/");
 		}
-	}, [router]);
+	}, [hasHydrated, router, status]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
