@@ -22,9 +22,9 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import { CollectionItemFilter } from "@/components/shared/filter-collection-item-sets";
 import Loader from "@/components/shared/loader";
 import { PopoverHelp } from "@/components/shared/popover-help";
+import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { SortControl } from "@/components/shared/select-sort";
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Lead, P } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
@@ -450,74 +450,68 @@ export default function CollectionItemPage() {
 									</div>
 								)}
 
-							<div className="divide-y divide-primary-dynamic/20 space-y-6">
-								{(filteredCollectionItemSets ?? []).map((set) => (
-									<Carousel
+							<ResponsiveGrid size="regular">
+								{filteredCollectionItemSets.map((set) => (
+									<div
 										key={set.ID}
-										opts={{
-											align: "start",
-											dragFree: true,
-											slidesToScroll: "auto",
+										className="relative flex flex-col items-center p-2 border rounded-md"
+										style={{
+											background: "oklch(0.16 0.0202 282.55)",
+											opacity: "0.95",
+											padding: "0.5rem",
 										}}
-										className="w-full"
 									>
-										<div className="flex flex-col">
-											<div className="flex flex-row items-center justify-between mb-1">
-												<P className="text-primary-dynamic text-md font-semibold ml-1 w-3/4">
-													{set.Title}
-												</P>
-												<div
-													className={cn(
-														"ml-auto flex space-x-2",
-														set.Title.length > 29 && "mb-5 xs:mb-0"
-													)}
-												>
-													<CollectionsDownloadModal
-														collectionItem={collectionItem}
-														collectionItemSet={set}
-													/>
-												</div>
+										<div className="relative w-full mb-1">
+											{/* Download Button - absolute top right */}
+											<div className="absolute top-0 right-0 z-10">
+												<CollectionsDownloadModal
+													collectionItem={collectionItem}
+													collectionItemSet={set}
+												/>
 											</div>
-											<div className="text-md text-muted-foreground mb-1 flex items-center">
-												<User />
-												<Link
-													href={`/user/${set.User.Name}`}
-													className="hover:text-primary cursor-pointer underline"
-												>
-													{set.User.Name}
-												</Link>
-											</div>
-											<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
-												Last Update:{" "}
-												{formatLastUpdatedDate(
-													set.Posters[0]?.Modified || "",
-													set.Backdrops[0]?.Modified || ""
-												)}
-											</Lead>
+											{/* Set Name */}
+											<P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
+												{set.Title}
+											</P>
 										</div>
-										<CarouselContent>
-											<CarouselItem key={`${set.ID}`}>
-												{set.Posters.length > 0 && set.Posters[0] && set.Posters[0].ID && (
-													<AssetImage
-														image={set.Posters[0]}
-														aspect="poster"
-														className={`w-full`}
-													/>
-												)}
-												{set.Backdrops.length > 0 &&
-													set.Backdrops[0] &&
-													set.Backdrops[0].ID && (
-														<AssetImage
-															image={set.Backdrops[0]}
-															aspect="backdrop"
-															className={`w-full`}
-														/>
-													)}
-											</CarouselItem>
-										</CarouselContent>
-									</Carousel>
+
+										{/* Set User Name */}
+										<div className="flex items-center justify-start w-full mb-1">
+											<User className="h-4 w-4 mr-1" />
+											<Link
+												href={`/user/${set.User.Name}`}
+												className="text-sm hover:text-primary cursor-pointer underline truncate"
+												style={{ wordBreak: "break-word" }}
+											>
+												{set.User.Name}
+											</Link>
+										</div>
+
+										{/* Last Update */}
+										<Lead className="text-sm text-muted-foreground w-full mb-2">
+											Last Update:{" "}
+											{formatLastUpdatedDate(
+												set.Posters[0]?.Modified || "",
+												set.Backdrops[0]?.Modified || ""
+											)}
+										</Lead>
+
+										{/* Poster */}
+										{set.Posters[0] && (
+											<AssetImage
+												image={set.Posters[0]}
+												aspect="poster"
+												className="w-full mb-2"
+											/>
+										)}
+
+										{/* Backdrop */}
+										{set.Backdrops[0] && (
+											<AssetImage image={set.Backdrops[0]} aspect="backdrop" className="w-full" />
+										)}
+									</div>
 								))}
-							</div>
+							</ResponsiveGrid>
 						</>
 					)}
 				</div>

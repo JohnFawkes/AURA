@@ -277,7 +277,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 			}}
 		>
 			<DialogTrigger asChild>
-				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+				<Download className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
 			</DialogTrigger>
 			<DialogPortal>
 				<DialogOverlay />
