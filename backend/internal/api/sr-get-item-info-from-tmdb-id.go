@@ -86,6 +86,10 @@ func SR_GetItemInfoFromTMDBID(ctx context.Context, app Config_SonarrRadarrApp, t
 	if Err.Message != "" {
 		return nil, Err
 	}
+	if len(results) == 0 {
+		actionGetBaseInfo.SetError("No results from TMDB ID lookup", "The TMDB ID does not correspond to any item in the Sonarr/Radarr library", map[string]any{"tmdbID": tmdbID})
+		return nil, *actionGetBaseInfo.Error
+	}
 
 	result := results[0]
 
