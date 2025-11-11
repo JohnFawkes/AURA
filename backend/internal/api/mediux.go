@@ -50,6 +50,12 @@ type MediuxCollectionImagesByMovieIDs_Response struct {
 	} `json:"data"`
 }
 
+type MediuxCollectionImageByTMDB_ID_Response struct {
+	Data struct {
+		Collection MediuxCollectionImageByMovieIDs_Collection `json:"collections_by_id"`
+	} `json:"data"`
+}
+
 type MediuxCollectionImageByMovieIDs_Movie struct {
 	ID           string                                      `json:"id"`
 	Title        string                                      `json:"title"`

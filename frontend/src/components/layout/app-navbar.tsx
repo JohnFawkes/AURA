@@ -391,15 +391,13 @@ export default function Navbar() {
 										<BookmarkIcon className="w-6 h-6 mr-2" />
 										Saved Sets
 									</DropdownMenuItem>
-									{status.currentSetup.MediaServer.Type === "Plex" && (
-										<DropdownMenuItem
-											className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-											onClick={() => router.push("/collections")}
-										>
-											<LayoutGrid className="w-6 h-6 mr-2" />
-											Collections
-										</DropdownMenuItem>
-									)}
+									<DropdownMenuItem
+										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+										onClick={() => router.push("/collections")}
+									>
+										<LayoutGrid className="w-6 h-6 mr-2" />
+										Collections
+									</DropdownMenuItem>
 									<DropdownMenuItem
 										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
 										onClick={() => router.push("/download-queue")}

@@ -113,3 +113,47 @@ func EJ_FetchLibrarySectionOptions(ctx context.Context, msConfig Config_MediaSer
 
 	return sectionOptions, logging.LogErrorInfo{}
 }
+
+func EJ_FetchLibraryCollectionSectionID(ctx context.Context, msConfig Config_MediaServer) (LibrarySection, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching Collection Library from %s", msConfig.Type), logging.LevelDebug)
+	defer logAction.Complete()
+
+	// Construct the URL for the Emby/Jellyfin server API request
+	u, err := url.Parse(msConfig.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse Emby/Jellyfin base URL", err.Error(), nil)
+		return LibrarySection{}, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "Users", msConfig.UserID, "Items")
+	URL := u.String()
+
+	// Make Auth Headers for Request
+	headers := MakeAuthHeader("X-Emby-Token", msConfig.Token)
+
+	// Make a GET request to the Emby/Jellyfin server
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, msConfig.Type)
+	if logErr.Message != "" {
+		return LibrarySection{}, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response body into an EmbyJellyLibrarySectionsResponse struct
+	var ejResponse EmbyJellyLibrarySectionsResponse
+	logErr = DecodeJSONBody(ctx, respBody, &ejResponse, "EmbyJellyLibrarySectionsResponse")
+	if logErr.Message != "" {
+		return LibrarySection{}, logErr
+	}
+
+	var section LibrarySection
+	for _, item := range ejResponse.Items {
+		if item.CollectionType != "boxsets" {
+			continue
+		}
+		section.ID = item.ID
+		section.Title = item.Name
+		section.Type = item.CollectionType
+		break
+	}
+
+	return section, logging.LogErrorInfo{}
+}

@@ -13,8 +13,12 @@ type CollectionItemDetailsProps = {
 };
 
 export function CollectionItemDetails({ collectionItem }: CollectionItemDetailsProps) {
-	const minYear = collectionItem.MediaItems.reduce((min, item) => (item.Year < min ? item.Year : min), Infinity);
-	const maxYear = collectionItem.MediaItems.reduce((max, item) => (item.Year > max ? item.Year : max), -Infinity);
+	const minYear = Array.isArray(collectionItem.MediaItems)
+		? collectionItem.MediaItems.reduce((min, item) => (item.Year < min ? item.Year : min), Infinity)
+		: undefined;
+	const maxYear = Array.isArray(collectionItem.MediaItems)
+		? collectionItem.MediaItems.reduce((max, item) => (item.Year > max ? item.Year : max), -Infinity)
+		: undefined;
 
 	return (
 		<div>
@@ -33,9 +37,11 @@ export function CollectionItemDetails({ collectionItem }: CollectionItemDetailsP
 					<H1 className="mb-1">{collectionItem?.Title}</H1>
 					{/* Hide summary on mobile */}
 					<Lead className="text-primary-dynamic max-w-xl hidden lg:block">{collectionItem.Summary}</Lead>
-					<Badge variant="default" className="mt-2 mb-2">
-						{minYear === maxYear ? `${minYear}` : `${minYear} - ${maxYear}`}
-					</Badge>
+					{minYear !== undefined && maxYear !== undefined && (
+						<Badge variant="default" className="mt-2 mb-2">
+							{minYear === maxYear ? `${minYear}` : `${minYear} - ${maxYear}`}
+						</Badge>
+					)}
 				</div>
 			</div>
 
