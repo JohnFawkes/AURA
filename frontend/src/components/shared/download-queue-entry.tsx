@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteFromQueue } from "@/services/download-queue/delete-item";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import React, { useState } from "react";
@@ -14,7 +15,7 @@ import { renderTypeBadges } from "@/components/shared/saved-sets-shared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { H4, P } from "@/components/ui/typography";
+import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
@@ -60,19 +61,19 @@ const DownloadQueueEntry: React.FC<{
 	};
 
 	return (
-		<Card className="relative w-full max-w-md mx-auto mb-4">
+		<Card className="relative w-full max-w-md mx-auto">
 			<CardHeader>
 				{/* Top Left: Delete File */}
 				<div className="absolute top-2 left-2">
 					<ConfirmDestructiveDialogActionButton
-						variant="ghost"
+						variant="outline"
 						className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
 						confirmText="Delete File"
 						title="Delete Downloaded File?"
 						description="Are you sure you want to delete the downloaded file for this media item? This action cannot be undone."
 						onConfirm={onDeleteConfirm}
 					>
-						Delete
+						<Trash2 className="w-5 h-5" />
 					</ConfirmDestructiveDialogActionButton>
 				</div>
 				{/* Top Right: Dropdown Menu */}
@@ -86,17 +87,15 @@ const DownloadQueueEntry: React.FC<{
 						autoDownloadDefault={editSets[0].autoDownload}
 					/>
 				</div>
-				{/* Middle: Image */}
-				<div className="flex justify-center mt-6">
-					<AssetImage
-						image={entry.MediaItem}
-						className="w-[170px] h-auto transition-transform hover:scale-105"
-					/>
-				</div>
 			</CardHeader>
 
+			{/* Middle: Image */}
+			<div className="flex justify-center">
+				<AssetImage image={entry.MediaItem} className="w-[80%] h-auto transition-transform hover:scale-105" />
+			</div>
+
 			{/* Content */}
-			<CardContent>
+			<CardContent className="p-0 ml-2 mr-2">
 				{/* Title */}
 				<H4>
 					<Link
@@ -111,11 +110,10 @@ const DownloadQueueEntry: React.FC<{
 					</Link>
 				</H4>
 
-				{/* Year */}
-				<P className="text-sm text-muted-foreground">Year: {entry.MediaItem.Year}</P>
-
-				{/* Library Title */}
-				<P className="text-sm text-muted-foreground">Library: {entry.MediaItem.LibraryTitle}</P>
+				{/* Year and Library */}
+				<span className="text-xs sm:text-sm text-muted-foreground inline-block">
+					{entry.MediaItem.Year} · {entry.MediaItem.LibraryTitle}
+				</span>
 
 				<Separator className="my-4" />
 
