@@ -1,3 +1,19 @@
+## [0.9.54] - 2025-11-10
+
+### Added
+
+- Added responsive grid for all pages to improve layout on different screen sizes.
+- Added hidden option to add labels to Plex for each selected image type.
+- Added support for TMDB Poster and Backdrop URLs in the download queue image selection logic.
+
+### Fixed
+
+- Fixed missing User-Agent header in requests to MediUX GraphQL API.
+- Fixed issue where download queue was having panics when Poster for set was empty.
+- Fixed issue where pagination was not being reset when number of items per page was changed on another page.
+
+---
+
 ## [0.9.53] - 2025-11-09
 
 ### Added
