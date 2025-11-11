@@ -12,6 +12,7 @@ import { FilterHome } from "@/components/shared/filter-home";
 import HomeMediaItemCard from "@/components/shared/media-item-card";
 import { HomeMediaItemCardSkeletonGrid } from "@/components/shared/media-item-card-skeleton";
 import { RefreshButton } from "@/components/shared/refresh-button";
+import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 
@@ -290,9 +291,9 @@ export default function Home() {
 	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
 
 	return (
-		<div className="min-h-screen px-0 sm:px-0 pb-0 flex items-center justify-center">
+		<div className="flex items-center justify-center">
 			{!fullyLoaded && librarySections.length > 0 ? (
-				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
+				<div className="min-h-screen pb-4 px-4 sm:px-10 w-full">
 					{/* Progress bars */}
 					<div className="flex flex-col items-center w-full px-4">
 						{[...librarySections]
@@ -338,7 +339,7 @@ export default function Home() {
 					<HomeMediaItemCardSkeletonGrid />
 				</div>
 			) : (
-				<div className="min-h-screen px-8 pb-20 sm:px-20 w-full">
+				<div className="min-h-screen pb-4 px-4 sm:px-10 w-full">
 					{/* Filter & Sort Controls */}
 					<div className="w-full flex items-center justify-center mb-4 mt-4">
 						<FilterHome
@@ -359,7 +360,7 @@ export default function Home() {
 					</div>
 
 					{/* Grid of Cards */}
-					<div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+					<ResponsiveGrid size="regular">
 						{paginatedItems.length === 0 && fullyLoaded && (searchQuery || filteredLibraries.length > 0) ? (
 							<div className="col-span-full text-center text-red-500">
 								<ErrorMessage
@@ -377,9 +378,10 @@ export default function Home() {
 								/>
 							</div>
 						) : (
-							paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} mediaItem={item} />)
+							paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} item={item} />)
 						)}
-					</div>
+					</ResponsiveGrid>
+
 					{/* Pagination */}
 					<CustomPagination
 						currentPage={currentPage}
