@@ -1,3 +1,13 @@
+## [0.9.55] - 2025-11-11
+
+### Fixed
+
+- Fixed issue where backend didn't pass back info about whether media item exists in database to frontend for download modal.
+- Fixed panic error where Sonarr/Radarr didn't find the TMDB ID in the response.
+- Fixed issue where login page would not redirect after successful login if user was already authenticated.
+
+---
+
 ## [0.9.54] - 2025-11-10
 
 ### Added
