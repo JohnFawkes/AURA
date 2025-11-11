@@ -1,5 +1,6 @@
 "use client";
 
+import { CollectionItem } from "@/app/collections/page";
 import { decode } from "blurhash";
 
 import { useMemo, useState } from "react";
@@ -16,7 +17,7 @@ import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterFile } from "@/types/media-and-posters/poster-sets";
 
 interface AssetImageProps {
-	image: PosterFile | MediaItem | string;
+	image: PosterFile | MediaItem | CollectionItem | string;
 	aspect?: AspectRatio;
 	className?: string;
 	imageClassName?: string;
