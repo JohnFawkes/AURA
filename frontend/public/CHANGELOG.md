@@ -1,3 +1,20 @@
+## [0.9.57] - 2025-11-12
+
+### Added
+
+- Added new search bar component to allow searching for Media Items and MediUX Users from anywhere in the app.
+- Added some color to the Edit button on the Settings Page for better visibility.
+
+### Fixed
+
+- Fixed issue where saving the new config would create a new config.yaml file instead of overwriting existing config.yml.
+- Fixed issue where clicking on a Media Item from the Collection Items Page would throw an error for Emby/Jellyfin media servers.
+- Fixed issue where Media Item Title on Collection Items Page was causing misalignment in the Carousel.
+- Fixed issue where Force Recheck for Auto-Download was not working correctly for large sets.
+- Fixed Collections Download modal "Cancel" button to match Main Download modal.
+
+---
+
 ## [0.9.56] - 2025-11-11
 
 ### Added
