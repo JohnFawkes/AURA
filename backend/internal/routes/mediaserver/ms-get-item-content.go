@@ -32,7 +32,7 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 
 	var itemInfo api.MediaItem
 	var posterSets []api.PosterSet
-	var userFollowHide api.UserFollowHide
+	var userFollowHide []api.MediuxUserInfo
 
 	itemInfo, Err := api.CallFetchItemContent(ctx, ratingKey, sectionTitle)
 	if Err.Message != "" {

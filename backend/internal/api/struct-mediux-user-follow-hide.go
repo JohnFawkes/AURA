@@ -1,8 +1,9 @@
 package api
 
 type MediuxFollowHideUserInfo struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
+	ID       string           `json:"id"`
+	Username string           `json:"username"`
+	Avatar   MediuxUserAvatar `json:"avatar"`
 }
 
 type MediuxUserFollow struct {
@@ -20,12 +21,14 @@ type MediuxUserFollowHideResponse struct {
 	} `json:"data"`
 }
 
-type MediuxUserFollowHideUserInfo struct {
+type MediuxUserInfo struct {
 	ID       string `json:"ID"`
 	Username string `json:"Username"`
+	Avatar   string `json:"Avatar"`
+	Follow   bool   `json:"Follow"`
+	Hide     bool   `json:"Hide"`
 }
 
-type UserFollowHide struct {
-	Follows []MediuxUserFollowHideUserInfo `json:"Follows"`
-	Hides   []MediuxUserFollowHideUserInfo `json:"Hides"`
+type MediuxUserAvatar struct {
+	ID string `json:"id"`
 }

@@ -6,7 +6,7 @@ import { log } from "@/lib/logger";
 import { APIResponse, LogErrorInfo } from "@/types/api/api-response";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
-import { MediuxUserFollowHide } from "@/types/mediux/mediux-user-follow-hide";
+import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 export const fetchMediaServerItemContent = async (
 	ratingKey: string,
@@ -17,7 +17,7 @@ export const fetchMediaServerItemContent = async (
 		serverType: string;
 		mediaItem: MediaItem;
 		posterSets: PosterSet[];
-		userFollowHide: MediuxUserFollowHide;
+		userFollowHide: MediuxUserInfo[];
 		error: LogErrorInfo | null;
 	}>
 > => {
@@ -39,7 +39,7 @@ export const fetchMediaServerItemContent = async (
 				serverType: string;
 				mediaItem: MediaItem;
 				posterSets: PosterSet[];
-				userFollowHide: MediuxUserFollowHide;
+				userFollowHide: MediuxUserInfo[];
 				error: LogErrorInfo | null;
 			}>
 		>(`/mediaserver/item`, { params });
@@ -63,7 +63,7 @@ export const fetchMediaServerItemContent = async (
 			serverType: string;
 			mediaItem: MediaItem;
 			posterSets: PosterSet[];
-			userFollowHide: MediuxUserFollowHide;
+			userFollowHide: MediuxUserInfo[];
 			error: null;
 		}>(error);
 	}

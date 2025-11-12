@@ -90,3 +90,42 @@ func GetImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(imageData)
 }
+
+func GetAvatarImage(w http.ResponseWriter, r *http.Request) {
+	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
+	logAction := ld.AddAction("Get Avatar Image From MediUX", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+
+	actionGetQueryParams := logAction.AddSubAction("Get all query params", logging.LevelTrace)
+	// Get the following information from the URL
+	// Avatar ID
+	avatarID := r.URL.Query().Get("avatarID")
+	if avatarID == "" {
+		// If the avatarID is missing, check to see if there is a username parameter
+		username := r.URL.Query().Get("username")
+		if username == "" {
+			actionGetQueryParams.SetError("Missing Query Parameters", "One or more required query parameters are missing",
+				map[string]any{
+					"avatarID": avatarID,
+					"username": username,
+				})
+			api.Util_Response_SendJSON(w, ld, nil)
+			return
+		}
+
+		// Get the avatar ID from the username
+		// TODO: Implement this
+		return
+	}
+	actionGetQueryParams.Complete()
+
+	imageData, imageType, Err := api.Mediux_GetAvatarImage(ctx, avatarID)
+	if Err.Message != "" {
+		api.Util_Response_SendJSON(w, ld, nil)
+		return
+	}
+
+	w.Header().Set("Content-Type", imageType)
+	w.WriteHeader(http.StatusOK)
+	w.Write(imageData)
+}

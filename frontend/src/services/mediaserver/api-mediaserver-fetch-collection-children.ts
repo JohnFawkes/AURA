@@ -6,12 +6,12 @@ import { log } from "@/lib/logger";
 
 import { APIResponse, LogErrorInfo } from "@/types/api/api-response";
 import { PosterFile } from "@/types/media-and-posters/poster-sets";
-import { MediuxUserFollowHide } from "@/types/mediux/mediux-user-follow-hide";
+import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 interface fetchCollectionChildrenAndPostersResponse {
 	collection_item: CollectionItem;
 	collection_sets: CollectionSet[];
-	user_follow_hide: MediuxUserFollowHide;
+	user_follow_hide: MediuxUserInfo[];
 	error: LogErrorInfo | null;
 }
 

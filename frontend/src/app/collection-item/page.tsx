@@ -24,6 +24,7 @@ import Loader from "@/components/shared/loader";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { SortControl } from "@/components/shared/select-sort";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Lead, P } from "@/components/ui/typography";
 
@@ -34,6 +35,7 @@ import { useCollectionItemPageStore } from "@/lib/stores/page-store-collection-i
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 
 import { APIResponse } from "@/types/api/api-response";
+import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 export default function CollectionItemPage() {
 	const router = useRouter();
@@ -48,8 +50,8 @@ export default function CollectionItemPage() {
 	const [filteredCollectionItemSets, setFilteredCollectionItemSets] = useState<CollectionSet[]>([]);
 
 	// User Follows/Hides States
-	const [userFollows, setUserFollows] = useState<{ ID: string; Username: string }[]>([]);
-	const [userHides, setUserHides] = useState<{ ID: string; Username: string }[]>([]);
+	const [userFollows, setUserFollows] = useState<MediuxUserInfo[]>([]);
+	const [userHides, setUserHides] = useState<MediuxUserInfo[]>([]);
 
 	// Loading States
 	const [responseLoading, setResponseLoading] = useState<boolean>(true);
@@ -170,9 +172,11 @@ export default function CollectionItemPage() {
 					});
 				}
 
-				if (userFollowHide) {
-					setUserFollows(userFollowHide.Follows || []);
-					setUserHides(userFollowHide.Hides || []);
+				if (userFollowHide && Array.isArray(userFollowHide)) {
+					for (const info of userFollowHide) {
+						if (info.Follow) setUserFollows((prev) => [...prev, info]);
+						if (info.Hide) setUserHides((prev) => [...prev, info]);
+					}
 				} else {
 					setUserFollows([]);
 					setUserHides([]);
@@ -477,14 +481,24 @@ export default function CollectionItemPage() {
 
 										{/* Set User Name */}
 										<div className="flex items-center justify-start w-full mb-1">
-											<User className="h-4 w-4 mr-1" />
-											<Link
-												href={`/user/${set.User.Name}`}
-												className="text-sm hover:text-primary cursor-pointer underline truncate"
-												style={{ wordBreak: "break-word" }}
-											>
-												{set.User.Name}
-											</Link>
+											<div className="flex items-center gap-1">
+												<Avatar className="rounded-lg mr-1 w-4 h-4">
+													<AvatarImage
+														src={`/api/mediux/avatar-image?username=${set.User.Name}`}
+														className="w-4 h-4"
+													/>
+													<AvatarFallback className="">
+														<User className="w-4 h-4" />
+													</AvatarFallback>
+												</Avatar>
+												<Link
+													href={`/user/${set.User.Name}`}
+													className="text-sm hover:text-primary cursor-pointer underline truncate"
+													style={{ wordBreak: "break-word" }}
+												>
+													{set.User.Name}
+												</Link>
+											</div>
 										</div>
 
 										{/* Last Update */}

@@ -5,7 +5,7 @@ import { formatDownloadSize } from "@/helper/format-download-size";
 import { patchDownloadCollectionImageAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { CollectionSet } from "@/services/mediaserver/api-mediaserver-fetch-collection-children";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Download, LoaderIcon, X } from "lucide-react";
+import { Check, Download, LoaderIcon, User, X } from "lucide-react";
 import { z } from "zod";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -286,7 +287,22 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 				>
 					<DialogHeader>
 						<DialogTitle onClick={logInfoForPage}>{collectionItemSet.Title}</DialogTitle>
-						<DialogDescription>{collectionItemSet.User?.Name}</DialogDescription>
+						<DialogDescription>
+							<div className="flex items-center gap-1">
+								<Avatar className="rounded-lg mr-1 w-4 h-4">
+									<AvatarImage
+										src={`/api/mediux/avatar-image?username=${collectionItemSet.User.Name}`}
+										className="w-4 h-4"
+									/>
+									<AvatarFallback className="">
+										<User className="w-4 h-4" />
+									</AvatarFallback>
+								</Avatar>
+								<Link href={`/user/${collectionItemSet.User.Name}`} className="hover:underline">
+									{collectionItemSet.User.Name}
+								</Link>
+							</div>
+						</DialogDescription>
 						<DialogDescription>Library: {collectionItem.LibraryTitle}</DialogDescription>
 						<DialogDescription>
 							<Link

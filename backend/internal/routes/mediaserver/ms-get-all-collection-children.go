@@ -37,7 +37,7 @@ func GetAllCollectionChildren(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var allCollectionSets []api.CollectionSet
-	var userFollowHide api.UserFollowHide
+	var userFollowHide []api.MediuxUserInfo
 
 	// From here on out, we need to get more data (collections sets, user follow/hide)
 	// If any of them fail, we just send what we have and make status warning

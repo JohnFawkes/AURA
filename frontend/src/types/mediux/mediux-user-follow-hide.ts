@@ -1,9 +1,7 @@
-export interface MediuxUserFollowHide {
-	Follows?: MediuxFollowHideUserInfo[];
-	Hides?: MediuxFollowHideUserInfo[];
-}
-
-export interface MediuxFollowHideUserInfo {
+export interface MediuxUserInfo {
 	ID: string;
 	Username: string;
+	Avatar: string;
+	Follow?: boolean;
+	Hide?: boolean;
 }

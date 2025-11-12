@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 )
@@ -180,6 +181,63 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 	logAction.AppendResult("size", len(imageData))
 	logAction.AppendResult("imageType", imageType)
 	logAction.AppendResult("source", "MediUX")
+
+	// Return the image data and type
+	return imageData, imageType, Err
+}
+
+func Mediux_GetAvatarImage(ctx context.Context, avatarID string) (imageData []byte, imageType string, Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Avatar Image '%s' from Mediux", avatarID), logging.LevelTrace)
+	defer logAction.Complete()
+
+	imageData = nil
+	imageType = ""
+	Err = logging.LogErrorInfo{}
+
+	// Construct the Mediux URL
+	u, err := url.Parse(MediuxBaseURL)
+	if err != nil {
+		logAction.SetError("Failed to parse Mediux base URL", err.Error(), nil)
+		return imageData, imageType, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "assets", avatarID)
+
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
+
+	// Make the API request to Mediux
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, u.String(), http.MethodGet, headers, 60, nil, "MediUX")
+	if logErr.Message != "" {
+		return imageData, imageType, Err
+	}
+	defer httpResp.Body.Close()
+
+	// Check if the response body is empty
+	if len(respBody) == 0 {
+		logAction.SetError("Mediux returned an empty avatar image response",
+			"Ensure the avatar ID is correct and the image exists on the Mediux server.",
+			map[string]any{
+				"avatarID": avatarID,
+			})
+		Err = *logAction.Error
+		return nil, "", *logAction.Error
+	}
+	imageData = respBody
+
+	// Get the image type from the response headers
+	imageType = httpResp.Header.Get("Content-Type")
+	if imageType == "" {
+		logAction.SetError("Failed to determine avatar image type from Mediux response",
+			"Ensure the Mediux server is returning a valid image.",
+			map[string]any{
+				"avatarID": avatarID,
+			})
+		Err = *logAction.Error
+		return nil, "", *logAction.Error
+	}
+
+	logAction.AppendResult("size", len(imageData))
+	logAction.AppendResult("imageType", imageType)
 
 	// Return the image data and type
 	return imageData, imageType, Err

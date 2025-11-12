@@ -3,7 +3,7 @@
 import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchAllUserSets } from "@/services/mediux/api-mediux-fetch-username-sets";
-import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp } from "lucide-react";
+import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -15,6 +15,7 @@ import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
 import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { SortControl } from "@/components/shared/select-sort";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -667,9 +668,18 @@ const UserSetPage = () => {
 					<div className="min-h-screen px-4 sm:px-8 pb-20">
 						{/* User Sets Header */}
 						<div className="flex flex-col items-center mt-8 mb-6">
-							<h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight text-primary">
-								<span className="text-white opacity-80">Sets by</span>{" "}
+							<h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight text-primary flex items-center justify-center gap-2">
+								<span className="text-white opacity-80">Sets by</span>
 								<span className="text-primary">{username}</span>
+								<Avatar className="rounded-lg w-7 h-7 ml-2 align-middle">
+									<AvatarImage
+										src={`/api/mediux/avatar-image?username=${username}`}
+										className="w-7 h-7"
+									/>
+									<AvatarFallback>
+										<User className="w-7 h-7" />
+									</AvatarFallback>
+								</Avatar>
 							</h1>
 							{!selectedLibrarySection && (
 								<div className="flex flex-wrap gap-3 mt-2 justify-center">

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { SetFileCounts } from "@/components/shared/set-file-counts";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Carousel, CarouselContent } from "@/components/ui/carousel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Lead } from "@/components/ui/typography";
@@ -114,10 +115,24 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 					</div>
 				</div>
 				<div className="text-md text-muted-foreground mb-1 flex items-center">
-					<User />
-					<Link href={`/user/${set.User.Name}`} className="hover:text-primary cursor-pointer underline">
-						{set.User.Name}
-					</Link>
+					<div className="ml-1 flex items-center gap-1">
+						<Avatar className="rounded-lg mr-1 w-4 h-4">
+							<AvatarImage
+								src={`/api/mediux/avatar-image?username=${set.User.Name}`}
+								className="w-4 h-4"
+							/>
+							<AvatarFallback className="">
+								<User className="w-4 h-4" />
+							</AvatarFallback>
+						</Avatar>
+						<Link
+							href={`/user/${set.User.Name}`}
+							className="text-sm hover:text-primary cursor-pointer underline truncate"
+							style={{ wordBreak: "break-word" }}
+						>
+							{set.User.Name}
+						</Link>
+					</div>
 				</div>
 				<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
 					Last Update: {formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}

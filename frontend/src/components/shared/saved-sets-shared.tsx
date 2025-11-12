@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 
 import DownloadModal from "@/components/shared/download-modal";
 import { ErrorMessage } from "@/components/shared/error-message";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -461,11 +462,21 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 									</Button>
 								</div>
 								{editSet.set.User?.Name && (
-									<DialogDescription className="text-md text-muted-foreground mb-1 flex items-center">
-										<User className="text-sm text-muted-foreground" />
-										<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
-											{editSet.set.User.Name}
-										</Link>
+									<DialogDescription>
+										<div className="flex items-center gap-1">
+											<Avatar className="rounded-lg mr-1 w-4 h-4">
+												<AvatarImage
+													src={`/api/mediux/avatar-image?username=${editSet.set.User.Name}`}
+													className="w-4 h-4"
+												/>
+												<AvatarFallback className="">
+													<User className="w-4 h-4" />
+												</AvatarFallback>
+											</Avatar>
+											<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
+												{editSet.set.User.Name}
+											</Link>
+										</div>
 									</DialogDescription>
 								)}
 								<DialogDescription className="ml-1">
@@ -674,12 +685,24 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 							>
 								{ps.PosterSetID}
 							</Link>
-							<Link
-								href={`/user/${ps.PosterSet.User.Name}`}
-								className="text-primary hover:underline text-xs text-right"
-							>
-								{ps.PosterSet.User.Name || ""}
-							</Link>
+
+							<div className="flex items-center gap-1">
+								<Avatar className="rounded-lg mr-1 w-4 h-4">
+									<AvatarImage
+										src={`/api/mediux/avatar-image?username=${ps.PosterSet.User.Name}`}
+										className="w-4 h-4"
+									/>
+									<AvatarFallback className="">
+										<User className="w-4 h-4" />
+									</AvatarFallback>
+								</Avatar>
+								<Link
+									href={`/user/${ps.PosterSet.User.Name}`}
+									className="text-primary hover:underline text-xs text-right"
+								>
+									{ps.PosterSet.User.Name || ""}
+								</Link>
+							</div>
 						</li>
 					))}
 				</ul>
@@ -708,9 +731,23 @@ export const SavedSetsList: React.FC<SavedSetsListProps> = ({
 							{ps.PosterSetID}
 						</Link>
 						<span className="text-muted-foreground text-xs">—</span>
-						<Link href={`/user/${ps.PosterSet.User.Name}`} className="text-primary hover:underline text-xs">
-							{ps.PosterSet.User.Name || ""}
-						</Link>
+						<div className="flex items-center gap-1">
+							<Avatar className="rounded-lg mr-1 w-4 h-4">
+								<AvatarImage
+									src={`/api/mediux/avatar-image?username=${ps.PosterSet.User.Name}`}
+									className="w-4 h-4"
+								/>
+								<AvatarFallback className="">
+									<User className="w-4 h-4" />
+								</AvatarFallback>
+							</Avatar>
+							<Link
+								href={`/user/${ps.PosterSet.User.Name}`}
+								className="text-primary hover:underline text-xs text-right"
+							>
+								{ps.PosterSet.User.Name || ""}
+							</Link>
+						</div>
 					</li>
 				))}
 			</ul>

@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-func Mediux_FetchUserFollowingAndHiding(ctx context.Context) (UserFollowHide, logging.LogErrorInfo) {
+func Mediux_FetchUserFollowingAndHiding(ctx context.Context) ([]MediuxUserInfo, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetch User Following And Hiding", logging.LevelInfo)
 	defer logAction.Complete()
 
@@ -14,41 +14,41 @@ func Mediux_FetchUserFollowingAndHiding(ctx context.Context) (UserFollowHide, lo
 	// Send the GraphQL request
 	resp, Err := Mediux_SendGraphQLRequest(ctx, requestBody)
 	if Err.Message != "" {
-		return UserFollowHide{}, Err
+		return nil, Err
 	}
 
 	// Parse the response body into the appropriate struct based on itemType
 	var responseBody MediuxUserFollowHideResponse
 	Err = DecodeJSONBody(ctx, resp.Body(), &responseBody, "MediuxUserFollowHideResponse")
 	if Err.Message != "" {
-		return UserFollowHide{}, Err
+		return nil, Err
 	}
 
 	data := responseBody.Data
 	if data.Follows == nil && data.Hides == nil {
-		return UserFollowHide{}, logging.LogErrorInfo{}
+		return nil, logging.LogErrorInfo{}
 	}
 
-	// Create a new UserFollowHide object to store the response data
-	userFollowHide := UserFollowHide{
-		Follows: make([]MediuxUserFollowHideUserInfo, 0),
-		Hides:   make([]MediuxUserFollowHideUserInfo, 0),
-	}
+	var userFollowHide []MediuxUserInfo
 
 	// Populate the UserFollowHide object with the response data
 	if data.Follows != nil {
 		for _, follow := range data.Follows {
-			userFollowHide.Follows = append(userFollowHide.Follows, MediuxUserFollowHideUserInfo{
+			userFollowHide = append(userFollowHide, MediuxUserInfo{
 				ID:       follow.FolloweeID.ID,
 				Username: follow.FolloweeID.Username,
+				Avatar:   follow.FolloweeID.Avatar.ID,
+				Follow:   true,
 			})
 		}
 	}
 	if data.Hides != nil {
 		for _, hide := range data.Hides {
-			userFollowHide.Hides = append(userFollowHide.Hides, MediuxUserFollowHideUserInfo{
+			userFollowHide = append(userFollowHide, MediuxUserInfo{
 				ID:       hide.HidingID.ID,
 				Username: hide.HidingID.Username,
+				Avatar:   hide.HidingID.Avatar.ID,
+				Hide:     true,
 			})
 		}
 	}

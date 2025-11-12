@@ -7,7 +7,7 @@ import { postAddToQueue } from "@/services/download-queue/api-queue-add";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, Download, ListEnd, Loader, TriangleAlert, X } from "lucide-react";
+import { CircleAlert, Download, ListEnd, Loader, TriangleAlert, User, X } from "lucide-react";
 import { z } from "zod";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +21,7 @@ import { AssetImage } from "@/components/shared/asset-image";
 import DownloadModalPopover from "@/components/shared/download-modal-popover";
 import { DownloadModalProgressItem } from "@/components/shared/download-modal-progress-item";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -1388,7 +1389,22 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				>
 					<DialogHeader>
 						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
-						<DialogDescription>{setAuthor}</DialogDescription>
+						<DialogDescription>
+							<div className="flex items-center gap-1">
+								<Avatar className="rounded-lg mr-1 w-4 h-4">
+									<AvatarImage
+										src={`/api/mediux/avatar-image?username=${setAuthor}`}
+										className="w-4 h-4"
+									/>
+									<AvatarFallback className="">
+										<User className="w-4 h-4" />
+									</AvatarFallback>
+								</Avatar>
+								<Link href={`/user/${setAuthor}`} className="hover:underline">
+									{setAuthor}
+								</Link>
+							</div>
+						</DialogDescription>
 						<DialogDescription>
 							<Link
 								href={getMediuxBaseUrl()}

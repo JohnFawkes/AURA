@@ -414,12 +414,18 @@ query {
         followee_id {
             id
             username
+			avatar {
+				id
+			}
         }
     }
 	user_hides (filter: {hider_id: {id: {_eq: "$CURRENT_USER" }}}) {
 		hiding_id {
 			id
 			username
+			avatar {
+				id
+			}
 		}
 	}
 }

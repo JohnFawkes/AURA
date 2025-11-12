@@ -264,10 +264,11 @@ const MediaItemPage = () => {
 					});
 				}
 
-				// Check User Follows/Hides
-				if (userFollowHideResponse) {
-					setUserFollows(userFollowHideResponse.Follows || []);
-					setUserHides(userFollowHideResponse.Hides || []);
+				if (userFollowHideResponse && Array.isArray(userFollowHideResponse)) {
+					for (const info of userFollowHideResponse) {
+						if (info.Follow) setUserFollows((prev) => [...prev, info]);
+						if (info.Hide) setUserHides((prev) => [...prev, info]);
+					}
 				} else {
 					setUserFollows([]);
 					setUserHides([]);
