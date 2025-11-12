@@ -22,16 +22,30 @@ export interface AutodownloadSetResult {
 export const postForceRecheckDBItemForAutoDownload = async (
 	saveItem: DBMediaItemWithPosterSets
 ): Promise<APIResponse<AutodownloadResult>> => {
+	let largeDataSize = false;
+	let size = JSON.stringify(saveItem).length / 1024 / 1024;
+	if (size > 5) {
+		largeDataSize = true;
+		saveItem.PosterSets.forEach((posterSet) => {
+			posterSet.PosterSet.Poster = undefined;
+			posterSet.PosterSet.OtherPosters = [];
+			posterSet.PosterSet.Backdrop = undefined;
+			posterSet.PosterSet.OtherBackdrops = [];
+			posterSet.PosterSet.SeasonPosters = [];
+			posterSet.PosterSet.TitleCards = [];
+		});
+	}
 	log(
 		"INFO",
 		"API - DB",
 		"Recheck",
 		`Forcing recheck for auto-download for ${saveItem.MediaItem.Title} (${saveItem.TMDB_ID} | ${saveItem.LibraryTitle})`,
-		saveItem
+		{ saveItem, largeDataSize, size }
 	);
 	try {
 		const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force-recheck`, {
 			Item: saveItem,
+			LargeDataSize: largeDataSize,
 		});
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.message || "Unknown error forcing recheck for auto-download");

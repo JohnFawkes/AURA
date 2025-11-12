@@ -23,7 +23,8 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
 	var requestBody struct {
-		Item api.DBMediaItemWithPosterSets
+		Item          api.DBMediaItemWithPosterSets
+		LargeDataSize bool
 	}
 	Err := api.DecodeRequestBodyJSON(ctx, r.Body, &requestBody, "DBMediaItemWithPosterSets")
 	if Err.Message != "" {
@@ -32,6 +33,9 @@ func ForceRecheckItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item := requestBody.Item
+	largeDataSize := requestBody.LargeDataSize
+	logAction.AppendResult("large", largeDataSize)
+
 	results := api.AutoDownload_CheckItem(ctx, item)
 
 	api.Util_Response_SendJSON(w, ld, results)
