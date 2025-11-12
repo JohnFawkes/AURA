@@ -222,6 +222,7 @@ func EJ_FetchMovieCollectionItemChildren(ctx context.Context, collectionItem *Co
 		}
 
 		items = append(items, itemInfo)
+		Global_Cache_LibraryStore.UpdateMediaItem(collectionItem.LibraryTitle, &itemInfo)
 	}
 
 	collectionItem.MediaItems = items

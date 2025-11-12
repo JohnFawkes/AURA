@@ -73,5 +73,7 @@ func GetEmbyJellyCollectionItems(ctx context.Context) []api.CollectionItem {
 		return nil
 	}
 
+	api.Global_Cache_LibraryStore.UpdateSection(&section)
+
 	return collectionItems
 }
