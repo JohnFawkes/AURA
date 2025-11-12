@@ -10,7 +10,6 @@ import {
 	ListOrdered,
 	LogOutIcon,
 	Logs,
-	Search as SearchIcon,
 	Settings as SettingsIcon,
 } from "lucide-react";
 
@@ -19,6 +18,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
+import { DynamicSearch } from "@/components/layout/app-search-bar";
 import { ViewDensitySlider } from "@/components/shared/view-density-context";
 import {
 	DropdownMenu,
@@ -27,31 +27,29 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 
 import { useCollectionStore } from "@/lib/stores/global-store-collection-store";
-import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-import { searchItems } from "@/hooks/search-query";
-
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-
 const placeholderTexts = {
 	home: {
 		desktop: "Search for Movies or Shows",
-		mobile: "Search Media",
+		mobile: "Search",
 	},
 	savedSets: {
 		desktop: "Search Saved Sets",
-		mobile: "Search Sets",
+		mobile: "Search",
 	},
 	user: {
 		desktop: "Search Sets by",
+		mobile: "Search",
+	},
+	collections: {
+		desktop: "Search Collections",
 		mobile: "Search",
 	},
 };
@@ -81,8 +79,7 @@ export default function Navbar() {
 	const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
 
 	// Search States
-	const { searchQuery, setSearchQuery } = useSearchQueryStore(); // Global store for search query
-	const [searchInput, setSearchInput] = useState(searchQuery); // Local state for input field
+	const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
 	const [placeholderText, setPlaceholderText] = useState(""); // Placeholder text based on page
 
 	// Home Page Store
@@ -98,18 +95,6 @@ export default function Navbar() {
 	const { fetchStatus } = useOnboardingStore();
 	const status = useOnboardingStore((state) => state.status);
 	const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
-
-	// Library Sections Store (for searching cached media items)
-	const sectionsMap = useLibrarySectionsStore((s) => s.sections); // subscribe so effect reacts to cache changes
-
-	// State for search dropdown results (for non-homepage)
-	// This will be populated with results from the IDB
-	// when the user types in the search input
-	const [searchResults, setSearchResults] = useState<MediaItem[]>([]);
-	const [showDropdown, setShowDropdown] = useState(false);
-
-	// Media Store
-	const { setMediaItem } = useMediaStore();
 
 	// Check if the screen is mobile
 	const [isWideScreen, setIsWideScreen] = useState(false);
@@ -162,6 +147,10 @@ export default function Navbar() {
 		}
 		if (isSavedSetsPage) {
 			setPlaceholderText(isWideScreen ? placeholderTexts.savedSets.desktop : placeholderTexts.savedSets.mobile);
+		} else if (isCollectionsPage) {
+			setPlaceholderText(
+				isWideScreen ? placeholderTexts.collections.desktop : placeholderTexts.collections.mobile
+			);
 		} else if (isUserPage) {
 			setPlaceholderText(
 				isWideScreen
@@ -171,58 +160,7 @@ export default function Navbar() {
 		} else {
 			setPlaceholderText(isWideScreen ? placeholderTexts.home.desktop : placeholderTexts.home.mobile);
 		}
-	}, [isHomePage, isSavedSetsPage, isUserPage, isWideScreen, pathName]);
-
-	// Debounce updating
-	useEffect(() => {
-		const handler = setTimeout(() => {
-			setSearchQuery(searchInput);
-		}, 300);
-		return () => clearTimeout(handler);
-	}, [searchInput, setSearchQuery]);
-
-	// Sync local input if store value changes externally
-	useEffect(() => {
-		setSearchInput(searchQuery);
-	}, [searchQuery]);
-
-	// When not on homepage, search cached media items from zustand store
-	useEffect(() => {
-		if (isHomePage || searchQuery.trim() === "") {
-			setSearchResults([]);
-			return;
-		}
-
-		const handler = setTimeout(() => {
-			try {
-				const records = Object.values(sectionsMap);
-
-				if (!records || records.length === 0) {
-					setSearchResults([]);
-					return;
-				}
-
-				const allMediaItems: MediaItem[] = records.flatMap((r) => r.MediaItems ?? []);
-				if (allMediaItems.length === 0) {
-					setSearchResults([]);
-					return;
-				}
-
-				const query = searchQuery.trim().toLowerCase();
-				const results = searchItems(allMediaItems, query, {
-					getTitle: (item) => item.Title,
-					getYear: (item) => item.Year,
-					getLibraryTitle: (item) => item.LibraryTitle,
-					getID: (item) => item.TMDB_ID || item.RatingKey,
-				});
-				setSearchResults(results.slice(0, 10)); // Limit to 10 results
-			} catch {
-				setSearchResults([]);
-			}
-		}, 300);
-
-		return () => clearTimeout(handler);
-	}, [searchQuery, isHomePage, sectionsMap]); // sectionsMap included so results update when cache fills
+	}, [isCollectionsPage, isHomePage, isSavedSetsPage, isUserPage, isWideScreen, pathName]);
 
 	// On mount, check auth status
 	useEffect(() => {
@@ -245,19 +183,11 @@ export default function Navbar() {
 		}
 		if (isHomePage) {
 			setSearchQuery("");
-			setSearchInput("");
 			setCurrentPage(1);
 			setFilteredLibraries([]);
 			setFilterInDB("all");
-			setSearchResults([]);
 		}
 		router.push("/");
-	};
-
-	// When clicking on a dropdown result (non-homepage), set the mediaStore and navigate
-	const handleResultClick = (result: MediaItem) => {
-		setMediaItem(result);
-		router.push("/media-item/");
 	};
 
 	// Handle Logout
@@ -290,50 +220,7 @@ export default function Navbar() {
 			{/* Center: Search */}
 			<div className="relative flex-1 flex justify-center mx-3">
 				<div className="relative w-full max-w-2xl">
-					<SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						type="search"
-						placeholder={placeholderText}
-						className="pl-10 pr-10 bg-transparent text-foreground rounded-full border-muted w-full focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground transition hover:brightness-120"
-						onChange={(e) => setSearchInput(e.target.value)}
-						value={searchInput}
-						onFocus={() => setShowDropdown(true)}
-						onBlur={() => setShowDropdown(false)}
-					/>
-					{/* Dropdown results (unchanged) */}
-					{!isHomePage &&
-						!isSavedSetsPage &&
-						!isUserPage &&
-						!isCollectionsPage &&
-						showDropdown &&
-						searchResults.length > 0 && (
-							<div className="absolute top-full mt-5 md:mt-4 w-[80vw] md:w-full max-w-md bg-background border border-border rounded shadow-lg z-50 left-1/2 -translate-x-1/2 md:transform-none max-h-[400px] overflow-y-auto">
-								{searchResults.map((result) => (
-									<div
-										key={result.RatingKey}
-										onMouseDown={() => handleResultClick(result)}
-										className="p-2 cursor-pointer hover:bg-muted flex items-center gap-2"
-									>
-										<div className="relative w-[24px] h-[35px] rounded overflow-hidden">
-											<Image
-												src={`/api/mediaserver/image?ratingKey=${result.RatingKey}&imageType=poster`}
-												alt={result.Title}
-												fill
-												className="object-cover"
-												loading="lazy"
-												unoptimized
-											/>
-										</div>
-										<div>
-											<p className="font-medium text-sm md:text-base">{result.Title}</p>
-											<p className="text-xs text-muted-foreground">
-												{result.LibraryTitle} · {result.Year}
-											</p>
-										</div>
-									</div>
-								))}
-							</div>
-						)}
+					<DynamicSearch placeholder={placeholderText} />
 				</div>
 			</div>
 

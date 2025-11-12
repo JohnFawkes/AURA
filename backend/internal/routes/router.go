@@ -14,6 +14,7 @@ import (
 	routes_mediux "aura/internal/routes/mediux"
 	middleware "aura/internal/routes/middleware"
 	routes_notification "aura/internal/routes/notification"
+	routes_search "aura/internal/routes/search"
 	routes_sonarr_radarr "aura/internal/routes/sonarr-radarr"
 	routes_tempimages "aura/internal/routes/tempimages"
 	"net/http"
@@ -75,6 +76,8 @@ func AddRoutes(r *chi.Mux) {
 
 		// Route for Config Status
 		r.Get("/config/status", routes_config.GetConfigStatus)
+
+		r.Get("/search", routes_search.SearchHandler)
 
 		r.Group(func(r chi.Router) {
 			// Protected routes
