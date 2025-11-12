@@ -14,11 +14,11 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	if (error instanceof AxiosError) {
 		return {
 			status: "error",
-			error: error.response?.data.error || {
-				message: error.response?.data.message || error.message,
-				help: "Please check your connection and try again",
-				function: "AxiosRequest",
-				line_number: 0,
+			error: {
+				message: error.response?.data.message || "Failed to connect to API",
+				help: "Please make sure the backend API is running and accessible.",
+				function: "Axios Request",
+				line_number: -1,
 			},
 		} as APIResponse<T>;
 	}

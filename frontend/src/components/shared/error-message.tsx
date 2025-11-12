@@ -92,7 +92,7 @@ export function ErrorMessage<T>({ error, className, isWarning }: ErrorMessagePro
 									</Lead>
 								)}
 
-							{error.error.line_number && error.error.line_number !== 0 && (
+							{!!error.error.line_number && error.error.line_number > 0 && (
 								<Lead className="text-sm text-muted-foreground mb-1">
 									Line Number: {error.error.line_number}
 								</Lead>
