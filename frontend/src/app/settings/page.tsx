@@ -499,9 +499,9 @@ const SettingsPage: React.FC = () => {
 							<div className="flex gap-2">
 								{!editing && (
 									<Button
-										variant="outline"
+										variant="ghost"
 										onClick={() => setEditing(true)}
-										className="cursor-pointer hover:text-primary active:scale-95 hover:brightness-120"
+										className="cursor-pointer active:scale-95 hover:brightness-120 hover:text-primary border border-yellow-500"
 									>
 										Edit
 									</Button>
