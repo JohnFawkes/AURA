@@ -30,7 +30,7 @@ export function CollectionMediaItemsCarousel({ mediaItems }: { mediaItems: Media
 			<CarouselContent>
 				{mediaItems.map((mediaItem) => (
 					<CarouselItem key={`${mediaItem.RatingKey}`} onClick={() => handleCardClick(mediaItem)}>
-						<p className="text-primary-dynamic text-md text-center mt-2 mb-1">{mediaItem.Title}</p>
+						<p className="text-primary-dynamic text-sm text-center mt-1 mb-1 truncate">{mediaItem.Title}</p>
 						<AssetImage image={mediaItem} aspect="poster" className={`w-full`} />
 						<AssetImage image={mediaItem} aspect="backdrop" className={`w-full`} />
 					</CarouselItem>
