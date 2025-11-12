@@ -20,8 +20,17 @@ func (config *Config) SaveToFile(ctx context.Context) logging.LogErrorInfo {
 		configPath = "/config"
 	}
 	yamlFile := path.Join(configPath, "config.yaml")
-	config.MediaServer.UserID = ""
+	if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
+		yamlFile = path.Join(configPath, "config.yml")
+		if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
+			// If neither file exists, default to config.yaml
+			yamlFile = path.Join(configPath, "config.yaml")
+		}
+	}
 	subActionDeterminePath.Complete()
+
+	// Clear the UserID before saving. This is done because we don't want to save this. We want this to be generated on startup.
+	config.MediaServer.UserID = ""
 
 	// Sub-action: Marshal config to YAML
 	subActionMarshal := logAction.AddSubAction("Marshal Config to YAML", logging.LevelTrace)
