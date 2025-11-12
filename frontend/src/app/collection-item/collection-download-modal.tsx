@@ -333,7 +333,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 													<AssetImage
 														image={posterImage}
 														aspect="poster"
-														className="w-42 h-auto mt-2 rounded shadow"
+														className="w-32 h-auto mt-2 rounded shadow"
 													/>
 												)}
 											</FormItem>
@@ -426,8 +426,15 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 							)}
 
 							<DialogFooter>
+								{/* Cancel button to close the modal */}
 								<DialogClose asChild>
-									<Button variant="ghost" type="button" onClick={handleClose}>
+									<Button
+										className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+										variant="ghost"
+										onClick={() => {
+											handleClose();
+										}}
+									>
 										{cancelButtonText}
 									</Button>
 								</DialogClose>
