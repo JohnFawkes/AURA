@@ -42,12 +42,14 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 		Str("id_filter", idFilter).
 		Msg("Processing search query")
 
-	var mediaItems []api.MediaItem
 	var mediux_usernames []api.MediuxUserInfo
 
+	var mediaItems []api.MediaItem
+	maxPerSection := 5
+	maxTotal := 10
 	allSections := api.Global_Cache_LibraryStore.GetAllSectionsSortedByTitle()
-searchLoop:
 	for _, section := range allSections {
+		count := 0
 		for _, item := range section.MediaItems {
 			if hasLibraryFilter && !strings.EqualFold(item.LibraryTitle, libraryFilter) {
 				continue
@@ -60,17 +62,21 @@ searchLoop:
 			}
 			if strings.Contains(strings.ToLower(item.Title), strings.ToLower(cleanedQuery)) {
 				mediaItems = append(mediaItems, item)
+				count++
+				if count >= maxPerSection || len(mediaItems) >= maxTotal {
+					break
+				}
 			}
-			if len(mediaItems) >= 10 {
-				break searchLoop
-			}
+		}
+		if len(mediaItems) >= maxTotal {
+			break
 		}
 	}
 
 	// Get MediUX Usernames and filter based on query
 	var Err logging.LogErrorInfo
 	if cleanedQuery != "" {
-		mediux_usernames, Err = api.Mediux_GetAllUsers(ctx, cleanedQuery)
+		mediux_usernames, Err = api.Mediux_SearchUsers(ctx, cleanedQuery)
 		if Err.Message != "" {
 			ld.Status = logging.StatusWarn
 			api.Util_Response_SendJSON(w, ld, map[string]any{
