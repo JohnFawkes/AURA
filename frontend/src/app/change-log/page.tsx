@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { useSearchParams } from "next/navigation";
 
 import { ChangelogMarkdown } from "@/components/shared/changelog-markdown";
 
 export default function Changelog() {
+	return (
+		<Suspense fallback={<div>Loading...</div>}>
+			<ChangelogContent />
+		</Suspense>
+	);
+}
+
+function ChangelogContent() {
 	const [content, setContent] = useState("");
 	const searchParams = useSearchParams();
 	const [currentVersion, setCurrentVersion] = useState<string | null>(null);
