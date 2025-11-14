@@ -1,17 +1,27 @@
-## [0.9.57] - 2025-11-12
+## [0.9.57] - 2025-11-14
+
+### Breaking
+
+- The LabelsAndTagsProvider config section has been updated. The field `AddLabelsForSelectedTypes` has been renamed to `AddLabelTagForSelectedTypes` to better reflect its purpose of adding labels in Plex and tags in Sonarr/Radarr. Please update your configuration accordingly. This is a hidden setting (not available in the UI) to add labels/tags for each selected image type during downloads to Plex/Sonarr/Radarr.
 
 ### Added
 
 - Added new search bar component to allow searching for Media Items and MediUX Users from anywhere in the app.
+- Added Avatar images to the MediUX Users for better visual identification.
 - Added some color to the Edit button on the Settings Page for better visibility.
+- Added option to add tags in Sonarr/Radarr for each selected image type during downloads. This is a hidden setting (not available in the UI) called `AddLabelTagForSelectedTypes` under the LabelsAndTagsProvider config section.
+- Updated changelog format to show which version you are currently on and the changes since your last update.
+- Updated Movie Boxsets to use the new Responsive Grid layout for better visibility of items.
 
 ### Fixed
 
 - Fixed issue where saving the new config would create a new config.yaml file instead of overwriting existing config.yml.
 - Fixed issue where clicking on a Media Item from the Collection Items Page would throw an error for Emby/Jellyfin media servers.
+- Fixed issue where images were not being applied correctly for Emby/Jellyfin.
 - Fixed issue where Media Item Title on Collection Items Page was causing misalignment in the Carousel.
 - Fixed issue where Force Recheck for Auto-Download was not working correctly for large sets.
 - Fixed Collections Download modal "Cancel" button to match Main Download modal.
+- Cleaned up some inconsistent naming for MediUX in various places.
 
 ---
 
