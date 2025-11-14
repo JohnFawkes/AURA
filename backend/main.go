@@ -87,7 +87,7 @@ func main() {
 
 // Finish Preflight
 // Validate MediaServer Connection (Get User ID for Emby/Jellyfin)
-// Validate Mediux Token
+// Validate MediUX Token
 func finishPreflight() bool {
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Finish Preflight")
 	defer ld.Log()
@@ -102,13 +102,13 @@ func finishPreflight() bool {
 		api.Global_Config_MediaServerValid = false
 	}
 
-	// Validate Mediux Token
+	// Validate MediUX Token
 	logErr = api.Mediux_ValidateToken(ctx, api.Global_Config.Mediux.Token)
 	if logErr.Message != "" {
 		api.Global_Config_MediuxValid = false
 	}
 
-	// Check if both Media Server and Mediux configs are valid
+	// Check if both Media Server and MediUX configs are valid
 	if !api.Global_Config_MediuxValid || !api.Global_Config_MediaServerValid {
 		return false
 	}
