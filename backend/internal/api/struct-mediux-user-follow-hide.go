@@ -22,11 +22,12 @@ type MediuxUserFollowHideResponse struct {
 }
 
 type MediuxUserInfo struct {
-	ID       string `json:"ID"`
-	Username string `json:"Username"`
-	Avatar   string `json:"Avatar"`
-	Follow   bool   `json:"Follow"`
-	Hide     bool   `json:"Hide"`
+	ID        string `json:"ID"`
+	Username  string `json:"Username"`
+	Avatar    string `json:"Avatar"`
+	Follow    bool   `json:"Follow"`
+	Hide      bool   `json:"Hide"`
+	TotalSets int    `json:"TotalSets"`
 }
 
 type MediuxUserAvatar struct {

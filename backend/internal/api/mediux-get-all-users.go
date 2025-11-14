@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -33,22 +35,25 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 		return mediux_usernames, Err
 	}
 
-	var added = make(map[string]bool)
-	var sortedUsernames []MediuxUserInfo
+	var (
+		added         = make(map[string]bool)
+		followedUsers []MediuxUserInfo
+		normalUsers   []MediuxUserInfo
+		hiddenUsers   []MediuxUserInfo
+	)
 
 	// First add Followed users
 	for _, info := range userFollowHide {
 		if info.Follow {
 			for _, user := range mediux_usernames {
 				if strings.EqualFold(user.Username, info.Username) && !added[strings.ToLower(user.Username)] {
-					sortedUsernames = append(sortedUsernames, info)
+					followedUsers = append(followedUsers, info)
 					added[strings.ToLower(user.Username)] = true
 					break
 				}
 			}
 		}
 	}
-
 	// Then add non-followed and non-hidden users
 	for _, user := range mediux_usernames {
 		found := false
@@ -59,7 +64,7 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 			}
 		}
 		if !found && !added[strings.ToLower(user.Username)] {
-			sortedUsernames = append(sortedUsernames, user)
+			normalUsers = append(normalUsers, user)
 			added[strings.ToLower(user.Username)] = true
 		}
 	}
@@ -69,7 +74,7 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 		if info.Hide {
 			for _, user := range mediux_usernames {
 				if strings.EqualFold(user.Username, info.Username) && !added[strings.ToLower(user.Username)] {
-					sortedUsernames = append(sortedUsernames, info)
+					hiddenUsers = append(hiddenUsers, info)
 					added[strings.ToLower(user.Username)] = true
 					break
 				}
@@ -77,7 +82,22 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 		}
 	}
 
+	// Sort each section by TotalSets descending
+	sort.SliceStable(followedUsers, func(i, j int) bool {
+		return followedUsers[i].TotalSets > followedUsers[j].TotalSets
+	})
+	sort.SliceStable(normalUsers, func(i, j int) bool {
+		return normalUsers[i].TotalSets > normalUsers[j].TotalSets
+	})
+	sort.SliceStable(hiddenUsers, func(i, j int) bool {
+		return hiddenUsers[i].TotalSets > hiddenUsers[j].TotalSets
+	})
+
+	// Combine the sections
+	sortedUsernames := append(followedUsers, normalUsers...)
+	sortedUsernames = append(sortedUsernames, hiddenUsers...)
 	mediux_usernames = sortedUsernames
+
 	logAction.AppendResult("users_found_with_query", len(mediux_usernames))
 	return mediux_usernames, logging.LogErrorInfo{}
 }
@@ -136,10 +156,25 @@ func Mediux_GetAllUsers(ctx context.Context) (mediux_usernames []MediuxUserInfo,
 			continue
 		}
 		mediux_usernames = append(mediux_usernames, MediuxUserInfo{
+			ID:       user.ID,
 			Username: user.Username,
 			Avatar:   user.Avatar,
+			TotalSets: func() int {
+				if user.TotalSets != "" {
+					val, err := strconv.Atoi(user.TotalSets)
+					if err == nil {
+						return val
+					}
+				}
+				return user.ShowSets + user.MovieSets + user.CollectionSets
+			}(),
 		})
 	}
+
+	// Sort the users by Total Sets descending
+	sort.SliceStable(mediux_usernames, func(i, j int) bool {
+		return mediux_usernames[i].TotalSets > mediux_usernames[j].TotalSets
+	})
 
 	// Load the list of users into the cache for faster access later
 	Global_Cache_MediuxUsers.StoreMediuxUsers(mediux_usernames)
