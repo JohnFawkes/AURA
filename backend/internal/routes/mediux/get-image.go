@@ -114,8 +114,11 @@ func GetAvatarImage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get the avatar ID from the username
-		// TODO: Implement this
-		return
+		userFromCache, found := api.Global_Cache_MediuxUsers.GetMediuxUserByUsername(username)
+		if !found || userFromCache.Avatar == "" {
+			return
+		}
+		avatarID = userFromCache.Avatar
 	}
 	actionGetQueryParams.Complete()
 
