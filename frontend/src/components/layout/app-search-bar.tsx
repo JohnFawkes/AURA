@@ -259,6 +259,16 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		router.push(`/user/${username}`);
 	};
 
+	const mediaTypes = Array.from(new Set(filteredMediaItems.map((item) => item.Type)));
+	let mediaSectionTitle = "Media Items";
+	if (mediaTypes.length === 1) {
+		if (mediaTypes[0] === "movie") mediaSectionTitle = "Movies";
+		else if (mediaTypes[0] === "show" || mediaTypes[0] === "series" || mediaTypes[0] === "tv")
+			mediaSectionTitle = "Shows";
+	} else if (mediaTypes.includes("movie") && mediaTypes.some((t) => t === "show")) {
+		mediaSectionTitle = "Movies & Shows";
+	}
+
 	return (
 		<div className={cn("w-full", className)}>
 			<div className="flex w-full relative sm:max-w-lg sm:mx-auto">
@@ -336,7 +346,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 											<motion.div variants={itemVariants}>
 												<div className="mb-6">
 													<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-														Movies & Shows ({filteredMediaItems.length})
+														{mediaSectionTitle} ({filteredMediaItems.length})
 													</h3>
 													<div className="space-y-1">
 														{filteredMediaItems.map((item, index) => {
