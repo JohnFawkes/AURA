@@ -140,7 +140,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 			selectedTypes = saveItem.PosterSets[0].SelectedTypes
 		}
 		api.Plex_HandleLabels(saveItem.MediaItem, selectedTypes)
-		api.SR_CallHandleTags(context.Background(), saveItem.MediaItem)
+		api.SR_CallHandleTags(context.Background(), saveItem.MediaItem, selectedTypes)
 	}()
 
 	api.Util_Response_SendJSON(w, ld, saveItem)
