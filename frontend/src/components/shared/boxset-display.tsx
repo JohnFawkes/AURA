@@ -1,5 +1,4 @@
 import { BoxsetCollectionToPosterSet } from "@/helper/boxsets/boxset-to-collection-poster-set";
-import { BoxsetMovieToPosterSet } from "@/helper/boxsets/boxset-to-movie-poster-set";
 import { BoxsetToPosterSet } from "@/helper/boxsets/boxset-to-poster-set";
 import { BoxsetShowToPosterSet } from "@/helper/boxsets/boxset-to-show-poster-set";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
@@ -10,13 +9,16 @@ import DownloadModal from "@/components/shared/download-modal";
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Carousel, CarouselContent } from "@/components/ui/carousel";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Lead } from "@/components/ui/typography";
+
+import { cn } from "@/lib/cn";
 
 import { PosterSet } from "@/types/media-and-posters/poster-sets";
 import {
 	MediuxUserBoxset,
 	MediuxUserCollectionSet,
-	MediuxUserMovieSet,
+	//MediuxUserMovieSet,
 	MediuxUserShowSet,
 } from "@/types/mediux/mediux-sets";
 
@@ -24,7 +26,7 @@ export const RenderBoxSetDisplay = ({
 	set,
 	type,
 }: {
-	set: MediuxUserShowSet | MediuxUserMovieSet | MediuxUserCollectionSet | MediuxUserBoxset;
+	set: MediuxUserShowSet | MediuxUserCollectionSet | MediuxUserBoxset;
 	type: "show" | "movie" | "collection" | "boxset";
 }) => {
 	// Handle different types of sets
@@ -32,8 +34,8 @@ export const RenderBoxSetDisplay = ({
 		switch (type) {
 			case "show":
 				return BoxsetShowToPosterSet(set as MediuxUserShowSet);
-			case "movie":
-				return BoxsetMovieToPosterSet(set as MediuxUserMovieSet);
+			// case "movie":
+			// 	return BoxsetMovieToPosterSet(set as MediuxUserMovieSet);
 			case "collection":
 				return BoxsetCollectionToPosterSet(set as MediuxUserCollectionSet);
 			case "boxset":
@@ -96,48 +98,136 @@ export const RenderBoxSetDisplay = ({
 						<div className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold">
 							{type === "collection"
 								? (set as MediuxUserCollectionSet).set_title
-								: (set as MediuxUserShowSet | MediuxUserMovieSet).set_title}
+								: (set as MediuxUserShowSet).set_title}
 						</div>
-						{type === "movie" && (set as MediuxUserMovieSet).movie_id.MediaItem?.ExistInDatabase && (
-							<Database
-								className={`ml-2 ${
-									(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
-										(dbSet) => dbSet.PosterSetID === set.id
-									)
-										? "text-green-500"
-										: "text-yellow-500"
-								}`}
-								size={20}
-							/>
-						)}
+						{/* {type === "movie" && (set as MediuxUserMovieSet).movie_id.MediaItem?.ExistInDatabase && (
+							<Popover>
+								<PopoverTrigger asChild>
+									<Database
+										className={cn(
+											"ml-1 h-5 w-5 cursor-pointer active:scale-95",
+											(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
+												(dbSet) => dbSet.PosterSetID === set.id
+											)
+												? "text-green-500 hover:text-green-600"
+												: "text-yellow-500 hover:text-yellow-600"
+										)}
+									/>
+								</PopoverTrigger>
+								<PopoverContent
+									side="top"
+									sideOffset={5}
+									className="bg-secondary border border-2 border-primary p-2"
+								>
+									<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
+										<Database
+											className={cn(
+												"inline-block mr-2 cursor-pointer active:scale-95",
+												(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
+													(dbSet) => dbSet.PosterSetID === set.id
+												)
+													? "text-green-500"
+													: "text-yellow-500"
+											)}
+											size={16}
+										/>
+										{(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
+											(dbSet) => dbSet.PosterSetID === set.id
+										)
+											? "This exact set is already in your database"
+											: "Some Media Items in this set are in the database with different sets"}
+									</div>
+								</PopoverContent>
+							</Popover>
+						)} */}
 						{type === "show" && (set as MediuxUserShowSet).show_id.MediaItem?.ExistInDatabase && (
-							<Database
-								className={`ml-2 ${
-									(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
-										(dbSet) => dbSet.PosterSetID === set.id
-									)
-										? "text-green-500"
-										: "text-yellow-500"
-								}`}
-								size={20}
-							/>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Database
+										className={cn(
+											"ml-1 h-5 w-5 cursor-pointer active:scale-95",
+											(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
+												(dbSet) => dbSet.PosterSetID === set.id
+											)
+												? "text-green-500 hover:text-green-600"
+												: "text-yellow-500 hover:text-yellow-600"
+										)}
+									/>
+								</PopoverTrigger>
+								<PopoverContent
+									side="top"
+									sideOffset={5}
+									className="bg-secondary border border-2 border-primary p-2"
+								>
+									<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
+										<Database
+											className={cn(
+												"inline-block mr-2 cursor-pointer active:scale-95",
+												(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
+													(dbSet) => dbSet.PosterSetID === set.id
+												)
+													? "text-green-500"
+													: "text-yellow-500"
+											)}
+											size={16}
+										/>
+										{(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
+											(dbSet) => dbSet.PosterSetID === set.id
+										)
+											? "This exact set is already in your database"
+											: "Some Media Items in this set are in the database with different sets"}
+									</div>
+								</PopoverContent>
+							</Popover>
 						)}
 						{type === "collection" &&
 							(set as MediuxUserCollectionSet).movie_posters.some(
 								(mp) => mp.movie.MediaItem?.ExistInDatabase
 							) && (
-								<Database
-									className={`ml-2 ${
-										(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
-											mp.movie.MediaItem?.DBSavedSets?.some(
-												(dbSet) => dbSet.PosterSetID === set.id
+								<Popover>
+									<PopoverTrigger asChild>
+										<Database
+											className={cn(
+												"ml-1 h-5 w-5 cursor-pointer active:scale-95",
+												(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
+													mp.movie.MediaItem?.DBSavedSets?.some(
+														(dbSet) => dbSet.PosterSetID === set.id
+													)
+												)
+													? "text-green-500 hover:text-green-600"
+													: "text-yellow-500 hover:text-yellow-600"
+											)}
+										/>
+									</PopoverTrigger>
+									<PopoverContent
+										side="top"
+										sideOffset={5}
+										className="bg-secondary border border-2 border-primary p-2"
+									>
+										<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
+											<Database
+												className={cn(
+													"inline-block mr-2 cursor-pointer active:scale-95",
+													(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
+														mp.movie.MediaItem?.DBSavedSets?.some(
+															(dbSet) => dbSet.PosterSetID === set.id
+														)
+													)
+														? "text-green-500"
+														: "text-yellow-500"
+												)}
+												size={16}
+											/>
+											{(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
+												mp.movie.MediaItem?.DBSavedSets?.some(
+													(dbSet) => dbSet.PosterSetID === set.id
+												)
 											)
-										)
-											? "text-green-500"
-											: "text-yellow-500"
-									}`}
-									size={20}
-								/>
+												? "This exact set is already in your database"
+												: "Some Media Items in this set are in the database with different sets"}
+										</div>
+									</PopoverContent>
+								</Popover>
 							)}
 					</div>
 					<div className="ml-auto flex space-x-2">
@@ -146,7 +236,7 @@ export const RenderBoxSetDisplay = ({
 							setTitle={
 								type === "collection"
 									? (set as MediuxUserCollectionSet).set_title
-									: (set as MediuxUserShowSet | MediuxUserMovieSet).set_title
+									: (set as MediuxUserShowSet).set_title
 							}
 							setID={set.id}
 							setAuthor={set.user_created.username}

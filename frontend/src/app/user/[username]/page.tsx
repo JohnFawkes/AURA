@@ -1,26 +1,37 @@
 "use client";
 
+import { BoxsetMovieToPosterSet } from "@/helper/boxsets/boxset-to-movie-poster-set";
+import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchAllUserSets } from "@/services/mediux/api-mediux-fetch-username-sets";
-import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
+import { ArrowDownAZ, ArrowDownZA, CircleAlert, ClockArrowDown, ClockArrowUp, Database, User } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 
+import { AssetImage } from "@/components/shared/asset-image";
 import { RenderBoxSetDisplay } from "@/components/shared/boxset-display";
 import { CustomPagination } from "@/components/shared/custom-pagination";
+import DownloadModal from "@/components/shared/download-modal";
 import { ErrorMessage } from "@/components/shared/error-message";
 import Loader from "@/components/shared/loader";
+import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { SortControl } from "@/components/shared/select-sort";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
+import { Lead, P } from "@/components/ui/typography";
 
+import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
@@ -128,6 +139,7 @@ function sortSets<T extends object>(
 }
 
 const UserSetPage = () => {
+	const router = useRouter();
 	// Get the username from the URL
 	const { username } = useParams();
 	const hasFetchedInfo = useRef(false);
@@ -987,17 +999,178 @@ const UserSetPage = () => {
 
 											{paginatedMovieSets.length > 0 && (
 												<TabsContent value="movieSets">
-													<div className="divide-y divide-primary-dynamic/20 space-y-6">
-														{paginatedMovieSets.map((movieSet) => (
-															<div key={`${movieSet.id}-movieset`} className="pb-6">
-																<RenderBoxSetDisplay
-																	key={movieSet.id}
-																	set={movieSet}
-																	type="movie"
-																/>
-															</div>
-														))}
-													</div>
+													<ResponsiveGrid size="regular">
+														{paginatedMovieSets.map((set) => {
+															const posterSets = BoxsetMovieToPosterSet(
+																set as MediuxUserMovieSet
+															);
+															const posterSet = posterSets[0];
+															return (
+																<div
+																	key={posterSet.ID}
+																	className="relative flex flex-col items-center p-2 border rounded-md"
+																	style={{
+																		background: "oklch(0.16 0.0202 282.55)",
+																		opacity: "0.95",
+																		padding: "0.5rem",
+																	}}
+																>
+																	<div className="relative w-full mb-1">
+																		{/* Download Button - absolute top right */}
+																		<div className="absolute top-0 right-0 z-10">
+																			<DownloadModal
+																				setType={"movie"}
+																				setTitle={posterSet.Title}
+																				setID={posterSet.ID}
+																				setAuthor={posterSet.User.Name}
+																				posterSets={posterSets}
+																			/>
+																		</div>
+																		{/* Set Name */}
+																		<P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
+																			{posterSet.Title}
+																		</P>
+																	</div>
+
+																	{/* Set User Name */}
+																	<div className="flex items-center justify-start w-full mb-1">
+																		<div className="flex items-center gap-1">
+																			<Avatar className="rounded-lg mr-1 w-4 h-4">
+																				<AvatarImage
+																					src={`/api/mediux/avatar-image?username=${posterSet.User.Name}`}
+																					className="w-4 h-4"
+																				/>
+																				<AvatarFallback className="">
+																					<User className="w-4 h-4" />
+																				</AvatarFallback>
+																			</Avatar>
+																			<Link
+																				href={`/user/${posterSet.User.Name}`}
+																				className="text-sm hover:text-primary cursor-pointer underline truncate"
+																				style={{ wordBreak: "break-word" }}
+																			>
+																				{posterSet.User.Name}
+																			</Link>
+																		</div>
+																	</div>
+
+																	{/* Last Update */}
+																	<>
+																		<Lead className="text-sm text-muted-foreground w-full mb-2 flex items-center gap-2">
+																			Last Update:{" "}
+																			{formatLastUpdatedDate(
+																				posterSet.Poster?.Modified || "",
+																				posterSet.Backdrop?.Modified || ""
+																			)}
+																			{set.movie_id.MediaItem?.DBSavedSets &&
+																				set.movie_id.MediaItem?.DBSavedSets
+																					.length > 0 && (
+																					<Popover>
+																						<PopoverTrigger asChild>
+																							<Database
+																								className={cn(
+																									"cursor-pointer active:scale-95",
+																									(
+																										set as MediuxUserMovieSet
+																									).movie_id.MediaItem?.DBSavedSets?.some(
+																										(dbSet) =>
+																											dbSet.PosterSetID ===
+																											posterSet.ID
+																									)
+																										? "text-green-500"
+																										: "text-yellow-500"
+																								)}
+																								size={16}
+																							/>
+																						</PopoverTrigger>
+																						<PopoverContent
+																							side="top"
+																							sideOffset={5}
+																							className="bg-secondary border border-2 border-primary p-2"
+																						>
+																							<div className="flex items-center mb-2">
+																								<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+																								<span className="text-sm text-yellow-600">
+																									This media item
+																									already exists in
+																									your database
+																								</span>
+																							</div>
+																							<div className="text-xs text-muted-foreground mb-2">
+																								You have previously
+																								saved it in the
+																								following sets
+																							</div>
+																							<ul className="space-y-2">
+																								{set.movie_id.MediaItem.DBSavedSets.map(
+																									(dbSet) => (
+																										<li
+																											key={
+																												dbSet.PosterSetID
+																											}
+																											className="flex items-center rounded-md px-2 py-1 shadow-sm"
+																										>
+																											<Button
+																												variant="outline"
+																												className={cn(
+																													"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+																													dbSet.PosterSetID.toString() ===
+																														posterSet.ID.toString()
+																														? "text-green-600  hover:bg-green-100  hover:text-green-600"
+																														: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+																												)}
+																												aria-label={`View saved set ${dbSet.PosterSetID} ${dbSet.PosterSetUser ? `by ${dbSet.PosterSetUser}` : ""}`}
+																												onClick={(
+																													e
+																												) => {
+																													e.stopPropagation();
+																													setSearchQuery(
+																														`${set.movie_id.MediaItem.Title} Y:${set.movie_id.MediaItem.Year}: ID:${set.movie_id.MediaItem.TMDB_ID}: L:${set.movie_id.MediaItem.LibraryTitle}:`
+																													);
+																													router.push(
+																														"/saved-sets"
+																													);
+																												}}
+																											>
+																												Set ID:{" "}
+																												{
+																													dbSet.PosterSetID
+																												}
+																												{dbSet.PosterSetUser
+																													? ` by ${dbSet.PosterSetUser}`
+																													: ""}
+																											</Button>
+																										</li>
+																									)
+																								)}
+																							</ul>
+																						</PopoverContent>
+																					</Popover>
+																				)}
+																		</Lead>
+																	</>
+
+																	{/* Poster */}
+																	{posterSet.Poster && (
+																		<AssetImage
+																			image={posterSet.Poster}
+																			aspect="poster"
+																			className="w-full mb-2"
+																		/>
+																	)}
+
+																	{/* Backdrop */}
+																	{posterSet.Backdrop && (
+																		<AssetImage
+																			image={posterSet.Backdrop}
+																			aspect="backdrop"
+																			className="w-full"
+																		/>
+																	)}
+																</div>
+															);
+														})}
+													</ResponsiveGrid>
 												</TabsContent>
 											)}
 
