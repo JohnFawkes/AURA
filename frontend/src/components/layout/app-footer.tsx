@@ -150,7 +150,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 				{/* Version - Line 3 on mobile */}
 				<div className="flex flex-col items-center md:flex-row md:justify-end gap-2 hover:brightness-120 active:scale-95 transition">
 					<Link
-						href="/change-log"
+						href={`/change-log?currentVersion=${encodeURIComponent(version)}`}
 						className="text-sm py-1 px-2 bg-muted rounded-md hover:text-primary transition-colors"
 						title="View change log"
 					>
@@ -158,11 +158,9 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					</Link>
 					{latestVersion && isNewerVersion(latestVersion, version) && (
 						<Link
-							href="https://github.com/mediux-team/AURA/pkgs/container/aura"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-xs py-1 px-2 bg-amber-500/10 border border-amber-500/40 rounded-md hover:bg-amber-500/20 transition-colors"
-							title={`Latest version ${latestVersion} on GitHub`}
+							href={`/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion)}`}
+							className="text-sm py-1 px-2 rounded-md bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/20 transition-colors"
+							title={`Change log for latest version ${latestVersion} available`}
 						>
 							Update Available: {latestVersion}
 						</Link>
