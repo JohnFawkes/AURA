@@ -289,6 +289,7 @@ LabelsAndTags:
         - "4K"
       Remove:
         - "OldLabel"
+      AddLabelTagForSelectedTypes: true
 ```
 
 ### Applications
@@ -300,6 +301,7 @@ LabelsAndTags:
   - `Enabled`: Set to `true` to enable label/tag management for this application.
   - `Add`: A list of labels/tags to add to items after processing.
   - `Remove`: A list of labels/tags to remove from items after processing.
+  - `AddLabelTagForSelectedTypes`: A boolean to add labels in Plex and tags in Sonarr/Radarr for each selected type (e.g., aura-poster, aura-backdrop).
 
 #### Example Use Case
 
@@ -315,12 +317,14 @@ LabelsAndTags:
         - "aura"
       Remove:
         - "OldLabel"
+      AddLabelTagForSelectedTypes: true
     - Application: Sonarr
       Enabled: true
       Add:
         - aura
       Remove:
         - "some-old-label"
+      AddLabelTagForSelectedTypes: true
     - Application: Radarr
       Enabled: true
       Add:

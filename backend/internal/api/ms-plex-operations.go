@@ -372,7 +372,7 @@ func Plex_HandleLabels(item MediaItem, selectedTypes []string) {
 						labelsToAdd += ","
 					}
 				}
-				if app.AddLabelsForSelectedTypes && len(selectedTypes) > 0 {
+				if app.AddLabelTagForSelectedTypes && len(selectedTypes) > 0 {
 					for _, label := range selectedTypes {
 						additionParams += "&"
 						switch label {

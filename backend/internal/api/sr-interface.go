@@ -21,7 +21,7 @@ type Interface_SonarrRadarr interface {
 	AddNewTags(ctx context.Context, app Config_SonarrRadarrApp, tags []string) ([]SonarrRadarrTag, logging.LogErrorInfo)
 
 	// Handle tags for the Sonarr/Radarr instance
-	HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo
+	HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem, selectedTypes []string) logging.LogErrorInfo
 }
 
 type SonarrApp struct{}

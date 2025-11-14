@@ -7,18 +7,18 @@ import (
 	"strconv"
 )
 
-func (s *SonarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
-	return SR_HandleTags(ctx, app, item)
+func (s *SonarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem, selectedTypes []string) logging.LogErrorInfo {
+	return SR_HandleTags(ctx, app, item, selectedTypes)
 }
 
-func (r *RadarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
-	return SR_HandleTags(ctx, app, item)
+func (r *RadarrApp) HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem, selectedTypes []string) logging.LogErrorInfo {
+	return SR_HandleTags(ctx, app, item, selectedTypes)
 }
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_CallHandleTags(ctx context.Context, item MediaItem) logging.LogErrorInfo {
+func SR_CallHandleTags(ctx context.Context, item MediaItem, selectedTypes []string) logging.LogErrorInfo {
 	if len(Global_Config.SonarrRadarr.Applications) == 0 {
 		return logging.LogErrorInfo{}
 	}
@@ -82,7 +82,7 @@ func SR_CallHandleTags(ctx context.Context, item MediaItem) logging.LogErrorInfo
 				})
 			continue
 		}
-		Err = interfaceSR.HandleTags(ctx, app, item)
+		Err = interfaceSR.HandleTags(ctx, app, item, selectedTypes)
 		if Err.Message != "" {
 			actionApp.SetError("Failed to Handle Tags",
 				fmt.Sprintf("An error occurred while handling tags for this %s instance", app.Type),
@@ -99,7 +99,7 @@ func SR_CallHandleTags(ctx context.Context, item MediaItem) logging.LogErrorInfo
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-func SR_HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem) logging.LogErrorInfo {
+func SR_HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaItem, selectedTypes []string) logging.LogErrorInfo {
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Handling tags for %s in %s (%s)", item.Title, app.Type, app.Library), logging.LevelInfo)
 	defer logAction.Complete()
 
@@ -130,6 +130,23 @@ func SR_HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaIt
 		// Check to see there is at least one tag to add or remove
 		if len(labelApp.Add) == 0 && len(labelApp.Remove) == 0 {
 			continue
+		}
+
+		if labelApp.AddLabelTagForSelectedTypes {
+			for _, tag := range selectedTypes {
+				switch tag {
+				case "poster":
+					labelApp.Add = append(labelApp.Add, "aura-poster")
+				case "backdrop":
+					labelApp.Add = append(labelApp.Add, "aura-backdrop")
+				case "seasonPoster":
+					labelApp.Add = append(labelApp.Add, "aura-season-poster")
+				case "specialSeasonPoster":
+					labelApp.Add = append(labelApp.Add, "aura-special-season-poster")
+				case "titlecard":
+					labelApp.Add = append(labelApp.Add, "aura-titlecard")
+				}
+			}
 		}
 
 		// Build a map for quick lookup
@@ -187,6 +204,27 @@ func SR_HandleTags(ctx context.Context, app Config_SonarrRadarrApp, item MediaIt
 		for _, tagLabel := range labelApp.Add {
 			if tag, exists := availableTagMap[tagLabel]; exists {
 				finalTagIDSet[int64(tag.ID)] = struct{}{}
+			}
+		}
+
+		if labelApp.AddLabelTagForSelectedTypes {
+			for _, tag := range selectedTypes {
+				var tagLabel string
+				switch tag {
+				case "poster":
+					tagLabel = "aura-poster"
+				case "backdrop":
+					tagLabel = "aura-backdrop"
+				case "seasonPoster":
+					tagLabel = "aura-season-poster"
+				case "specialSeasonPoster":
+					tagLabel = "aura-special-season-poster"
+				case "titlecard":
+					tagLabel = "aura-titlecard"
+				}
+				if tag, exists := availableTagMap[tagLabel]; exists {
+					finalTagIDSet[int64(tag.ID)] = struct{}{}
+				}
 			}
 		}
 
