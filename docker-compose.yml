@@ -18,7 +18,7 @@ services:
         # Make sure to change these paths to match your host system
         volumes:
             - /mnt/user/appdata/aura:/config # Config directory
-            - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container
+            - /mnt/user/data/media/:/data/media # This should be the same as your Media Server Docker container. Both the host and container paths must match exactly.
 
         # Add environment variables for PUID, PGID, and UMASK
         environment:
