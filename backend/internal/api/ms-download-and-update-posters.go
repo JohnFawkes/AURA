@@ -81,10 +81,12 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			if Err.Message != "" {
 				return Err
 			}
+			getFilePathAction.AppendResult("fetched_movie_from_library", true)
 		}
 
 		// Handle Movie Specific Logic
 		newFilePath = path.Dir(mediaItem.Movie.File.Path)
+		getFilePathAction.AppendResult("movie_location", newFilePath)
 		switch file.Type {
 		case "poster":
 			newFileName = "poster.jpg"
@@ -94,6 +96,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	case "show":
 		// Handle show-specific logic
 		newFilePath = mediaItem.Series.Location
+		getFilePathAction.AppendResult("series_location", newFilePath)
 		switch file.Type {
 		case "poster":
 			newFileName = "poster.jpg"
@@ -134,6 +137,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			episodeNamingConvention := Global_Config.Images.SaveImagesLocally.EpisodeNamingConvention
 			// For titlecards, get the file path from Plex
 			episodePath := Plex_GetEpisodePathFromPlex(mediaItem, file)
+			getFilePathAction.AppendResult("episode_path_lookup", episodePath)
 			if episodePath != "" {
 				newFilePath = path.Dir(episodePath)
 				switch episodeNamingConvention {
