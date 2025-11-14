@@ -225,12 +225,12 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 
 			// If an item is focused, select it
 			if (focusedIndex >= 0) {
-				// Determine if we're selecting Media Items or Mediux Users
+				// Determine if we're selecting Media Items or MediUX Users
 				if (focusedIndex < filteredMediaItems.length) {
 					// Selecting from Media Items
 					handleMediaItemClick(filteredMediaItems[focusedIndex]);
 				} else {
-					// Selecting from Mediux Users
+					// Selecting from MediUX Users
 					handleMediuxUserClick(filteredMediuxUsers[focusedIndex - filteredMediaItems.length].Username);
 				}
 				setIsExpanded(false);
@@ -251,7 +251,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		router.push("/media-item/");
 	};
 
-	// Handle Mediux User Click
+	// Handle MediUX User Click
 	const handleMediuxUserClick = (username: string) => {
 		setIsExpanded(false);
 		setSearchQuery("");
@@ -310,7 +310,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 														)}
 														onClick={() => toggleFilter(filterType)}
 													>
-														{filterType === "mediaItem" ? "Media Items" : "Mediux Users"}
+														{filterType === "mediaItem" ? "Media Items" : "MediUX Users"}
 													</Badge>
 												))}
 											</div>

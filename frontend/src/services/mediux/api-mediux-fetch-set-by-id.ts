@@ -14,7 +14,7 @@ export const fetchSetByID = async (
 ): Promise<APIResponse<PosterSet>> => {
 	log(
 		"INFO",
-		"API - Mediux",
+		"API - MediUX",
 		"Fetch Set By ID",
 		`Fetching set by ID: ${setID} for itemType: ${itemType}, librarySection: ${librarySection}, tmdbID: ${tmdbID}`
 	);
@@ -30,13 +30,13 @@ export const fetchSetByID = async (
 		if (response.data.status === "error") {
 			throw new Error(response.data.error?.message || `Unknown error fetching set by ID: ${setID}`);
 		} else {
-			log("INFO", "API - Mediux", "Fetch Set By ID", `Fetched set by ID: ${setID} successfully`, response.data);
+			log("INFO", "API - MediUX", "Fetch Set By ID", `Fetched set by ID: ${setID} successfully`, response.data);
 		}
 		return response.data;
 	} catch (error) {
 		log(
 			"ERROR",
-			"API - Mediux",
+			"API - MediUX",
 			"Fetch Set By ID",
 			`Failed to fetch set by ID: ${setID}: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error

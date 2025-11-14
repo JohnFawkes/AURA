@@ -2,7 +2,7 @@ export interface AppConfig {
 	Auth: AppConfigAuth;
 	Logging: AppConfigLogging; // Logging configuration settings
 	MediaServer: AppConfigMediaServer; // Media server integration settings
-	Mediux: AppConfigMediux; // Mediux integration settings
+	Mediux: AppConfigMediux; // MediUX integration settings
 	AutoDownload: AppConfigAutoDownload; // Auto-download settings
 	Images: AppConfigImages;
 	TMDB: AppConfigTMDB; // TMDB (The Movie Database) integration settings
@@ -35,7 +35,7 @@ export interface AppConfigMediaServerLibrary {
 }
 
 export interface AppConfigMediux {
-	Token: string; // Authentication token for accessing Mediux services
+	Token: string; // Authentication token for accessing MediUX services
 	DownloadQuality: string; // Preferred download quality (e.g., "original", "optimized")
 }
 

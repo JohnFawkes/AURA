@@ -163,8 +163,8 @@ Mediux:
 
 ### APIKey
 
-- **Description**: The API key for Mediux.
-- **Details**: This option specifies the API key required to access Mediux's API. This can be obtained by creating an account on [Mediux](https://mediux.io/) and generating an API key in your account settings.
+- **Description**: The API key for MediUX.
+- **Details**: This option specifies the API key required to access MediUX's API. This can be obtained by creating an account on [MediUX](https://mediux.io/) and generating an API key in your account settings.
 - **Note**: This is not yet available to the public, but will be in the future.
   If you would like to test out aura, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
 
@@ -172,8 +172,8 @@ Mediux:
 
 - **Default**: `optimized`
 - **Options**: `optimized`, `original`
-- **Description**: The quality of images to download from Mediux.
-- **Details**: This option specifies the quality of images to download from Mediux.
+- **Description**: The quality of images to download from MediUX.
+- **Details**: This option specifies the quality of images to download from MediUX.
   - `optimized`: Downloads images that are optimized for space savings and performance.
   - `original`: Downloads the original images without any optimization.
 

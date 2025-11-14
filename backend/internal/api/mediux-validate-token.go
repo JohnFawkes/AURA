@@ -10,7 +10,7 @@ import (
 )
 
 func Mediux_ValidateToken(ctx context.Context, token string) logging.LogErrorInfo {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Mediux Token", logging.LevelDebug)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating MediUX Token", logging.LevelDebug)
 	defer logAction.Complete()
 
 	// If the token is empty, return an error
@@ -22,7 +22,7 @@ func Mediux_ValidateToken(ctx context.Context, token string) logging.LogErrorInf
 	// Build the API URL
 	u, err := url.Parse(MediuxBaseURL)
 	if err != nil {
-		logAction.SetError("Failed to parse Mediux base URL", err.Error(), nil)
+		logAction.SetError("Failed to parse MediUX base URL", err.Error(), nil)
 		return *logAction.Error
 	}
 	u.Path = path.Join(u.Path, "users", "me")
@@ -39,7 +39,7 @@ func Mediux_ValidateToken(ctx context.Context, token string) logging.LogErrorInf
 
 	// Check the response status code
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		logAction.SetError("Mediux server returned non-200 status", fmt.Sprintf("Status Code: %d", httpResp.StatusCode), map[string]any{
+		logAction.SetError("MediUX server returned non-200 status", fmt.Sprintf("Status Code: %d", httpResp.StatusCode), map[string]any{
 			"url":         URL,
 			"status_code": httpResp.StatusCode,
 			"response":    string(respBody),

@@ -10,11 +10,11 @@ import (
 )
 
 func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, imageQuality MediuxImageQuality) (string, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Constructing Mediux Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Constructing MediUX Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
 	defer logAction.Complete()
 
 	if assetID == "" {
-		logAction.SetError("Asset ID is required to construct Mediux URL",
+		logAction.SetError("Asset ID is required to construct MediUX URL",
 			"Please provide a valid Asset ID.",
 			nil)
 		return "", *logAction.Error
@@ -75,10 +75,10 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 		qualityParam = "jpg"
 	}
 
-	// Construct the Mediux URL
+	// Construct the MediUX URL
 	u, err := url.Parse(MediuxBaseURL)
 	if err != nil {
-		logAction.SetError("Failed to parse Mediux base URL", err.Error(), nil)
+		logAction.SetError("Failed to parse MediUX base URL", err.Error(), nil)
 		return "", *logAction.Error
 	}
 	u.Path = path.Join(u.Path, "assets", assetID)
@@ -103,7 +103,7 @@ func Mediux_GetImageURLFromSrc(src string) string {
 	if src == "" {
 		return ""
 	}
-	// Construct the Mediux URL
+	// Construct the MediUX URL
 	u, err := url.Parse(MediuxBaseURL)
 	if err != nil {
 		return ""

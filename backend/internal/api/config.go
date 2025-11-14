@@ -19,12 +19,12 @@ func init() {
 
 // Config represents the main application configuration settings.
 // It includes options for server setup, caching, data storage, logging,
-// and integration with external services such as Plex, TMDB, and Mediux.
+// and integration with external services such as Plex, TMDB, and MediUX.
 type Config struct {
 	Auth          Config_Auth              `yaml:"Auth,omitempty"`          // Authentication settings.
 	Logging       Config_Logging           `yaml:"Logging,omitempty"`       // Logging configuration settings.
 	MediaServer   Config_MediaServer       `yaml:"MediaServer,omitempty"`   // Media server integration settings.
-	Mediux        Config_Mediux            `yaml:"Mediux,omitempty"`        // Mediux integration settings.
+	Mediux        Config_Mediux            `yaml:"Mediux,omitempty"`        // MediUX integration settings.
 	AutoDownload  Config_AutoDownload      `yaml:"AutoDownload,omitempty"`  // Auto-download settings.
 	Images        Config_Images            `yaml:"Images,omitempty"`        // Image settings.
 	TMDB          Config_TMDB              `yaml:"TMDB,omitempty"`          // TMDB (The Movie Database) integration settings.
@@ -62,8 +62,8 @@ type Config_MediaServerLibrary struct {
 }
 
 type Config_Mediux struct {
-	Token           string `yaml:"Token"`           // Authentication token for accessing Mediux services.
-	DownloadQuality string `yaml:"DownloadQuality"` // Quality of the media to download from Mediux (Options: "original", "optimized") Defaults to "optimized".
+	Token           string `yaml:"Token"`           // Authentication token for accessing MediUX services.
+	DownloadQuality string `yaml:"DownloadQuality"` // Quality of the media to download from MediUX (Options: "original", "optimized") Defaults to "optimized".
 }
 
 type Config_AutoDownload struct {

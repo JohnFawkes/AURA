@@ -6,7 +6,7 @@ import (
 )
 
 func Mediux_FetchShowSetByID(ctx context.Context, librarySection, tmdbID, setID string) (PosterSet, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Show Set by ID from Mediux", logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Show Set by ID from MediUX", logging.LevelTrace)
 	defer logAction.Complete()
 
 	// If cache is empty, return false
@@ -37,7 +37,7 @@ func Mediux_FetchShowSetByID(ctx context.Context, librarySection, tmdbID, setID 
 	actionShowSetValidation := logAction.AddSubAction("Validating Show Set Data", logging.LevelTrace)
 	showSet := responseBody.Data.ShowSetID
 	if showSet.ID == "" {
-		actionShowSetValidation.SetError("Invalid Show Set Data", "Mediux returned invalid show set data",
+		actionShowSetValidation.SetError("Invalid Show Set Data", "MediUX returned invalid show set data",
 			map[string]any{
 				"librarySection": librarySection,
 				"tmdbID":         tmdbID,
@@ -77,7 +77,7 @@ func Mediux_FetchShowSetByID(ctx context.Context, librarySection, tmdbID, setID 
 }
 
 func Mediux_FetchMovieSetByID(ctx context.Context, librarySection, tmdbID, setID string) (PosterSet, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Movie Set by ID from Mediux", logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Movie Set by ID from MediUX", logging.LevelTrace)
 	defer logAction.Complete()
 
 	// If cache is empty, return false
@@ -135,7 +135,7 @@ func Mediux_FetchMovieSetByID(ctx context.Context, librarySection, tmdbID, setID
 }
 
 func Mediux_FetchCollectionSetByID(ctx context.Context, librarySection, tmdbID, setID string) (PosterSet, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Collection Set by ID from Mediux", logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetching Collection Set by ID from MediUX", logging.LevelTrace)
 	defer logAction.Complete()
 
 	// If cache is empty, return false
@@ -169,7 +169,7 @@ func Mediux_FetchCollectionSetByID(ctx context.Context, librarySection, tmdbID, 
 	logAction.AppendResult("date_updated", collectionSet.DateUpdated)
 
 	if collectionSet.ID == "" {
-		logAction.SetError("Invalid Collection Set Data", "Mediux returned invalid collection set data",
+		logAction.SetError("Invalid Collection Set Data", "MediUX returned invalid collection set data",
 			map[string]any{
 				"librarySection": librarySection,
 				"tmdbID":         tmdbID,

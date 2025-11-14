@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// Mediux_FetchAllUserSets fetches all user-defined sets from Mediux for a specific user.
+// Mediux_FetchAllUserSets fetches all user-defined sets from MediUX for a specific user.
 //
 // Takes in the username as a parameter.
 //
@@ -23,7 +23,7 @@ Data struct {
 }
 */
 func Mediux_FetchAllUserSets(ctx context.Context, username string) (MediuxUserAllSetsResponse, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetch All '%s' User Sets from Mediux", username), logging.LevelDebug)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetch All '%s' User Sets from MediUX", username), logging.LevelDebug)
 	defer logAction.Complete()
 
 	requestBody := Mediux_GenerateAllUserSetsBody(username)

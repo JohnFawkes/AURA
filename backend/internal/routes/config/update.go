@@ -53,7 +53,7 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !mediuxValid {
-		api.Util_Response_SendJSON(w, ld, "Invalid Mediux configuration")
+		api.Util_Response_SendJSON(w, ld, "Invalid MediUX configuration")
 		return
 	}
 
@@ -227,9 +227,9 @@ func checkConfigDifferences_MediaServer(ctx context.Context, oldMediaServer api.
 	return changed, newValid
 }
 
-// checkConfigDifferences_Mediux compares old and new Mediux configurations.
+// checkConfigDifferences_Mediux compares old and new MediUX configurations.
 func checkConfigDifferences_Mediux(ctx context.Context, oldMediux api.Config_Mediux, newMediux *api.Config_Mediux) (changed, newValid bool) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Check Config Differences: Mediux", logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Check Config Differences: MediUX", logging.LevelTrace)
 	defer logAction.Complete()
 	changed = false
 	newValid = false

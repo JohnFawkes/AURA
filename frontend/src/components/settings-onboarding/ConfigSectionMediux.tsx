@@ -150,13 +150,13 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 					<Label>Token</Label>
 					{editing && (
 						<PopoverHelp ariaLabel="help-mediux-token">
-							<p>Mediux API token. Paste the personal token generated from your Mediux account.</p>
+							<p>MediUX API token. Paste the personal token generated from your MediUX account.</p>
 						</PopoverHelp>
 					)}
 				</div>
 				<Input
 					disabled={!editing}
-					placeholder="Mediux API token"
+					placeholder="MediUX API token"
 					value={value.Token}
 					onChange={(e) => onChange("Token", e.target.value)}
 					onBlur={() => {

@@ -67,7 +67,7 @@ searchLoop:
 		}
 	}
 
-	// Get Mediux Usernames and filter based on query
+	// Get MediUX Usernames and filter based on query
 	var Err logging.LogErrorInfo
 	if cleanedQuery != "" {
 		mediux_usernames, Err = api.Mediux_GetAllUsers(ctx, cleanedQuery)

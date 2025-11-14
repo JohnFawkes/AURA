@@ -89,7 +89,7 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 	});
 	const tmdbID = guids?.find((g) => g.Provider === "tmdb")?.ID;
 
-	// On Load -- Set the Mediux URL
+	// On Load -- Set the MediUX URL
 	useEffect(() => {
 		async function fetchMediuxURL() {
 			if (tmdbID && (mediaItemType === "movie" || mediaItemType === "show")) {

@@ -9,7 +9,7 @@ import (
 
 func CheckMediuxLink(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
-	logAction := ld.AddAction("Check Mediux Link", logging.LevelTrace)
+	logAction := ld.AddAction("Check MediUX Link", logging.LevelTrace)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
 	// Parse query parameters
@@ -29,7 +29,7 @@ func CheckMediuxLink(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.Head(fmt.Sprintf("https://mediux.io/%s/%s", itemType, tmdbID))
 	if err != nil {
-		logAction.SetError("Failed to check Mediux link", "Error occurred while making HEAD request",
+		logAction.SetError("Failed to check MediUX link", "Error occurred while making HEAD request",
 			map[string]any{
 				"error": err.Error(),
 				"url":   fmt.Sprintf("https://mediux.io/%s/%s", itemType, tmdbID),

@@ -368,7 +368,7 @@ const ShowFullSetDetails: React.FC<{
 							window.open(`https://mediux.io/${setType}-set/${setID}`, "_blank");
 						}}
 					>
-						View on Mediux
+						View on MediUX
 					</Badge>
 				</div>
 

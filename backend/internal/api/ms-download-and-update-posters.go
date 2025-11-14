@@ -307,9 +307,9 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	}
 	getRatingKeyAction.AppendResult("item_rating_key", itemRatingKey)
 	getRatingKeyAction.Complete()
-	// If Save Image Next to Content is enabled and the Path is set, set the poster in Plex via the Mediux URL
+	// If Save Image Next to Content is enabled and the Path is set, set the poster in Plex via the MediUX URL
 	// When the Path is set, the image is saved in a different location than Plex expects it to be.
-	// So we need to upload the image to Plex via the Mediux URL.
+	// So we need to upload the image to Plex via the MediUX URL.
 	if isCustomLocalPath {
 		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {
@@ -330,7 +330,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 		logAction.AppendResult("poster_key", posterKey)
 	}
 
-	// If failedOnGetPosters is true, use the Mediux URL to set the poster
+	// If failedOnGetPosters is true, use the MediUX URL to set the poster
 	if failedToGetPosterKey {
 		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
 		if Err.Message != "" {

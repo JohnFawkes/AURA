@@ -42,7 +42,7 @@ func GetAllCollectionChildren(w http.ResponseWriter, r *http.Request) {
 	// From here on out, we need to get more data (collections sets, user follow/hide)
 	// If any of them fail, we just send what we have and make status warning
 
-	// Fetch user following and hiding data from the Mediux API
+	// Fetch user following and hiding data from the MediUX API
 	userFollowHide, Err = api.Mediux_FetchUserFollowingAndHiding(ctx)
 	if Err.Message != "" {
 		ld.Status = logging.StatusWarn

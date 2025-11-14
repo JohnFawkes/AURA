@@ -84,7 +84,7 @@ func GetItemContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch user following and hiding data from the Mediux API
+	// Fetch user following and hiding data from the MediUX API
 	userFollowHide, Err = api.Mediux_FetchUserFollowingAndHiding(ctx)
 	if Err.Message != "" {
 		ld.Status = logging.StatusWarn

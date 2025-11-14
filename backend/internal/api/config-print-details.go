@@ -19,7 +19,7 @@ func (config *Config) PrintDetails() {
 		Interface("Authentication Details", sanitizedConfig.Auth).
 		Interface("Logging", sanitizedConfig.Logging).
 		Interface("Media Server", sanitizedConfig.MediaServer).
-		Interface("Mediux", sanitizedConfig.Mediux).
+		Interface("MediUX", sanitizedConfig.Mediux).
 		Interface("Auto Download", sanitizedConfig.AutoDownload).
 		Interface("Images", sanitizedConfig.Images).
 		Interface("TMDB", sanitizedConfig.TMDB).

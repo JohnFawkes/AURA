@@ -19,7 +19,7 @@ const (
 )
 
 func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, imageQuality MediuxImageQuality) (imageData []byte, imageType string, Err logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Image '%s' from Mediux (%s)", assetID, imageQuality), logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Image '%s' from MediUX (%s)", assetID, imageQuality), logging.LevelTrace)
 	defer logAction.Complete()
 
 	imageData = nil
@@ -59,8 +59,8 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 		// Check if caching is enabled
 		if Global_Config.Images.CacheImages.Enabled {
 			// Create a new logging data for this goroutine
-			ctx, ld := logging.CreateLoggingContext(context.Background(), "Caching - Mediux Image")
-			logAction := ld.AddAction("Caching Mediux Image", logging.LevelDebug)
+			ctx, ld := logging.CreateLoggingContext(context.Background(), "Caching - MediUX Image")
+			logAction := ld.AddAction("Caching MediUX Image", logging.LevelDebug)
 			ctx = logging.WithCurrentAction(ctx, logAction)
 			// Check if the folder exists
 			Err = Util_File_CheckFolderExists(ctx, folderPath)
@@ -71,7 +71,7 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 			writeToFileAction := logAction.AddSubAction("Write Image to Temp Folder", logging.LevelTrace)
 			err := os.WriteFile(filePath, imageData, 0644)
 			if err != nil {
-				logAction.SetError("Failed to write image to Mediux thumbs temp image folder",
+				logAction.SetError("Failed to write image to MediUX thumbs temp image folder",
 					"Ensure the application has write permissions to the temp image folder.",
 					map[string]any{
 						"filePath": filePath,
@@ -91,8 +91,8 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 	// Now we check to see if Global_Config.Images.CacheImages.Enabled is true
 	// If it is, we check the temporary or full image folder for the image based on qualityParam
 	// If the image exists there, we serve it from disk
-	// If not, we fetch it from Mediux and save it to the temp/full folder based on qualityParam
-	// If Global_Config.Images.CacheImages.Enabled is false, we always fetch from Mediux
+	// If not, we fetch it from MediUX and save it to the temp/full folder based on qualityParam
+	// If Global_Config.Images.CacheImages.Enabled is false, we always fetch from MediUX
 
 	if Global_Config.Images.CacheImages.Enabled {
 		// Check if the folder exists
@@ -135,9 +135,9 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 		}
 	}
 
-	// If the image does not exist in the cache, fetch it from Mediux
+	// If the image does not exist in the cache, fetch it from MediUX
 
-	// Construct the URL for the Mediux API request
+	// Construct the URL for the MediUX API request
 	mediuxURL, Err := Mediux_GetImageURL(ctx, assetID, formatDate, imageQuality)
 	if Err.Message != "" {
 		return imageData, imageType, Err
@@ -146,7 +146,7 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 	// Make the Auth Headers for Request
 	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
 
-	// Make the API request to Mediux
+	// Make the API request to MediUX
 	httpResp, respBody, logErr := MakeHTTPRequest(ctx, mediuxURL, http.MethodGet, headers, 60, nil, "MediUX")
 	if logErr.Message != "" {
 		return imageData, imageType, Err
@@ -155,8 +155,8 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 
 	// Check if the response body is empty
 	if len(respBody) == 0 {
-		logAction.SetError("Mediux returned an empty image response",
-			"Ensure the asset ID is correct and the image exists on the Mediux server.",
+		logAction.SetError("MediUX returned an empty image response",
+			"Ensure the asset ID is correct and the image exists on the MediUX server.",
 			map[string]any{
 				"URL": mediuxURL,
 			})
@@ -168,8 +168,8 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 	// Get the image type from the response headers
 	imageType = httpResp.Header.Get("Content-Type")
 	if imageType == "" {
-		logAction.SetError("Failed to determine image type from Mediux response",
-			"Ensure the Mediux server is returning a valid image.",
+		logAction.SetError("Failed to determine image type from MediUX response",
+			"Ensure the MediUX server is returning a valid image.",
 			map[string]any{
 				"URL": mediuxURL,
 			})
@@ -187,17 +187,17 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 }
 
 func Mediux_GetAvatarImage(ctx context.Context, avatarID string) (imageData []byte, imageType string, Err logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Avatar Image '%s' from Mediux", avatarID), logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Get Avatar Image '%s' from MediUX", avatarID), logging.LevelTrace)
 	defer logAction.Complete()
 
 	imageData = nil
 	imageType = ""
 	Err = logging.LogErrorInfo{}
 
-	// Construct the Mediux URL
+	// Construct the MediUX URL
 	u, err := url.Parse(MediuxBaseURL)
 	if err != nil {
-		logAction.SetError("Failed to parse Mediux base URL", err.Error(), nil)
+		logAction.SetError("Failed to parse MediUX base URL", err.Error(), nil)
 		return imageData, imageType, *logAction.Error
 	}
 	u.Path = path.Join(u.Path, "assets", avatarID)
@@ -205,7 +205,7 @@ func Mediux_GetAvatarImage(ctx context.Context, avatarID string) (imageData []by
 	// Make the Auth Headers for Request
 	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
 
-	// Make the API request to Mediux
+	// Make the API request to MediUX
 	httpResp, respBody, logErr := MakeHTTPRequest(ctx, u.String(), http.MethodGet, headers, 60, nil, "MediUX")
 	if logErr.Message != "" {
 		return imageData, imageType, Err
@@ -214,8 +214,8 @@ func Mediux_GetAvatarImage(ctx context.Context, avatarID string) (imageData []by
 
 	// Check if the response body is empty
 	if len(respBody) == 0 {
-		logAction.SetError("Mediux returned an empty avatar image response",
-			"Ensure the avatar ID is correct and the image exists on the Mediux server.",
+		logAction.SetError("MediUX returned an empty avatar image response",
+			"Ensure the avatar ID is correct and the image exists on the MediUX server.",
 			map[string]any{
 				"avatarID": avatarID,
 			})
@@ -227,8 +227,8 @@ func Mediux_GetAvatarImage(ctx context.Context, avatarID string) (imageData []by
 	// Get the image type from the response headers
 	imageType = httpResp.Header.Get("Content-Type")
 	if imageType == "" {
-		logAction.SetError("Failed to determine avatar image type from Mediux response",
-			"Ensure the Mediux server is returning a valid image.",
+		logAction.SetError("Failed to determine avatar image type from MediUX response",
+			"Ensure the MediUX server is returning a valid image.",
 			map[string]any{
 				"avatarID": avatarID,
 			})

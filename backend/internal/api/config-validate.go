@@ -31,7 +31,7 @@ func (config *Config) ValidateConfig() {
 	// // Sub-action: MediaServer Config
 	isMediaServerValid := Config_ValidateMediaServer(ctx, &config.MediaServer)
 
-	// Sub-action: Mediux Config
+	// Sub-action: MediUX Config
 	isMediuxValid := Config_ValidateMediux(ctx, &config.Mediux)
 
 	// Sub-action: AutoDownload Config
@@ -156,14 +156,14 @@ func Config_ValidateMediaServer(ctx context.Context, MediaServer *Config_MediaSe
 }
 
 func Config_ValidateMediux(ctx context.Context, Mediux *Config_Mediux) bool {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Mediux Config", logging.LevelTrace)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating MediUX Config", logging.LevelTrace)
 	defer logAction.Complete()
 
 	isValid := true
 
-	// Check if Mediux.Token is set
+	// Check if MediUX.Token is set
 	if Mediux.Token == "" {
-		logAction.SetError("Mediux.Token is not set", "Mediux token must be specified", nil)
+		logAction.SetError("Mediux.Token is not set", "MediUX token must be specified", nil)
 		isValid = false
 	}
 

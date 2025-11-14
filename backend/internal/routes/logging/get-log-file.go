@@ -43,7 +43,7 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Section: "CONFIG",
 	},
 	"/api/config/validate/mediux": {
-		Label:   "Validate Mediux Token",
+		Label:   "Validate MediUX Token",
 		Section: "CONFIG",
 	},
 	"/api/config/validate/mediaserver": {
@@ -148,7 +148,7 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Section: "MEDIUX",
 	},
 	"/api/mediux/check-link": {
-		Label:   "Check Mediux Link",
+		Label:   "Check MediUX Link",
 		Section: "MEDIUX",
 	},
 	// Database Routes

@@ -11,7 +11,7 @@ func GetUserFollowingAndHiding(w http.ResponseWriter, r *http.Request) {
 	logAction := ld.AddAction("Get User Following And Hiding", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
-	// Fetch user following and hiding data from the Mediux API
+	// Fetch user following and hiding data from the MediUX API
 	userFollowHide, Err := api.Mediux_FetchUserFollowingAndHiding(ctx)
 	if Err.Message != "" {
 		api.Util_Response_SendJSON(w, ld, nil)

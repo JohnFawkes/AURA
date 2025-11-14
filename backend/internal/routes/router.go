@@ -133,7 +133,7 @@ func AddRoutes(r *chi.Mux) {
 				r.Delete("/delete", routes_download_queue.DeleteFromDownloadQueue)
 			})
 
-			// Mediux Routes
+			// MediUX Routes
 			r.Route("/mediux", func(r chi.Router) {
 				r.Get("/sets", routes_mediux.GetAllSets)
 				r.Get("/sets-by-user", routes_mediux.GetAllUserSets)

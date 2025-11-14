@@ -7,7 +7,7 @@ import { APIResponse } from "@/types/api/api-response";
 import { MediuxUserAllSetsResponse } from "@/types/mediux/mediux-sets";
 
 export const fetchAllUserSets = async (username: string): Promise<APIResponse<MediuxUserAllSetsResponse>> => {
-	log("INFO", "API - Mediux", "Fetch All User Sets", `Fetching all user sets for ${username}`);
+	log("INFO", "API - MediUX", "Fetch All User Sets", `Fetching all user sets for ${username}`);
 	try {
 		const response = await apiClient.get<APIResponse<MediuxUserAllSetsResponse>>("/mediux/sets-by-user", {
 			params: {
@@ -19,7 +19,7 @@ export const fetchAllUserSets = async (username: string): Promise<APIResponse<Me
 		} else {
 			log(
 				"INFO",
-				"API - Mediux",
+				"API - MediUX",
 				"Fetch All User Sets",
 				`Fetched all user sets for ${username} successfully`,
 				response.data
@@ -29,7 +29,7 @@ export const fetchAllUserSets = async (username: string): Promise<APIResponse<Me
 	} catch (error) {
 		log(
 			"ERROR",
-			"API - Mediux",
+			"API - MediUX",
 			"Fetch All User Sets",
 			`Failed to fetch all user sets for ${username}: ${error instanceof Error ? error.message : "Unknown error"}`,
 			error

@@ -14,7 +14,7 @@ permalink: /
 [![Docker Pulls](https://img.shields.io/docker/pulls/mmoosem13/aura?label=Docker%20Pulls&logo=docker)](https://github.com/mediux-team/aura/pkgs/container/aura)
 ![GHCR](https://img.shields.io/badge/dynamic/json?label=GitHub%20Pulls&logo=Github&url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmediux-team%2Faura%2Faura&query=downloadCount)
 
-**aura** (Automated Utility for Retrieval of Assets) is a visual tool for managing Mediux image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
+**aura** (Automated Utility for Retrieval of Assets) is a visual tool for managing MediUX image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
 
 > **Note:** This tool is currently in beta. While it has been tested locally, please use it at your own risk.
 
@@ -22,11 +22,11 @@ permalink: /
 
 ## Key Features
 
--   🧩 **Cross-Server Compatibility**: Works with Plex, Emby, and Jellyfin.
--   🖼 **Visual Browsing**: Preview artwork in a clean, organized interface.
--   🔁 **Automated Updates**: Save selected image sets and keep them synced automatically.
--   🗄 **Local Storage**: Option to store images next to your media files for easy access.
--   📦 **Docker Support**: Easily deploy using Docker or docker-compose.
+- 🧩 **Cross-Server Compatibility**: Works with Plex, Emby, and Jellyfin.
+- 🖼 **Visual Browsing**: Preview artwork in a clean, organized interface.
+- 🔁 **Automated Updates**: Save selected image sets and keep them synced automatically.
+- 🗄 **Local Storage**: Option to store images next to your media files for easy access.
+- 📦 **Docker Support**: Easily deploy using Docker or docker-compose.
 
 ---
 
@@ -52,7 +52,7 @@ To get started with aura:
 2. Configure your `config.yaml` file. You can use [configuration guide](/config.md) as a reference.
 3. Visit the web UI at `http://localhost:3000`.
 4. Browse your media server's contents.
-5. Choose and apply Mediux image sets.
+5. Choose and apply MediUX image sets.
 6. Optionally save selections for automatic updates.
 
 > Visit the [Installation](installation) and [Usage](how-to-use) sections in the sidebar for detailed steps.
@@ -61,7 +61,7 @@ To get started with aura:
 
 ## Join the Community
 
--   💬 [Join our Discord](https://discord.gg/YAKzwKPwyw)
--   🛠 [View Source on GitHub](https://github.com/mediux-team/aura)
+- 💬 [Join our Discord](https://discord.gg/YAKzwKPwyw)
+- 🛠 [View Source on GitHub](https://github.com/mediux-team/aura)
 
 ---

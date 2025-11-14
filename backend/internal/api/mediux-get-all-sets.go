@@ -7,7 +7,7 @@ import (
 )
 
 func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection string) ([]PosterSet, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetch All Sets from Mediux", logging.LevelInfo)
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Fetch All Sets from MediUX", logging.LevelInfo)
 	defer logAction.Complete()
 
 	actionGenerateRequestBody := logAction.AddSubAction("Generate Request Body", logging.LevelDebug)
@@ -49,7 +49,7 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 	switch itemType {
 	case "movie":
 		if responseBody.Data.Movie.ID == "" {
-			actionValidateResponse.SetError("Movie not found in the response", "Ensure the TMDB ID is correct and the movie exists in the Mediux database.",
+			actionValidateResponse.SetError("Movie not found in the response", "Ensure the TMDB ID is correct and the movie exists in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
@@ -60,7 +60,7 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 		if responseBody.Data.Movie.CollectionID == nil &&
 			responseBody.Data.Movie.Posters == nil &&
 			responseBody.Data.Movie.Backdrops == nil {
-			actionValidateResponse.SetError("Movie sets not found in the response", "Ensure the TMDB ID is correct and the movie has sets in the Mediux database.",
+			actionValidateResponse.SetError("Movie sets not found in the response", "Ensure the TMDB ID is correct and the movie has sets in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
@@ -70,7 +70,7 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 
 	case "show":
 		if responseBody.Data.Show.ID == "" {
-			actionValidateResponse.SetError("Show not found in the response", "Ensure the TMDB ID is correct and the show exists in the Mediux database.",
+			actionValidateResponse.SetError("Show not found in the response", "Ensure the TMDB ID is correct and the show exists in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
@@ -81,7 +81,7 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 		if responseBody.Data.Show.Posters == nil &&
 			responseBody.Data.Show.Backdrops == nil &&
 			responseBody.Data.Show.Seasons == nil {
-			actionValidateResponse.SetError("Show sets not found in the response", "Ensure the TMDB ID is correct and the show has sets in the Mediux database.",
+			actionValidateResponse.SetError("Show sets not found in the response", "Ensure the TMDB ID is correct and the show has sets in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
@@ -148,7 +148,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 		len(show.Posters) == 0 &&
 		len(show.Backdrops) == 0 &&
 		len(show.Seasons) == 0 {
-		logAction.SetError("Show response contained no assets", "Ensure the TMDB ID is correct and the show has assets in the Mediux database.",
+		logAction.SetError("Show response contained no assets", "Ensure the TMDB ID is correct and the show has assets in the MediUX database.",
 			map[string]any{
 				"title":    show.Title,
 				"tmdbID":   tmdbID,
