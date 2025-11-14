@@ -394,20 +394,20 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 	// If the posterType is Backdrop, we need to set the index to 0 to replace the current backdrop
 	// First we will get the list of current images
 	if posterType == "Backdrop" {
-		currentImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, mediaItem.RatingKey, "Current")
+		currentImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, itemRatingKey, "Current")
 		if logErr.Message != "" {
 			return logErr
 		}
 
 		// Upload the new image
-		logErr = EJ_UploadImage(ctx, mediaItem.Title, mediaItem.RatingKey, file, imageData)
+		logErr = EJ_UploadImage(ctx, mediaItem.Title, itemRatingKey, file, imageData)
 		if logErr.Message != "" {
 			return logErr
 		}
 
 		if len(currentImages) != 0 {
 			// Get the list of images again to find the new one
-			newImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, mediaItem.RatingKey, "New")
+			newImages, logErr := EJ_GetCurrentImages(ctx, mediaItem.Title, itemRatingKey, "New")
 			if logErr.Message != "" {
 				return logErr
 			}
@@ -426,7 +426,7 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 
 			// Now we change the image index to 0, if it's not already 0
 			if newImageItem.ImageIndex != 0 {
-				logErr = EJ_ChangeImageIndex(ctx, mediaItem.Title, mediaItem.RatingKey, newImageItem)
+				logErr = EJ_ChangeImageIndex(ctx, mediaItem.Title, itemRatingKey, newImageItem)
 				if logErr.Message != "" {
 					return logErr
 				}
@@ -434,7 +434,7 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 		}
 	} else {
 		// For Primary images, just upload the image
-		logErr := EJ_UploadImage(ctx, mediaItem.Title, mediaItem.RatingKey, file, imageData)
+		logErr := EJ_UploadImage(ctx, mediaItem.Title, itemRatingKey, file, imageData)
 		if logErr.Message != "" {
 			return logErr
 		}
