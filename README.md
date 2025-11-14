@@ -6,7 +6,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/mediux/aura?label=Docker%20Pulls&logo=docker)](https://hub.docker.com/r/mediux/aura/tags)
 ![GHCR](https://img.shields.io/badge/dynamic/json?label=GitHub%20Pulls&logo=Github&url=https%3A%2F%2Fghcr-badge.elias.eu.org%2Fapi%2Fmediux-team%2Faura%2Faura&query=downloadCount)
 
-**aura** (Automated Utility for Retrieval of Assets) is a visual tool for managing Mediux image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
+**aura** (Automated Utility for Retrieval of Assets) is a visual tool for managing MediUX image assets for your media server. It provides a sleek and intuitive interface to browse, preview, and apply image sets to your library content across platforms like Plex, Emby, and Jellyfin.
 
 > **Note:** This tool is currently in beta. While it has been tested locally, please use it at your own risk.
 
@@ -44,7 +44,7 @@ To get started with aura:
 2. Visit the web UI at `http://localhost:3000`.
 3. Configure the application during the onboarding setup.
 4. Browse your media server's contents.
-5. Choose and apply Mediux image sets.
+5. Choose and apply MediUX image sets.
 6. Optionally save selections for automatic updates.
 
 > Visit the [Docs](https://mediux-team.github.io/AURA/) for detailed steps.
