@@ -3,29 +3,24 @@ package api
 import (
 	"aura/internal/logging"
 	"context"
+	"net/http"
+	"net/url"
+	"path"
 	"strings"
 )
 
-func Mediux_GetAllUsers(ctx context.Context, query string) (mediux_usernames []MediuxUserInfo, Err logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Get All Mediux Users", logging.LevelInfo)
+func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []MediuxUserInfo, Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Get All MediUX Users", logging.LevelInfo)
 	defer logAction.Complete()
 
-	var allUserNames = []string{
-		"aloha_alona", "benno", "brikim", "canadianmovieguy", "casewicked", "cenodude", "cinemalounge_digital_posters",
-		"cmdrriker", "codonzero22", "crackerjack", "cundallini", "danmark", "darkwesley", "davidlettice", "defluo",
-		"drwhodalek", "edmondantes32", "etiennemza", "evergreen", "fireninja", "fwlolx", "fxckingham", "gemris",
-		"hikari", "identitytheft", "ikonok", "jetram", "jezzfreeman", "jjwags23", "jmxd", "josephdoraniii", "jrsly",
-		"kealoha_king", "kit4nos", "koltom", "kosherkale", "kwickflix", "ludacris", "mediuxking79", "minizaki",
-		"mrmonkey", "oldmankestis", "olivier_286", "paliking", "parrillized", "pejamas", "plexstreaming", "praythea",
-		"r3draid3r04", "randalpink87", "randombell", "recker_man", "rogue", "ruvilev", "sarrius", "senex", "simionski",
-		"simmsuma", "slm", "stayk", "stoube26", "swaffelsmurf", "tallinex", "tarantula212", "thatja", "the_carlos4",
-		"thebigg", "thelibrarian", "themedeusa", "valexv", "whiskeytime", "wholock", "wikid82", "willtong93", "wiwer",
-		"wwalkerrrrr",
+	mediuxUsers, Err := Mediux_GetAllUsers(ctx)
+	if Err.Message != "" {
+		return mediux_usernames, Err
 	}
 
-	for _, username := range allUserNames {
-		if strings.Contains(strings.ToLower(username), strings.ToLower(query)) {
-			mediux_usernames = append(mediux_usernames, MediuxUserInfo{Username: username, Avatar: ""})
+	for _, user := range mediuxUsers {
+		if strings.Contains(strings.ToLower(user.Username), strings.ToLower(query)) {
+			mediux_usernames = append(mediux_usernames, user)
 			if len(mediux_usernames) >= 10 {
 				break
 			}
@@ -83,5 +78,86 @@ func Mediux_GetAllUsers(ctx context.Context, query string) (mediux_usernames []M
 	}
 
 	mediux_usernames = sortedUsernames
+	logAction.AppendResult("users_found_with_query", len(mediux_usernames))
 	return mediux_usernames, logging.LogErrorInfo{}
+}
+
+func Mediux_GetAllUsers(ctx context.Context) (mediux_usernames []MediuxUserInfo, Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Getting All Users from MediUX", logging.LevelDebug)
+	defer logAction.Complete()
+
+	type MediuxUserInfoResponse struct {
+		ID             string `json:"id"`
+		DateUpdated    string `json:"date_updated"`
+		ShowSets       int    `json:"show_sets"`
+		MovieSets      int    `json:"movie_sets"`
+		CollectionSets int    `json:"collection_sets"`
+		Username       string `json:"username"`
+		Avatar         string `json:"avatar"`
+		TotalSets      string `json:"total_sets"`
+	}
+
+	type MediuxUsersResponse struct {
+		Data []MediuxUserInfoResponse `json:"data"`
+	}
+
+	// Construct the MediUX URL
+	u, err := url.Parse(MediuxBaseURL)
+	if err != nil {
+		logAction.SetError("Failed to parse MediUX base URL", err.Error(), nil)
+		return nil, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "items", "contributors")
+	q := u.Query()
+	q.Set("limit", "-1")
+	u.RawQuery = q.Encode()
+	URL := u.String()
+
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
+
+	// Make the API request to MediUX
+	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "MediUX")
+	if logErr.Message != "" {
+		return mediux_usernames, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Parse the response JSON
+	var mediuxUsers MediuxUsersResponse
+	Err = DecodeJSONBody(ctx, respBody, &mediuxUsers, "MediUX Get All Users Response")
+	if Err.Message != "" {
+		return mediux_usernames, Err
+	}
+
+	// Convert to MediuxUserInfo slice
+	for _, user := range mediuxUsers.Data {
+		if user.Username == "" || (user.TotalSets == "0" && user.ShowSets == 0 && user.MovieSets == 0 && user.CollectionSets == 0) {
+			continue
+		}
+		mediux_usernames = append(mediux_usernames, MediuxUserInfo{
+			Username: user.Username,
+			Avatar:   user.Avatar,
+		})
+	}
+
+	// Load the list of users into the cache for faster access later
+	Global_Cache_MediuxUsers.StoreMediuxUsers(mediux_usernames)
+
+	logAction.AppendResult("users_found", len(mediux_usernames))
+	return mediux_usernames, logging.LogErrorInfo{}
+}
+
+func Mediux_PreloadAllUsersInCache() {
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Preload All MediUX Users in Cache")
+	defer ld.Log()
+
+	action := ld.AddAction("Preloading MediUX Users", logging.LevelDebug)
+	ctx = logging.WithCurrentAction(ctx, action)
+	defer action.Complete()
+
+	_, Err := Mediux_GetAllUsers(ctx)
+	if Err.Message != "" {
+		return
+	}
 }
