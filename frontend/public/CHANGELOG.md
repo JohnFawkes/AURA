@@ -1,3 +1,11 @@
+## [0.9.57] - 2025-11-15
+
+### Added
+
+- Added total number of sets for each MediUX User in the search results for better context.
+
+---
+
 ## [0.9.57] - 2025-11-14
 
 ### Breaking

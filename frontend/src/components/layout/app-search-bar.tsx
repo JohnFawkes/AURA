@@ -520,7 +520,9 @@ const SearchResultUserItem: React.FC<SearchResultUserItemProps> = ({ user, isHig
 			</Avatar>
 			<div className="flex-1 min-w-0">
 				<div className="font-medium text-sm truncate">{user.Username}</div>
+				<div className="text-xs text-muted-foreground truncate">{`${user.TotalSets ?? 0} ${user.TotalSets === 1 ? "set" : "sets"}`}</div>
 			</div>
+
 			<div className="flex items-center gap-1">
 				{user.Follow && <Star className="h-4 w-4 text-yellow-400" />}
 				{user.Hide && <EyeOff className="h-4 w-4 text-red-500" />}

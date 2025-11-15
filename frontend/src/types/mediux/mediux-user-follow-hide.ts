@@ -4,4 +4,5 @@ export interface MediuxUserInfo {
 	Avatar: string;
 	Follow?: boolean;
 	Hide?: boolean;
+	TotalSets?: number;
 }
