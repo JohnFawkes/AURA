@@ -3,6 +3,7 @@
 ### Added
 
 - Added total number of sets for each MediUX User in the search results for better context.
+- Changed default tab on User Page to "Show Sets" and "Movie Sets" when no Box Sets are available.
 
 ---
 

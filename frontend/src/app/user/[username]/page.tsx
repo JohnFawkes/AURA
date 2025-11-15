@@ -174,7 +174,7 @@ const UserSetPage = () => {
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Pagination and Active Tab state
-	const [activeTab, setActiveTab] = useState("boxSets");
+	const [activeTab, setActiveTab] = useState("");
 	const [totalPages, setTotalPages] = useState(0);
 
 	// Library sections & progress
@@ -288,6 +288,7 @@ const UserSetPage = () => {
 
 			// Process Boxsets
 			if (respBoxsets && respBoxsets.length > 0) {
+				setActiveTab("boxSets");
 				const userBoxsets: MediuxUserBoxset[] = await Promise.all(
 					respBoxsets.map(async (origBoxset) => {
 						const boxset = { ...origBoxset };
@@ -358,6 +359,7 @@ const UserSetPage = () => {
 
 			// Process Show Sets
 			if (selectedLibrarySection.type === "show" && respShowSets && respShowSets.length > 0) {
+				setActiveTab("showSets");
 				log("INFO", "User Page", "Fetch User Sets", "Processing Show Sets");
 				const processedShowSets = await processBatch<MediuxUserShowSet>(
 					respShowSets,
@@ -380,6 +382,7 @@ const UserSetPage = () => {
 
 			// Process Movie Sets
 			if (selectedLibrarySection.type === "movie" && respMovieSets && respMovieSets.length > 0) {
+				setActiveTab("movieSets");
 				log("INFO", "User Page", "Fetch User Sets", "Processing Movie Sets");
 				const processedMovieSets = await processBatch<MediuxUserMovieSet>(
 					respMovieSets,
