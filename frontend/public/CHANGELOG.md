@@ -6,6 +6,10 @@
 - Changed default tab on User Page to "Show Sets" and "Movie Sets" when no Box Sets are available.
 - Changed library filter option on User Page to not require unselecting of previous library selection.
 
+### Fixed
+
+- Fixed issue where using the back button would revert page number to 1 instead of the last visited page.
+
 ---
 
 ## [0.9.57] - 2025-11-14
