@@ -778,7 +778,7 @@ const UserSetPage = () => {
 											className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
 												!!selectedLibrarySection &&
 												selectedLibrarySection.title !== section.title
-													? "opacity-50 pointer-events-none"
+													? "opacity-50 hover:opacity-100"
 													: ""
 											}`}
 										>
