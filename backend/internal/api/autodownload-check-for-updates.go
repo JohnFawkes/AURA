@@ -352,7 +352,22 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		newDBItem.MediaItem = latestMediaItem
 		newDBItem.MediaItemJSON = ""
 		newDBItem.PosterSets = []DBPosterSetDetail{}
-		newDBItem.PosterSets = append([]DBPosterSetDetail{}, dbSavedItem.PosterSets...)
+		newDBItem.PosterSets = make([]DBPosterSetDetail, len(dbSavedItem.PosterSets))
+		for i, ps := range dbSavedItem.PosterSets {
+			if ps.PosterSetID == dbPosterSet.PosterSetID {
+				// Update only the set being worked on
+				newDBItem.PosterSets[i] = DBPosterSetDetail{
+					PosterSetID:    latestSet.ID,
+					PosterSet:      latestSet,
+					AutoDownload:   ps.AutoDownload,
+					SelectedTypes:  ps.SelectedTypes,
+					LastDownloaded: time.Now().Format("2006-01-02 15:04:05"),
+				}
+			} else {
+				// Keep other sets unchanged
+				newDBItem.PosterSets[i] = ps
+			}
+		}
 		Err = DB_InsertAllInfoIntoTables(ctx, newDBItem)
 		if Err.Message != "" {
 			setResult.Result = "Error"
