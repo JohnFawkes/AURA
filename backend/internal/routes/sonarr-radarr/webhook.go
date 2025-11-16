@@ -174,7 +174,7 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			newDBItem := dbItem
 			newDBItem.MediaItem = mediaItem
 			newDBItem.MediaItemJSON = ""
-			Err = api.DB_InsertAllInfoIntoTables(ctx, newDBItem)
+			Err = api.DB_InsertAllInfoIntoTables(bgCtx, newDBItem)
 			if Err.Message != "" {
 				logAction.AppendResult("db_update_error", Err.Message)
 			}
