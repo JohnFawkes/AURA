@@ -165,6 +165,19 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			api.DeleteTempImageForNextLoad(bgCtx, downloadFile, mediaItem.RatingKey)
 			logging.LOGGER.Debug().Timestamp().Str("Library", library).Str("Title", dbItem.MediaItem.Title).Msgf("Redownloaded title card: %s for S%dE%d", downloadFileName, sonarrEpisode.SeasonNumber, sonarrEpisode.EpisodeNumber)
+
+			go func() {
+				SendFileDownloadNotification(mediaItem.Title, posterSet.PosterSet.ID, downloadFile)
+			}()
+
+			// Update the item in the database
+			newDBItem := dbItem
+			newDBItem.MediaItem = mediaItem
+			newDBItem.MediaItemJSON = ""
+			Err = api.DB_InsertAllInfoIntoTables(ctx, newDBItem)
+			if Err.Message != "" {
+				logAction.AppendResult("db_update_error", Err.Message)
+			}
 		}
 	}(dbItem, sonarrEpisode, library)
 }
