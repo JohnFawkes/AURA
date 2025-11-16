@@ -5,6 +5,7 @@ import (
 	"aura/internal/logging"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
@@ -166,4 +167,71 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 			logging.LOGGER.Debug().Timestamp().Str("Library", library).Str("Title", dbItem.MediaItem.Title).Msgf("Redownloaded title card: %s for S%dE%d", downloadFileName, sonarrEpisode.SeasonNumber, sonarrEpisode.EpisodeNumber)
 		}
 	}(dbItem, sonarrEpisode, library)
+}
+
+func SendFileDownloadNotification(itemTitle, posterSetID string, posterFile api.PosterFile) {
+
+	if len(api.Global_Config.Notifications.Providers) == 0 {
+		return
+	}
+
+	notificationTitle := "Sonarr Episode Upgrade"
+	messageBody := fmt.Sprintf(
+		"%s (Set: %s) - %s",
+		itemTitle,
+		posterSetID,
+		api.MediaServer_GetFileDownloadName(posterFile),
+	)
+
+	imageURL := fmt.Sprintf("%s/%s?v=%s&key=jpg",
+		"https://images.mediux.io/assets",
+		posterFile.ID,
+		posterFile.Modified.Format("20060102150405"),
+	)
+
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send File Download Message")
+	logAction := ld.AddAction("Sending File Download Notification", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
+	defer ld.Log()
+	defer logAction.Complete()
+
+	// Send a notification to all configured providers
+	for _, provider := range api.Global_Config.Notifications.Providers {
+		if provider.Enabled {
+			switch provider.Provider {
+			case "Discord":
+				api.Notification_SendDiscordMessage(
+					ctx,
+					provider.Discord,
+					messageBody,
+					imageURL,
+					notificationTitle,
+				)
+			case "Pushover":
+				api.Notification_SendPushoverMessage(
+					ctx,
+					provider.Pushover,
+					messageBody,
+					imageURL,
+					notificationTitle,
+				)
+			case "Gotify":
+				api.Notification_SendGotifyMessage(
+					ctx,
+					provider.Gotify,
+					messageBody,
+					imageURL,
+					notificationTitle,
+				)
+			case "Webhook":
+				api.Notification_SendWebhookMessage(
+					ctx,
+					provider.Webhook,
+					messageBody,
+					imageURL,
+					notificationTitle,
+				)
+			}
+		}
+	}
 }
