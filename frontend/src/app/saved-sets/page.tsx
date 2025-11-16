@@ -810,7 +810,7 @@ const SavedSetsPage: React.FC = () => {
 
 			{/* Bulk Edit Mode Options */}
 			{bulkEditMode && (
-				<div className="sticky bottom-0 mt-10 z-130 flex justify-center w-full">
+				<div className="sticky bottom-0 mt-10 z-101 flex justify-center w-full">
 					<div className="mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex flex-col items-center gap-2">
 						<div className="flex flex-row items-center gap-2 w-full">
 							<Select
@@ -820,7 +820,7 @@ const SavedSetsPage: React.FC = () => {
 								<SelectTrigger className="w-full min-w-[180px]">
 									<SelectValue placeholder="Select Bulk Action" />
 								</SelectTrigger>
-								<SelectContent>
+								<SelectContent className="z-102">
 									{bulkEditActionsList.map((action) => (
 										<SelectItem key={action.value} value={action.value}>
 											{action.label}
