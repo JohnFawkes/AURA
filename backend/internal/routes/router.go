@@ -9,6 +9,7 @@ import (
 	routes_config "aura/internal/routes/config"
 	routes_db "aura/internal/routes/db"
 	routes_download_queue "aura/internal/routes/download-queue"
+	routes_labelstags "aura/internal/routes/labels-tags"
 	routes_logging "aura/internal/routes/logging"
 	routes_ms "aura/internal/routes/mediaserver"
 	routes_mediux "aura/internal/routes/mediux"
@@ -151,6 +152,11 @@ func AddRoutes(r *chi.Mux) {
 				r.Patch("/update", routes_db.UpdateItem)
 				r.Post("/add", routes_db.AddItem)
 				r.Post("/force-recheck", routes_autodownload.ForceRecheckItem)
+			})
+
+			// Labels/Tags Routes
+			r.Route("/labels-tags", func(r chi.Router) {
+				r.Post("/apply", routes_labelstags.ApplyLabelsTags)
 			})
 
 		})

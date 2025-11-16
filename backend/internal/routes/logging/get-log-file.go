@@ -172,6 +172,11 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Label:   "Force Recheck on Item",
 		Section: "DATABASE",
 	},
+	// Labels/Tags Routes
+	"/api/labels-tags/apply": {
+		Label:   "Apply Labels/Tags to Items",
+		Section: "LABELS/TAGS",
+	},
 }
 
 func GetLogContents(w http.ResponseWriter, r *http.Request) {

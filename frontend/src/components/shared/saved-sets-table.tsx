@@ -18,6 +18,7 @@ import {
 	savedSetsConfirmEdit,
 } from "@/components/shared/saved-sets-shared";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -37,7 +38,10 @@ const SavedSetsTableRow: React.FC<{
 	savedSet: DBMediaItemWithPosterSets;
 	onUpdate: () => void;
 	handleRecheckItem: (title: string, item: DBMediaItemWithPosterSets) => void;
-}> = ({ savedSet, onUpdate, handleRecheckItem }) => {
+	bulkEditMode: boolean;
+	bulkEditSelectedItems: Set<string>;
+	setBulkEditSelectedItems: React.Dispatch<React.SetStateAction<Set<string>>>;
+}> = ({ savedSet, onUpdate, handleRecheckItem, bulkEditMode, bulkEditSelectedItems, setBulkEditSelectedItems }) => {
 	// Initialize edit state from the savedSet.PosterSets array.
 	const [editSets, setEditSets] = useState(() =>
 		savedSet.PosterSets.map((set) => ({
@@ -88,6 +92,27 @@ const SavedSetsTableRow: React.FC<{
 	return (
 		<>
 			<TableRow key={savedSet.TMDB_ID}>
+				<TableCell>
+					{bulkEditMode && (
+						<Checkbox
+							checked={bulkEditSelectedItems.has(`${savedSet.TMDB_ID}|||${savedSet.LibraryTitle}`)}
+							onCheckedChange={() => {
+								const key = `${savedSet.TMDB_ID}|||${savedSet.LibraryTitle}`;
+								setBulkEditSelectedItems((prev) => {
+									const newSet = new Set(prev);
+									if (newSet.has(key)) {
+										newSet.delete(key);
+									} else {
+										newSet.add(key);
+									}
+									return newSet;
+								});
+							}}
+							className="mr-2"
+							aria-label={`Select ${savedSet.MediaItem.Title} for bulk edit`}
+						/>
+					)}
+				</TableCell>
 				<TableCell>
 					{savedSet.MediaItem.Type === "show" ? (
 						<div>

@@ -2,13 +2,17 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchAllItemFromDBWithFilters } from "@/services/database/api-db-get-all";
+import { deleteMediaItemFromDB } from "@/services/database/api-db-item-delete";
 import { AutodownloadResult, postForceRecheckDBItemForAutoDownload } from "@/services/database/api-db-items-recheck";
+import { postApplyLabelsTagsToDBItem } from "@/services/labels-tags/apply-labels-tags";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
 	ClockArrowDown,
 	ClockArrowUp,
 	RefreshCcw as RefreshIcon,
+	Tag,
+	Trash2,
 	XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +20,7 @@ import { toast } from "sonner";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { CustomPagination } from "@/components/shared/custom-pagination";
+import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
 import { ErrorMessage } from "@/components/shared/error-message";
 import { FilterSavedSets } from "@/components/shared/filter-saved-sets";
 import Loader from "@/components/shared/loader";
@@ -26,6 +31,9 @@ import SavedSetsTableRow from "@/components/shared/saved-sets-table";
 import { ViewControl } from "@/components/shared/select-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -47,6 +55,15 @@ const SavedSetsPage: React.FC = () => {
 	const isFetchingRef = useRef(false);
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
+
+	const [bulkEditMode, setBulkEditMode] = useState(false);
+	const [bulkEditActionsList] = useState<{ value: string; label: string }[]>([
+		{ value: "force-recheck", label: "Force Autodownload Recheck" },
+		{ value: "apply-label-tag", label: "Apply Labels/Tags" },
+		{ value: "delete-selected", label: "Delete Selected Sets" },
+	]);
+	const [bulkEditSelectedAction, setBulkEditSelectedAction] = useState<string>("");
+	const [bulkEditSelectedItems, setBulkEditSelectedItems] = useState<Set<string>>(new Set());
 
 	const {
 		currentPage,
@@ -218,12 +235,10 @@ const SavedSetsPage: React.FC = () => {
 	const handleRecheckItem = async (title: string, item: DBMediaItemWithPosterSets): Promise<void> => {
 		try {
 			const response = await postForceRecheckDBItemForAutoDownload(item);
-
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to recheck item");
 				return;
 			}
-
 			setRecheckStatus((prev) => ({
 				...prev,
 				[title]: response.data as AutodownloadResult,
@@ -235,25 +250,40 @@ const SavedSetsPage: React.FC = () => {
 		fetchSavedSets();
 	};
 
-	const forceRecheckAll = async () => {
+	const handleApplyLabelsTagsToItem = async (item: DBMediaItemWithPosterSets): Promise<void> => {
+		try {
+			const response = await postApplyLabelsTagsToDBItem(item);
+			if (response.status === "error") {
+				toast.error(response.error?.message || "Failed to apply labels/tags");
+				return;
+			}
+		} catch (error) {
+			const errorResponse = ReturnErrorMessage<unknown>(error);
+			toast.error(errorResponse.error?.message || "An unexpected error occurred");
+		}
+	};
+
+	const handleDeleteItemFromDB = async (item: DBMediaItemWithPosterSets): Promise<void> => {
+		try {
+			const response = await deleteMediaItemFromDB(item);
+			if (response.status === "error") {
+				toast.error(response.error?.message || "Failed to delete item");
+				return;
+			}
+		} catch (error) {
+			const errorResponse = ReturnErrorMessage<unknown>(error);
+			toast.error(errorResponse.error?.message || "An unexpected error occurred");
+		}
+	};
+
+	const actionForceAutoDownloadRecheck = async (setsToRecheck: DBMediaItemWithPosterSets[]) => {
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
-
 		setRecheckStatus({}); // Reset recheck status
-
-		// Get all saved sets that have AutoDownload enabled
-		const setsToRecheck = savedSets.filter((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload));
 
 		log("INFO", "Saved Sets Page", "Force Recheck", `Forcing recheck for ${setsToRecheck.length} sets`, {
 			setsToRecheck,
 		});
-
-		if (setsToRecheck.length === 0) {
-			toast.warning("No sets with AutoDownload enabled found", {
-				id: "force-recheck",
-				duration: 2000,
-			});
-		}
 
 		// Show loading toast
 		toast.loading(`Rechecking ${setsToRecheck.length} sets...`, {
@@ -277,6 +307,102 @@ const SavedSetsPage: React.FC = () => {
 
 		isFetchingRef.current = false;
 		fetchSavedSets();
+	};
+
+	const actionApplyLabelsTags = async (setsToApply: DBMediaItemWithPosterSets[]) => {
+		log("INFO", "Saved Sets Page", "Apply Labels/Tags", `Applying labels/tags to ${setsToApply.length} sets`, {
+			setsToApply,
+		});
+
+		// Show loading toast
+		toast.loading(`Applying labels/tags to ${setsToApply.length} sets...`, {
+			id: "apply-labels-tags",
+			duration: 0, // Keep it open until we manually close it
+		});
+
+		for (const [index, set] of setsToApply.entries()) {
+			toast.loading(`Applying labels/tags to ${index + 1} of ${setsToApply.length} - ${set.MediaItem.Title}`, {
+				id: "apply-labels-tags",
+				duration: 0, // Keep it open until we manually close it
+			});
+			await handleApplyLabelsTagsToItem(set);
+		}
+
+		// Close loading toast
+		toast.success("Labels/Tags applied successfully", {
+			id: "apply-labels-tags",
+			duration: 2000,
+		});
+	};
+
+	const actionDeleteSelectedSets = async (setsToDelete: DBMediaItemWithPosterSets[]) => {
+		log("INFO", "Saved Sets Page", "Delete Selected Sets", `Deleting ${setsToDelete.length} sets`, {
+			setsToDelete,
+		});
+
+		// Show loading toast
+		toast.loading(`Deleting ${setsToDelete.length} sets...`, {
+			id: "delete-sets",
+			duration: 0, // Keep it open until we manually close it
+		});
+
+		for (const [index, set] of setsToDelete.entries()) {
+			toast.loading(`Deleting ${index + 1} of ${setsToDelete.length} - ${set.MediaItem.Title}`, {
+				id: "delete-sets",
+				duration: 0, // Keep it open until we manually close it
+			});
+			await handleDeleteItemFromDB(set);
+		}
+
+		// Close loading toast
+		toast.success("Sets deleted successfully", {
+			id: "delete-sets",
+			duration: 2000,
+		});
+		setBulkEditSelectedItems(new Set());
+		fetchSavedSets();
+	};
+
+	const handleBulkEditButtonToggleClick = () => {
+		setBulkEditSelectedItems(new Set());
+		setBulkEditSelectedAction("");
+		setBulkEditMode(!bulkEditMode);
+	};
+
+	const handleBulkEditButtonRunClick = () => {
+		if (!bulkEditSelectedAction) return;
+		if (bulkEditSelectedItems.size === 0) return;
+		if (!bulkEditMode) return;
+
+		// Get the Selected Keys from the Bulk Edit Selected Items (key: `TMDB ID|||Library Title`)
+		const selectedKeys = Array.from(bulkEditSelectedItems);
+
+		// Find matching savedSets for each selected key
+		const selectedSavedSets = selectedKeys
+			.map((key) => {
+				const [tmdbId, libraryTitle] = key.split("|||");
+				return savedSets.find((set) => String(set.TMDB_ID) === tmdbId && set.LibraryTitle === libraryTitle);
+			})
+			.filter(Boolean);
+
+		if (selectedSavedSets.length === 0) {
+			toast.warning("No matching saved sets found for the selected items", {
+				id: "force-recheck",
+				duration: 2000,
+			});
+			return;
+		}
+
+		if (bulkEditSelectedAction === "force-recheck") {
+			actionForceAutoDownloadRecheck(selectedSavedSets as DBMediaItemWithPosterSets[]);
+		} else if (bulkEditSelectedAction === "apply-label-tag") {
+			actionApplyLabelsTags(selectedSavedSets as DBMediaItemWithPosterSets[]);
+		} else if (bulkEditSelectedAction === "delete-selected") {
+			actionDeleteSelectedSets(selectedSavedSets as DBMediaItemWithPosterSets[]);
+		}
+
+		// Set the Selected Action back to empty
+		setBulkEditSelectedAction("");
 	};
 
 	return (
@@ -313,29 +439,20 @@ const SavedSetsPage: React.FC = () => {
 					/>
 				</div>
 
+				{/* Bulk Edit Mode Button  */}
 				<div>
-					{savedSets &&
-						savedSets.some((set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)) && (
-							<Button
-								variant="secondary"
-								size="sm"
-								onClick={() => forceRecheckAll()}
-								className="flex items-center gap-1 text-xs sm:text-sm cursor-pointer"
-							>
-								<span className="hidden sm:inline">Force Autodownload Recheck</span>
-								<span className="sm:hidden">Recheck</span>
-								<span className="whitespace-nowrap">
-									(
-									{
-										savedSets.filter(
-											(set) => set.PosterSets && set.PosterSets.some((ps) => ps.AutoDownload)
-										).length
-									}
-									)
-								</span>
-								<RefreshIcon className="h-3 w-3" />
-							</Button>
+					<Button
+						variant={bulkEditMode ? "destructive" : "secondary"}
+						onClick={handleBulkEditButtonToggleClick}
+						className={cn(
+							"flex items-center gap-1 text-xs sm:text-sm cursor-pointer",
+							bulkEditMode
+								? "border-red-600 bg-red-600/10 hover:bg-red-600/20"
+								: "border border-1 border-yellow-500 hover:bg-yellow-800"
 						)}
+					>
+						{bulkEditMode ? "Cancel Bulk Edit" : "Bulk Edit"}
+					</Button>
 				</div>
 			</div>
 
@@ -495,6 +612,30 @@ const SavedSetsPage: React.FC = () => {
 				<Table>
 					<TableHeader>
 						<TableRow>
+							<TableHead className="w-[20px]">
+								{bulkEditMode && (
+									<Checkbox
+										checked={
+											bulkEditSelectedItems.size === savedSets.length && savedSets.length > 0
+										}
+										onCheckedChange={(checked) => {
+											if (checked) {
+												// Select all
+												const allKeys = new Set(
+													savedSets.map(
+														(set) => `${set.TMDB_ID}|||${set.LibraryTitle}` // Key format
+													)
+												);
+												setBulkEditSelectedItems(allKeys);
+											} else {
+												// Deselect all
+												setBulkEditSelectedItems(new Set());
+											}
+										}}
+										aria-label="Select All Saved Sets"
+									/>
+								)}
+							</TableHead>
 							<TableHead className="w-[20px]"></TableHead>
 							<TableHead
 								className="w-[300px] group cursor-pointer select-none"
@@ -616,6 +757,9 @@ const SavedSetsPage: React.FC = () => {
 									savedSet={savedSet}
 									onUpdate={fetchSavedSets}
 									handleRecheckItem={handleRecheckItem}
+									bulkEditMode={bulkEditMode}
+									bulkEditSelectedItems={bulkEditSelectedItems}
+									setBulkEditSelectedItems={setBulkEditSelectedItems}
 								/>
 							))}
 					</TableBody>
@@ -624,18 +768,107 @@ const SavedSetsPage: React.FC = () => {
 
 			{/* Card View */}
 			{viewOption === "card" && (
-				<ResponsiveGrid size="larger">
-					{savedSets &&
-						savedSets.length > 0 &&
-						savedSets.map((savedSet) => (
-							<SavedSetsCard
-								key={savedSet.MediaItem.RatingKey}
-								savedSet={savedSet}
-								onUpdate={fetchSavedSets}
-								handleRecheckItem={handleRecheckItem}
+				<>
+					{/* Add a Select All CheckBox for when in Card View  */}
+					{bulkEditMode && viewOption === "card" && (
+						<div className="flex items-center">
+							<Checkbox
+								className="mr-2 mb-4"
+								checked={savedSets.length > 0 && bulkEditSelectedItems.size === savedSets.length}
+								onCheckedChange={(checked) => {
+									if (checked) {
+										// Select all items
+										const allKeys = savedSets.map((set) => `${set.TMDB_ID}|||${set.LibraryTitle}`);
+										setBulkEditSelectedItems(new Set(allKeys));
+									} else {
+										// Deselect all items
+										setBulkEditSelectedItems(new Set());
+									}
+								}}
 							/>
-						))}
-				</ResponsiveGrid>
+							<Label className="mb-4 ml-1">Select All on Page</Label>
+						</div>
+					)}
+
+					<ResponsiveGrid size="larger">
+						{savedSets &&
+							savedSets.length > 0 &&
+							savedSets.map((savedSet) => (
+								<SavedSetsCard
+									key={savedSet.MediaItem.RatingKey}
+									savedSet={savedSet}
+									onUpdate={fetchSavedSets}
+									handleRecheckItem={handleRecheckItem}
+									bulkEditMode={bulkEditMode}
+									bulkEditSelectedItems={bulkEditSelectedItems}
+									setBulkEditSelectedItems={setBulkEditSelectedItems}
+								/>
+							))}
+					</ResponsiveGrid>
+				</>
+			)}
+
+			{/* Bulk Edit Mode Options */}
+			{bulkEditMode && (
+				<div className="sticky bottom-0 mt-10 z-130 flex justify-center w-full">
+					<div className="mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex flex-col items-center gap-2">
+						<div className="flex flex-row items-center gap-2 w-full">
+							<Select
+								value={bulkEditSelectedAction}
+								onValueChange={(value) => setBulkEditSelectedAction(value)}
+							>
+								<SelectTrigger className="w-full min-w-[180px]">
+									<SelectValue placeholder="Select Bulk Action" />
+								</SelectTrigger>
+								<SelectContent>
+									{bulkEditActionsList.map((action) => (
+										<SelectItem key={action.value} value={action.value}>
+											{action.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{bulkEditSelectedItems.size >= 0 &&
+								bulkEditSelectedAction &&
+								bulkEditSelectedAction !== "delete-selected" && (
+									<Button
+										size="icon"
+										variant={
+											bulkEditSelectedAction === "delete-selected" ? "destructive" : "default"
+										}
+										disabled={bulkEditSelectedItems.size === 0 || !bulkEditSelectedAction}
+										onClick={handleBulkEditButtonRunClick}
+									>
+										{bulkEditSelectedAction === "apply-label-tag" && <Tag className="h-4 w-4" />}
+										{bulkEditSelectedAction === "force-recheck" && (
+											<RefreshIcon className="h-4 w-4" />
+										)}
+									</Button>
+								)}
+							{bulkEditSelectedItems.size > 0 && bulkEditSelectedAction === "delete-selected" && (
+								<ConfirmDestructiveDialogActionButton
+									onConfirm={async () => {
+										// Your delete logic here
+										await handleBulkEditButtonRunClick();
+									}}
+									title="Confirm Bulk Delete"
+									description={`You are about to delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"} from the database. This action cannot be undone.`}
+									confirmText={`Yes, delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"}`}
+									cancelText="Cancel"
+									variant="destructive"
+									disabled={bulkEditSelectedItems.size === 0}
+								>
+									<Trash2 className="h-4 w-4" />
+								</ConfirmDestructiveDialogActionButton>
+							)}
+						</div>
+						<span className="text-xs text-muted-foreground">
+							{bulkEditSelectedItems.size > 0
+								? `${bulkEditSelectedItems.size} selected`
+								: "Select items to enable action"}
+						</span>
+					</div>
+				</div>
 			)}
 
 			{/* Pagination */}
