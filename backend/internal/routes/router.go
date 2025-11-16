@@ -53,6 +53,7 @@ func NewRouter() *chi.Mux {
 }
 
 // AddRoutes adds all the routes to the given router.
+// Any new routes must also be added to the /backend/internal/logging/get-log-file.go file under the possible_actions_paths
 func AddRoutes(r *chi.Mux) {
 
 	// If Config not yet valid, only expose onboarding routes
@@ -158,6 +159,9 @@ func AddRoutes(r *chi.Mux) {
 			r.Route("/labels-tags", func(r chi.Router) {
 				r.Post("/apply", routes_labelstags.ApplyLabelsTags)
 			})
+
+			// Sonarr Webhook Routes
+			r.Post("/sonarr/webhook", routes_sonarr_radarr.SonarrWebhookHandler)
 
 		})
 

@@ -1,3 +1,11 @@
+## [0.9.59] - 2025-11-16
+
+### Added
+
+- Added ability to Redownload titlecards when Sonarr episode file is upgrade. This requires you to set up a custom webhook connection from Sonarr to aura. View the [documentation](https://mediux-team.github.io/AURA/sonarr-webhook-integration) for more details.
+
+---
+
 ## [0.9.58] - 2025-11-15
 
 ### Added

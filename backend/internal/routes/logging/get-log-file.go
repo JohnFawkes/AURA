@@ -177,6 +177,11 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Label:   "Apply Labels/Tags to Items",
 		Section: "LABELS/TAGS",
 	},
+	// Sonarr Webhook Route
+	"/api/sonarr/webhook": {
+		Label:   "Sonarr OnUpgrade Webhook",
+		Section: "SONARR",
+	},
 }
 
 func GetLogContents(w http.ResponseWriter, r *http.Request) {
