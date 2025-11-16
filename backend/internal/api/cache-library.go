@@ -131,25 +131,6 @@ func (c *LibraryCache) ClearAllSections() {
 	c.sections = make(map[string]*LibrarySection)
 }
 
-// GetMediaItemFromSection retrieves a media item by TMDB ID from a specific section
-func (c *LibraryCache) GetMediaItemFromSection(sectionTitle, tmdbID string) (*MediaItem, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	section, exists := c.sections[sectionTitle]
-	if !exists {
-		return &MediaItem{}, false
-	}
-
-	for _, item := range section.MediaItems {
-		if item.TMDB_ID == tmdbID {
-			return &item, true
-		}
-	}
-
-	return &MediaItem{}, false
-}
-
 // GetMediaItemFromSectionByTMDBID retrieves a media item by TMDB ID from a specific section
 func (c *LibraryCache) GetMediaItemFromSectionByTMDBID(sectionTitle, tmdbID string) (*MediaItem, bool) {
 	c.mu.RLock()

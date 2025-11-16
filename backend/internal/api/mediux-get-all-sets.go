@@ -123,7 +123,7 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 
 	showSetMap := make(map[string]*PosterSet)
 
-	cachedItem, exists := Global_Cache_LibraryStore.GetMediaItemFromSection(librarySection, tmdbID)
+	cachedItem, exists := Global_Cache_LibraryStore.GetMediaItemFromSectionByTMDBID(librarySection, tmdbID)
 	if !exists {
 		logAction.SetError("Could not find show in cache", "Try refreshing on the Home page", map[string]any{
 			"title":  show.Title,
@@ -410,7 +410,7 @@ func processMovieSetPostersAndBackdrops(ctx context.Context, librarySection stri
 	var posterSets []PosterSet
 	movieSetMap := make(map[string]*PosterSet)
 
-	cachedItem, exists := Global_Cache_LibraryStore.GetMediaItemFromSection(librarySection, tmdbID)
+	cachedItem, exists := Global_Cache_LibraryStore.GetMediaItemFromSectionByTMDBID(librarySection, tmdbID)
 	if !exists {
 		logAction.SetError("Could not find movie in cache", "Try refreshing on the Home page", map[string]any{
 			"title":  movie.Title,
