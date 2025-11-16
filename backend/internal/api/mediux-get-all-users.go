@@ -42,44 +42,28 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 		hiddenUsers   []MediuxUserInfo
 	)
 
-	// First add Followed users
-	for _, info := range userFollowHide {
-		if info.Follow {
-			for _, user := range mediux_usernames {
-				if strings.EqualFold(user.Username, info.Username) && !added[strings.ToLower(user.Username)] {
-					followedUsers = append(followedUsers, info)
-					added[strings.ToLower(user.Username)] = true
-					break
-				}
-			}
-		}
-	}
-	// Then add non-followed and non-hidden users
 	for _, user := range mediux_usernames {
 		found := false
+		isFollowed := false
+		isHidden := false
+
 		for _, info := range userFollowHide {
 			if strings.EqualFold(user.Username, info.Username) {
 				found = true
+				isFollowed = info.Follow
+				isHidden = info.Hide
 				break
 			}
 		}
-		if !found && !added[strings.ToLower(user.Username)] {
-			normalUsers = append(normalUsers, user)
-			added[strings.ToLower(user.Username)] = true
-		}
-	}
 
-	// Finally add Hidden users
-	for _, info := range userFollowHide {
-		if info.Hide {
-			for _, user := range mediux_usernames {
-				if strings.EqualFold(user.Username, info.Username) && !added[strings.ToLower(user.Username)] {
-					hiddenUsers = append(hiddenUsers, info)
-					added[strings.ToLower(user.Username)] = true
-					break
-				}
-			}
+		if isFollowed {
+			followedUsers = append(followedUsers, user)
+		} else if isHidden {
+			hiddenUsers = append(hiddenUsers, user)
+		} else if !found {
+			normalUsers = append(normalUsers, user)
 		}
+		added[strings.ToLower(user.Username)] = true
 	}
 
 	// Sort each section by TotalSets descending
