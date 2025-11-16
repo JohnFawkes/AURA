@@ -250,7 +250,8 @@ function LogList({
 			{logEntries.map((log, idx) => {
 				let mainLabel = "";
 				if (log.route?.path) {
-					mainLabel = possibleActionsPaths[log.route.path].label || log.route.path;
+					const actionPath = possibleActionsPaths[log.route.path];
+					mainLabel = actionPath?.label || log.route.path;
 				} else if (log.actions && log.actions.length > 0) {
 					mainLabel = log.message || log.actions[0].name || "Background Task";
 				}
