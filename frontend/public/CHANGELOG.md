@@ -1,3 +1,11 @@
+## [0.9.60] - 2025-11-17
+
+### Fixed
+
+- Fixed issue with backdrops not working in Emby
+
+---
+
 ## [0.9.59] - 2025-11-16
 
 ### Added

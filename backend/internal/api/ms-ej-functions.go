@@ -14,7 +14,8 @@ import (
 type EmbyJellyItemImagesResponse struct {
 	ImageType  string `json:"ImageType"`
 	ImageIndex int    `json:"ImageIndex,omitempty"`
-	ImageTag   string `json:"ImageTag"`
+	ImageTag   string `json:"ImageTag"`       // Used in Jellyfin responses
+	ImagePath  string `json:"Path,omitempty"` // Used in Emby responses
 }
 
 func EJ_UploadImage(ctx context.Context, title string, ratingKey string, file PosterFile, imageData []byte) logging.LogErrorInfo {
@@ -188,7 +189,10 @@ func EJ_FindNewImage(currentImages, newImages []EmbyJellyItemImagesResponse, pos
 		}
 		found := false
 		for _, currentImage := range currentImages {
-			if updatedImage.ImageType == currentImage.ImageType && updatedImage.ImageIndex == currentImage.ImageIndex && updatedImage.ImageTag == currentImage.ImageTag {
+			if updatedImage.ImageType == currentImage.ImageType &&
+				updatedImage.ImageIndex == currentImage.ImageIndex &&
+				((updatedImage.ImageTag != "" && updatedImage.ImageTag == currentImage.ImageTag) ||
+					(updatedImage.ImagePath != "" && updatedImage.ImagePath == currentImage.ImagePath)) {
 				found = true
 				break
 			}

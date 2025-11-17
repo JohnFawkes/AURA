@@ -414,7 +414,7 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 
 			// Find the new image by comparing currentImages and newImages
 			newImageItem := EJ_FindNewImage(currentImages, newImages, posterType)
-			if newImageItem.ImageTag == "" {
+			if newImageItem.ImageTag == "" && newImageItem.ImagePath == "" {
 				logAction.SetError("Failed to find new image tag after upload",
 					"Ensure the image was uploaded successfully",
 					map[string]any{
