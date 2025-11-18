@@ -1,3 +1,11 @@
+## [0.9.61] - 2025-11-18
+
+### Fixed
+
+- Fixed the layout of the cards so that the badges are aligned properly in cards.
+
+---
+
 ## [0.9.60] - 2025-11-17
 
 ### Added

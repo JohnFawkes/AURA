@@ -49,7 +49,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
 	return (
 		<Card
 			key={item.RatingKey}
-			className="relative items-center cursor-pointer hover:shadow-xl transition-shadow"
+			className="relative items-center cursor-pointer border border-1 hover:shadow-xl transition-shadow p-0 rounded-xl"
 			onClick={() => {
 				if (isMediaItem(item)) {
 					handleMediaItemCardClick(item);
@@ -58,6 +58,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
 				}
 			}}
 		>
+			{/* Database Existence Indicator */}
 			{isMediaItem(item) && item.ExistInDatabase && (
 				<div className="absolute top-2 left-2 z-10">
 					<Database className="text-green-500" size={20} />
@@ -65,21 +66,22 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
 			)}
 
 			{/* Poster Image */}
-			<AssetImage image={item} className="w-[80%] h-auto transition-transform hover:scale-105" />
-
-			{/* Title */}
-			<span className="text-center text-lg text-foreground font-semibold mb-0">
-				{item.Title.length > 55 ? `${item.Title.slice(0, 55)}...` : item.Title}
-			</span>
+			<AssetImage image={item} className="w-[100%] h-auto transition-transform hover:scale-102 rounded-xl mb-0" />
 
 			{/* Badges */}
-			<CardContent className="flex flex-col md:flex-row justify-center items-center gap-1 p-1">
-				<Badge variant="default" className="text-xs">
-					{isMediaItem(item) ? item.Year : `${item.ChildCount} items`}
-				</Badge>
-				<Badge variant="default" className="text-xs">
-					{item.LibraryTitle}
-				</Badge>
+			<CardContent className="flex flex-col justify-center items-center mt-0">
+				<div className="flex flex-row gap-2">
+					<Badge variant="default" className="text-xs">
+						{isMediaItem(item) ? item.Year : `${item.ChildCount} items`}
+					</Badge>
+					<Badge variant="default" className="text-xs">
+						{item.LibraryTitle}
+					</Badge>
+				</div>
+				{/* Title */}
+				<span className="text-center text-md text-foreground font-semibold mt-2 mb-2">
+					{item.Title.length > 55 ? `${item.Title.slice(0, 55)}...` : item.Title}
+				</span>
 			</CardContent>
 		</Card>
 	);
