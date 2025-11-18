@@ -230,14 +230,18 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (!isExpanded) return;
 
-		const totalItems = filteredMediaItems.length + filteredMediuxUsers.length;
+		const totalItems = filteredMediaItems.length + filteredMediuxUsers.length + filteredSavedSets.length;
 
 		if (e.key === "ArrowDown") {
 			e.preventDefault();
-			setFocusedIndex((prev) => (prev < totalItems - 1 ? prev + 1 : prev));
+			setFocusedIndex(
+				(prev) => (totalItems === 0 ? -1 : prev < totalItems - 1 ? prev + 1 : 0) // loop to start
+			);
 		} else if (e.key === "ArrowUp") {
 			e.preventDefault();
-			setFocusedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+			setFocusedIndex(
+				(prev) => (totalItems === 0 ? -1 : prev > 0 ? prev - 1 : totalItems - 1) // loop to end
+			);
 		} else if (e.key === "Enter") {
 			e.preventDefault();
 
@@ -247,10 +251,16 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 				if (focusedIndex < filteredMediaItems.length) {
 					// Selecting from Media Items
 					handleMediaItemClick(filteredMediaItems[focusedIndex]);
-				} else {
+				} else if (focusedIndex < filteredMediaItems.length + filteredMediuxUsers.length) {
 					// Selecting from MediUX Users
 					handleMediuxUserClick(filteredMediuxUsers[focusedIndex - filteredMediaItems.length].Username);
+				} else {
+					// Selecting from Saved Sets
+					handleSavedSetsClick(
+						filteredSavedSets[focusedIndex - filteredMediaItems.length - filteredMediuxUsers.length]
+					);
 				}
+
 				setIsExpanded(false);
 			} else {
 				// No item focused, trigger manual search
@@ -275,6 +285,15 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		setSearchQuery("");
 		setSearchInput("");
 		router.push(`/user/${username}`);
+	};
+
+	// Handle Saved Sets Click
+	const handleSavedSetsClick = (set: DBMediaItemWithPosterSets) => {
+		setSearchQuery(
+			`${set.MediaItem.Title} Y:${set.MediaItem.Year}: ID:${set.MediaItem.TMDB_ID}: L:${set.LibraryTitle}:`
+		);
+		setIsExpanded(false);
+		router.push("/saved-sets/");
 	};
 
 	const mediaTypes = Array.from(new Set(filteredMediaItems.map((item) => item.Type)));
@@ -437,10 +456,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 												</h3>
 												<div className="space-y-1">
 													{filteredSavedSets.map((set, index) => {
-														const adjustedIndex =
-															filteredMediaItems.length +
-															filteredMediuxUsers.length +
-															index;
+														const adjustedIndex = filteredMediaItems.length + index;
 														const isHighlighted = adjustedIndex === focusedIndex;
 														const subtitle = `${set.LibraryTitle} • ${
 															set.PosterSets.length > 1
@@ -460,9 +476,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 																	<Film className="h-4 w-4 text-muted-foreground" />
 																}
 																onLinkClick={() => {
-																	setSearchQuery(
-																		`${set.MediaItem.Title} Y:${set.MediaItem.Year}: ID:${set.MediaItem.TMDB_ID}: L:${set.LibraryTitle}:`
-																	);
+																	handleSavedSetsClick(set);
 																}}
 															/>
 														);
@@ -483,7 +497,10 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 												</h3>
 												<div className="space-y-1">
 													{filteredMediuxUsers.map((item, index) => {
-														const adjustedIndex = filteredMediaItems.length + index;
+														const adjustedIndex =
+															filteredMediaItems.length +
+															filteredSavedSets.length +
+															index;
 														const isHighlighted = adjustedIndex === focusedIndex;
 														return (
 															<SearchResultUserItem
