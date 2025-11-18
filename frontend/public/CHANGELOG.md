@@ -1,5 +1,9 @@
 ## [0.9.60] - 2025-11-17
 
+### Added
+
+- Added more breakpoints for larger screens (3xl, 4xl, 5xl, 6xl) to support ultra-wide and 4K/5K/8K monitors.
+
 ### Fixed
 
 - Fixed issue with backdrops not working in Emby.
