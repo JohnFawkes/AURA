@@ -23,6 +23,7 @@ func DB_GetAllItemsWithFilter(
 	pageNumber int,
 	sortOption string,
 	sortOrder string,
+	posterSetID string,
 ) ([]DBMediaItemWithPosterSets, int, []string, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Getting all DB items with filters", logging.LevelDebug)
 	defer logAction.Complete()
@@ -38,6 +39,9 @@ func DB_GetAllItemsWithFilter(
 	// TMDB_ID filter
 	tmdbClauses := buildWhereClause_SearchTMDB_ID(searchTMDBID, searchLibrary, &queryArgs)
 	whereClauses = append(whereClauses, tmdbClauses...)
+
+	posterSetClauses := buildWhereClause_SearchPosterSetID(posterSetID, &queryArgs)
+	whereClauses = append(whereClauses, posterSetClauses...)
 
 	if len(tmdbClauses) == 0 {
 		libraryClauses := buildWhereClause_SearchLibrary(searchLibrary, &queryArgs)
@@ -239,6 +243,15 @@ func buildWhereClause_SearchTMDB_ID(searchTMDBID, searchLibrary string, queryArg
 		tmdbClauses = append(tmdbClauses, libraryClauses...)
 	}
 	return tmdbClauses
+}
+
+func buildWhereClause_SearchPosterSetID(searchPosterSetID string, queryArgs *[]any) []string {
+	posterSetClauses := []string{}
+	if searchPosterSetID != "" {
+		posterSetClauses = append(posterSetClauses, "p.PosterSetID = ?")
+		*queryArgs = append(*queryArgs, searchPosterSetID)
+	}
+	return posterSetClauses
 }
 
 func buildWhereClause_SearchLibrary(searchLibrary string, queryArgs *[]any) []string {
@@ -540,6 +553,7 @@ func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.LogErrorInfo) {
 		1,                // pageNumber
 		"dateDownloaded", // sortOption
 		"desc",           // sortOrder
+		"",               // posterSetID
 	)
 	if Err.Message != "" {
 		return nil, Err
@@ -563,6 +577,7 @@ func DB_GetAllItems() ([]DBMediaItemWithPosterSets, logging.LogErrorInfo) {
 			page,             // pageNumber
 			"dateDownloaded", // sortOption
 			"desc",           // sortOrder
+			"",               // posterSetID
 		)
 		if pageErr.Message != "" {
 			return nil, pageErr

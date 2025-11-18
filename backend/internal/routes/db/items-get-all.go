@@ -113,6 +113,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 		pageNumber,
 		sortOption,
 		sortOrder,
+		"", // posterSetID
 	)
 	if Err.Message != "" {
 		api.Util_Response_SendJSON(w, ld, nil)

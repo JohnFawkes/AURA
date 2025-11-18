@@ -96,6 +96,7 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		1,                                   // pageNumber
 		"dateDownloaded",                    // sortOption
 		"desc",                              // sortOrder
+		"",                                  // posterSetID
 	)
 	if pageErr.Message != "" {
 		api.Util_Response_SendJSON(w, ld, nil)
