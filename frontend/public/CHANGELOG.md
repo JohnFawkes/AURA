@@ -2,7 +2,9 @@
 
 ### Fixed
 
-- Fixed issue with backdrops not working in Emby
+- Fixed issue with backdrops not working in Emby.
+- Fixed issue where multi-set Saved Sets would not save correctly when one was marked for deletion.
+- Fixed issue where Selected Types would throw error when undefined in Saved Sets Page.
 
 ---
 
