@@ -60,7 +60,7 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
 		>
 			{/* Database Existence Indicator */}
 			{isMediaItem(item) && item.ExistInDatabase && (
-				<div className="absolute top-2 left-2 z-10">
+				<div className="absolute top-1 right-1 z-10 rounded-full p-1 border border-green-800">
 					<Database className="text-green-500" size={20} />
 				</div>
 			)}
