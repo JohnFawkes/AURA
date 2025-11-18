@@ -275,8 +275,11 @@ func buildWhereClause_SearchYear(searchYear int, queryArgs *[]any) []string {
 func buildWhereClause_SearchTitle(searchTitle string, queryArgs *[]any) []string {
 	titleClauses := []string{}
 	if searchTitle != "" {
-		titleClauses = append(titleClauses, "LOWER(m.Title) LIKE ?")
-		*queryArgs = append(*queryArgs, "%"+searchTitle+"%")
+		words := strings.FieldsSeq(strings.ToLower(searchTitle))
+		for word := range words {
+			titleClauses = append(titleClauses, "LOWER(m.Title) LIKE ?")
+			*queryArgs = append(*queryArgs, "%"+word+"%")
+		}
 	}
 	return titleClauses
 }
