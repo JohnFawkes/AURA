@@ -25,8 +25,18 @@ export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedStrin
 			return `${pluralize(diffMonths, "month")} ago`;
 		} else if (diffWeeks >= 1) {
 			return `${pluralize(diffWeeks, "week")} ago`;
-		} else {
+		} else if (diffDays >= 1) {
 			return `${pluralize(diffDays, "day")} ago`;
+		} else {
+			const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+			const diffMinutes = Math.floor(diffMs / (1000 * 60));
+			if (diffHours >= 1) {
+				return `${pluralize(diffHours, "hour")} ago`;
+			} else if (diffMinutes < 5) {
+				return "Just a moment ago";
+			} else {
+				return `${pluralize(diffMinutes, "minute")} ago`;
+			}
 		}
 	} catch {
 		return "Invalid Date";
