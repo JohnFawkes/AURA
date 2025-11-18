@@ -1,10 +1,14 @@
 ## [0.9.61] - 2025-11-18
 
+### Added
+
+- Added image to Saved Sets table for better visual identification of sets.
+
 ### Fixed
 
 - Fixed the layout of the cards so that the badges are aligned properly in cards.
 - [#116](https://github.com/mediux-team/AURA/issues/116) - Fixed issue where MediUX token validation would fail if the MediUX service was unreachable, now it properly handles connection errors.
-- Improve date formatting to show hours and minutes for recent updates
+- Improved date formatting to show hours and minutes for recent updates
 
 ---
 
