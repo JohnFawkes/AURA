@@ -11,6 +11,7 @@
 - Improved date formatting to show hours and minutes for recent updates
 - Fixed issue where search queries with multiple words would not return expected results.
 - Fixed issue where search bar was not being updated when clicking on Database icon in Media Item Page.
+- Fixed alignment of Uploader name and avatar in Download Modal for better visual consistency.
 
 ---
 

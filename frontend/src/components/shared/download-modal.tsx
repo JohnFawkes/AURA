@@ -1390,7 +1390,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					<DialogHeader>
 						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
 						<DialogDescription>
-							<div className="flex items-center gap-1">
+							<div className="flex items-center justify-center sm:justify-start">
 								<Avatar className="rounded-lg mr-1 w-4 h-4">
 									<AvatarImage
 										src={`/api/mediux/avatar-image?username=${setAuthor}`}
