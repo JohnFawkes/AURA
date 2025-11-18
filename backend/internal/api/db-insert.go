@@ -250,6 +250,10 @@ func DB_InsertAllInfoIntoTables(ctx context.Context, item DBMediaItemWithPosterS
 
 	// Insert each of the PosterSet items
 	for _, posterSet := range item.PosterSets {
+		if posterSet.ToDelete {
+			// Skip poster sets marked for deletion
+			continue
+		}
 		posterSetJSON, _ := json.Marshal(posterSet.PosterSet)
 		now := time.Now().UTC().Format(time.RFC3339)
 		actionAddToPosterSetsTable := logAction.AddSubAction("Insert/Update Poster Set in PosterSets Table", logging.LevelTrace)
