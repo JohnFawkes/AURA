@@ -302,7 +302,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 							style={{ originY: "top" }}
 							className="absolute top-full left-0 right-0 w-full mt-2 bg-background dark:bg-background-dark border border-primary rounded-xl shadow-lg z-100 sm:max-w-lg sm:mx-auto"
 						>
-							<div className="p-4 max-h-[60vh] overflow-y-auto">
+							<div className="p-4 max-h-[60vh] overflow-y-auto scrollbar-hide">
 								{/* Filter Controls - Always show when searching */}
 								{isSearching && (
 									<>
