@@ -289,156 +289,154 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 						className="pl-10 pr-4 py-3 text-lg border-2 rounded-xl transition-all duration-200 focus:border-primary-dynamic w-full"
 					/>
 				</div>
-
-				{/* Expanded Results */}
-				<AnimatePresence>
-					{isExpanded && isSearching && (
-						<motion.div
-							ref={resultsRef}
-							initial={{ opacity: 0, y: 10, scale: 0.98 }}
-							animate={{ opacity: 1, y: 0, scale: 1 }}
-							exit={{ opacity: 0, y: 10, scale: 0.98 }}
-							transition={{ duration: 0.2, ease: "easeOut" }}
-							style={{ originY: "top" }}
-							className="absolute top-full left-0 right-0 w-full mt-2 bg-background dark:bg-background-dark border border-primary rounded-xl shadow-lg z-100 sm:max-w-lg sm:mx-auto"
-						>
-							<div className="p-4 max-h-[60vh] overflow-y-auto scrollbar-hide">
-								{/* Filter Controls - Always show when searching */}
-								{isSearching && (
-									<>
-										<div className="flex items-center gap-2 mb-4 flex-wrap">
-											<span className="text-xs font-medium text-muted-foreground mr-2 shrink-0">
-												Filter:
-											</span>
-											<div className="flex items-center gap-2 flex-wrap">
-												{filterOrder.map((filterType) => (
-													<Badge
-														key={filterType}
-														variant={filters[filterType] ? "default" : "secondary"}
-														className={cn(
-															"capitalize text-xs cursor-pointer transition-colors",
-															filters[filterType]
-																? "hover:bg-primary-dynamic/20"
-																: "text-muted-foreground hover:text-primary-dynamic hover:border-primary-dynamic/50"
-														)}
-														onClick={() => toggleFilter(filterType)}
-													>
-														{filterType === "mediaItem" ? "Media Items" : "MediUX Users"}
-													</Badge>
-												))}
-											</div>
-										</div>
-										<Separator className="mb-4" />
-									</>
-								)}
-
-								{isLoading ? (
-									<div className="text-center py-8 text-muted-foreground">
-										<AuraSpinner size="lg" className="mx-auto mb-2 text-primary-dynamic" />
-										<p>Searching...</p>
-									</div>
-								) : hasFilteredResults ? (
-									<motion.div
-										variants={wrapperVariants}
-										initial="closed"
-										animate="open"
-										exit="closed"
-									>
-										{/* Movies & TV Shows Section */}
-										{filteredMediaItems.length > 0 && (
-											<motion.div variants={itemVariants}>
-												<div className="mb-6">
-													<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-														{mediaSectionTitle} ({filteredMediaItems.length})
-													</h3>
-													<div className="space-y-1">
-														{filteredMediaItems.map((item, index) => {
-															const isHighlighted = index === focusedIndex;
-															return (
-																<SearchResultMediaItem
-																	key={`media-item-${item.RatingKey}`}
-																	title={item.Title}
-																	subtitle={`${item.LibraryTitle} • ${item.Year}`}
-																	href={`/media-item/`}
-																	isHighlighted={isHighlighted}
-																	imageSrc={`/api/mediaserver/image?ratingKey=${item.RatingKey}&imageType=poster`}
-																	imageAlt={item.Title}
-																	fallbackIcon={
-																		item.Type === "movie" ? (
-																			<FilmIcon className="h-4 w-4 text-muted-foreground" />
-																		) : (
-																			<TvIcon className="h-4 w-4 text-muted-foreground" />
-																		)
-																	}
-																	onLinkClick={() => {
-																		handleMediaItemClick(item);
-																	}}
-																/>
-															);
-														})}
-													</div>
-												</div>
-											</motion.div>
-										)}
-
-										{/* MediUX Users Section */}
-										{filteredMediuxUsers.length > 0 && (
-											<motion.div variants={itemVariants}>
-												{filteredMediaItems.length > 0 && <Separator className="mb-6" />}
-												<div className="mb-6">
-													<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-														<UserIcon className="h-4 w-4" />
-														MediUX Users ({filteredMediuxUsers.length})
-													</h3>
-													<div className="space-y-1">
-														{filteredMediuxUsers.map((item, index) => {
-															const adjustedIndex = filteredMediaItems.length + index;
-															const isHighlighted = adjustedIndex === focusedIndex;
-															return (
-																<SearchResultUserItem
-																	key={`user-${item.Username}`}
-																	user={item}
-																	isHighlighted={isHighlighted}
-																	onLinkClick={() => {
-																		handleMediuxUserClick(item.Username);
-																	}}
-																/>
-															);
-														})}
-													</div>
-												</div>
-											</motion.div>
-										)}
-
-										{error && <ErrorMessage error={error} />}
-									</motion.div>
-								) : isSearching ? (
-									<div className="text-center py-8 text-muted-foreground">
-										{!error ? (
-											<>
-												<Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-												<p>No results found for '{searchInput}'</p>
-												<p className="text-xs mt-1">
-													Try adjusting your search terms or filter settings
-												</p>
-											</>
-										) : (
-											<>
-												<Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-												<p className="text-sm mt-1">
-													There was an error processing your search of
-												</p>
-												<p className="text-sm mt-1">'{searchInput}'</p>
-												<ErrorMessage error={error} />
-											</>
-										)}
-									</div>
-								) : null}
-							</div>
-						</motion.div>
-					)}
-				</AnimatePresence>
 			</div>
+
+			{/* Expanded Results */}
+			<AnimatePresence>
+				{isExpanded && isSearching && (
+					<motion.div
+						ref={resultsRef}
+						initial={{ opacity: 0, y: 10, scale: 0.98 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 10, scale: 0.98 }}
+						transition={{ duration: 0.2, ease: "easeOut" }}
+						style={{ originY: "top" }}
+						className={cn(
+							// Mobile: fixed, full width, centered, with padding and max width
+							"fixed top-16 left-0 right-0 w-full max-w-md mx-auto px-1 py-2 z-50 rounded-2xl bg-background dark:bg-background-dark border border-primary shadow-lg",
+							// Desktop: absolute, matches search bar width
+							"sm:absolute sm:top-full sm:left-0 sm:w-full sm:max-w-lg sm:mx-auto sm:mt-2 sm:rounded-xl"
+						)}
+					>
+						<div className="p-4 max-h-[60vh] overflow-y-auto scrollbar-hide">
+							{/* Filter Controls - Always show when searching */}
+							{isSearching && (
+								<>
+									<div className="flex items-center gap-2 mb-4 flex-wrap">
+										<span className="text-xs font-medium text-muted-foreground mr-2 shrink-0">
+											Filter:
+										</span>
+										<div className="flex items-center gap-2 flex-wrap">
+											{filterOrder.map((filterType) => (
+												<Badge
+													key={filterType}
+													variant={filters[filterType] ? "default" : "secondary"}
+													className={cn(
+														"capitalize text-xs cursor-pointer transition-colors",
+														filters[filterType]
+															? "hover:bg-primary-dynamic/20"
+															: "text-muted-foreground hover:text-primary-dynamic hover:border-primary-dynamic/50"
+													)}
+													onClick={() => toggleFilter(filterType)}
+												>
+													{filterType === "mediaItem" ? "Media Items" : "MediUX Users"}
+												</Badge>
+											))}
+										</div>
+									</div>
+									<Separator className="mb-4" />
+								</>
+							)}
+
+							{isLoading ? (
+								<div className="text-center py-8 text-muted-foreground">
+									<AuraSpinner size="lg" className="mx-auto mb-2 text-primary-dynamic" />
+									<p>Searching...</p>
+								</div>
+							) : hasFilteredResults ? (
+								<motion.div variants={wrapperVariants} initial="closed" animate="open" exit="closed">
+									{/* Movies & TV Shows Section */}
+									{filteredMediaItems.length > 0 && (
+										<motion.div variants={itemVariants}>
+											<div className="mb-6">
+												<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+													{mediaSectionTitle} ({filteredMediaItems.length})
+												</h3>
+												<div className="space-y-1">
+													{filteredMediaItems.map((item, index) => {
+														const isHighlighted = index === focusedIndex;
+														return (
+															<SearchResultMediaItem
+																key={`media-item-${item.RatingKey}`}
+																title={item.Title}
+																subtitle={`${item.LibraryTitle} • ${item.Year}`}
+																href={`/media-item/`}
+																isHighlighted={isHighlighted}
+																imageSrc={`/api/mediaserver/image?ratingKey=${item.RatingKey}&imageType=poster`}
+																imageAlt={item.Title}
+																fallbackIcon={
+																	item.Type === "movie" ? (
+																		<FilmIcon className="h-4 w-4 text-muted-foreground" />
+																	) : (
+																		<TvIcon className="h-4 w-4 text-muted-foreground" />
+																	)
+																}
+																onLinkClick={() => {
+																	handleMediaItemClick(item);
+																}}
+															/>
+														);
+													})}
+												</div>
+											</div>
+										</motion.div>
+									)}
+
+									{/* MediUX Users Section */}
+									{filteredMediuxUsers.length > 0 && (
+										<motion.div variants={itemVariants}>
+											{filteredMediaItems.length > 0 && <Separator className="mb-6" />}
+											<div className="mb-6">
+												<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+													<UserIcon className="h-4 w-4" />
+													MediUX Users ({filteredMediuxUsers.length})
+												</h3>
+												<div className="space-y-1">
+													{filteredMediuxUsers.map((item, index) => {
+														const adjustedIndex = filteredMediaItems.length + index;
+														const isHighlighted = adjustedIndex === focusedIndex;
+														return (
+															<SearchResultUserItem
+																key={`user-${item.Username}`}
+																user={item}
+																isHighlighted={isHighlighted}
+																onLinkClick={() => {
+																	handleMediuxUserClick(item.Username);
+																}}
+															/>
+														);
+													})}
+												</div>
+											</div>
+										</motion.div>
+									)}
+
+									{error && <ErrorMessage error={error} />}
+								</motion.div>
+							) : isSearching ? (
+								<div className="text-center py-8 text-muted-foreground">
+									{!error ? (
+										<>
+											<Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+											<p>No results found for '{searchInput}'</p>
+											<p className="text-xs mt-1">
+												Try adjusting your search terms or filter settings
+											</p>
+										</>
+									) : (
+										<>
+											<Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+											<p className="text-sm mt-1">There was an error processing your search of</p>
+											<p className="text-sm mt-1">'{searchInput}'</p>
+											<ErrorMessage error={error} />
+										</>
+									)}
+								</div>
+							) : null}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
