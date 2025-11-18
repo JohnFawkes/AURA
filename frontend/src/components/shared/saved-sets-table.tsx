@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 
+import { AssetImage } from "@/components/shared/asset-image";
 import { hasSelectedTypesOverlapOnAutoDownload } from "@/components/shared/saved-sets-cards";
 import {
 	SavedSetDeleteModal,
@@ -158,6 +159,14 @@ const SavedSetsTableRow: React.FC<{
 					) : (
 						<></>
 					)}
+				</TableCell>
+				<TableCell className="font-medium">
+					{
+						<AssetImage
+							image={savedSet.MediaItem}
+							className="w-[100%] h-auto transition-transform hover:scale-105"
+						/>
+					}
 				</TableCell>
 				<TableCell className="font-medium">
 					{

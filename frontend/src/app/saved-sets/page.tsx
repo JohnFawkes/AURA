@@ -639,6 +639,7 @@ const SavedSetsPage: React.FC = () => {
 								)}
 							</TableHead>
 							<TableHead className="w-[20px]"></TableHead>
+							<TableHead className="w-[70px]"></TableHead>
 							<TableHead
 								className="w-[300px] group cursor-pointer select-none"
 								onClick={() => {
