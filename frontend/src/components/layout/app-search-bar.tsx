@@ -2,7 +2,7 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchSearchResults } from "@/services/search/api-search";
-import { EyeOff, FilmIcon, Search, Star, TvIcon, User, UserIcon } from "lucide-react";
+import { EyeOff, FilmIcon, Search, Star, TvIcon, User, UserIcon, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import * as React from "react";
@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { ErrorMessage } from "@/components/shared/error-message";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AuraSpinner from "@/components/ui/mediux-spinner";
 import { Separator } from "@/components/ui/separator";
@@ -337,6 +338,17 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 									<Separator className="mb-4" />
 								</>
 							)}
+
+							{/* Close Icon */}
+							<Button
+								size={"icon"}
+								variant={"ghost"}
+								className="absolute top-1 right-1"
+								aria-label="Close search results"
+								onClick={() => setIsExpanded(false)}
+							>
+								<X className="w-4 h-4 text-destructive" />
+							</Button>
 
 							{isLoading ? (
 								<div className="text-center py-8 text-muted-foreground">
