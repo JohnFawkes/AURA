@@ -57,8 +57,10 @@ func Mediux_SearchUsers(ctx context.Context, query string) (mediux_usernames []M
 		}
 
 		if isFollowed {
+			user.Follow = true
 			followedUsers = append(followedUsers, user)
 		} else if isHidden {
+			user.Hide = true
 			hiddenUsers = append(hiddenUsers, user)
 		} else if !found {
 			normalUsers = append(normalUsers, user)
