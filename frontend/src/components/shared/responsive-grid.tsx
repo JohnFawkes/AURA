@@ -55,30 +55,6 @@ interface ResponsiveGridProps {
 /**
  * A responsive grid component that adjusts the number of columns based on screen size.
  *
- * Default column counts for "regular" size (step 2):
- * - Default: 2 columns
- * - sm: 2 columns
- * - md: 3 columns
- * - lg: 3 columns
- * - xl: 4 columns
- * - 2xl: 5 columns
- * - 3xl: 6 columns
- * - 4xl: 8 columns
- * - 5xl: 10 columns
- * - 6xl: 12 columns
- *
- * Default column counts for "larger" size (step 2):
- * - Default: 2 columns
- * - sm: 2 columns
- * - md: 2 columns
- * - lg: 3 columns
- * - xl: 3 columns
- * - 2xl: 4 columns
- * - 3xl: 5 columns
- * - 4xl: 6 columns
- * - 5xl: 7 columns
- * - 6xl: 8 columns
- *
  * The number of columns can be dynamically adjusted based on user preference using density steps:
  * - Step 2: Default columns (lowest density)
  * - Step 1: +1 column (medium density)
@@ -104,41 +80,59 @@ export const ResponsiveGrid: React.FC<PropsWithChildren<ResponsiveGridProps>> = 
 		"grid-cols-2",
 		"sm:grid-cols-2",
 		"md:grid-cols-3",
-		"lg:grid-cols-3",
-		"xl:grid-cols-4",
-		"2xl:grid-cols-5",
-		"3xl:grid-cols-6",
-		"4xl:grid-cols-8",
-		"5xl:grid-cols-10",
-		"6xl:grid-cols-12",
+		"lg:grid-cols-4",
+		"xl:grid-cols-5",
+		"2xl:grid-cols-6",
+		"3xl:grid-cols-7",
+		"3.5xl:grid-cols-8",
+		"4xl:grid-cols-9",
+		"4.5xl:grid-cols-10",
+		"5xl:grid-cols-12",
+		"5.5xl:grid-cols-14",
+		"6xl:grid-cols-16",
+		"6.5xl:grid-cols-18",
+		"7xl:grid-cols-20",
+		"8xl:grid-cols-24",
 	];
 
 	// Medium density classes (step 1) for Regular size
 	const mediumRegularClasses = [
 		"grid-cols-2",
 		"sm:grid-cols-3",
-		"md:grid-cols-3",
-		"lg:grid-cols-4",
-		"xl:grid-cols-5",
-		"2xl:grid-cols-6",
-		"3xl:grid-cols-7",
-		"4xl:grid-cols-9",
-		"5xl:grid-cols-11",
-		"6xl:grid-cols-13",
+		"md:grid-cols-4",
+		"lg:grid-cols-5",
+		"xl:grid-cols-6",
+		"2xl:grid-cols-8",
+		"3xl:grid-cols-9",
+		"3.5xl:grid-cols-10",
+		"4xl:grid-cols-12",
+		"4.5xl:grid-cols-14",
+		"5xl:grid-cols-16",
+		"5.5xl:grid-cols-18",
+		"6xl:grid-cols-20",
+		"6.5xl:grid-cols-22",
+		"7xl:grid-cols-24",
+		"8xl:grid-cols-28",
 	];
 
 	// Highest density classes (step 0) for Regular size
 	const highRegularClasses = [
 		"grid-cols-2",
 		"sm:grid-cols-3",
-		"md:grid-cols-4",
-		"lg:grid-cols-5",
-		"xl:grid-cols-6",
-		"2xl:grid-cols-7",
-		"3xl:grid-cols-8",
-		"4xl:grid-cols-10",
-		"5xl:grid-cols-12",
-		"6xl:grid-cols-14",
+		"md:grid-cols-5",
+		"lg:grid-cols-6",
+		"xl:grid-cols-8",
+		"2xl:grid-cols-10",
+		"3xl:grid-cols-12",
+		"3.5xl:grid-cols-14",
+		"4xl:grid-cols-16",
+		"4.5xl:grid-cols-18",
+		"5xl:grid-cols-20",
+		"5.5xl:grid-cols-22",
+		"6xl:grid-cols-24",
+		"6.5xl:grid-cols-28",
+		"7xl:grid-cols-32",
+		"8xl:grid-cols-40",
 	];
 
 	// Base classes for default density (step 2) - Larger size
@@ -147,40 +141,58 @@ export const ResponsiveGrid: React.FC<PropsWithChildren<ResponsiveGridProps>> = 
 		"sm:grid-cols-2",
 		"md:grid-cols-2",
 		"lg:grid-cols-3",
-		"xl:grid-cols-3",
-		"2xl:grid-cols-4",
-		"3xl:grid-cols-4",
-		"4xl:grid-cols-5",
-		"5xl:grid-cols-6",
-		"6xl:grid-cols-7",
+		"xl:grid-cols-4",
+		"2xl:grid-cols-5",
+		"3xl:grid-cols-6",
+		"3.5xl:grid-cols-7",
+		"4xl:grid-cols-8",
+		"4.5xl:grid-cols-9",
+		"5xl:grid-cols-10",
+		"5.5xl:grid-cols-12",
+		"6xl:grid-cols-14",
+		"6.5xl:grid-cols-16",
+		"7xl:grid-cols-18",
+		"8xl:grid-cols-20",
 	];
 
 	// Medium density classes (step 1) for Larger size
 	const mediumLargerClasses = [
 		"grid-cols-2",
-		"sm:grid-cols-2",
+		"sm:grid-cols-3",
 		"md:grid-cols-3",
-		"lg:grid-cols-3",
-		"xl:grid-cols-4",
-		"2xl:grid-cols-5",
-		"3xl:grid-cols-6",
-		"4xl:grid-cols-7",
-		"5xl:grid-cols-8",
-		"6xl:grid-cols-9",
+		"lg:grid-cols-4",
+		"xl:grid-cols-5",
+		"2xl:grid-cols-6",
+		"3xl:grid-cols-7",
+		"3.5xl:grid-cols-8",
+		"4xl:grid-cols-9",
+		"4.5xl:grid-cols-10",
+		"5xl:grid-cols-12",
+		"5.5xl:grid-cols-14",
+		"6xl:grid-cols-16",
+		"6.5xl:grid-cols-18",
+		"7xl:grid-cols-20",
+		"8xl:grid-cols-22",
 	];
 
 	// Highest density classes (step 0) for Larger size
 	const highLargerClasses = [
 		"grid-cols-2",
 		"sm:grid-cols-3",
-		"md:grid-cols-3",
-		"lg:grid-cols-4",
-		"xl:grid-cols-4",
-		"2xl:grid-cols-6",
-		"3xl:grid-cols-7",
-		"4xl:grid-cols-8",
-		"5xl:grid-cols-9",
-		"6xl:grid-cols-10",
+		"md:grid-cols-4",
+		"lg:grid-cols-5",
+		"xl:grid-cols-6",
+		"2xl:grid-cols-8",
+		"3xl:grid-cols-9",
+		"3.5xl:grid-cols-10",
+		"4xl:grid-cols-12",
+		"4.5xl:grid-cols-14",
+		"5xl:grid-cols-16",
+		"5.5xl:grid-cols-18",
+		"6xl:grid-cols-20",
+		"6.5xl:grid-cols-22",
+		"7xl:grid-cols-24",
+		"8xl:grid-cols-28",
 	];
 
 	// Select classes based on size and density step
