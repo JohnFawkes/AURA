@@ -3,6 +3,7 @@
 ### Fixed
 
 - Fixed the layout of the cards so that the badges are aligned properly in cards.
+- [#116](https://github.com/mediux-team/AURA/issues/116) - Fixed issue where MediUX token validation would fail if the MediUX service was unreachable, now it properly handles connection errors.
 
 ---
 

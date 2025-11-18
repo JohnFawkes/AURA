@@ -47,5 +47,6 @@ func Mediux_ValidateToken(ctx context.Context, token string) logging.LogErrorInf
 		return *logAction.Error
 	}
 
+	Global_Config_MediuxValid = true
 	return logging.LogErrorInfo{}
 }
