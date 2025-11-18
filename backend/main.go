@@ -178,6 +178,8 @@ func startRuntimeServices() {
 
 	cronInstance.Start()
 
+	// Start MediUX WebSocket Client
+	//go api.Mediux_StartWebSocketClient()
 }
 
 func PrintDetails() {
