@@ -60,7 +60,16 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 			if hasIDFilter && (item.TMDB_ID != idFilter && item.RatingKey != idFilter) {
 				continue
 			}
-			if strings.Contains(strings.ToLower(item.Title), strings.ToLower(cleanedQuery)) {
+			queryWords := strings.Fields(strings.ToLower(cleanedQuery))
+			titleLower := strings.ToLower(item.Title)
+			allWordsMatch := true
+			for _, word := range queryWords {
+				if !strings.Contains(titleLower, word) {
+					allWordsMatch = false
+					break
+				}
+			}
+			if allWordsMatch {
 				mediaItems = append(mediaItems, item)
 				count++
 				if count >= maxPerSection || len(mediaItems) >= maxTotal {
