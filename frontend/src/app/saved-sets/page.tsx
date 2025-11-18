@@ -500,7 +500,9 @@ const SavedSetsPage: React.FC = () => {
 													}
 												)}
 											>
-												{result.OverAllResult}
+												{["Success", "Warn", "Error", "Skipped"].includes(result.OverAllResult)
+													? result.OverAllResult
+													: "Unknown"}
 											</Badge>
 										</div>
 									</div>
@@ -528,7 +530,7 @@ const SavedSetsPage: React.FC = () => {
 												});
 												await handleRecheckItem(title, item);
 											}}
-											className="h-6 w-6 text-muted-foreground hover:text-red-500"
+											className="h-6 w-6 text-muted-foreground hover:text-yellow-500"
 										>
 											<RefreshIcon className="h-4 w-4" />
 										</Button>
