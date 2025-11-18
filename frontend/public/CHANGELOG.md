@@ -2,6 +2,7 @@
 
 ### Added
 
+- Added Saved Sets to search functionality.
 - Added image to Saved Sets table for better visual identification of sets.
 
 ### Fixed

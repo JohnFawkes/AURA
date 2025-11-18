@@ -2,7 +2,7 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { fetchSearchResults } from "@/services/search/api-search";
-import { EyeOff, FilmIcon, Search, Star, TvIcon, User, UserIcon, X } from "lucide-react";
+import { BookmarkIcon, EyeOff, Film, FilmIcon, Search, Star, TvIcon, User, UserIcon, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import * as React from "react";
@@ -26,6 +26,7 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 import { APIResponse } from "@/types/api/api-response";
+import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
@@ -36,8 +37,8 @@ export interface DynamicSearchProps {
 }
 
 // Types for filter keys
-type SearchTypeFilter = "mediaItem" | "mediuxUser";
-const filterOrder: SearchTypeFilter[] = ["mediaItem", "mediuxUser"];
+type SearchTypeFilter = "mediaItem" | "mediuxUser" | "savedSets";
+const filterOrder: SearchTypeFilter[] = ["mediaItem", "mediuxUser", "savedSets"];
 
 // Animation variants for results
 const wrapperVariants = {
@@ -90,6 +91,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	const [filters, setFilters] = useState<{ [key: string]: boolean }>({
 		mediaItem: true,
 		mediuxUser: true,
+		savedSets: false,
 	});
 
 	// Focused Index for keyboard navigation
@@ -98,6 +100,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	// Search Results States
 	const [searchResultMediaItems, setSearchResultMediaitems] = useState<MediaItem[]>([]);
 	const [searchResultMediuxUsers, setSearchResultsMediuxUsers] = useState<MediuxUserInfo[]>([]);
+	const [searchResultSavedSets, setSearchResultsSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
 
 	// --- Handlers and Effects ---
 
@@ -128,6 +131,10 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		return filters.mediuxUser ? searchResultMediuxUsers : [];
 	}, [searchResultMediuxUsers, filters.mediuxUser]);
 
+	const filteredSavedSets = useMemo(() => {
+		return filters.savedSets ? searchResultSavedSets : [];
+	}, [searchResultSavedSets, filters.savedSets]);
+
 	const hasFilteredResults = filteredMediaItems.length > 0 || filteredMediuxUsers.length > 0;
 
 	// Use Effect - To handle clicks outside the search results to close the dropdown
@@ -153,6 +160,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	const clearAllResults = () => {
 		setSearchResultMediaitems([]);
 		setSearchResultsMediuxUsers([]);
+		setSearchResultsSavedSets([]);
 	};
 
 	// If the search query is changed externally, update the local input state
@@ -185,7 +193,12 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 			setSearchQuery(searchInput);
 
 			try {
-				const searchResp = await fetchSearchResults(searchInput);
+				const searchResp = await fetchSearchResults({
+					searchQuery: searchInput,
+					searchMediaItems: filters.mediaItem,
+					searchMediuxUsers: filters.mediuxUser,
+					searchSavedSets: filters.savedSets,
+				});
 				if (searchResp.status === "error") {
 					setError(searchResp);
 					return;
@@ -199,6 +212,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 
 				setSearchResultMediaitems(results?.media_items || []);
 				setSearchResultsMediuxUsers(results?.mediux_usernames || []);
+				setSearchResultsSavedSets(results?.saved_sets || []);
 			} catch (error) {
 				clearAllResults();
 				log("ERROR", "Search Bar", "Fetch", "Search failed");
@@ -209,7 +223,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		}, 500);
 
 		return () => clearTimeout(delayDebounceFn);
-	}, [searchInput, setSearchQuery]);
+	}, [filters.mediaItem, filters.mediuxUser, filters.savedSets, searchInput, setSearchQuery]);
 
 	// Keyboard Navigation Handler
 	// Handles keyboard events for navigating and selecting search results
@@ -330,7 +344,13 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 													)}
 													onClick={() => toggleFilter(filterType)}
 												>
-													{filterType === "mediaItem" ? "Media Items" : "MediUX Users"}
+													{filterType === "mediaItem"
+														? "Media Items"
+														: filterType === "mediuxUser"
+															? "MediUX Users"
+															: filterType === "savedSets"
+																? "Saved Sets"
+																: filterType}
 												</Badge>
 											))}
 										</div>
@@ -362,6 +382,16 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 										<motion.div variants={itemVariants}>
 											<div className="mb-6">
 												<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+													{mediaTypes.includes("movie") && mediaTypes.includes("show") ? (
+														<>
+															<FilmIcon className="h-4 w-4" />
+															<TvIcon className="h-4 w-4" />
+														</>
+													) : mediaTypes.includes("movie") ? (
+														<FilmIcon className="h-4 w-4" />
+													) : (
+														<TvIcon className="h-4 w-4" />
+													)}
 													{mediaSectionTitle} ({filteredMediaItems.length})
 												</h3>
 												<div className="space-y-1">
@@ -385,6 +415,54 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 																}
 																onLinkClick={() => {
 																	handleMediaItemClick(item);
+																}}
+															/>
+														);
+													})}
+												</div>
+											</div>
+										</motion.div>
+									)}
+
+									{/* Saved Sets Section */}
+									{filteredSavedSets.length > 0 && (
+										<motion.div variants={itemVariants}>
+											{(filteredMediaItems.length > 0 || filteredMediuxUsers.length > 0) && (
+												<Separator className="mb-6" />
+											)}
+											<div className="mb-6">
+												<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+													<BookmarkIcon className="h-4 w-4" />
+													Saved Sets ({filteredSavedSets.length})
+												</h3>
+												<div className="space-y-1">
+													{filteredSavedSets.map((set, index) => {
+														const adjustedIndex =
+															filteredMediaItems.length +
+															filteredMediuxUsers.length +
+															index;
+														const isHighlighted = adjustedIndex === focusedIndex;
+														const subtitle = `${set.LibraryTitle} • ${
+															set.PosterSets.length > 1
+																? `${set.PosterSets.length} sets`
+																: `Set by ${set.PosterSets[0].PosterSet.User.Name}`
+														}`;
+														return (
+															<SearchResultMediaItem
+																key={`saved-set-${set.LibraryTitle}-${set.TMDB_ID}`}
+																title={set.MediaItem.Title}
+																subtitle={subtitle}
+																href={`/saved-sets/`}
+																isHighlighted={isHighlighted}
+																imageSrc={`/api/mediaserver/image?ratingKey=${set.MediaItem.RatingKey}&imageType=poster`}
+																imageAlt={set.MediaItem.Title}
+																fallbackIcon={
+																	<Film className="h-4 w-4 text-muted-foreground" />
+																}
+																onLinkClick={() => {
+																	setSearchQuery(
+																		`${set.MediaItem.Title} Y:${set.MediaItem.Year}: ID:${set.MediaItem.TMDB_ID}: L:${set.LibraryTitle}:`
+																	);
 																}}
 															/>
 														);
