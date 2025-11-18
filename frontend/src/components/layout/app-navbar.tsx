@@ -35,25 +35,6 @@ import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-const placeholderTexts = {
-	home: {
-		desktop: "Search for Movies or Shows",
-		mobile: "Search",
-	},
-	savedSets: {
-		desktop: "Search Saved Sets",
-		mobile: "Search",
-	},
-	user: {
-		desktop: "Search Sets by",
-		mobile: "Search",
-	},
-	collections: {
-		desktop: "Search Collections",
-		mobile: "Search",
-	},
-};
-
 export default function Navbar() {
 	// Router
 	const router = useRouter();
@@ -63,13 +44,9 @@ export default function Navbar() {
 	// Page Logic
 	const isHomePage = pathName === "/";
 	const isMediaPage = pathName.startsWith("/media-item") || pathName.startsWith("/media-item/");
-	//const isSettingsPage = pathName === "/settings" || pathName === "/settings/";
-	const isSavedSetsPage = pathName === "/saved-sets" || pathName === "/saved-sets/";
-	const isUserPage = pathName.startsWith("/user/");
 	const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";
 	const isLogsPage = pathName === "/logs" || pathName === "/logs/";
 	const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
-	const isCollectionsPage = pathName === "/collections" || pathName === "/collections/";
 	const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
 
 	// Auth State
@@ -80,7 +57,6 @@ export default function Navbar() {
 
 	// Search States
 	const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
-	const [placeholderText, setPlaceholderText] = useState(""); // Placeholder text based on page
 
 	// Home Page Store
 	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
@@ -138,29 +114,7 @@ export default function Navbar() {
 	useEffect(() => {
 		// Update the Logo based on the screen size
 		setLogoSrc(isWideScreen ? "/aura_word_logo.svg" : "/aura_logo.svg");
-
-		let username = "";
-		// Update the placeholder text based on the page and screen size
-		if (isUserPage) {
-			const parts = pathName.split("/");
-			username = parts[parts.length - 1] || parts[parts.length - 2] || "";
-		}
-		if (isSavedSetsPage) {
-			setPlaceholderText(isWideScreen ? placeholderTexts.savedSets.desktop : placeholderTexts.savedSets.mobile);
-		} else if (isCollectionsPage) {
-			setPlaceholderText(
-				isWideScreen ? placeholderTexts.collections.desktop : placeholderTexts.collections.mobile
-			);
-		} else if (isUserPage) {
-			setPlaceholderText(
-				isWideScreen
-					? `${placeholderTexts.user.desktop} ${username}`
-					: `${placeholderTexts.user.mobile} ${username}`
-			);
-		} else {
-			setPlaceholderText(isWideScreen ? placeholderTexts.home.desktop : placeholderTexts.home.mobile);
-		}
-	}, [isCollectionsPage, isHomePage, isSavedSetsPage, isUserPage, isWideScreen, pathName]);
+	}, [isWideScreen]);
 
 	// On mount, check auth status
 	useEffect(() => {
@@ -220,7 +174,7 @@ export default function Navbar() {
 			{/* Center: Search */}
 			<div className="relative flex-1 flex justify-center mx-3">
 				<div className="relative w-full max-w-2xl">
-					<DynamicSearch placeholder={placeholderText} />
+					<DynamicSearch placeholder="Search" />
 				</div>
 			</div>
 
@@ -260,75 +214,73 @@ export default function Navbar() {
 						/>
 					</>
 				)}
-				{(!isMediaPage || isWideScreen) && (
-					<DropdownMenu>
-						<DropdownMenuTrigger
-							asChild
-							className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						asChild
+						className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
+					>
+						<SettingsIcon className="w-8 h-8 ml-2" />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
+						{status && !status.needsSetup && (
+							<>
+								<DropdownMenuItem
+									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+									onClick={() => router.push("/saved-sets")}
+								>
+									<BookmarkIcon className="w-6 h-6 mr-2" />
+									Saved Sets
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+									onClick={() => router.push("/collections")}
+								>
+									<LayoutGrid className="w-6 h-6 mr-2" />
+									Collections
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+									onClick={() => router.push("/download-queue")}
+								>
+									<ListOrdered className="w-6 h-6 mr-2" />
+									Download Queue
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+									onClick={() => router.push("/settings")}
+								>
+									<FileCogIcon className="w-6 h-6 mr-2" />
+									Settings
+								</DropdownMenuItem>
+								{isWideScreen && (
+									<DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
+										<ViewDensitySlider />
+									</DropdownMenuItem>
+								)}
+							</>
+						)}
+						<DropdownMenuItem
+							className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+							onClick={() => router.push("/logs")}
 						>
-							<SettingsIcon className="w-8 h-8 ml-2" />
-						</DropdownMenuTrigger>
-						<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-							{status && !status.needsSetup && (
-								<>
-									<DropdownMenuItem
-										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-										onClick={() => router.push("/saved-sets")}
-									>
-										<BookmarkIcon className="w-6 h-6 mr-2" />
-										Saved Sets
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-										onClick={() => router.push("/collections")}
-									>
-										<LayoutGrid className="w-6 h-6 mr-2" />
-										Collections
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-										onClick={() => router.push("/download-queue")}
-									>
-										<ListOrdered className="w-6 h-6 mr-2" />
-										Download Queue
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-										onClick={() => router.push("/settings")}
-									>
-										<FileCogIcon className="w-6 h-6 mr-2" />
-										Settings
-									</DropdownMenuItem>
-									{isWideScreen && (
-										<DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
-											<ViewDensitySlider />
-										</DropdownMenuItem>
-									)}
-								</>
-							)}
-							<DropdownMenuItem
-								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-								onClick={() => router.push("/logs")}
-							>
-								<Logs className="w-6 h-6 mr-2" />
-								Logs
-							</DropdownMenuItem>
-							{isAuthed && status?.currentSetup.Auth.Enabled && (
-								<>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
-										onClick={handleLogout}
-									>
-										<LogOutIcon className="w-6 h-6 mr-2" />
-										Logout
-									</DropdownMenuItem>
-								</>
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				)}
+							<Logs className="w-6 h-6 mr-2" />
+							Logs
+						</DropdownMenuItem>
+						{isAuthed && status?.currentSetup.Auth.Enabled && (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
+									onClick={handleLogout}
+								>
+									<LogOutIcon className="w-6 h-6 mr-2" />
+									Logout
+								</DropdownMenuItem>
+							</>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</div>
 		</nav>
 	);
