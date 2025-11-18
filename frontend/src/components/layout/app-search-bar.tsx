@@ -70,6 +70,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 
 	// Global Search Store
 	const { searchQuery, setSearchQuery } = useSearchQueryStore(); // Global store for search query
+
 	const [searchInput, setSearchInput] = useState(searchQuery); // Local state for input field
 
 	// Results UI States
@@ -153,12 +154,14 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 		setSearchResultsMediuxUsers([]);
 	};
 
-	// If the search query is cleared, reset states
+	// If the search query is changed externally, update the local input state
 	useEffect(() => {
 		if (searchQuery.trim() === "") {
 			setSearchInput("");
 			setIsSearching(false);
 			clearAllResults();
+		} else {
+			setSearchInput(searchQuery);
 		}
 	}, [searchQuery]);
 

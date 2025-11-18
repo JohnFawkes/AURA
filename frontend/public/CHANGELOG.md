@@ -10,6 +10,7 @@
 - [#116](https://github.com/mediux-team/AURA/issues/116) - Fixed issue where MediUX token validation would fail if the MediUX service was unreachable, now it properly handles connection errors.
 - Improved date formatting to show hours and minutes for recent updates
 - Fixed issue where search queries with multiple words would not return expected results.
+- Fixed issue where search bar was not being updated when clicking on Database icon in Media Item Page.
 
 ---
 
