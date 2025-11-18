@@ -350,7 +350,11 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 			// or if it's not selected here, but found in any other set.
 			const isTypeDisabled =
 				editSet.toDelete ||
-				(!isSelected && editSets.some((item, j) => j !== index && item.selectedTypes.includes(type)));
+				(!isSelected &&
+					editSets.some(
+						(item, j) =>
+							j !== index && Array.isArray(item.selectedTypes) && item.selectedTypes.includes(type)
+					));
 			return (
 				<Badge
 					key={type}
