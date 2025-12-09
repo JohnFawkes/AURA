@@ -132,7 +132,11 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 				getFilePathAction.AppendResult("season_path", "built season path from series path and season number")
 			}
 			newFilePath = seasonPath
-			newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
+			if file.Type == "specialSeasonPoster" {
+				newFileName = "season-specials-poster.jpg"
+			} else {
+				newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
+			}
 		case "titlecard":
 			episodeNamingConvention := Global_Config.Images.SaveImagesLocally.EpisodeNamingConvention
 			// For titlecards, get the file path from Plex
