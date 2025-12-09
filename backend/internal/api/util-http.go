@@ -166,7 +166,7 @@ func DecodeRequestBodyJSON(ctx context.Context, r io.ReadCloser, v any, structNa
 	if err != nil {
 		_, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Decoding request body into `%s` struct", structName), logging.LevelTrace)
 		defer logAction.Complete()
-		logAction.SetError("Failed to decode the JSON", fmt.Sprintf("Ensure that the JSON is correct for %s", structName),
+		logAction.SetError("Failed to decode the JSON request body", fmt.Sprintf("Ensure that the JSON is correct for %s", structName),
 			map[string]any{
 				"requestBody": body,
 				"error":       err.Error(),
