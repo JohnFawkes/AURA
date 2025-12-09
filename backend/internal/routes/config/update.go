@@ -90,10 +90,27 @@ func UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	if !authChanged && !loggingChanged && !mediaServerChanged && !mediuxChanged &&
 		!autoDownloadChanged && !imagesChanged && !tmdbChanged && !labelsAndTagsChanged &&
 		!notificationsChanged && !sonarrRadarrChanged {
-		ld.Status = logging.StatusWarn
-		logging.LOGGER.Warn().Timestamp().Msg("No changes detected in configuration")
-		api.Util_Response_SendJSON(w, ld, "No changes detected in configuration")
-		return
+		// If nothing has changed AND the config is valid, log a warning
+		if api.Global_Config_Valid {
+			ld.Status = logging.StatusWarn
+			logging.LOGGER.Warn().Timestamp().Msg("No changes detected in configuration")
+			api.Util_Response_SendJSON(w, ld, "No changes detected in configuration")
+			return
+		} else if !api.Global_Config_Valid {
+			// If nothing has changed AND the config is invalid, re-validate
+			newConfig.ValidateConfig()
+			if !api.Global_Config_Valid {
+				ld.Status = logging.StatusError
+				logging.LOGGER.Error().Timestamp().Msg("Current configuration is invalid")
+				api.Util_Response_SendJSON(w, ld, "Current configuration is invalid")
+				return
+			} else {
+				ld.Status = logging.StatusSuccess
+				logging.LOGGER.Info().Timestamp().Msg("Configuration is now valid")
+				api.Util_Response_SendJSON(w, ld, newConfig.Sanitize(ctx))
+				return
+			}
+		}
 	}
 
 	// Save the new configuration
