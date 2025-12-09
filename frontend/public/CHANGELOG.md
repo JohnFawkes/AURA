@@ -1,3 +1,13 @@
+## [0.9.62] - 2025-12-09
+
+### Fixed
+
+- Fixed issue where Special Season Posters were not being properly named.
+- [#120](https://github.com/mediux-team/AURA/issues/120) - Fixed issue where aura would fail to start when external applications were unreachable during startup (e.g. MediUX, Media Server, Sonarr, Radarr).
+- Clarify port number for Sonarr in Webhook documentation.
+
+---
+
 ## [0.9.61] - 2025-11-18
 
 ### Added
