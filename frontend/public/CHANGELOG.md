@@ -1,3 +1,11 @@
+## [0.9.63] - 2025-12-09
+
+### Fixed
+
+- Fixed issue where response is nil when MediUX returns an error, causing a panic.
+
+---
+
 ## [0.9.62] - 2025-12-09
 
 ### Fixed
