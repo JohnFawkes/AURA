@@ -61,7 +61,7 @@ FROM node:alpine AS final
 WORKDIR /app
 
 # Install CA certificates and tzdata for timezone support
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk update && apk add --no-cache ca-certificates tzdata
 
 # Copy the backend application from the builder stage
 COPY --from=backend-builder /backend/main .
