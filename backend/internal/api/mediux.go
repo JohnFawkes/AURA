@@ -24,6 +24,19 @@ type MediuxResponse struct {
 		Movie *MediuxMovieByID `json:"movies_by_id,omitempty"`
 		Show  *MediuxShowByID  `json:"shows_by_id,omitempty"`
 	} `json:"data"`
+	Errors []MediuxError `json:"errors,omitempty"`
+}
+
+type MediuxError struct {
+	Message    string                `json:"message"`
+	Paths      []string              `json:"path,omitempty"`
+	Extensions map[string]any        `json:"extensions,omitempty"`
+	Locations  []MediuxErrorLocation `json:"locations,omitempty"`
+}
+
+type MediuxErrorLocation struct {
+	Line   int `json:"line"`
+	Column int `json:"column"`
 }
 
 type MediuxShowSetResponse struct {

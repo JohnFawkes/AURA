@@ -43,13 +43,32 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 		return nil, Err
 	}
 
+	if len(responseBody.Errors) > 0 {
+		logAction.SetError("Errors returned from MediUX API", "Review the errors for more details",
+			map[string]any{
+				"tmdbID":   tmdbID,
+				"itemType": itemType,
+				"errors":   responseBody.Errors,
+			})
+		return nil, *logAction.Error
+	}
+
 	// Check Response is Valid
 	actionValidateResponse := logAction.AddSubAction("Validate MediUX Response", logging.LevelDebug)
 	// Check if the response is nil on all fields
 	switch itemType {
 	case "movie":
-		if responseBody.Data.Movie.ID == "" {
+		if responseBody.Data.Movie == nil {
 			actionValidateResponse.SetError("Movie not found in the response", "Ensure the TMDB ID is correct and the movie exists in the MediUX database.",
+				map[string]any{
+					"tmdbID":   tmdbID,
+					"itemType": itemType,
+				})
+			return nil, *actionValidateResponse.Error
+		}
+
+		if responseBody.Data.Movie.ID == "" {
+			actionValidateResponse.SetError("Movie ID not found in the response", "Ensure the TMDB ID is correct and the movie exists in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
@@ -69,8 +88,16 @@ func Mediux_FetchAllSets(ctx context.Context, tmdbID, itemType, librarySection s
 		}
 
 	case "show":
-		if responseBody.Data.Show.ID == "" {
+		if responseBody.Data.Show == nil {
 			actionValidateResponse.SetError("Show not found in the response", "Ensure the TMDB ID is correct and the show exists in the MediUX database.",
+				map[string]any{
+					"tmdbID":   tmdbID,
+					"itemType": itemType,
+				})
+			return nil, *actionValidateResponse.Error
+		}
+		if responseBody.Data.Show.ID == "" {
+			actionValidateResponse.SetError("Show ID not found in the response", "Ensure the TMDB ID is correct and the show exists in the MediUX database.",
 				map[string]any{
 					"tmdbID":   tmdbID,
 					"itemType": itemType,
