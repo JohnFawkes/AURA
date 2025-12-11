@@ -26,7 +26,6 @@ import { cn } from "@/lib/cn";
 
 import { AppConfigImages } from "@/types/config/config-app";
 
-const SEASON_NAMING_CONVENTION_OPTIONS = ["1", "2"];
 const EPISODE_NAMING_CONVENTION_OPTIONS = ["match", "static"];
 
 interface ConfigSectionImagesProps {
