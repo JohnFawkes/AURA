@@ -1,3 +1,26 @@
+## [0.9.64] - 2025-12-11
+
+### Breaking
+
+- SeasonNamingConvention config option has been removed. Please update your configuration accordingly. Read below for more information.
+
+### Added
+
+- Standardized naming convention for image files. This is to help future proof users who want to migrate from Plex to Emby/Jellyfin. The new naming conventions are as follows:
+    - Posters: Movie/poster.jpg or Show/poster.jpg
+    - Backdrops: Movie/backdrop.jpg or Show/backdrop.jpg
+    - Season Posters: Show/seasonXX-poster.jpg
+    - Special Season Posters: Show/season-specials-poster.jpg
+    - Titlecards: Show/Season #/episode.jpg
+
+    Please note that if you were using SeasonNamingConvention before, this is no longer supported. SeasonNamingConvention was using to determine the Season number but is no longer needed for the new format since all images are saved in root folder. Episode naming conventions remain unchanged. Episode naming for those using "static" will now use the currrent episode numbering format (e.g. S01E01.jpg or S1E1.jpg).
+
+### Fixed
+
+- Fixed issue where running aura in Docker for Windows would cause errors with path names not matching.
+
+---
+
 ## [0.9.63] - 2025-12-09
 
 ### Fixed
