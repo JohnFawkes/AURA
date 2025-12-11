@@ -7,8 +7,7 @@ import { PaginationStore, SortStore } from "@/types/store-interfaces";
 import { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS, TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
 
 interface SavedSets_PageStore
-	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>,
-		PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
 	// View Store
 	viewOption: TYPE_VIEW_TYPE_OPTIONS;
 	setViewOption: (option: TYPE_VIEW_TYPE_OPTIONS) => void;

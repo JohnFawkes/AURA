@@ -10,8 +10,7 @@ import { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui
 type Direction = "next" | "previous";
 
 interface CollectionsHome_PageStore
-	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>,
-		PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+	extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
 	// Filters
 	filteredAndSortedCollectionItems: CollectionItem[];
 	setFilteredAndSortedCollectionItems: (items: CollectionItem[]) => void;
