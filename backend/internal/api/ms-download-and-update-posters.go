@@ -240,6 +240,9 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	}
 
 	createFileAction := logAction.AddSubAction("Saving Image to New File Path", logging.LevelDebug)
+	savedFilePath := path.Join(newFilePath, newFileName)
+	newFilePath = ConvertWindowsPathToDockerPath(newFilePath)
+	savedFilePath = ConvertWindowsPathToDockerPath(savedFilePath)
 
 	// Ensure the directory exists
 	err := os.MkdirAll(newFilePath, os.ModePerm)
@@ -253,12 +256,12 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	}
 
 	// Create the new file
-	newFile, err := os.Create(path.Join(newFilePath, newFileName))
+	newFile, err := os.Create(savedFilePath)
 	if err != nil {
 		createFileAction.SetError("Failed to create file", "Ensure the file can be created",
 			map[string]any{
 				"error": err.Error(),
-				"path":  newFilePath,
+				"path":  savedFilePath,
 			})
 		return *createFileAction.Error
 	}
@@ -270,11 +273,11 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 		createFileAction.SetError("Failed to write image data to file", "Ensure the file is writable",
 			map[string]any{
 				"error": err.Error(),
-				"path":  newFilePath,
+				"path":  savedFilePath,
 			})
 		return *createFileAction.Error
 	}
-	createFileAction.AppendResult("saved_file_path", path.Join(newFilePath, newFileName))
+	createFileAction.AppendResult("saved_file_path", savedFilePath)
 	createFileAction.Complete()
 
 	// Determine the itemRatingKey
@@ -421,4 +424,22 @@ func EJ_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file 
 
 	logAction.Complete()
 	return logging.LogErrorInfo{}
+}
+
+func ConvertWindowsPathToDockerPath(windowsPath string) string {
+	if !Global_Config.Images.SaveImagesLocally.RunningOnWindows {
+		return windowsPath
+	} else {
+		logging.LOGGER.Debug().Timestamp().Msg("ConvertWindowsPathToDockerPath called, fixing path for Windows")
+	}
+	// Replace backslashes with forward slashes
+	dockerPath := strings.ReplaceAll(windowsPath, "\\", "/")
+
+	// Handle drive letter conversion (e.g., C:/ to /C/)
+	if len(dockerPath) > 1 && dockerPath[1] == ':' {
+		driveLetter := string(dockerPath[0])
+		dockerPath = "/" + driveLetter + dockerPath[2:]
+	}
+
+	return dockerPath
 }
