@@ -218,7 +218,6 @@ Images:
     SaveImagesLocally:
         Enabled: false
         Path: ""
-        SeasonNamingConvention: "2"
         EpisodeNamingConvention: "match"
 ```
 
@@ -251,16 +250,6 @@ Images:
     -   Ensure the specified path is added to your docker volume mounts.
     -   Ensure the specified path is writable by the application.
 
-## SaveImagesLocally.SeasonNamingConvention
-
--   **Default:** `"2"`
--   **Options:** `"1"` or `"2"`
--   **Description:** The naming convention for season images when saving locally.
--   **Details:**
-    -   `"1"`: Uses the format `Season 1`, `Season 2`,
-    -   `"2"`: Uses the format `Season 01`, `Season 02`.
--   **Note:** This option is only applicable when using Plex as the Media Server.
-
 ## SaveImagesLocally.EpisodeNamingConvention
 
 -   **Default:** `"match"`
@@ -268,8 +257,8 @@ Images:
 -   **Description:** The naming convention for episode images when saving locally.
 -   **Details:**
     -   `"match"`: Episode images will match the episode file name.
-    -   `"static"`: Episode images will use a static naming format like `S01E01.jpg`.
--   **Note:** This option is only applicable when using Plex as the Media Server. Choosing static will use the Season Naming Convention for level of zero padding.
+    -   `"static"`: Episode images will use a static naming format like `S01E01.jpg` or `S1E1.jpg`.
+-   **Note:** This option is only applicable when using Plex as the Media Server.
 
 ---
 

@@ -347,16 +347,6 @@ func checkConfigDifferences_Images(ctx context.Context, oldImages api.Config_Ima
 			changed = true
 		}
 
-		if oldImages.SaveImagesLocally.SeasonNamingConvention != newImages.SaveImagesLocally.SeasonNamingConvention {
-			logAction.AppendResult("Images.SaveImagesLocally.SeasonNamingConvention changed", fmt.Sprintf("from '%s' to '%s'", oldImages.SaveImagesLocally.SeasonNamingConvention, newImages.SaveImagesLocally.SeasonNamingConvention))
-			logging.LOGGER.Info().
-				Timestamp().
-				Str("old_season_naming_convention", oldImages.SaveImagesLocally.SeasonNamingConvention).
-				Str("new_season_naming_convention", newImages.SaveImagesLocally.SeasonNamingConvention).
-				Msg("Images.SaveImagesLocally.SeasonNamingConvention changed")
-			changed = true
-		}
-
 		if oldImages.SaveImagesLocally.EpisodeNamingConvention != newImages.SaveImagesLocally.EpisodeNamingConvention {
 			logAction.AppendResult("Images.SaveImagesLocally.EpisodeNamingConvention changed", fmt.Sprintf("from '%s' to '%s'", oldImages.SaveImagesLocally.EpisodeNamingConvention, newImages.SaveImagesLocally.EpisodeNamingConvention))
 			logging.LOGGER.Info().

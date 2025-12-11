@@ -216,24 +216,13 @@ func Config_ValidateImages(ctx context.Context, Images *Config_Images, msConfig 
 
 	isValid := true
 
-	// If Images.SaveImagesLocally.Enabled is true, validate the SeasonNamingConvention and EpisodeNamingConvention
+	// If Images.SaveImagesLocally.Enabled is true, validate the EpisodeNamingConvention
 	if Images.SaveImagesLocally.Enabled {
 		if msConfig.Type != "Plex" {
 			return isValid
 		}
 
-		validSeasonNamingConventions := []string{"1", "2"}
 		validEpisodeNamingConventions := []string{"match", "static"}
-
-		if !stringSliceContains(validSeasonNamingConventions, Images.SaveImagesLocally.SeasonNamingConvention) {
-			if msConfig.Type == "Plex" && Images.SaveImagesLocally.SeasonNamingConvention == "" {
-				Images.SaveImagesLocally.SeasonNamingConvention = "2"
-				logAction.AppendWarning("message", "Images.SaveImagesLocally.SeasonNamingConvention not set, defaulting to '2'")
-			} else if msConfig.Type == "Plex" && Images.SaveImagesLocally.SeasonNamingConvention != "1" && Images.SaveImagesLocally.SeasonNamingConvention != "2" {
-				Images.SaveImagesLocally.SeasonNamingConvention = "2"
-				logAction.AppendWarning("message", "Images.SaveImagesLocally.SeasonNamingConvention invalid, defaulting to '2'")
-			}
-		}
 
 		Images.SaveImagesLocally.EpisodeNamingConvention = strings.ToLower(Images.SaveImagesLocally.EpisodeNamingConvention)
 		if !stringSliceContains(validEpisodeNamingConventions, Images.SaveImagesLocally.EpisodeNamingConvention) {

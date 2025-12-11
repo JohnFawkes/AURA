@@ -28,7 +28,11 @@ export const defaultAppConfig = (): AppConfig =>
 		},
 		Images: {
 			CacheImages: { Enabled: false },
-			SaveImagesLocally: { Enabled: false, Path: "", SeasonNamingConvention: "", EpisodeNamingConvention: "" },
+			SaveImagesLocally: {
+				Enabled: false,
+				Path: "",
+				EpisodeNamingConvention: "",
+			},
 		},
 		TMDB: {
 			ApiKey: "",

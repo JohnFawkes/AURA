@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -102,41 +103,11 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			newFileName = "poster.jpg"
 		case "backdrop":
 			newFileName = "backdrop.jpg"
-		case "seasonPoster", "specialSeasonPoster":
-			seasonNumberConvention := Global_Config.Images.SaveImagesLocally.SeasonNamingConvention
-			var seasonNumber string
-			if seasonNumberConvention == "1" {
-				seasonNumber = fmt.Sprintf("%d", file.Season.Number)
-			} else {
-				seasonNumber = Util_Format_Get2DigitNumber(int64(file.Season.Number))
-			}
-			// Try and get the season folder from the first episode
-			seasonPath := ""
-		foundSeasonPath:
-			for _, season := range mediaItem.Series.Seasons {
-				if season.SeasonNumber == file.Season.Number {
-					if len(season.Episodes) > 0 {
-						for _, episode := range season.Episodes {
-							if episode.File.Path != "" {
-								episodeFilePath := episode.File.Path
-								seasonPath = path.Dir(episodeFilePath)
-								getFilePathAction.AppendResult("season_path", fmt.Sprintf("found season path from S%d E%d", episode.SeasonNumber, episode.EpisodeNumber))
-								break foundSeasonPath
-							}
-						}
-					}
-				}
-			}
-			if seasonPath == "" {
-				seasonPath = path.Join(newFilePath, fmt.Sprintf("Season %s", seasonNumber))
-				getFilePathAction.AppendResult("season_path", "built season path from series path and season number")
-			}
-			newFilePath = seasonPath
-			if file.Type == "specialSeasonPoster" {
-				newFileName = "season-specials-poster.jpg"
-			} else {
-				newFileName = fmt.Sprintf("Season%s.jpg", seasonNumber)
-			}
+		case "seasonPoster":
+			seasonNumber := Util_Format_Get2DigitNumber(int64(file.Season.Number))
+			newFileName = fmt.Sprintf("season%s-poster.jpg", seasonNumber)
+		case "specialSeasonPoster":
+			newFileName = "season-specials-poster.jpg"
 		case "titlecard":
 			episodeNamingConvention := Global_Config.Images.SaveImagesLocally.EpisodeNamingConvention
 			// For titlecards, get the file path from Plex
@@ -149,22 +120,25 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 					newFileName = path.Base(episodePath)
 					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
 				case "static":
-					var seasonNumber string
-					var episodeNumber string
-					if Global_Config.Images.SaveImagesLocally.SeasonNamingConvention == "1" {
-						seasonNumber = fmt.Sprintf("%d", file.Episode.SeasonNumber)
-						episodeNumber = fmt.Sprintf("%d", file.Episode.EpisodeNumber)
+					re := regexp.MustCompile(`S(\d{1,2})E(\d{1,2})`)
+					matches := re.FindStringSubmatch(episodePath)
+					if len(matches) == 3 {
+						seasonNumber := matches[1]
+						episodeNumber := matches[2]
+						newFileName = fmt.Sprintf("S%sE%s.jpg", seasonNumber, episodeNumber)
 					} else {
-						seasonNumber = Util_Format_Get2DigitNumber(int64(file.Episode.SeasonNumber))
-						episodeNumber = Util_Format_Get2DigitNumber(int64(file.Episode.EpisodeNumber))
+						getFilePathAction.SetError("Failed to parse episode path for static naming",
+							"Ensure the episode path contains season and episode information in the format SxxExx",
+							map[string]any{
+								"episode_path": episodePath,
+							})
+						return *getFilePathAction.Error
 					}
-					newFileName = fmt.Sprintf("S%sE%s.jpg", seasonNumber, episodeNumber)
 				default:
 					getFilePathAction.SetError("Invalid Episode Naming Convention",
 						"EpisodeNamingConvention must be either 'match' or 'static'",
 						map[string]any{
 							"EpisodeNamingConvention": episodeNamingConvention,
-							"SeasonNamingConvention":  Global_Config.Images.SaveImagesLocally.SeasonNamingConvention,
 						})
 					return *getFilePathAction.Error
 				}
@@ -225,7 +199,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 			contentPath := ""
 			seasonPath := ""
 
-			if file.Type == "poster" || file.Type == "backdrop" || mediaItem.Type == "movie" {
+			if file.Type != "titlecard" {
 				// For movies or posters/backdrops
 				contentPath = path.Base(newFilePath)
 				newPathAction.AppendResult("content_path", contentPath)
@@ -233,10 +207,11 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 				libraryPath = path.Base(path.Dir(newFilePath))
 				newPathAction.AppendResult("library_path", libraryPath)
 
-				// Final path: /local/images/movies/Inception (2020)
+				// Final path:  /local/images/movies/Inception (2020)
+				//				/local/images/shows/Breaking Bad
 				newFilePath = path.Join(Global_Config.Images.SaveImagesLocally.Path, libraryPath, contentPath)
 				newPathAction.AppendResult("final_path", newFilePath)
-			} else if mediaItem.Type == "show" && (file.Type == "seasonPoster" || file.Type == "specialSeasonPoster" || file.Type == "titlecard") {
+			} else if mediaItem.Type == "show" && (file.Type == "titlecard") {
 				// For shows with seasonPoster/specialSeasonPoster/titlecard
 				seasonPath = path.Base(newFilePath)
 				newPathAction.AppendResult("season_path", seasonPath)

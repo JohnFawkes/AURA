@@ -56,7 +56,6 @@ export interface AppConfigCacheImages {
 export interface AppConfigSaveImagesLocally {
 	Enabled: boolean; // Whether to save images locally.
 	Path: string; // Path to save images locally. If empty, images will be saved next to content.
-	SeasonNamingConvention: string; // Naming convention for season images.
 	EpisodeNamingConvention: string; // Naming convention for episode images.
 }
 

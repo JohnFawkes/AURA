@@ -37,7 +37,6 @@ interface ConfigSectionImagesProps {
 		SaveImagesLocally?: {
 			Enabled?: boolean;
 			Path?: boolean;
-			SeasonNamingConvention?: boolean;
 			EpisodeNamingConvention?: boolean;
 		};
 	};
@@ -77,16 +76,8 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 	const errors = React.useMemo<Partial<Record<keyof AppConfigImages, string>>>(() => {
 		const errs: Partial<Record<keyof AppConfigImages, string>> = {};
 
-		// If Media Server Type is Plex, validate SaveImagesLocally.SeasonNamingConvention and EpisodeNamingConvention
+		// If Media Server Type is Plex, validate SaveImagesLocally.EpisodeNamingConvention
 		if (mediaServerType && mediaServerType === "Plex" && value.SaveImagesLocally.Enabled) {
-			if (!value.SaveImagesLocally.SeasonNamingConvention) {
-				errs.SaveImagesLocally = "Season naming convention is required.";
-			} else {
-				if (!SEASON_NAMING_CONVENTION_OPTIONS.includes(value.SaveImagesLocally.SeasonNamingConvention)) {
-					errs.SaveImagesLocally = `Season naming convention must be one of: ${SEASON_NAMING_CONVENTION_OPTIONS.join(", ")}.`;
-				}
-			}
-
 			if (!value.SaveImagesLocally.EpisodeNamingConvention) {
 				errs.SaveImagesLocally = "Episode naming convention is required.";
 			} else {
@@ -97,12 +88,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 		}
 
 		return errs;
-	}, [
-		mediaServerType,
-		value.SaveImagesLocally.Enabled,
-		value.SaveImagesLocally.SeasonNamingConvention,
-		value.SaveImagesLocally.EpisodeNamingConvention,
-	]);
+	}, [mediaServerType, value.SaveImagesLocally.Enabled, value.SaveImagesLocally.EpisodeNamingConvention]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -211,67 +197,6 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 								)}
 								placeholder="/path/to/images"
 							/>
-						</div>
-					)}
-
-					{mediaServerType === "Plex" && value.SaveImagesLocally.Enabled && (
-						<div className={cn("space-y-1 mt-4")}>
-							<div className="flex items-center justify-between">
-								<Label>Season Naming Convention</Label>
-								{editing && (
-									<PopoverHelp ariaLabel="help-media-server-season-naming-convention">
-										<div className="space-y-3">
-											<div>
-												<p className="font-medium mb-1">Season Naming Convention</p>
-												<p className="text-muted-foreground">
-													How Plex season folders / labels are formatted.
-												</p>
-											</div>
-											<ul className="space-y-1">
-												<li className="flex items-center gap-2">
-													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono ">
-														1
-													</span>
-													<span>Season 1</span>
-												</li>
-												<li className="flex items-center gap-2">
-													<span className="inline-flex h-5 items-center rounded-sm bg-muted px-2 font-mono">
-														2
-													</span>
-													<span>Season 01 (zero‑padded)</span>
-												</li>
-											</ul>
-											<p className="text-muted-foreground">
-												Used for display / folder naming logic.
-											</p>
-										</div>
-									</PopoverHelp>
-								)}
-							</div>
-							<Select
-								disabled={!editing}
-								value={value.SaveImagesLocally.SeasonNamingConvention || ""}
-								onValueChange={(v) => onChange("SaveImagesLocally", "SeasonNamingConvention", v)}
-							>
-								<SelectTrigger
-									id="media-server-season-naming-convention-trigger"
-									className={cn(
-										"w-full",
-										dirtyFields.SaveImagesLocally?.SeasonNamingConvention && "border-amber-500"
-									)}
-								>
-									<SelectValue placeholder="Select convention..." />
-								</SelectTrigger>
-								<SelectContent>
-									{SEASON_NAMING_CONVENTION_OPTIONS.map((o) => (
-										<SelectItem key={o} value={o}>
-											{o}
-										</SelectItem>
-									))}
-									<SelectScrollUpButton />
-									<SelectScrollDownButton />
-								</SelectContent>
-							</Select>
 						</div>
 					)}
 

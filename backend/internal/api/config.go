@@ -83,8 +83,8 @@ type Config_CacheImages struct {
 type Config_SaveImagesLocally struct {
 	Enabled                 bool   `yaml:"Enabled"`                           // Whether to save images next to their content.
 	Path                    string `yaml:"Path,omitempty"`                    // By default, this is set to alongside the content. If set, this will override that behavior and save all images to this path.
-	SeasonNamingConvention  string `yaml:"SeasonNamingConvention,omitempty"`  // Season naming convention for the media server. Only needed for Plex. Will default to 2
 	EpisodeNamingConvention string `yaml:"EpisodeNamingConvention,omitempty"` // Episode naming convention for the media server. Only needed for Plex. Will default to match
+	RunningOnWindows        bool   `yaml:"RunningOnWindows,omitempty"`        // Whether the application is running on Windows. This affects path formatting.
 }
 
 type Config_TMDB struct {
