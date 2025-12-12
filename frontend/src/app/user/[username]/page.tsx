@@ -188,18 +188,14 @@ const UserSetPage = () => {
 	// State to track the selected sorting option
 	const { sortOption, setSortOption, sortOrder, setSortOrder } = useUserPageStore();
 
-	const { sections, getSectionSummaries } = useLibrarySectionsStore();
+	const { sections, getSectionSummaries, hasHydrated } = useLibrarySectionsStore();
 
-	// Get all the library sections from the IDB
 	useEffect(() => {
-		const fetchLibrarySections = async () => {
-			setLoadMessage("Loading library sections from cache");
-			const sections = getSectionSummaries();
-			setLibrarySections(sections);
-			log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
-		};
-		fetchLibrarySections();
-	}, [getSectionSummaries]);
+		if (!hasHydrated) return;
+		const sections = getSectionSummaries();
+		setLibrarySections(sections);
+		log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
+	}, [getSectionSummaries, hasHydrated]);
 
 	// Set sortOption to "dateLastUpdate" if it's not title or dateLastUpdate
 	if (sortOption !== "title" && sortOption !== "dateLastUpdate") {
