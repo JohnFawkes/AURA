@@ -1,3 +1,11 @@
+## [0.9.65] - 2025-12-12
+
+### Fixed
+
+- Fixed issue where refreshing on the User Page would cause library section options to not load correctly.
+
+---
+
 ## [0.9.64] - 2025-12-11
 
 ### Breaking
