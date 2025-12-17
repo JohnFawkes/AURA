@@ -7,7 +7,18 @@ import { postAddToQueue } from "@/services/download-queue/api-queue-add";
 import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
 import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, Download, ListEnd, Loader, TriangleAlert, User, X } from "lucide-react";
+import {
+	Check,
+	CircleAlert,
+	Database,
+	Download,
+	ListEnd,
+	Loader,
+	RefreshCcw,
+	TriangleAlert,
+	User,
+	X,
+} from "lucide-react";
 import { z } from "zod";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +30,7 @@ import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import DownloadModalPopover from "@/components/shared/download-modal-popover";
-import { DownloadModalProgressItem } from "@/components/shared/download-modal-progress-item";
+import { PopoverHelp } from "@/components/shared/popover-help";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -95,7 +106,7 @@ type AssetProgress = {
 type DownloadProgress = {
 	// Shared progress bar state
 	value: number;
-	color: string;
+	currentText: string;
 
 	// Individual item progress, keyed by MediaItemRatingKey
 	itemProgress: Record<string, AssetProgress>;
@@ -195,11 +206,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// Download Progress
 	const [progressValues, setProgressValues] = useState<DownloadProgress>({
 		value: 0,
-		color: "",
+		currentText: "",
 		itemProgress: {},
 		warningMessages: {},
 	});
-	// Add this with your other state declarations
+
+	// Refs for progress values
 	const progressRef = useRef(0);
 	const progressIncrementRef = useRef(0);
 	const progressDownloadRef = useRef(0);
@@ -231,11 +243,14 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// Search Query Store
 	const { setSearchQuery } = useSearchQueryStore();
 
+	// Cancel Ref
+	const cancelRef = useRef(false);
+
 	// Function - Reset Progress Values
 	const resetProgressValues = () => {
 		setProgressValues({
 			value: 0,
-			color: "",
+			currentText: "",
 			itemProgress: {},
 			warningMessages: {},
 		});
@@ -243,6 +258,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	// Function - Close Modal
 	const handleClose = () => {
+		cancelRef.current = true;
 		setIsMounted(false);
 		resetProgressValues();
 		setButtonTexts({
@@ -518,6 +534,29 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.Type
 		);
 
+		// Check download status from progressValues
+		const progress = progressValues.itemProgress?.[item.MediaItemRatingKey]?.[assetType];
+		const isDownloaded = progress?.startsWith("Downloaded");
+		const isFailed = progress?.startsWith("Failed");
+		const isLoading = progress && !isDownloaded && !isFailed;
+
+		// Check if this assetType is already downloaded in another set (using DBSavedSets)
+		let isDownloadedInAnotherSet = false;
+		if (!isDownloaded && !isLoading && item.MediaItem?.DBSavedSets) {
+			isDownloadedInAnotherSet = item.MediaItem.DBSavedSets.some((set) => {
+				const found =
+					set.PosterSetID !== item.Set.ID &&
+					Array.isArray(set.SelectedTypes) &&
+					set.SelectedTypes.some((typeStr) =>
+						typeStr
+							.split(",")
+							.map((t) => t.trim())
+							.includes(assetType)
+					);
+				return found;
+			});
+		}
+
 		return (
 			<FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
 				<FormControl className="mt-1">
@@ -565,6 +604,54 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				<FormLabel className="text-md font-normal cursor-pointer">
 					{assetType.charAt(0).toUpperCase() + assetType.slice(1).replace(/([A-Z])/g, " $1")}
 				</FormLabel>
+				{isDownloaded ? (
+					<Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
+				) : isFailed ? (
+					<X className="h-4 w-4 text-destructive mt-1" strokeWidth={3} />
+				) : isLoading ? (
+					<Loader className="h-4 w-4 text-yellow-500 mt-1 animate-spin" />
+				) : isDownloadedInAnotherSet ? (
+					<PopoverHelp
+						ariaLabel="Type already downloaded in another set"
+						side="right"
+						className="max-w-xs"
+						trigger={<TriangleAlert className="h-4 w-4 mt-1 text-yellow-500 cursor-help" />}
+					>
+						<div className="flex items-center">
+							<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+							<span className="text-xs">
+								{AssetTypes[assetType]} {AssetTypes[assetType].endsWith("s") ? "have" : "has"} already
+								been downloaded in set{" "}
+								{
+									item.MediaItem?.DBSavedSets?.find(
+										(set) =>
+											Array.isArray(set.SelectedTypes) &&
+											set.SelectedTypes.some((typeStr) =>
+												typeStr
+													.split(",")
+													.map((t) => t.trim())
+													.includes(assetType)
+											)
+									)?.PosterSetID
+								}{" "}
+								by user{" "}
+								{
+									item.MediaItem?.DBSavedSets?.find(
+										(set) =>
+											Array.isArray(set.SelectedTypes) &&
+											set.SelectedTypes.some((typeStr) =>
+												typeStr
+													.split(",")
+													.map((t) => t.trim())
+													.includes(assetType)
+											)
+									)?.PosterSetUser
+								}
+								.
+							</span>
+						</div>
+					</PopoverHelp>
+				) : null}
 			</FormItem>
 		);
 	};
@@ -576,89 +663,118 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.Type
 		);
 
+		// Calculate whether the item is already in the database
+		const isInDatabase = item.MediaItem && item.MediaItem.ExistInDatabase;
+
+		// Calculate whether the item is already in the database and has this set saved
+		const isInDatabaseWithSet =
+			isInDatabase &&
+			item.MediaItem.DBSavedSets &&
+			item.MediaItem.DBSavedSets.some((set) => set.PosterSetID === item.Set.ID);
+
 		return (
 			<FormField
 				key={`${item.MediaItemRatingKey}-${item.Set.Type}`}
 				control={form.control}
 				name={`selectedOptionsByItem.${item.MediaItemRatingKey}`}
 				render={({ field }) => (
-					<div className="rounded-md border p-4 rounded mb-4">
+					<div
+						className={cn("rounded-md border p-4 rounded-lg mb-4", {
+							"border-green-500": isInDatabaseWithSet,
+							"border-yellow-500": isInDatabase && !isInDatabaseWithSet,
+						})}
+					>
 						<FormLabel
 							className="text-md font-normal mb-4"
 							onDoubleClick={() => {
 								setMediaItem(item.MediaItem);
 							}}
 						>
-							{item.MediaItemTitle}
-							{item.MediaItem && item.MediaItem.ExistInDatabase && item.MediaItem.DBSavedSets && (
-								<Popover modal={true}>
-									<PopoverTrigger>
-										<CircleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
-									</PopoverTrigger>
-									<PopoverContent className="max-w-[400px] rounded-lg shadow-lg border-2 border-yellow-800 p-2 flex flex-col items-center justify-center">
-										<div className="flex items-center mb-2">
-											<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
-											<span className="text-sm text-yellow-600">
-												This media item already exists in your database
-											</span>
-										</div>
-										<div className="text-xs text-muted-foreground mb-2">
-											You have previously saved it in the following sets
-										</div>
-										<ul className="space-y-2">
-											{item.MediaItem.DBSavedSets.map((set) => (
-												<li
-													key={set.PosterSetID}
-													className="flex items-center rounded-md px-2 py-1 shadow-sm"
-												>
-													<Button
-														variant="outline"
-														className={cn(
-															"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
-															set.PosterSetID.toString() === item.SetID.toString()
-																? "text-green-600  hover:bg-green-100  hover:text-green-600"
-																: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
-														)}
-														aria-label={`View saved set ${set.PosterSetID} ${set.PosterSetUser ? `by ${set.PosterSetUser}` : ""}`}
-														onClick={(e) => {
-															e.stopPropagation();
-															setSearchQuery(
-																`${item.MediaItem.Title} Y:${item.MediaItem.Year}: ID:${item.MediaItem.TMDB_ID}: L:${item.MediaItem.LibraryTitle}:`
-															);
-															router.push("/saved-sets");
-														}}
-													>
-														Set ID: {set.PosterSetID}
-														{set.PosterSetUser ? ` by ${set.PosterSetUser}` : ""}
-													</Button>
-												</li>
-											))}
-										</ul>
-									</PopoverContent>
-								</Popover>
-							)}
-							{setType === "boxset" &&
-								isDuplicate &&
-								isDuplicate.selectedType !== "" &&
-								isDuplicate.selectedType !== item.Set.Type && (
+							<span className="flex items-center justify-between w-full">
+								{item.MediaItemTitle}
+								{item.MediaItem && item.MediaItem.ExistInDatabase && item.MediaItem.DBSavedSets && (
 									<Popover modal={true}>
 										<PopoverTrigger>
-											<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
+											<Database
+												className={cn(
+													"h-4 w-4 ml-2 cursor-help",
+													isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
+												)}
+											/>
 										</PopoverTrigger>
-										<PopoverContent className="max-w-[400px] w-60">
-											<div className="text-sm text-yellow-500">
-												This item is selected in the{" "}
-												{isDuplicate.selectedType === "movie" ? "Movie Set" : "Collection Set"}.
+										<PopoverContent
+											className={cn(
+												"max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
+												isInDatabaseWithSet ? "border-green-800" : "border-yellow-800"
+											)}
+										>
+											<div className="flex items-center mb-2">
+												<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+												<span className="text-sm text-muted-foreground">
+													This media item already exists in your database
+												</span>
 											</div>
-											{(() => {
-												const img = isDuplicate.options.find(
-													(o) => o.type === isDuplicate.selectedType
-												)?.image;
-												return img && <AssetImage className="mt-2" image={img} />;
-											})()}
+											<div className="text-xs text-muted-foreground mb-2">
+												You have previously saved it in the following sets
+											</div>
+											<ul className="space-y-2">
+												{item.MediaItem.DBSavedSets.map((set) => (
+													<li
+														key={set.PosterSetID}
+														className="flex items-center rounded-md px-2 py-1 shadow-sm"
+													>
+														<Button
+															variant="outline"
+															className={cn(
+																"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+																set.PosterSetID.toString() === item.SetID.toString()
+																	? "text-green-600  hover:bg-green-100  hover:text-green-600"
+																	: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+															)}
+															aria-label={`View saved set ${set.PosterSetID} ${set.PosterSetUser ? `by ${set.PosterSetUser}` : ""}`}
+															onClick={(e) => {
+																e.stopPropagation();
+																setSearchQuery(
+																	`${item.MediaItem.Title} Y:${item.MediaItem.Year}: ID:${item.MediaItem.TMDB_ID}: L:${item.MediaItem.LibraryTitle}:`
+																);
+																router.push("/saved-sets");
+															}}
+														>
+															Set ID: {set.PosterSetID}
+															{set.PosterSetUser ? ` by ${set.PosterSetUser}` : ""}
+														</Button>
+													</li>
+												))}
+											</ul>
 										</PopoverContent>
 									</Popover>
 								)}
+								{setType === "boxset" &&
+									isDuplicate &&
+									isDuplicate.selectedType !== "" &&
+									isDuplicate.selectedType !== item.Set.Type && (
+										<Popover modal={true}>
+											<PopoverTrigger>
+												<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
+											</PopoverTrigger>
+											<PopoverContent className="max-w-[400px] w-60">
+												<div className="text-sm text-yellow-500">
+													This item is selected in the{" "}
+													{isDuplicate.selectedType === "movie"
+														? "Movie Set"
+														: "Collection Set"}
+													.
+												</div>
+												{(() => {
+													const img = isDuplicate.options.find(
+														(o) => o.type === isDuplicate.selectedType
+													)?.image;
+													return img && <AssetImage className="mt-2" image={img} />;
+												})()}
+											</PopoverContent>
+										</Popover>
+									)}
+							</span>
 						</FormLabel>
 
 						<div className="space-y-2">
@@ -701,29 +817,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									<FormLabel className="text-md font-normal cursor-pointer">
 										Add to Database Only
 									</FormLabel>
+
 									<DownloadModalPopover type="add-to-db-only" />
 								</FormItem>
 							)}
 							{item.Set.Type === "show" && (
 								<>
-									<FormItem className="flex items-center space-x-2">
-										<FormControl>
-											<Checkbox
-												checked={field.value?.autodownload || false}
-												onCheckedChange={(checked) => {
-													field.onChange({
-														...(field.value ?? {}),
-														autodownload: checked,
-													});
-												}}
-												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-											/>
-										</FormControl>
-										<FormLabel className="text-md font-normal cursor-pointer">
-											Auto Download
-										</FormLabel>
-										<DownloadModalPopover type="autodownload" />
-									</FormItem>
 									<FormItem className="flex items-center space-x-2">
 										<FormControl>
 											<Checkbox
@@ -741,6 +840,24 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											Future Updates Only
 										</FormLabel>
 										<DownloadModalPopover type="future-updated-only" />
+									</FormItem>
+									<FormItem className="flex items-center space-x-2">
+										<FormControl>
+											<Checkbox
+												checked={field.value?.autodownload || false}
+												onCheckedChange={(checked) => {
+													field.onChange({
+														...(field.value ?? {}),
+														autodownload: checked,
+													});
+												}}
+												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+											/>
+										</FormControl>
+										<FormLabel className="text-md font-normal cursor-pointer">
+											Auto Download
+										</FormLabel>
+										<DownloadModalPopover type="autodownload" />
 									</FormItem>
 								</>
 							)}
@@ -765,6 +882,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const updateItemProgress = (itemKey: string, assetType: keyof AssetProgress, status: string) => {
 		setProgressValues((prev) => ({
 			...prev,
+			currentText: `${status}`,
 			itemProgress: {
 				...prev.itemProgress,
 				[itemKey]: {
@@ -815,22 +933,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		updateItemProgress(mediaItem.RatingKey, posterFileType, `Downloading ${fileName}`);
 		try {
 			const response = await patchDownloadPosterFileAndUpdateMediaServer(posterFile, mediaItem, fileName);
+			updateProgressValue(progressRef.current + progressIncrementRef.current);
 			if (response.status === "error") {
 				updateItemProgress(mediaItem.RatingKey, posterFileType, `Failed to download ${fileName}`);
 				throw new Error(response.error?.message || "Unknown error");
 			} else {
-				updateItemProgress(mediaItem.RatingKey, posterFileType, `Finished downloading ${fileName}`);
+				updateItemProgress(mediaItem.RatingKey, posterFileType, `Downloaded ${fileName}`);
 			}
-			updateProgressValue(progressRef.current + progressIncrementRef.current);
 		} catch (error) {
 			if (posterFileType === "seasonPoster" || posterFileType === "titlecard") {
 				setProgressValues((prev) => ({
 					...prev,
-					progressColor: "yellow",
-					// warningMessages: [
-					// 	...prev.warningMessages,
-					// 	`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-					// ],
 					warningMessages: {
 						...prev.warningMessages,
 						[mediaItem.Title]: {
@@ -861,11 +974,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			} else {
 				setProgressValues((prev) => ({
 					...prev,
-					progressColor: "yellow",
-					// warningMessages: [
-					// 	...prev.warningMessages,
-					// 	`${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-					// ],
 					warningMessages: {
 						...prev.warningMessages,
 						[mediaItem.Title]: {
@@ -885,6 +993,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	const onSubmit = async (data: z.infer<typeof formSchema>) => {
 		if (isMounted) return;
+		cancelRef.current = false;
 
 		try {
 			setIsMounted(true);
@@ -907,11 +1016,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			progressIncrementRef.current = 95 / (selectedSizes.fileCount + formItems.length);
 
 			// Sort formItems by MediaItemTitle for consistent order
-			const sortedFormItems = formItems.sort((a, b) => a.MediaItemTitle.localeCompare(b.MediaItemTitle));
+			const sortedFormItems = formItems;
 			log("INFO", "Download Modal", "Debug Info", "Sorted Form Items:", sortedFormItems);
 
 			// Go through each item in the formItems
 			for (let idx = 0; idx < sortedFormItems.length; idx++) {
+				if (cancelRef.current) return; // Exit if cancelled
 				const item = sortedFormItems[idx];
 				log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
 
@@ -975,7 +1085,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				if (latestMediaItemResp.status === "error") {
 					setProgressValues((prev) => ({
 						...prev,
-						progressColor: "red",
 						warningMessages: {
 							...prev.warningMessages,
 							[item.MediaItemTitle]: {
@@ -997,11 +1106,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				if (!latestMediaItemResp.data) {
 					setProgressValues((prev) => ({
 						...prev,
-						progressColor: "red",
-						// warningMessages: [
-						// 	...prev.warningMessages,
-						// 	`No media item found for ${item.MediaItemTitle}. Skipping.`,
-						// ],
 						warningMessages: {
 							...prev.warningMessages,
 							[item.MediaItemTitle]: {
@@ -1020,7 +1124,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				// If the item is set to "Add to DB Only", create the DB item and skip download
 				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
 				if (selectedOptions.addToDBOnly) {
-					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Adding");
+					updateItemProgress(item.MediaItemRatingKey, "addToDB", `Adding ${item.MediaItemTitle} to DB`);
 					log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
 					log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
 					const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
@@ -1034,8 +1138,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						);
 						setProgressValues((prev) => ({
 							...prev,
-							progressColor: "red",
-							// warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
 							warningMessages: {
 								...prev.warningMessages,
 								[item.MediaItemTitle]: {
@@ -1050,7 +1152,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 					} else {
 						log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
-						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 					}
 					updateProgressValue(progressRef.current + progressIncrementRef.current);
 					continue;
@@ -1095,7 +1196,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						);
 						setProgressValues((prev) => ({
 							...prev,
-							progressColor: "red",
 							warningMessages: {
 								...prev.warningMessages,
 								[item.MediaItemTitle]: {
@@ -1122,6 +1222,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				}
 
 				for (const type of selectedTypes) {
+					if (cancelRef.current) return; // Exit if cancelled
 					switch (type) {
 						case "poster":
 							if (item.Set.Poster) {
@@ -1299,7 +1400,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					}
 				}
 				// Add the item to the database after downloading
-				updateItemProgress(item.MediaItemRatingKey, "addToDB", "Adding");
+				updateItemProgress(item.MediaItemRatingKey, "addToDB", `Adding ${item.MediaItemTitle} to DB`);
 				log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
 				log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
 				const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
@@ -1313,8 +1414,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					);
 					setProgressValues((prev) => ({
 						...prev,
-						progressColor: "red",
-						// warningMessages: [...prev.warningMessages, `Error adding ${item.MediaItemTitle} to DB.`],
 						warningMessages: {
 							...prev.warningMessages,
 							[item.MediaItemTitle]: {
@@ -1329,10 +1428,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
 				} else {
 					log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
-					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 				}
 				updateProgressValue(progressRef.current + progressIncrementRef.current);
-				updateItemProgress(item.MediaItemRatingKey, "addToDB", "Added to DB");
 				if (onMediaItemChange) {
 					latestMediaItem.ExistInDatabase = true;
 					onMediaItemChange(latestMediaItem);
@@ -1349,8 +1446,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			log("ERROR", "Download Modal", "Debug Info", "Download Error:", error);
 			setProgressValues((prev) => ({
 				...prev,
-				progressColor: "red",
-				// warningMessages: [...prev.warningMessages, "An error occurred while downloading."],
 				warningMessages: {
 					...prev.warningMessages,
 					general: {
@@ -1522,104 +1617,31 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								{/* Progress Bar */}
 								{progressValues.value > 0 && (
 									<div className="w-full">
-										<div className="flex items-center justify-between">
-											<Progress
-												value={progressValues.value}
-												className={`flex-1 
-												rounded-md ${progressValues.value < 100 ? "animate-pulse" : ""}
-												${progressValues.color ? `[&>div]:bg-${progressValues.color}-500` : ""}`}
-											/>
-											<span className="ml-2 text-sm text-muted-foreground">
+										<div className="flex items-center justify-between w-full">
+											<div className="relative w-full">
+												<Progress
+													value={progressValues.value}
+													className={cn(
+														"w-full rounded-md overflow-hidden",
+														progressValues.value < 100 && "animate-pulse h-5",
+														progressValues.value === 100 && "[&>div]:bg-green-500 h-3",
+														progressValues.value === 100 &&
+															progressValues.warningMessages &&
+															Object.keys(progressValues.warningMessages).length > 0
+															? "[&>div]:bg-destructive"
+															: ""
+													)}
+												/>
+												{progressValues.value < 100 && (
+													<span className="absolute inset-0 flex items-center justify-center text-xs text-white pointer-events-none w-full mt-0.5">
+														{progressValues.currentText}
+													</span>
+												)}
+											</div>
+											<span className="ml-2 text-sm text-muted-foreground min-w-[40px] text-right">
 												{Math.round(progressValues.value)}%
 											</span>
 										</div>
-
-										{Object.entries(progressValues.itemProgress)
-											.sort(([a], [b]) => {
-												const itemA = formItems.find((item) => item.MediaItemRatingKey === a);
-												const itemB = formItems.find((item) => item.MediaItemRatingKey === b);
-												return (itemA?.MediaItemTitle || "").localeCompare(
-													itemB?.MediaItemTitle || ""
-												);
-											})
-											.map(([itemKey, progress]) => {
-												// Find the corresponding form item to get totals
-												const formItem = formItems.find(
-													(item) => item.MediaItemRatingKey === itemKey
-												);
-
-												return (
-													<div key={itemKey} className="my-2">
-														<Lead className="text-md text-muted-foreground mb-1">
-															{formItem?.MediaItemTitle}
-														</Lead>
-														{progress.poster && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-poster`}
-																status={progress.poster}
-																label="Poster"
-															/>
-														)}
-														{progress.backdrop && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-backdrop`}
-																status={progress.backdrop}
-																label="Backdrop"
-															/>
-														)}
-														{progress.seasonPoster && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-seasonPoster`}
-																status={progress.seasonPoster}
-																label="Season Poster"
-																total={
-																	formItem?.Set.SeasonPosters?.filter(
-																		(sp) => sp.Season?.Number !== 0
-																	).length
-																}
-																failed={progress.seasonPosterFailed || 0}
-															/>
-														)}
-														{progress.specialSeasonPoster && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-specialSeasonPoster`}
-																status={progress.specialSeasonPoster}
-																label="Special Season Poster"
-															/>
-														)}
-														{progress.titlecard && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-titlecard`}
-																status={progress.titlecard}
-																label="Title Card"
-																total={
-																	formItem?.Set.TitleCards?.filter(
-																		(tc) =>
-																			tc.Episode?.SeasonNumber !== undefined &&
-																			tc.Episode?.EpisodeNumber !== undefined &&
-																			tc.Episode.SeasonNumber !== 0
-																	).length
-																}
-																failed={progress.titlecardFailed || 0}
-															/>
-														)}
-														{progress.addToDB && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-addToDB`}
-																status={progress.addToDB}
-																label="Add to DB"
-															/>
-														)}
-														{progress.addToQueue && (
-															<DownloadModalProgressItem
-																key={`${itemKey}-addToQueue`}
-																status={progress.addToQueue}
-																label="Add to Download Queue"
-															/>
-														)}
-													</div>
-												);
-											})}
 									</div>
 								)}
 								{/* Warning Messages */}
@@ -1638,8 +1660,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																	key={`warning-${key}-${Math.random()}`}
 																	className="flex items-center text-destructive"
 																>
-																	<X
-																		className="mr-1 h-4 w-4"
+																	<span
+																		className="mr-1 h-4 w-4 relative group cursor-pointer"
 																		onClick={() => {
 																			// Retry Download if there is a posterFile, posterFileType, fileName and mediaItem
 																			if (
@@ -1660,7 +1682,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																						fileName: item.fileName,
 																						mediaItem: item.mediaItem,
 																					}
-																				); // Remove this warningMessage
+																				);
 																				setProgressValues((prev) => {
 																					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 																					const { [key]: _, ...rest } =
@@ -1670,7 +1692,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																						warningMessages: rest,
 																					};
 																				});
-																				progressDownloadRef.current -= 1;
+																				progressDownloadRef.current -=
+																					progressIncrementRef.current;
+																				updateProgressValue(
+																					progressRef.current -
+																						progressIncrementRef.current
+																				);
 																				// Retry the download
 																				downloadPosterFileAndUpdateMediaServer(
 																					item.posterFile,
@@ -1684,7 +1711,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 																				}));
 																			}
 																		}}
-																	/>
+																	>
+																		<X className="absolute inset-0 h-4 w-4 transition-opacity duration-150 group-hover:opacity-0" />
+																		<RefreshCcw className="absolute inset-0 h-4 w-4 opacity-0 transition-opacity duration-150 group-hover:opacity-100 text-yellow-500" />
+																	</span>
 																	<span>{item.message}</span>
 																</div>
 															)
@@ -1772,7 +1802,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													});
 													setProgressValues({
 														value: 0,
-														color: "blue",
+														currentText: "",
 														itemProgress: {},
 														warningMessages: {},
 													});
