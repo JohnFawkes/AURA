@@ -15,7 +15,8 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 		return {
 			status: "error",
 			error: {
-				message: error.response?.data.message || "Failed to connect to API",
+				message:
+					error.response?.data.message || error.response?.data.error?.message || "Failed to connect to API",
 				help: "Please make sure the backend API is running and accessible.",
 				function: "Axios Request",
 				line_number: -1,
