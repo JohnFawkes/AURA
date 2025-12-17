@@ -1,3 +1,19 @@
+## [0.9.67] - 2025-12-17
+
+### Added
+
+- Revamped Download Modal logic to allow for better handling for failed downloads.
+- Added more icons to Download Modal buttons for better visual context.
+
+### Fixed
+
+- Fixed issue where Download Modal would not properly update button text when toggling between "Add to Database Only" and normal download options.
+- Fixed hydration issue in Download Modal and Saved Sets Page.
+- Fixed issue where Download Modal would not show cursor pointer on Database icon hover.
+- Fixed issue where Download Modal button icon would not update properly when toggling between options.
+
+---
+
 ## [0.9.66] - 2025-12-16
 
 ### Added
