@@ -1,3 +1,17 @@
+## [0.9.66] - 2025-12-16
+
+### Added
+
+- Changed Download Modal to show progress inline with image type for each item.
+- Changed Download Modal progress bar to show current step in download process.
+- Changed Download Modal to show currently applied sets for better context when downloading images.
+
+### Fixed
+
+- Fixed issue where Download Modal would not show proper error message when download failed.
+
+---
+
 ## [0.9.65] - 2025-12-12
 
 ### Fixed
