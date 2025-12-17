@@ -90,42 +90,82 @@ interface AssetTypeFormValues {
 	source?: SourceType;
 }
 
-// Type for individual item progress
-type AssetProgress = {
-	poster?: string;
-	backdrop?: string;
-	seasonPoster?: string;
-	specialSeasonPoster?: string;
-	titlecard?: string;
-	addToDB?: string;
-	addToQueue?: string;
-	// Number of Files Failed
-	seasonPosterFailed?: number;
-	titlecardFailed?: number;
+type TaskStatus = "pending" | "in-progress" | "completed" | "failed" | "skipped";
+
+type DownloadTaskPayload = {
+	kind: "download";
+	itemKey: string;
+	itemTitle: string;
+	posterFile: PosterFile;
+	posterFileType: AssetType;
+	fileName: string;
+	mediaItem: MediaItem;
 };
 
-// Main progress type
+type AddToDBTaskPayload = {
+	kind: "addToDB";
+	itemKey: string;
+	itemTitle: string;
+	dbItem: DBMediaItemWithPosterSets;
+};
+
+type AddToQueueTaskPayload = {
+	kind: "addToQueue";
+	itemKey: string;
+	itemTitle: string;
+	dbItem: DBMediaItemWithPosterSets;
+};
+
+// Non-Retryable “record only” task (e.g. fetch latest media item failed)
+type NoteTaskPayload = {
+	kind: "note";
+	itemKey: string;
+	itemTitle: string;
+};
+
+type TaskPayload = DownloadTaskPayload | AddToDBTaskPayload | AddToQueueTaskPayload | NoteTaskPayload;
+
+type Task = {
+	id: string;
+	status: TaskStatus;
+	label: string;
+	attempts: number;
+	payload: TaskPayload;
+	error?: string;
+};
+
+type ItemProgress = {
+	itemKey: string;
+	title: string;
+	tasks: Task[];
+};
+
 type DownloadProgress = {
-	// Shared progress bar state
-	value: number;
 	currentText: string;
-
-	// Individual item progress, keyed by MediaItemRatingKey
-	itemProgress: Record<string, AssetProgress>;
-
-	// Shared warning messages
-	//warningMessages: string[];
-	warningMessages: Record<
-		string,
-		{
-			posterFile: PosterFile | null;
-			posterFileType: keyof AssetProgress | null;
-			fileName: string | null;
-			mediaItem: MediaItem | null;
-			message: string;
-		}
-	>;
+	items: Record<string, ItemProgress>;
 };
+
+// helper for stable ids
+const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+// derive progress (0..100) from tasks
+const getOverallProgress = (state: DownloadProgress) => {
+	const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
+	const relevant = allTasks.filter((t) => t.status !== "skipped");
+	const done = relevant.filter((t) => t.status === "completed" || t.status === "failed").length;
+	const total = relevant.length || 1;
+	return Math.round((done / total) * 100);
+};
+
+// derive “errors per item” for the accordion
+const getErrorsByItem = (state: DownloadProgress) =>
+	Object.values(state.items)
+		.map((i) => ({
+			itemKey: i.itemKey,
+			title: i.title,
+			errors: i.tasks.filter((t) => t.status === "failed"),
+		}))
+		.filter((x) => x.errors.length > 0);
 
 const formSchema = z
 	.object({
@@ -206,17 +246,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const [isMounted, setIsMounted] = useState(false);
 
 	// Download Progress
-	const [progressValues, setProgressValues] = useState<DownloadProgress>({
-		value: 0,
+	const [progress, setProgress] = useState<DownloadProgress>({
 		currentText: "",
-		itemProgress: {},
-		warningMessages: {},
+		items: {},
 	});
-
-	// Refs for progress values
-	const progressRef = useRef(0);
-	const progressIncrementRef = useRef(0);
-	const progressDownloadRef = useRef(0);
 
 	// State - Modal Button Texts
 	const [buttonTexts, setButtonTexts] = useState({
@@ -249,12 +282,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const cancelRef = useRef(false);
 
 	// Function - Reset Progress Values
-	const resetProgressValues = () => {
-		setProgressValues({
-			value: 0,
+	const resetProgress = () => {
+		setProgress({
 			currentText: "",
-			itemProgress: {},
-			warningMessages: {},
+			items: {},
 		});
 	};
 
@@ -262,7 +293,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const handleClose = () => {
 		cancelRef.current = true;
 		setIsMounted(false);
-		resetProgressValues();
+		resetProgress();
 		setButtonTexts({
 			cancel: "Cancel",
 			download: "Download",
@@ -514,8 +545,181 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		log("INFO", "Download Modal", "Debug Info", "Logging form items:", formItems);
 		log("INFO", "Download Modal", "Debug Info", "Logging form values:", form);
 		log("INFO", "Download Modal", "Debug Info", "Logging watch selected types:", watchSelectedOptions);
-		log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
+		log("INFO", "Download Modal", "Debug Info", "Logging progress:", progress);
 		log("INFO", "Download Modal", "Debug Info", "Logging duplicates:", duplicates);
+	};
+
+	// --- Progress/Task Helpers ---
+	const setCurrentText = (text: string) => {
+		setProgress((prev) => ({
+			...prev,
+			currentText: text,
+		}));
+	};
+
+	const upsertItem = (itemKey: string, title: string) => {
+		setProgress((prev) => {
+			if (prev.items[itemKey]) return prev;
+			return {
+				...prev,
+				items: {
+					...prev.items,
+					[itemKey]: { itemKey, title, tasks: [] },
+				},
+			};
+		});
+	};
+
+	const addTask = (itemKey: string, title: string, task: Task) => {
+		setProgress((prev) => {
+			const existing = prev.items[itemKey] ?? { itemKey, title, tasks: [] as Task[] };
+			return {
+				...prev,
+				items: {
+					...prev.items,
+					[itemKey]: {
+						...existing,
+						title: existing.title || title,
+						tasks: [...existing.tasks, task],
+					},
+				},
+			};
+		});
+	};
+
+	const updateTask = (taskId: string, updater: (t: Task) => Task) => {
+		setProgress((prev) => {
+			let changed = false;
+			const nextItems: Record<string, ItemProgress> = {};
+
+			for (const [itemKey, item] of Object.entries(prev.items)) {
+				const idx = item.tasks.findIndex((t) => t.id === taskId);
+				if (idx === -1) {
+					nextItems[itemKey] = item;
+					continue;
+				}
+
+				const nextTasks = [...item.tasks];
+				nextTasks[idx] = updater(nextTasks[idx]);
+				nextItems[itemKey] = { ...item, tasks: nextTasks };
+				changed = true;
+			}
+
+			return changed ? { ...prev, items: nextItems } : prev;
+		});
+	};
+
+	const findTask = (state: DownloadProgress, taskId: string): Task | undefined => {
+		for (const item of Object.values(state.items)) {
+			const t = item.tasks.find((x) => x.id === taskId);
+			if (t) return t;
+		}
+		return undefined;
+	};
+
+	const getAssetStatus = (itemKey: string, assetType: AssetType): TaskStatus | undefined => {
+		const tasks = progress.items[itemKey]?.tasks ?? [];
+		const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.posterFileType === assetType);
+		return relevant.length ? relevant[relevant.length - 1].status : undefined;
+	};
+
+	const runDownloadTask = async (taskId: string, payload: DownloadTaskPayload): Promise<boolean> => {
+		updateTask(taskId, (t) => ({
+			...t,
+			status: "in-progress",
+			attempts: (t.attempts ?? 0) + 1,
+			error: undefined,
+		}));
+		setCurrentText(`Downloading ${payload.fileName} for "${payload.itemTitle}"`);
+
+		try {
+			const response = await patchDownloadPosterFileAndUpdateMediaServer(
+				payload.posterFile,
+				payload.mediaItem,
+				payload.fileName
+			);
+
+			if (response.status === "error") {
+				throw new Error(response.error?.message || "Unknown error");
+			}
+
+			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+			return true;
+		} catch (error) {
+			const message = `"${payload.itemTitle}" - ${payload.fileName} - ${error instanceof Error ? error.message : "Unknown error"}`;
+			updateTask(taskId, (t) => ({ ...t, status: "failed", error: message }));
+			return false;
+		}
+	};
+
+	const runAddToDBTask = async (taskId: string, payload: AddToDBTaskPayload): Promise<boolean> => {
+		updateTask(taskId, (t) => ({
+			...t,
+			status: "in-progress",
+			attempts: (t.attempts ?? 0) + 1,
+			error: undefined,
+		}));
+		setCurrentText(`Adding "${payload.itemTitle}" to DB`);
+
+		try {
+			const resp = await postAddItemToDB(payload.dbItem);
+			if (resp.status === "error") {
+				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
+			}
+			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+			return true;
+		} catch (error) {
+			updateTask(taskId, (t) => ({
+				...t,
+				status: "failed",
+				error: `"${payload.itemTitle}" - Add to DB failed - ${error instanceof Error ? error.message : "Unknown error"}`,
+			}));
+			return false;
+		}
+	};
+
+	const runAddToQueueTask = async (taskId: string, payload: AddToQueueTaskPayload): Promise<boolean> => {
+		updateTask(taskId, (t) => ({
+			...t,
+			status: "in-progress",
+			attempts: (t.attempts ?? 0) + 1,
+			error: undefined,
+		}));
+		setCurrentText(`Adding "${payload.itemTitle}" to queue`);
+
+		try {
+			const resp = await postAddToQueue(payload.dbItem);
+			if (resp.status === "error") {
+				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
+			}
+			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+			return true;
+		} catch (error) {
+			updateTask(taskId, (t) => ({
+				...t,
+				status: "failed",
+				error: `"${payload.itemTitle}" - Add to queue failed - ${error instanceof Error ? error.message : "Unknown error"}`,
+			}));
+			return false;
+		}
+	};
+
+	const retryTask = async (taskId: string) => {
+		const t = findTask(progress, taskId);
+		if (!t) return;
+
+		// NOTE: "note" tasks are not retryable
+		if (t.payload.kind === "note") return;
+
+		if (t.payload.kind === "download") {
+			await runDownloadTask(taskId, t.payload);
+		} else if (t.payload.kind === "addToDB") {
+			await runAddToDBTask(taskId, t.payload);
+		} else if (t.payload.kind === "addToQueue") {
+			await runAddToQueueTask(taskId, t.payload);
+		}
+
+		setButtonTexts((prev) => ({ ...prev, download: "Download Again" }));
 	};
 
 	const renderFormItemAssetType = (
@@ -537,11 +741,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.Type
 		);
 
-		// Check download status from progressValues
-		const progress = progressValues.itemProgress?.[item.MediaItemRatingKey]?.[assetType];
-		const isDownloaded = progress?.startsWith("Downloaded");
-		const isFailed = progress?.startsWith("Failed");
-		const isLoading = progress && !isDownloaded && !isFailed;
+		// Check download status from task state
+		const status = getAssetStatus(item.MediaItemRatingKey, assetType);
+		const isDownloaded = status === "completed";
+		const isFailed = status === "failed";
+		const isLoading = status === "in-progress";
 
 		// Check if this assetType is already downloaded in another set (using DBSavedSets)
 		let isDownloadedInAnotherSet = false;
@@ -675,6 +879,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			item.MediaItem.DBSavedSets &&
 			item.MediaItem.DBSavedSets.some((set) => set.PosterSetID === item.Set.ID);
 
+		// Calculate whether the item has any error tasks
+		const itemProgress = progress.items[item.MediaItemRatingKey];
+		const hasErrorTasks = itemProgress ? itemProgress.tasks.some((t) => t.status === "failed") : false;
+
 		return (
 			<FormField
 				key={`${item.MediaItemRatingKey}-${item.Set.Type}`}
@@ -685,6 +893,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						className={cn("rounded-md border p-4 rounded-lg mb-4", {
 							"border-green-500": isInDatabaseWithSet,
 							"border-yellow-500": isInDatabase && !isInDatabaseWithSet,
+							"border-destructive": hasErrorTasks,
 						})}
 					>
 						<FormLabel
@@ -871,31 +1080,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		);
 	};
 
-	const updateProgressValue = (value: number) => {
-		// Update the ref immediately
-		progressRef.current = Math.min(value, 100);
-
-		// Update the state
-		setProgressValues((prev) => ({
-			...prev,
-			value: progressRef.current,
-		}));
-	};
-
-	const updateItemProgress = (itemKey: string, assetType: keyof AssetProgress, status: string) => {
-		setProgressValues((prev) => ({
-			...prev,
-			currentText: `${status}`,
-			itemProgress: {
-				...prev.itemProgress,
-				[itemKey]: {
-					...prev.itemProgress[itemKey],
-					[assetType]: status,
-				},
-			},
-		}));
-	};
-
 	const createDBItem = (
 		item: FormItemDisplay,
 		options: z.infer<typeof formSchema>["selectedOptionsByItem"][string],
@@ -922,78 +1106,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		};
 	};
 
-	const downloadPosterFileAndUpdateMediaServer = async (
-		posterFile: PosterFile,
-		posterFileType: keyof AssetProgress,
-		fileName: string,
-		mediaItem: MediaItem
-	) => {
-		progressDownloadRef.current += 1;
-		setButtonTexts((prev) => ({
-			...prev,
-			download: `Downloading ${progressDownloadRef.current}/${selectedSizes.fileCount}`,
-		}));
-		updateItemProgress(mediaItem.RatingKey, posterFileType, `Downloading ${fileName}`);
-		try {
-			const response = await patchDownloadPosterFileAndUpdateMediaServer(posterFile, mediaItem, fileName);
-			updateProgressValue(progressRef.current + progressIncrementRef.current);
-			if (response.status === "error") {
-				updateItemProgress(mediaItem.RatingKey, posterFileType, `Failed to download ${fileName}`);
-				throw new Error(response.error?.message || "Unknown error");
-			} else {
-				updateItemProgress(mediaItem.RatingKey, posterFileType, `Downloaded ${fileName}`);
-			}
-		} catch (error) {
-			if (posterFileType === "seasonPoster" || posterFileType === "titlecard") {
-				setProgressValues((prev) => ({
-					...prev,
-					warningMessages: {
-						...prev.warningMessages,
-						[mediaItem.Title]: {
-							posterFile: posterFile,
-							posterFileType: posterFileType,
-							fileName: fileName,
-							mediaItem: mediaItem,
-							message: `${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					},
-					itemProgress: {
-						...prev.itemProgress,
-						[mediaItem.RatingKey]: {
-							...prev.itemProgress[mediaItem.RatingKey],
-							// Use specific property name based on the type
-							...(posterFileType === "seasonPoster"
-								? {
-										seasonPosterFailed:
-											(prev.itemProgress[mediaItem.RatingKey]?.seasonPosterFailed || 0) + 1,
-									}
-								: {
-										titlecardFailed:
-											(prev.itemProgress[mediaItem.RatingKey]?.titlecardFailed || 0) + 1,
-									}),
-						},
-					},
-				}));
-			} else {
-				setProgressValues((prev) => ({
-					...prev,
-					warningMessages: {
-						...prev.warningMessages,
-						[mediaItem.Title]: {
-							posterFile: posterFile,
-							posterFileType: posterFileType,
-							fileName: fileName,
-							mediaItem: mediaItem,
-							message: `${fileName} - ${error instanceof Error ? error.message : "Unknown error"}`,
-						},
-					},
-				}));
-			}
-
-			return;
-		}
-	};
-
 	const onSubmit = async (data: z.infer<typeof formSchema>) => {
 		if (isMounted) return;
 		cancelRef.current = false;
@@ -1004,19 +1116,14 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				cancel: "Cancel",
 				download: "Downloading...",
 			});
-			progressDownloadRef.current = 0;
-			resetProgressValues();
+			resetProgress();
+			setCurrentText("Starting...");
 
 			// Your download logic here
 			log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
-			log("INFO", "Download Modal", "Debug Info", "Progress Values:", progressValues);
+			log("INFO", "Download Modal", "Debug Info", "Progress:", progress);
 			log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
 			log("INFO", "Download Modal", "Debug Info", "Add to Queue Only:", addToQueueOnly);
-
-			updateProgressValue(1); // Reset progress to 0 at the start
-
-			// File Count + 1 for every item
-			progressIncrementRef.current = 95 / (selectedSizes.fileCount + formItems.length);
 
 			// Sort formItems by MediaItemTitle for consistent order
 			const sortedFormItems = formItems;
@@ -1042,6 +1149,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					continue;
 				}
 
+				upsertItem(item.MediaItemRatingKey, item.MediaItemTitle);
+
 				let currentMediaItem: MediaItem | undefined;
 				if (item.Set.Type === "movie" || item.Set.Type === "collection") {
 					currentMediaItem = item.Set.Poster?.Movie?.MediaItem || item.Set.Backdrop?.Movie?.MediaItem;
@@ -1053,12 +1162,15 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						item.Set.TitleCards?.find((card) => card.Show?.MediaItem)?.Show?.MediaItem;
 				}
 				if (!currentMediaItem) {
-					log(
-						"INFO",
-						"Download Modal",
-						"Debug Info",
-						`No MediaItem found for ${item.MediaItemTitle}. Skipping.`
-					);
+					const noteId = newId();
+					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+						id: noteId,
+						status: "failed",
+						label: "Resolve media item",
+						attempts: 1,
+						error: `No MediaItem found for ${item.MediaItemTitle}.`,
+						payload: { kind: "note", itemKey: item.MediaItemRatingKey, itemTitle: item.MediaItemTitle },
+					});
 					continue;
 				}
 
@@ -1085,78 +1197,57 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					currentMediaItem.LibraryTitle,
 					"mediaitem"
 				);
-				if (latestMediaItemResp.status === "error") {
-					setProgressValues((prev) => ({
-						...prev,
-						warningMessages: {
-							...prev.warningMessages,
-							[item.MediaItemTitle]: {
-								posterFile: null,
-								posterFileType: null,
-								fileName: null,
-								mediaItem: null,
-								message: `Error fetching latest media item for ${item.MediaItemTitle}: ${
-									latestMediaItemResp.error?.help ||
-									latestMediaItemResp.error?.detail ||
-									latestMediaItemResp.error?.message ||
-									"Unknown error"
-								}`,
-							},
-						},
-					}));
-					continue;
-				}
-				if (!latestMediaItemResp.data) {
-					setProgressValues((prev) => ({
-						...prev,
-						warningMessages: {
-							...prev.warningMessages,
-							[item.MediaItemTitle]: {
-								posterFile: null,
-								posterFileType: null,
-								fileName: null,
-								mediaItem: null,
-								message: `No media item found for ${item.MediaItemTitle}. Skipping.`,
-							},
-						},
-					}));
-					continue;
-				}
-				const latestMediaItem = latestMediaItemResp.data.mediaItem;
+				if (latestMediaItemResp.status === "error" || !latestMediaItemResp.data) {
+					const noteId = newId();
+					const msg =
+						latestMediaItemResp.status === "error"
+							? latestMediaItemResp.error?.help ||
+								latestMediaItemResp.error?.detail ||
+								latestMediaItemResp.error?.message ||
+								"Unknown error"
+							: "No media item found.";
 
-				// If the item is set to "Add to DB Only", create the DB item and skip download
+					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+						id: noteId,
+						status: "failed",
+						label: "Fetch latest media item",
+						attempts: 1,
+						error: `Error fetching latest media item for ${item.MediaItemTitle}: ${msg}`,
+						payload: { kind: "note", itemKey: item.MediaItemRatingKey, itemTitle: item.MediaItemTitle },
+					});
+					continue;
+				}
+
+				const latestMediaItem = latestMediaItemResp.data.mediaItem;
 				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
+
+				// Add to DB only
 				if (selectedOptions.addToDBOnly) {
-					updateItemProgress(item.MediaItemRatingKey, "addToDB", `Adding ${item.MediaItemTitle} to DB`);
-					log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
-					log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
-					const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
-					if (addToDBResp.status === "error") {
-						log(
-							"INFO",
-							"Download Modal",
-							"Debug Info",
-							`Error adding ${item.MediaItemTitle} to DB:`,
-							addToDBResp.error
-						);
-						setProgressValues((prev) => ({
-							...prev,
-							warningMessages: {
-								...prev.warningMessages,
-								[item.MediaItemTitle]: {
-									posterFile: null,
-									posterFileType: null,
-									fileName: null,
-									mediaItem: null,
-									message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error?.message || addToDBResp.error || "Unknown error"}`,
-								},
-							},
-						}));
-						updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
-					} else {
-						log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
+					const taskId = newId();
+					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+						id: taskId,
+						status: "pending",
+						label: `Add "${item.MediaItemTitle}" to DB`,
+						attempts: 0,
+						payload: {
+							kind: "addToDB",
+							itemKey: item.MediaItemRatingKey,
+							itemTitle: item.MediaItemTitle,
+							dbItem: createdSavedItem.dbItem,
+						},
+					});
+
+					await runAddToDBTask(taskId, {
+						kind: "addToDB",
+						itemKey: item.MediaItemRatingKey,
+						itemTitle: item.MediaItemTitle,
+						dbItem: createdSavedItem.dbItem,
+					});
+
+					if (onMediaItemChange) {
+						latestMediaItem.ExistInDatabase = true;
+						onMediaItemChange(latestMediaItem);
 					}
-					updateProgressValue(progressRef.current + progressIncrementRef.current);
 					continue;
 				}
 
@@ -1179,287 +1270,301 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					selectedTypes
 				);
 
+				// Add to queue only (for items that actually have types selected)
 				if (addToQueueOnly) {
-					const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
-					log(
-						"INFO",
-						"Download Modal",
-						"Debug Info",
-						`Adding ${item.MediaItemTitle} to download queue only.`,
-						{ createdSavedItem }
-					);
-					const addToQueueResp = await postAddToQueue(createdSavedItem.dbItem);
-					if (addToQueueResp.status === "error") {
-						log(
-							"INFO",
-							"Download Modal",
-							"Debug Info",
-							`Error adding ${item.MediaItemTitle} to download queue:`,
-							addToQueueResp.error
-						);
-						setProgressValues((prev) => ({
-							...prev,
-							warningMessages: {
-								...prev.warningMessages,
-								[item.MediaItemTitle]: {
-									posterFile: null,
-									posterFileType: null,
-									fileName: null,
-									mediaItem: null,
-									message: `Error adding ${item.MediaItemTitle} to download queue: ${addToQueueResp.error?.message || addToQueueResp.error || "Unknown error"}`,
-								},
-							},
-						}));
-						updateItemProgress(item.MediaItemRatingKey, "addToQueue", "Failed to add to queue");
-					} else {
-						log(
-							"INFO",
-							"Download Modal",
-							"Debug Info",
-							`Successfully added ${item.MediaItemTitle} to download queue.`
-						);
-						updateItemProgress(item.MediaItemRatingKey, "addToQueue", "Added to queue");
-					}
-					updateProgressValue(progressRef.current + progressIncrementRef.current);
+					const taskId = newId();
+					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+						id: taskId,
+						status: "pending",
+						label: `Add "${item.MediaItemTitle}" to queue`,
+						attempts: 0,
+						payload: {
+							kind: "addToQueue",
+							itemKey: item.MediaItemRatingKey,
+							itemTitle: item.MediaItemTitle,
+							dbItem: createdSavedItem.dbItem,
+						},
+					});
+
+					await runAddToQueueTask(taskId, {
+						kind: "addToQueue",
+						itemKey: item.MediaItemRatingKey,
+						itemTitle: item.MediaItemTitle,
+						dbItem: createdSavedItem.dbItem,
+					});
 					continue;
 				}
+
+				// Track whether THIS item had at least one successful download
+				let downloadedAtLeastOneForItem = false;
 
 				for (const type of selectedTypes) {
 					if (cancelRef.current) return; // Exit if cancelled
 					switch (type) {
 						case "poster":
 							if (item.Set.Poster) {
-								log(
-									"INFO",
-									"Download Modal",
-									"Debug Info",
-									`Downloading Poster for ${item.MediaItemTitle}`
-								);
-								await downloadPosterFileAndUpdateMediaServer(
-									item.Set.Poster,
-									"poster",
-									`${item.MediaItemTitle} - Poster`,
-									latestMediaItem
-								);
+								const taskId = newId();
+								const payload: DownloadTaskPayload = {
+									kind: "download",
+									itemKey: item.MediaItemRatingKey,
+									itemTitle: item.MediaItemTitle,
+									posterFile: item.Set.Poster,
+									posterFileType: "poster",
+									fileName: "Poster",
+									mediaItem: latestMediaItem,
+								};
+
+								addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+									id: taskId,
+									status: "pending",
+									label: payload.fileName,
+									attempts: 0,
+									payload,
+								});
+
+								const okPoster = await runDownloadTask(taskId, payload);
+								downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okPoster;
 							}
 							break;
+
 						case "backdrop":
 							if (item.Set.Backdrop) {
-								log(
-									"INFO",
-									"Download Modal",
-									"Debug Info",
-									`Downloading Backdrop for ${item.MediaItemTitle}`
-								);
-								await downloadPosterFileAndUpdateMediaServer(
-									item.Set.Backdrop,
-									"backdrop",
-									`${item.MediaItemTitle} - Backdrop`,
-									latestMediaItem
-								);
+								const taskId = newId();
+								const payload: DownloadTaskPayload = {
+									kind: "download",
+									itemKey: item.MediaItemRatingKey,
+									itemTitle: item.MediaItemTitle,
+									posterFile: item.Set.Backdrop,
+									posterFileType: "backdrop",
+									fileName: "Backdrop",
+									mediaItem: latestMediaItem,
+								};
+
+								addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+									id: taskId,
+									status: "pending",
+									label: payload.fileName,
+									attempts: 0,
+									payload,
+								});
+
+								const okBackdrop = await runDownloadTask(taskId, payload);
+								downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okBackdrop;
 							}
 							break;
+
 						case "seasonPoster":
 							if (item.Set.SeasonPosters) {
-								log(
-									"INFO",
-									"Download Modal",
-									"Debug Info",
-									`Downloading Season Posters for ${item.MediaItemTitle}`
+								const sorted = item.Set.SeasonPosters.filter((sp) => sp.Season?.Number !== 0).sort(
+									(a, b) => (a.Season?.Number || 0) - (b.Season?.Number || 0)
 								);
-								const sortedSeasonPosters = item.Set.SeasonPosters.filter(
-									(sp) => sp.Season?.Number !== 0
-								).sort((a, b) => (a.Season?.Number || 0) - (b.Season?.Number || 0));
-								for (const sp of sortedSeasonPosters) {
+
+								for (const sp of sorted) {
+									const seasonNum = sp.Season?.Number;
 									const seasonExists = latestMediaItem.Series?.Seasons.some(
-										(season) => season.SeasonNumber === sp.Season?.Number
+										(season) => season.SeasonNumber === seasonNum
 									);
+
+									const fileName = `Season ${seasonNum?.toString().padStart(2, "0")} Poster`;
+
+									const taskId = newId();
+									const payload: DownloadTaskPayload = {
+										kind: "download",
+										itemKey: item.MediaItemRatingKey,
+										itemTitle: item.MediaItemTitle,
+										posterFile: sp,
+										posterFileType: "seasonPoster",
+										fileName,
+										mediaItem: latestMediaItem,
+									};
+
+									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+										id: taskId,
+										status: "pending",
+										label: fileName,
+										attempts: 0,
+										payload,
+									});
+
 									if (!seasonExists) {
-										log(
-											"INFO",
-											"Download Modal",
-											"Debug Info",
-											`Skipping Season ${sp.Season?.Number} for ${item.MediaItemTitle} - Season does not exist in latest media item.`
-										);
-										setSelectedSizes((prev) => ({
-											...prev,
-											fileCount: prev.fileCount - 1,
-											downloadSize: sp.FileSize
-												? prev.downloadSize - sp.FileSize
-												: prev.downloadSize,
+										updateTask(taskId, (t) => ({
+											...t,
+											status: "skipped",
 										}));
 										continue;
 									}
-									await downloadPosterFileAndUpdateMediaServer(
-										sp,
-										"seasonPoster",
-										`${item.MediaItemTitle} - S${sp.Season?.Number?.toString().padStart(2, "0")} Poster`,
-										latestMediaItem
-									);
+
+									const okSeason = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeason;
 								}
 							}
 							break;
+
 						case "specialSeasonPoster":
 							if (item.Set.SeasonPosters) {
-								log(
-									"INFO",
-									"Download Modal",
-									"Debug Info",
-									`Downloading Special Season Posters for ${item.MediaItemTitle}`
-								);
-								const specialSeasonPosters = item.Set.SeasonPosters.filter(
-									(sp) => sp.Season?.Number === 0
-								);
-								for (const sp of specialSeasonPosters) {
-									const spExists = latestMediaItem.Series?.Seasons.some(
+								const specials = item.Set.SeasonPosters.filter((sp) => sp.Season?.Number === 0);
+
+								for (const sp of specials) {
+									const exists = latestMediaItem.Series?.Seasons.some(
 										(season) => season.SeasonNumber === 0
 									);
-									if (!spExists) {
-										log(
-											"INFO",
-											"Download Modal",
-											"Debug Info",
-											`Skipping Special Season Poster for ${item.MediaItemTitle} - Special Season does not exist in latest media item.`
-										);
+
+									const taskId = newId();
+									const payload: DownloadTaskPayload = {
+										kind: "download",
+										itemKey: item.MediaItemRatingKey,
+										itemTitle: item.MediaItemTitle,
+										posterFile: sp,
+										posterFileType: "specialSeasonPoster",
+										fileName: `"Special Season Poster"`,
+										mediaItem: latestMediaItem,
+									};
+
+									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+										id: taskId,
+										status: "pending",
+										label: payload.fileName,
+										attempts: 0,
+										payload,
+									});
+
+									if (!exists) {
+										updateTask(taskId, (t) => ({
+											...t,
+											status: "skipped",
+										}));
 										continue;
 									}
-									await downloadPosterFileAndUpdateMediaServer(
-										sp,
-										"specialSeasonPoster",
-										`${item.MediaItemTitle} - Special Season Poster`,
-										latestMediaItem
-									);
+
+									const okSpecialSeason = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeason;
 								}
 							}
 							break;
+
 						case "titlecard":
 							if (item.Set.TitleCards) {
-								log(
-									"INFO",
-									"Download Modal",
-									"Debug Info",
-									`Downloading Title Cards for ${item.MediaItemTitle}`
-								);
-								const sortedTitleCards = item.Set.TitleCards.filter(
+								const sorted = item.Set.TitleCards.filter(
 									(tc) =>
 										tc.Episode?.SeasonNumber !== undefined &&
 										tc.Episode?.EpisodeNumber !== undefined
 								).sort((a, b) => {
-									const seasonA = a.Episode?.SeasonNumber || 0;
-									const seasonB = b.Episode?.SeasonNumber || 0;
-									const episodeA = a.Episode?.EpisodeNumber || 0;
-									const episodeB = b.Episode?.EpisodeNumber || 0;
-									return seasonA - seasonB || episodeA - episodeB;
+									const sa = a.Episode?.SeasonNumber || 0;
+									const sb = b.Episode?.SeasonNumber || 0;
+									const ea = a.Episode?.EpisodeNumber || 0;
+									const eb = b.Episode?.EpisodeNumber || 0;
+									return sa - sb || ea - eb;
 								});
 
-								for (const tc of sortedTitleCards) {
-									if (
-										tc.FileSize &&
-										tc.Episode?.SeasonNumber !== undefined &&
-										tc.Episode?.EpisodeNumber !== undefined
-									) {
-										const episode = latestMediaItem.Series?.Seasons.flatMap(
-											(s) => s.Episodes || []
-										).find(
-											(e) =>
-												e.SeasonNumber === tc.Episode?.SeasonNumber &&
-												e.EpisodeNumber === tc.Episode?.EpisodeNumber
-										);
-										if (!episode) {
-											log(
-												"INFO",
-												"Download Modal",
-												"Debug Info",
-												`Skipping Title Card for S${tc.Episode.SeasonNumber}E${tc.Episode.EpisodeNumber} - Episode does not exist in latest media item.`
-											);
-											setSelectedSizes((prev) => ({
-												...prev,
-												fileCount: prev.fileCount - 1,
-												downloadSize: prev.downloadSize - tc.FileSize!,
-											}));
-											continue;
-										}
-										await downloadPosterFileAndUpdateMediaServer(
-											tc,
-											"titlecard",
-											`${item.MediaItemTitle} - S${tc.Episode.SeasonNumber.toString().padStart(
-												2,
-												"0"
-											)}E${tc.Episode.EpisodeNumber.toString().padStart(2, "0")} Title Card`,
-											latestMediaItem
-										);
+								for (const tc of sorted) {
+									const season = tc.Episode!.SeasonNumber;
+									const episodeNum = tc.Episode!.EpisodeNumber;
+
+									const episodeExists = latestMediaItem.Series?.Seasons.flatMap(
+										(s) => s.Episodes || []
+									).some((e) => e.SeasonNumber === season && e.EpisodeNumber === episodeNum);
+
+									const fileName = `"S${season.toString().padStart(2, "0")}E${episodeNum
+										.toString()
+										.padStart(2, "0")} Title Card`;
+
+									const taskId = newId();
+									const payload: DownloadTaskPayload = {
+										kind: "download",
+										itemKey: item.MediaItemRatingKey,
+										itemTitle: item.MediaItemTitle,
+										posterFile: tc,
+										posterFileType: "titlecard",
+										fileName,
+										mediaItem: latestMediaItem,
+									};
+
+									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+										id: taskId,
+										status: "pending",
+										label: fileName,
+										attempts: 0,
+										payload,
+									});
+
+									if (!episodeExists) {
+										updateTask(taskId, (t) => ({
+											...t,
+											status: "skipped",
+										}));
+										continue;
 									}
+
+									const okTitleCard = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitleCard;
 								}
 							}
 							break;
-						default:
-							log(
-								"INFO",
-								"Download Modal",
-								"Debug Info",
-								`Unknown type ${type} for ${item.MediaItemTitle}. Skipping.`
-							);
-							continue;
 					}
 				}
-				// Add the item to the database after downloading
-				updateItemProgress(item.MediaItemRatingKey, "addToDB", `Adding ${item.MediaItemTitle} to DB`);
-				log("INFO", "Download Modal", "Debug Info", `Adding ${item.MediaItemTitle} to DB only.`);
-				log("INFO", "Download Modal", "Debug Info", "DB Item Created:", createdSavedItem.dbItem);
-				const addToDBResp = await postAddItemToDB(createdSavedItem.dbItem);
-				if (addToDBResp.status === "error") {
-					log(
-						"ERROR",
-						"Download Modal",
-						"Debug Info",
-						`Error adding ${item.MediaItemTitle} to DB:`,
-						addToDBResp.error
-					);
-					setProgressValues((prev) => ({
-						...prev,
-						warningMessages: {
-							...prev.warningMessages,
-							[item.MediaItemTitle]: {
-								posterFile: null,
-								posterFileType: null,
-								fileName: null,
-								mediaItem: null,
-								message: `Error adding ${item.MediaItemTitle} to DB: ${addToDBResp.error?.message || addToDBResp.error || "Unknown error"}`,
-							},
+
+				// Only add to DB if at least one download succeeded
+				if (!downloadedAtLeastOneForItem) {
+					const taskId = newId();
+					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+						id: taskId,
+						status: "skipped",
+						label: `Add "${item.MediaItemTitle}" to DB (skipped: no successful downloads)`,
+						attempts: 0,
+						payload: {
+							kind: "addToDB",
+							itemKey: item.MediaItemRatingKey,
+							itemTitle: item.MediaItemTitle,
+							dbItem: createdSavedItem.dbItem,
 						},
-					}));
-					updateItemProgress(item.MediaItemRatingKey, "addToDB", "Failed to add to DB");
-				} else {
-					log("INFO", "Download Modal", "Debug Info", `Successfully added ${item.MediaItemTitle} to DB.`);
+					});
+					continue;
 				}
-				updateProgressValue(progressRef.current + progressIncrementRef.current);
-				if (onMediaItemChange) {
+
+				const addId = newId();
+				addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+					id: addId,
+					status: "pending",
+					label: `Add "${item.MediaItemTitle}" to DB`,
+					attempts: 0,
+					payload: {
+						kind: "addToDB",
+						itemKey: item.MediaItemRatingKey,
+						itemTitle: item.MediaItemTitle,
+						dbItem: createdSavedItem.dbItem,
+					},
+				});
+
+				const ok = await runAddToDBTask(addId, {
+					kind: "addToDB",
+					itemKey: item.MediaItemRatingKey,
+					itemTitle: item.MediaItemTitle,
+					dbItem: createdSavedItem.dbItem,
+				});
+
+				if (ok && onMediaItemChange) {
 					latestMediaItem.ExistInDatabase = true;
 					onMediaItemChange(latestMediaItem);
 				}
 			}
 
+			setCurrentText("Completed!");
 			setButtonTexts({
 				cancel: "Close",
 				download: "Download Again",
 			});
-			updateProgressValue(100); // Set progress to 100% at the end
 			setIsMounted(false);
 		} catch (error) {
-			log("ERROR", "Download Modal", "Debug Info", "Download Error:", error);
-			setProgressValues((prev) => ({
-				...prev,
-				warningMessages: {
-					...prev.warningMessages,
-					general: {
-						posterFile: null,
-						posterFileType: null,
-						fileName: null,
-						mediaItem: null,
-						message: error instanceof Error ? error.message : "An unknown error occurred",
-					},
-				},
-			}));
+			const taskId = newId();
+			addTask("general", "General", {
+				id: taskId,
+				status: "failed",
+				label: "Unexpected error",
+				attempts: 1,
+				error: error instanceof Error ? error.message : "An unknown error occurred",
+				payload: { kind: "note", itemKey: "general", itemTitle: "General" },
+			});
+
 			setButtonTexts({
 				cancel: "Close",
 				download: "Retry Download",
@@ -1616,118 +1721,105 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								</div>
 
 								{/* Progress Bar */}
-								{progressValues.value > 0 && (
-									<div className="w-full">
-										<div className="flex items-center justify-between w-full">
-											<div className="relative w-full">
-												<Progress
-													value={progressValues.value}
-													className={cn(
-														"w-full rounded-md overflow-hidden",
-														progressValues.value < 100 && "animate-pulse h-5",
-														progressValues.value === 100 && "[&>div]:bg-green-500 h-3",
-														progressValues.value === 100 &&
-															progressValues.warningMessages &&
-															Object.keys(progressValues.warningMessages).length > 0
-															? "[&>div]:bg-destructive"
-															: ""
-													)}
-												/>
-												{progressValues.value < 100 && (
-													<span className="absolute inset-0 flex items-center justify-center text-xs text-white pointer-events-none w-full mt-0.5">
-														{progressValues.currentText}
-													</span>
-												)}
-											</div>
-											<span className="ml-2 text-sm text-muted-foreground min-w-[40px] text-right">
-												{Math.round(progressValues.value)}%
-											</span>
-										</div>
-									</div>
-								)}
-								{/* Warning Messages */}
-								{Object.keys(progressValues.warningMessages).length > 0 && (
-									<div className="my-2">
-										<Accordion type="single" collapsible defaultValue="warnings">
-											<AccordionItem value="warnings">
-												<AccordionTrigger className="text-destructive">
-													Errors ({Object.keys(progressValues.warningMessages).length})
-												</AccordionTrigger>
-												<AccordionContent>
-													<div className="flex flex-col space-y-2">
-														{Object.entries(progressValues.warningMessages).map(
-															([key, item]) => (
-																<div
-																	key={`warning-${key}-${Math.random()}`}
-																	className="flex items-center text-destructive"
-																>
-																	<span
-																		className="mr-1 h-4 w-4 relative group cursor-pointer"
-																		onClick={() => {
-																			// Retry Download if there is a posterFile, posterFileType, fileName and mediaItem
-																			if (
-																				item.posterFile &&
-																				item.posterFileType &&
-																				item.fileName &&
-																				item.mediaItem
-																			) {
-																				log(
-																					"INFO",
-																					"Download Modal",
-																					"Debug Info",
-																					"Retrying Download for:",
-																					{
-																						posterFile: item.posterFile,
-																						posterFileType:
-																							item.posterFileType,
-																						fileName: item.fileName,
-																						mediaItem: item.mediaItem,
-																					}
-																				);
-																				setProgressValues((prev) => {
-																					// eslint-disable-next-line @typescript-eslint/no-unused-vars
-																					const { [key]: _, ...rest } =
-																						prev.warningMessages;
-																					return {
-																						...prev,
-																						warningMessages: rest,
-																					};
-																				});
-																				progressDownloadRef.current -=
-																					progressIncrementRef.current;
-																				updateProgressValue(
-																					progressRef.current -
-																						progressIncrementRef.current
-																				);
-																				// Retry the download
-																				downloadPosterFileAndUpdateMediaServer(
-																					item.posterFile,
-																					item.posterFileType,
-																					item.fileName,
-																					item.mediaItem
-																				);
-																				setButtonTexts((prev) => ({
-																					...prev,
-																					download: `Download Again`,
-																				}));
-																			}
-																		}}
-																	>
-																		<X className="absolute inset-0 h-4 w-4 transition-opacity duration-150 group-hover:opacity-0" />
-																		<RefreshCcw className="absolute inset-0 h-4 w-4 opacity-0 transition-opacity duration-150 group-hover:opacity-100 text-yellow-500" />
-																	</span>
-																	<span>{item.message}</span>
-																</div>
-															)
+								{Object.values(progress.items).some((i) => i.tasks.length > 0) &&
+									(() => {
+										const overall = getOverallProgress(progress);
+										const errors = getErrorsByItem(progress);
+										const hasErrors = errors.length > 0;
+
+										return (
+											<div className="w-full">
+												<div className="flex items-center justify-between w-full">
+													<div className="relative w-full min-w-0">
+														<Progress
+															value={overall}
+															className={cn(
+																"w-full rounded-md overflow-hidden h-3",
+																overall < 100 && "animate-pulse h-5",
+																overall === 100 && !hasErrors && "[&>div]:bg-green-500",
+																overall === 100 && hasErrors && "[&>div]:bg-destructive"
+															)}
+														/>
+
+														{overall < 100 && (
+															<span
+																className={cn(
+																	"absolute inset-0 flex items-center justify-center",
+																	"text-xs text-white pointer-events-none mt-0.5",
+																	"px-2 min-w-0"
+																)}
+																title={progress.currentText}
+															>
+																<span className="w-full min-w-0 truncate text-center">
+																	{progress.currentText}
+																</span>
+															</span>
 														)}
 													</div>
-												</AccordionContent>
-											</AccordionItem>
-										</Accordion>
+
+													<span className="ml-1 text-sm text-muted-foreground min-w-[30px] text-right">
+														{overall}%
+													</span>
+												</div>
+											</div>
+										);
+									})()}
+
+								{/* Errors */}
+								{getErrorsByItem(progress).length > 0 && (
+									<div className="my-2">
+										{(() => {
+											const grouped = getErrorsByItem(progress);
+											const errorCount = grouped.reduce((acc, g) => acc + g.errors.length, 0);
+
+											return (
+												<Accordion type="single" collapsible>
+													<AccordionItem value="errors">
+														<AccordionTrigger className="text-destructive">
+															Errors ({errorCount})
+														</AccordionTrigger>
+														<AccordionContent>
+															<div className="flex flex-col space-y-2">
+																{grouped.map((g) => (
+																	<div
+																		key={g.itemKey}
+																		className="flex flex-col space-y-2"
+																	>
+																		{g.errors.map((t) => (
+																			<div
+																				key={t.id}
+																				className="flex items-center text-destructive"
+																			>
+																				{t.payload.kind !== "note" ? (
+																					<button
+																						type="button"
+																						className="mr-2 h-4 w-4 text-yellow-500 cursor-pointer"
+																						onClick={() => retryTask(t.id)}
+																						aria-label="Retry"
+																					>
+																						<RefreshCcw className="h-4 w-4" />
+																					</button>
+																				) : (
+																					<span className="mr-1 h-4 w-4">
+																						<X className="h-4 w-4" />
+																					</span>
+																				)}
+																				<span>{t.error || t.label}</span>
+																			</div>
+																		))}
+																	</div>
+																))}
+															</div>
+														</AccordionContent>
+													</AccordionItem>
+												</Accordion>
+											);
+										})()}
 									</div>
 								)}
+
 								<DialogFooter>
-									<div className="flex space-x-4">
+									<div className="flex space-x-4 justify-end w-full">
 										{/* Cancel button to close the modal */}
 										<DialogClose asChild>
 											<Button
@@ -1788,7 +1880,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											)
 										}
 
-										{/* If the all items have no types selected and nothing is set to "Add to DB Only", show a button to reset the form */}
+										{/* Reset Form button: If the all items have no types selected and nothing is set to "Add to DB Only" */}
 										{formItems.every(
 											(item) =>
 												!watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length &&
@@ -1799,19 +1891,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												variant="secondary"
 												onClick={() => {
 													form.reset();
-													setSelectedSizes({
-														fileCount: 0,
-														downloadSize: 0,
-													});
-													setProgressValues({
-														value: 0,
-														currentText: "",
-														itemProgress: {},
-														warningMessages: {},
-													});
+													setSelectedSizes({ fileCount: 0, downloadSize: 0 });
+													resetProgress();
 													setDuplicates({});
 												}}
 											>
+												<OctagonMinus className="h-4 w-4" />
 												Reset Form
 											</Button>
 										)}
