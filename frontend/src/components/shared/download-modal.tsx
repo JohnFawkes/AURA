@@ -1767,16 +1767,18 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													{buttonTexts.download.startsWith("Downloading") ||
 													buttonTexts.download.startsWith("Adding") ? (
 														<>
-															<Loader className="mr-2 h-4 w-4 animate-spin" />
+															<Loader className="h-4 w-4 animate-spin" />
 															{buttonTexts.download}
 														</>
 													) : (
 														<>
 															{buttonTexts.download === "Download" ? (
-																<Download className="mr-2 h-4 w-4" />
-															) : (
-																<ListEnd className="mr-2 h-4 w-4" />
-															)}
+																<Download className="h-4 w-4" />
+															) : buttonTexts.download === "Add to Queue" ? (
+																<ListEnd className="h-4 w-4" />
+															) : buttonTexts.download === "Add to Database" ? (
+																<DatabaseZap className="h-4 w-4" />
+															) : null}
 															{buttonTexts.download}
 														</>
 													)}
