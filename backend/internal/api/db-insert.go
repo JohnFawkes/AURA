@@ -13,8 +13,14 @@ func DB_InsertAllInfoIntoTables(ctx context.Context, item DBMediaItemWithPosterS
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Adding Item into Database", logging.LevelInfo)
 	defer logAction.Complete()
 
-	// Return Success for testing
+	// Return for dev-testing
+	//time.Sleep(1 * time.Second)
 	// return logging.LogErrorInfo{}
+	// ld := logAction.AddSubAction("Simulate Error", logging.LevelTrace)
+	// ld.SetError("Simulated db error for testing", "This is only a test", map[string]any{
+	// 	"item": item,
+	// })
+	// return *ld.Error
 
 	// Start a DB transaction
 	actionBeginTx := logAction.AddSubAction("Start DB Transaction", logging.LevelTrace)

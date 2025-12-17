@@ -34,8 +34,21 @@ func CallDownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file
 //////////////////////////////////////////////////////////////////////
 
 func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, file PosterFile) logging.LogErrorInfo {
-	// Return Success for testing
-	// return logging.LogErrorInfo{}
+
+	// Return for dev-testing
+	// time.Sleep(1 * time.Second)
+	// if file.Type == "poster" || file.Type == "seasonPoster" {
+	// 	_, errorAction := logging.AddSubActionToContext(ctx, "Plex_DownloadAndUpdatePosters Simulate Error", logging.LevelInfo)
+	// 	defer errorAction.Complete()
+	// 	ld := errorAction.AddSubAction("Simulate Error", logging.LevelTrace)
+	// 	ld.SetError("Simulated download error for testing", "This is only a test", map[string]any{
+	// 		"media_item": mediaItem,
+	// 		"file":       file,
+	// 	})
+	// 	return *ld.Error
+	// } else {
+	// 	return logging.LogErrorInfo{}
+	// }
 
 	if !Global_Config.Images.SaveImagesLocally.Enabled {
 		Err := Plex_UpdateImageViaMediuxURL(ctx, mediaItem, file)
