@@ -698,7 +698,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										<PopoverTrigger>
 											<Database
 												className={cn(
-													"h-4 w-4 ml-2 cursor-help",
+													"h-4 w-4 ml-2 cursor-pointer",
 													isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
 												)}
 											/>
