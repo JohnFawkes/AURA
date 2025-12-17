@@ -466,22 +466,20 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
 									</Button>
 								</div>
 								{editSet.set.User?.Name && (
-									<DialogDescription>
-										<div className="flex items-center gap-1">
-											<Avatar className="rounded-lg mr-1 w-4 h-4">
-												<AvatarImage
-													src={`/api/mediux/avatar-image?username=${editSet.set.User.Name}`}
-													className="w-4 h-4"
-												/>
-												<AvatarFallback className="">
-													<User className="w-4 h-4" />
-												</AvatarFallback>
-											</Avatar>
-											<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
-												{editSet.set.User.Name}
-											</Link>
-										</div>
-									</DialogDescription>
+									<div className="flex items-center gap-1">
+										<Avatar className="rounded-lg mr-1 w-4 h-4">
+											<AvatarImage
+												src={`/api/mediux/avatar-image?username=${editSet.set.User.Name}`}
+												className="w-4 h-4"
+											/>
+											<AvatarFallback className="">
+												<User className="w-4 h-4" />
+											</AvatarFallback>
+										</Avatar>
+										<Link href={`/user/${editSet.set.User.Name}`} className="hover:underline">
+											{editSet.set.User.Name}
+										</Link>
+									</div>
 								)}
 								<DialogDescription className="ml-1">
 									Set ID:{" "}
