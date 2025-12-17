@@ -1484,22 +1484,20 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				>
 					<DialogHeader>
 						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
-						<DialogDescription>
-							<div className="flex items-center justify-center sm:justify-start">
-								<Avatar className="rounded-lg mr-1 w-4 h-4">
-									<AvatarImage
-										src={`/api/mediux/avatar-image?username=${setAuthor}`}
-										className="w-4 h-4"
-									/>
-									<AvatarFallback className="">
-										<User className="w-4 h-4" />
-									</AvatarFallback>
-								</Avatar>
-								<Link href={`/user/${setAuthor}`} className="hover:underline">
-									{setAuthor}
-								</Link>
-							</div>
-						</DialogDescription>
+						<div className="flex items-center justify-center sm:justify-start">
+							<Avatar className="rounded-lg mr-1 w-4 h-4">
+								<AvatarImage
+									src={`/api/mediux/avatar-image?username=${setAuthor}`}
+									className="w-4 h-4"
+								/>
+								<AvatarFallback className="">
+									<User className="w-4 h-4" />
+								</AvatarFallback>
+							</Avatar>
+							<Link href={`/user/${setAuthor}`} className="hover:underline">
+								{setAuthor}
+							</Link>
+						</div>
 						<DialogDescription>
 							<Link
 								href={getMediuxBaseUrl()}
