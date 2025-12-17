@@ -374,10 +374,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	useEffect(() => {
 		// If all the form items are set to "Add to Database Only", change button text
 		if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types.length === 0)) {
-			setAddToQueueOnly(false);
-		}
-
-		if (addToQueueOnly) {
+			setButtonTexts((prev) => ({
+				...prev,
+				download: "Add to Database",
+			}));
+		} else if (addToQueueOnly) {
 			setButtonTexts((prev) => ({
 				...prev,
 				download: "Add to Queue",
