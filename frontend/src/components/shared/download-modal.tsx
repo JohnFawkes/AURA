@@ -1506,7 +1506,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										itemTitle: item.MediaItemTitle,
 										posterFile: sp,
 										posterFileType: "specialSeasonPoster",
-										fileName: `"Special Season Poster"`,
+										fileName: "Special Season Poster",
 										mediaItem: latestMediaItem,
 									};
 
@@ -1554,9 +1554,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										(s) => s.Episodes || []
 									).some((e) => e.SeasonNumber === season && e.EpisodeNumber === episodeNum);
 
-									const fileName = `"S${season.toString().padStart(2, "0")}E${episodeNum
+									const fileName = `S${season.toString().padStart(2, "0")}E${episodeNum
 										.toString()
-										.padStart(2, "0")} Title Card`;
+										.padStart(2, "0")} Titlecard`;
 
 									const taskId = newId();
 									const payload: DownloadTaskPayload = {
