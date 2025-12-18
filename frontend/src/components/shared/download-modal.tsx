@@ -826,7 +826,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
 					/>
 				</FormControl>
-				<FormLabel className="text-md font-normal cursor-pointer">
+				<FormLabel
+					className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}
+				>
 					{assetType.charAt(0).toUpperCase() + assetType.slice(1).replace(/([A-Z])/g, " $1")}
 				</FormLabel>
 				{isDownloaded ? (
@@ -834,7 +836,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				) : isFailed ? (
 					<X className="h-4 w-4 text-destructive mt-1" strokeWidth={3} />
 				) : isLoading ? (
-					<Loader className="h-4 w-4 text-yellow-500 mt-1 animate-spin" />
+					<Loader className="h-4 w-4 mt-1 animate-spin" />
 				) : isDownloadedInAnotherSet ? (
 					<PopoverHelp
 						ariaLabel="Type already downloaded in another set"
