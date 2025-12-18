@@ -1863,7 +1863,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											return (
 												<Accordion type="single" collapsible>
 													<AccordionItem value="errors">
-														<AccordionTrigger className="text-destructive">
+														<AccordionTrigger
+															className={cn(
+																"text-destructive justify-start gap-2 [&>svg]:ml-0"
+															)}
+														>
 															Errors ({errorCount})
 														</AccordionTrigger>
 														<AccordionContent>
