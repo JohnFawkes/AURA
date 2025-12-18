@@ -142,18 +142,34 @@ type ItemProgress = {
 
 type DownloadProgress = {
 	currentText: string;
+	totalPlanned: number;
 	items: Record<string, ItemProgress>;
 };
 
 // helper for stable ids
 const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+// derive progress counts from tasks (uses totalPlanned so total doesn't grow as tasks are added)
+const getOverallCounts = (state: DownloadProgress) => {
+	const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
+
+	// Notes shouldn't affect progress totals
+	const relevant = allTasks.filter((t) => t.payload.kind !== "note");
+
+	// Treat skipped as "done" so we always end at 100%
+	const done = relevant.filter(
+		(t) => t.status === "completed" || t.status === "failed" || t.status === "skipped"
+	).length;
+
+	// Use the planned total when present; fallback for safety
+	const total = Math.max(1, state.totalPlanned || relevant.length || 1);
+
+	return { done, total };
+};
+
 // derive progress (0..100) from tasks
 const getOverallProgress = (state: DownloadProgress) => {
-	const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
-	const relevant = allTasks.filter((t) => t.status !== "skipped");
-	const done = relevant.filter((t) => t.status === "completed" || t.status === "failed").length;
-	const total = relevant.length || 1;
+	const { done, total } = getOverallCounts(state);
 	return Math.round((done / total) * 100);
 };
 
@@ -248,6 +264,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	// Download Progress
 	const [progress, setProgress] = useState<DownloadProgress>({
 		currentText: "",
+		totalPlanned: 0,
 		items: {},
 	});
 
@@ -285,6 +302,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const resetProgress = () => {
 		setProgress({
 			currentText: "",
+			totalPlanned: 0,
 			items: {},
 		});
 	};
@@ -1106,6 +1124,70 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		};
 	};
 
+	// Compute how many tasks we *expect* to run before starting
+	const computePlannedTotal = (data: z.infer<typeof formSchema>) => {
+		let total = 0;
+
+		for (const item of formItems) {
+			const selected = data.selectedOptionsByItem[item.MediaItemRatingKey];
+			if (!selected) continue;
+
+			// Skip duplicates that aren't selected
+			if (
+				(item.Set.Type === "movie" || item.Set.Type === "collection") &&
+				duplicates[item.MediaItemRatingKey]?.selectedType &&
+				duplicates[item.MediaItemRatingKey].selectedType !== item.Set.Type
+			) {
+				continue;
+			}
+
+			// Nothing selected and not DB-only => no tasks
+			if ((selected.types?.length ?? 0) === 0 && !selected.addToDBOnly) continue;
+
+			// DB-only => just one task
+			if (selected.addToDBOnly) {
+				total += 1;
+				continue;
+			}
+
+			// Add-to-queue-only => just one task (no downloads, no add-to-db)
+			if (addToQueueOnly) {
+				total += 1;
+				continue;
+			}
+
+			// Download tasks
+			for (const type of selected.types ?? []) {
+				switch (type) {
+					case "poster":
+						if (item.Set.Poster) total += 1;
+						break;
+					case "backdrop":
+						if (item.Set.Backdrop) total += 1;
+						break;
+					case "seasonPoster":
+						total += item.Set.SeasonPosters?.filter((sp) => sp.Season?.Number !== 0).length ?? 0;
+						break;
+					case "specialSeasonPoster":
+						total += item.Set.SeasonPosters?.filter((sp) => sp.Season?.Number === 0).length ?? 0;
+						break;
+					case "titlecard":
+						total +=
+							item.Set.TitleCards?.filter(
+								(tc) =>
+									tc.Episode?.SeasonNumber !== undefined && tc.Episode?.EpisodeNumber !== undefined
+							).length ?? 0;
+						break;
+				}
+			}
+
+			// After downloads, you *attempt* add-to-db (or mark it skipped) => count it as a planned task
+			if ((selected.types?.length ?? 0) > 0) total += 1;
+		}
+
+		return total;
+	};
+
 	const onSubmit = async (data: z.infer<typeof formSchema>) => {
 		if (isMounted) return;
 		cancelRef.current = false;
@@ -1114,10 +1196,16 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			setIsMounted(true);
 			setButtonTexts({
 				cancel: "Cancel",
-				download: "Downloading...",
+				download: "Starting...",
 			});
 			resetProgress();
-			setCurrentText("Starting...");
+			// Reset + set the planned total up front (fixed total)
+			const plannedTotal = computePlannedTotal(data);
+			setProgress({
+				currentText: "Starting...",
+				totalPlanned: plannedTotal,
+				items: {},
+			});
 
 			// Your download logic here
 			log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
@@ -1858,24 +1946,42 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														isMounted
 													}
 												>
-													{buttonTexts.download.startsWith("Downloading") ||
-													buttonTexts.download.startsWith("Adding") ? (
-														<>
-															<Loader className="h-4 w-4 animate-spin" />
-															{buttonTexts.download}
-														</>
-													) : (
-														<>
-															{buttonTexts.download === "Download" ? (
-																<Download className="h-4 w-4" />
-															) : buttonTexts.download === "Add to Queue" ? (
-																<ListEnd className="h-4 w-4" />
-															) : buttonTexts.download === "Add to Database" ? (
-																<DatabaseZap className="h-4 w-4" />
-															) : null}
-															{buttonTexts.download}
-														</>
-													)}
+													{(() => {
+														const isBusy =
+															buttonTexts.download.startsWith("Starting") ||
+															buttonTexts.download.startsWith("Adding") ||
+															buttonTexts.download.startsWith("Downloading");
+
+														const { done, total } = getOverallCounts(progress);
+
+														if (isBusy) {
+															return (
+																<>
+																	<Loader className="h-4 w-4 animate-spin" />
+																	{progress.totalPlanned > 0 && done !== total && (
+																		<span className="ml-2 text-muted-foreground tabular-nums">
+																			{done}/{total}
+																		</span>
+																	)}
+																</>
+															);
+														}
+
+														return (
+															<>
+																{buttonTexts.download === "Download" ||
+																buttonTexts.download === "Download Again" ||
+																buttonTexts.download === "Retry Download" ? (
+																	<Download className="h-4 w-4" />
+																) : buttonTexts.download === "Add to Queue" ? (
+																	<ListEnd className="h-4 w-4" />
+																) : buttonTexts.download === "Add to Database" ? (
+																	<DatabaseZap className="h-4 w-4" />
+																) : null}
+																{buttonTexts.download}
+															</>
+														);
+													})()}
 												</Button>
 											)
 										}
