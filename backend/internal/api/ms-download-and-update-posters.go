@@ -133,19 +133,15 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 					newFileName = path.Base(episodePath)
 					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
 				case "static":
-					re := regexp.MustCompile(`S(\d{1,2})E(\d{1,2})`)
-					matches := re.FindStringSubmatch(episodePath)
-					if len(matches) == 3 {
-						seasonNumber := matches[1]
-						episodeNumber := matches[2]
-						newFileName = fmt.Sprintf("S%sE%s.jpg", seasonNumber, episodeNumber)
+					filename := path.Base(episodePath)
+					re := regexp.MustCompile(`(?i)\bS?\d{1,2}[Ex]\d{1,2}\b`)
+					trimmed := strings.TrimSuffix(filename, path.Ext(filename))
+					matchedString := re.FindString(trimmed)
+					if matchedString != "" {
+						newFileName = matchedString + ".jpg"
 					} else {
-						getFilePathAction.SetError("Failed to parse episode path for static naming",
-							"Ensure the episode path contains season and episode information in the format SxxExx",
-							map[string]any{
-								"episode_path": episodePath,
-							})
-						return *getFilePathAction.Error
+						// If we failed to get the season and episode numbers, try and get them from the file struct
+						newFileName = fmt.Sprintf("S%02dE%02d.jpg", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)
 					}
 				default:
 					getFilePathAction.SetError("Invalid Episode Naming Convention",
