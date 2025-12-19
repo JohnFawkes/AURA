@@ -1,6 +1,8 @@
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { Database, User, ZoomInIcon } from "lucide-react";
 
+import React from "react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -77,7 +79,7 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 										sideOffset={5}
 										className="bg-secondary border border-2 border-primary p-2"
 									>
-										<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
+										<div className={cn("text-center", "text-sm", "font-medium", "rounded-md")}>
 											<Database
 												className="inline-block mr-2 text-green-500 hover:text-green-600 cursor-pointer active:scale-95"
 												size={16}
@@ -89,7 +91,75 @@ export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarous
 													router.push("/saved-sets");
 												}}
 											/>
-											This exact set is already in your database
+											{(() => {
+												const typeMap = {
+													poster: "Poster",
+													backdrop: "Backdrop",
+													seasonPoster: "Season Poster",
+													specialSeasonPoster: "Special Season Poster",
+													titlecard: "Titlecard",
+												};
+												const selectedTypesRaw = mediaItem.DBSavedSets.find(
+													(s) => s.PosterSetID === set.ID
+												)?.SelectedTypes;
+												if (!selectedTypesRaw) return null;
+
+												let selectedTypes: string[] = [];
+												if (Array.isArray(selectedTypesRaw)) {
+													if (
+														selectedTypesRaw.length === 1 &&
+														typeof selectedTypesRaw[0] === "string" &&
+														selectedTypesRaw[0].includes(",")
+													) {
+														selectedTypes = (selectedTypesRaw[0] as string)
+															.split(",")
+															.map((t) => t.trim())
+															.filter(Boolean);
+													} else {
+														selectedTypes = selectedTypesRaw;
+													}
+												} else if (typeof selectedTypesRaw === "string") {
+													selectedTypes = (selectedTypesRaw[0] as string)
+														.split(",")
+														.map((t) => t.trim())
+														.filter(Boolean);
+												}
+
+												const mapped = selectedTypes.map((type, idx) => (
+													<span key={type + idx} className="text-green-500">
+														{typeMap[type as keyof typeof typeMap] || type}
+													</span>
+												));
+
+												let formatted: React.ReactNode = null;
+												if (mapped.length === 1) {
+													formatted = mapped[0];
+												} else if (mapped.length === 2) {
+													formatted = (
+														<>
+															{mapped[0]} and {mapped[1]}
+														</>
+													);
+												} else if (mapped.length > 2) {
+													formatted = (
+														<>
+															{mapped.slice(0, -1).map((el, i) => (
+																<React.Fragment key={i}>
+																	{el}
+																	{", "}
+																</React.Fragment>
+															))}
+															and {mapped[mapped.length - 1]}
+														</>
+													);
+												}
+												return (
+													<>
+														This exact set is already in your database with {formatted}{" "}
+														selected.
+													</>
+												);
+											})()}
 										</div>
 									</PopoverContent>
 								</Popover>
