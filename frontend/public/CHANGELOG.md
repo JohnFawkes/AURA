@@ -1,3 +1,19 @@
+## [0.9.68] - 2025-12-19
+
+### Added
+
+- Added list of image types present in the database to the Database icon popover in the MediUX Carousel for better context.
+
+### Fixed
+
+- Fixed issue where using "static" episode naming convention would cause errors when downloading Titlecards with non-standard episode numbers (e.g. 1x03).
+- Fixed typo in Download Modal error message for Titlecards and Special Season Posters.
+- Fixed issue where Download Modal popover for existing database items would be cut off on smaller screens.
+- Fixed issue where Download Modal item would not show green border when all tasks were successful.
+- Fixed issue where Gotify token would be masked after changing it in the Settings Page.
+
+---
+
 ## [0.9.67] - 2025-12-17
 
 ### Added
