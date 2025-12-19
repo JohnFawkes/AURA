@@ -688,7 +688,7 @@ func checkConfigDifferences_Notifications(ctx context.Context, oldNotifications 
 				// Token may still arrive masked; keep existing mask logic
 				if oldProv.Gotify != nil && newProv.Gotify != nil {
 					if oldProv.Gotify.Token != newProv.Gotify.Token {
-						if !IsMaskedWebhook(newProv.Gotify.Token) {
+						if !strings.HasPrefix(newProv.Gotify.Token, "***") {
 							logAction.AppendResult("Notifications.Gotify.Token changed", fmt.Sprintf("from '%v' to '%v'", oldProv.Gotify.Token, newProv.Gotify.Token))
 							logging.LOGGER.Info().
 								Timestamp().
