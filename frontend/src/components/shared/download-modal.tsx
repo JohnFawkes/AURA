@@ -840,7 +840,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				) : isDownloadedInAnotherSet ? (
 					<PopoverHelp
 						ariaLabel="Type already downloaded in another set"
-						side="right"
+						side="bottom"
 						className="max-w-xs"
 						trigger={<TriangleAlert className="h-4 w-4 mt-1 text-yellow-500 cursor-help" />}
 					>
