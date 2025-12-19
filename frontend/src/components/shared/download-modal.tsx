@@ -902,6 +902,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		// Calculate whether the item has any error tasks
 		const itemProgress = progress.items[item.MediaItemRatingKey];
 		const hasErrorTasks = itemProgress ? itemProgress.tasks.some((t) => t.status === "failed") : false;
+		const allSuccessful = itemProgress
+			? itemProgress.tasks.length > 0 && itemProgress.tasks.every((t) => t.status === "completed")
+			: false;
 
 		return (
 			<FormField
@@ -911,7 +914,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				render={({ field }) => (
 					<div
 						className={cn("rounded-md border p-4 rounded-lg mb-4", {
-							"border-green-500": isInDatabaseWithSet,
+							"border-green-500": isInDatabaseWithSet || allSuccessful,
 							"border-yellow-500": isInDatabase && !isInDatabaseWithSet,
 							"border-destructive": hasErrorTasks,
 						})}
