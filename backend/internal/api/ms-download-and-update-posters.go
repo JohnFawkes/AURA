@@ -73,6 +73,29 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Downloading and Updating %s in Plex", posterImageType), logging.LevelInfo)
 	defer logAction.Complete()
 
+	// Determine the itemRatingKey
+	getRatingKeyAction := logAction.AddSubAction("Determining Item Rating Key for Poster Update", logging.LevelDebug)
+	itemRatingKey := Plex_GetItemRatingKey(mediaItem, file)
+	if itemRatingKey == "" {
+		getRatingKeyAction.SetError("Failed to determine item rating key", "Ensure the media item and file data are correct",
+			map[string]any{
+				"media_item": mediaItem,
+				"file":       file,
+			})
+		return *getRatingKeyAction.Error
+	}
+	getRatingKeyAction.AppendResult("item_rating_key", itemRatingKey)
+	getRatingKeyAction.Complete()
+
+	// Before we download and save the image locally, we need to get a list of the current posters in Plex
+	// This is to handle the case where the image is already set in Plex, and we need to replace it
+	// with the new image after saving it locally
+	currentImages, logErr := Plex_GetAllImages(ctx, itemRatingKey, file.Type)
+	if logErr.Message != "" {
+		return logErr
+	}
+	logAction.AppendResult("current_image_count", len(currentImages))
+
 	// Get the Image from MediUX
 	// Mediux_GetImage will handle checking the temp folder and caching based on config
 	formatDate := file.Modified.Format("20060102150405")
@@ -289,19 +312,6 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	createFileAction.AppendResult("saved_file_path", savedFilePath)
 	createFileAction.Complete()
 
-	// Determine the itemRatingKey
-	getRatingKeyAction := logAction.AddSubAction("Determining Item Rating Key for Poster Update", logging.LevelDebug)
-	itemRatingKey := Plex_GetItemRatingKey(mediaItem, file)
-	if itemRatingKey == "" {
-		getRatingKeyAction.SetError("Failed to determine item rating key", "Ensure the media item and file data are correct",
-			map[string]any{
-				"media_item": mediaItem,
-				"file":       file,
-			})
-		return *getRatingKeyAction.Error
-	}
-	getRatingKeyAction.AppendResult("item_rating_key", itemRatingKey)
-	getRatingKeyAction.Complete()
 	// If Save Image Next to Content is enabled and the Path is set, set the poster in Plex via the MediUX URL
 	// When the Path is set, the image is saved in a different location than Plex expects it to be.
 	// So we need to upload the image to Plex via the MediUX URL.
@@ -317,12 +327,15 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 	Plex_RefreshItem(ctx, itemRatingKey)
 
 	// Get the Plex Poster Key
-	posterKey, Err := Plex_GetPoster(ctx, itemRatingKey, file.Type)
 	failedToGetPosterKey := false
+	imageKey, Err := Plex_GetNewImage(ctx, itemRatingKey, file.Type, currentImages)
 	if Err.Message != "" {
 		failedToGetPosterKey = true
+		logAction.AppendWarning("warning", map[string]any{
+			"error": Err,
+		})
 	} else {
-		logAction.AppendResult("poster_key", posterKey)
+		logAction.AppendResult("new_image_key", imageKey)
 	}
 
 	// If failedOnGetPosters is true, use the MediUX URL to set the poster
@@ -334,7 +347,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 		return logging.LogErrorInfo{}
 	}
 
-	Err = Plex_SetPoster(ctx, itemRatingKey, posterKey, file.Type)
+	Err = Plex_SetPoster(ctx, itemRatingKey, imageKey, file.Type)
 	if Err.Message != "" {
 		return Err
 	}
