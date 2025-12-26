@@ -637,7 +637,7 @@ func AutoDownload_GetLatestMediaItemAndCheckForRatingKeyChanges(ctx context.Cont
 
 func SendFileDownloadNotification(itemTitle, posterSetID string, psFile PosterFileWithReason) {
 
-	if len(Global_Config.Notifications.Providers) == 0 {
+	if len(Global_Config.Notifications.Providers) == 0 || Global_Config.Notifications.Enabled == false {
 		return
 	}
 

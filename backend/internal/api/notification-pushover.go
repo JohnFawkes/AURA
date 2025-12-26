@@ -9,6 +9,10 @@ import (
 )
 
 func Notification_SendPushoverMessage(ctx context.Context, provider *Config_Notification_Pushover, message string, imageURL string, title string) logging.LogErrorInfo {
+	if Global_Config.Notifications.Enabled == false {
+		return logging.LogErrorInfo{}
+	}
+
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Pushover Notification", logging.LevelInfo)
 	defer logAction.Complete()
 

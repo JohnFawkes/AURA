@@ -9,6 +9,10 @@ import (
 )
 
 func Notification_SendDiscordMessage(ctx context.Context, provider *Config_Notification_Discord, message string, imageURL string, title string) logging.LogErrorInfo {
+	if Global_Config.Notifications.Enabled == false {
+		return logging.LogErrorInfo{}
+	}
+
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Discord Notification", logging.LevelInfo)
 	defer logAction.Complete()
 

@@ -308,6 +308,10 @@ func GetDownloadQueueFolderPath(ctx context.Context) string {
 }
 
 func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle string, posterSet DBPosterSetDetail) {
+	if len(Global_Config.Notifications.Providers) == 0 || Global_Config.Notifications.Enabled == false {
+		return
+	}
+
 	var result DownloadQueueStatus
 	if len(fileIssues.Errors) > 0 {
 		result = DOWNLOAD_QUEUE_LAST_STATUS_ERROR
@@ -351,11 +355,6 @@ func SendDownloadQueueNotification(fileIssues FileIssues, itemTitle string, post
 	DOWNLOAD_QUEUE_LATEST_INFO.Message = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.PosterSetID)
 	DOWNLOAD_QUEUE_LATEST_INFO.Errors = fileIssues.Errors
 	DOWNLOAD_QUEUE_LATEST_INFO.Warnings = fileIssues.Warnings
-
-	// Check if there are any notification providers configured
-	if len(Global_Config.Notifications.Providers) == 0 {
-		return
-	}
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send Download Queue Update")
 	logAction := ld.AddAction("Sending Download Queue Notification", logging.LevelInfo)

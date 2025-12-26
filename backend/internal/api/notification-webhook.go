@@ -8,6 +8,10 @@ import (
 )
 
 func Notification_SendWebhookMessage(ctx context.Context, provider *Config_Notification_Webhook, message string, imageURL string, title string) logging.LogErrorInfo {
+	if Global_Config.Notifications.Enabled == false {
+		return logging.LogErrorInfo{}
+	}
+
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Webhook Notification", logging.LevelInfo)
 	defer logAction.Complete()
 

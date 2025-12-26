@@ -12,6 +12,10 @@ import (
 )
 
 func Notification_SendGotifyMessage(ctx context.Context, provider *Config_Notification_Gotify, message string, imageURL string, title string) logging.LogErrorInfo {
+	if Global_Config.Notifications.Enabled == false {
+		return logging.LogErrorInfo{}
+	}
+
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Sending Gotify Notification", logging.LevelInfo)
 	defer logAction.Complete()
 

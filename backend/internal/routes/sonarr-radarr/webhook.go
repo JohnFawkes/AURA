@@ -184,8 +184,7 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendFileDownloadNotification(itemTitle, posterSetID string, posterFile api.PosterFile) {
-
-	if len(api.Global_Config.Notifications.Providers) == 0 {
+	if len(api.Global_Config.Notifications.Providers) == 0 || api.Global_Config.Notifications.Enabled == false {
 		return
 	}
 
