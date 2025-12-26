@@ -107,9 +107,9 @@ func Plex_GetPoster(ctx context.Context, itemRatingKey string, posterType string
 				} else {
 					// Successfully parsed JSON; check for posters
 					if len(plexPosters.MediaContainer.Metadata) > 0 {
-						// Look for the first poster with a provider of "local"
+						// Look for the first poster with a provider of "local" that is not selected
 						for _, poster := range plexPosters.MediaContainer.Metadata {
-							if poster.Provider == "local" && poster.RatingKey != "" {
+							if poster.Provider == "local" && poster.RatingKey != "" && poster.Selected != true {
 								return poster.RatingKey, logging.LogErrorInfo{}
 							}
 						}
