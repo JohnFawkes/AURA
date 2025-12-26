@@ -1,3 +1,11 @@
+## [0.9.70] - 2025-12-27
+
+### Added
+
+- Added better logic for checking Plex images when saving locally.
+
+---
+
 ## [0.9.69] - 2025-12-26
 
 ### Added
