@@ -476,7 +476,18 @@ const SavedSetsPage: React.FC = () => {
 
 			{Object.keys(recheckStatus).length > 0 && (
 				<div className="w-full">
-					<h3 className="text-lg font-semibold mb-2 ml-1">Recheck Status:</h3>
+					<div className="flex items-center justify-between mb-2">
+						<h3 className="text-lg font-semibold mb-2 ml-1">Recheck Status:</h3>
+						<span className="text-xs text-muted-foreground">
+							{Object.keys(recheckStatus).length} item{Object.keys(recheckStatus).length === 1 ? "" : "s"}
+						</span>
+						<Badge
+							className="mb-4 bg-blue-100 text-blue-800 px-2 py-1"
+							onClick={() => setRecheckStatus({})}
+						>
+							Clear All
+						</Badge>
+					</div>
 					<div className="grid grid-cols-1 gap-2">
 						{Object.entries(recheckStatus)
 							.sort(([, a], [, b]) => a.MediaItemTitle.localeCompare(b.MediaItemTitle))
@@ -491,12 +502,12 @@ const SavedSetsPage: React.FC = () => {
 												className={cn(
 													"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium",
 													{
-														"bg-green-100 text-green-700":
+														"bg-green-300 text-green-900":
 															result.OverAllResult === "Success",
-														"bg-yellow-100 text-yellow-700":
+														"bg-yellow-300 text-yellow-900":
 															result.OverAllResult === "Warn",
-														"bg-red-100 text-red-700": result.OverAllResult === "Error",
-														"bg-gray-100 text-gray-700": result.OverAllResult === "Skipped",
+														"bg-red-300 text-red-900": result.OverAllResult === "Error",
+														"bg-gray-300 text-gray-900": result.OverAllResult === "Skipped",
 													}
 												)}
 											>
@@ -508,14 +519,40 @@ const SavedSetsPage: React.FC = () => {
 									</div>
 									<p className="text-sm text-muted-foreground">{result.OverAllResultMessage}</p>
 									{result.Sets &&
-										result.Sets.map((set, index) => (
-											<div
-												key={`${set.PosterSetID}-${index}`}
-												className="text-xs text-muted-foreground pl-2"
-											>
-												• Set {set.PosterSetID}: {set.Result} - {set.Reason}
-											</div>
-										))}
+										result.Sets.map((set, index) => {
+											const setStatus = ["Success", "Warn", "Error", "Skipped"].includes(
+												set.Result
+											)
+												? set.Result
+												: "Other";
+
+											return (
+												<div
+													key={`${set.PosterSetID}-${index}`}
+													className="flex items-start gap-2 text-xs pl-2"
+												>
+													<span className="shrink-0 text-muted-foreground mt-1">
+														Set {set.PosterSetID}
+													</span>
+
+													<Badge
+														className={cn(
+															"shrink-0 rounded-full px-2",
+															setStatus === "Success" && "bg-green-500/15 text-green-600",
+															setStatus === "Error" && "bg-red-500/15 text-red-600",
+															setStatus === "Skipped" && "bg-muted text-muted-foreground",
+															setStatus === "Other" && "bg-muted text-muted-foreground"
+														)}
+													>
+														{setStatus}
+													</Badge>
+
+													<span className="min-w-0 text-muted-foreground break-words mt-1">
+														{set.Reason}
+													</span>
+												</div>
+											);
+										})}
 									<div className="flex justify-end gap-2 mt-2">
 										<Button
 											variant="ghost"
