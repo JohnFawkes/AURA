@@ -131,7 +131,7 @@ func Plex_DownloadAndUpdatePosters(ctx context.Context, mediaItem MediaItem, fil
 				switch episodeNamingConvention {
 				case "match":
 					newFileName = path.Base(episodePath)
-					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + ".jpg"
+					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + "-thumb.jpg"
 				case "static":
 					filename := path.Base(episodePath)
 					re := regexp.MustCompile(`(?i)\bS?\d{1,2}[Ex]\d{1,2}\b`)
