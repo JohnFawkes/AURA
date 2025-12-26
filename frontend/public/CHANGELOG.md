@@ -1,3 +1,18 @@
+## [0.9.69] - 2025-12-26
+
+### Added
+
+- Added better UI for Recheck Status output on the Saved Sets Page.
+- Added 'Clear All' button to the Recheck Status output on the Saved Sets Page for better user experience.
+
+### Fixed
+
+- Fixed issue where aura would select already selected image when downloading new images.
+- Fixed issue where "-thumb" suffix was not being added to titlecard images. This is to standardize naming conventions between Plex/Emby/Jellyfin.
+- Fixed issue where notifications would be sent even when the Notifications section was disabled in the config.
+
+---
+
 ## [0.9.68] - 2025-12-19
 
 ### Added
