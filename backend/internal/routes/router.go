@@ -125,6 +125,8 @@ func AddRoutes(r *chi.Mux) {
 				r.Get("/collection-items", routes_ms.GetCollectionItems)
 				r.Post("/collection-children", routes_ms.GetAllCollectionChildren)
 				r.Patch("/download-collection", routes_ms.DownloadAndUpdateCollection)
+				r.Patch("/refresh-item", routes_ms.RefreshMediaItem)
+				r.Patch("/rate-item", routes_ms.RateMediaItem)
 			})
 
 			// Download Queue Routes
