@@ -38,6 +38,10 @@ const providerLogoMap: {
 		logoUrl: "",
 		urlPrefix: "",
 	},
+	user: {
+		logoUrl: "/plex-icon.png",
+		urlPrefix: "",
+	},
 };
 
 type MediaItemRatingsProps = {
@@ -127,7 +131,7 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 							</span>
 							{info.rating}
 						</>
-					) : (
+					) : provider !== "user" ? (
 						<>
 							<a href={info.linkUrl!} target="_blank" rel="noopener noreferrer">
 								<AssetImage
@@ -137,6 +141,16 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 									imageClassName="object-contain"
 								/>
 							</a>
+							{/* Only display rating if it exists */}
+							{info.rating && <span className="text-sm">{info.rating}</span>}
+						</>
+					) : (
+						<>
+							<AssetImage
+								image={info.logoUrl}
+								className="relative w-[35px] h-[30px]"
+								imageClassName="object-fill"
+							/>
 							{/* Only display rating if it exists */}
 							{info.rating && <span className="text-sm">{info.rating}</span>}
 						</>

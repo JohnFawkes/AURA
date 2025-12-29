@@ -1,7 +1,7 @@
 "use client";
 
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { Database } from "lucide-react";
+import { Database, MoreHorizontal, RefreshCcw, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,12 +10,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { MediaItemRatingModal } from "@/components/shared/media-item-rating-modal";
 import { MediaItemRatings } from "@/components/shared/media-item-ratings";
+import { RefreshMetadataModal } from "@/components/shared/media-item-refresh-modal";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { H1, Lead } from "@/components/ui/typography";
 
+import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
@@ -47,8 +56,9 @@ export function MediaItemDetails({
 	const { setSearchQuery } = useSearchQueryStore();
 
 	const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+	const [isRefreshMetadataModalOpen, setIsRefreshMetadataModalOpen] = useState(false);
+	const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 
-	// Add at the top of your component
 	const touchStartXRef = useRef<number | undefined>(undefined);
 	const mouseStartXRef = useRef<number | undefined>(undefined);
 
@@ -66,14 +76,13 @@ export function MediaItemDetails({
 	const movieDuration = mediaItem?.Movie?.File?.Duration || 0;
 	const guids = mediaItem?.Guids || [];
 
-	// Sync when parent prop changes (e.g. route change or external update)
 	useEffect(() => {
 		setIsInDBLocal(existsInDB);
 	}, [existsInDB]);
 
 	const updateInDB = (next: boolean) => {
-		setIsInDBLocal(next); // local optimistic
-		onExistsInDBChange?.(next); // notify parent
+		setIsInDBLocal(next);
+		onExistsInDBChange?.(next);
 	};
 
 	const handleSavedSetsPageClick = () => {
@@ -84,8 +93,6 @@ export function MediaItemDetails({
 	};
 
 	const handleAddToIgnoredClick = async () => {
-		// Create a DBMediaItemWithPosterSets object to add to DB
-		// with minimal required fields
 		const ignoreDBItem: DBMediaItemWithPosterSets = {
 			TMDB_ID: tmdbID,
 			LibraryTitle: libraryTitle,
@@ -111,13 +118,15 @@ export function MediaItemDetails({
 				},
 			],
 		};
+
 		const addToDBResp = await postAddItemToDB(ignoreDBItem);
 		if (addToDBResp.status === "error") {
 			toast.error(`Failed to add ${title} to DB`);
-		} else {
-			updateInDB(true); // use helper so parent also updates
-			toast.success(`Will successfully ignore ${title} in the future`);
+			return;
 		}
+
+		updateInDB(true);
+		toast.success(`Will successfully ignore ${title} in the future`);
 	};
 
 	return (
@@ -173,59 +182,102 @@ export function MediaItemDetails({
 				{/* Title and Summary */}
 				<div className="flex flex-col items-center lg:items-start">
 					<H1 className="mb-1">{title}</H1>
-					{/* Hide summary on mobile */}
 					<Lead className="text-primary-dynamic max-w-xl hidden lg:block">{summary}</Lead>
 
 					{/* Year, Content Rating And External Ratings/Links */}
 					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-						{/* Year */}
-						{year && <Badge className="flex items-center text-sm">{year}</Badge>}
+						{year ? <Badge className="flex items-center text-sm">{year}</Badge> : null}
+						{contentRating ? <Badge className="flex items-center text-sm">{contentRating}</Badge> : null}
 
-						{/* Content Rating */}
-						{contentRating && <Badge className="flex items-center text-sm">{contentRating}</Badge>}
-
-						{/* Status */}
-						{status && (
+						{status ? (
 							<Badge
-								className={`flex items-center text-sm ${
-									status.toLowerCase() === "ended" ||
-									status.toLowerCase() === "cancelled" ||
-									status.toLowerCase() === "canceled"
-										? "bg-red-700 text-white"
-										: status.toLowerCase().startsWith("returning")
-											? "bg-green-700 text-white"
-											: ""
-								}`}
+								className={cn(
+									"flex items-center text-sm",
+									(status.toLowerCase() === "ended" ||
+										status.toLowerCase() === "cancelled" ||
+										status.toLowerCase() === "canceled") &&
+										"bg-red-700 text-white",
+									status.toLowerCase().startsWith("returning") && "bg-green-700 text-white"
+								)}
 							>
 								{status.toLowerCase().startsWith("returning") ? "Continuing" : status}
 							</Badge>
-						)}
+						) : null}
+
+						{/* Ellipsis (More Options) */}
+						<div className="flex items-center text-sm">
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="ghost"
+										className="cursor-pointer p-1 hover:bg-muted/50 focus:bg-muted/50"
+										size="icon"
+										aria-label="More options"
+									>
+										<MoreHorizontal />
+									</Button>
+								</DropdownMenuTrigger>
+
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										className="cursor-pointer"
+										onSelect={() => setIsRefreshMetadataModalOpen(true)}
+									>
+										<RefreshCcw className="mr-2 h-4 w-4" />
+										Refresh Metadata
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										className="cursor-pointer"
+										onSelect={() => setIsRatingModalOpen(true)}
+									>
+										<Star className="mr-2 h-4 w-4" />
+										Rate {mediaItemType === "movie" ? "Movie" : "Show"}
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
 					</div>
 
 					{/* External Ratings/Links from GUIDs */}
-					{/* Year, Content Rating And External Ratings/Links */}
 					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
 						<MediaItemRatings guids={guids} mediaItemType={mediaItemType} title={title} />
 					</div>
 				</div>
 			</div>
 
+			{/* Refresh Metadata Modal */}
+			{mediaItem && (
+				<RefreshMetadataModal
+					mediaItem={mediaItem}
+					isOpen={isRefreshMetadataModalOpen}
+					onClose={() => setIsRefreshMetadataModalOpen(false)}
+				/>
+			)}
+
+			{/* Rating Modal */}
+			{mediaItem && (
+				<MediaItemRatingModal
+					mediaItem={mediaItem}
+					isOpen={isRatingModalOpen}
+					onClose={() => setIsRatingModalOpen(false)}
+				/>
+			)}
+
 			{/* Library Information */}
-			{libraryTitle && (
+			{libraryTitle ? (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-0 md:mt-2">
 					<Lead className="text-md text-primary-dynamic ml-1">
 						<span className="font-semibold">{libraryTitle} Library</span>{" "}
 					</Lead>
 				</div>
-			)}
+			) : null}
 
 			{/* Other Media Item Information */}
-			{otherMediaItem && (
+			{otherMediaItem ? (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-1">
 					<Lead className="text-md text-primary-dynamic ml-1">
 						Also available in{" "}
 						<Link
-							//href={formatMediaItemUrl(otherMediaItem)}
 							href={"/media-item/"}
 							onClick={() => {
 								setMediaItem(otherMediaItem);
@@ -238,16 +290,14 @@ export function MediaItemDetails({
 						Library
 					</Lead>
 				</div>
-			)}
+			) : null}
 
 			{/* Show Existence in Database */}
 			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
 				<Lead
-					className={`text-md ${isInDB ? "hover:cursor-pointer text-green-500" : "text-red-500"}`}
+					className={cn("text-md", isInDB ? "hover:cursor-pointer text-green-500" : "text-red-500")}
 					onClick={() => {
-						if (isInDB) {
-							handleSavedSetsPageClick();
-						}
+						if (isInDB) handleSavedSetsPageClick();
 					}}
 				>
 					<Database className="inline ml-1 mr-1" /> {isInDB ? "Already in Database" : "Not in Database"}
@@ -255,7 +305,7 @@ export function MediaItemDetails({
 			</div>
 
 			{/* Add Item to DB to Ignore it */}
-			{!isInDB && (
+			{!isInDB ? (
 				<Button
 					onClick={handleAddToIgnoredClick}
 					variant="ghost"
@@ -263,21 +313,21 @@ export function MediaItemDetails({
 				>
 					Mark as Ignored
 				</Button>
-			)}
+			) : null}
 
 			{/* Season/Episode Information */}
-			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 && (
+			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 ? (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
 					<Lead className="flex items-center text-md text-primary-dynamic ml-1">
 						{seasonCount} {seasonCount > 1 ? "Seasons" : "Season"} with {episodeCount}{" "}
 						{episodeCount > 1 ? "Episodes" : "Episode"} in {serverType}
 					</Lead>
 				</div>
-			)}
+			) : null}
 
 			{/* Movie Information */}
 			<div className="lg:flex items-center text-white gap-8 tracking-wide mt-4">
-				{mediaItemType === "movie" && (
+				{mediaItemType === "movie" ? (
 					<div className="flex flex-col w-full items-center">
 						<Accordion type="single" collapsible className="w-full">
 							<AccordionItem value="movie-details">
@@ -285,25 +335,22 @@ export function MediaItemDetails({
 									Movie Details
 								</AccordionTrigger>
 								<AccordionContent className="mt-2 text-sm text-muted-foreground space-y-2">
-									{/* Show the Movie File Path */}
-									{moviePath && (
+									{moviePath ? (
 										<p>
 											<span className="font-semibold">File Path:</span> {moviePath}
 										</p>
-									)}
+									) : null}
 
-									{/* Show the Movie File Size */}
-									{movieSize && (
+									{movieSize ? (
 										<p>
 											<span className="font-semibold">File Size:</span>{" "}
 											{movieSize >= 1024 * 1024 * 1024
 												? `${(movieSize / (1024 * 1024 * 1024)).toFixed(2)} GB`
 												: `${(movieSize / (1024 * 1024)).toFixed(2)} MB`}
 										</p>
-									)}
+									) : null}
 
-									{/* Show the Movie Duration */}
-									{movieDuration && (
+									{movieDuration ? (
 										<p>
 											<span className="font-semibold">Duration:</span>{" "}
 											{movieDuration < 3600000
@@ -312,12 +359,12 @@ export function MediaItemDetails({
 														(movieDuration % 3600000) / 60000
 													)}min`}
 										</p>
-									)}
+									) : null}
 								</AccordionContent>
 							</AccordionItem>
 						</Accordion>
 					</div>
-				)}
+				) : null}
 			</div>
 		</div>
 	);
