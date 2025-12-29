@@ -1,3 +1,12 @@
+## [0.9.71] - 2025-12-29
+
+### Added
+
+- Added new option to refresh metadata for Media Items from Media Item Page. For Shows, this will allow you to refresh metadata for specific seasons as well.
+- Added option to rate items in your Plex library from the Media Item Page.
+
+---
+
 ## [0.9.70] - 2025-12-27
 
 ### Added
