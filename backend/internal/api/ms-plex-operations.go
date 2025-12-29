@@ -61,17 +61,7 @@ func Plex_GetAllImages(ctx context.Context, itemRatingKey string, imageType stri
 	}
 
 	plexImages = plexImagesWrapper.MediaContainer.Metadata
-
-	// Remove any images that do not have a provider of "local"
-	// If there are no local images, return an empty slice
-	localImages := []PlexGetAllImagesMetadata{}
-	for _, image := range plexImages {
-		if image.Provider == "local" {
-			localImages = append(localImages, image)
-		}
-	}
-
-	return localImages, logging.LogErrorInfo{}
+	return plexImages, logging.LogErrorInfo{}
 }
 
 // Plex_GetNewImage attempts to retrieve a new image for a Plex item by comparing previous and current images.
@@ -101,6 +91,9 @@ func Plex_GetNewImage(ctx context.Context, itemRatingKey string, imageType strin
 				}
 				isNew := true
 				for _, previousImage := range previousImages {
+					if previousImage.Provider != "local" {
+						continue
+					}
 					if currentImage.RatingKey == previousImage.RatingKey {
 						isNew = false
 						break
