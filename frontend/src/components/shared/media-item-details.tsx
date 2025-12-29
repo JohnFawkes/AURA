@@ -76,13 +76,14 @@ export function MediaItemDetails({
 	const movieDuration = mediaItem?.Movie?.File?.Duration || 0;
 	const guids = mediaItem?.Guids || [];
 
+	// Sync when parent prop changes (e.g. route change or external update)
 	useEffect(() => {
 		setIsInDBLocal(existsInDB);
 	}, [existsInDB]);
 
 	const updateInDB = (next: boolean) => {
-		setIsInDBLocal(next);
-		onExistsInDBChange?.(next);
+		setIsInDBLocal(next); // local optimistic
+		onExistsInDBChange?.(next); // notify parent
 	};
 
 	const handleSavedSetsPageClick = () => {
@@ -93,6 +94,8 @@ export function MediaItemDetails({
 	};
 
 	const handleAddToIgnoredClick = async () => {
+		// Create a DBMediaItemWithPosterSets object to add to DB
+		// with minimal required fields
 		const ignoreDBItem: DBMediaItemWithPosterSets = {
 			TMDB_ID: tmdbID,
 			LibraryTitle: libraryTitle,
@@ -182,12 +185,16 @@ export function MediaItemDetails({
 				{/* Title and Summary */}
 				<div className="flex flex-col items-center lg:items-start">
 					<H1 className="mb-1">{title}</H1>
+					{/* Hide summary on mobile */}
 					<Lead className="text-primary-dynamic max-w-xl hidden lg:block">{summary}</Lead>
 
 					{/* Year, Content Rating And External Ratings/Links */}
 					<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-4">
-						{year ? <Badge className="flex items-center text-sm">{year}</Badge> : null}
-						{contentRating ? <Badge className="flex items-center text-sm">{contentRating}</Badge> : null}
+						{/* Year */}
+						{year && <Badge className="flex items-center text-sm">{year}</Badge>}
+
+						{/* Content Rating */}
+						{contentRating && <Badge className="flex items-center text-sm">{contentRating}</Badge>}
 
 						{status ? (
 							<Badge
