@@ -115,6 +115,14 @@ func Plex_FetchItemContent(ctx context.Context, ratingKey string) (MediaItem, lo
 			break
 		}
 	}
+	if plexResponse.MediaContainer.Metadata[0].UserRating > 0 {
+		// If user has rated the item, add a community GUID with the rating
+		itemInfo.Guids = append(itemInfo.Guids, Guid{
+			Provider: "user",
+			Rating:   strconv.FormatFloat(plexResponse.MediaContainer.Metadata[0].UserRating, 'f', -1, 64),
+		})
+	}
+
 	if itemInfo.TMDB_ID == "" {
 		logAction.SetError("Item does not have a valid TMDB ID",
 			"Ensure the item has a valid TMDB ID in its GUIDs to proceed.",
