@@ -12,44 +12,6 @@ import (
 	"time"
 )
 
-// Plex_RefreshItem sends a request to the Plex server to refresh the specified item.
-func Plex_RefreshItem(ctx context.Context, itemRatingKey string) logging.LogErrorInfo {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Refreshing Item with Rating Key '%s' on Plex", itemRatingKey), logging.LevelDebug)
-	defer logAction.Complete()
-
-	// Construct the URL for the Plex server API request
-	u, err := url.Parse(Global_Config.MediaServer.URL)
-	if err != nil {
-		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
-		return *logAction.Error
-	}
-	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, "refresh")
-	URL := u.String()
-
-	// Make the Auth Headers for Request
-	headers := MakeAuthHeader("X-Plex-Token", Global_Config.MediaServer.Token)
-
-	// Make the API request to Plex
-	httpResp, _, logErr := MakeHTTPRequest(ctx, URL, http.MethodPut, headers, 60, nil, "Plex")
-	if logErr.Message != "" {
-		return logErr
-	}
-	defer httpResp.Body.Close()
-
-	// Check the response status code
-	if httpResp.StatusCode != http.StatusOK && httpResp.StatusCode != http.StatusAccepted {
-		logAction.SetError("Failed to refresh item on Plex",
-			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
-			map[string]any{
-				"URL":        URL,
-				"StatusCode": httpResp.StatusCode,
-			})
-		return *logAction.Error
-	}
-
-	return logging.LogErrorInfo{}
-}
-
 // Plex_GetAllImages retrieves all images for a Plex item by ratingKey.
 func Plex_GetAllImages(ctx context.Context, itemRatingKey string, imageType string) ([]PlexGetAllImagesMetadata, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting all '%s' for Item with Rating Key '%s' from Plex", imageType, itemRatingKey), logging.LevelDebug)

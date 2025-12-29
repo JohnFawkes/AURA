@@ -43,6 +43,9 @@ type Interface_MediaServer interface {
 
 	// Download and update the collection image
 	DownloadAndUpdateCollectionImage(ctx context.Context, collectionItem CollectionItem, file PosterFile) logging.LogErrorInfo
+
+	// Refresh Media Item
+	RefreshMediaItem(ctx context.Context, ratingKey string) logging.LogErrorInfo
 }
 
 type PlexServer struct{}
