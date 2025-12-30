@@ -157,16 +157,16 @@ MediaServer:
 
 ```yaml
 Mediux:
-    APIKey: YOUR_MEDIUX_API_KEY_HERE
+    Token: YOUR_MEDIUX_API_TOKEN_HERE
     DownloadQuality: optimized
 ```
 
-### APIKey
+### Token
 
--   **Description**: The API key for MediUX.
--   **Details**: This option specifies the API key required to access MediUX's API. This can be obtained by creating an account on [MediUX](https://mediux.io/) and generating an API key in your account settings.
+-   **Description**: The API token for MediUX.
+-   **Details**: This option specifies the API token required to access MediUX's API. This can be obtained by creating an account on [MediUX](https://mediux.io/) and generating an API token in your account settings.
 -   **Note**: This is not yet available to the public, but will be in the future.
-    If you would like to test out aura, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API key.
+    If you would like to test out aura, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API token.
 
 ### DownloadQuality
 
