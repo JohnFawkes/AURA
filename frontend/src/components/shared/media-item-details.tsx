@@ -1,7 +1,7 @@
 "use client";
 
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { Database, MoreHorizontal, RefreshCcw, Star } from "lucide-react";
+import { ChevronDown, Database, MoreHorizontal, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +20,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { H1, Lead } from "@/components/ui/typography";
@@ -210,39 +211,6 @@ export function MediaItemDetails({
 								{status.toLowerCase().startsWith("returning") ? "Continuing" : status}
 							</Badge>
 						) : null}
-
-						{/* Ellipsis (More Options) */}
-						<div className="flex items-center text-sm">
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="ghost"
-										className="cursor-pointer p-1 hover:bg-muted/50 focus:bg-muted/50"
-										size="icon"
-										aria-label="More options"
-									>
-										<MoreHorizontal />
-									</Button>
-								</DropdownMenuTrigger>
-
-								<DropdownMenuContent align="end">
-									<DropdownMenuItem
-										className="cursor-pointer"
-										onSelect={() => setIsRefreshMetadataModalOpen(true)}
-									>
-										<RefreshCcw className="mr-2 h-4 w-4" />
-										Refresh Metadata
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										className="cursor-pointer"
-										onSelect={() => setIsRatingModalOpen(true)}
-									>
-										<Star className="mr-2 h-4 w-4" />
-										Rate {mediaItemType === "movie" ? "Movie" : "Show"}
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
 					</div>
 
 					{/* External Ratings/Links from GUIDs */}
@@ -311,16 +279,61 @@ export function MediaItemDetails({
 				</Lead>
 			</div>
 
-			{/* Add Item to DB to Ignore it */}
-			{!isInDB ? (
-				<Button
-					onClick={handleAddToIgnoredClick}
-					variant="ghost"
-					className="mx-auto lg:w-auto lg:mx-0 flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2 text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
-				>
-					Mark as Ignored
-				</Button>
-			) : null}
+			{/* Actions */}
+			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="outline"
+							size="sm"
+							className={cn("gap-2 px-3", "border border-border shadow-sm", "hover:bg-secondary/80")}
+						>
+							Actions
+							<ChevronDown className="h-4 w-4 opacity-80" />
+						</Button>
+					</DropdownMenuTrigger>
+
+					<DropdownMenuContent align="start" side="bottom" className="min-w-[220px]">
+						<DropdownMenuItem
+							className="cursor-pointer"
+							onSelect={() => setIsRefreshMetadataModalOpen(true)}
+						>
+							<RefreshCcw className="mr-2 h-4 w-4" />
+							Refresh Metadata
+						</DropdownMenuItem>
+
+						<DropdownMenuItem className="cursor-pointer" onSelect={() => setIsRatingModalOpen(true)}>
+							<Star className="mr-2 h-4 w-4" />
+							Rate {mediaItemType === "movie" ? "Movie" : "Show"}
+						</DropdownMenuItem>
+
+						<DropdownMenuSeparator />
+
+						{isInDB ? (
+							<DropdownMenuItem
+								className="cursor-pointer"
+								onSelect={() => {
+									setSearchQuery(`${title} Y:${year}: ID:${tmdbID}: L:${libraryTitle}:`);
+									router.push("/saved-sets");
+								}}
+							>
+								<Database className="mr-2 h-4 w-4" />
+								View in Saved Sets
+							</DropdownMenuItem>
+						) : (
+							<DropdownMenuItem
+								className="cursor-pointer text-destructive focus:text-destructive"
+								onSelect={() => {
+									void handleAddToIgnoredClick();
+								}}
+							>
+								<Trash2 className="mr-2 h-4 w-4" />
+								Mark as Ignored
+							</DropdownMenuItem>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
 
 			{/* Season/Episode Information */}
 			{mediaItemType === "show" && seasonCount > 0 && episodeCount > 0 ? (
