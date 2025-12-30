@@ -283,6 +283,19 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 							<Logs className="w-6 h-6 mr-2" />
 							Logs
 						</DropdownMenuItem>
+						{isNewerVersion(latestVersion ?? "", version) && (
+							<DropdownMenuItem
+								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
+								onClick={() =>
+									router.push(
+										`/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion ?? "")}`
+									)
+								}
+							>
+								<Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
+								New Version Available ({latestVersion})
+							</DropdownMenuItem>
+						)}
 						{isAuthed && status?.currentSetup.Auth.Enabled && (
 							<>
 								<DropdownMenuSeparator />
