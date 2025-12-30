@@ -230,7 +230,12 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 						asChild
 						className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
 					>
-						<SettingsIcon className="w-8 h-8 ml-2" />
+						<SettingsIcon
+							className={cn(
+								"w-8 h-8 ml-2",
+								isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
+							)}
+						/>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
 						{status && !status.needsSetup && (
