@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { FaDiscord, FaGithub } from "react-icons/fa";
 
 import Image from "next/image";
@@ -8,11 +7,11 @@ import Link from "next/link";
 
 import { ReleaseNotesDialog } from "@/components/layout/app-release-notes";
 
-import { log } from "@/lib/logger";
+import { useAppVersion } from "@/hooks/app-version";
 
-interface AppFooterProps {
+type AppFooterProps = {
 	version?: string;
-}
+};
 
 export function AppFooter({ version = "dev" }: AppFooterProps) {
 	// App Version Hooks

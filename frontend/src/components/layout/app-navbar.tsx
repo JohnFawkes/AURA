@@ -11,6 +11,7 @@ import {
 	LogOutIcon,
 	Logs,
 	Settings as SettingsIcon,
+	Sparkles,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -28,6 +29,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { cn } from "@/lib/cn";
 import { useCollectionStore } from "@/lib/stores/global-store-collection-store";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
@@ -35,7 +37,13 @@ import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 
-export default function Navbar() {
+import { useAppVersion } from "@/hooks/app-version";
+
+type AppNavbarProps = {
+	version?: string;
+};
+
+export function Navbar({ version = "dev" }: AppNavbarProps) {
 	// Router
 	const router = useRouter();
 
@@ -74,6 +82,9 @@ export default function Navbar() {
 
 	// Check if the screen is mobile
 	const [isWideScreen, setIsWideScreen] = useState(false);
+
+	// App Version Hook
+	const { latestVersion, isNewerVersion } = useAppVersion(version);
 
 	// Onboarding Status Check on mount and path change
 	useEffect(() => {
