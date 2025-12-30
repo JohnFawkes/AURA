@@ -4,6 +4,8 @@
 
 - Added better colors to "New Version Available" footer for better visibility.
 - Added "New Version Available" to Settings Icon for better visibility.
+- Added option to add labels/tags for each selected type in the Settings/Onboarding UI.
+- Moved "Refresh Metadata", "Rate", "Ignore Set" and "View Saved Sets" option to new dropdown menu on Media Item page.
 
 ---
 
