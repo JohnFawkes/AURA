@@ -72,7 +72,7 @@ export function AppFooter({ version = "dev" }: AppFooterProps) {
 					{latestVersion && isNewerVersion(latestVersion, version) && (
 						<Link
 							href={`/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion)}`}
-							className="text-sm py-1 px-2 rounded-md bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/20 transition-colors"
+							className="text-sm py-1 px-2 rounded-md bg-yellow-500/40 border border-yellow-500 hover:bg-yellow-500/90 hover:text-black transition-colors animate-pulse"
 							title={`Change log for latest version ${latestVersion} available`}
 						>
 							Update Available: {latestVersion}
