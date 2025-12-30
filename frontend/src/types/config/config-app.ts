@@ -72,6 +72,7 @@ export interface AppConfigLabelsAndTagsApplication {
 	Enabled: boolean; // Whether label/tag management is enabled for this application
 	Add: string[]; // List of labels/tags to add
 	Remove: string[]; // List of labels/tags to remove
+	AddLabelTagForSelectedTypes: boolean; // Whether to add labels/tags for selected media types (poster, backdrop, etc.)
 }
 
 export interface AppConfigNotifications {

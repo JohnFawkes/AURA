@@ -20,7 +20,20 @@ interface ConfigSectionLabelsAndTagsProps {
 	value: AppConfigLabelsAndTags;
 	editing: boolean;
 	dirtyFields?: {
-		Applications?: Array<Partial<Record<string, boolean | { Enabled?: boolean; Add?: boolean; Remove?: boolean }>>>;
+		Applications?: Array<
+			Partial<
+				Record<
+					string,
+					| boolean
+					| {
+							Enabled?: boolean;
+							Add?: boolean;
+							Remove?: boolean;
+							AddLabelTagForSelectedTypes?: boolean;
+					  }
+				>
+			>
+		>;
 	};
 	onChange: <K extends keyof AppConfigLabelsAndTags>(field: K, value: AppConfigLabelsAndTags[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
@@ -96,9 +109,9 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 		const type = newApplicationType;
 		let newEntry: AppConfigLabelsAndTagsApplication;
 		if (type === "Plex") {
-			newEntry = { Application: "Plex", Enabled: true, Add: [], Remove: [] };
+			newEntry = { Application: "Plex", Enabled: true, Add: [], Remove: [], AddLabelTagForSelectedTypes: false };
 		} else if (Array.isArray(srOptions) && srOptions.includes(type)) {
-			newEntry = { Application: type, Enabled: true, Add: [], Remove: [] };
+			newEntry = { Application: type, Enabled: true, Add: [], Remove: [], AddLabelTagForSelectedTypes: false };
 		}
 		setApplications([...applications, newEntry!]);
 	};
@@ -294,6 +307,49 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												<Plus className="h-4 w-4" />
 											</Button>
 										</form>
+									)}
+								</div>
+							</div>
+
+							{/* Add/Remove for Selected Types */}
+							<div className="space-y-2">
+								<Label className="mb-2">Add {orLabelTag.toLowerCase()} for selected image types</Label>
+								<div className="flex w-full items-center gap-2">
+									<Switch
+										disabled={!editing}
+										checked={app.AddLabelTagForSelectedTypes || false}
+										onCheckedChange={(v) =>
+											updateApplication(idx, "AddLabelTagForSelectedTypes", v)
+										}
+									/>
+									{editing && (
+										<div className="ml-auto flex items-center">
+											<PopoverHelp ariaLabel="help-labels-tags-selected-types">
+												<div className="space-y-2">
+													<p>
+														When enabled, Aura will add/remove a separate{" "}
+														{orLabelTag.toLowerCase()} for each selected image type.
+													</p>
+													<ul className="list-disc pl-5 space-y-1">
+														<li>
+															Helps you quickly identify which image types Aura
+															downloaded.
+														</li>
+														<li>
+															Uses the format{" "}
+															<span className="font-medium">aura-&lt;type&gt;</span>.
+														</li>
+													</ul>
+													<p className="text-muted-foreground">
+														Example: selecting <span className="font-medium">'Poster'</span>{" "}
+														and <span className="font-medium">'Backdrop'</span> adds the{" "}
+														{orLabelTag.toLowerCase()}{" "}
+														<span className="font-medium">'aura-poster'</span> and{" "}
+														<span className="font-medium">'aura-backdrop'</span>.
+													</p>
+												</div>
+											</PopoverHelp>
+										</div>
 									)}
 								</div>
 							</div>

@@ -447,6 +447,18 @@ func checkConfigDifferences_LabelsAndTags(ctx context.Context, oldLAT api.Config
 				changed = true
 			}
 
+			// Add Labels/Tags for Seleted Types diff
+			if oldApp.AddLabelTagForSelectedTypes != newApp.AddLabelTagForSelectedTypes {
+				logAction.AppendResult("LabelsAndTags.Application.AddLabelTagForSelectedTypes changed", fmt.Sprintf("from '%v' to '%v'", oldApp.AddLabelTagForSelectedTypes, newApp.AddLabelTagForSelectedTypes))
+				logging.LOGGER.Info().
+					Timestamp().
+					Str("application", name).
+					Bool("old_value", oldApp.AddLabelTagForSelectedTypes).
+					Bool("new_value", newApp.AddLabelTagForSelectedTypes).
+					Msg("LabelsAndTags.Application.AddLabelTagForSelectedTypes changed")
+				changed = true
+			}
+
 			// Add list diff
 			var addAdded, addRemoved []string
 			oldAddMap := make(map[string]bool)
