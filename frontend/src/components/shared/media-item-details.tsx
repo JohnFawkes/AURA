@@ -1,7 +1,7 @@
 "use client";
 
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { ChevronDown, Database, MoreHorizontal, RefreshCcw, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Database, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
