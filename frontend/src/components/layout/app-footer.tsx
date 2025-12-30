@@ -15,96 +15,9 @@ interface AppFooterProps {
 }
 
 export function AppFooter({ version = "dev" }: AppFooterProps) {
-	// Get the latest version from Github
-	const [latestVersion, setLatestVersion] = useState<string | null>(null);
-
-	const [showReleaseNotes, setShowReleaseNotes] = useState(false);
-	const [changelog, setChangelog] = useState("");
-
-	function isNewerVersion(latest: string, current: string): boolean {
-		const parse = (v: string) => v.replace(/^v/, "").split("-")[0].split(".").map(Number);
-		const [lMaj, lMin, lPatch] = parse(latest);
-		const [cMaj, cMin, cPatch] = parse(current);
-
-		if (lMaj > cMaj) return true;
-		if (lMaj < cMaj) return false;
-		if (lMin > cMin) return true;
-		if (lMin < cMin) return false;
-		if (lPatch > cPatch) return true;
-		return false;
-	}
-
-	function normalizeVersion(version: string) {
-		return version.replace(/^v/, "").replace(/-.*$/, "");
-	}
-
-	function getChangelogEntriesSince(changelog: string, lastVersion: string) {
-		const regex = /## \[([^\]]+)\] - (\d{4}-\d{2}-\d{2})/g;
-		const entries: { version: string; content: string }[] = [];
-		let match;
-		const indices: number[] = [];
-		const versions: string[] = [];
-		while ((match = regex.exec(changelog)) !== null) {
-			indices.push(match.index);
-			versions.push(match[1]);
-		}
-		indices.push(changelog.length);
-
-		for (let i = 0; i < versions.length; i++) {
-			entries.push({
-				version: versions[i],
-				content: changelog.slice(indices[i], indices[i + 1]),
-			});
-		}
-
-		// Normalize lastSeenVersion for matching
-		const normalizedLastVersion = normalizeVersion(lastVersion || "");
-		const idx = entries.findIndex((e) => normalizeVersion(e.version) === normalizedLastVersion);
-
-		return idx === -1 ? entries : entries.slice(0, idx);
-	}
-
-	useEffect(() => {
-		const lastSeen = localStorage.getItem("lastSeenVersion");
-		log("INFO", "App Footer", "Release Notes", `Last seen version: ${lastSeen}, Current version: ${version}`);
-
-		fetch("/CHANGELOG.md")
-			.then((res) => res.text())
-			.then((fullChangelog) => {
-				const relevantEntries = getChangelogEntriesSince(fullChangelog, lastSeen || "");
-				// Join relevant entries for markdown rendering
-				setChangelog(relevantEntries.map((e) => e.content).join("\n"));
-				if (lastSeen !== version && relevantEntries.length > 0) {
-					setShowReleaseNotes(true);
-				}
-			});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [version]);
-
-	function handleCloseReleaseNotes() {
-		localStorage.setItem("lastSeenVersion", version);
-		log("INFO", "App Footer", "Release Notes", `User closed release notes for version ${version}`);
-		setShowReleaseNotes(false);
-	}
-
-	useEffect(() => {
-		const fetchLatestVersion = async () => {
-			try {
-				const res = await fetch("https://raw.githubusercontent.com/mediux-team/AURA/master/VERSION.txt", {
-					cache: "no-store",
-				});
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				const txt = (await res.text()).trim();
-				// Basic sanity (optional)
-				if (txt && txt.length < 50) {
-					setLatestVersion(txt);
-				}
-			} catch (error) {
-				log("ERROR", "App Footer", "Fetch Latest Version", "Failed to fetch latest version:", error);
-			}
-		};
-		fetchLatestVersion();
-	}, []);
+	// App Version Hooks
+	const { latestVersion, showReleaseNotes, changelog, isNewerVersion, handleCloseReleaseNotes } =
+		useAppVersion(version);
 
 	return (
 		<footer className="border-t bg-background/80 backdrop-blur-sm w-full py-3 px-4 md:px-12">
