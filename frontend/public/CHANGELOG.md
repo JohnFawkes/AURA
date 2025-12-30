@@ -1,3 +1,12 @@
+## [0.9.72] - 2025-12-30
+
+### Added
+
+- Added better colors to "New Version Available" footer for better visibility.
+- Added "New Version Available" to Settings Icon for better visibility.
+
+---
+
 ## [0.9.71] - 2025-12-29
 
 ### Added
