@@ -1,3 +1,11 @@
+## [0.9.73] - 2025-12-30
+
+### Added
+
+- Revamp Sonarr Webhook integration so that it is more robust and better at handling errors. Will now handle Season Poster downloads too.
+
+---
+
 ## [0.9.72] - 2025-12-30
 
 ### Added
