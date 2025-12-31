@@ -49,6 +49,7 @@ type LogAction struct {
 	ElapsedMicroseconds int64          `json:"elapsed_us"`            // Elapsed time for the action in microseconds
 	Result              map[string]any `json:"result,omitempty"`      // Optional result data
 	SubActions          []*LogAction   `json:"sub_actions,omitempty"` // Optional nested sub-actions
+	Completed           bool           `json:"-"`
 	mu                  sync.Mutex     // Mutex to protect concurrent access to SubActions
 }
 

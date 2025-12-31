@@ -107,6 +107,15 @@ func (a *LogAction) AddSubAction(name, level string) *LogAction {
 
 // Complete marks the action as completed and calculates elapsed time.
 func (a *LogAction) Complete() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	// Make Complete idempotent
+	if a.Completed {
+		return
+	}
+	a.Completed = true
+
 	a.ElapsedMicroseconds = time.Since(a.Timestamp).Microseconds()
 	if a.Status == "" {
 		a.Status = StatusSuccess
