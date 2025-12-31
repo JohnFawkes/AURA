@@ -1,3 +1,13 @@
+## [0.9.74] - 2025-12-31
+
+### Added
+
+- Added new "Manual YAML Import" action. This will allow you to use the YAML from MediUX to manually import poster sets to your media server. Keep in mind that downloads through this method will not be tracked in the aura database, so auto-downloads and rechecks will not apply to these sets.
+
+### Fixed
+
+- Fixed issue where rating modal was being cut off on smaller screens.
+
 ## [0.9.73] - 2025-12-30
 
 ### Added
