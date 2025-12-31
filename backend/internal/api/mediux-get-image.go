@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 )
 
 type MediuxImageQuality string
@@ -143,8 +144,11 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 		return imageData, imageType, Err
 	}
 
-	// Make the Auth Headers for Request
-	headers := MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
+	var headers map[string]string
+	if strings.HasPrefix(mediuxURL, "https://images.mediux.io") {
+		// Make the Auth Headers for Request
+		headers = MakeAuthHeader("Authorization", Global_Config.Mediux.Token)
+	}
 
 	// Make the API request to MediUX
 	httpResp, respBody, logErr := MakeHTTPRequest(ctx, mediuxURL, http.MethodGet, headers, 60, nil, "MediUX")
@@ -152,6 +156,18 @@ func Mediux_GetImage(ctx context.Context, assetID string, formatDate string, ima
 		return imageData, imageType, Err
 	}
 	defer httpResp.Body.Close()
+
+	// Check for HTTP errors
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("MediUX returned non-200 status code",
+			"Ensure the asset ID is correct and the MediUX service is operational.",
+			map[string]any{
+				"URL":        mediuxURL,
+				"statusCode": httpResp.StatusCode,
+			})
+		Err = *logAction.Error
+		return nil, "", *logAction.Error
+	}
 
 	// Check if the response body is empty
 	if len(respBody) == 0 {
