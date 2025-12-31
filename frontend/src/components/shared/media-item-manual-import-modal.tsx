@@ -204,7 +204,6 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
 	const runImportTask = async (t: ImportTask) => {
 		updateImportTask(t.id, (task) => ({ ...task, status: "in-progress" }));
 		try {
-			// Simulate API call delay
 			setImportText(t.label);
 			const response = await patchDownloadPosterFileAndUpdateMediaServer(t.PosterFile, mediaItem, t.label);
 			if (response.status === "error") {
