@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -75,8 +76,18 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 		qualityParam = "jpg"
 	}
 
+	var MediuxURL string
+	if strings.HasPrefix(assetID, "---") {
+		// Special handling for assets starting with "---"
+		// This is for manual imports
+		MediuxURL = "https://api.mediux.pro"
+		assetID = strings.TrimPrefix(assetID, "---")
+	} else {
+		MediuxURL = MediuxBaseURL
+	}
+
 	// Construct the MediUX URL
-	u, err := url.Parse(MediuxBaseURL)
+	u, err := url.Parse(MediuxURL)
 	if err != nil {
 		logAction.SetError("Failed to parse MediUX base URL", err.Error(), nil)
 		return "", *logAction.Error
@@ -103,8 +114,19 @@ func Mediux_GetImageURLFromSrc(src string) string {
 	if src == "" {
 		return ""
 	}
+
+	var MediuxURL string
+	if strings.HasPrefix(src, "---") {
+		// Special handling for assets starting with "---"
+		// This is for manual imports
+		MediuxURL = "https://api.mediux.pro"
+		src = strings.TrimPrefix(src, "---")
+	} else {
+		MediuxURL = MediuxBaseURL
+	}
+
 	// Construct the MediUX URL
-	u, err := url.Parse(MediuxBaseURL)
+	u, err := url.Parse(MediuxURL)
 	if err != nil {
 		return ""
 	}
