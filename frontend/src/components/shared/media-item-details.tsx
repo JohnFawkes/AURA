@@ -1,7 +1,7 @@
 "use client";
 
 import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { ChevronDown, Database, RefreshCcw, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Database, FileIcon, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { ManualImportModal } from "@/components/shared/media-item-manual-import-modal";
 import { MediaItemRatingModal } from "@/components/shared/media-item-rating-modal";
 import { MediaItemRatings } from "@/components/shared/media-item-ratings";
 import { RefreshMetadataModal } from "@/components/shared/media-item-refresh-modal";
@@ -57,8 +58,11 @@ export function MediaItemDetails({
 	const { setSearchQuery } = useSearchQueryStore();
 
 	const [currentPosterIndex, setCurrentPosterIndex] = useState(0);
+
+	// Action Modals
 	const [isRefreshMetadataModalOpen, setIsRefreshMetadataModalOpen] = useState(false);
 	const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+	const [isManualImportModalOpen, setIsManualImportModalOpen] = useState(false);
 
 	const touchStartXRef = useRef<number | undefined>(undefined);
 	const mouseStartXRef = useRef<number | undefined>(undefined);
@@ -220,24 +224,6 @@ export function MediaItemDetails({
 				</div>
 			</div>
 
-			{/* Refresh Metadata Modal */}
-			{mediaItem && (
-				<RefreshMetadataModal
-					mediaItem={mediaItem}
-					isOpen={isRefreshMetadataModalOpen}
-					onClose={() => setIsRefreshMetadataModalOpen(false)}
-				/>
-			)}
-
-			{/* Rating Modal */}
-			{mediaItem && (
-				<MediaItemRatingModal
-					mediaItem={mediaItem}
-					isOpen={isRatingModalOpen}
-					onClose={() => setIsRatingModalOpen(false)}
-				/>
-			)}
-
 			{/* Library Information */}
 			{libraryTitle ? (
 				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-0 md:mt-2">
@@ -305,6 +291,11 @@ export function MediaItemDetails({
 						<DropdownMenuItem className="cursor-pointer" onSelect={() => setIsRatingModalOpen(true)}>
 							<Star className="mr-2 h-4 w-4" />
 							Rate {mediaItemType === "movie" ? "Movie" : "Show"}
+						</DropdownMenuItem>
+
+						<DropdownMenuItem className="cursor-pointer" onSelect={() => setIsManualImportModalOpen(true)}>
+							<FileIcon className="mr-2 h-4 w-4" />
+							Manual YAML Import
 						</DropdownMenuItem>
 
 						<DropdownMenuSeparator />
@@ -386,6 +377,34 @@ export function MediaItemDetails({
 					</div>
 				) : null}
 			</div>
+
+			{/*	Action Modals */}
+			{/* Refresh Metadata Modal */}
+			{mediaItem && (
+				<RefreshMetadataModal
+					mediaItem={mediaItem}
+					isOpen={isRefreshMetadataModalOpen}
+					onClose={() => setIsRefreshMetadataModalOpen(false)}
+				/>
+			)}
+
+			{/* Rating Modal */}
+			{mediaItem && (
+				<MediaItemRatingModal
+					mediaItem={mediaItem}
+					isOpen={isRatingModalOpen}
+					onClose={() => setIsRatingModalOpen(false)}
+				/>
+			)}
+
+			{/* Manual Import Modal */}
+			{mediaItem && (
+				<ManualImportModal
+					mediaItem={mediaItem}
+					isOpen={isManualImportModalOpen}
+					onClose={() => setIsManualImportModalOpen(false)}
+				/>
+			)}
 		</div>
 	);
 }
