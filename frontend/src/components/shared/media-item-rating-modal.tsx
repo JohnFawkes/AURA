@@ -100,7 +100,7 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
 				if (!open) onClose();
 			}}
 		>
-			<DialogContent className={cn("sm:max-w-[520px]", "border border-primary")}>
+			<DialogContent className={cn("max-h-[80vh] overflow-y-auto sm:max-w-[700px]", "border border-primary")}>
 				<DialogHeader>
 					<DialogTitle className="text-lg font-bold">Rate</DialogTitle>
 					<DialogDescription className="text-sm text-muted-foreground">
