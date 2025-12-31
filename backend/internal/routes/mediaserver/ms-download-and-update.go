@@ -34,6 +34,9 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 			map[string]any{
 				"MediaItem": mediaItem,
 			})
+		actionValidate.Complete()
+		api.Util_Response_SendJSON(w, ld, nil)
+		return
 	}
 
 	// Make sure that the posterFile has the following fields set
@@ -45,6 +48,9 @@ func DownloadAndUpdate(w http.ResponseWriter, r *http.Request) {
 			map[string]any{
 				"PosterFile": posterFile,
 			})
+		actionValidate.Complete()
+		api.Util_Response_SendJSON(w, ld, nil)
+		return
 	}
 	actionValidate.Complete()
 
