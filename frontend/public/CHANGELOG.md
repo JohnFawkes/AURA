@@ -1,3 +1,9 @@
+## [0.9.75] - 2026-01-05
+
+### Added
+
+- Added new clear search button to Search Bar in Navbar for better user experience.
+
 ## [0.9.74] - 2025-12-31
 
 ### Added
