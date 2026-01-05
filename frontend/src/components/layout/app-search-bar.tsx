@@ -320,8 +320,24 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 						onChange={handleInputChange}
 						onFocus={handleInputFocus}
 						onKeyDown={handleKeyDown}
-						className="pl-10 pr-4 py-3 text-lg border-2 rounded-xl transition-all duration-200 focus:border-primary-dynamic w-full"
+						className="pl-10 pr-10 py-3 text-lg border-2 rounded-xl transition-all duration-200 focus:border-primary-dynamic w-full"
 					/>
+					{searchInput && (
+						<button
+							type="button"
+							className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-destructive focus:outline-none"
+							aria-label="Clear search"
+							onClick={() => {
+								setSearchInput("");
+								setSearchQuery("");
+								clearAllResults();
+								inputRef.current?.focus();
+							}}
+							tabIndex={0}
+						>
+							<X className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</div>
 
