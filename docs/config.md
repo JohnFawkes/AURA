@@ -39,7 +39,7 @@ Auth:
     Password: YOUR_ARGON2ID_HASH_HERE
 ```
 
-While this password authentication method is effective, it is important to keep your password secure and not share it with others. For enhanced security, consider using solutions like [Authentik](https://goauthentik.io/) or [Authelia](https://www.authelia.com/).  
+While this password authentication method is effective, it is important to keep your password secure and not share it with others. For enhanced security, consider using solutions like [Authentik](https://goauthentik.io/), [Authelia](https://www.authelia.com/) or [Tinyauth](https://tinyauth.app/).  
 **I am not a security expert** 😅
 
 ### Enable
