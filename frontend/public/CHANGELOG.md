@@ -1,3 +1,18 @@
+## [0.9.76] - 2026-01-09
+
+### Added
+
+- Added new Login With Plex button for easier authentication with Plex Media Servers.
+- Added multiple retry logic for connecting with Sonarr/Radarr during startup for better reliability.
+
+### Fixed
+
+- Fixed default logging level to INFO when onboarding.
+- Fixed issue where if no Season Posters are found during AutoDownload, it would cause panic error.
+- Fixed issue where Sonarr Webhook integration would update database even if no images were downloaded.
+
+---
+
 ## [0.9.75] - 2026-01-05
 
 ### Added
