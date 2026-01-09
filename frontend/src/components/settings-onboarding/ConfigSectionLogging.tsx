@@ -72,6 +72,13 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 		}
 	};
 
+	// If no level is set, default to INFO
+	useEffect(() => {
+		if (!value.Level) {
+			onChange("Level", "INFO");
+		}
+	}, [value.Level, onChange]);
+
 	return (
 		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<h2 className="text-xl font-semibold text-blue-500">Logging</h2>
