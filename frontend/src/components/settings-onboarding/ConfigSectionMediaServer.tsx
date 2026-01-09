@@ -2,7 +2,12 @@
 
 import { ValidateURL } from "@/helper/validation/validate-url";
 import { checkMediaServerNewInfoConnectionStatus } from "@/services/settings-onboarding/api-mediaserver-connection";
-import { fetchMediaServerLibraryOptions } from "@/services/settings-onboarding/api-mediaserver-library-options";
+import {
+	PlexServersResponse,
+	fetchCheckAuthStatusWithPlex,
+	fetchMediaServerLibraryOptions,
+	fetchPinCodeAndIDFromBackend,
+} from "@/services/settings-onboarding/api-mediaserver-library-options";
 import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -83,6 +88,15 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		color: GetConnectionColor("unknown"),
 	});
 
+	// Plex Signin States
+	const PLEX_CLIENT_ID = "aura";
+	const PLEX_PRODUCT = "AURA";
+	const [plexID, setPlexID] = useState("");
+	const [plexPIN, setPlexPIN] = useState("");
+	const [plexConnectionsAvailable, setPlexConnectionsAvailable] = useState<PlexServersResponse[]>([]);
+	const [plexOAuthWindow, setPlexOAuthWindow] = useState<Window | null>(null);
+	const [signInWithPlex, setSignInWithPlex] = useState(false);
+
 	const valueRef = React.useRef(value);
 	React.useEffect(() => {
 		valueRef.current = value;
@@ -152,6 +166,13 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	useEffect(() => {
 		setRemoteTokenError(null);
 	}, [value.Token, value.URL]);
+
+	useEffect(() => {
+		if (editing && value.URL) {
+			runRemoteValidation();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [value.URL]);
 
 	const runRemoteValidation = useCallback(
 		async (showToast = true) => {
@@ -233,6 +254,67 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		replaceLibraries(data);
 	};
 
+	// Plex OAuth Flow (Get PIN and ID)
+	const handleGetPlexPinAndID = async () => {
+		const { ok, pinCode, plexID } = await fetchPinCodeAndIDFromBackend();
+		if (!ok) return;
+		setPlexPIN(pinCode);
+		setPlexID(plexID);
+	};
+
+	// Plex OAuth Flow (Open Plex OAuth Window)
+	const handleOpenPlexOAuthWindow = () => {
+		if (plexID === "" || plexPIN === "") return;
+		const plexOAuthURL = `https://app.plex.tv/auth/#?clientID=${PLEX_CLIENT_ID}&code=${plexPIN}&context%5Bdevice%5D%5Bproduct%5D=${PLEX_PRODUCT}`;
+		const width = 500;
+		const height = 700;
+		const left = window.screenX + (window.outerWidth - width) / 2;
+		const top = window.screenY + (window.outerHeight - height) / 2.5;
+
+		const oauthWindow = window.open(
+			plexOAuthURL,
+			"Plex OAuth",
+			`width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+		);
+		if (oauthWindow) {
+			setPlexOAuthWindow(oauthWindow);
+		}
+	};
+
+	// Plex OAuth Flow (Poll for OAuth Completion)
+	useEffect(() => {
+		if (plexID === "" || plexPIN === "" || !plexOAuthWindow) return;
+
+		const interval = setInterval(async () => {
+			const { ok, authenticated, authToken, connectionsAvailable } = await fetchCheckAuthStatusWithPlex(plexID);
+			if (!ok) return;
+			if (authenticated) {
+				// Set the token and available connections
+				onChange("Token", authToken || "");
+				setPlexConnectionsAvailable(connectionsAvailable);
+				setSignInWithPlex(true);
+				// Close the OAuth window
+				if (plexOAuthWindow && !plexOAuthWindow.closed) {
+					plexOAuthWindow.close();
+				}
+				setPlexOAuthWindow(null);
+			}
+		}, 3000);
+
+		return () => clearInterval(interval);
+	}, [plexID, plexPIN, plexOAuthWindow, onChange]);
+
+	let displayValue = "Select server connection...";
+	if (value.URL) {
+		try {
+			const url = new URL(value.URL);
+			const showPort = url.port && url.port !== "443";
+			displayValue = showPort ? `${url.hostname}:${url.port}` : url.hostname;
+		} catch {
+			displayValue = value.URL;
+		}
+	}
+
 	return (
 		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
 			<div className="flex items-center justify-between">
@@ -278,7 +360,14 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						value.Token = "";
 						value.UserID = "";
 						value.Libraries = [];
+						setPlexID("");
+						setPlexPIN("");
+						setPlexConnectionsAvailable([]);
+						setSignInWithPlex(false);
 						onChange("Type", v);
+						if (v === "Plex") {
+							handleGetPlexPinAndID();
+						}
 					}}
 				>
 					<SelectTrigger
@@ -300,42 +389,146 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				{errors.Type && <p className="text-xs text-red-500">{errors.Type}</p>}
 			</div>
 
-			{/* URL */}
-			<div className={cn("space-y-1")}>
-				<div className="flex items-center justify-between">
-					<Label>URL</Label>
-					{editing && (
-						<PopoverHelp ariaLabel="help-media-server-url">
-							<p className="font-medium mb-1">Base server URL</p>
-							<p>Examples:</p>
-							<ul className="list-disc list-inside mb-1">
-								<li>https://{value.Type.toLowerCase()}.domain.com</li>
-								<li>http://192.168.1.10:{value.Type === "Plex" ? "32400" : "8096"}</li>
-								<li>
-									http://{value.Type.toLowerCase()}:{value.Type === "Plex" ? "32400" : "8096"}
-								</li>
-							</ul>
-							<p>Rules:</p>
-							<ul className="list-disc list-inside">
-								<li>Must be a valid URL</li>
-								<li>Must include http:// or https://</li>
-								<li>IPv4 addresses must include a port</li>
-							</ul>
-						</PopoverHelp>
+			{/* If the Type is Plex, then show a Sign in with Plex button here */}
+			{editing && value.Type === "Plex" && plexPIN && plexID && plexConnectionsAvailable.length === 0 && (
+				<div className="flex flex-col items-center">
+					<div
+						className="flex flex-row items-center justify-center rounded-lg"
+						style={{
+							background: "#e5a00d 100%",
+							padding: "0.2rem 0.5rem",
+							margin: "1rem 0",
+							maxWidth: "320px",
+							marginLeft: "auto",
+							marginRight: "auto",
+						}}
+						onClick={() => {
+							handleOpenPlexOAuthWindow();
+						}}
+					>
+						<img src="/plex-icon.png" alt="Plex" className="mr-3 w-8 h-8" />
+						<Button
+							variant="ghost"
+							size="sm"
+							disabled={!editing}
+							onClick={() => {
+								handleOpenPlexOAuthWindow();
+							}}
+							className="font-semibold text-black border-none hover:text-white transition-colors"
+						>
+							Sign in with Plex
+						</Button>
+					</div>
+					{!signInWithPlex && (
+						<span className="text-xs text-center text-muted-foreground">
+							or Enter URL and Token manually
+						</span>
 					)}
 				</div>
-				<Input
-					disabled={!editing}
-					placeholder="https://server.example.com"
-					value={value.URL}
-					onChange={(e) => onChange("URL", e.target.value)}
-					onBlur={() => runRemoteValidation()}
-					className={cn("w-full", dirtyFields.URL && "border-amber-500")}
-				/>
-				{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
-			</div>
+			)}
+
+			{/* URL */}
+			{signInWithPlex && value.Type === "Plex" && plexConnectionsAvailable.length > 0 ? (
+				<div className={cn("space-y-1")}>
+					<div className="flex items-center justify-between">
+						<Label>Server Connection</Label>
+						{editing && (
+							<PopoverHelp ariaLabel="help-media-server-connection">
+								<p>Select the Plex server connection to use.</p>
+							</PopoverHelp>
+						)}
+					</div>
+
+					<Select
+						disabled={!editing}
+						value={value.URL}
+						onValueChange={(v) => {
+							onChange("URL", v);
+						}}
+					>
+						<SelectTrigger
+							id="media-server-connection-trigger"
+							className={cn("w-full", dirtyFields.URL && "border-amber-500")}
+						>
+							<SelectValue placeholder={displayValue} />
+						</SelectTrigger>
+
+						<SelectContent>
+							<SelectScrollUpButton />
+							{plexConnectionsAvailable.flatMap((server, serverIndex) =>
+								(server.connections || []).map((c, connIndex) => {
+									const showPort = c.port && c.port !== 443;
+									const label = !showPort ? c.uri.replace(/:\d+$/, "") : c.uri;
+
+									return (
+										<SelectItem
+											className="cursor-pointer"
+											key={`${serverIndex}-${connIndex}-${label}`}
+											value={!showPort ? c.uri.replace(/:\d+$/, "") : c.uri}
+										>
+											<div className="flex items-center gap-2">
+												<span className="block text-xs ">{label}</span>{" "}
+												{c.local && (
+													<span className="ml-1 px-1.5 py-0.5 rounded bg-green-100 text-green-700 text-[10px] font-semibold">
+														Local
+													</span>
+												)}
+												{c.relay && (
+													<span className="ml-1 px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 text-[10px] font-semibold">
+														Relay
+													</span>
+												)}
+											</div>
+										</SelectItem>
+									);
+								})
+							)}
+							<SelectScrollDownButton />
+						</SelectContent>
+					</Select>
+
+					{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
+				</div>
+			) : (
+				<div className={cn("space-y-1")}>
+					<div className="flex items-center justify-between">
+						<Label>URL</Label>
+						{editing && (
+							<PopoverHelp ariaLabel="help-media-server-url">
+								<p className="font-medium mb-1">Base server URL</p>
+								<p>Examples:</p>
+								<ul className="list-disc list-inside mb-1">
+									<li>https://{value.Type.toLowerCase()}.domain.com</li>
+									<li>http://192.168.1.10:{value.Type === "Plex" ? "32400" : "8096"}</li>
+									<li>
+										http://{value.Type.toLowerCase()}:{value.Type === "Plex" ? "32400" : "8096"}
+									</li>
+								</ul>
+								<p>Rules:</p>
+								<ul className="list-disc list-inside">
+									<li>Must be a valid URL</li>
+									<li>Must include http:// or https://</li>
+									<li>IPv4 addresses must include a port</li>
+								</ul>
+							</PopoverHelp>
+						)}
+					</div>
+
+					<Input
+						disabled={!editing}
+						placeholder="https://server.example.com"
+						value={value.URL}
+						onChange={(e) => onChange("URL", e.target.value)}
+						onBlur={() => runRemoteValidation()}
+						className={cn("w-full", dirtyFields.URL && "border-amber-500")}
+					/>
+
+					{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
+				</div>
+			)}
 
 			{/* Token */}
+
 			<div className={cn("space-y-1")}>
 				<div className="flex items-center justify-between">
 					<Label>Token</Label>
@@ -346,7 +539,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					)}
 				</div>
 				<Input
-					disabled={!editing}
+					disabled={!editing || (value.Type === "Plex" && signInWithPlex)}
 					type="text"
 					placeholder="API token"
 					value={value.Token}

@@ -221,3 +221,22 @@ type PlexSearchResponse struct {
 type PlexSearchResultResponse struct {
 	Metadata []PlexLibraryItemsMetadata `json:"Metadata"`
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
+type PlexServersResponse struct {
+	Name        string                  `json:"name"`
+	Owned       bool                    `json:"owned"`
+	Connections []PlexServerConnections `json:"connections"`
+}
+
+type PlexServerConnections struct {
+	Protocol string `json:"protocol"`
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+	Uri      string `json:"uri"`
+	Local    bool   `json:"local"`
+	Relay    bool   `json:"relay"`
+	IPv6     bool   `json:"ipv6"`
+}

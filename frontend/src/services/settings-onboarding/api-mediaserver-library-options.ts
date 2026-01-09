@@ -71,3 +71,100 @@ export const fetchMediaServerLibraryOptions = async (
 		};
 	}
 };
+
+export const fetchPinCodeAndIDFromBackend = async (): Promise<{ ok: boolean; pinCode: string; plexID: string }> => {
+	log("INFO", "API - Settings", "Media Server", "Fetching Plex PIN code and ID from backend");
+	try {
+		const response = await apiClient.get<APIResponse<{ pinCode: string; plexID: string }>>(`/config/plex/get-pin`);
+		if (response.data.status === "error") {
+			return {
+				ok: false,
+				pinCode: "",
+				plexID: "",
+			};
+		}
+		log(
+			"INFO",
+			"API - Settings",
+			"Media Server",
+			"Fetched Plex PIN code and ID from backend successfully",
+			response.data
+		);
+		return { ok: true, pinCode: response.data.data?.pinCode || "", plexID: response.data.data?.plexID || "" };
+	} catch (error) {
+		log(
+			"ERROR",
+			"API - Settings",
+			"Media Server",
+			`Failed to fetch Plex PIN code and ID from backend: ${error instanceof Error ? error.message : "Unknown error"}`,
+			error
+		);
+		const errorResponse = ReturnErrorMessage<{ pinCode: string; plexID: string }>(error);
+		toast.error(errorResponse.error?.message || "Couldn't fetch Plex Pin Code", {
+			duration: 1000,
+		});
+		return {
+			ok: false,
+			pinCode: "",
+			plexID: "",
+		};
+	}
+};
+
+export const fetchCheckAuthStatusWithPlex = async (
+	plexID: string
+): Promise<{ ok: boolean; authenticated: boolean; authToken: string; connectionsAvailable: PlexServersResponse[] }> => {
+	log("INFO", "API - Settings", "Media Server", "Checking authentication status with Plex");
+	try {
+		const response = await apiClient.get<
+			APIResponse<{ authenticated: boolean; authToken: string; connectionsAvailable: PlexServersResponse[] }>
+		>(`/config/plex/check-pin`, {
+			params: { plexID },
+		});
+		if (response.data.status === "error") {
+			return {
+				ok: false,
+				authenticated: false,
+				authToken: "",
+				connectionsAvailable: [],
+			};
+		}
+		log(
+			"INFO",
+			"API - Settings",
+			"Media Server",
+			"Checked authentication status with Plex successfully",
+			response.data
+		);
+		return {
+			ok: true,
+			authenticated: response.data.data?.authenticated || false,
+			authToken: response.data.data?.authToken || "",
+			connectionsAvailable: response.data.data?.connectionsAvailable || [],
+		};
+	} catch {
+		log("ERROR", "API - Settings", "Media Server", `Failed to check authentication status with Plex`);
+		return {
+			ok: false,
+			authenticated: false,
+			authToken: "",
+			connectionsAvailable: [],
+		};
+	}
+};
+
+export interface PlexServersResponse {
+	name: string;
+	owned: boolean;
+	connections: PlexServerConnection[];
+}
+
+export interface PlexServerConnection {
+	protocol: string;
+	address: string;
+	port: number;
+	uri: string;
+	local: boolean;
+	relay: boolean;
+	ipv6: boolean;
+}

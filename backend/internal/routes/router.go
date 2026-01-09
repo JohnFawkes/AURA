@@ -15,6 +15,7 @@ import (
 	routes_mediux "aura/internal/routes/mediux"
 	middleware "aura/internal/routes/middleware"
 	routes_notification "aura/internal/routes/notification"
+	routes_plex "aura/internal/routes/plex"
 	routes_search "aura/internal/routes/search"
 	routes_sonarr_radarr "aura/internal/routes/sonarr-radarr"
 	routes_tempimages "aura/internal/routes/tempimages"
@@ -98,6 +99,11 @@ func AddRoutes(r *chi.Mux) {
 					r.Post("/sonarr", routes_sonarr_radarr.TestConnection)
 					r.Post("/radarr", routes_sonarr_radarr.TestConnection)
 					r.Post("/notification", routes_notification.SendTest)
+				})
+
+				r.Route("/plex", func(r chi.Router) {
+					r.Get("/get-pin", routes_plex.PlexGetPinCodeAndIDHandler)
+					r.Get("/check-pin", routes_plex.PlexCheckPinHandler)
 				})
 			})
 
@@ -194,6 +200,11 @@ func addOnboardingRoutes(r chi.Router) {
 					r.Post("/sonarr", routes_sonarr_radarr.TestConnection)
 					r.Post("/radarr", routes_sonarr_radarr.TestConnection)
 					r.Post("/notification", routes_notification.SendTest)
+				})
+
+				r.Route("/plex", func(r chi.Router) {
+					r.Get("/get-pin", routes_plex.PlexGetPinCodeAndIDHandler)
+					r.Get("/check-pin", routes_plex.PlexCheckPinHandler)
 				})
 			})
 

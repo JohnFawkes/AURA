@@ -420,3 +420,164 @@ func Plex_HandleLabels(item MediaItem, selectedTypes []string) {
 		}
 	}
 }
+
+type PlexGetPinResponse struct {
+	Pin  string `json:"code"`
+	ID   int64  `json:"id"`
+	Auth string `json:"authToken"`
+}
+
+func Plex_GetPinCodeAndID(ctx context.Context) (string, int64, logging.LogErrorInfo) {
+	var pinCode string
+	var plexID int64
+
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Getting Pin Code and ID from Plex", logging.LevelDebug)
+	defer logAction.Complete()
+
+	// Make the URL
+	u, err := url.Parse("https://plex.tv/api/v2/pins")
+	if err != nil {
+		logAction.SetError("Failed to parse Plex pin URL", err.Error(), nil)
+		return "", 0, *logAction.Error
+	}
+	query := u.Query()
+	query.Set("strong", "true")
+	query.Set("X-Plex-Product", "AURA")
+	query.Set("X-Plex-Client-Identifier", "aura")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+
+	// Make the API request to Plex
+	httpResp, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodPost, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return "", 0, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusCreated {
+		logAction.SetError("Failed to get pin from Plex",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{"URL": URL, "StatusCode": httpResp.StatusCode})
+		return "", 0, *logAction.Error
+	}
+
+	// Parse the response body into a PlexGetPinResponse struct
+	var plexPinResponse PlexGetPinResponse
+	logErr = DecodeJSONBody(ctx, body, &plexPinResponse, "PlexGetPinResponse")
+	if logErr.Message != "" {
+		return "", 0, logErr
+	}
+
+	pinCode = plexPinResponse.Pin
+	plexID = plexPinResponse.ID
+
+	return pinCode, plexID, logging.LogErrorInfo{}
+}
+
+func Plex_CheckPin(ctx context.Context, pinCode string) (bool, string, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Checking Pin Code with Plex", logging.LevelDebug)
+	defer logAction.Complete()
+
+	var isValid bool
+	var authToken string
+
+	// Make the URL
+	u, err := url.Parse("https://plex.tv/api/v2/pins/" + pinCode)
+	if err != nil {
+		logAction.SetError("Failed to parse Plex check pin URL", err.Error(), nil)
+		return false, "", *logAction.Error
+	}
+	query := u.Query()
+	query.Set("X-Plex-Product", "AURA")
+	query.Set("X-Plex-Client-Identifier", "aura")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+
+	// Make the API request to Plex
+	httpResp, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, nil, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return false, "", logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Failed to check pin with Plex",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{"URL": URL, "StatusCode": httpResp.StatusCode})
+		return false, "", *logAction.Error
+	}
+
+	// Parse the response body into a PlexGetPinResponse struct
+	var plexPinResponse PlexGetPinResponse
+	logErr = DecodeJSONBody(ctx, body, &plexPinResponse, "PlexGetPinResponse")
+	if logErr.Message != "" {
+		return false, "", logErr
+	}
+
+	// If an auth token is present, the PIN is valid
+	if plexPinResponse.Auth != "" {
+		isValid = true
+		authToken = plexPinResponse.Auth
+	} else {
+		isValid = false
+		authToken = ""
+	}
+
+	return isValid, authToken, logging.LogErrorInfo{}
+}
+
+func Plex_GetServerConnections(ctx context.Context, authToken string) ([]PlexServersResponse, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Getting Plex Server Connections", logging.LevelDebug)
+	defer logAction.Complete()
+
+	var plexServers []PlexServersResponse
+
+	// Make the URL
+	u, err := url.Parse("https://plex.tv/api/v2/resources")
+	if err != nil {
+		logAction.SetError("Failed to parse Plex resources URL", err.Error(), nil)
+		return plexServers, *logAction.Error
+	}
+	query := u.Query()
+	query.Set("includeHttps", "1")
+	query.Set("X-Plex-Product", "AURA")
+	query.Set("X-Plex-Client-Identifier", "aura")
+	u.RawQuery = query.Encode()
+	URL := u.String()
+
+	// Make the Auth Headers for Request
+	headers := MakeAuthHeader("X-Plex-Token", authToken)
+
+	// Make the API request to Plex
+	httpResp, body, logErr := MakeHTTPRequest(ctx, URL, http.MethodGet, headers, 60, nil, "Plex")
+	if logErr.Message != "" {
+		return plexServers, logErr
+	}
+	defer httpResp.Body.Close()
+
+	// Check the response status code
+	if httpResp.StatusCode != http.StatusOK {
+		logAction.SetError("Failed to get Plex server connections",
+			fmt.Sprintf("Plex server returned status code %d", httpResp.StatusCode),
+			map[string]any{"URL": URL, "StatusCode": httpResp.StatusCode})
+		return plexServers, *logAction.Error
+	}
+
+	// Parse the response body into a slice of PlexServerResponse structs
+	logErr = DecodeJSONBody(ctx, body, &plexServers, "PlexServerResponseSlice")
+	if logErr.Message != "" {
+		return plexServers, logErr
+	}
+
+	// Remove any servers that are not owned by the user
+	var ownedServers []PlexServersResponse
+	for _, server := range plexServers {
+		if server.Owned {
+			ownedServers = append(ownedServers, server)
+		}
+	}
+
+	return ownedServers, logging.LogErrorInfo{}
+}
