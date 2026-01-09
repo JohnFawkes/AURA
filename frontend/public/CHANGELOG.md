@@ -4,6 +4,8 @@
 
 - Added new clear search button to Search Bar in Navbar for better user experience.
 
+---
+
 ## [0.9.74] - 2025-12-31
 
 ### Added
@@ -13,6 +15,8 @@
 ### Fixed
 
 - Fixed issue where rating modal was being cut off on smaller screens.
+
+---
 
 ## [0.9.73] - 2025-12-30
 

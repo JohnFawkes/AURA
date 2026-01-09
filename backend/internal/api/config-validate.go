@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/robfig/cron/v3"
@@ -369,9 +370,21 @@ func Config_ValidateSonarrRadarr(ctx context.Context, apps *Config_SonarrRadarr_
 			isValid = false
 		}
 
-		// Test Connection to the App
-		valid, Err := SR_CallTestConnection(ctx, app)
-		if Err.Message != "" || !valid {
+		// Test Connection to the App (try up to 5 times)
+		maxAttempts := 5
+		secondsToWait := 10
+		success := false
+		for attempt := 1; attempt <= maxAttempts; attempt++ {
+			valid, Err := SR_CallTestConnection(ctx, app)
+			if Err.Message == "" && valid {
+				success = true
+				break
+			}
+			// Sleep for 5 seconds before retrying
+			logging.LOGGER.Warn().Timestamp().Int("attempt", attempt).Int("max_attempts", maxAttempts).Err(fmt.Errorf("%s", Err.Message)).Msgf("Failed to connect to Sonarr/Radarr app '%s' at '%s'. Retrying in %d seconds...", app.Type, app.URL, secondsToWait)
+			time.Sleep(time.Duration(secondsToWait) * time.Second)
+		}
+		if !success {
 			isValid = false
 		}
 
