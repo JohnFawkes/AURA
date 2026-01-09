@@ -38,7 +38,7 @@ export const checkMediaServerNewInfoConnectionStatus = async (
 	try {
 		let loadingToast: string | number | undefined;
 		if (showToast) {
-			loadingToast = toast.loading(`Checking connection to ${mediaServerInfo.Type}...`);
+			loadingToast = toast.loading(`Checking connection to ${mediaServerInfo.Type} (${mediaServerInfo.URL})...`);
 		}
 		const response = await postMediaServerNewInfoConnectionStatus(mediaServerInfo);
 		if (response.status === "error") {
