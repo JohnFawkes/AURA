@@ -294,14 +294,16 @@ func processShowResponse(ctx context.Context, librarySection, tmdbID string, sho
 					} else {
 						seasonType = "seasonPoster"
 					}
-					// Check if the Season exists in the cachedItem
-					seasonExists := false
-					for _, cachedSeason := range cachedItem.Series.Seasons {
-						if cachedSeason.SeasonNumber == season.SeasonNumber {
-							seasonExists = true
-							break
-						}
-					}
+					   // Check if the Season exists in the cachedItem
+					   seasonExists := false
+					   if cachedItem.Series != nil {
+						   for _, cachedSeason := range cachedItem.Series.Seasons {
+							   if cachedSeason.SeasonNumber == season.SeasonNumber {
+								   seasonExists = true
+								   break
+							   }
+						   }
+					   }
 					var seasonItem *MediaItem
 					if !seasonExists {
 						seasonItem = &MediaItem{} // Create a new empty MediaItem
