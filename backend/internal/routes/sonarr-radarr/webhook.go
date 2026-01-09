@@ -353,6 +353,8 @@ func SonarrProcessDownload(ctx context.Context, payload SonarrWebHookOnUpgradePa
 		}
 		posterSet.PosterSet = latestSet
 
+		dbUpdateRequired := false
+
 		// For each episode in the payload, find and download the corresponding titlecard
 		for _, sonarrEpisode := range payload.Episodes {
 			var downloadFile api.PosterFile
@@ -376,6 +378,7 @@ func SonarrProcessDownload(ctx context.Context, payload SonarrWebHookOnUpgradePa
 				logAction.AppendWarning("CallDownloadAndUpdatePosters_error", Err.Message)
 				return
 			}
+			dbUpdateRequired = true
 
 			api.DeleteTempImageForNextLoad(ctx, downloadFile, mediaItem.RatingKey)
 			go func() {
@@ -383,32 +386,34 @@ func SonarrProcessDownload(ctx context.Context, payload SonarrWebHookOnUpgradePa
 			}()
 		}
 
-		// Update the database with the latest information
-		newDBItem := dbItem
-		newDBItem.MediaItem = mediaItem
-		newDBItem.MediaItemJSON = ""
-		newDBItem.PosterSets = make([]api.DBPosterSetDetail, len(dbItem.PosterSets))
-		for i, ps := range dbItem.PosterSets {
-			if ps.PosterSetID == posterSet.PosterSetID {
-				// Update only the set being worked on
-				newDBItem.PosterSets[i] = api.DBPosterSetDetail{
-					PosterSetID:    latestSet.ID,
-					PosterSet:      latestSet,
-					AutoDownload:   ps.AutoDownload,
-					SelectedTypes:  ps.SelectedTypes,
-					LastDownloaded: time.Now().Format("2006-01-02 15:04:05"),
+		if dbUpdateRequired {
+			// Update the database with the latest information
+			newDBItem := dbItem
+			newDBItem.MediaItem = mediaItem
+			newDBItem.MediaItemJSON = ""
+			newDBItem.PosterSets = make([]api.DBPosterSetDetail, len(dbItem.PosterSets))
+			for i, ps := range dbItem.PosterSets {
+				if ps.PosterSetID == posterSet.PosterSetID {
+					// Update only the set being worked on
+					newDBItem.PosterSets[i] = api.DBPosterSetDetail{
+						PosterSetID:    latestSet.ID,
+						PosterSet:      latestSet,
+						AutoDownload:   ps.AutoDownload,
+						SelectedTypes:  ps.SelectedTypes,
+						LastDownloaded: time.Now().Format("2006-01-02 15:04:05"),
+					}
+				} else {
+					// Keep other sets unchanged
+					newDBItem.PosterSets[i] = ps
 				}
-			} else {
-				// Keep other sets unchanged
-				newDBItem.PosterSets[i] = ps
 			}
-		}
-		Err = api.DB_InsertAllInfoIntoTables(ctx, newDBItem)
-		if Err.Message != "" {
-			logAction.AppendWarning("DB_InsertAllInfoIntoTables_error", Err.Message)
-			logAction.AppendResult("db_update_error", Err.Message)
-		} else {
-			logAction.AppendResult("db_update_success", fmt.Sprintf("DB updated successfully posterSet=%s", posterSet.PosterSet.ID))
+			Err = api.DB_InsertAllInfoIntoTables(ctx, newDBItem)
+			if Err.Message != "" {
+				logAction.AppendWarning("DB_InsertAllInfoIntoTables_error", Err.Message)
+				logAction.AppendResult("db_update_error", Err.Message)
+			} else {
+				logAction.AppendResult("db_update_success", fmt.Sprintf("DB updated successfully posterSet=%s", posterSet.PosterSet.ID))
+			}
 		}
 	}
 }
