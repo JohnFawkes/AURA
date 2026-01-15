@@ -166,11 +166,38 @@ func DecodeRequestBodyJSON(ctx context.Context, r io.ReadCloser, v any, structNa
 	if err != nil {
 		_, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Decoding request body into `%s` struct", structName), logging.LevelTrace)
 		defer logAction.Complete()
-		logAction.SetError("Failed to decode the JSON request body", fmt.Sprintf("Ensure that the JSON is correct for %s", structName),
-			map[string]any{
-				"requestBody": body,
-				"error":       err.Error(),
-			})
+
+		errorDetails := map[string]any{
+			"requestBody": string(body),
+			"error":       err.Error(),
+			"errorType":   fmt.Sprintf("%T", err),
+		}
+
+		// Enhanced error reporting for JSON errors
+		switch e := err.(type) {
+		case *json.UnmarshalTypeError:
+			errorDetails["field"] = e.Field
+			errorDetails["value"] = e.Value
+			errorDetails["type"] = e.Type.String()
+			logAction.SetError(
+				fmt.Sprintf("Type error for field '%s' in struct '%s'", e.Field, structName),
+				fmt.Sprintf("Check the type of field '%s' (expected %s, got %s)", e.Field, e.Type.String(), e.Value),
+				errorDetails,
+			)
+		case *json.SyntaxError:
+			errorDetails["offset"] = e.Offset
+			logAction.SetError(
+				"JSON syntax error",
+				fmt.Sprintf("Syntax error at offset %d in struct '%s'", e.Offset, structName),
+				errorDetails,
+			)
+		default:
+			logAction.SetError(
+				"Failed to decode the JSON request body",
+				fmt.Sprintf("Ensure that the JSON is correct for %s", structName),
+				errorDetails,
+			)
+		}
 		return *logAction.Error
 	}
 	return logging.LogErrorInfo{}
