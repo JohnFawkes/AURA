@@ -26,7 +26,7 @@ func EJ_UploadImage(ctx context.Context, title string, ratingKey string, file Po
 		posterType = "Primary"
 	}
 
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Uploading %s Image for %s to %s", posterType, title, Global_Config.MediaServer.Type), logging.LevelInfo)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Uploading %s Image for '%s' to %s", posterType, title, Global_Config.MediaServer.Type), logging.LevelInfo)
 	defer logAction.Complete()
 
 	// Make the URL
@@ -107,11 +107,11 @@ func EJ_ChangeImageIndex(ctx context.Context, title string, ratingKey string, ne
 	// Make a POST request to set the new index
 	httpResp, respBody, logErr := MakeHTTPRequest(ctx, URL, http.MethodPost, headers, 30, nil, Global_Config.MediaServer.Type)
 	if logErr.Message != "" {
-		logAction.SetError("Failed to set new image index in Emby/Jellyfin",
+		logAction.SetError("Failed to send request to set new image index in Emby/Jellyfin",
 			"Ensure the Emby/Jellyfin server is reachable and the API key is valid",
 			map[string]any{
 				"error":        logErr.Detail,
-				"responseBody": respBody,
+				"responseBody": string(respBody),
 			})
 		return *logAction.Error
 	}
@@ -119,10 +119,10 @@ func EJ_ChangeImageIndex(ctx context.Context, title string, ratingKey string, ne
 
 	if httpResp.StatusCode != 200 && httpResp.StatusCode != 204 {
 		logAction.SetError("Failed to set new image index in Emby/Jellyfin",
-			"Ensure the Emby/Jellyfin server is reachable and the API key is valid",
+			fmt.Sprintf("Bad Response Code: '%d'. Ensure the Emby/Jellyfin server is reachable and the API key is valid", httpResp.StatusCode),
 			map[string]any{
 				"error":        logErr.Detail,
-				"responseBody": respBody,
+				"responseBody": string(respBody),
 			})
 		return *logAction.Error
 	}
@@ -134,7 +134,7 @@ func EJ_ChangeImageIndex(ctx context.Context, title string, ratingKey string, ne
 }
 
 func EJ_GetCurrentImages(ctx context.Context, title string, ratingKey, status string) ([]EmbyJellyItemImagesResponse, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching %s Images for %s from %s", status, title, Global_Config.MediaServer.Type), logging.LevelInfo)
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Fetching %s Images for '%s' from %s", status, title, Global_Config.MediaServer.Type), logging.LevelInfo)
 	defer logAction.Complete()
 
 	// Make the URL
@@ -179,6 +179,8 @@ func EJ_GetCurrentImages(ctx context.Context, title string, ratingKey, status st
 		return nil, *logAction.Error
 	}
 
+	logAction.AppendResult("image_count", len(currentImages))
+	logAction.AppendResult("images", currentImages)
 	return currentImages, logging.LogErrorInfo{}
 }
 
