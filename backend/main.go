@@ -123,18 +123,18 @@ func finishPreflight() bool {
 // - Send Startup Notification
 func startRuntimeServices() {
 
-	// Preload all sections and items
-	api.GetAllSectionsAndItems()
-
-	// Preload all MediUX Users in cache
-	api.Mediux_PreloadAllUsersInCache()
-
 	// Initialize the database
 	if ok := api.DB_Init(); !ok {
 		logging.LOGGER.Error().Timestamp().Msg("Database initialization failed, terminating application.")
 		// Kill Application
 		os.Exit(1)
 	}
+
+	// Preload all sections and items
+	api.GetAllSectionsAndItems()
+
+	// Preload all MediUX Users in cache
+	api.Mediux_PreloadAllUsersInCache()
 
 	// Cron Schedule: AutoDownload (if enabled)
 	cronInstance = cron.New()
