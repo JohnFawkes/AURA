@@ -415,7 +415,7 @@ export function yamlToPosterSet(
 							Status: "",
 							Tagline: "",
 							Slug: "",
-							DateUpdated: "",
+							DateUpdated: new Date().toISOString(),
 							TVbdID: "",
 							ImdbID: "",
 							TraktID: "",
