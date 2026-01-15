@@ -300,6 +300,7 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 			actionResultMap["status"] = "skipped"
 			actionResultMap["status_reason"] = setResult.Reason
 			logAction.AppendResult(fmt.Sprintf("set_%s", dbPosterSet.PosterSetID), actionResultMap)
+			AutoDownload_UpdateDatabase(ctx, dbSavedItem, latestMediaItem, dbPosterSet, latestSet)
 			continue
 		} else {
 			actionResultMap["files_to_download"] = len(filesToDownload)
@@ -348,27 +349,7 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		}
 
 		// Update the database with the latest information
-		newDBItem := dbSavedItem
-		newDBItem.MediaItem = latestMediaItem
-		newDBItem.MediaItemJSON = ""
-		newDBItem.PosterSets = []DBPosterSetDetail{}
-		newDBItem.PosterSets = make([]DBPosterSetDetail, len(dbSavedItem.PosterSets))
-		for i, ps := range dbSavedItem.PosterSets {
-			if ps.PosterSetID == dbPosterSet.PosterSetID {
-				// Update only the set being worked on
-				newDBItem.PosterSets[i] = DBPosterSetDetail{
-					PosterSetID:    latestSet.ID,
-					PosterSet:      latestSet,
-					AutoDownload:   ps.AutoDownload,
-					SelectedTypes:  ps.SelectedTypes,
-					LastDownloaded: time.Now().Format("2006-01-02 15:04:05"),
-				}
-			} else {
-				// Keep other sets unchanged
-				newDBItem.PosterSets[i] = ps
-			}
-		}
-		Err = DB_InsertAllInfoIntoTables(ctx, newDBItem)
+		Err = AutoDownload_UpdateDatabase(ctx, dbSavedItem, latestMediaItem, dbPosterSet, latestSet)
 		if Err.Message != "" {
 			setResult.Result = "Error"
 			setResult.Reason = fmt.Sprintf("Error updating database for '%s' in set '%s' - %s", dbSavedItem.MediaItem.Title, dbPosterSet.PosterSetID, Err.Message)
@@ -421,6 +402,47 @@ func AutoDownload_CheckItem(ctx context.Context, dbSavedItem DBMediaItemWithPost
 		}
 	}
 	return result
+}
+
+func AutoDownload_UpdateMovieDatabase(ctx context.Context, dbSavedItem DBMediaItemWithPosterSets, latestMediaItem MediaItem) logging.LogErrorInfo {
+	// Update the database with the latest information
+	newDBItem := dbSavedItem
+	newDBItem.MediaItem = latestMediaItem
+	newDBItem.MediaItemJSON = "" // Clear out the JSON so it gets regenerated
+	Err := DB_InsertAllInfoIntoTables(ctx, newDBItem)
+	if Err.Message != "" {
+		return Err
+	}
+	return logging.LogErrorInfo{}
+}
+
+func AutoDownload_UpdateDatabase(ctx context.Context, dbSavedItem DBMediaItemWithPosterSets, latestMediaItem MediaItem, dbPosterSet DBPosterSetDetail, latestSet PosterSet) logging.LogErrorInfo {
+	// Update the database with the latest information
+	newDBItem := dbSavedItem
+	newDBItem.MediaItem = latestMediaItem
+	newDBItem.MediaItemJSON = ""
+	newDBItem.PosterSets = []DBPosterSetDetail{}
+	newDBItem.PosterSets = make([]DBPosterSetDetail, len(dbSavedItem.PosterSets))
+	for i, ps := range dbSavedItem.PosterSets {
+		if ps.PosterSetID == dbPosterSet.PosterSetID {
+			// Update only the set being worked on
+			newDBItem.PosterSets[i] = DBPosterSetDetail{
+				PosterSetID:    latestSet.ID,
+				PosterSet:      latestSet,
+				AutoDownload:   ps.AutoDownload,
+				SelectedTypes:  ps.SelectedTypes,
+				LastDownloaded: time.Now().Format("2006-01-02 15:04:05"),
+			}
+		} else {
+			// Keep other sets unchanged
+			newDBItem.PosterSets[i] = ps
+		}
+	}
+	Err := DB_InsertAllInfoIntoTables(ctx, newDBItem)
+	if Err.Message != "" {
+		return Err
+	}
+	return logging.LogErrorInfo{}
 }
 
 func AutoDownload_CheckMovieForKeyChanges(ctx context.Context, dbSavedItem DBMediaItemWithPosterSets) AutoDownloadResult {
@@ -530,10 +552,7 @@ func AutoDownload_CheckMovieForKeyChanges(ctx context.Context, dbSavedItem DBMed
 	}
 
 	// Update the database with the latest information
-	newDBItem := dbSavedItem
-	newDBItem.MediaItem = latestMediaItem
-	newDBItem.MediaItemJSON = "" // Clear out the JSON so it gets regenerated
-	Err = DB_InsertAllInfoIntoTables(ctx, newDBItem)
+	Err = AutoDownload_UpdateMovieDatabase(ctx, dbSavedItem, latestMediaItem)
 	if Err.Message != "" {
 		result.OverAllResult = "Error"
 		result.OverAllResultMessage = Err.Message
