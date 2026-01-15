@@ -3,10 +3,24 @@ package api
 import (
 	"aura/internal/logging"
 	"context"
+	"fmt"
 )
 
 func Plex_UpdateImageViaMediuxURL(ctx context.Context, item MediaItem, file PosterFile) logging.LogErrorInfo {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Update Image via MediUX URL", logging.LevelInfo)
+
+	var posterImageType string
+	switch file.Type {
+	case "poster":
+		posterImageType = "Poster"
+	case "backdrop":
+		posterImageType = "Backdrop"
+	case "seasonPoster", "specialSeasonPoster":
+		posterImageType = fmt.Sprintf("Season %d Poster", file.Season.Number)
+	case "titlecard":
+		posterImageType = fmt.Sprintf("S%dE%d Titlecard", file.Episode.SeasonNumber, file.Episode.EpisodeNumber)
+	}
+
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Update %s via MediUX URL", posterImageType), logging.LevelInfo)
 	defer logAction.Complete()
 
 	// Determine the itemRatingKey
