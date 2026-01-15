@@ -114,7 +114,47 @@ func DB_Init() bool {
 		}
 	}
 
+	// Check if we can vacuum the database
+	vacuumErr := DB_Vacuum(ctx)
+	if vacuumErr.Message != "" {
+		return false
+	}
+
 	return true
+}
+
+func DB_Vacuum(ctx context.Context) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "DB: VACUUM Database", logging.LevelInfo)
+	defer logAction.Complete()
+
+	// Check if freelist_count is greater than 10000
+	var freeListCount int64
+	err := db.QueryRow("PRAGMA freelist_count;").Scan(&freeListCount)
+	if err != nil {
+		logAction.SetError("Failed to get freelist_count", err.Error(), map[string]any{
+			"error": err.Error(),
+		})
+		return *logAction.Error
+	}
+
+	if freeListCount < 10000 {
+		logAction.AppendResult("freelist_count", freeListCount)
+		logAction.AppendResult("vacuum_performed", false)
+		return logging.LogErrorInfo{}
+	}
+
+	// Perform VACUUM
+	_, err = db.Exec("VACUUM;")
+	if err != nil {
+		logAction.SetError("Failed to VACUUM database", err.Error(), map[string]any{
+			"error": err.Error(),
+		})
+		return *logAction.Error
+	}
+
+	logAction.AppendResult("freelist_count", freeListCount)
+	logAction.AppendResult("vacuum_performed", true)
+	return logging.LogErrorInfo{}
 }
 
 func DB_CreateBaseTables(ctx context.Context) logging.LogErrorInfo {
