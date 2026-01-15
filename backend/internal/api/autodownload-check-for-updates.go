@@ -632,7 +632,15 @@ func AutoDownload_GetLatestMediaItemAndCheckForRatingKeyChanges(ctx context.Cont
 	// Get the latest Media Item information from the Media Server
 	latestMediaItem, Err := CallFetchItemContent(ctx, dbSavedItem.MediaItem.RatingKey, dbSavedItem.MediaItem.LibraryTitle)
 	if Err.Message != "" {
-		return MediaItem{}, false, Err
+
+		// Try and get the item from the cache
+		cacheItem, found := Global_Cache_LibraryStore.GetMediaItemFromSectionByTMDBID(dbSavedItem.MediaItem.LibraryTitle, dbSavedItem.MediaItem.TMDB_ID)
+		if !found {
+			return MediaItem{}, false, Err
+		} else {
+			latestMediaItem = *cacheItem
+			logAction.AppendResult("message", "Using cached media item data")
+		}
 	}
 
 	// If the TMDB ID and Library Title do not match, skip
