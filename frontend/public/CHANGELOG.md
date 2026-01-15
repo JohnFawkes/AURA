@@ -1,3 +1,14 @@
+## [0.9.77] - 2026-01-15
+
+### Fixed
+
+- Fixed issue where Series didn't have any Seasons/Episodes, causing panic error during AutoDownload.
+- Fixed issue where Manual Import from MediUX would not properly handle missing information.
+- Reordered startup process to ensure database is initialized before attempting to connect to external services.
+- Fixed issue where database had inflated size due to migration. Added automatic vacuuming after migration to reduce database size.
+
+---
+
 ## [0.9.76] - 2026-01-09
 
 ### Added
