@@ -6,6 +6,10 @@ import (
 
 func MS_AddedMoreSeasonsOrEpisodes(dbSavedItem, latestMediaItem MediaItem) bool {
 	// Check if the latest media item has more seasons or episodes than the saved item
+	if dbSavedItem.Series == nil || latestMediaItem.Series == nil {
+		return false
+	}
+
 	if latestMediaItem.Series.SeasonCount > dbSavedItem.Series.SeasonCount ||
 		latestMediaItem.Series.EpisodeCount > dbSavedItem.Series.EpisodeCount {
 		return true
@@ -16,6 +20,10 @@ func MS_AddedMoreSeasonsOrEpisodes(dbSavedItem, latestMediaItem MediaItem) bool 
 
 func MS_CheckEpisodePathChanges(dbSavedItem, latestMediaItem MediaItem) bool {
 	// Check if any episode paths have changed
+	if dbSavedItem.Series == nil || latestMediaItem.Series == nil {
+		return false
+	}
+
 	for _, latestSeason := range latestMediaItem.Series.Seasons {
 		var dbSeason *MediaItemSeason
 		for _, s := range dbSavedItem.Series.Seasons {
@@ -97,6 +105,10 @@ func CheckEpisodeExistsAddedAndPath(seasonNumber, episodeNumber int, dbSavedItem
 	}
 
 	// Find episode in latest
+	if latestMediaItem.Series == nil {
+		return existsInDB, existsInLatest, pathChanged
+	}
+
 	for _, season := range latestMediaItem.Series.Seasons {
 		if season.SeasonNumber == seasonNumber {
 			for _, episode := range season.Episodes {
