@@ -82,6 +82,7 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 		// This is for manual imports
 		MediuxURL = "https://api.mediux.pro"
 		assetID = strings.TrimPrefix(assetID, "---")
+		qualityParam = ""
 	} else {
 		MediuxURL = MediuxBaseURL
 	}
