@@ -1,11 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import {
-	FetchLogContentsResponse,
-	fetchLogContents,
-	postClearOldLogs,
-} from "@/services/settings-onboarding/api-logs-actions";
+import { clearLogFile } from "@/services/logs/logs-clear";
+import { FetchLogContentsResponse, fetchLogContents } from "@/services/logs/logs-get";
 import { EllipsisIcon, SaveIcon, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,10 +55,6 @@ export default function LogsPage() {
 	} = useLogsPageStore();
 
 	useEffect(() => {
-		document.title = "aura | Logs";
-	}, []);
-
-	useEffect(() => {
 		const fetchLogs = async () => {
 			try {
 				setLoading(true);
@@ -109,7 +102,7 @@ export default function LogsPage() {
 
 	const clearLogsFromToday = async () => {
 		try {
-			const response = await postClearOldLogs(true);
+			const response = await clearLogFile(true);
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to clear old logs");
 				return;
@@ -183,13 +176,8 @@ export default function LogsPage() {
 										actionsFilter.length > 0
 											? `with action${actionsFilter.length > 1 ? "s" : ""} ${actionsFilter
 													.map((act) => {
-														if (
-															act.startsWith("/api") &&
-															possibleActionsPaths[act]?.label
-														) {
-															return `"${possibleActionsPaths[act].label}"`;
-														}
-														return `"${act}"`;
+														const label = possibleActionsPaths[act]?.label;
+														return `"${label || act}"`;
 													})
 													.join(", ")}`
 											: null,
@@ -238,6 +226,13 @@ export default function LogsPage() {
 	);
 }
 
+function routeActionKey(method?: string, path?: string): string {
+	const m = (method || "").trim().toUpperCase();
+	const p = (path || "").trim();
+	if (!m || !p) return p;
+	return `${m}:${p}`;
+}
+
 function LogList({
 	logEntries,
 	possibleActionsPaths,
@@ -250,8 +245,9 @@ function LogList({
 			{logEntries.map((log, idx) => {
 				let mainLabel = "";
 				if (log.route?.path) {
-					const actionPath = possibleActionsPaths[log.route.path];
-					mainLabel = actionPath?.label || log.route.path;
+					const key = routeActionKey(log.route.method, log.route.path);
+					const actionPath = possibleActionsPaths[key] || possibleActionsPaths[log.route.path]; // fallback
+					mainLabel = actionPath?.label || key || log.route.path;
 				} else if (log.actions && log.actions.length > 0) {
 					mainLabel = log.message || log.actions[0].name || "Background Task";
 				}
