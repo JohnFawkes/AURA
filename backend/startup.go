@@ -196,7 +196,7 @@ func runWarmup() (success bool) {
 	jobs.StartJobs()
 
 	// Initialize MediUX WebSocket Listener
-	go mediux.StartWebSocketClient()
+	//go mediux.StartWebSocketClient()
 
 	success = true
 	return success
@@ -211,9 +211,6 @@ func startAPI() {
 	} else {
 		logging.LOGGER.Warn().Timestamp().Bool("notifications_enabled", config.Current.Notifications.Enabled).Bool("dev_version", strings.Contains(APP_VERSION, "dev")).Msg("App start notification not sent")
 	}
-
-	jobs.RunAutoDownloadJobNow()
-	jobs.RunCheckForRatingKeyChangesJobNow()
 
 	// Start HTTP Server
 	logging.LOGGER.Info().Timestamp().Int("port", APP_PORT).
