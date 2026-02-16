@@ -1,6 +1,6 @@
 "use client";
 
-import { postLogin } from "@/services/auth/api-auth";
+import { attemptLogin } from "@/services/auth/login";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -16,10 +16,6 @@ import { Label } from "@/components/ui/label";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
 export default function LoginPage() {
-	useEffect(() => {
-		document.title = "aura | Login";
-	}, []);
-
 	const router = useRouter();
 	const [password, setPassword] = useState("");
 	const [showPw, setShowPw] = useState(false);
@@ -34,7 +30,7 @@ export default function LoginPage() {
 		const token = localStorage.getItem("aura-auth-token");
 		if (token && token.length > 0 && token !== "null" && token !== "undefined") {
 			router.replace("/");
-		} else if (hasHydrated && status && status.currentSetup.Auth.Enabled === false) {
+		} else if (hasHydrated && status && status.current_setup.auth.enabled === false) {
 			// If onboarding is complete and auth is disabled, redirect to /
 			router.replace("/");
 		}
@@ -49,7 +45,7 @@ export default function LoginPage() {
 		}
 		try {
 			setLoading(true);
-			const resp = await postLogin(password);
+			const resp = await attemptLogin(password);
 			const token = (resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
 			if (!token) {
 				throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
