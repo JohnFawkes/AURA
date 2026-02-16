@@ -1,17 +1,18 @@
-package api
+package mediux
 
 import (
-	"aura/internal/logging"
+	"aura/config"
+	"aura/logging"
+	"aura/utils"
 	"context"
 	"fmt"
 	"net/url"
 	"path"
 	"strings"
-	"time"
 )
 
-func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, imageQuality MediuxImageQuality) (string, logging.LogErrorInfo) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Constructing MediUX Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
+func ConstructImageUrl(ctx context.Context, assetID, dateTimeString string, imageQuality ImageQuality) (imageURL string, Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("MediUX: Constructing Image URL for Asset ID '%s'", assetID), logging.LevelTrace)
 	defer logAction.Complete()
 
 	if assetID == "" {
@@ -21,35 +22,8 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 		return "", *logAction.Error
 	}
 
-	var dateTime time.Time
-	if dateTimeString == "" || dateTimeString == "0" || dateTimeString == "undefined" {
-		// Use today's date if the modified date is not provided
-		dateTime = time.Now()
-	} else {
-		// Try multiple date formats
-		var err error
-
-		// First try RFC3339 format (ISO 8601)
-		dateTime, err = time.Parse(time.RFC3339, dateTimeString)
-		if err != nil {
-			// If that fails, try the compact format (YYYYMMDDHHMMSS)
-			dateTime, err = time.Parse("20060102150405", dateTimeString)
-			if err != nil {
-				// Try Go's time.String() format
-				dateTime, err = time.Parse("2006-01-02 15:04:05 -0700 MST", dateTimeString)
-				if err != nil {
-					// If all formats fail, log the error but use current time as fallback
-					logAction.AppendWarning("message", "Failed to parse dateTimeString, defaulting to current time")
-					logAction.AppendWarning("dateTimeString", dateTimeString)
-					logAction.AppendWarning("error", err.Error())
-					dateTime = time.Now()
-				}
-			}
-		}
-	}
-
 	// Check quality is set to "original" or "thumb"
-	if imageQuality != MediuxImageQualityOriginal && imageQuality != MediuxImageQualityThumb && imageQuality != MediuxImageQualityOptimized {
+	if imageQuality != ImageQualityOriginal && imageQuality != ImageQualityThumb && imageQuality != ImageQualityOptimized {
 		logAction.SetError("Invalid quality parameter",
 			"Quality must be either 'original', 'thumb', or 'optimized'.",
 			map[string]any{
@@ -59,20 +33,21 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 	}
 
 	// Format the date to YYYYMMDDHHMMSS
+	dateTime := utils.ConvertDateStringToTime(dateTimeString)
 	dateTimeFormatted := dateTime.Format("20060102150405")
 
 	qualityParam := ""
 	switch imageQuality {
-	case MediuxImageQualityThumb:
+	case ImageQualityThumb:
 		qualityParam = "thumb"
-	case MediuxImageQualityOptimized:
+	case ImageQualityOptimized:
 		qualityParam = "jpg"
-	case MediuxImageQualityOriginal:
+	case ImageQualityOriginal:
 		// Leave qualityParam as empty for original
 	}
 
 	// Override qualityParam based on global config if it is set to optimized
-	if imageQuality != MediuxImageQualityThumb && Global_Config.Mediux.DownloadQuality == "optimized" {
+	if imageQuality != ImageQualityThumb && config.Current.Mediux.DownloadQuality == "optimized" {
 		qualityParam = "jpg"
 	}
 
@@ -80,11 +55,11 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 	if strings.HasPrefix(assetID, "---") {
 		// Special handling for assets starting with "---"
 		// This is for manual imports
-		MediuxURL = "https://api.mediux.pro"
+		MediuxURL = MediuxPublicURL
 		assetID = strings.TrimPrefix(assetID, "---")
 		qualityParam = ""
 	} else {
-		MediuxURL = MediuxBaseURL
+		MediuxURL = MediuxApiURL
 	}
 
 	// Construct the MediUX URL
@@ -111,7 +86,7 @@ func Mediux_GetImageURL(ctx context.Context, assetID, dateTimeString string, ima
 	return URL, logging.LogErrorInfo{}
 }
 
-func Mediux_GetImageURLFromSrc(src string) string {
+func GetImageURLFromSrc(src string) string {
 	if src == "" {
 		return ""
 	}
@@ -120,10 +95,10 @@ func Mediux_GetImageURLFromSrc(src string) string {
 	if strings.HasPrefix(src, "---") {
 		// Special handling for assets starting with "---"
 		// This is for manual imports
-		MediuxURL = "https://api.mediux.pro"
+		MediuxURL = MediuxPublicURL
 		src = strings.TrimPrefix(src, "---")
 	} else {
-		MediuxURL = MediuxBaseURL
+		MediuxURL = MediuxApiURL
 	}
 
 	// Construct the MediUX URL
