@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchCollectionItems } from "@/services/mediaserver/api-mediaserver-fetch-collection-items";
+import { getCollectionItems } from "@/services/mediaserver/collections";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -25,18 +25,16 @@ import { APIResponse } from "@/types/api/api-response";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface CollectionItem {
-	RatingKey: string;
-	Title: string;
-	Summary?: string;
-	ChildCount: number;
-	MediaItems: MediaItem[];
-	LibraryTitle?: string;
+	rating_key: string;
+	index: string;
+	title: string;
+	summary?: string;
+	child_count: number;
+	media_items: MediaItem[];
+	library_title?: string;
 }
 
 export default function CollectionsPage() {
-	useEffect(() => {
-		document.title = "aura | Collections";
-	}, []);
 	const isMounted = useRef(false);
 
 	// -------------------------------
@@ -92,7 +90,7 @@ export default function CollectionsPage() {
 	}, [sortOption, setSortOption, setSortOrder]);
 
 	// Fetch data from cache or API
-	const getCollectionItems = useCallback(
+	const fetchCollections = useCallback(
 		async (useCache: boolean) => {
 			if (isMounted.current && useCache) return;
 			setError(null);
@@ -138,7 +136,7 @@ export default function CollectionsPage() {
 					}
 				}
 
-				const response = await fetchCollectionItems();
+				const response = await getCollectionItems();
 				if (response.status === "error") {
 					setError(response);
 					setFullyLoaded(true);
@@ -174,9 +172,9 @@ export default function CollectionsPage() {
 	);
 
 	useEffect(() => {
-		getCollectionItems(true);
+		fetchCollections(true);
 		isMounted.current = true;
-	}, [getCollectionItems]);
+	}, [fetchCollections]);
 
 	useEffect(() => {
 		if (searchQuery !== prevSearchQuery.current) {
@@ -191,33 +189,33 @@ export default function CollectionsPage() {
 			let items = [...collectionItems];
 
 			// Filter out items with no ChildCount
-			items = items.filter((item) => item.ChildCount > 0);
+			items = items.filter((item) => item.child_count > 0);
 
 			// Sort items by Title
 			if (sortOption === "title") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => a.Title.localeCompare(b.Title));
+					items.sort((a, b) => a.title.localeCompare(b.title));
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => b.Title.localeCompare(a.Title));
+					items.sort((a, b) => b.title.localeCompare(a.title));
 				}
 			} else if (sortOption === "numberOfItems") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => a.ChildCount - b.ChildCount);
+					items.sort((a, b) => a.child_count - b.child_count);
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => b.ChildCount - a.ChildCount);
+					items.sort((a, b) => b.child_count - a.child_count);
 				}
 			}
 
 			// Filter by Libraries
 			if (filteredLibraries.length > 0) {
-				items = items.filter((item) => item.LibraryTitle && filteredLibraries.includes(item.LibraryTitle));
+				items = items.filter((item) => item.library_title && filteredLibraries.includes(item.library_title));
 			}
 
 			// Filter out items by search
 			const filteredItems = searchItems(items, searchQuery, {
-				getTitle: (item) => item.Title,
-				getLibraryTitle: (item) => item.LibraryTitle,
-				getID: (item) => item.RatingKey,
+				getTitle: (item) => item.title,
+				getLibraryTitle: (item) => item.library_title,
+				getID: (item) => item.rating_key,
 			});
 
 			// Store the filtered and sorted items in local storage
@@ -239,7 +237,7 @@ export default function CollectionsPage() {
 					<div className="w-full flex items-center justify-center mb-4 mt-4">
 						<FilterCollections
 							librarySections={[
-								...new Set(collectionItems.map((item) => item.LibraryTitle || "Unknown")),
+								...new Set(collectionItems.map((item) => item.library_title || "Unknown")),
 							]}
 							filteredLibraries={filteredLibraries}
 							setFilteredLibraries={setFilteredLibraries}
@@ -266,7 +264,7 @@ export default function CollectionsPage() {
 								/>
 							</div>
 						) : (
-							paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} item={item} />)
+							paginatedItems.map((item) => <HomeMediaItemCard key={item.rating_key} item={item} />)
 						)}
 					</ResponsiveGrid>
 
@@ -281,7 +279,7 @@ export default function CollectionsPage() {
 					/>
 
 					{/* Refresh Button */}
-					<RefreshButton onClick={() => getCollectionItems(false)} />
+					<RefreshButton onClick={() => fetchCollections(false)} />
 				</div>
 			) : (
 				<Loader className="mt-20" message="Loading Collection Items" />
