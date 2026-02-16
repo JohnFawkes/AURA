@@ -2,8 +2,7 @@
 
 import { CollectionItem } from "@/app/collections/page";
 import { formatDownloadSize } from "@/helper/format-download-size";
-import { patchDownloadCollectionImageAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
-import { CollectionSet } from "@/services/mediaserver/api-mediaserver-fetch-collection-children";
+import { downloadImageFileForCollectionItem } from "@/services/downloads/download-collection-image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Download, LoaderIcon, User, X } from "lucide-react";
 import { z } from "zod";
@@ -37,11 +36,11 @@ import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { PosterFile } from "@/types/media-and-posters/poster-sets";
+import { ImageFile, SetRef } from "@/types/media-and-posters/sets";
 
 export interface CollectionsDownloadModalProps {
-	collectionItem: CollectionItem;
-	collectionItemSet: CollectionSet;
+	item: CollectionItem;
+	set: SetRef;
 }
 
 const downloadSchema = z.object({
@@ -49,7 +48,7 @@ const downloadSchema = z.object({
 	backdrop: z.boolean(),
 });
 
-const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ collectionItem, collectionItemSet }) => {
+const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ item, set }) => {
 	const [isMounted, setIsMounted] = useState(false);
 
 	// Cancel Button Text
@@ -71,8 +70,8 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 	// User Preferences
 	const { downloadDefaults } = useUserPreferencesStore();
 
-	const posterImage = collectionItemSet.Posters?.[0] || null;
-	const backdropImage = collectionItemSet.Backdrops?.[0] || null;
+	const posterImage = set.images.find((img) => img.type === "collection-poster") || null;
+	const backdropImage = set.images.find((img) => img.type === "collection-backdrop") || null;
 
 	const form = useForm({
 		resolver: zodResolver(downloadSchema),
@@ -101,8 +100,8 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 
 	const sizeOfImagesSelected = useMemo(() => {
 		let size = 0;
-		if (selectedValues.poster && posterImage) size += posterImage.FileSize || 0;
-		if (selectedValues.backdrop && backdropImage) size += backdropImage.FileSize || 0;
+		if (selectedValues.poster && posterImage) size += posterImage.file_size || 0;
+		if (selectedValues.backdrop && backdropImage) size += backdropImage.file_size || 0;
 		return formatDownloadSize(size);
 	}, [selectedValues.poster, selectedValues.backdrop, posterImage, backdropImage]);
 
@@ -156,7 +155,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 	const downloadImageFileAndApply = async (
 		imageType: "poster" | "backdrop",
 		collectionItem: CollectionItem,
-		posterImage: PosterFile
+		imageFile: ImageFile
 	) => {
 		let isDone = false;
 		let interval: NodeJS.Timeout | undefined; // Declare interval here
@@ -178,11 +177,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 				}
 			}, 50);
 
-			const response = await patchDownloadCollectionImageAndUpdateMediaServer(
-				imageType,
-				collectionItem,
-				posterImage
-			);
+			const response = await downloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
 			if (response.status === "error") {
 				throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
 			}
@@ -230,8 +225,8 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 
 			log("INFO", "Collections Download Modal", "Debug Info", "Form submitted with data:", {
 				data,
-				collectionItem,
-				collectionItemSet,
+				item,
+				set,
 			});
 			log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
 			updateProgressValue(1);
@@ -242,11 +237,11 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 			progressIncrementRef.current = 95 / (totalItemsToDownload * 2); // Multiply by 2 for start and end progress
 
 			if (data.poster && posterImage) {
-				await downloadImageFileAndApply("poster", collectionItem, posterImage);
+				await downloadImageFileAndApply("poster", item, posterImage);
 			}
 
 			if (data.backdrop && backdropImage) {
-				await downloadImageFileAndApply("backdrop", collectionItem, backdropImage);
+				await downloadImageFileAndApply("backdrop", item, backdropImage);
 			}
 
 			updateProgressValue(100);
@@ -261,8 +256,8 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 
 	const logInfoForPage = () => {
 		log("INFO", "Collections Download Modal", "Debug Info", "Rendering with props:", {
-			collectionItem,
-			collectionItemSet,
+			item,
+			set,
 			posterImage,
 			backdropImage,
 			downloadDefaults,
@@ -286,34 +281,25 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
 				>
 					<DialogHeader>
-						<DialogTitle onClick={logInfoForPage}>{collectionItemSet.Title}</DialogTitle>
+						<DialogTitle onClick={logInfoForPage}>{set.title}</DialogTitle>
 						<DialogDescription>
 							<div className="flex items-center justify-center sm:justify-start">
 								<Avatar className="rounded-lg mr-1 w-4 h-4">
 									<AvatarImage
-										src={`/api/mediux/avatar-image?username=${collectionItemSet.User.Name}`}
+										src={`/api/images/mediux/avatar?username=${set.user_created}`}
 										className="w-4 h-4"
 									/>
 									<AvatarFallback className="">
 										<User className="w-4 h-4" />
 									</AvatarFallback>
 								</Avatar>
-								<Link href={`/user/${collectionItemSet.User.Name}`} className="hover:underline">
-									{collectionItemSet.User.Name}
+								<Link href={`/user/${set.user_created}`} className="hover:underline">
+									{set.user_created}
 								</Link>
 							</div>
 						</DialogDescription>
-						<DialogDescription>Library: {collectionItem.LibraryTitle}</DialogDescription>
-						<DialogDescription>
-							<Link
-								href={"/"}
-								className="hover:text-primary transition-colors text-sm text-muted-foreground"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								Collection ID: {collectionItemSet.ID}
-							</Link>
-						</DialogDescription>
+						<DialogDescription>Library: {item.library_title}</DialogDescription>
+						<DialogDescription>Collection ID: {set.id}</DialogDescription>
 					</DialogHeader>
 
 					<Form {...form}>
@@ -332,6 +318,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 												{posterImage && (
 													<AssetImage
 														image={posterImage}
+														imageType="mediux"
 														aspect="poster"
 														className="w-32 h-auto mt-2 rounded shadow"
 													/>
@@ -353,6 +340,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ col
 												{backdropImage && (
 													<AssetImage
 														image={backdropImage}
+														imageType="mediux"
 														aspect="backdrop"
 														className="w-full"
 													/>
