@@ -1,18 +1,15 @@
-package api
+package migration
 
 import (
-	"aura/internal/logging"
+	"aura/config"
+	"aura/logging"
 	"fmt"
 	"os"
 	"path"
 )
 
-func DB_Migration_CreateWarningFile(version int, warning logging.LogErrorInfo) {
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "/config"
-	}
-	filePath := path.Join(configPath, fmt.Sprintf("migration_warning_v%d.txt", version))
+func addToWarningFile(version int, warning logging.LogErrorInfo) {
+	filePath := path.Join(config.ConfigPath, fmt.Sprintf("migration_warning_v%d.txt", version))
 
 	// Create the file if it doesn't exist, else append to it
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
