@@ -1,19 +1,20 @@
-package api
+package config
 
 import (
-	"aura/internal/logging"
+	"aura/logging"
 	"context"
 )
 
 func (config *Config) PrintDetails() {
-	ctx, ld := logging.CreateLoggingContext(context.Background(), "Config - Print Details")
+	ctx, ld := logging.CreateLoggingContext(context.Background(), "Preflight - Print Details")
 	logAction := ld.AddAction("Print Config Details", logging.LevelDebug)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 	defer logAction.Complete()
 
 	event := logging.LOGGER.Debug() // default level
 
-	sanitizedConfig := config.Sanitize(ctx)
+	// Sanitize the config before printing
+	sanitizedConfig := config.SanitizeConfig(ctx)
 
 	event.Timestamp().
 		Interface("Authentication Details", sanitizedConfig.Auth).

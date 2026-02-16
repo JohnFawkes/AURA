@@ -1,7 +1,7 @@
-package api
+package config
 
 import (
-	"aura/internal/logging"
+	"aura/logging"
 	"context"
 	"os"
 	"path"
@@ -9,27 +9,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func (config *Config) SaveToFile(ctx context.Context) logging.LogErrorInfo {
+func (config *Config) Save(ctx context.Context) (Err logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Saving Config to File", logging.LevelDebug)
 	defer logAction.Complete()
 
-	// Sub-action: Determine config path
-	subActionDeterminePath := logAction.AddSubAction("Determine Config Path", logging.LevelTrace)
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "/config"
-	}
-	yamlFile := path.Join(configPath, "config.yaml")
-	if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
-		yamlFile = path.Join(configPath, "config.yml")
-		if _, err := os.Stat(yamlFile); os.IsNotExist(err) {
-			// If neither file exists, default to config.yaml
-			yamlFile = path.Join(configPath, "config.yaml")
-		}
-	}
-	subActionDeterminePath.Complete()
-
-	// Clear the UserID before saving. This is done because we don't want to save this. We want this to be generated on startup.
+	// Clear the User ID before saving
+	// This is done so that it is loaded on startup
 	config.MediaServer.UserID = ""
 
 	// Sub-action: Marshal config to YAML
@@ -44,7 +29,7 @@ func (config *Config) SaveToFile(ctx context.Context) logging.LogErrorInfo {
 
 	// Sub-action: Write config to file
 	subActionWrite := logAction.AddSubAction("Write Config to File", logging.LevelTrace)
-	if writeErr := os.WriteFile(yamlFile, data, 0644); writeErr != nil {
+	if writeErr := os.WriteFile(path.Join(ConfigPath, "config.yaml"), data, 0644); writeErr != nil {
 		subActionWrite.SetError("Failed to write config to file", writeErr.Error(), nil)
 		logAction.Status = logging.StatusError
 		return *subActionWrite.Error
