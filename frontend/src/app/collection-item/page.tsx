@@ -4,11 +4,16 @@ import CollectionsDownloadModal from "@/app/collection-item/collection-download-
 import { CollectionItem } from "@/app/collections/page";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
+import { getCollectionItemContent } from "@/services/mediaserver/collection-details";
 import {
-	CollectionSet,
-	fetchCollectionChildrenAndPosters,
-} from "@/services/mediaserver/api-mediaserver-fetch-collection-children";
-import { ArrowDownAZ, ArrowDownZA, CalendarArrowDown, CalendarArrowUp, User } from "lucide-react";
+	ArrowDownAZ,
+	ArrowDownZA,
+	CalendarArrowDown,
+	CalendarArrowUp,
+	ChartBarDecreasing,
+	ChartBarIncreasing,
+	User,
+} from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -35,6 +40,7 @@ import { useCollectionItemPageStore } from "@/lib/stores/page-store-collection-i
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 
 import { APIResponse } from "@/types/api/api-response";
+import { SetRef } from "@/types/media-and-posters/sets";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 export default function CollectionItemPage() {
@@ -46,8 +52,8 @@ export default function CollectionItemPage() {
 
 	// Main Collection Item State
 	const [collectionItem, setCollectionItem] = useState<CollectionItem | null>(null);
-	const [collectionItemSets, setCollectionItemSets] = useState<CollectionSet[]>([]);
-	const [filteredCollectionItemSets, setFilteredCollectionItemSets] = useState<CollectionSet[]>([]);
+	const [collectionItemSets, setCollectionItemSets] = useState<SetRef[]>([]);
+	const [filteredCollectionItemSets, setFilteredCollectionItemSets] = useState<SetRef[]>([]);
 
 	// User Follows/Hides States
 	const [userFollows, setUserFollows] = useState<MediuxUserInfo[]>([]);
@@ -74,16 +80,9 @@ export default function CollectionItemPage() {
 	// Collections Page Store (for adjacent items)
 	const { setNextCollectionItem, setPreviousCollectionItem, getAdjacentCollectionItem } = useCollectionsPageStore();
 
-	// Set document title
-	useEffect(() => {
-		const rawTitle = collectionItem?.Title || partialCollectionItem?.Title || "Collection Item";
-		const title = rawTitle && !rawTitle.toLowerCase().includes("collection") ? `${rawTitle} Collection` : rawTitle;
-		document.title = `aura | ${title}`;
-	}, [collectionItem?.Title, partialCollectionItem?.Title]);
-
 	// Set the default sort order and option on mount
 	useEffect(() => {
-		if (sortOption !== "dateUpdated" && sortOption !== "username") {
+		if (sortOption !== "dateUpdated" && sortOption !== "username" && sortOption !== "popularity") {
 			setSortOption("dateUpdated");
 			setSortOrder("desc");
 		}
@@ -116,15 +115,15 @@ export default function CollectionItemPage() {
 		const fetchFullCollectionItem = async () => {
 			try {
 				setResponseLoading(true);
-				setLoadingMessage(`Loading Collection Item: ${partialCollectionItem.Title}`);
+				setLoadingMessage(`Loading Collection Item: ${partialCollectionItem.title}`);
 				log(
 					"INFO",
 					"Collection Item Page",
 					"Fetch",
-					`Fetching full collection item for: ${partialCollectionItem.Title} (${partialCollectionItem.RatingKey})`
+					`Fetching full collection item for: ${partialCollectionItem.title} (${partialCollectionItem.rating_key})`
 				);
 
-				const resp = await fetchCollectionChildrenAndPosters(partialCollectionItem);
+				const resp = await getCollectionItemContent(partialCollectionItem);
 				if (resp.status === "error") {
 					setError(resp);
 					setHasError(true);
@@ -141,7 +140,7 @@ export default function CollectionItemPage() {
 
 				const errorResponse = resp.data?.error;
 				const collectionItem = resp.data.collection_item || null;
-				const collectionItemSets = resp.data.collection_sets || [];
+				const collectionItemSets = resp.data.sets || [];
 				const userFollowHide = resp.data.user_follow_hide || null;
 
 				log("INFO", "Collection Item Page", "Fetch", "Collection Item Response", { collectionItem });
@@ -163,7 +162,7 @@ export default function CollectionItemPage() {
 						error: {
 							message:
 								errorResponse?.message ||
-								`No collection sets found for '${partialCollectionItem.Title}'`,
+								`No collection sets found for '${partialCollectionItem.title}'`,
 							help: errorResponse?.help || "",
 							detail: errorResponse?.detail ?? undefined,
 							function: errorResponse?.function || "Unknown",
@@ -174,8 +173,8 @@ export default function CollectionItemPage() {
 
 				if (userFollowHide && Array.isArray(userFollowHide)) {
 					for (const info of userFollowHide) {
-						if (info.Follow) setUserFollows((prev) => [...prev, info]);
-						if (info.Hide) setUserHides((prev) => [...prev, info]);
+						if (info.follow) setUserFollows((prev) => [...prev, info]);
+						if (info.hide) setUserHides((prev) => [...prev, info]);
 					}
 				} else {
 					setUserFollows([]);
@@ -212,31 +211,42 @@ export default function CollectionItemPage() {
 
 		let filtered = collectionItemSets.filter((set) => {
 			if (showHiddenUsers) return true;
-			const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
+			const isHidden = userHides.some((hide) => hide.username === set.user_created);
 			return !isHidden;
 		});
 
 		filtered.sort((a, b) => {
-			const isAFollow = userFollows.some((follow) => follow.Username === a.User.Name);
-			const isBFollow = userFollows.some((follow) => follow.Username === b.User.Name);
+			const isAFollow = userFollows.some((follow) => follow.username === a.user_created);
+			const isBFollow = userFollows.some((follow) => follow.username === b.user_created);
 			if (isAFollow && !isBFollow) return -1;
 			if (!isAFollow && isBFollow) return 1;
 
 			if (sortOption === "username") {
 				// If users are the same, sort by date updated
-				if (a.User.Name === b.User.Name) {
-					const dateA = new Date(a.Posters[0]?.Modified || "");
-					const dateB = new Date(b.Posters[0]?.Modified || "");
+				if (a.user_created === b.user_created) {
+					const dateA = new Date(a.date_updated || a.date_created || "");
+					const dateB = new Date(b.date_updated || b.date_created || "");
 					return dateB.getTime() - dateA.getTime();
 				}
 				// Otherwise, sort by user name
 				return sortOrder === "asc"
-					? a.User.Name.localeCompare(b.User.Name)
-					: b.User.Name.localeCompare(a.User.Name);
+					? a.user_created.localeCompare(b.user_created)
+					: b.user_created.localeCompare(a.user_created);
 			}
 
-			const dateA = new Date(a.Posters[0]?.Modified || "");
-			const dateB = new Date(b.Posters[0]?.Modified || "");
+			if (sortOption === "popularity") {
+				const aPopularity = a.popularity || 0;
+				const bPopularity = b.popularity || 0;
+				if (aPopularity === bPopularity) {
+					const dateA = new Date(a.date_updated || a.date_created || "");
+					const dateB = new Date(b.date_updated || b.date_created || "");
+					return dateB.getTime() - dateA.getTime();
+				}
+				return sortOrder === "asc" ? aPopularity - bPopularity : bPopularity - aPopularity;
+			}
+
+			const dateA = new Date(a.date_updated || a.date_created || "");
+			const dateB = new Date(b.date_updated || b.date_created || "");
 			if (sortOption === "dateUpdated") {
 				return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
 			}
@@ -263,9 +273,9 @@ export default function CollectionItemPage() {
 		if (!userHides || userHides.length === 0) return 0;
 		const uniqueHiddenUsers = new Set<string>();
 		collectionItemSets.forEach((set) => {
-			const isHidden = userHides.some((hide) => hide.Username === set.User.Name);
+			const isHidden = userHides.some((hide) => hide.username === set.user_created);
 			if (isHidden) {
-				uniqueHiddenUsers.add(set.User.Name);
+				uniqueHiddenUsers.add(set.user_created);
 			}
 		});
 		return uniqueHiddenUsers.size;
@@ -274,9 +284,9 @@ export default function CollectionItemPage() {
 	// 5. Compute adjacent items when collectionItem changes
 	useEffect(() => {
 		if (!collectionItem) return;
-		if (!collectionItem?.RatingKey) return;
-		setNextCollectionItem(getAdjacentCollectionItem(collectionItem.RatingKey, "next"));
-		setPreviousCollectionItem(getAdjacentCollectionItem(collectionItem.RatingKey, "previous"));
+		if (!collectionItem?.rating_key) return;
+		setNextCollectionItem(getAdjacentCollectionItem(collectionItem.rating_key, "next"));
+		setPreviousCollectionItem(getAdjacentCollectionItem(collectionItem.rating_key, "previous"));
 	}, [getAdjacentCollectionItem, collectionItem, setNextCollectionItem, setPreviousCollectionItem]);
 
 	const handleShowHiddenUsers = () => {
@@ -336,7 +346,7 @@ export default function CollectionItemPage() {
 	return (
 		<>
 			<DimmedBackground
-				backdropURL={`/api/mediaserver/image?ratingKey=${collectionItem?.RatingKey}&imageType=backdrop&cb=${imageVersion}`}
+				backdropURL={`/api/images/media/collection?rating_key=${collectionItem?.rating_key}&image_type=backdrop&cb=${imageVersion}`}
 			/>
 
 			<div className="p-4 lg:p-6">
@@ -388,6 +398,13 @@ export default function CollectionItemPage() {
 												ascIcon: <ArrowDownAZ />,
 												descIcon: <ArrowDownZA />,
 												type: "string",
+											},
+											{
+												value: "popularity",
+												label: "Popularity",
+												ascIcon: <ChartBarIncreasing />,
+												descIcon: <ChartBarDecreasing />,
+												type: "number" as const,
 											},
 										]}
 										sortOption={sortOption}
@@ -457,7 +474,7 @@ export default function CollectionItemPage() {
 							<ResponsiveGrid size="regular">
 								{filteredCollectionItemSets.map((set) => (
 									<div
-										key={set.ID}
+										key={set.id}
 										className="relative flex flex-col items-center p-2 border rounded-md"
 										style={{
 											background: "oklch(0.16 0.0202 282.55)",
@@ -468,14 +485,11 @@ export default function CollectionItemPage() {
 										<div className="relative w-full mb-1">
 											{/* Download Button - absolute top right */}
 											<div className="absolute top-0 right-0 z-10">
-												<CollectionsDownloadModal
-													collectionItem={collectionItem}
-													collectionItemSet={set}
-												/>
+												<CollectionsDownloadModal item={collectionItem} set={set} />
 											</div>
 											{/* Set Name */}
 											<P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
-												{set.Title}
+												{set.title}
 											</P>
 										</div>
 
@@ -484,7 +498,7 @@ export default function CollectionItemPage() {
 											<div className="flex items-center gap-1">
 												<Avatar className="rounded-lg mr-1 w-4 h-4">
 													<AvatarImage
-														src={`/api/mediux/avatar-image?username=${set.User.Name}`}
+														src={`/api/images/mediux/avatar?username=${set.user_created}`}
 														className="w-4 h-4"
 													/>
 													<AvatarFallback className="">
@@ -492,11 +506,11 @@ export default function CollectionItemPage() {
 													</AvatarFallback>
 												</Avatar>
 												<Link
-													href={`/user/${set.User.Name}`}
+													href={`/user/${set.user_created}`}
 													className="text-sm hover:text-primary cursor-pointer underline truncate"
 													style={{ wordBreak: "break-word" }}
 												>
-													{set.User.Name}
+													{set.user_created}
 												</Link>
 											</div>
 										</div>
@@ -505,23 +519,31 @@ export default function CollectionItemPage() {
 										<Lead className="text-sm text-muted-foreground w-full mb-2">
 											Last Update:{" "}
 											{formatLastUpdatedDate(
-												set.Posters[0]?.Modified || "",
-												set.Backdrops[0]?.Modified || ""
+												set.date_updated,
+												set.date_created || set.images[0]?.modified || ""
 											)}
 										</Lead>
 
 										{/* Poster */}
-										{set.Posters[0] && (
+										{set.images.find((image) => image.type === "collection-poster") && (
 											<AssetImage
-												image={set.Posters[0]}
+												image={set.images.find((image) => image.type === "collection-poster")!}
+												imageType="mediux"
 												aspect="poster"
 												className="w-full mb-2"
 											/>
 										)}
 
 										{/* Backdrop */}
-										{set.Backdrops[0] && (
-											<AssetImage image={set.Backdrops[0]} aspect="backdrop" className="w-full" />
+										{set.images.find((image) => image.type === "collection-backdrop") && (
+											<AssetImage
+												image={
+													set.images.find((image) => image.type === "collection-backdrop")!
+												}
+												imageType="mediux"
+												aspect="backdrop"
+												className="w-full"
+											/>
 										)}
 									</div>
 								))}
