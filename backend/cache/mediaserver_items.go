@@ -1,6 +1,7 @@
-package api
+package cache
 
 import (
+	"aura/models"
 	"sort"
 	"strconv"
 	"strings"
@@ -8,29 +9,31 @@ import (
 )
 
 // ---   Cache Global Variables (Backend Library Cache) --- ---
-var Global_Cache_LibraryStore *LibraryCache
+var LibraryStore *MediaServerLibraryCache
 
-type LibraryCache struct {
-	sections map[string]*LibrarySection // Key: Library Title
-	mu       sync.RWMutex
+type MediaServerLibraryCache struct {
+	sections       map[string]*models.LibrarySection // Key: Library Title
+	mu             sync.RWMutex
+	LastFullUpdate int64
 }
 
 // NewLibraryCache creates a new LibraryCache instance
-func Cache_NewLibraryCache() *LibraryCache {
-	return &LibraryCache{
-		sections: make(map[string]*LibrarySection),
+func Cache_NewLibraryCache() *MediaServerLibraryCache {
+	return &MediaServerLibraryCache{
+		sections:       make(map[string]*models.LibrarySection),
+		LastFullUpdate: 0,
 	}
 }
 
 func init() {
-	Global_Cache_LibraryStore = Cache_NewLibraryCache()
+	LibraryStore = Cache_NewLibraryCache()
 }
 
 // UpdateSection updates or adds a LibrarySection in the cache.
 // If the section already exists, its metadata and media items are updated.
 // New media items are appended to the section.
 // If the section does not exist, it is added to the cache.
-func (c *LibraryCache) UpdateSection(section *LibrarySection) {
+func (c *MediaServerLibraryCache) UpdateSection(section *models.LibrarySection) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -43,13 +46,13 @@ func (c *LibraryCache) UpdateSection(section *LibrarySection) {
 		existing.Path = section.Path
 
 		// Create a map of existing items for O(1) lookup
-		existingItems := make(map[string]*MediaItem)
+		existingItems := make(map[string]*models.MediaItem)
 		for i := range existing.MediaItems {
 			existingItems[existing.MediaItems[i].TMDB_ID] = &existing.MediaItems[i]
 		}
 
 		// Update existing items and collect new ones
-		var newItems []MediaItem
+		var newItems []models.MediaItem
 		for _, newItem := range section.MediaItems {
 			if existingItem, found := existingItems[newItem.TMDB_ID]; found {
 				// Update existing item
@@ -70,14 +73,14 @@ func (c *LibraryCache) UpdateSection(section *LibrarySection) {
 }
 
 // UpdateMediaItem updates a specific media item in a section
-func (c *LibraryCache) UpdateMediaItem(sectionTitle string, item *MediaItem) {
+func (c *MediaServerLibraryCache) UpdateMediaItem(sectionTitle string, item *models.MediaItem) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	// Check if section exists
 	if section, exists := c.sections[sectionTitle]; exists {
 		// Create a map of existing items for O(1) lookup
-		existingItems := make(map[string]*MediaItem)
+		existingItems := make(map[string]*models.MediaItem)
 		for i := range section.MediaItems {
 			existingItems[section.MediaItems[i].TMDB_ID] = &section.MediaItems[i]
 		}
@@ -92,20 +95,56 @@ func (c *LibraryCache) UpdateMediaItem(sectionTitle string, item *MediaItem) {
 	}
 }
 
+func (c *MediaServerLibraryCache) UpdateMediaItemDBSavedSets(sectionTitle string, item *models.MediaItem, dbSavedSets []models.DBSavedSet) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check if section exists
+	if section, exists := c.sections[sectionTitle]; exists {
+		// Create a map of existing items for O(1) lookup
+		existingItems := make(map[string]*models.MediaItem)
+		for i := range section.MediaItems {
+			existingItems[section.MediaItems[i].TMDB_ID] = &section.MediaItems[i]
+		}
+		if existingItem, found := existingItems[item.TMDB_ID]; found {
+			// Update existing item
+			existingItem.DBSavedSets = dbSavedSets
+		}
+	}
+}
+
 // GetSectionByTitle retrieves a section by Title
-func (c *LibraryCache) GetSectionByTitle(title string) (*LibrarySection, bool) {
+func (c *MediaServerLibraryCache) GetSectionByTitle(title string) (*models.LibrarySection, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	section, exists := c.sections[title]
 	return section, exists
 }
 
-// GetAllSectionsSortedByTitle returns all sections sorted by Title
-func (c *LibraryCache) GetAllSectionsSortedByTitle() []*LibrarySection {
+func (c *MediaServerLibraryCache) GetRatingKeyByTMDBID(libraryTitle, tmdbID string) (string, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	sections := make([]*LibrarySection, 0, len(c.sections))
+	section, exists := c.sections[libraryTitle]
+	if !exists {
+		return "", false
+	}
+
+	for _, item := range section.MediaItems {
+		if item.TMDB_ID == tmdbID {
+			return item.RatingKey, true
+		}
+	}
+
+	return "", false
+}
+
+// GetAllSectionsSortedByTitle returns all sections sorted by Title
+func (c *MediaServerLibraryCache) GetAllSectionsSortedByTitle() []*models.LibrarySection {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	sections := make([]*models.LibrarySection, 0, len(c.sections))
 	for _, section := range c.sections {
 		sections = append(sections, section)
 	}
@@ -118,30 +157,30 @@ func (c *LibraryCache) GetAllSectionsSortedByTitle() []*LibrarySection {
 }
 
 // RemoveSectionByTitle removes a section from the cache by Title
-func (c *LibraryCache) RemoveSectionByTitle(title string) {
+func (c *MediaServerLibraryCache) RemoveSectionByTitle(title string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.sections, title)
 }
 
 // ClearAllSections removes all sections from the cache
-func (c *LibraryCache) ClearAllSections() {
+func (c *MediaServerLibraryCache) ClearAllSections() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.sections = make(map[string]*LibrarySection)
+	c.sections = make(map[string]*models.LibrarySection)
 }
 
 // GetMediaItemFromSectionByTMDBID retrieves a media item by TMDB ID from a specific section
-func (c *LibraryCache) GetMediaItemFromSectionByTMDBID(sectionTitle, tmdbID string) (*MediaItem, bool) {
+func (c *MediaServerLibraryCache) GetMediaItemFromSectionByTMDBID(sectionTitle, tmdbID string) (*models.MediaItem, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	section, exists := c.sections[sectionTitle]
 	if !exists {
-		return &MediaItem{}, false
+		return &models.MediaItem{}, false
 	}
 
-	var newestItem *MediaItem
+	var newestItem *models.MediaItem
 	for _, item := range section.MediaItems {
 		if item.TMDB_ID == tmdbID {
 			newestItem = &item
@@ -152,38 +191,79 @@ func (c *LibraryCache) GetMediaItemFromSectionByTMDBID(sectionTitle, tmdbID stri
 	if newestItem != nil {
 		return newestItem, true
 	}
-	return &MediaItem{}, false
+	return &models.MediaItem{}, false
+}
+
+func (c *MediaServerLibraryCache) GetMediaItemByRatingKey(ratingKey string) (*models.MediaItem, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, section := range c.sections {
+		for _, item := range section.MediaItems {
+			if item.RatingKey == ratingKey {
+				return &item, true
+			}
+		}
+	}
+
+	return &models.MediaItem{}, false
 }
 
 // GetMediaItemFromSectionByTitleAndYear retrieves the TMDB ID from a media item by its title and year
-func (c *LibraryCache) GetMediaItemFromSectionByTitleAndYear(sectionTitle, itemTitle string, year int) (*MediaItem, bool) {
+func (c *MediaServerLibraryCache) GetMediaItemFromSectionByTitleAndYear(sectionTitle, itemTitle string, year int) (*models.MediaItem, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	section, exists := c.sections[sectionTitle]
 	if !exists {
-		return &MediaItem{}, false
+		return &models.MediaItem{}, false
 	}
 
-	cleanedSearchTitle := CleanStringForComparison(stripYearFromTitle(itemTitle))
+	cleanedSearchTitle := cleanStringForComparison(stripYearFromTitle(itemTitle))
 	for _, item := range section.MediaItems {
-		cleanedTitle := CleanStringForComparison(stripYearFromTitle(item.Title))
+		cleanedTitle := cleanStringForComparison(stripYearFromTitle(item.Title))
 		if cleanedTitle == cleanedSearchTitle && item.Year == year {
 			return &item, true
 		}
 	}
 
-	return &MediaItem{}, false
+	return &models.MediaItem{}, false
+}
+
+func (c *MediaServerLibraryCache) GetSectionsCount() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.sections)
+}
+
+func (c *MediaServerLibraryCache) GetItemsCount() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	totalItems := 0
+	for _, section := range c.sections {
+		totalItems += len(section.MediaItems)
+	}
+	return totalItems
+}
+
+func (c *MediaServerLibraryCache) GetAllMediaItems() []models.MediaItem {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var allItems []models.MediaItem
+	for _, section := range c.sections {
+		allItems = append(allItems, section.MediaItems...)
+	}
+	return allItems
 }
 
 // IsEmpty checks if the cache is empty
-func (c *LibraryCache) IsEmpty() bool {
+func (c *MediaServerLibraryCache) IsEmpty() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.sections) == 0
 }
 
-func CleanStringForComparison(input string) string {
+func cleanStringForComparison(input string) string {
 	var b strings.Builder
 	input = strings.ToLower(input)
 	for _, r := range input {
