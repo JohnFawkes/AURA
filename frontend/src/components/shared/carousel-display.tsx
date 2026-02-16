@@ -236,14 +236,11 @@ export function CarouselDisplay({
                       const bSeasonNum = Number(bSeason);
 
                       if (dimNotFound) {
-                        const aTmdbId =
-                          typeof (aCards as any)?.[0]?.item_tmdb_id === "string"
-                            ? ((aCards as any)[0].item_tmdb_id as string)
-                            : "";
-                        const bTmdbId =
-                          typeof (bCards as any)?.[0]?.item_tmdb_id === "string"
-                            ? ((bCards as any)[0].item_tmdb_id as string)
-                            : "";
+                        const aFirst = aCards[0];
+                        const bFirst = bCards[0];
+
+                        const aTmdbId = typeof aFirst?.item_tmdb_id === "string" ? aFirst.item_tmdb_id : "";
+                        const bTmdbId = typeof bFirst?.item_tmdb_id === "string" ? bFirst.item_tmdb_id : "";
 
                         const aAvail = aTmdbId ? (hasSeason(includedItems, aTmdbId, aSeasonNum) ? 1 : 0) : 0;
                         const bAvail = bTmdbId ? (hasSeason(includedItems, bTmdbId, bSeasonNum) ? 1 : 0) : 0;
@@ -323,14 +320,18 @@ export function hasEpisode(
   return episode !== undefined;
 }
 
+type MediuxInfoDateFields = {
+  release_date?: string | null;
+  first_air_date?: string | null;
+  air_date?: string | null;
+  date?: string | null;
+};
+
 export function getReleaseEpoch(includedItems: { [tmdb_id: string]: IncludedItem }, tmdbId: string): number {
-  const ii = includedItems?.[tmdbId];
-  const raw =
-    (ii as any)?.mediux_info?.release_date ??
-    (ii as any)?.mediux_info?.first_air_date ??
-    (ii as any)?.mediux_info?.air_date ??
-    (ii as any)?.mediux_info?.date ??
-    null;
+  const ii = includedItems?.[tmdbId] as (IncludedItem & { mediux_info?: MediuxInfoDateFields }) | undefined;
+  const info = ii?.mediux_info;
+
+  const raw = info?.release_date ?? info?.first_air_date ?? info?.air_date ?? info?.date ?? null;
 
   if (typeof raw !== "string" || raw.trim() === "") return 0;
 

@@ -301,20 +301,16 @@ export const ShowFullSetsDisplay: React.FC<{
                         <Accordion type="multiple" className="w-full">
                           {Object.entries(seasons)
                             .filter(([, cards]) => (cards as ImageFile[]).length > 0)
-                            // NEW: sort seasons available-first (when dimNotFound), then season high->low
                             .sort(([aSeason, aCards], [bSeason, bCards]) => {
                               const aSeasonNum = Number(aSeason);
                               const bSeasonNum = Number(bSeason);
 
                               if (dimNotFound) {
-                                const aTmdb =
-                                  typeof (aCards as any)?.[0]?.item_tmdb_id === "string"
-                                    ? ((aCards as any)[0].item_tmdb_id as string)
-                                    : "";
-                                const bTmdb =
-                                  typeof (bCards as any)?.[0]?.item_tmdb_id === "string"
-                                    ? ((bCards as any)[0].item_tmdb_id as string)
-                                    : "";
+                                const aFirst = aCards[0];
+                                const bFirst = bCards[0];
+
+                                const aTmdb = typeof aFirst?.item_tmdb_id === "string" ? aFirst.item_tmdb_id : "";
+                                const bTmdb = typeof bFirst?.item_tmdb_id === "string" ? bFirst.item_tmdb_id : "";
 
                                 const aAvail = aTmdb ? (hasSeason(includedItems, aTmdb, aSeasonNum) ? 1 : 0) : 0;
                                 const bAvail = bTmdb ? (hasSeason(includedItems, bTmdb, bSeasonNum) ? 1 : 0) : 0;

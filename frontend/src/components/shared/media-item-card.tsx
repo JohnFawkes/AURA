@@ -28,11 +28,11 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
   const { setCollectionItem } = useCollectionStore();
 
   // Helper type guards
-  function isMediaItem(item: any): item is MediaItem {
+  function isMediaItem(item: MediaItem | CollectionItem): item is MediaItem {
     return "db_saved_sets" in item;
   }
 
-  function isCollectionItem(item: any): item is CollectionItem {
+  function isCollectionItem(item: MediaItem | CollectionItem): item is CollectionItem {
     return "child_count" in item && "media_items" in item;
   }
 

@@ -453,20 +453,22 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         // Count files and sum sizes for each selected type
         selection.types.forEach((type) => {
           switch (type) {
-            case "poster":
+            case "poster": {
               const posterImage = formItem.Set.images.find((img) => img.type === "poster" && img.file_size);
               if (posterImage && posterImage.file_size) {
                 totalSize += posterImage.file_size;
                 totalFiles += 1;
               }
               break;
-            case "backdrop":
+            }
+            case "backdrop": {
               const backdropImage = formItem.Set.images.find((img) => img.type === "backdrop" && img.file_size);
               if (backdropImage && backdropImage.file_size) {
                 totalSize += backdropImage.file_size;
                 totalFiles += 1;
               }
               break;
+            }
             case "season_poster":
               formItem.Set.images.forEach((sp) => {
                 if (sp.type === "season_poster" && sp.season_number !== 0 && sp.file_size) {
@@ -1305,7 +1307,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         for (const type of selectedTypes) {
           if (cancelRef.current) return; // Exit if cancelled
           switch (type) {
-            case "poster":
+            case "poster": {
               const posterImg = item.Set.images.find((img) => img.type === "poster");
               if (posterImg) {
                 const taskId = newId();
@@ -1330,8 +1332,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                 downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okPoster;
               }
               break;
+            }
 
-            case "backdrop":
+            case "backdrop": {
               const backdropImg = item.Set.images.find((img) => img.type === "backdrop");
               if (backdropImg) {
                 const taskId = newId();
@@ -1356,8 +1359,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                 downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okBackdrop;
               }
               break;
+            }
 
-            case "season_poster":
+            case "season_poster": {
               if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number !== 0)) {
                 const seasonPosters = item.Set.images
                   .filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
@@ -1403,7 +1407,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                 }
               }
               break;
-            case "special_season_poster":
+            }
+            case "special_season_poster": {
               if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number === 0)) {
                 const specialSeasonPosters = item.Set.images.filter(
                   (sp) => sp.type === "season_poster" && sp.season_number === 0
@@ -1433,8 +1438,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                 }
               }
               break;
-
-            case "titlecard":
+            }
+            case "titlecard": {
               if (item.Set.images.some((tc) => tc.type === "titlecard")) {
                 const titlecards = item.Set.images
                   .filter((tc) => tc.type === "titlecard" && tc.season_number && tc.episode_number)
@@ -1485,6 +1490,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                 }
               }
               break;
+            }
           }
         }
 
