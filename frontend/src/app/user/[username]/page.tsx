@@ -51,7 +51,7 @@ function processSets(
       }
     }
   }
-  const mediaItemByTMDB = new Map<string, any>();
+  const mediaItemByTMDB = new Map<string, MediaItem | boolean>();
   for (const tmdbId of tmdbIDs) {
     const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
     if (mediaItem && typeof mediaItem !== "boolean") {
