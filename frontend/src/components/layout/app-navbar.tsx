@@ -2,17 +2,17 @@
 
 import { getAuthToken } from "@/services/auth/login";
 import {
-    ArrowLeftCircle,
-    ArrowRightCircle,
-    Bookmark as BookmarkIcon,
-    Clock,
-    FileCog as FileCogIcon,
-    LayoutGrid,
-    ListOrdered,
-    LogOutIcon,
-    Logs,
-    MenuIcon,
-    Sparkles,
+  ArrowLeftCircle,
+  ArrowRightCircle,
+  Bookmark as BookmarkIcon,
+  Clock,
+  FileCog as FileCogIcon,
+  LayoutGrid,
+  ListOrdered,
+  LogOutIcon,
+  Logs,
+  MenuIcon,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,11 +24,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { DynamicSearch } from "@/components/layout/app-search-bar";
 import { ViewDensitySlider } from "@/components/shared/view-density-context";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/cn";
@@ -42,302 +42,300 @@ import { useHomePageStore } from "@/lib/stores/page-store-home";
 import { useAppVersion } from "@/hooks/app-version";
 
 type AppNavbarProps = {
-    version?: string;
+  version?: string;
 };
 
 export function Navbar({ version = "dev" }: AppNavbarProps) {
-    // Router
-    const router = useRouter();
+  // Router
+  const router = useRouter();
 
-    // Pathname
-    const pathName = usePathname();
-    // Page Logic
-    const isHomePage = pathName === "/";
-    const isMediaPage = pathName.startsWith("/media-item") || pathName.startsWith("/media-item/");
-    const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";
-    const isLogsPage = pathName === "/logs" || pathName === "/logs/";
-    const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
-    const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
+  // Pathname
+  const pathName = usePathname();
+  // Page Logic
+  const isHomePage = pathName === "/";
+  const isMediaPage = pathName.startsWith("/media-item") || pathName.startsWith("/media-item/");
+  const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";
+  const isLogsPage = pathName === "/logs" || pathName === "/logs/";
+  const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
+  const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
 
-    // Auth State
-    const [isAuthed, setIsAuthed] = useState(false);
+  // Auth State
+  const [isAuthed, setIsAuthed] = useState(false);
 
-    // Logo state
-    const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
+  // Logo state
+  const [logoSrc, setLogoSrc] = useState("/aura_word_logo.svg");
 
-    // Search States
-    const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
+  // Search States
+  const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
 
-    // Home Page Store
-    const { setCurrentPage, setFilteredLibraries, setFilterInDB, setFilterIgnored } = useHomePageStore();
-    const nextMediaItem = useHomePageStore((state) => state.nextMediaItem);
-    const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
+  // Home Page Store
+  const { setCurrentPage, setFilteredLibraries, setFilterInDB, setFilterIgnored } = useHomePageStore();
+  const nextMediaItem = useHomePageStore((state) => state.nextMediaItem);
+  const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
 
-    // Collection Item Page Store
-    const nextCollectionItem = useCollectionsPageStore((state) => state.nextCollectionItem);
-    const previousCollectionItem = useCollectionsPageStore((state) => state.previousCollectionItem);
+  // Collection Item Page Store
+  const nextCollectionItem = useCollectionsPageStore((state) => state.nextCollectionItem);
+  const previousCollectionItem = useCollectionsPageStore((state) => state.previousCollectionItem);
 
-    // Onboarding Store
-    const { fetchStatus } = useOnboardingStore();
-    const status = useOnboardingStore((state) => state.status);
-    const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
+  // Onboarding Store
+  const { fetchStatus } = useOnboardingStore();
+  const status = useOnboardingStore((state) => state.status);
+  const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
-    // Check if the screen is mobile
-    const [isWideScreen, setIsWideScreen] = useState(false);
+  // Check if the screen is mobile
+  const [isWideScreen, setIsWideScreen] = useState(false);
 
-    // App Version Hook
-    const { latestVersion, isNewerVersion } = useAppVersion(version);
+  // App Version Hook
+  const { latestVersion, isNewerVersion } = useAppVersion(version);
 
-    // Onboarding Status Check on mount and path change
-    useEffect(() => {
-        const checkOnboarding = async () => {
-            await fetchStatus();
-        };
-        checkOnboarding();
-    }, [pathName, fetchStatus]);
-
-    // App Not Fully Loaded Redirect Logic
-    useEffect(() => {
-        if (!hasHydrated) return;
-        if (status) {
-            if (status.app_fully_loaded === false) {
-                toast.error("The app is still loading. Please wait a moment and try again.", {
-                    duration: 5000,
-                });
-                router.replace("/app-loading");
-            }
-        }
-    }, [status, router, hasHydrated]);
-
-    // Onboarding Redirect Logic
-    useEffect(() => {
-        if (!hasHydrated) return;
-        if (status) {
-            // If needs setup and not on onboarding page, redirect to onboarding
-            if (status.needs_setup) {
-                if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
-                    router.replace("/onboarding");
-                }
-            } else if (!status.needs_setup) {
-                // If does not need setup and on onboarding page, redirect to home
-                if (isOnboardingPage) {
-                    router.replace("/");
-                }
-            }
-        }
-    }, [status, pathName, router, hasHydrated, isOnboardingPage, isLogsPage, isChangeLogPage]);
-
-    // Change isWideScreen on window resize
-    useEffect(() => {
-        const handleResize = () => {
-            setIsWideScreen(window.innerWidth >= 950);
-        };
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    useEffect(() => {
-        // Update the Logo based on the screen size
-        setLogoSrc(isWideScreen ? "/aura_word_logo.svg" : "/aura_logo.svg");
-    }, [isWideScreen]);
-
-    useEffect(() => {
-        document.title = `aura | ${status?.media_server_name}` || "aura";
-    }, [status?.media_server_name]);
-
-    // On mount, check auth status
-    useEffect(() => {
-        if (status?.current_setup?.auth?.enabled === false) {
-            setIsAuthed(true);
-            return;
-        }
-
-        // If auth is enabled, check for token
-        const token = getAuthToken();
-        setIsAuthed(!!token && token !== "null" && token !== "undefined");
-    }, [pathName, status?.current_setup?.auth?.enabled]);
-
-    // When clicking on the logo, navigate to home
-    // If already on homepage, reset home page states
-    const handleHomeClick = () => {
-        if (!isAuthed) {
-            router.push("/login");
-            return;
-        }
-        if (isHomePage) {
-            setSearchQuery("");
-            setCurrentPage(1);
-            setFilteredLibraries([]);
-            setFilterInDB("all");
-            setFilterIgnored("none");
-        }
-        router.push("/");
+  // Onboarding Status Check on mount and path change
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      await fetchStatus();
     };
+    checkOnboarding();
+  }, [pathName, fetchStatus]);
 
-    // Handle Logout
-    const handleLogout = () => {
-        localStorage.removeItem("aura-auth-token");
-        setIsAuthed(false);
-        // Redirect to login page
-        router.replace("/login");
+  // App Not Fully Loaded Redirect Logic
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (status) {
+      if (status.app_fully_loaded === false) {
+        toast.error("The app is still loading. Please wait a moment and try again.", {
+          duration: 5000,
+        });
+        router.replace("/app-loading");
+      }
+    }
+  }, [status, router, hasHydrated]);
+
+  // Onboarding Redirect Logic
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (status) {
+      // If needs setup and not on onboarding page, redirect to onboarding
+      if (status.needs_setup) {
+        if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
+          router.replace("/onboarding");
+        }
+      } else if (!status.needs_setup) {
+        // If does not need setup and on onboarding page, redirect to home
+        if (isOnboardingPage) {
+          router.replace("/");
+        }
+      }
+    }
+  }, [status, pathName, router, hasHydrated, isOnboardingPage, isLogsPage, isChangeLogPage]);
+
+  // Change isWideScreen on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsWideScreen(window.innerWidth >= 950);
     };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    return (
-        <nav
-            suppressHydrationWarning
-            className="sticky top-0 z-50 flex items-center px-6 py-4 justify-between shadow-md bg-background dark:bg-background-dark border-b border-border dark:border-border-dark"
+  useEffect(() => {
+    // Update the Logo based on the screen size
+    setLogoSrc(isWideScreen ? "/aura_word_logo.svg" : "/aura_logo.svg");
+  }, [isWideScreen]);
+
+  useEffect(() => {
+    document.title = `aura | ${status?.media_server_name}` || "aura";
+  }, [status?.media_server_name]);
+
+  // On mount, check auth status
+  useEffect(() => {
+    if (status?.current_setup?.auth?.enabled === false) {
+      setIsAuthed(true);
+      return;
+    }
+
+    // If auth is enabled, check for token
+    const token = getAuthToken();
+    setIsAuthed(!!token && token !== "null" && token !== "undefined");
+  }, [pathName, status?.current_setup?.auth?.enabled]);
+
+  // When clicking on the logo, navigate to home
+  // If already on homepage, reset home page states
+  const handleHomeClick = () => {
+    if (!isAuthed) {
+      router.push("/login");
+      return;
+    }
+    if (isHomePage) {
+      setSearchQuery("");
+      setCurrentPage(1);
+      setFilteredLibraries([]);
+      setFilterInDB("all");
+      setFilterIgnored("none");
+    }
+    router.push("/");
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    localStorage.removeItem("aura-auth-token");
+    setIsAuthed(false);
+    // Redirect to login page
+    router.replace("/login");
+  };
+
+  return (
+    <nav
+      suppressHydrationWarning
+      className="sticky top-0 z-50 flex items-center px-6 py-4 justify-between shadow-md bg-background dark:bg-background-dark border-b border-border dark:border-border-dark"
+    >
+      {/* Left: Logo */}
+      <div className="relative flex-shrink-0">
+        <div
+          onClick={handleHomeClick}
+          className="relative cursor-pointer active:scale-95 transition-transform select-none"
+          style={{
+            width: logoSrc === "/aura_logo.svg" ? "50px" : "150px",
+            height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
+          }}
         >
-            {/* Left: Logo */}
-            <div className="relative flex-shrink-0">
-                <div
-                    onClick={handleHomeClick}
-                    className="relative cursor-pointer active:scale-95 transition-transform select-none"
-                    style={{
-                        width: logoSrc === "/aura_logo.svg" ? "50px" : "150px",
-                        height: logoSrc === "/aura_logo.svg" ? "30px" : "35px",
-                    }}
+          <Image src={logoSrc} alt="Logo" fill className="object-contain filter" priority />
+        </div>
+      </div>
+
+      {/* Center: Search */}
+      <div className="relative flex-1 flex justify-center mx-3">
+        <div className="relative w-full max-w-2xl">
+          <DynamicSearch placeholder="Search" />
+        </div>
+      </div>
+
+      {/* Right: Arrows and/or Settings */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {isMediaPage && (
+          <>
+            <ArrowLeftCircle
+              className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+              onClick={() => {
+                if (previousMediaItem) useMediaStore.setState({ mediaItem: previousMediaItem });
+              }}
+            />
+            <ArrowRightCircle
+              className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+              onClick={() => {
+                if (nextMediaItem) useMediaStore.setState({ mediaItem: nextMediaItem });
+              }}
+            />
+          </>
+        )}
+        {isCollectionItemPage && (
+          <>
+            <ArrowLeftCircle
+              className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+              onClick={() => {
+                if (previousCollectionItem) useCollectionStore.setState({ collectionItem: previousCollectionItem });
+              }}
+            />
+            <ArrowRightCircle
+              className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
+              onClick={() => {
+                if (nextCollectionItem) useCollectionStore.setState({ collectionItem: nextCollectionItem });
+              }}
+            />
+          </>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            asChild
+            className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
+          >
+            <MenuIcon
+              className={cn(
+                "w-8 h-8 ml-2",
+                isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
+              )}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
+            {status && !status.needs_setup && (
+              <>
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/saved-sets")}
                 >
-                    <Image src={logoSrc} alt="Logo" fill className="object-contain filter" priority />
-                </div>
-            </div>
-
-            {/* Center: Search */}
-            <div className="relative flex-1 flex justify-center mx-3">
-                <div className="relative w-full max-w-2xl">
-                    <DynamicSearch placeholder="Search" />
-                </div>
-            </div>
-
-            {/* Right: Arrows and/or Settings */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-                {isMediaPage && (
-                    <>
-                        <ArrowLeftCircle
-                            className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-                            onClick={() => {
-                                if (previousMediaItem) useMediaStore.setState({ mediaItem: previousMediaItem });
-                            }}
-                        />
-                        <ArrowRightCircle
-                            className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextMediaItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-                            onClick={() => {
-                                if (nextMediaItem) useMediaStore.setState({ mediaItem: nextMediaItem });
-                            }}
-                        />
-                    </>
+                  <BookmarkIcon className="w-6 h-6 mr-2" />
+                  Saved Sets
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/collections")}
+                >
+                  <LayoutGrid className="w-6 h-6 mr-2" />
+                  Collections
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/download-queue")}
+                >
+                  <ListOrdered className="w-6 h-6 mr-2" />
+                  Download Queue
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/settings")}
+                >
+                  <FileCogIcon className="w-6 h-6 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+                {isWideScreen && (
+                  <DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
+                    <ViewDensitySlider />
+                  </DropdownMenuItem>
                 )}
-                {isCollectionItemPage && (
-                    <>
-                        <ArrowLeftCircle
-                            className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!previousCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-                            onClick={() => {
-                                if (previousCollectionItem)
-                                    useCollectionStore.setState({ collectionItem: previousCollectionItem });
-                            }}
-                        />
-                        <ArrowRightCircle
-                            className={`h-8 w-8 hover:scale-105 active:scale-95 transition-colors cursor-pointer ${!nextCollectionItem ? "opacity-30 pointer-events-none" : "text-primary hover:text-primary/80"}`}
-                            onClick={() => {
-                                if (nextCollectionItem)
-                                    useCollectionStore.setState({ collectionItem: nextCollectionItem });
-                            }}
-                        />
-                    </>
-                )}
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        asChild
-                        className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
-                    >
-                        <MenuIcon
-                            className={cn(
-                                "w-8 h-8 ml-2",
-                                isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
-                            )}
-                        />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-                        {status && !status.needs_setup && (
-                            <>
-                                <DropdownMenuItem
-                                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                                    onClick={() => router.push("/saved-sets")}
-                                >
-                                    <BookmarkIcon className="w-6 h-6 mr-2" />
-                                    Saved Sets
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                                    onClick={() => router.push("/collections")}
-                                >
-                                    <LayoutGrid className="w-6 h-6 mr-2" />
-                                    Collections
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                                    onClick={() => router.push("/download-queue")}
-                                >
-                                    <ListOrdered className="w-6 h-6 mr-2" />
-                                    Download Queue
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                                    onClick={() => router.push("/settings")}
-                                >
-                                    <FileCogIcon className="w-6 h-6 mr-2" />
-                                    Settings
-                                </DropdownMenuItem>
-                                {isWideScreen && (
-                                    <DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
-                                        <ViewDensitySlider />
-                                    </DropdownMenuItem>
-                                )}
-                            </>
-                        )}
-                        <DropdownMenuItem
-                            className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                            onClick={() => router.push("/logs")}
-                        >
-                            <Logs className="w-6 h-6 mr-2" />
-                            Logs
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                            onClick={() => router.push("/jobs")}
-                        >
-                            <Clock className="w-6 h-6 mr-2" />
-                            Jobs
-                        </DropdownMenuItem>
-                        {isNewerVersion(latestVersion ?? "", version) && (
-                            <DropdownMenuItem
-                                className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
-                                onClick={() =>
-                                    router.push(
-                                        `/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion ?? "")}`
-                                    )
-                                }
-                            >
-                                <Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
-                                New Version Available ({latestVersion})
-                            </DropdownMenuItem>
-                        )}
-                        {isAuthed && status?.current_setup.auth.enabled && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
-                                    onClick={handleLogout}
-                                >
-                                    <LogOutIcon className="w-6 h-6 mr-2" />
-                                    Logout
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-        </nav>
-    );
+              </>
+            )}
+            <DropdownMenuItem
+              className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+              onClick={() => router.push("/logs")}
+            >
+              <Logs className="w-6 h-6 mr-2" />
+              Logs
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+              onClick={() => router.push("/jobs")}
+            >
+              <Clock className="w-6 h-6 mr-2" />
+              Jobs
+            </DropdownMenuItem>
+            {isNewerVersion(latestVersion ?? "", version) && (
+              <DropdownMenuItem
+                className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
+                onClick={() =>
+                  router.push(
+                    `/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion ?? "")}`
+                  )
+                }
+              >
+                <Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
+                New Version Available ({latestVersion})
+              </DropdownMenuItem>
+            )}
+            {isAuthed && status?.current_setup.auth.enabled && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
+                  onClick={handleLogout}
+                >
+                  <LogOutIcon className="w-6 h-6 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </nav>
+  );
 }

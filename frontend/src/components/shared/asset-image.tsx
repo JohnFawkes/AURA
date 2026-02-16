@@ -18,12 +18,12 @@ import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { ImageFile } from "@/types/media-and-posters/sets";
 
 interface AssetImageProps {
-    image: ImageFile | MediaItem | CollectionItem | string;
-    imageType: "item" | "collection" | "mediux" | "url";
-    aspect?: AspectRatio;
-    className?: string;
-    imageClassName?: string;
-    priority?: boolean;
+  image: ImageFile | MediaItem | CollectionItem | string;
+  imageType: "item" | "collection" | "mediux" | "url";
+  aspect?: AspectRatio;
+  className?: string;
+  imageClassName?: string;
+  priority?: boolean;
 }
 
 /**
@@ -32,151 +32,149 @@ interface AssetImageProps {
  * @returns Data URL string ready for blurDataURL prop, or undefined on error
  */
 function decodeBlurhashToDataURL(blurhash: string): string | undefined {
-    try {
-        // Debug: Warn if blurhash is longer than expected for 3x3 components (~15-20 chars)
-        if (blurhash.length > 30) {
-            log(
-                "WARN",
-                "AssetImage",
-                "decodeBlurhashToDataURL",
-                `Large blurhash detected (${blurhash.length} chars). Expected 3x3 components (~15-20 chars).`
-            );
-        }
-
-        // Decode blurhash to pixel data (2x2 for absolute minimal size)
-        // For blur placeholders, very small dimensions are sufficient
-        const width = 2;
-        const height = 2;
-        const pixels = decode(blurhash, width, height);
-
-        // Create canvas and draw pixels
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-            throw new Error("Failed to get canvas context");
-        }
-
-        // Create ImageData from pixels and draw to canvas
-        const imageData = ctx.createImageData(width, height);
-        imageData.data.set(pixels);
-        ctx.putImageData(imageData, 0, 0);
-
-        // PNG is typically smaller than JPEG for very small images
-        return canvas.toDataURL("image/png");
-    } catch (error) {
-        log("ERROR", "AssetImage", "decodeBlurhashToDataURL", "Failed to decode blurhash", error);
-        return undefined;
+  try {
+    // Debug: Warn if blurhash is longer than expected for 3x3 components (~15-20 chars)
+    if (blurhash.length > 30) {
+      log(
+        "WARN",
+        "AssetImage",
+        "decodeBlurhashToDataURL",
+        `Large blurhash detected (${blurhash.length} chars). Expected 3x3 components (~15-20 chars).`
+      );
     }
+
+    // Decode blurhash to pixel data (2x2 for absolute minimal size)
+    // For blur placeholders, very small dimensions are sufficient
+    const width = 2;
+    const height = 2;
+    const pixels = decode(blurhash, width, height);
+
+    // Create canvas and draw pixels
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Failed to get canvas context");
+    }
+
+    // Create ImageData from pixels and draw to canvas
+    const imageData = ctx.createImageData(width, height);
+    imageData.data.set(pixels);
+    ctx.putImageData(imageData, 0, 0);
+
+    // PNG is typically smaller than JPEG for very small images
+    return canvas.toDataURL("image/png");
+  } catch (error) {
+    log("ERROR", "AssetImage", "decodeBlurhashToDataURL", "Failed to decode blurhash", error);
+    return undefined;
+  }
 }
 
 export function AssetImage({
-    image,
-    imageType,
-    aspect = "poster",
-    className,
-    imageClassName,
-    priority = false,
+  image,
+  imageType,
+  aspect = "poster",
+  className,
+  imageClassName,
+  priority = false,
 }: AssetImageProps) {
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-    const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+  const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
 
-    // Decode blurhash string to data URL client-side
-    const blurDataURL = useMemo(() => {
-        const blurhash = typeof image === "object" && "blurhash" in image ? image.blurhash : undefined;
-        if (!blurhash) return undefined;
-        return decodeBlurhashToDataURL(blurhash);
-    }, [image]);
+  // Decode blurhash string to data URL client-side
+  const blurDataURL = useMemo(() => {
+    const blurhash = typeof image === "object" && "blurhash" in image ? image.blurhash : undefined;
+    if (!blurhash) return undefined;
+    return decodeBlurhashToDataURL(blurhash);
+  }, [image]);
 
-    let imageSrc = "";
-    if (imageType === "url") {
-        imageSrc = image as string;
-    } else if (imageType === "mediux") {
-        imageSrc = `/api/images/mediux/item?asset_id=${(image as ImageFile).id}&modified_date=${(image as ImageFile).modified}`;
-    } else if (imageType === "item") {
-        imageSrc = `/api/images/media/item?rating_key=${(image as MediaItem).rating_key}&image_type=${aspect}`;
-    } else if (imageType === "collection") {
-        imageSrc = `/api/images/media/collection?rating_key=${(image as CollectionItem).rating_key}&image_type=${aspect}&index=${(image as CollectionItem).index}`;
-    } else {
-        imageSrc = "";
-    }
+  let imageSrc = "";
+  if (imageType === "url") {
+    imageSrc = image as string;
+  } else if (imageType === "mediux") {
+    imageSrc = `/api/images/mediux/item?asset_id=${(image as ImageFile).id}&modified_date=${(image as ImageFile).modified}`;
+  } else if (imageType === "item") {
+    imageSrc = `/api/images/media/item?rating_key=${(image as MediaItem).rating_key}&image_type=${aspect}`;
+  } else if (imageType === "collection") {
+    imageSrc = `/api/images/media/collection?rating_key=${(image as CollectionItem).rating_key}&image_type=${aspect}&index=${(image as CollectionItem).index}`;
+  } else {
+    imageSrc = "";
+  }
 
-    const imageContent = (
-        <>
-            {!imageError ? (
-                <Image
-                    src={imageSrc}
-                    alt={typeof image === "string" ? `${image} ${aspect}` : "id" in image ? image.id : ""}
-                    fill
-                    sizes={getImageSizes(aspect)}
-                    className={cn(
-                        "object-cover",
-                        "border border-transparent hover:border-primary-dynamic/30",
-                        "rounded-sm",
-                        "transition-all duration-300",
-                        imageClassName
-                    )}
-                    unoptimized
-                    loading="lazy"
-                    draggable={false}
-                    style={{ userSelect: "none" }}
-                    priority={priority}
-                    placeholder={blurDataURL ? "blur" : undefined}
-                    blurDataURL={blurDataURL}
-                    onLoad={() => setImageLoaded(true)}
-                    onError={() => setImageError(true)}
-                />
-            ) : (
-                <div
-                    className={cn(
-                        "flex items-center justify-center w-full h-full bg-muted text-muted-foreground",
-                        getAspectRatioClass(aspect)
-                    )}
-                >
-                    <div className="flex flex-col items-center">
-                        <span className="text-xs">No Image Available</span>
-                        <Image
-                            src="/aura_logo.svg"
-                            alt="Aura Logo"
-                            width={40}
-                            height={40}
-                            className="mt-1 opacity-70"
-                            draggable={false}
-                        />
-                    </div>
+  const imageContent = (
+    <>
+      {!imageError ? (
+        <Image
+          src={imageSrc}
+          alt={typeof image === "string" ? `${image} ${aspect}` : "id" in image ? image.id : ""}
+          fill
+          sizes={getImageSizes(aspect)}
+          className={cn(
+            "object-cover",
+            "border border-transparent hover:border-primary-dynamic/30",
+            "rounded-sm",
+            "transition-all duration-300",
+            imageClassName
+          )}
+          unoptimized
+          loading="lazy"
+          draggable={false}
+          style={{ userSelect: "none" }}
+          priority={priority}
+          placeholder={blurDataURL ? "blur" : undefined}
+          blurDataURL={blurDataURL}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div
+          className={cn(
+            "flex items-center justify-center w-full h-full bg-muted text-muted-foreground",
+            getAspectRatioClass(aspect)
+          )}
+        >
+          <div className="flex flex-col items-center">
+            <span className="text-xs">No Image Available</span>
+            <Image
+              src="/aura_logo.svg"
+              alt="Aura Logo"
+              width={40}
+              height={40}
+              className="mt-1 opacity-70"
+              draggable={false}
+            />
+          </div>
 
-                    <Skeleton
-                        className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))}
-                    />
-                </div>
-            )}
-            {/* Overlay that fades out when image loads, revealing the sharp image underneath */}
-            {blurDataURL && !imageLoaded && !imageError && (
-                <Skeleton className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))} />
-            )}
-        </>
-    );
-
-    return (
-        <div className={className}>
-            <div
-                className={cn(
-                    "relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
-                    getAspectRatioClass(aspect)
-                )}
-            >
-                {imageContent}
-            </div>
-            {imageType === "mediux" && showDateModified && (
-                <div className="mt-1 text-xs text-white/80 text-center w-full">
-                    {typeof image === "object" && "modified" in image && image.modified
-                        ? new Date(image.modified).toLocaleString()
-                        : ""}
-                </div>
-            )}
+          <Skeleton className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))} />
         </div>
-    );
+      )}
+      {/* Overlay that fades out when image loads, revealing the sharp image underneath */}
+      {blurDataURL && !imageLoaded && !imageError && (
+        <Skeleton className={cn("absolute inset-0 rounded-md animate-pulse", getAspectRatioClass(aspect))} />
+      )}
+    </>
+  );
+
+  return (
+    <div className={className}>
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
+          getAspectRatioClass(aspect)
+        )}
+      >
+        {imageContent}
+      </div>
+      {imageType === "mediux" && showDateModified && (
+        <div className="mt-1 text-xs text-white/80 text-center w-full">
+          {typeof image === "object" && "modified" in image && image.modified
+            ? new Date(image.modified).toLocaleString()
+            : ""}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -7,39 +7,39 @@ import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
 export const removeItemFromQueue = async (dbItem: DBSavedItem): Promise<APIResponse<string>> => {
-    log(
+  log(
+    "INFO",
+    "API - Media Server",
+    "Delete from Queue",
+    `Deleting '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue`
+  );
+  for (const set of dbItem.poster_sets) {
+    set.last_downloaded = new Date().toISOString();
+  }
+  try {
+    const response = await apiClient.delete<APIResponse<string>>(`/download/queue/item`, { data: dbItem });
+    if (response.data.status === "error") {
+      throw new Error(response.data.error?.message || "Unknown error while deleting from download queue");
+    } else {
+      log(
         "INFO",
         "API - Media Server",
         "Delete from Queue",
-        `Deleting '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue`
+        `Deleted '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue`,
+        response.data
+      );
+    }
+    return response.data;
+  } catch (error) {
+    log(
+      "ERROR",
+      "API - Media Server",
+      "Delete from Queue",
+      `Failed to delete '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue: ${
+        dbItem.media_item.rating_key
+      }: ${error instanceof Error ? error.message : "Unknown error"}`,
+      error
     );
-    for (const set of dbItem.poster_sets) {
-        set.last_downloaded = new Date().toISOString();
-    }
-    try {
-        const response = await apiClient.delete<APIResponse<string>>(`/download/queue/item`, { data: dbItem });
-        if (response.data.status === "error") {
-            throw new Error(response.data.error?.message || "Unknown error while deleting from download queue");
-        } else {
-            log(
-                "INFO",
-                "API - Media Server",
-                "Delete from Queue",
-                `Deleted '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue`,
-                response.data
-            );
-        }
-        return response.data;
-    } catch (error) {
-        log(
-            "ERROR",
-            "API - Media Server",
-            "Delete from Queue",
-            `Failed to delete '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue: ${
-                dbItem.media_item.rating_key
-            }: ${error instanceof Error ? error.message : "Unknown error"}`,
-            error
-        );
-        return ReturnErrorMessage<string>(error);
-    }
+    return ReturnErrorMessage<string>(error);
+  }
 };

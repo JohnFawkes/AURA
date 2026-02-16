@@ -9,52 +9,52 @@ import { SetRef } from "@/types/media-and-posters/sets";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 interface fetchCollectionChildrenAndPostersResponse {
-    collection_item: CollectionItem;
-    sets: SetRef[];
-    user_follow_hide: MediuxUserInfo[];
-    error: LogErrorInfo | null;
+  collection_item: CollectionItem;
+  sets: SetRef[];
+  user_follow_hide: MediuxUserInfo[];
+  error: LogErrorInfo | null;
 }
 
 export const getCollectionItemContent = async (
-    collection_item: CollectionItem
+  collection_item: CollectionItem
 ): Promise<APIResponse<fetchCollectionChildrenAndPostersResponse>> => {
-    log(
+  log(
+    "INFO",
+    "API - Media Server",
+    "Fetch",
+    `Fetching collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
+  );
+  try {
+    const response = await apiClient.get<APIResponse<fetchCollectionChildrenAndPostersResponse>>(
+      `/mediaserver/collections/item`,
+      {
+        params: {
+          rating_key: collection_item.rating_key,
+        },
+      }
+    );
+    if (response.data.status === "error") {
+      throw new Error(
+        response.data.error?.message ||
+          `Unknown error fetching collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
+      );
+    } else {
+      log(
         "INFO",
         "API - Media Server",
         "Fetch",
-        `Fetching collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
-    );
-    try {
-        const response = await apiClient.get<APIResponse<fetchCollectionChildrenAndPostersResponse>>(
-            `/mediaserver/collections/item`,
-            {
-                params: {
-                    rating_key: collection_item.rating_key,
-                },
-            }
-        );
-        if (response.data.status === "error") {
-            throw new Error(
-                response.data.error?.message ||
-                    `Unknown error fetching collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
-            );
-        } else {
-            log(
-                "INFO",
-                "API - Media Server",
-                "Fetch",
-                `Fetched collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
-            );
-        }
-        return response.data;
-    } catch (error) {
-        log(
-            "ERROR",
-            "API - Media Server",
-            "Fetch",
-            `Fetching item content for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}' failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-            error
-        );
-        return ReturnErrorMessage<fetchCollectionChildrenAndPostersResponse>(error);
+        `Fetched collection children for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}'`
+      );
     }
+    return response.data;
+  } catch (error) {
+    log(
+      "ERROR",
+      "API - Media Server",
+      "Fetch",
+      `Fetching item content for '${collection_item.title}' [${collection_item.rating_key}] from library '${collection_item.library_title}' failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      error
+    );
+    return ReturnErrorMessage<fetchCollectionChildrenAndPostersResponse>(error);
+  }
 };

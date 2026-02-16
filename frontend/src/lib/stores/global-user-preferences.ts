@@ -6,53 +6,53 @@ import { GlobalStore } from "@/lib/stores/stores";
 import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 interface UserPreferencesStore {
-    downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
-    setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => void;
+  downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
+  setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => void;
 
-    showOnlyDownloadDefaults: boolean;
-    setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => void;
+  showOnlyDownloadDefaults: boolean;
+  setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => void;
 
-    showDateModified: boolean;
-    setShowDateModified: (showDateModified: boolean) => void;
+  showDateModified: boolean;
+  setShowDateModified: (showDateModified: boolean) => void;
 
-    hasHydrated: boolean;
-    hydrate: () => void;
-    clear: () => void;
+  hasHydrated: boolean;
+  hydrate: () => void;
+  clear: () => void;
 }
 
 export const useUserPreferencesStore = create<UserPreferencesStore>()(
-    persist(
-        (set) => ({
-            downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-            setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => set({ downloadDefaults }),
+  persist(
+    (set) => ({
+      downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+      setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => set({ downloadDefaults }),
 
-            showOnlyDownloadDefaults: false,
-            setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => set({ showOnlyDownloadDefaults }),
+      showOnlyDownloadDefaults: false,
+      setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => set({ showOnlyDownloadDefaults }),
 
-            showDateModified: false,
-            setShowDateModified: (showDateModified: boolean) => set({ showDateModified }),
+      showDateModified: false,
+      setShowDateModified: (showDateModified: boolean) => set({ showDateModified }),
 
-            hasHydrated: false,
-            hydrate: () => set({ hasHydrated: true }),
+      hasHydrated: false,
+      hydrate: () => set({ hasHydrated: true }),
 
-            clear: () =>
-                set({
-                    downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-                    showOnlyDownloadDefaults: false,
-                    showDateModified: false,
-                }),
+      clear: () =>
+        set({
+          downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+          showOnlyDownloadDefaults: false,
+          showDateModified: false,
         }),
-        {
-            name: "UserPreferences",
-            storage: GlobalStore,
-            partialize: (state) => ({
-                downloadDefaults: state.downloadDefaults,
-                showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
-                showDateModified: state.showDateModified,
-            }),
-            onRehydrateStorage: () => (state) => {
-                state?.hydrate();
-            },
-        }
-    )
+    }),
+    {
+      name: "UserPreferences",
+      storage: GlobalStore,
+      partialize: (state) => ({
+        downloadDefaults: state.downloadDefaults,
+        showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
+        showDateModified: state.showDateModified,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.hydrate();
+      },
+    }
+  )
 );

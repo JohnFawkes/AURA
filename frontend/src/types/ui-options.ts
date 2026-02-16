@@ -20,23 +20,23 @@ export type TYPE_FILTER_IGNORED_OPTIONS = "none" | "always" | "temp";
 export const FILTER_IGNORED_OPTIONS: TYPE_FILTER_IGNORED_OPTIONS[] = ["none", "always", "temp"];
 
 export type TYPE_DOWNLOAD_DEFAULT_OPTIONS =
-    | "poster"
-    | "backdrop"
-    | "season_poster"
-    | "special_season_poster"
-    | "titlecard";
+  | "poster"
+  | "backdrop"
+  | "season_poster"
+  | "special_season_poster"
+  | "titlecard";
 export const DOWNLOAD_DEFAULT_TYPE_OPTIONS: TYPE_DOWNLOAD_DEFAULT_OPTIONS[] = [
-    "poster",
-    "backdrop",
-    "season_poster",
-    "special_season_poster",
-    "titlecard",
+  "poster",
+  "backdrop",
+  "season_poster",
+  "special_season_poster",
+  "titlecard",
 ];
 
 export const DOWNLOAD_DEFAULT_LABELS: Record<TYPE_DOWNLOAD_DEFAULT_OPTIONS, string> = {
-    poster: "Poster",
-    backdrop: "Backdrop",
-    season_poster: "Season Posters",
-    special_season_poster: "Special Season Posters",
-    titlecard: "Titlecards",
+  poster: "Poster",
+  backdrop: "Backdrop",
+  season_poster: "Season Posters",
+  special_season_poster: "Special Season Posters",
+  titlecard: "Titlecards",
 };
