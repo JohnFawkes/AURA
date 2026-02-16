@@ -143,7 +143,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   }, [isWideScreen]);
 
   useEffect(() => {
-    document.title = `aura | ${status?.media_server_name}` || "aura";
+    document.title = status?.media_server_name ? `aura | ${status.media_server_name}` : "aura";
   }, [status?.media_server_name]);
 
   // On mount, check auth status
