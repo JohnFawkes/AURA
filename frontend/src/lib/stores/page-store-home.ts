@@ -5,7 +5,7 @@ import { PageStore } from "@/lib/stores/stores";
 
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PaginationStore, SortStore } from "@/types/store-interfaces";
-import { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
+import { TYPE_FILTER_IGNORED_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
 import { TYPE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type Direction = "next" | "previous";
@@ -19,6 +19,8 @@ interface Home_PageStore
 	setFilteredLibraries: (libraries: string[]) => void;
 	filterInDB: TYPE_FILTER_IN_DB_OPTIONS;
 	setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
+	filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
+	setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
 
 	getAdjacentMediaItem: (currentRatingKey: string, direction: Direction) => MediaItem | null;
 
@@ -58,6 +60,9 @@ export const useHomePageStore = create<Home_PageStore>()(
 			filterInDB: "all",
 			setFilterInDB: (filter) => set({ filterInDB: filter }),
 
+			filterIgnored: "none",
+			setFilterIgnored: (ignored) => set({ filterIgnored: ignored }),
+
 			/**
 			 * Retrieves adjacent media item (wrap-around) from the Home page store's
 			 * filteredAndSortedMediaItems array.
@@ -66,7 +71,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 				const mediaItems = get().filteredAndSortedMediaItems || [];
 				if (!mediaItems.length) return null;
 
-				const currentIndex = mediaItems.findIndex((m) => m.TMDB_ID === tmdbID);
+				const currentIndex = mediaItems.findIndex((m) => m.tmdb_id === tmdbID);
 				if (currentIndex === -1) return null;
 
 				const nextIndex =
@@ -95,6 +100,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 					filteredAndSortedMediaItems: [],
 					filteredLibraries: [],
 					filterInDB: "all",
+					filterIgnored: "none",
 					previousMediaItem: null,
 					nextMediaItem: null,
 					hasHydrated: false,
@@ -111,6 +117,7 @@ export const useHomePageStore = create<Home_PageStore>()(
 				filteredAndSortedMediaItems: state.filteredAndSortedMediaItems,
 				filteredLibraries: state.filteredLibraries,
 				filterInDB: state.filterInDB,
+				filterIgnored: state.filterIgnored,
 				previousMediaItem: state.previousMediaItem,
 				nextMediaItem: state.nextMediaItem,
 			}),

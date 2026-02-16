@@ -3,24 +3,18 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { PosterSet } from "@/types/media-and-posters/poster-sets";
-import { TYPE_POSTER_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import { BaseSetInfo, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import { TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
 interface PosterSetsStore {
-	setType: TYPE_POSTER_SET_TYPE_OPTIONS;
-	setSetType: (setType: TYPE_POSTER_SET_TYPE_OPTIONS) => void;
+	setBaseInfo: BaseSetInfo;
+	setSetBaseInfo: (setBaseInfo: BaseSetInfo) => void;
 
-	setTitle: string;
-	setSetTitle: (setTitle: string) => void;
+	posterSets: SetRef[];
+	setPosterSets: (posterSets: SetRef[]) => void;
 
-	setAuthor: string;
-	setSetAuthor: (setAuthor: string) => void;
-
-	setID: string;
-	setSetID: (setID: string) => void;
-
-	posterSets: PosterSet[];
-	setPosterSets: (posterSets: PosterSet[]) => void;
+	includedItems: { [tmdb_id: string]: IncludedItem };
+	setIncludedItems: (includedItems: { [tmdb_id: string]: IncludedItem }) => void;
 
 	hasHydrated: boolean;
 	hydrate: () => void;
@@ -30,42 +24,50 @@ interface PosterSetsStore {
 export const usePosterSetsStore = create<PosterSetsStore>()(
 	persist(
 		(set) => ({
-			setType: "set",
-			setSetType: (setType) => set({ setType }),
+			setBaseInfo: {
+				id: "",
+				title: "",
+				type: "set" as TYPE_SET_TYPE_OPTIONS,
+				user_created: "",
+				date_created: "",
+				date_updated: "",
+				popularity: 0,
+				popularity_global: 0,
+			},
+			setSetBaseInfo: (setBaseInfo) => set({ setBaseInfo }),
 
-			setTitle: "",
-			setSetTitle: (setTitle) => set({ setTitle }),
-
-			setAuthor: "",
-			setSetAuthor: (setAuthor) => set({ setAuthor }),
-
-			setID: "",
-			setSetID: (setID) => set({ setID }),
-
-			posterSets: [],
+			posterSets: [] as SetRef[],
 			setPosterSets: (posterSets) => set({ posterSets }),
+
+			includedItems: {} as { [tmdb_id: string]: IncludedItem },
+			setIncludedItems: (includedItems) => set({ includedItems }),
 
 			hasHydrated: false,
 			hydrate: () => set({ hasHydrated: true }),
 
 			clear: () =>
 				set({
-					setType: "set",
-					setTitle: "",
-					setAuthor: "",
-					setID: "",
-					posterSets: [],
+					setBaseInfo: {
+						id: "",
+						title: "",
+						type: "set" as TYPE_SET_TYPE_OPTIONS,
+						user_created: "",
+						date_created: "",
+						date_updated: "",
+						popularity: 0,
+						popularity_global: 0,
+					},
+					posterSets: [] as SetRef[],
+					includedItems: {} as { [tmdb_id: string]: IncludedItem },
 				}),
 		}),
 		{
 			name: "PosterSets",
 			storage: GlobalStore,
 			partialize: (state) => ({
-				setType: state.setType,
-				setTitle: state.setTitle,
-				setAuthor: state.setAuthor,
-				setID: state.setID,
+				setBaseInfo: state.setBaseInfo,
 				posterSets: state.posterSets,
+				includedItems: state.includedItems,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();

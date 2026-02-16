@@ -60,7 +60,7 @@ export const useCollectionsPageStore = create<CollectionsHome_PageStore>()(
 				const collectionItems = get().filteredAndSortedCollectionItems || [];
 				if (!collectionItems.length) return null;
 
-				const currentIndex = collectionItems.findIndex((m) => m.RatingKey === ratingKey);
+				const currentIndex = collectionItems.findIndex((m) => m.rating_key === ratingKey);
 				if (currentIndex === -1) return null;
 
 				const nextIndex =

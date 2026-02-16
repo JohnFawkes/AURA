@@ -1,18 +1,18 @@
-import { fetchOnboardingStatus } from "@/services/settings-onboarding/api-onboarding-fetch-status";
+import { getAppConfigStatus } from "@/services/config/app-status";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
 import { APIResponse } from "@/types/api/api-response";
-import { AppOnboardingStatus } from "@/types/config/onboarding";
+import { AppStatusResponse } from "@/types/config/response-status";
 
 interface OnboardingStore {
-	status: AppOnboardingStatus | null;
+	status: AppStatusResponse | null;
 	loading: boolean;
 	error: string | null;
 
-	setStatus: (status: AppOnboardingStatus | null) => void;
+	setStatus: (status: AppStatusResponse | null) => void;
 	setLoading: (loading: boolean) => void;
 	setError: (error: string | null) => void;
 
@@ -37,7 +37,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
 			fetchStatus: async () => {
 				set({ loading: true, error: null });
 				try {
-					const response: APIResponse<AppOnboardingStatus> = await fetchOnboardingStatus();
+					const response: APIResponse<AppStatusResponse> = await getAppConfigStatus(false);
 					set({ status: response.data, loading: false });
 				} catch (err: unknown) {
 					const message = err instanceof Error ? err.message : "Failed to fetch onboarding status";

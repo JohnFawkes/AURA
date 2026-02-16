@@ -12,6 +12,9 @@ interface UserPreferencesStore {
 	showOnlyDownloadDefaults: boolean;
 	setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => void;
 
+	showDateModified: boolean;
+	setShowDateModified: (showDateModified: boolean) => void;
+
 	hasHydrated: boolean;
 	hydrate: () => void;
 	clear: () => void;
@@ -26,6 +29,9 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 			showOnlyDownloadDefaults: false,
 			setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => set({ showOnlyDownloadDefaults }),
 
+			showDateModified: false,
+			setShowDateModified: (showDateModified: boolean) => set({ showDateModified }),
+
 			hasHydrated: false,
 			hydrate: () => set({ hasHydrated: true }),
 
@@ -33,6 +39,7 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 				set({
 					downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
 					showOnlyDownloadDefaults: false,
+					showDateModified: false,
 				}),
 		}),
 		{
@@ -41,6 +48,7 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 			partialize: (state) => ({
 				downloadDefaults: state.downloadDefaults,
 				showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
+				showDateModified: state.showDateModified,
 			}),
 			onRehydrateStorage: () => (state) => {
 				state?.hydrate();
