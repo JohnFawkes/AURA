@@ -1,18 +1,20 @@
 "use client";
 
-import { getAuthToken } from "@/services/auth/api-auth";
+import { getAuthToken } from "@/services/auth/login";
 import {
 	ArrowLeftCircle,
 	ArrowRightCircle,
 	Bookmark as BookmarkIcon,
+	Clock,
 	FileCog as FileCogIcon,
 	LayoutGrid,
 	ListOrdered,
 	LogOutIcon,
 	Logs,
-	Settings as SettingsIcon,
+	MenuIcon,
 	Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 
@@ -67,7 +69,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 	const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
 
 	// Home Page Store
-	const { setCurrentPage, setFilteredLibraries, setFilterInDB } = useHomePageStore();
+	const { setCurrentPage, setFilteredLibraries, setFilterInDB, setFilterIgnored } = useHomePageStore();
 	const nextMediaItem = useHomePageStore((state) => state.nextMediaItem);
 	const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
 
@@ -94,16 +96,29 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 		checkOnboarding();
 	}, [pathName, fetchStatus]);
 
+	// App Not Fully Loaded Redirect Logic
+	useEffect(() => {
+		if (!hasHydrated) return;
+		if (status) {
+			if (status.app_fully_loaded === false) {
+				toast.error("The app is still loading. Please wait a moment and try again.", {
+					duration: 5000,
+				});
+				router.replace("/app-loading");
+			}
+		}
+	}, [status, router, hasHydrated]);
+
 	// Onboarding Redirect Logic
 	useEffect(() => {
 		if (!hasHydrated) return;
 		if (status) {
 			// If needs setup and not on onboarding page, redirect to onboarding
-			if (status.needsSetup) {
+			if (status.needs_setup) {
 				if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
 					router.replace("/onboarding");
 				}
-			} else if (!status.needsSetup) {
+			} else if (!status.needs_setup) {
 				// If does not need setup and on onboarding page, redirect to home
 				if (isOnboardingPage) {
 					router.replace("/");
@@ -127,9 +142,13 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 		setLogoSrc(isWideScreen ? "/aura_word_logo.svg" : "/aura_logo.svg");
 	}, [isWideScreen]);
 
+	useEffect(() => {
+		document.title = `aura | ${status?.media_server_name}` || "aura";
+	}, [status?.media_server_name]);
+
 	// On mount, check auth status
 	useEffect(() => {
-		if (status?.currentSetup.Auth.Enabled === false) {
+		if (status?.current_setup?.auth?.enabled === false) {
 			setIsAuthed(true);
 			return;
 		}
@@ -137,7 +156,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 		// If auth is enabled, check for token
 		const token = getAuthToken();
 		setIsAuthed(!!token && token !== "null" && token !== "undefined");
-	}, [pathName, status?.currentSetup.Auth.Enabled]);
+	}, [pathName, status?.current_setup?.auth?.enabled]);
 
 	// When clicking on the logo, navigate to home
 	// If already on homepage, reset home page states
@@ -151,6 +170,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 			setCurrentPage(1);
 			setFilteredLibraries([]);
 			setFilterInDB("all");
+			setFilterIgnored("none");
 		}
 		router.push("/");
 	};
@@ -230,7 +250,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 						asChild
 						className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
 					>
-						<SettingsIcon
+						<MenuIcon
 							className={cn(
 								"w-8 h-8 ml-2",
 								isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
@@ -238,7 +258,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 						/>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-						{status && !status.needsSetup && (
+						{status && !status.needs_setup && (
 							<>
 								<DropdownMenuItem
 									className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
@@ -283,6 +303,13 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 							<Logs className="w-6 h-6 mr-2" />
 							Logs
 						</DropdownMenuItem>
+						<DropdownMenuItem
+							className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+							onClick={() => router.push("/jobs")}
+						>
+							<Clock className="w-6 h-6 mr-2" />
+							Jobs
+						</DropdownMenuItem>
 						{isNewerVersion(latestVersion ?? "", version) && (
 							<DropdownMenuItem
 								className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
@@ -296,7 +323,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
 								New Version Available ({latestVersion})
 							</DropdownMenuItem>
 						)}
-						{isAuthed && status?.currentSetup.Auth.Enabled && (
+						{isAuthed && status?.current_setup.auth.enabled && (
 							<>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem

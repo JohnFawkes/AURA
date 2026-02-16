@@ -1,257 +1,74 @@
-import { BoxsetCollectionToPosterSet } from "@/helper/boxsets/boxset-to-collection-poster-set";
-import { BoxsetToPosterSet } from "@/helper/boxsets/boxset-to-poster-set";
-import { BoxsetShowToPosterSet } from "@/helper/boxsets/boxset-to-show-poster-set";
-import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
-import { Database } from "lucide-react";
+import { BoxsetsWithSetInfo } from "@/app/user/[username]/page";
+import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 
-import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
+import { MediaCarousel } from "@/components/shared/media-carousel";
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Carousel, CarouselContent } from "@/components/ui/carousel";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Lead } from "@/components/ui/typography";
 
-import { cn } from "@/lib/cn";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
-import { PosterSet } from "@/types/media-and-posters/poster-sets";
-import {
-	MediuxUserBoxset,
-	MediuxUserCollectionSet,
-	//MediuxUserMovieSet,
-	MediuxUserShowSet,
-} from "@/types/mediux/mediux-sets";
-
-export const RenderBoxSetDisplay = ({
+export const RenderShowAndCollectionDisplay = ({
 	set,
-	type,
+	includedItems,
 }: {
-	set: MediuxUserShowSet | MediuxUserCollectionSet | MediuxUserBoxset;
-	type: "show" | "movie" | "collection" | "boxset";
+	set: SetRef;
+	includedItems?: { [tmdb_id: string]: IncludedItem };
 }) => {
-	// Handle different types of sets
-	const getPosterSets = () => {
-		switch (type) {
-			case "show":
-				return BoxsetShowToPosterSet(set as MediuxUserShowSet);
-			// case "movie":
-			// 	return BoxsetMovieToPosterSet(set as MediuxUserMovieSet);
-			case "collection":
-				return BoxsetCollectionToPosterSet(set as MediuxUserCollectionSet);
-			case "boxset":
-				return BoxsetToPosterSet(set as MediuxUserBoxset);
-			default:
-				return [];
+	// For Media Item, we find it based on the set.item_ids and the first one in the includedItems that has a title and rating key
+	let mediaItem: MediaItem | undefined = undefined;
+	if (includedItems) {
+		for (const itemId of set.item_ids) {
+			const includedItem = includedItems[itemId];
+			if (includedItem && includedItem.media_item.title && includedItem.media_item.rating_key) {
+				mediaItem = includedItem.media_item;
+				break;
+			}
 		}
-	};
-
-	const posterSets = getPosterSets();
-	if (!posterSets || posterSets.length === 0) return null;
-
-	// For boxsets, render with accordion
-	if (type === "boxset") {
-		const boxset = set as MediuxUserBoxset;
-		return (
-			<Accordion type="single" collapsible className="w-full">
-				<AccordionItem value={boxset.id}>
-					<AccordionTrigger className="flex items-center justify-between">
-						<div className="text-primary-dynamic hover:text-primary cursor-pointer text-lg font-semibold">
-							{boxset.boxset_title}
-						</div>
-					</AccordionTrigger>
-					<AccordionContent>
-						<div className="flex justify-end">
-							<DownloadModal
-								setType={type}
-								setTitle={boxset.boxset_title}
-								setID={boxset.id}
-								setAuthor={boxset.user_created.username}
-								posterSets={posterSets}
-							/>
-						</div>
-						<ShowFullSetsDisplay
-							setType={type}
-							setTitle={boxset.boxset_title}
-							setAuthor={boxset.user_created.username}
-							setID={boxset.id}
-							posterSets={posterSets}
-						/>
-					</AccordionContent>
-				</AccordionItem>
-			</Accordion>
-		);
 	}
 
-	// For other types, render carousel
+	// Show And Collection Sets
 	return (
-		<Carousel
-			opts={{
-				align: "start",
-				dragFree: true,
-				slidesToScroll: "auto",
-			}}
-			className="w-full"
-		>
-			<div className="flex flex-col">
-				<div className="flex flex-row items-center">
-					<div className="flex flex-row items-center">
-						<div className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold">
-							{type === "collection"
-								? (set as MediuxUserCollectionSet).set_title
-								: (set as MediuxUserShowSet).set_title}
-						</div>
-						{/* {type === "movie" && (set as MediuxUserMovieSet).movie_id.MediaItem?.ExistInDatabase && (
-							<Popover>
-								<PopoverTrigger asChild>
-									<Database
-										className={cn(
-											"ml-1 h-5 w-5 cursor-pointer active:scale-95",
-											(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
-												(dbSet) => dbSet.PosterSetID === set.id
-											)
-												? "text-green-500 hover:text-green-600"
-												: "text-yellow-500 hover:text-yellow-600"
-										)}
-									/>
-								</PopoverTrigger>
-								<PopoverContent
-									side="top"
-									sideOffset={5}
-									className="bg-secondary border border-2 border-primary p-2"
-								>
-									<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
-										<Database
-											className={cn(
-												"inline-block mr-2 cursor-pointer active:scale-95",
-												(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
-													(dbSet) => dbSet.PosterSetID === set.id
-												)
-													? "text-green-500"
-													: "text-yellow-500"
-											)}
-											size={16}
-										/>
-										{(set as MediuxUserMovieSet).movie_id.MediaItem.DBSavedSets?.some(
-											(dbSet) => dbSet.PosterSetID === set.id
-										)
-											? "This exact set is already in your database"
-											: "Some Media Items in this set are in the database with different sets"}
-									</div>
-								</PopoverContent>
-							</Popover>
-						)} */}
-						{type === "show" && (set as MediuxUserShowSet).show_id.MediaItem?.ExistInDatabase && (
-							<Popover>
-								<PopoverTrigger asChild>
-									<Database
-										className={cn(
-											"ml-1 h-5 w-5 cursor-pointer active:scale-95",
-											(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
-												(dbSet) => dbSet.PosterSetID === set.id
-											)
-												? "text-green-500 hover:text-green-600"
-												: "text-yellow-500 hover:text-yellow-600"
-										)}
-									/>
-								</PopoverTrigger>
-								<PopoverContent
-									side="top"
-									sideOffset={5}
-									className="bg-secondary border border-2 border-primary p-2"
-								>
-									<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
-										<Database
-											className={cn(
-												"inline-block mr-2 cursor-pointer active:scale-95",
-												(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
-													(dbSet) => dbSet.PosterSetID === set.id
-												)
-													? "text-green-500"
-													: "text-yellow-500"
-											)}
-											size={16}
-										/>
-										{(set as MediuxUserShowSet).show_id.MediaItem.DBSavedSets?.some(
-											(dbSet) => dbSet.PosterSetID === set.id
-										)
-											? "This exact set is already in your database"
-											: "Some Media Items in this set are in the database with different sets"}
-									</div>
-								</PopoverContent>
-							</Popover>
-						)}
-						{type === "collection" &&
-							(set as MediuxUserCollectionSet).movie_posters.some(
-								(mp) => mp.movie.MediaItem?.ExistInDatabase
-							) && (
-								<Popover>
-									<PopoverTrigger asChild>
-										<Database
-											className={cn(
-												"ml-1 h-5 w-5 cursor-pointer active:scale-95",
-												(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
-													mp.movie.MediaItem?.DBSavedSets?.some(
-														(dbSet) => dbSet.PosterSetID === set.id
-													)
-												)
-													? "text-green-500 hover:text-green-600"
-													: "text-yellow-500 hover:text-yellow-600"
-											)}
-										/>
-									</PopoverTrigger>
-									<PopoverContent
-										side="top"
-										sideOffset={5}
-										className="bg-secondary border border-2 border-primary p-2"
-									>
-										<div className={cn("text-center", "text-md", "font-medium", "rounded-md")}>
-											<Database
-												className={cn(
-													"inline-block mr-2 cursor-pointer active:scale-95",
-													(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
-														mp.movie.MediaItem?.DBSavedSets?.some(
-															(dbSet) => dbSet.PosterSetID === set.id
-														)
-													)
-														? "text-green-500"
-														: "text-yellow-500"
-												)}
-												size={16}
-											/>
-											{(set as MediuxUserCollectionSet).movie_posters.some((mp) =>
-												mp.movie.MediaItem?.DBSavedSets?.some(
-													(dbSet) => dbSet.PosterSetID === set.id
-												)
-											)
-												? "This exact set is already in your database"
-												: "Some Media Items in this set are in the database with different sets"}
-										</div>
-									</PopoverContent>
-								</Popover>
-							)}
+		<MediaCarousel
+			set={set}
+			includedItems={includedItems}
+			mediaItem={mediaItem || ({} as MediaItem)}
+			dimNotFound={false}
+		/>
+	);
+};
+
+export const RenderBoxsetDisplay = ({
+	set,
+	includedItems,
+}: {
+	set: BoxsetsWithSetInfo;
+	includedItems?: { [tmdb_id: string]: IncludedItem };
+}) => {
+	return (
+		<Accordion type="single" collapsible className="w-full">
+			<AccordionItem value={set.id}>
+				<AccordionTrigger className="flex items-center justify-between">
+					<div className="text-primary-dynamic hover:text-primary cursor-pointer text-lg font-semibold">
+						{set.title}
 					</div>
-					<div className="ml-auto flex space-x-2">
+				</AccordionTrigger>
+				<AccordionContent>
+					<div className="flex justify-end">
 						<DownloadModal
-							setType={type}
-							setTitle={
-								type === "collection"
-									? (set as MediuxUserCollectionSet).set_title
-									: (set as MediuxUserShowSet).set_title
-							}
-							setID={set.id}
-							setAuthor={set.user_created.username}
-							posterSets={posterSets}
+							baseSetInfo={set}
+							formItems={setRefsToFormItems(set.sets || [], includedItems || {})}
 						/>
 					</div>
-				</div>
-				<Lead className="text-sm text-muted-foreground flex items-center mb-1">
-					Last Update: {formatLastUpdatedDate(set.date_updated, set.date_created)}
-				</Lead>
-			</div>
-
-			<CarouselContent>
-				<CarouselDisplay sets={posterSets as PosterSet[]} />
-			</CarouselContent>
-		</Carousel>
+					<ShowFullSetsDisplay
+						baseSetInfo={set}
+						posterSets={set.sets || []}
+						includedItems={includedItems}
+						dimNotFound={false}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+		</Accordion>
 	);
 };

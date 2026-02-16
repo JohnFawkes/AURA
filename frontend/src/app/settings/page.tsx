@@ -1,8 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchConfig } from "@/services/settings-onboarding/api-config-fetch";
-import { updateConfig } from "@/services/settings-onboarding/api-config-update";
+import { getAppConfigStatus } from "@/services/config/app-status";
+import { updateAppConfig } from "@/services/config/config-update";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -35,36 +35,36 @@ import {
 	AppConfigNotificationGotify,
 	AppConfigNotificationPushover,
 	AppConfigNotificationWebhook,
-} from "@/types/config/config-app";
+} from "@/types/config/config";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
 type ObjectSectionKeys = {
 	[K in keyof AppConfig]-?: NonNullable<AppConfig[K]> extends object ? K : never;
 }[keyof AppConfig];
 
-type SectionDirty<S extends ObjectSectionKeys = ObjectSectionKeys> = S extends "SonarrRadarr"
-	? Partial<{ Type: boolean; Library: boolean; URL: boolean; APIKey: boolean }>
+type SectionDirty<S extends ObjectSectionKeys = ObjectSectionKeys> = S extends "sonarr_radarr"
+	? Partial<{ type: boolean; library: boolean; url: boolean; api_token: boolean }>
 	: Partial<Record<keyof NonNullable<AppConfig[S]>, boolean>>;
 
 interface ImagesDirty {
-	CacheImages?: { Enabled?: boolean };
-	SaveImagesLocally?: { Enabled?: boolean; Path?: string };
+	cache_images?: { enabled?: boolean };
+	save_images_locally?: { enabled?: boolean; path?: string };
 }
 
 type NotificationsDirty = {
-	Enabled?: boolean;
-	Providers?: Array<
+	enabled?: boolean;
+	providers?: Array<
 		Partial<
 			Record<
 				string,
 				| boolean
 				| {
-						Enabled?: boolean;
-						Webhook?: boolean;
-						UserKey?: boolean;
-						Token?: boolean;
-						URL?: boolean;
-						Headers?: Record<string, boolean>;
+						enabled?: boolean;
+						webhook?: boolean;
+						user_key?: boolean;
+						api_token?: boolean;
+						url?: boolean;
+						headers?: Record<string, boolean>;
 				  }
 			>
 		>
@@ -72,11 +72,11 @@ type NotificationsDirty = {
 };
 
 type DirtyState = {
-	[K in ObjectSectionKeys]?: K extends "Images"
+	[K in ObjectSectionKeys]?: K extends "images"
 		? ImagesDirty
-		: K extends "SonarrRadarr"
-			? Array<SectionDirty<"SonarrRadarr">>
-			: K extends "Notifications"
+		: K extends "sonarr_radarr"
+			? Array<SectionDirty<"sonarr_radarr">>
+			: K extends "notifications"
 				? NotificationsDirty
 				: SectionDirty<K>;
 };
@@ -133,7 +133,7 @@ const SettingsPage: React.FC = () => {
 	const fetchAndSetConfig = async (reload: boolean = false) => {
 		try {
 			setLoading(true);
-			const response = await fetchConfig(reload);
+			const response = await getAppConfigStatus(reload);
 			if (response.status === "error") {
 				setError(response);
 				setInitialConfig(defaultAppConfig());
@@ -141,7 +141,7 @@ const SettingsPage: React.FC = () => {
 				return;
 			}
 
-			const cfg = response.data ?? defaultAppConfig();
+			const cfg = response.data?.current_setup ?? defaultAppConfig();
 			setInitialConfig(cfg);
 			setNewConfig(cfg);
 			setError(null);
@@ -156,9 +156,6 @@ const SettingsPage: React.FC = () => {
 
 	// Fetch configuration data on mount
 	useEffect(() => {
-		if (typeof window !== "undefined") {
-			document.title = "aura | Settings";
-		}
 		if (isMounted.current) return;
 		isMounted.current = true;
 
@@ -180,7 +177,7 @@ const SettingsPage: React.FC = () => {
 		setEditing(false);
 
 		try {
-			const resp = await updateConfig(newConfig);
+			const resp = await updateAppConfig(newConfig);
 
 			if (resp.status === "error") {
 				setError(resp);
@@ -241,52 +238,52 @@ const SettingsPage: React.FC = () => {
 
 		setDirty((prev) => {
 			// --- SonarrRadarr dirty tracking ---
-			if (section === "SonarrRadarr" && field === "Applications") {
-				const originalApps = initialConfig.SonarrRadarr.Applications ?? [];
-				const newApps = (value as AppConfig["SonarrRadarr"]["Applications"]) ?? [];
+			if (section === "sonarr_radarr" && field === "applications") {
+				const originalApps = initialConfig.sonarr_radarr.applications ?? [];
+				const newApps = (value as AppConfig["sonarr_radarr"]["applications"]) ?? [];
 				const dirtyArr = newApps.map((app, idx) => {
 					const orig = originalApps[idx];
-					const dirtyObj: SectionDirty<"SonarrRadarr"> = {};
-					for (const key of ["Type", "Library", "URL", "APIKey"] as const) {
+					const dirtyObj: SectionDirty<"sonarr_radarr"> = {};
+					for (const key of ["type", "library", "url", "api_token"] as const) {
 						if (app[key] !== orig?.[key]) dirtyObj[key] = true;
 					}
 					return dirtyObj;
 				});
-				return { ...prev, SonarrRadarr: dirtyArr };
+				return { ...prev, sonarr_radarr: dirtyArr };
 			}
 
 			// --- Notifications dirty tracking ---
-			if (section === "Notifications" && field === "Providers") {
-				const originalProviders = initialConfig.Notifications?.Providers ?? [];
-				const newProviders = value as AppConfig["Notifications"]["Providers"];
+			if (section === "notifications" && field === "providers") {
+				const originalProviders = initialConfig.notifications?.providers ?? [];
+				const newProviders = value as AppConfig["notifications"]["providers"];
 				const dirtyProviders = newProviders.map((prov, idx) => {
 					const orig = originalProviders[idx] ?? {};
 					const dirtyObj: Partial<
 						Record<
 							string,
 							{
-								Enabled?: boolean;
-								Webhook?: boolean;
-								UserKey?: boolean;
-								Token?: boolean;
-								URL?: boolean;
-								Headers?: Record<string, boolean>;
+								enabled?: boolean;
+								webhook?: boolean;
+								user_key?: boolean;
+								api_token?: boolean;
+								url?: boolean;
+								headers?: Record<string, boolean>;
 							}
 						>
 					> = {};
 
-					for (const key of ["Discord", "Pushover", "Gotify", "Webhook"] as const) {
+					for (const key of ["discord", "pushover", "gotify", "webhook"] as const) {
 						if (prov[key] && orig?.[key]) {
 							const fieldDirty: {
-								Enabled?: boolean;
-								Webhook?: boolean;
-								UserKey?: boolean;
-								URL?: boolean;
-								Token?: boolean;
-								Headers?: Record<string, boolean>;
+								enabled?: boolean;
+								webhook?: boolean;
+								user_key?: boolean;
+								url?: boolean;
+								api_token?: boolean;
+								headers?: Record<string, boolean>;
 							} = {};
-							if (key === "Discord") {
-								const discordKeys = ["Enabled", "Webhook"] as const;
+							if (key === "discord") {
+								const discordKeys = ["enabled", "webhook"] as const;
 								for (const subKey of discordKeys) {
 									if (
 										(prov[key] as AppConfigNotificationDiscord)[subKey] !==
@@ -295,8 +292,8 @@ const SettingsPage: React.FC = () => {
 										fieldDirty[subKey] = true;
 									}
 								}
-							} else if (key === "Pushover") {
-								const pushoverKeys = ["Enabled", "UserKey", "Token"] as const;
+							} else if (key === "pushover") {
+								const pushoverKeys = ["enabled", "user_key", "api_token"] as const;
 								for (const subKey of pushoverKeys) {
 									if (
 										(prov[key] as AppConfigNotificationPushover)[subKey] !==
@@ -305,8 +302,8 @@ const SettingsPage: React.FC = () => {
 										fieldDirty[subKey] = true;
 									}
 								}
-							} else if (key === "Gotify") {
-								const gotifyKeys = ["Enabled", "Token", "URL"] as const;
+							} else if (key === "gotify") {
+								const gotifyKeys = ["enabled", "api_token", "url"] as const;
 								for (const subKey of gotifyKeys) {
 									if (
 										(prov[key] as AppConfigNotificationGotify)[subKey] !==
@@ -315,8 +312,8 @@ const SettingsPage: React.FC = () => {
 										fieldDirty[subKey] = true;
 									}
 								}
-							} else if (key === "Webhook") {
-								const webhookKeys = ["Enabled", "URL"] as const;
+							} else if (key === "webhook") {
+								const webhookKeys = ["enabled", "url"] as const;
 								for (const subKey of webhookKeys) {
 									if (
 										(prov[key] as AppConfigNotificationWebhook)[subKey] !==
@@ -326,8 +323,8 @@ const SettingsPage: React.FC = () => {
 									}
 								}
 								// Deep compare Headers
-								const newHeaders = (prov[key] as AppConfigNotificationWebhook).Headers ?? {};
-								const origHeaders = (orig[key] as AppConfigNotificationWebhook).Headers ?? {};
+								const newHeaders = (prov[key] as AppConfigNotificationWebhook).headers ?? {};
+								const origHeaders = (orig[key] as AppConfigNotificationWebhook).headers ?? {};
 								const headersDirty: Record<string, boolean> = {};
 								const allHeaderKeys = Array.from(
 									new Set([...Object.keys(newHeaders), ...Object.keys(origHeaders)])
@@ -337,7 +334,7 @@ const SettingsPage: React.FC = () => {
 										headersDirty[hKey] = true;
 									}
 								}
-								fieldDirty.Headers = Object.keys(headersDirty).length > 0 ? headersDirty : undefined;
+								fieldDirty.headers = Object.keys(headersDirty).length > 0 ? headersDirty : undefined;
 							}
 							if (Object.keys(fieldDirty).length > 0) {
 								dirtyObj[key] = fieldDirty;
@@ -348,9 +345,9 @@ const SettingsPage: React.FC = () => {
 				});
 				return {
 					...prev,
-					Notifications: {
-						...prev.Notifications,
-						Providers: dirtyProviders,
+					notifications: {
+						...prev.notifications,
+						providers: dirtyProviders,
 					},
 				};
 			}
@@ -362,7 +359,7 @@ const SettingsPage: React.FC = () => {
 			let nextSectionDirty = prevSectionDirty;
 
 			// Only run for non-SonarrRadarr sections
-			if (section !== "SonarrRadarr") {
+			if (section !== "sonarr_radarr") {
 				// Explicit cast via unknown to satisfy TypeScript
 				const dirtyKey = field as unknown as keyof SectionDirty<S>;
 				if (reverted) {
@@ -388,30 +385,30 @@ const SettingsPage: React.FC = () => {
 		});
 	};
 
-	const updateImagesField = <G extends keyof AppConfig["Images"], F extends keyof AppConfig["Images"][G]>(
+	const updateImagesField = <G extends keyof AppConfig["images"], F extends keyof AppConfig["images"][G]>(
 		group: G,
 		field: F,
-		value: AppConfig["Images"][G][F]
+		value: AppConfig["images"][G][F]
 	) => {
 		setNewConfig((prev) => {
 			const nextGroup = {
-				...prev.Images[group],
+				...prev.images[group],
 				[field]: value,
 			};
 			return {
 				...prev,
-				Images: {
-					...prev.Images,
+				images: {
+					...prev.images,
 					[group]: nextGroup,
 				},
 			};
 		});
 
 		setDirty((prev) => {
-			const originalVal = initialConfig.Images[group][field];
+			const originalVal = initialConfig.images[group][field];
 			const reverted = originalVal === value;
 
-			const prevImagesDirty = (prev.Images ?? {}) as ImagesDirty;
+			const prevImagesDirty = (prev.images ?? {}) as ImagesDirty;
 			const prevGroupDirty = (prevImagesDirty[group] ?? {}) as { [k in F]?: boolean };
 
 			let nextGroupDirty = prevGroupDirty;
@@ -435,9 +432,9 @@ const SettingsPage: React.FC = () => {
 
 			const nextState: DirtyState = { ...prev };
 			if (Object.keys(nextImagesDirty).length === 0) {
-				delete nextState.Images;
+				delete nextState.images;
 			} else {
-				nextState.Images = nextImagesDirty;
+				nextState.images = nextImagesDirty;
 			}
 			return nextState;
 		});
@@ -548,56 +545,56 @@ const SettingsPage: React.FC = () => {
 						<TabsContent value="app-settings" className="mt-6 w-full">
 							<div className="space-y-5 w-full">
 								<ConfigSectionMediux
-									value={newConfig.Mediux}
+									value={newConfig.mediux}
 									editing={editing}
 									configAlreadyLoaded={true}
-									dirtyFields={dirty.Mediux}
-									onChange={(field, value) => updateConfigField("Mediux", field, value)}
+									dirtyFields={dirty.mediux}
+									onChange={(field, value) => updateConfigField("mediux", field, value)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("Mediux", errs as Record<string, string>)
+										updateSectionErrors("mediux", errs as Record<string, string>)
 									}
 								/>
 								<ConfigSectionMediaServer
-									value={newConfig.MediaServer}
+									value={newConfig.media_server}
 									editing={editing}
 									configAlreadyLoaded={true}
-									dirtyFields={dirty.MediaServer}
-									onChange={(field, value) => updateConfigField("MediaServer", field, value)}
+									dirtyFields={dirty.media_server}
+									onChange={(field, value) => updateConfigField("media_server", field, value)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("MediaServer", errs as Record<string, string>)
+										updateSectionErrors("media_server", errs as Record<string, string>)
 									}
 								/>
 								<ConfigSectionAuth
-									value={newConfig.Auth}
+									value={newConfig.auth}
 									editing={editing}
-									dirtyFields={dirty.Auth}
-									onChange={(field, value) => updateConfigField("Auth", field, value)}
-									errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
+									dirtyFields={dirty.auth}
+									onChange={(field, value) => updateConfigField("auth", field, value)}
+									errorsUpdate={(errs) => updateSectionErrors("auth", errs as Record<string, string>)}
 								/>
 								<ConfigSectionLogging
-									value={newConfig.Logging}
+									value={newConfig.logging}
 									editing={editing}
-									dirtyFields={dirty.Logging}
-									onChange={(field, value) => updateConfigField("Logging", field, value)}
+									dirtyFields={dirty.logging}
+									onChange={(field, value) => updateConfigField("logging", field, value)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("Logging", errs as Record<string, string>)
+										updateSectionErrors("logging", errs as Record<string, string>)
 									}
 								/>
 								<ConfigSectionImages
-									value={newConfig.Images}
+									value={newConfig.images}
 									editing={editing}
 									dirtyFields={
-										dirty.Images
+										dirty.images
 											? {
-													...dirty.Images,
-													SaveImagesLocally: dirty.Images.SaveImagesLocally
+													...dirty.images,
+													save_images_locally: dirty.images.save_images_locally
 														? {
-																...dirty.Images.SaveImagesLocally,
-																Path:
-																	typeof dirty.Images.SaveImagesLocally.Path ===
+																...dirty.images.save_images_locally,
+																path:
+																	typeof dirty.images.save_images_locally.path ===
 																	"string"
-																		? !!dirty.Images.SaveImagesLocally.Path
-																		: dirty.Images.SaveImagesLocally.Path,
+																		? !!dirty.images.save_images_locally.path
+																		: dirty.images.save_images_locally.path,
 															}
 														: undefined,
 												}
@@ -605,17 +602,17 @@ const SettingsPage: React.FC = () => {
 									}
 									onChange={updateImagesField}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("Images", errs as Record<string, string>)
+										updateSectionErrors("images", errs as Record<string, string>)
 									}
-									mediaServerType={newConfig.MediaServer.Type}
+									mediaServerType={newConfig.media_server.type}
 								/>
 								<ConfigSectionAutoDownload
-									value={newConfig.AutoDownload}
+									value={newConfig.auto_download}
 									editing={editing}
-									dirtyFields={dirty.AutoDownload}
-									onChange={(f, v) => updateConfigField("AutoDownload", f, v)}
+									dirtyFields={dirty.auto_download}
+									onChange={(f, v) => updateConfigField("auto_download", f, v)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("AutoDownload", errs as Record<string, string>)
+										updateSectionErrors("auto_download", errs as Record<string, string>)
 									}
 								/>
 
@@ -628,87 +625,87 @@ const SettingsPage: React.FC = () => {
 								/> */}
 
 								<ConfigSectionSonarrRadarr
-									value={newConfig.SonarrRadarr}
+									value={newConfig.sonarr_radarr}
 									editing={editing}
 									dirtyFields={
-										dirty.SonarrRadarr
+										dirty.sonarr_radarr
 											? {
-													Applications: dirty.SonarrRadarr as Partial<{
-														Type: boolean;
-														Library: boolean;
-														URL: boolean;
-														APIKey: boolean;
+													applications: dirty.sonarr_radarr as Partial<{
+														type: boolean;
+														library: boolean;
+														url: boolean;
+														api_token: boolean;
 													}>[],
 												}
 											: undefined
 									}
-									onChange={(field, val) => updateConfigField("SonarrRadarr", field, val)}
+									onChange={(field, val) => updateConfigField("sonarr_radarr", field, val)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("SonarrRadarr", errs as Record<string, string>)
+										updateSectionErrors("sonarr_radarr", errs as Record<string, string>)
 									}
 									configAlreadyLoaded={true}
-									libraries={newConfig.MediaServer.Libraries || []}
+									libraries={newConfig.media_server.libraries || []}
 								/>
 
-								{(newConfig.MediaServer.Type === "Plex" ||
-									(Array.isArray(newConfig.SonarrRadarr.Applications) &&
-										newConfig.SonarrRadarr.Applications.length > 0)) && (
+								{(newConfig.media_server.type === "Plex" ||
+									(Array.isArray(newConfig.sonarr_radarr.applications) &&
+										newConfig.sonarr_radarr.applications.length > 0)) && (
 									<ConfigSectionLabelsAndTags
-										value={newConfig.LabelsAndTags}
+										value={newConfig.labels_and_tags}
 										editing={editing}
 										dirtyFields={
-											dirty.LabelsAndTags as {
-												Applications?: Array<
+											dirty.labels_and_tags as {
+												applications?: Array<
 													Partial<
 														Record<
 															string,
 															| boolean
-															| { Enabled?: boolean; Add?: boolean; Remove?: boolean }
+															| { enabled?: boolean; add?: boolean; remove?: boolean }
 														>
 													>
 												>;
 											}
 										}
-										mediaServerType={newConfig.MediaServer.Type}
+										mediaServerType={newConfig.media_server.type}
 										srOptions={Array.from(
 											new Set(
-												(newConfig.SonarrRadarr.Applications ?? [])
-													.map((app) => app.Type)
+												(newConfig.sonarr_radarr.applications ?? [])
+													.map((app) => app.type)
 													.filter((type) => !!type)
 											)
 										)}
-										onChange={(field, val) => updateConfigField("LabelsAndTags", field, val)}
+										onChange={(field, val) => updateConfigField("labels_and_tags", field, val)}
 										errorsUpdate={(errs) =>
-											updateSectionErrors("LabelsAndTags", errs as Record<string, string>)
+											updateSectionErrors("labels_and_tags", errs as Record<string, string>)
 										}
 									/>
 								)}
 
 								<ConfigSectionNotifications
-									value={newConfig.Notifications}
+									value={newConfig.notifications}
 									editing={editing}
 									dirtyFields={
-										dirty.Notifications as {
-											Enabled?: boolean;
-											Providers?: Partial<
+										dirty.notifications as {
+											enabled?: boolean;
+											providers?: Partial<
 												Record<
 													string,
 													| boolean
 													| {
-															Enabled?: boolean;
-															Webhook?: boolean;
-															UserKey?: boolean;
-															Token?: boolean;
-															URL?: boolean;
-															Headers?: Record<string, boolean>;
+															enabled?: boolean;
+															webhook?: boolean;
+															user_key?: boolean;
+															api_token?: boolean;
+															url?: boolean;
+															headers?: Record<string, boolean>;
 													  }
 												>
 											>[];
 										}
 									}
-									onChange={(field, val) => updateConfigField("Notifications", field, val)}
+									onChange={(field, val) => updateConfigField("notifications", field, val)}
 									errorsUpdate={(errs) =>
-										updateSectionErrors("Notifications", errs as Record<string, string>)
+										updateSectionErrors("notifications", errs as Record<string, string>)
 									}
 									configAlreadyLoaded={true}
 								/>

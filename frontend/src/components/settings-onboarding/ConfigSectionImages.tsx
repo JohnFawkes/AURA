@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { postClearTempImagesFolder } from "@/services/settings-onboarding/api-images-actions";
+import { postClearTempImagesFolder } from "@/services/images/api-images-actions";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigImages } from "@/types/config/config-app";
+import { AppConfigImages } from "@/types/config/config";
 
 const EPISODE_NAMING_CONVENTION_OPTIONS = ["match", "static"];
 
@@ -32,11 +32,11 @@ interface ConfigSectionImagesProps {
 	value: AppConfigImages;
 	editing: boolean;
 	dirtyFields?: {
-		CacheImages?: { Enabled?: boolean };
-		SaveImagesLocally?: {
-			Enabled?: boolean;
-			Path?: boolean;
-			EpisodeNamingConvention?: boolean;
+		cache_images?: { enabled?: boolean };
+		save_images_locally?: {
+			enabled?: boolean;
+			path?: boolean;
+			episode_naming_convention?: boolean;
 		};
 	};
 	onChange: <K extends keyof AppConfigImages, F extends keyof AppConfigImages[K]>(
@@ -76,18 +76,18 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 		const errs: Partial<Record<keyof AppConfigImages, string>> = {};
 
 		// If Media Server Type is Plex, validate SaveImagesLocally.EpisodeNamingConvention
-		if (mediaServerType && mediaServerType === "Plex" && value.SaveImagesLocally.Enabled) {
-			if (!value.SaveImagesLocally.EpisodeNamingConvention) {
-				errs.SaveImagesLocally = "Episode naming convention is required.";
+		if (mediaServerType && mediaServerType === "Plex" && value.save_images_locally.enabled) {
+			if (!value.save_images_locally.episode_naming_convention) {
+				errs.save_images_locally = "Episode naming convention is required.";
 			} else {
-				if (!EPISODE_NAMING_CONVENTION_OPTIONS.includes(value.SaveImagesLocally.EpisodeNamingConvention)) {
-					errs.SaveImagesLocally = `Episode naming convention must be one of: ${EPISODE_NAMING_CONVENTION_OPTIONS.join(", ")}.`;
+				if (!EPISODE_NAMING_CONVENTION_OPTIONS.includes(value.save_images_locally.episode_naming_convention)) {
+					errs.save_images_locally = `Episode naming convention must be one of: ${EPISODE_NAMING_CONVENTION_OPTIONS.join(", ")}.`;
 				}
 			}
 		}
 
 		return errs;
-	}, [mediaServerType, value.SaveImagesLocally.Enabled, value.SaveImagesLocally.EpisodeNamingConvention]);
+	}, [mediaServerType, value.save_images_locally.enabled, value.save_images_locally.episode_naming_convention]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -120,15 +120,15 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 				className={cn(
 					"flex items-center justify-between border rounded-md p-3 transition",
 					"border-muted",
-					dirtyFields.CacheImages?.Enabled && "border-amber-500"
+					dirtyFields.cache_images?.enabled && "border-amber-500"
 				)}
 			>
 				<Label className="mr-2">Cache Images</Label>
 				<div className="flex items-center gap-2">
 					<Switch
 						disabled={!editing}
-						checked={value.CacheImages.Enabled}
-						onCheckedChange={(v) => onChange("CacheImages", "Enabled", v)}
+						checked={value.cache_images.enabled}
+						onCheckedChange={(v) => onChange("cache_images", "enabled", v)}
 					/>
 					{editing && (
 						<PopoverHelp ariaLabel="help-images-cache">
@@ -144,7 +144,7 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 					className={cn(
 						"border rounded-md p-3 transition",
 						"border-muted",
-						dirtyFields.SaveImagesLocally?.Enabled && "border-amber-500"
+						dirtyFields.save_images_locally?.enabled && "border-amber-500"
 					)}
 				>
 					<div className="flex items-center justify-between mb-2">
@@ -152,8 +152,8 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						<div className="flex items-center gap-2">
 							<Switch
 								disabled={!editing}
-								checked={!!value.SaveImagesLocally.Enabled}
-								onCheckedChange={(v) => onChange("SaveImagesLocally", "Enabled", v)}
+								checked={!!value.save_images_locally.enabled}
+								onCheckedChange={(v) => onChange("save_images_locally", "enabled", v)}
 							/>
 							{editing && (
 								<PopoverHelp ariaLabel="help-images-save-next-to-content">
@@ -166,11 +166,11 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 						</div>
 					</div>
 
-					{value.SaveImagesLocally.Enabled && (
+					{value.save_images_locally.enabled && (
 						<div
 							className={cn(
 								"mt-2",
-								dirtyFields.SaveImagesLocally?.Enabled && "border border-amber-500 rounded-md p-2"
+								dirtyFields.save_images_locally?.enabled && "border border-amber-500 rounded-md p-2"
 							)}
 						>
 							<div className="flex items-center justify-between mb-2">
@@ -188,18 +188,18 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 							<Input
 								type="text"
 								disabled={!editing}
-								value={value.SaveImagesLocally.Path || ""}
-								onChange={(e) => onChange("SaveImagesLocally", "Path", e.target.value)}
+								value={value.save_images_locally.path || ""}
+								onChange={(e) => onChange("save_images_locally", "path", e.target.value)}
 								className={cn(
 									"w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 transition",
-									dirtyFields.SaveImagesLocally?.Path && "border-amber-500"
+									dirtyFields.save_images_locally?.path && "border-amber-500"
 								)}
 								placeholder="/path/to/images"
 							/>
 						</div>
 					)}
 
-					{mediaServerType === "Plex" && value.SaveImagesLocally.Enabled && (
+					{mediaServerType === "Plex" && value.save_images_locally.enabled && (
 						<div className={cn("space-y-1 mt-4")}>
 							<div className="flex items-center justify-between">
 								<Label>Episode Naming Convention</Label>
@@ -233,14 +233,14 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 							</div>
 							<Select
 								disabled={!editing}
-								value={value.SaveImagesLocally.EpisodeNamingConvention || ""}
-								onValueChange={(v) => onChange("SaveImagesLocally", "EpisodeNamingConvention", v)}
+								value={value.save_images_locally.episode_naming_convention || ""}
+								onValueChange={(v) => onChange("save_images_locally", "episode_naming_convention", v)}
 							>
 								<SelectTrigger
 									id="media-server-episode-naming-convention-trigger"
 									className={cn(
 										"w-full",
-										dirtyFields.SaveImagesLocally?.EpisodeNamingConvention && "border-amber-500"
+										dirtyFields.save_images_locally?.episode_naming_convention && "border-amber-500"
 									)}
 								>
 									<SelectValue placeholder="Select convention..." />

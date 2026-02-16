@@ -1,7 +1,7 @@
 "use client";
 
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { sendTestNotification } from "@/services/settings-onboarding/api-notifications-test";
+import { sendTestNotification } from "@/services/notifications/test";
 import { Plus, TestTube, Trash2 } from "lucide-react";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,6 +12,8 @@ import {
 	ConfigConnectionStatus,
 } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,31 +28,33 @@ import {
 	AppConfigNotificationGotify,
 	AppConfigNotificationProviders,
 	AppConfigNotificationPushover,
+	AppConfigNotificationTemplate,
 	AppConfigNotificationWebhook,
 	AppConfigNotifications,
-} from "@/types/config/config-app";
+} from "@/types/config/config";
 
 interface ConfigSectionNotificationsProps {
 	value: AppConfigNotifications;
 	editing: boolean;
 	dirtyFields?: {
-		Enabled?: boolean;
-		Providers?: Array<
+		enabled?: boolean;
+		providers?: Array<
 			Partial<
 				Record<
 					string,
 					| boolean
 					| {
-							Enabled?: boolean;
-							Webhook?: boolean;
-							UserKey?: boolean;
-							Token?: boolean;
-							URL?: boolean;
-							Headers?: Record<string, boolean>;
+							enabled?: boolean;
+							webhook?: boolean;
+							user_key?: boolean;
+							api_token?: boolean;
+							url?: boolean;
+							headers?: Record<string, boolean>;
 					  }
 				>
 			>
 		>;
+		templates?: Partial<Record<keyof AppConfigNotificationTemplate, boolean>>;
 	};
 	onChange: <K extends keyof AppConfigNotifications>(field: K, value: AppConfigNotifications[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
@@ -58,6 +62,36 @@ interface ConfigSectionNotificationsProps {
 }
 
 const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify", "Webhook"] as const;
+
+const TEMPLATE_TITLES: Partial<Record<keyof AppConfigNotificationTemplate, string>> = {
+	app_startup: "App Startup",
+	test_notification: "Test Notification",
+	// autodownload: "Auto Download",
+	// download_queue_success: "Download Queue Success",
+	// download_queue_warning: "Download Queue Warning",
+	// download_queue_error: "Download Queue Error",
+	// sonarr_download_upgrade: "Sonarr Download Upgrade",
+	// sonarr_download_new: "Sonarr Download New",
+};
+
+const NOTIFICATION_VARIABLES: Partial<Record<keyof AppConfigNotificationTemplate, string[]>> = {
+	app_startup: [
+		"{{AppName}}",
+		"{{AppVersion}}",
+		"{{AppPort}}",
+		"{{MediaServerName}}",
+		"{{MediaServerType}}",
+		"{{Timestamp}}",
+	],
+	test_notification: ["{{Timestamp}}", "{{MediaServerName}}", "{{MediaServerType}}"],
+};
+
+const TEMPLATE_SUPPORTS_IMAGE: Partial<Record<keyof AppConfigNotificationTemplate, boolean>> = {
+	app_startup: false,
+	test_notification: false,
+};
+
+const TEMPLATE_VAR_REGEX = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
 
 export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProps> = ({
 	value,
@@ -70,34 +104,50 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 	const prevErrorsRef = useRef<string>("");
 	const hasRunInitialValidation = useRef(false);
 
+	const [insertTargetByTemplate, setInsertTargetByTemplate] = useState<
+		Partial<Record<keyof AppConfigNotificationTemplate, "title" | "message">>
+	>({});
+
 	// Local select state for adding providers
 	const [newProviderType, setNewProviderType] = useState<string>("Discord");
 
 	// State to track editing header keys
 	const [editingHeaderKeys, setEditingHeaderKeys] = useState<Record<number, Record<string, string>>>({});
 
-	const providers = useMemo(() => (Array.isArray(value.Providers) ? value.Providers : []), [value.Providers]);
+	const providers = useMemo(() => (Array.isArray(value.providers) ? value.providers : []), [value.providers]);
+
+	const templates = useMemo(() => value.templates || {}, [value.templates]);
 
 	// State to track app connection testing
 	const [appConnectionStatus, setAppConnectionStatus] = useState<Record<number, ConfigConnectionStatus>>({});
 	const [remoteTokenErrors, setRemoteTokenErrors] = useState<Record<number, string | null>>({});
 
+	const templateKeys = useMemo(() => Object.keys(TEMPLATE_TITLES) as Array<keyof AppConfigNotificationTemplate>, []);
+
+	const getUsedVars = (text: string) => {
+		const set = new Set<string>();
+		for (const m of text.matchAll(TEMPLATE_VAR_REGEX)) {
+			if (m[0]) set.add(m[0]); // keep with braces for direct compare with NOTIFICATION_VARIABLES
+		}
+		return [...set];
+	};
+
 	// ----- Validation -----
 	const errors = useMemo(() => {
 		const errs: Record<string, string> = {};
 
-		if (value.Enabled) {
+		if (value.enabled) {
 			// At least one enabled provider recommended
-			if (!providers.some((p) => p.Enabled)) {
+			if (!providers.some((p) => p.enabled)) {
 				errs["Providers"] = "Enable at least one provider or disable notifications.";
 			}
 		}
 
 		providers.forEach((p, idx) => {
-			if (value.Enabled && p.Enabled) {
-				if (p.Provider === "Discord") {
-					const discord = p.Discord;
-					const webhook = (discord?.Webhook || "").trim();
+			if (value.enabled && p.enabled) {
+				if (p.provider === "Discord") {
+					const discord = p.discord;
+					const webhook = (discord?.webhook || "").trim();
 					if (!webhook) {
 						errs[`Providers.[${idx}].Discord.Webhook`] = "Webhook URL required.";
 					} else if (!/^https?:\/\//i.test(webhook)) {
@@ -106,35 +156,35 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 					if (remoteTokenErrors[idx]) {
 						errs[`Providers.[${idx}].Discord.Webhook`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
-				} else if (p.Provider === "Pushover") {
-					const push = p.Pushover;
-					if (!(push?.UserKey || "").trim()) {
+				} else if (p.provider === "Pushover") {
+					const push = p.pushover;
+					if (!(push?.user_key || "").trim()) {
 						errs[`Providers.[${idx}].Pushover.UserKey`] = "User key required.";
 					}
-					if (!(push?.Token || "").trim()) {
-						errs[`Providers.[${idx}].Pushover.Token`] = "App token required.";
+					if (!(push?.api_token || "").trim()) {
+						errs[`Providers.[${idx}].Pushover.ApiToken`] = "App token required.";
 					}
 					if (remoteTokenErrors[idx]) {
-						errs[`Providers.[${idx}].Pushover.Token`] = remoteTokenErrors[idx] || "Connection failed.";
+						errs[`Providers.[${idx}].Pushover.ApiToken`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
-				} else if (p.Provider === "Gotify") {
-					const gotify = p.Gotify;
-					const rawURL = (gotify?.URL || "").trim();
+				} else if (p.provider === "Gotify") {
+					const gotify = p.gotify;
+					const rawURL = (gotify?.url || "").trim();
 					if (!rawURL) {
 						errs[`Providers.[${idx}].Gotify.URL`] = "URL required.";
 					} else {
 						const urlErr = ValidateURL(rawURL);
 						if (urlErr) errs[`Providers.[${idx}].Gotify.URL`] = urlErr;
 					}
-					if (!(gotify?.Token || "").trim()) {
-						errs[`Providers.[${idx}].Gotify.Token`] = "App token required.";
+					if (!(gotify?.api_token || "").trim()) {
+						errs[`Providers.[${idx}].Gotify.ApiToken`] = "App token required.";
 					}
 					if (remoteTokenErrors[idx]) {
-						errs[`Providers.[${idx}].Gotify.Token`] = remoteTokenErrors[idx] || "Connection failed.";
+						errs[`Providers.[${idx}].Gotify.ApiToken`] = remoteTokenErrors[idx] || "Connection failed.";
 					}
-				} else if (p.Provider === "Webhook") {
-					const webhook = p.Webhook;
-					const rawURL = (webhook?.URL || "").trim();
+				} else if (p.provider === "Webhook") {
+					const webhook = p.webhook;
+					const rawURL = (webhook?.url || "").trim();
 					if (!rawURL) {
 						errs[`Providers.[${idx}].Webhook.URL`] = "URL required.";
 					} else {
@@ -146,7 +196,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		});
 
 		return errs;
-	}, [value.Enabled, providers, remoteTokenErrors]);
+	}, [value.enabled, providers, remoteTokenErrors]);
 
 	// Emit errors
 	useEffect(() => {
@@ -158,7 +208,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 	}, [errors, errorsUpdate]);
 
 	// ----- Mutators -----
-	const setProviders = (next: AppConfigNotificationProviders[]) => onChange("Providers", next);
+	const setProviders = (next: AppConfigNotificationProviders[]) => onChange("providers", next);
 
 	const addProvider = () => {
 		if (!editing) return;
@@ -166,27 +216,27 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		let newEntry: AppConfigNotificationProviders;
 		if (type === "Discord") {
 			newEntry = {
-				Provider: "Discord",
-				Enabled: true,
-				Discord: { Enabled: true, Webhook: "" },
+				provider: "Discord",
+				enabled: true,
+				discord: { enabled: true, webhook: "" },
 			};
 		} else if (type === "Pushover") {
 			newEntry = {
-				Provider: "Pushover",
-				Enabled: true,
-				Pushover: { Enabled: true, UserKey: "", Token: "" },
+				provider: "Pushover",
+				enabled: true,
+				pushover: { enabled: true, user_key: "", api_token: "" },
 			};
 		} else if (type === "Gotify") {
 			newEntry = {
-				Provider: "Gotify",
-				Enabled: true,
-				Gotify: { Enabled: true, URL: "", Token: "" },
+				provider: "Gotify",
+				enabled: true,
+				gotify: { enabled: true, url: "", api_token: "" },
 			};
 		} else if (type === "Webhook") {
 			newEntry = {
-				Provider: "Webhook",
-				Enabled: true,
-				Webhook: { Enabled: true, URL: "", Headers: {} },
+				provider: "Webhook",
+				enabled: true,
+				webhook: { enabled: true, url: "", headers: {} },
 			};
 		} else {
 			return;
@@ -217,11 +267,11 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		val: AppConfigNotificationDiscord[K]
 	) => {
 		const prov = providers[idx];
-		if (!prov.Discord) return;
+		if (!prov.discord) return;
 		const next = providers.slice();
 		next[idx] = {
 			...prov,
-			Discord: { ...prov.Discord, [field]: val },
+			discord: { ...prov.discord, [field]: val },
 		};
 		setProviders(next);
 	};
@@ -232,11 +282,11 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		val: AppConfigNotificationPushover[K]
 	) => {
 		const prov = providers[idx];
-		if (!prov.Pushover) return;
+		if (!prov.pushover) return;
 		const next = providers.slice();
 		next[idx] = {
 			...prov,
-			Pushover: { ...prov.Pushover, [field]: val },
+			pushover: { ...prov.pushover, [field]: val },
 		};
 		setProviders(next);
 	};
@@ -247,11 +297,11 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		val: AppConfigNotificationGotify[K]
 	) => {
 		const prov = providers[idx];
-		if (!prov.Gotify) return;
+		if (!prov.gotify) return;
 		const next = providers.slice();
 		next[idx] = {
 			...prov,
-			Gotify: { ...prov.Gotify, [field]: val },
+			gotify: { ...prov.gotify, [field]: val },
 		};
 		setProviders(next);
 	};
@@ -262,19 +312,57 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 		val: AppConfigNotificationWebhook[K]
 	) => {
 		const prov = providers[idx];
-		if (!prov.Webhook) return;
+		if (!prov.webhook) return;
 		const next = providers.slice();
 		next[idx] = {
 			...prov,
-			Webhook: { ...prov.Webhook, [field]: val },
+			webhook: { ...prov.webhook, [field]: val },
 		};
 		setProviders(next);
+	};
+
+	const updateTemplate = (
+		key: keyof AppConfigNotificationTemplate,
+		patch: Partial<AppConfigNotificationTemplate[keyof AppConfigNotificationTemplate]>
+	) => {
+		const current = templates[key] || {
+			enabled: false,
+			title: "",
+			message: "",
+			include_image: false,
+		};
+
+		onChange("templates", {
+			...templates,
+			[key]: {
+				...current,
+				...patch,
+			},
+		});
+	};
+
+	const insertTemplateVariable = (
+		key: keyof AppConfigNotificationTemplate,
+		variable: string,
+		target: "title" | "message"
+	) => {
+		const tpl = templates[key] || {
+			enabled: false,
+			title: "",
+			message: "",
+			include_image: false,
+		};
+		const currentText = (tpl[target] || "").trim();
+		const nextText = `${currentText} ${variable}`.trim();
+		updateTemplate(key, { [target]: nextText } as Partial<
+			AppConfigNotificationTemplate[keyof AppConfigNotificationTemplate]
+		>);
 	};
 
 	const runRemoteValidation = useCallback(
 		async (idx: number, showToast = true) => {
 			const provider = providers[idx];
-			if (!provider || !provider.Enabled) return;
+			if (!provider || !provider.enabled) return;
 
 			// Set to unknown while testing
 			setAppConnectionStatus((s) => ({
@@ -315,16 +403,16 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
 	useEffect(() => {
 		if (configAlreadyLoaded && !hasRunInitialValidation.current) {
-			// Run remote validation for all apps that have URL and APIKey set
+			// Run remote validation for all apps that have URL and API Token set
 			providers.forEach((p, idx) => {
-				if (p.Enabled) {
-					if (p.Provider === "Discord" && p.Discord?.Webhook) {
+				if (p.enabled) {
+					if (p.provider === "Discord" && p.discord?.webhook) {
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
-					} else if (p.Provider === "Pushover" && p.Pushover?.UserKey && p.Pushover?.Token) {
+					} else if (p.provider === "Pushover" && p.pushover?.user_key && p.pushover?.api_token) {
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
-					} else if (p.Provider === "Gotify" && p.Gotify?.URL && p.Gotify?.Token) {
+					} else if (p.provider === "Gotify" && p.gotify?.url && p.gotify?.api_token) {
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
-					} else if (p.Provider === "Webhook" && p.Webhook?.URL) {
+					} else if (p.provider === "Webhook" && p.webhook?.url) {
 						setTimeout(() => runRemoteValidation(idx, false), 200 * idx);
 					}
 				}
@@ -345,15 +433,15 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 				className={cn(
 					"flex items-center justify-between border rounded-md p-3 transition",
 					"border-muted",
-					dirtyFields.Enabled && "border-amber-500"
+					dirtyFields.enabled && "border-amber-500"
 				)}
 			>
 				<Label>Enabled</Label>
 				<div className="flex items-center gap-2">
 					<Switch
 						disabled={!editing}
-						checked={value.Enabled}
-						onCheckedChange={(v) => onChange("Enabled", v)}
+						checked={value.enabled}
+						onCheckedChange={(v) => onChange("enabled", v)}
 					/>
 					{editing && (
 						<PopoverHelp ariaLabel="help-notifications-enabled">
@@ -397,22 +485,22 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 				)}
 
 				{providers.map((p, idx) => {
-					const providerDirty = dirtyFields.Providers?.[idx];
+					const providerDirty = dirtyFields.providers?.[idx];
 					const discordDirty =
-						typeof providerDirty?.Discord === "object" && providerDirty?.Discord !== null
-							? providerDirty.Discord
+						typeof providerDirty?.discord === "object" && providerDirty?.discord !== null
+							? providerDirty.discord
 							: {};
 					const pushoverDirty =
-						typeof providerDirty?.Pushover === "object" && providerDirty?.Pushover !== null
-							? providerDirty.Pushover
+						typeof providerDirty?.pushover === "object" && providerDirty?.pushover !== null
+							? providerDirty.pushover
 							: {};
 					const gotifyDirty =
-						typeof providerDirty?.Gotify === "object" && providerDirty?.Gotify !== null
-							? providerDirty.Gotify
+						typeof providerDirty?.gotify === "object" && providerDirty?.gotify !== null
+							? providerDirty.gotify
 							: {};
 					const webhookDirty =
-						typeof providerDirty?.Webhook === "object" && providerDirty?.Webhook !== null
-							? providerDirty.Webhook
+						typeof providerDirty?.webhook === "object" && providerDirty?.webhook !== null
+							? providerDirty.webhook
 							: {};
 					const providerErrorEntries = Object.entries(errors).filter(([k]) =>
 						k.startsWith(`Providers.[${idx}]`)
@@ -437,7 +525,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										providerDirty?.Enabled && "rounded-md border border-amber-500"
 									)}
 								>
-									<h2 className={`text-xl font-semibold text-${connStatus.color}`}>{p.Provider}</h2>
+									<h2 className={`text-xl font-semibold text-${connStatus.color}`}>{p.provider}</h2>
 									<span
 										className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[connStatus.status]} animate-pulse`}
 										title={`Connection status: ${connStatus.status}`}
@@ -445,8 +533,8 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
 									<Switch
 										disabled={!editing}
-										checked={p.Enabled}
-										onCheckedChange={(v) => updateProvider(idx, "Enabled", v)}
+										checked={p.enabled}
+										onCheckedChange={(v) => updateProvider(idx, "enabled", v)}
 									/>
 								</div>
 								<div className="flex items-center gap-2">
@@ -454,19 +542,20 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										variant="outline"
 										size="sm"
 										disabled={
-											!p.Enabled ||
-											(p.Provider === "Discord" && !p.Discord?.Webhook) ||
-											(p.Provider === "Pushover" &&
-												(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
-											(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token)) ||
-											(p.Provider === "Webhook" && !p.Webhook?.URL)
+											!value.enabled ||
+											!p.enabled ||
+											(p.provider === "Discord" && !p.discord?.webhook) ||
+											(p.provider === "Pushover" &&
+												(!p.pushover?.user_key || !p.pushover?.api_token)) ||
+											(p.provider === "Gotify" && (!p.gotify?.url || !p.gotify?.api_token)) ||
+											(p.provider === "Webhook" && !p.webhook?.url)
 										}
 										hidden={
-											((p.Provider === "Discord" && !p.Discord?.Webhook) ||
-												(p.Provider === "Pushover" &&
-													(!p.Pushover?.UserKey || !p.Pushover?.Token)) ||
-												(p.Provider === "Gotify" && (!p.Gotify?.URL || !p.Gotify?.Token)) ||
-												(p.Provider === "Webhook" && !p.Webhook?.URL)) &&
+											((p.provider === "Discord" && !p.discord?.webhook) ||
+												(p.provider === "Pushover" &&
+													(!p.pushover?.user_key || !p.pushover?.api_token)) ||
+												(p.provider === "Gotify" && (!p.gotify?.url || !p.gotify?.api_token)) ||
+												(p.provider === "Webhook" && !p.webhook?.url)) &&
 											!editing
 										}
 										onClick={() => {
@@ -491,7 +580,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							</div>
 
 							{/* Discord Fields */}
-							{p.Provider === "Discord" && p.Enabled && (
+							{p.provider === "Discord" && p.enabled && (
 								<div className={cn("space-y-1")}>
 									<div className="flex items-center justify-between">
 										<Label>Webhook URL</Label>
@@ -512,12 +601,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 									<Input
 										disabled={!editing}
 										placeholder="https://discord.com/api/webhooks/..."
-										value={p.Discord?.Webhook || ""}
+										value={p.discord?.webhook || ""}
 										onChange={(e) => {
 											const val = e.target.value;
-											updateDiscord(idx, "Webhook", val);
+											updateDiscord(idx, "webhook", val);
 										}}
-										className={cn(discordDirty?.Webhook && "border border-amber-500 p-3")}
+										className={cn(discordDirty?.webhook && "border border-amber-500 p-3")}
 									/>
 									{providerErrorEntries
 										.filter(([k]) => k.endsWith("Discord.Webhook"))
@@ -530,7 +619,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							)}
 
 							{/* Pushover Fields */}
-							{p.Provider === "Pushover" && p.Enabled && (
+							{p.provider === "Pushover" && p.enabled && (
 								<div className="grid gap-3 md:grid-cols-2">
 									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
@@ -548,9 +637,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<Input
 											disabled={!editing}
 											placeholder="User key"
-											value={p.Pushover?.UserKey || ""}
-											onChange={(e) => updatePushover(idx, "UserKey", e.target.value)}
-											className={cn(pushoverDirty?.UserKey && "border border-amber-500 p-3")}
+											value={p.pushover?.user_key || ""}
+											onChange={(e) => updatePushover(idx, "user_key", e.target.value)}
+											className={cn(pushoverDirty?.user_key && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Pushover.UserKey"))
@@ -578,9 +667,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<Input
 											disabled={!editing}
 											placeholder="App token"
-											value={p.Pushover?.Token || ""}
-											onChange={(e) => updatePushover(idx, "Token", e.target.value)}
-											className={cn(pushoverDirty?.Token && "border border-amber-500 p-3")}
+											value={p.pushover?.api_token || ""}
+											onChange={(e) => updatePushover(idx, "api_token", e.target.value)}
+											className={cn(pushoverDirty?.api_token && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Pushover.Token"))
@@ -594,7 +683,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							)}
 
 							{/* Gotify Fields */}
-							{p.Provider === "Gotify" && p.Enabled && (
+							{p.provider === "Gotify" && p.enabled && (
 								<div className="grid gap-3 md:grid-cols-2">
 									<div className={cn("space-y-1")}>
 										<div className="flex items-center justify-between">
@@ -618,9 +707,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<Input
 											disabled={!editing}
 											placeholder="URL"
-											value={p.Gotify?.URL || ""}
-											onChange={(e) => updateGotify(idx, "URL", e.target.value)}
-											className={cn(gotifyDirty?.URL && "border border-amber-500 p-3")}
+											value={p.gotify?.url || ""}
+											onChange={(e) => updateGotify(idx, "url", e.target.value)}
+											className={cn(gotifyDirty?.url && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Gotify.URL"))
@@ -651,9 +740,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										<Input
 											disabled={!editing}
 											placeholder="App token"
-											value={p.Gotify?.Token || ""}
-											onChange={(e) => updateGotify(idx, "Token", e.target.value)}
-											className={cn(gotifyDirty?.Token && "border border-amber-500 p-3")}
+											value={p.gotify?.api_token || ""}
+											onChange={(e) => updateGotify(idx, "api_token", e.target.value)}
+											className={cn(gotifyDirty?.api_token && "border border-amber-500 p-3")}
 										/>
 										{providerErrorEntries
 											.filter(([k]) => k.endsWith("Gotify.Token"))
@@ -667,7 +756,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 							)}
 
 							{/* Webhook Fields */}
-							{p.Provider === "Webhook" && p.Enabled && (
+							{p.provider === "Webhook" && p.enabled && (
 								<div className={cn("space-y-1")}>
 									<div className="flex items-center justify-between">
 										<Label>URL</Label>
@@ -683,15 +772,15 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 									<Input
 										disabled={!editing}
 										placeholder="https://example.com/webhook"
-										value={p.Webhook?.URL || ""}
+										value={p.webhook?.url || ""}
 										onChange={(e) => {
 											const val = e.target.value;
-											updateWebhook(idx, "URL", val);
+											updateWebhook(idx, "url", val);
 										}}
-										className={cn(webhookDirty?.URL && "border border-amber-500 p-3")}
+										className={cn(webhookDirty?.url && "border border-amber-500 p-3")}
 									/>
 									{providerErrorEntries
-										.filter(([k]) => k.endsWith("Webhook.URL"))
+										.filter(([k]) => k.endsWith("Webhook.url"))
 										.map(([, msg], i) => (
 											<p key={i} className="text-xs text-red-500">
 												{msg}
@@ -712,7 +801,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 										)}
 									</div>
 									<div className="space-y-2">
-										{Object.entries(p.Webhook?.Headers || {}).map(([key, value], i) => (
+										{Object.entries(p.webhook?.headers || {}).map(([key, value], i) => (
 											<div key={key + i} className="flex gap-2 items-center justify-between">
 												<Input
 													disabled={!editing}
@@ -736,10 +825,10 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 														const rawKey = e.target.value.trim();
 														const newKey = rawKey.replace(/\s+/g, "_");
 														if (newKey && newKey !== key) {
-															const headers = { ...(p.Webhook?.Headers || {}) };
+															const headers = { ...(p.webhook?.headers || {}) };
 															headers[newKey] = headers[key];
 															delete headers[key];
-															updateWebhook(idx, "Headers", headers);
+															updateWebhook(idx, "headers", headers);
 															// Clean up local state for this key
 															setEditingHeaderKeys((prev) => {
 																const next = { ...(prev[idx] || {}) };
@@ -757,7 +846,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 													}}
 													className={cn(
 														"w-1/2",
-														webhookDirty?.Headers?.[key] && "border border-amber-500 p-3"
+														webhookDirty?.headers?.[key] && "border border-amber-500 p-3"
 													)}
 												/>
 												<Input
@@ -765,13 +854,13 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 													placeholder="Header Value"
 													value={value}
 													onChange={(e) => {
-														const headers = { ...(p.Webhook?.Headers || {}) };
+														const headers = { ...(p.webhook?.headers || {}) };
 														headers[key] = e.target.value;
-														updateWebhook(idx, "Headers", headers);
+														updateWebhook(idx, "headers", headers);
 													}}
 													className={cn(
 														"w-1/2",
-														webhookDirty?.Headers?.[key] && "border border-amber-500 p-3"
+														webhookDirty?.headers?.[key] && "border border-amber-500 p-3"
 													)}
 												/>
 												{editing && (
@@ -779,9 +868,9 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 														variant="ghost"
 														size="icon"
 														onClick={() => {
-															const headers = { ...(p.Webhook?.Headers || {}) };
+															const headers = { ...(p.webhook?.headers || {}) };
 															delete headers[key];
-															updateWebhook(idx, "Headers", headers);
+															updateWebhook(idx, "headers", headers);
 														}}
 														aria-label="Remove header"
 														className="bg-red-700"
@@ -797,12 +886,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 												variant="outline"
 												size="sm"
 												onClick={() => {
-													const headers = { ...(p.Webhook?.Headers || {}) };
+													const headers = { ...(p.webhook?.headers || {}) };
 													let i = 1;
 													let newKey = "Header";
 													while (headers[newKey + i]) i++;
 													headers[newKey + i] = "";
-													updateWebhook(idx, "Headers", headers);
+													updateWebhook(idx, "headers", headers);
 												}}
 											>
 												<Plus className="h-4 w-4 mr-1" />
@@ -815,6 +904,155 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 						</div>
 					);
 				})}
+
+				{/* Notification Templates */}
+				<div className="space-y-3 pt-2">
+					<div>
+						<h3 className="text-lg font-semibold text-blue-500">Custom Notification Templates</h3>
+						<p className="text-sm text-muted-foreground">
+							Override title/message per event. Use variables like{" "}
+							<span className="font-mono">{"{{AppName}}"}</span>.
+						</p>
+					</div>
+
+					<Accordion type="multiple" className="w-full">
+						{templateKeys.map((key) => {
+							const tpl = templates[key] || {
+								enabled: false,
+								title: "",
+								message: "",
+								include_image: false,
+							};
+
+							const allowedVars = NOTIFICATION_VARIABLES[key] || [];
+							const usedVars = [...getUsedVars(tpl.title || ""), ...getUsedVars(tpl.message || "")];
+							const unknownVars = [...new Set(usedVars.filter((v) => !allowedVars.includes(v)))];
+							const supportsImage = TEMPLATE_SUPPORTS_IMAGE[key] ?? true;
+							const insertTarget = insertTargetByTemplate[key] || "message";
+
+							return (
+								<AccordionItem key={String(key)} value={String(key)} className="rounded-md border px-3">
+									<AccordionTrigger>
+										<div className="flex items-center gap-2 text-left">
+											<span>{TEMPLATE_TITLES[key] || key}</span>
+											{tpl.enabled ? (
+												<span className="text-xs text-green-500">Enabled</span>
+											) : (
+												<span className="text-xs text-muted-foreground">Disabled</span>
+											)}
+										</div>
+									</AccordionTrigger>
+
+									<AccordionContent className="space-y-3 pt-1">
+										<div className="flex items-center justify-between">
+											<Label>Enabled</Label>
+											<Switch
+												disabled={!editing}
+												checked={!!tpl.enabled}
+												onCheckedChange={(v) => updateTemplate(key, { enabled: v })}
+											/>
+										</div>
+
+										<div className="space-y-1">
+											<Label>Title</Label>
+											<Input
+												disabled={!editing || !tpl.enabled}
+												value={tpl.title || ""}
+												onChange={(e) => updateTemplate(key, { title: e.target.value })}
+												placeholder="Notification title"
+											/>
+										</div>
+
+										<div className="space-y-1">
+											<Label>Message</Label>
+											<Input
+												disabled={!editing || !tpl.enabled}
+												value={tpl.message || ""}
+												onChange={(e) => updateTemplate(key, { message: e.target.value })}
+												placeholder="Notification message"
+											/>
+										</div>
+
+										{supportsImage && (
+											<div className="flex items-center justify-between">
+												<Label>Include Image</Label>
+												<Switch
+													disabled={!editing || !tpl.enabled}
+													checked={!!tpl.include_image}
+													onCheckedChange={(v) => updateTemplate(key, { include_image: v })}
+												/>
+											</div>
+										)}
+
+										{editing && allowedVars.length > 0 && (
+											<div className="space-y-2">
+												<div className="flex items-center gap-2">
+													<Label className="text-xs text-muted-foreground">
+														Insert Variable into
+													</Label>
+													<Button
+														type="button"
+														variant={insertTarget === "title" ? "default" : "outline"}
+														size="sm"
+														disabled={!editing || !tpl.enabled}
+														onClick={() =>
+															setInsertTargetByTemplate((prev) => ({
+																...prev,
+																[key]: "title",
+															}))
+														}
+													>
+														Title
+													</Button>
+													<Button
+														type="button"
+														variant={insertTarget === "message" ? "default" : "outline"}
+														size="sm"
+														disabled={!editing || !tpl.enabled}
+														onClick={() =>
+															setInsertTargetByTemplate((prev) => ({
+																...prev,
+																[key]: "message",
+															}))
+														}
+													>
+														Message
+													</Button>
+												</div>
+
+												<div className="flex flex-wrap gap-2">
+													{allowedVars.map((v) => (
+														<Badge
+															key={v}
+															variant="outline"
+															className={cn(
+																"cursor-pointer",
+																(!editing || !tpl.enabled) &&
+																	"cursor-not-allowed opacity-50"
+															)}
+															onClick={() => {
+																if (!editing || !tpl.enabled) return;
+																insertTemplateVariable(key, v, insertTarget);
+															}}
+														>
+															{v}
+														</Badge>
+													))}
+												</div>
+											</div>
+										)}
+
+										{unknownVars.length > 0 && (
+											<p className="text-xs text-red-500">
+												Unknown variable(s): {unknownVars.join(", ")}
+											</p>
+										)}
+									</AccordionContent>
+								</AccordionItem>
+							);
+						})}
+					</Accordion>
+				</div>
 
 				{errors["Providers"] && <p className="text-xs text-red-500">{errors["Providers"]}</p>}
 			</div>

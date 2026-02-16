@@ -1,6 +1,6 @@
 "use client";
 
-import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
+import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
 import yaml from "js-yaml";
 import { User } from "lucide-react";
 
@@ -24,8 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/cn";
 
+import { PosterSet } from "@/types/database/db-poster-set";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
+import { ImageFile } from "@/types/media-and-posters/sets";
 
 export type MediaItemManualImportModalProps = {
 	mediaItem: MediaItem;
@@ -38,7 +39,7 @@ type ImportTask = {
 	id: string;
 	status: ImportTaskStatus;
 	label: string;
-	PosterFile: PosterFile;
+	imageFile: ImageFile;
 	error?: string;
 };
 
@@ -133,13 +134,13 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
 			setSetId(setId);
 
 			// Build the poster set using your utility
-			const posterSet = yamlToPosterSet(parsedData, mediaItem, mediaItem.Type as "movie" | "show", setId, author);
+			const posterSet = yamlToPosterSet(parsedData, mediaItem, mediaItem.type as "movie" | "show", setId, author);
 
 			// Count posters, backdrops, etc. from the posterSet object
-			let posterCount = posterSet.Poster ? 1 : 0;
-			let backdropCount = posterSet.Backdrop ? 1 : 0;
-			let seasonPosterCount = posterSet.SeasonPosters ? posterSet.SeasonPosters.length : 0;
-			let titlecardCount = posterSet.TitleCards ? posterSet.TitleCards.length : 0;
+			let posterCount = posterSet.images?.filter((img) => img.type === "poster").length || 0;
+			let backdropCount = posterSet.images?.filter((img) => img.type === "backdrop").length || 0;
+			let seasonPosterCount = posterSet.images?.filter((img) => img.type === "season_poster").length || 0;
+			let titlecardCount = posterSet.images?.filter((img) => img.type === "titlecard").length || 0;
 
 			setValidPosterSet(posterSet);
 			setNumberOfPostersInSet(posterCount);
@@ -154,50 +155,37 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
 		}
 	};
 
+	const getFileDownloadName = (imageFile: ImageFile, mediaItem: MediaItem) => {
+		if (imageFile.type === "poster") {
+			return `Poster for ${mediaItem.title}`;
+		} else if (imageFile.type === "backdrop") {
+			return `Backdrop for ${mediaItem.title}`;
+		} else if (imageFile.type === "season_poster") {
+			return `Season ${imageFile.season_number} Poster for ${mediaItem.title}`;
+		} else if (imageFile.type === "titlecard") {
+			const season = imageFile.season_number ?? "";
+			const episode =
+				imageFile.episode_number != null
+					? String(imageFile.episode_number).padStart(2, "0")
+					: (imageFile.title ?? "");
+
+			return `S${season}E${episode} Titlecard for ${mediaItem.title}`;
+		} else {
+			return `Image for ${mediaItem.title}`;
+		}
+	};
+
 	const buildImportTasks = (posterSet: PosterSet): ImportTask[] => {
 		const tasks: ImportTask[] = [];
-		if (posterSet.Poster) {
+		for (const image of posterSet.images || []) {
+			const label = getFileDownloadName(image, mediaItem);
 			tasks.push({
 				id: newId(),
 				status: "pending",
-				label: `Downloading Poster for '${mediaItem.Title}'`,
-				PosterFile: posterSet.Poster,
+				label,
+				imageFile: image,
 			});
 		}
-		if (posterSet.Backdrop) {
-			tasks.push({
-				id: newId(),
-				status: "pending",
-				label: `Downloading Backdrop for '${mediaItem.Title}'`,
-				PosterFile: posterSet.Backdrop,
-			});
-		}
-		posterSet.SeasonPosters?.forEach((sp, index) => {
-			tasks.push({
-				id: newId(),
-				status: "pending",
-				label: `Downloading Season ${sp.Season?.Number} Poster for '${mediaItem.Title}'`,
-				PosterFile: posterSet.SeasonPosters![index],
-			});
-		});
-		posterSet.TitleCards?.forEach((ep, index) => {
-			const episodeTitle =
-				mediaItem.Series?.Seasons.find((s) =>
-					s.Episodes.find(
-						(e) =>
-							e.SeasonNumber === ep.Episode?.SeasonNumber && e.EpisodeNumber === ep.Episode?.EpisodeNumber
-					)
-				)?.Episodes.find(
-					(e) => e.SeasonNumber === ep.Episode?.SeasonNumber && e.EpisodeNumber === ep.Episode?.EpisodeNumber
-				)?.Title || "";
-
-			tasks.push({
-				id: newId(),
-				status: "pending",
-				label: `Downloading "${episodeTitle}" (S${ep.Episode?.SeasonNumber}E${ep.Episode?.EpisodeNumber?.toString().padStart(2, "0")}) Titlecard`,
-				PosterFile: posterSet.TitleCards![index],
-			});
-		});
 		return tasks;
 	};
 
@@ -205,7 +193,7 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
 		updateImportTask(t.id, (task) => ({ ...task, status: "in-progress" }));
 		try {
 			setImportText(t.label);
-			const response = await patchDownloadPosterFileAndUpdateMediaServer(t.PosterFile, mediaItem, t.label);
+			const response = await downloadImageFileForMediaItem(t.imageFile, mediaItem, t.label);
 			if (response.status === "error") {
 				throw new Error(response.error?.message || "Unknown error");
 			}
@@ -238,12 +226,12 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className={cn("max-h-[80vh] overflow-y-auto sm:max-w-[700px]", "border border-primary")}>
 				<DialogHeader>
-					<DialogTitle>Manual YAML Import for '{mediaItem.Title}'</DialogTitle>
+					<DialogTitle>Manual YAML Import for '{mediaItem.title}'</DialogTitle>
 					{setAuthor && (
 						<div className="flex items-center justify-center sm:justify-start">
 							<Avatar className="rounded-lg mr-1 w-4 h-4">
 								<AvatarImage
-									src={`/api/mediux/avatar-image?username=${setAuthor}`}
+									src={`/api/images/mediux/avatar?username=${setAuthor}`}
 									className="w-4 h-4"
 								/>
 								<AvatarFallback className="">
@@ -377,13 +365,15 @@ export function yamlToPosterSet(
 	setAuthor: string | null
 ): PosterSet {
 	const posterSet: PosterSet = {
-		ID: setId || "",
-		Title: mediaItem.Title,
-		Type: type,
-		User: { Name: setAuthor ?? "" },
-		DateCreated: new Date().toISOString(),
-		DateUpdated: new Date().toISOString(),
-		Status: "",
+		id: setId || "",
+		title: mediaItem.title,
+		type: type,
+		user_created: setAuthor || "",
+		date_created: new Date().toISOString(),
+		date_updated: new Date().toISOString(),
+		popularity: 0,
+		popularity_global: 0,
+		images: [],
 	};
 
 	function extractAssetId(url?: string): string {
@@ -398,99 +388,55 @@ export function yamlToPosterSet(
 		fileType: string,
 		seasonNumber?: number,
 		episodeNumber?: number
-	): PosterFile => {
+	): ImageFile => {
 		const assetId = extractAssetId(src);
 		return {
-			ID: "---" + assetId,
-			Type: fileType,
-			Modified: new Date().toISOString(),
-			FileSize: 0,
-			Src: "---" + assetId,
-			Blurhash: "",
-			Movie:
-				type === "movie"
-					? {
-							ID: mediaItem.TMDB_ID,
-							Title: mediaItem.Title,
-							Status: "",
-							Tagline: "",
-							Slug: "",
-							DateUpdated: new Date().toISOString(),
-							TVbdID: "",
-							ImdbID: "",
-							TraktID: "",
-							ReleaseDate: "",
-							MediaItem: mediaItem,
-						}
-					: undefined,
-			Show:
-				type === "show"
-					? {
-							ID: mediaItem.TMDB_ID,
-							Title: mediaItem.Title,
-							MediaItem: mediaItem,
-						}
-					: undefined,
-			Season:
-				type === "show"
-					? {
-							Number: seasonNumber!,
-						}
-					: undefined,
-			Episode:
-				type === "show"
-					? {
-							Title:
-								mediaItem.Series?.Seasons.find((s) =>
-									s.Episodes.find(
-										(e) => e.SeasonNumber === seasonNumber && e.EpisodeNumber === episodeNumber
-									)
-								)?.Episodes.find(
-									(e) => e.SeasonNumber === seasonNumber && e.EpisodeNumber === episodeNumber
-								)?.Title || "",
-							SeasonNumber: seasonNumber!,
-							EpisodeNumber: episodeNumber!,
-						}
-					: undefined,
+			id: "---" + assetId,
+			type: fileType,
+			modified: new Date().toISOString(),
+			file_size: 0,
+			src: "---" + assetId,
+			blurhash: "",
+			season_number: seasonNumber,
+			episode_number: episodeNumber,
+			item_tmdb_id: mediaItem.tmdb_id,
 		};
 	};
 
 	if (type === "movie") {
 		// Only keep the item that matches the mediaItem (e.g., by TMDB ID)
-		const matchKey = mediaItem.TMDB_ID;
+		const matchKey = mediaItem.tmdb_id;
 		const item = yamlData[matchKey];
 		if (!item) throw new Error("No matching item found in YAML for this media item.");
-		if (item.url_poster) posterSet.Poster = makePosterFile(item.url_poster, "poster");
-		if (item.url_background) posterSet.Backdrop = makePosterFile(item.url_background, "backdrop");
+		if (item.url_poster) posterSet.images.push(makePosterFile(item.url_poster, "poster"));
+		if (item.url_background) posterSet.images.push(makePosterFile(item.url_background, "backdrop"));
 	} else if (type === "show") {
 		// For shows, just use the first item in the YAML
 		const firstKey = Object.keys(yamlData)[0];
 		const item = yamlData[firstKey];
 
-		if (item.url_poster) posterSet.Poster = makePosterFile(item.url_poster, "poster");
-		if (item.url_background) posterSet.Backdrop = makePosterFile(item.url_background, "backdrop");
+		if (item.url_poster) posterSet.images.push(makePosterFile(item.url_poster, "poster"));
+		if (item.url_background) posterSet.images.push(makePosterFile(item.url_background, "backdrop"));
 		if (item.seasons) {
-			posterSet.SeasonPosters = [];
 			for (const [seasonNum, seasonData] of Object.entries(item.seasons)) {
-				const seasonPosters: PosterFile[] = [];
 				if (
 					seasonData.url_poster &&
-					mediaItem.Series?.Seasons.find((s) => s.SeasonNumber.toString() === seasonNum)
+					mediaItem.series?.seasons.find((s) => s.season_number.toString() === seasonNum)
 				) {
-					seasonPosters.push(makePosterFile(seasonData.url_poster, "seasonPoster", parseInt(seasonNum)));
+					posterSet.images.push(makePosterFile(seasonData.url_poster, "season_poster", parseInt(seasonNum)));
 				}
-				const titleCards: PosterFile[] = [];
 				for (const [episodeNum, episodeData] of Object.entries(seasonData.episodes || {})) {
 					if (
 						episodeData.url_poster &&
-						mediaItem.Series?.Seasons.find((s) =>
-							s.Episodes.find(
+						mediaItem.series?.seasons.find((s) =>
+							s.episodes.find(
 								(e) =>
-									e.SeasonNumber.toString() === seasonNum && e.EpisodeNumber.toString() === episodeNum
+									e.season_number.toString() === seasonNum &&
+									e.episode_number.toString() === episodeNum
 							)
 						)
 					) {
-						titleCards.push(
+						posterSet.images.push(
 							makePosterFile(
 								episodeData.url_poster,
 								"titlecard",
@@ -500,9 +446,6 @@ export function yamlToPosterSet(
 						);
 					}
 				}
-				posterSet.SeasonPosters.push(...seasonPosters);
-				posterSet.TitleCards = posterSet.TitleCards || [];
-				posterSet.TitleCards.push(...titleCards);
 			}
 		}
 	}

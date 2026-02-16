@@ -1,20 +1,19 @@
 "use client";
 
-import { BoxsetMovieToPosterSet } from "@/helper/boxsets/boxset-to-movie-poster-set";
+import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchAllUserSets } from "@/services/mediux/api-mediux-fetch-username-sets";
-import { ArrowDownAZ, ArrowDownZA, CircleAlert, ClockArrowDown, ClockArrowUp, Database, User } from "lucide-react";
+import { getAllUserSets } from "@/services/mediux/sets-user";
+import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
-import { RenderBoxSetDisplay } from "@/components/shared/boxset-display";
+import { RenderBoxsetDisplay, RenderShowAndCollectionDisplay } from "@/components/shared/boxset-display";
 import { CustomPagination } from "@/components/shared/custom-pagination";
 import DownloadModal from "@/components/shared/download-modal";
 import { ErrorMessage } from "@/components/shared/error-message";
@@ -24,122 +23,108 @@ import { SelectItemsPerPage } from "@/components/shared/select-items-per-page";
 import { SortControl } from "@/components/shared/select-sort";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { Lead, P } from "@/components/ui/typography";
 
-import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useUserPageStore } from "@/lib/stores/page-store-user";
 
 import { APIResponse } from "@/types/api/api-response";
-import {
-	MediuxUserBoxset,
-	MediuxUserCollectionMovie,
-	MediuxUserCollectionSet,
-	MediuxUserMovieSet,
-	MediuxUserShowSet,
-} from "@/types/mediux/mediux-sets";
+import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import { BoxsetRef, CreatorSetsResponse, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
-const processBatch = async <T extends MediuxUserMovieSet | MediuxUserShowSet | MediuxUserCollectionMovie>(
-	items: MediuxUserMovieSet[] | MediuxUserShowSet[] | MediuxUserCollectionMovie[],
-	lookupMap: TMDBLookupMap,
-	type: "movie" | "show" | "collection",
-	updateProgress: (current: number) => void
-): Promise<T[]> => {
-	const results: T[] = [];
-	items.forEach((item, index) => {
-		let tmdbId: string | undefined;
-
-		// Handle different item types
-		if (type === "movie" && "movie_id" in item) {
-			tmdbId = item.movie_id.id;
-		} else if (type === "collection" && "movie" in item) {
-			tmdbId = item.movie.id;
-		} else if (type === "show" && "show_id" in item) {
-			tmdbId = item.show_id.id;
-		}
-
-		if (!tmdbId) return;
-
-		const mediaItem = searchWithLookupMap(tmdbId, lookupMap);
-		updateProgress(index + 1);
-
-		if (mediaItem && mediaItem !== true) {
-			// Handle different item types
-			if (type === "movie" && "movie_id" in item) {
-				item.movie_id.MediaItem = mediaItem;
-			} else if (type === "show" && "show_id" in item) {
-				item.show_id.MediaItem = mediaItem;
-			} else if (type === "collection" && "movie" in item) {
-				item.movie.MediaItem = mediaItem;
+function processSets(
+	sets: SetRef[],
+	tmdbLookupMap: TMDBLookupMap,
+	includedItems: { [key: string]: IncludedItem },
+	setSetter: (sets: SetRef[]) => void
+) {
+	const tmdbIDs = new Set<string>();
+	for (const set of sets) {
+		if (Array.isArray(set.item_ids)) {
+			for (const id of set.item_ids) {
+				tmdbIDs.add(id);
 			}
-			results.push(item as T);
 		}
-	});
-
-	return results;
-};
-
-const processCollectionSetItems = async (
-	set: MediuxUserCollectionSet,
-	lookupMap: TMDBLookupMap,
-	updateProgress: (current: number) => void
-) => {
-	const posters = await processBatch(set.movie_posters || [], lookupMap, "collection", updateProgress);
-
-	const backdrops = await processBatch(set.movie_backdrops || [], lookupMap, "collection", updateProgress);
-
-	if (posters.length !== 0 || backdrops.length !== 0) {
-		return {
-			...set,
-			movie_posters: posters,
-			movie_backdrops: backdrops,
-		};
 	}
-};
-
-function sortSets<T extends object>(
-	sets: T[],
-	sortOption: "title" | "dateLastUpdate",
-	sortOrder: "asc" | "desc",
-	titleKey: keyof T = "set_title" as keyof T // default to set_title, but can be boxset_title
-): T[] {
-	if (sortOption === "title") {
-		return sets.slice().sort((a, b) => {
-			const aTitle = (a[titleKey] as string) || "";
-			const bTitle = (b[titleKey] as string) || "";
-			return sortOrder === "asc" ? aTitle.localeCompare(bTitle) : bTitle.localeCompare(aTitle);
-		});
-	} else if (sortOption === "dateLastUpdate") {
-		return sets.slice().sort((a, b) => {
-			const aDate =
-				"date_updated" in a &&
-				(typeof a.date_updated === "string" ||
-					typeof a.date_updated === "number" ||
-					a.date_updated instanceof Date)
-					? new Date(a.date_updated).getTime()
-					: 0;
-			const bDate =
-				"date_updated" in b &&
-				(typeof b.date_updated === "string" ||
-					typeof b.date_updated === "number" ||
-					b.date_updated instanceof Date)
-					? new Date(b.date_updated).getTime()
-					: 0;
-			return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
-		});
+	const mediaItemByTMDB = new Map<string, any>();
+	for (const tmdbId of tmdbIDs) {
+		const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+		if (mediaItem && typeof mediaItem !== "boolean") {
+			mediaItemByTMDB.set(tmdbId, mediaItem);
+		}
 	}
+	const includedByTMDB: { [tmdb_id: string]: IncludedItem } = {};
+	for (const tmdbId of mediaItemByTMDB.keys()) {
+		const included = Object.values(includedItems || {}).find((ii) => ii?.mediux_info?.tmdb_id === tmdbId);
+		if (!included) continue;
+		includedByTMDB[tmdbId] = {
+			...included,
+			media_item: mediaItemByTMDB.get(tmdbId),
+		} as IncludedItem;
+	}
+	const filteredSets: SetRef[] = [];
+	for (const set of sets) {
+		if (Array.isArray(set.item_ids)) {
+			for (const itemID of set.item_ids) {
+				if (includedByTMDB[itemID]) {
+					filteredSets.push(set);
+					break;
+				}
+			}
+		}
+	}
+	setSetter(filteredSets);
+}
+
+function getBoxsetSetsForLibrary(
+	boxset: BoxsetRef,
+	userResponse: CreatorSetsResponse,
+	libraryType: "show" | "movie",
+	validSetIds: Set<string>
+): SetRef[] {
+	const sets: SetRef[] = [];
+
+	if (libraryType === "show" && boxset.set_ids.show) {
+		for (const setId of boxset.set_ids.show) {
+			if (validSetIds.has(setId)) {
+				const set = userResponse.show_sets.find((s) => s.id === setId);
+				if (set) sets.push(set);
+			}
+		}
+	}
+
+	if (libraryType === "movie") {
+		if (boxset.set_ids.movie) {
+			for (const setId of boxset.set_ids.movie) {
+				if (validSetIds.has(setId)) {
+					const set = userResponse.movie_sets.find((s) => s.id === setId);
+					if (set) sets.push(set);
+				}
+			}
+		}
+		if (boxset.set_ids.collection) {
+			for (const setId of boxset.set_ids.collection) {
+				if (validSetIds.has(setId)) {
+					const set = userResponse.collection_sets.find((s) => s.id === setId);
+					if (set) sets.push(set);
+				}
+			}
+		}
+	}
+
 	return sets;
 }
 
+export interface BoxsetsWithSetInfo extends BoxsetRef {
+	sets?: SetRef[];
+}
+
 const UserSetPage = () => {
-	const router = useRouter();
 	// Get the username from the URL
 	const { username } = useParams();
 	const hasFetchedInfo = useRef(false);
@@ -149,39 +134,18 @@ const UserSetPage = () => {
 	const [loadMessage, setLoadMessage] = useState("");
 	const { currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useUserPageStore();
 
-	// Add state to track progress
-	const [, setProgressCount] = useState<{
-		current: number;
-		total: number;
-	}>({
-		current: 0,
-		total: 0,
-	});
-	const [respShowSets, setRespShowSets] = useState<MediuxUserShowSet[]>([]);
-	const [respMovieSets, setRespMovieSets] = useState<MediuxUserMovieSet[]>([]);
-	const [respCollectionSets, setRespCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
-	const [respBoxsets, setRespBoxsets] = useState<MediuxUserBoxset[]>([]);
-	const [idbShowSets, setIdbShowSets] = useState<MediuxUserShowSet[]>([]);
-	const [idbMovieSets, setIdbMovieSets] = useState<MediuxUserMovieSet[]>([]);
-	const [idbCollectionSets, setIdbCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
-	const [idbBoxsets, setIdbBoxsets] = useState<MediuxUserBoxset[]>([]);
-	const [showSets, setShowSets] = useState<MediuxUserShowSet[]>([]);
-	const [movieSets, setMovieSets] = useState<MediuxUserMovieSet[]>([]);
-	const [collectionSets, setCollectionSets] = useState<MediuxUserCollectionSet[]>([]);
-	const [boxsets, setBoxSets] = useState<MediuxUserBoxset[]>([]);
-
 	const { searchQuery, setSearchQuery } = useSearchQueryStore();
 	const prevSearchQuery = useRef(searchQuery);
 
 	// Pagination and Active Tab state
-	const [activeTab, setActiveTab] = useState("");
+	const [activeTab, setActiveTab] = useState("boxSets");
 	const [totalPages, setTotalPages] = useState(0);
 
 	// Library sections & progress
 	const [librarySections, setLibrarySections] = useState<{ title: string; type: string }[]>([]);
 	const [selectedLibrarySection, setSelectedLibrarySection] = useState<{
 		title: string;
-		type: string;
+		type: "show" | "movie";
 	} | null>(null);
 	const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB">("all");
 
@@ -190,10 +154,27 @@ const UserSetPage = () => {
 
 	const { sections, getSectionSummaries, hasHydrated } = useLibrarySectionsStore();
 
+	// User Response From Server
+	const [creatorSetsResponse, setCreatorSetsResponse] = useState<CreatorSetsResponse | null>(null);
+
+	const [showSets, setShowSets] = useState<SetRef[]>([]);
+	const [filteredShowSets, setFilteredShowSets] = useState<SetRef[]>([]);
+	const [movieSets, setMovieSets] = useState<SetRef[]>([]);
+	const [filteredMovieSets, setFilteredMovieSets] = useState<SetRef[]>([]);
+	const [collectionSets, setCollectionSets] = useState<SetRef[]>([]);
+	const [filteredCollectionSets, setFilteredCollectionSets] = useState<SetRef[]>([]);
+	const [boxsets, setBoxsets] = useState<BoxsetsWithSetInfo[]>([]);
+	const [filteredBoxsets, setFilteredBoxsets] = useState<BoxsetsWithSetInfo[]>([]);
+	const [tmdbLookupMap, setTMDBLookupMap] = useState<TMDBLookupMap>({});
+	const [setIncludedItems, setSetIncludedItems] = useState<{
+		[tmdb_id: string]: IncludedItem;
+	} | null>(null);
+
 	useEffect(() => {
 		if (!hasHydrated) return;
 		const sections = getSectionSummaries();
 		setLibrarySections(sections);
+		setSelectedLibrarySection(null);
 		log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
 	}, [getSectionSummaries, hasHydrated]);
 
@@ -208,22 +189,19 @@ const UserSetPage = () => {
 		if (hasFetchedInfo.current) return;
 		hasFetchedInfo.current = true;
 		setLoadMessage(`Loading sets for ${username}`);
-		const getAllUserSets = async () => {
+		const fetchAllUserSets = async () => {
 			try {
 				setIsLoading(true);
 				setLoadMessage(`Loading sets for ${username}`);
-				const response = await fetchAllUserSets(username as string);
+				const response = await getAllUserSets(username as string);
 
 				if (response.status === "error") {
 					setError(response);
 					return;
 				}
+				setSelectedLibrarySection(null);
 
-				// Set the response data
-				setRespShowSets(response.data?.show_sets || []);
-				setRespMovieSets(response.data?.movie_sets || []);
-				setRespCollectionSets(response.data?.collection_sets || []);
-				setRespBoxsets(response.data?.boxsets || []);
+				setCreatorSetsResponse(response.data || null);
 			} catch (error) {
 				log("ERROR", "User Page", "Fetch User Sets", "Failed to fetch user sets:", error);
 				setError(ReturnErrorMessage<unknown>(error));
@@ -231,38 +209,37 @@ const UserSetPage = () => {
 				setIsLoading(false);
 			}
 		};
-		getAllUserSets();
+		fetchAllUserSets();
 	}, [username]);
 
-	// Filter out the sets based on which Library type is selected
+	// When a library section is selected, set the showSets, movieSets, collectionSets, boxsets based on that section
 	useEffect(() => {
-		setShowSets([]);
-		setMovieSets([]);
-		setCollectionSets([]);
-		setBoxSets([]);
-		setIdbShowSets([]);
-		setIdbMovieSets([]);
-		setIdbCollectionSets([]);
-		setIdbBoxsets([]);
-		setFilterOutInDB("all");
-
-		if (!respShowSets || !respMovieSets || !respCollectionSets || !respBoxsets) {
-			log("ERROR", "User Page", "Fetch User Sets", "No sets found in response");
+		if (!creatorSetsResponse) return;
+		if (
+			creatorSetsResponse &&
+			creatorSetsResponse.show_sets.length === 0 &&
+			creatorSetsResponse.movie_sets.length === 0 &&
+			creatorSetsResponse.collection_sets.length === 0 &&
+			creatorSetsResponse.boxsets.length === 0
+		) {
 			return;
 		}
 		if (!selectedLibrarySection) {
-			log("WARN", "User Page", "Fetch User Sets", "No library section selected");
 			return;
 		}
 
-		log("INFO", "User Page", "Fetch User Sets", "Filtering sets based on selected library", selectedLibrarySection);
+		setShowSets([]);
+		setMovieSets([]);
+		setCollectionSets([]);
+		setBoxsets([]);
+		setTMDBLookupMap({});
+		setSetIncludedItems(null);
 
 		const filterOutItems = async () => {
 			setIsLoading(true);
 
-			// Get the library section data once
 			const librarySection = sections[selectedLibrarySection.title];
-			if (!librarySection || !librarySection.MediaItems) {
+			if (!librarySection || !librarySection.media_items || librarySection.media_items.length === 0) {
 				log(
 					"ERROR",
 					"User Page",
@@ -273,167 +250,146 @@ const UserSetPage = () => {
 				return;
 			}
 
-			// Create a lookup map for faster access
-			const tmdbLookupMap = createTMDBLookupMap(librarySection.MediaItems);
-			log("INFO", "User Page", "Fetch User Sets", "TMDB Lookup Map", tmdbLookupMap);
+			const tmdbLookupMap = createTMDBLookupMap(librarySection.media_items);
 
-			log("INFO", "User Page", "Fetch User Sets", "Setting items based on", {
-				selectedLibrarySection,
-				filterOutInDB,
-			});
+			const includedItemsArray = Object.values(creatorSetsResponse.included_items ?? {});
+			if (Object.keys(tmdbLookupMap).length > 0 && includedItemsArray.length > 0) {
+				const nextIncludedByTMDB = includedItemsArray.reduce(
+					(acc, includedItem) => {
+						const tmdbId = includedItem?.mediux_info?.tmdb_id;
+						if (!tmdbId) return acc;
+
+						const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap); // MediaItem | boolean
+						acc[tmdbId] =
+							mediaItem && typeof mediaItem !== "boolean"
+								? ({
+										...includedItem,
+										media_item: mediaItem,
+									} as IncludedItem)
+								: includedItem;
+
+						return acc;
+					},
+					{} as { [tmdb_id: string]: IncludedItem }
+				);
+
+				setSetIncludedItems(nextIncludedByTMDB);
+			} else {
+				setSetIncludedItems(null);
+			}
 
 			// Process Boxsets
-			if (respBoxsets && respBoxsets.length > 0) {
-				setActiveTab("boxSets");
-				const userBoxsets: MediuxUserBoxset[] = await Promise.all(
-					respBoxsets.map(async (origBoxset) => {
-						const boxset = { ...origBoxset };
-						if (selectedLibrarySection.type === "show") {
-							boxset.movie_sets = [];
-							boxset.collection_sets = [];
-							if (boxset.show_sets && boxset.show_sets.length > 0) {
-								const processedShowSets = await processBatch(
-									boxset.show_sets,
-									tmdbLookupMap,
-									"show",
-									(current) => setProgressCount((prev) => ({ ...prev, current }))
-								);
-								boxset.show_sets = processedShowSets as MediuxUserShowSet[];
-							}
-						} else if (selectedLibrarySection.type === "movie") {
-							boxset.show_sets = [];
-							if (boxset.movie_sets && boxset.movie_sets.length > 0) {
-								const processedMovieSets = await processBatch(
-									boxset.movie_sets,
-									tmdbLookupMap,
-									"movie",
-									(current) => setProgressCount((prev) => ({ ...prev, current }))
-								);
-								boxset.movie_sets = processedMovieSets as MediuxUserMovieSet[];
-							}
-							if (boxset.collection_sets && boxset.collection_sets.length > 0) {
-								const processedCollectionSets = await Promise.all(
-									boxset.collection_sets.map(async (set) => {
-										return await processCollectionSetItems(set, tmdbLookupMap, (current) =>
-											setProgressCount((prev) => ({ ...prev, current }))
-										);
-									})
-								);
-								if (processedCollectionSets && processedCollectionSets.length > 0) {
-									const filteredCollectionSets = processedCollectionSets.filter(
-										(set): set is MediuxUserCollectionSet => set !== undefined
-									);
-									boxset.collection_sets = filteredCollectionSets;
-								} else {
-									boxset.collection_sets = [];
-								}
-							}
+			if (creatorSetsResponse.boxsets.length > 0) {
+				// Get all valid set IDs for this library section
+				let validSetIds = new Set<string>();
+				let validTmdbIds = new Set<string>(librarySection.media_items.map((mi) => mi.tmdb_id));
+
+				if (selectedLibrarySection.type === "show") {
+					creatorSetsResponse.show_sets.forEach((set) => {
+						if (Array.isArray(set.item_ids) && set.item_ids.some((id) => validTmdbIds.has(id))) {
+							validSetIds.add(set.id);
 						}
+					});
+				} else if (selectedLibrarySection.type === "movie") {
+					[...creatorSetsResponse.movie_sets, ...creatorSetsResponse.collection_sets].forEach((set) => {
+						if (Array.isArray(set.item_ids) && set.item_ids.some((id) => validTmdbIds.has(id))) {
+							validSetIds.add(set.id);
+						}
+					});
+				}
 
-						return boxset;
-					})
-				);
+				// Filter boxsets to only include sets present in the current library section
+				const filteredBoxsets = creatorSetsResponse.boxsets
+					.map((boxset) => ({
+						...boxset,
+						sets: getBoxsetSetsForLibrary(
+							boxset,
+							creatorSetsResponse,
+							selectedLibrarySection.type,
+							validSetIds
+						),
+					}))
+					.filter((boxset) => boxset.sets.length > 0);
 
-				// Only keep boxsets with at least one set
-				const filteredBoxsets = userBoxsets.filter(
-					(boxset) =>
-						boxset.show_sets.length > 0 || boxset.movie_sets.length > 0 || boxset.collection_sets.length > 0
-				);
+				setBoxsets(filteredBoxsets);
 
-				// Sort Boxsets
-				const sortedBoxsets = sortSets(
-					filteredBoxsets,
-					sortOption as "title" | "dateLastUpdate",
-					sortOrder,
-					"boxset_title"
-				) as MediuxUserBoxset[];
+				// Build a map of tmdb_id -> MediaItem for the current library section
+				const libraryMediaItemMap = new Map<string, MediaItem>();
+				librarySection.media_items.forEach((mi) => {
+					libraryMediaItemMap.set(mi.tmdb_id, mi);
+				});
 
-				log("INFO", "User Page", "Fetch User Sets", "Processed Boxsets", sortedBoxsets);
-				setBoxSets(sortedBoxsets);
-				setIdbBoxsets(sortedBoxsets);
+				// Collect all tmdb_ids used in the sets of filtered boxsets
+				const allBoxsetTmdbIds = new Set<string>();
+				filteredBoxsets.forEach((boxset) => {
+					boxset.sets.forEach((set) => {
+						set.item_ids.forEach((id) => {
+							if (libraryMediaItemMap.has(id)) {
+								allBoxsetTmdbIds.add(id);
+							}
+						});
+					});
+				});
 			}
 
 			// Process Show Sets
-			if (selectedLibrarySection.type === "show" && respShowSets && respShowSets.length > 0) {
-				setActiveTab("showSets");
-				log("INFO", "User Page", "Fetch User Sets", "Processing Show Sets");
-				const processedShowSets = await processBatch<MediuxUserShowSet>(
-					respShowSets,
+			if (selectedLibrarySection.type === "show" && creatorSetsResponse.show_sets.length > 0) {
+				processSets(
+					creatorSetsResponse.show_sets,
 					tmdbLookupMap,
-					"show",
-					(current) => setProgressCount((prev) => ({ ...prev, current }))
+					creatorSetsResponse.included_items,
+					setShowSets
 				);
-
-				// Sort Show Sets
-				const sortedShowSets = sortSets(
-					processedShowSets,
-					sortOption as "title" | "dateLastUpdate",
-					sortOrder as "asc" | "desc"
-				);
-
-				log("INFO", "User Page", "Fetch User Sets", "Processed Show Sets", sortedShowSets);
-				setShowSets(sortedShowSets);
-				setIdbShowSets(sortedShowSets);
-			}
-
-			// Process Movie Sets
-			if (selectedLibrarySection.type === "movie" && respMovieSets && respMovieSets.length > 0) {
-				setActiveTab("movieSets");
-				log("INFO", "User Page", "Fetch User Sets", "Processing Movie Sets");
-				const processedMovieSets = await processBatch<MediuxUserMovieSet>(
-					respMovieSets,
-					tmdbLookupMap,
-					"movie",
-					(current) => setProgressCount((prev) => ({ ...prev, current }))
-				);
-
-				// Sort Movie Sets
-				const sortedMovieSets = sortSets(
-					processedMovieSets,
-					sortOption as "title" | "dateLastUpdate",
-					sortOrder as "asc" | "desc"
-				);
-
-				log("INFO", "User Page", "Fetch User Sets", "Processed Movie Sets", sortedMovieSets);
-				setMovieSets(sortedMovieSets);
-				setIdbMovieSets(sortedMovieSets);
-			}
-
-			// Process Collection Sets
-			if (selectedLibrarySection.type === "movie" && respCollectionSets && respCollectionSets.length > 0) {
-				const processedCollectionSets = await Promise.all(
-					respCollectionSets.map(async (set) => {
-						return await processCollectionSetItems(set, tmdbLookupMap, (current) =>
-							setProgressCount((prev) => ({ ...prev, current }))
-						);
-					})
-				);
-				if (processedCollectionSets && processedCollectionSets.length > 0) {
-					const filteredCollectionSets = processedCollectionSets.filter(
-						(set): set is MediuxUserCollectionSet => set !== undefined
+			} else if (selectedLibrarySection.type === "movie") {
+				// Process Movie Sets
+				if (creatorSetsResponse.movie_sets.length > 0) {
+					processSets(
+						creatorSetsResponse.movie_sets,
+						tmdbLookupMap,
+						creatorSetsResponse.included_items,
+						setMovieSets
 					);
+				}
 
-					// Sort Collection Sets
-					const sortedCollectionSets = sortSets(
-						filteredCollectionSets,
-						sortOption as "title" | "dateLastUpdate",
-						sortOrder as "asc" | "desc"
+				// Process Collection Sets
+				if (creatorSetsResponse.collection_sets.length > 0) {
+					processSets(
+						creatorSetsResponse.collection_sets,
+						tmdbLookupMap,
+						creatorSetsResponse.included_items,
+						setCollectionSets
 					);
-
-					log("INFO", "User Page", "Fetch User Sets", "Processed Collection Sets", sortedCollectionSets);
-					setCollectionSets(sortedCollectionSets);
-					setIdbCollectionSets(sortedCollectionSets);
 				}
 			}
 
+			setTMDBLookupMap(tmdbLookupMap);
 			setIsLoading(false);
 		};
 
 		filterOutItems();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedLibrarySection]);
+	}, [sections, selectedLibrarySection, creatorSetsResponse]);
 
 	useEffect(() => {
+		if (!creatorSetsResponse) return;
+		if (
+			creatorSetsResponse &&
+			creatorSetsResponse.show_sets.length === 0 &&
+			creatorSetsResponse.movie_sets.length === 0 &&
+			creatorSetsResponse.collection_sets.length === 0 &&
+			creatorSetsResponse.boxsets.length === 0
+		) {
+			return;
+		}
+
+		// Always reset filtered sets to all sets if search is blank or filterOutInDB is "all"
+		if (searchQuery.trim() === "" && filterOutInDB === "all") {
+			setFilteredShowSets(showSets);
+			setFilteredMovieSets(movieSets);
+			setFilteredCollectionSets(collectionSets);
+			setFilteredBoxsets(boxsets);
+			return;
+		}
+
 		if (searchQuery !== prevSearchQuery.current) {
 			setCurrentPage(1);
 			prevSearchQuery.current = searchQuery;
@@ -442,174 +398,176 @@ const UserSetPage = () => {
 				return;
 			}
 			// Filter out the Show Sets on set title and mediaItem.Title
-			const filteredShowSets = idbShowSets.filter(
-				(showSet) =>
-					showSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					showSet.show_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-			);
-			setShowSets(filteredShowSets);
+			const filteredShowSets = showSets.filter((showSet) => {
+				const query = searchQuery.toLowerCase();
+
+				// Match on set title
+				if (showSet.title.toLowerCase().includes(query)) return true;
+
+				// Match on any media item's title in the set
+				return showSet.item_ids.some((tmdbId) => {
+					const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+					return (
+						mediaItem &&
+						typeof mediaItem !== "boolean" &&
+						mediaItem.title &&
+						mediaItem.title.toLowerCase().includes(query)
+					);
+				});
+			});
+			setFilteredShowSets(filteredShowSets);
 
 			// Filter out the Movie Sets on set title and mediaItem.Title
-			const filteredMovieSets = idbMovieSets.filter(
-				(movieSet) =>
-					movieSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					movieSet.movie_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-			);
-			setMovieSets(filteredMovieSets);
+			const filteredMovieSets = movieSets.filter((movieSet) => {
+				const query = searchQuery.toLowerCase();
+				// Match on set title
+				if (movieSet.title.toLowerCase().includes(query)) return true;
+				// Match on any media item's title in the set
+				return movieSet.item_ids.some((tmdbId) => {
+					const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+					return (
+						mediaItem &&
+						typeof mediaItem !== "boolean" &&
+						mediaItem.title &&
+						mediaItem.title.toLowerCase().includes(query)
+					);
+				});
+			});
+			setFilteredMovieSets(filteredMovieSets);
 
 			// Filter out the Collection Sets on set title and mediaItem.Title
-			const filteredCollectionSets = idbCollectionSets.filter(
-				(collectionSet) =>
-					collectionSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					collectionSet.movie_posters.some((poster) =>
-						poster.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-					) ||
-					collectionSet.movie_backdrops.some((backdrop) =>
-						backdrop.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-					)
-			);
-			setCollectionSets(filteredCollectionSets);
+			const filteredCollectionSets = collectionSets.filter((collectionSet) => {
+				const query = searchQuery.toLowerCase();
+				// Match on set title
+				if (collectionSet.title.toLowerCase().includes(query)) return true;
+				// Match on any media item's title in the set
+				return collectionSet.item_ids.some((tmdbId) => {
+					const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+					return (
+						mediaItem &&
+						typeof mediaItem !== "boolean" &&
+						mediaItem.title &&
+						mediaItem.title.toLowerCase().includes(query)
+					);
+				});
+			});
+			setFilteredCollectionSets(filteredCollectionSets);
 
 			// Filter out the Box Sets on set title and mediaItem.Title
-			const filteredBoxSets = idbBoxsets.filter((boxset) => {
-				const boxsetTitleMatch = boxset.boxset_title.toLowerCase().includes(searchQuery.toLowerCase());
-				const showSetsMatch = boxset.show_sets.some(
-					(showSet) =>
-						showSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-						showSet.show_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-				);
-				const movieSetsMatch = boxset.movie_sets.some(
-					(movieSet) =>
-						movieSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-						movieSet.movie_id.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-				);
-				const collectionSetsMatch = boxset.collection_sets.some(
-					(collectionSet) =>
-						collectionSet.set_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-						collectionSet.movie_posters.some((poster) =>
-							poster.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-						) ||
-						collectionSet.movie_backdrops.some((backdrop) =>
-							backdrop.movie.MediaItem.Title.toLowerCase().includes(searchQuery.toLowerCase())
-						)
-				);
-				const boxsetMatches = boxsetTitleMatch || showSetsMatch || movieSetsMatch || collectionSetsMatch;
-				return boxsetMatches;
-			});
-			setBoxSets(filteredBoxSets);
-		}
-	}, [idbBoxsets, idbCollectionSets, idbMovieSets, idbShowSets, searchQuery, selectedLibrarySection, setCurrentPage]);
+			// Boxsets don't have sets, they have
+			const filteredBoxSets = boxsets.filter((boxset) => {
+				const query = searchQuery.toLowerCase();
+				// Match on boxset title
+				if (boxset.title.toLowerCase().includes(query)) return true;
+				// Match on any set's title in the boxset
+				if (boxset.sets) {
+					for (const set of boxset.sets) {
+						if (set.title.toLowerCase().includes(query)) return true;
 
-	// Add this effect to handle filterOutInDB changes
-	useEffect(() => {
-		if (!selectedLibrarySection) return;
-
-		const filterByDatabaseStatus = (item: { MediaItem: { ExistInDatabase: boolean } }) => {
-			if (filterOutInDB === "all") return true;
-			if (filterOutInDB === "inDB") return item.MediaItem?.ExistInDatabase;
-			if (filterOutInDB === "notInDB") return !item.MediaItem?.ExistInDatabase;
-			return false;
-		};
-		// Filter boxsets
-		if (idbBoxsets.length > 0) {
-			const filteredBoxsets = idbBoxsets
-				.map((boxset) => {
-					const newBoxset = { ...boxset };
-					if (selectedLibrarySection.type === "show") {
-						newBoxset.show_sets = boxset.show_sets.filter((showSet) =>
-							filterByDatabaseStatus(showSet.show_id)
-						);
-					} else if (selectedLibrarySection.type === "movie") {
-						newBoxset.movie_sets = boxset.movie_sets.filter((movieSet) =>
-							filterByDatabaseStatus(movieSet.movie_id)
-						);
-						newBoxset.collection_sets = boxset.collection_sets
-							.map((collectionSet) => ({
-								...collectionSet,
-								movie_posters: collectionSet.movie_posters.filter((poster) =>
-									filterByDatabaseStatus(poster.movie)
-								),
-								movie_backdrops: collectionSet.movie_backdrops.filter((backdrop) =>
-									filterByDatabaseStatus(backdrop.movie)
-								),
-							}))
-							.filter((set) => set.movie_posters.length > 0 || set.movie_backdrops.length > 0);
+						// Match on any media item's title in the set
+						for (const tmdbId of set.item_ids) {
+							const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+							if (
+								mediaItem &&
+								typeof mediaItem !== "boolean" &&
+								mediaItem.title &&
+								mediaItem.title.toLowerCase().includes(query)
+							) {
+								return true;
+							}
+						}
 					}
-
-					return newBoxset;
-				})
-				.filter(
-					(boxset) =>
-						boxset.movie_sets?.length > 0 ||
-						boxset.show_sets?.length > 0 ||
-						boxset.collection_sets?.length > 0
-				);
-
-			const sortedBoxsets = sortSets(
-				filteredBoxsets,
-				sortOption as "title" | "dateLastUpdate",
-				sortOrder,
-				"boxset_title"
-			);
-
-			setBoxSets(sortedBoxsets);
+				}
+				return false;
+			});
+			setFilteredBoxsets(filteredBoxSets);
 		}
+	}, [
+		showSets,
+		movieSets,
+		collectionSets,
+		boxsets,
+		searchQuery,
+		filterOutInDB,
+		selectedLibrarySection,
+		setCurrentPage,
+		creatorSetsResponse,
+		filteredShowSets,
+		filteredMovieSets,
+		filteredCollectionSets,
+		filteredBoxsets,
+		tmdbLookupMap,
+	]);
 
-		// Filter show sets
-		if (idbShowSets.length > 0) {
-			log("INFO", "User Page", "Fetch User Sets", "Filtering Show Sets by Database Status", idbShowSets);
-			const filteredShowSets = idbShowSets.filter((idbShowSets) => filterByDatabaseStatus(idbShowSets.show_id));
-			const sortedShowSets = sortSets<MediuxUserShowSet>(
-				filteredShowSets,
-				sortOption as "dateLastUpdate" | "title",
-				sortOrder
-			);
-			setShowSets(sortedShowSets);
-		}
-
-		// Filter movie sets
-		if (idbMovieSets.length > 0) {
-			log("INFO", "User Page", "Fetch User Sets", "Filtering Movie Sets by Database Status", idbMovieSets);
-			const filteredMovieSets = idbMovieSets.filter((idbMovieSet) =>
-				filterByDatabaseStatus(idbMovieSet.movie_id)
-			);
-			const sortedMovieSets = sortSets<MediuxUserMovieSet>(
-				filteredMovieSets,
-				sortOption as "dateLastUpdate" | "title",
-				sortOrder
-			);
-			setMovieSets(sortedMovieSets);
-		}
-
-		// Filter collection sets
-		if (idbCollectionSets.length > 0) {
-			const filteredCollectionSets = idbCollectionSets
-				.map((collectionSet) => ({
-					...collectionSet,
-					movie_posters: collectionSet.movie_posters.filter((poster) => filterByDatabaseStatus(poster.movie)),
-					movie_backdrops: collectionSet.movie_backdrops.filter((backdrop) =>
-						filterByDatabaseStatus(backdrop.movie)
-					),
-				}))
-				.filter((set) => set.movie_posters.length > 0 || set.movie_backdrops.length > 0);
-			const sortedCollectionSets = sortSets<MediuxUserCollectionSet>(
-				filteredCollectionSets,
-				sortOption as "dateLastUpdate" | "title",
-				sortOrder
-			);
-			setCollectionSets(sortedCollectionSets);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [filterOutInDB, sortOrder, sortOption]);
-
-	// Update document title accordingly.
 	useEffect(() => {
-		if (error) {
-			if (typeof window !== "undefined") document.title = "aura | Error";
-		} else {
-			if (typeof window !== "undefined") document.title = `aura | ${username} Sets`;
+		if (filterOutInDB === "all") {
+			// Show all items, do not filter further
+			setFilteredShowSets(showSets);
+			setFilteredMovieSets(movieSets);
+			setFilteredCollectionSets(collectionSets);
+			setFilteredBoxsets(boxsets);
+			return;
 		}
-	}, [error, username]);
+
+		const filterInDB = (sets: SetRef[]) =>
+			sets.filter((set) =>
+				set.item_ids.every((tmdbId) => {
+					const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+					return mediaItem && typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length > 0;
+				})
+			);
+
+		const filterNotInDB = (sets: SetRef[]) =>
+			sets.filter((set) =>
+				set.item_ids.some((tmdbId) => {
+					const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+					return !mediaItem || (typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length === 0);
+				})
+			);
+
+		if (filterOutInDB === "inDB") {
+			setFilteredShowSets((prev) => filterInDB(prev));
+			setFilteredMovieSets((prev) => filterInDB(prev));
+			setFilteredCollectionSets((prev) => filterInDB(prev));
+			setFilteredBoxsets((prevBoxsets) =>
+				prevBoxsets.filter((boxset) =>
+					boxset.sets?.every((set) =>
+						set.item_ids.every((tmdbId) => {
+							const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+							return mediaItem && typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length > 0;
+						})
+					)
+				)
+			);
+		} else if (filterOutInDB === "notInDB") {
+			setFilteredShowSets((prev) => filterNotInDB(prev));
+			setFilteredMovieSets((prev) => filterNotInDB(prev));
+			setFilteredCollectionSets((prev) => filterNotInDB(prev));
+			setFilteredBoxsets((prevBoxsets) =>
+				prevBoxsets.filter((boxset) =>
+					boxset.sets?.some((set) =>
+						set.item_ids.some((tmdbId) => {
+							const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
+							return (
+								!mediaItem || (typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length === 0)
+							);
+						})
+					)
+				)
+			);
+		}
+	}, [
+		filterOutInDB,
+		tmdbLookupMap,
+		setFilteredShowSets,
+		setFilteredMovieSets,
+		setFilteredCollectionSets,
+		setFilteredBoxsets,
+		showSets,
+		movieSets,
+		collectionSets,
+		boxsets,
+	]);
 
 	useEffect(() => {
 		setTotalPages(
@@ -636,10 +594,13 @@ const UserSetPage = () => {
 		setCurrentPage,
 	]);
 
-	const paginatedShowSets = showSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-	const paginatedMovieSets = movieSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-	const paginatedCollectionSets = collectionSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-	const paginatedBoxSets = boxsets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+	const paginatedShowSets = filteredShowSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+	const paginatedMovieSets = filteredMovieSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+	const paginatedCollectionSets = filteredCollectionSets.slice(
+		(currentPage - 1) * itemsPerPage,
+		currentPage * itemsPerPage
+	);
+	const paginatedBoxSets = filteredBoxsets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
 	return (
 		<div className="flex flex-col">
@@ -660,22 +621,24 @@ const UserSetPage = () => {
 			{/* Show message when no sets are found */}
 			{!isLoading &&
 				!error &&
-				respShowSets.length === 0 &&
-				respMovieSets.length === 0 &&
-				respCollectionSets.length === 0 &&
-				respBoxsets.length === 0 && (
-					<div className="flex justify-center">
-						<ErrorMessage error={ReturnErrorMessage<string>(`No sets found for user ${username}.`)} />
+				creatorSetsResponse &&
+				creatorSetsResponse.show_sets.length === 0 &&
+				creatorSetsResponse.movie_sets.length === 0 &&
+				creatorSetsResponse.collection_sets.length === 0 &&
+				creatorSetsResponse.boxsets.length === 0 && (
+					<div className="flex justify-center mt-4">
+						<P>No sets found for {username}</P>
 					</div>
 				)}
 
 			{/* Main content when sets exist */}
 			{!isLoading &&
 				!error &&
-				(respShowSets.length > 0 ||
-					respMovieSets.length > 0 ||
-					respCollectionSets.length > 0 ||
-					respBoxsets.length > 0) && (
+				creatorSetsResponse &&
+				(creatorSetsResponse.show_sets.length > 0 ||
+					creatorSetsResponse.movie_sets.length > 0 ||
+					creatorSetsResponse.collection_sets.length > 0 ||
+					creatorSetsResponse.boxsets.length > 0) && (
 					<div className="min-h-screen px-4 sm:px-8 pb-20">
 						{/* User Sets Header */}
 						<div className="flex flex-col items-center mt-8 mb-6">
@@ -684,7 +647,7 @@ const UserSetPage = () => {
 								<span className="text-primary">{username}</span>
 								<Avatar className="rounded-lg w-7 h-7 ml-2 align-middle">
 									<AvatarImage
-										src={`/api/mediux/avatar-image?username=${username}`}
+										src={`/api/images/mediux/avatar?username=${username}`}
 										className="w-7 h-7"
 									/>
 									<AvatarFallback>
@@ -692,44 +655,46 @@ const UserSetPage = () => {
 									</AvatarFallback>
 								</Avatar>
 							</h1>
-							{!selectedLibrarySection && (
-								<div className="flex flex-wrap gap-3 mt-2 justify-center">
-									{respShowSets.length > 0 && (
-										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-											<span className="font-semibold text-primary">Show Sets</span>
-											<Badge variant="secondary" className="text-xs px-2 py-1">
-												{respShowSets.length}
-											</Badge>
-										</div>
-									)}
-									{respMovieSets.length > 0 && (
-										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-											<span className="font-semibold text-primary">Movie Sets</span>
-											<Badge variant="secondary" className="text-xs px-2 py-1">
-												{respMovieSets.length}
-											</Badge>
-										</div>
-									)}
-									{respCollectionSets.length > 0 && (
-										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-											<span className="font-semibold text-primary">Collection Sets</span>
-											<Badge variant="secondary" className="text-xs px-2 py-1">
-												{respCollectionSets.length}
-											</Badge>
-										</div>
-									)}
-									{respBoxsets.length > 0 && (
-										<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-											<span className="font-semibold text-primary">Box Sets</span>
-											<Badge variant="secondary" className="text-xs px-2 py-1">
-												{respBoxsets.length}
-											</Badge>
-										</div>
-									)}
-								</div>
-							)}
+							{!selectedLibrarySection ||
+								(selectedLibrarySection.title == "" && (
+									<div className="flex flex-wrap gap-3 mt-2 justify-center">
+										{showSets.length > 0 && (
+											<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+												<span className="font-semibold text-primary">Show Sets</span>
+												<Badge variant="secondary" className="text-xs px-2 py-1">
+													{showSets.length}
+												</Badge>
+											</div>
+										)}
+										{movieSets.length > 0 && (
+											<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+												<span className="font-semibold text-primary">Movie Sets</span>
+												<Badge variant="secondary" className="text-xs px-2 py-1">
+													{movieSets.length}
+												</Badge>
+											</div>
+										)}
+										{collectionSets.length > 0 && (
+											<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+												<span className="font-semibold text-primary">Collection Sets</span>
+												<Badge variant="secondary" className="text-xs px-2 py-1">
+													{collectionSets.length}
+												</Badge>
+											</div>
+										)}
+										{boxsets.length > 0 && (
+											<div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+												<span className="font-semibold text-primary">Box Sets</span>
+												<Badge variant="secondary" className="text-xs px-2 py-1">
+													{boxsets.length}
+												</Badge>
+											</div>
+										)}
+									</div>
+								))}
 						</div>
 
+						{/* Library Section Selection */}
 						<div className="w-full max-w-3xl">
 							{/* Library Section */}
 							<div className="flex flex-col sm:flex-row mb-4 mt-2">
@@ -746,10 +711,13 @@ const UserSetPage = () => {
 											: ""
 									}
 									onValueChange={(val: string) => {
+										const found = librarySections.find(
+											(section) =>
+												section.title === val &&
+												(section.type === "show" || section.type === "movie")
+										);
 										setSelectedLibrarySection(
-											val
-												? librarySections.find((section) => section.title === val) || null
-												: null
+											found ? { ...found, type: found.type as "show" | "movie" } : null
 										);
 									}}
 								>
@@ -760,12 +728,16 @@ const UserSetPage = () => {
 												selectedLibrarySection?.title === section.title ? "default" : "outline"
 											}
 											onClick={() => {
+												const safeSection =
+													section.type === "show" || section.type === "movie"
+														? { ...section, type: section.type as "show" | "movie" }
+														: null;
 												if (selectedLibrarySection?.title === section.title) {
 													setSelectedLibrarySection(null);
 													setCurrentPage(1);
 													setFilterOutInDB("all");
 												} else {
-													setSelectedLibrarySection(section);
+													setSelectedLibrarySection(safeSection);
 													setCurrentPage(1);
 													setFilterOutInDB("all");
 												}
@@ -797,7 +769,6 @@ const UserSetPage = () => {
 							</div>
 						)}
 
-						{/* Content when library is selected */}
 						{selectedLibrarySection &&
 							(showSets.length === 0 &&
 							movieSets.length === 0 &&
@@ -985,10 +956,9 @@ const UserSetPage = () => {
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
 														{paginatedShowSets.map((showSet) => (
 															<div key={`${showSet.id}-showset`} className="pb-6">
-																<RenderBoxSetDisplay
-																	key={showSet.id}
+																<RenderShowAndCollectionDisplay
+																	includedItems={setIncludedItems || {}}
 																	set={showSet}
-																	type="show"
 																/>
 															</div>
 														))}
@@ -999,176 +969,99 @@ const UserSetPage = () => {
 											{paginatedMovieSets.length > 0 && (
 												<TabsContent value="movieSets">
 													<ResponsiveGrid size="regular">
-														{paginatedMovieSets.map((set) => {
-															const posterSets = BoxsetMovieToPosterSet(
-																set as MediuxUserMovieSet
-															);
-															const posterSet = posterSets[0];
-															return (
-																<div
-																	key={posterSet.ID}
-																	className="relative flex flex-col items-center p-2 border rounded-md"
-																	style={{
-																		background: "oklch(0.16 0.0202 282.55)",
-																		opacity: "0.95",
-																		padding: "0.5rem",
-																	}}
-																>
-																	<div className="relative w-full mb-1">
-																		{/* Download Button - absolute top right */}
-																		<div className="absolute top-0 right-0 z-10">
-																			<DownloadModal
-																				setType={"movie"}
-																				setTitle={posterSet.Title}
-																				setID={posterSet.ID}
-																				setAuthor={posterSet.User.Name}
-																				posterSets={posterSets}
-																			/>
-																		</div>
-																		{/* Set Name */}
-																		<P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
-																			{posterSet.Title}
-																		</P>
-																	</div>
-
-																	{/* Set User Name */}
-																	<div className="flex items-center justify-start w-full mb-1">
-																		<div className="flex items-center gap-1">
-																			<Avatar className="rounded-lg mr-1 w-4 h-4">
-																				<AvatarImage
-																					src={`/api/mediux/avatar-image?username=${posterSet.User.Name}`}
-																					className="w-4 h-4"
-																				/>
-																				<AvatarFallback className="">
-																					<User className="w-4 h-4" />
-																				</AvatarFallback>
-																			</Avatar>
-																			<Link
-																				href={`/user/${posterSet.User.Name}`}
-																				className="text-sm hover:text-primary cursor-pointer underline truncate"
-																				style={{ wordBreak: "break-word" }}
-																			>
-																				{posterSet.User.Name}
-																			</Link>
-																		</div>
-																	</div>
-
-																	{/* Last Update */}
-																	<>
-																		<Lead className="text-sm text-muted-foreground w-full mb-2 flex items-center gap-2">
-																			Last Update:{" "}
-																			{formatLastUpdatedDate(
-																				posterSet.Poster?.Modified || "",
-																				posterSet.Backdrop?.Modified || ""
+														{filteredMovieSets.map((set) => (
+															<div
+																key={set.id}
+																className="relative flex flex-col items-center p-2 border rounded-md"
+																style={{
+																	background: "oklch(0.16 0.0202 282.55)",
+																	opacity: "0.95",
+																	padding: "0.5rem",
+																}}
+															>
+																<div className="relative w-full mb-1">
+																	{/* Download Button - absolute top right */}
+																	<div className="absolute top-0 right-0 z-10">
+																		<DownloadModal
+																			baseSetInfo={set}
+																			formItems={setRefsToFormItems(
+																				[set],
+																				setIncludedItems || {}
 																			)}
-																			{set.movie_id.MediaItem?.DBSavedSets &&
-																				set.movie_id.MediaItem?.DBSavedSets
-																					.length > 0 && (
-																					<Popover>
-																						<PopoverTrigger asChild>
-																							<Database
-																								className={cn(
-																									"cursor-pointer active:scale-95",
-																									(
-																										set as MediuxUserMovieSet
-																									).movie_id.MediaItem?.DBSavedSets?.some(
-																										(dbSet) =>
-																											dbSet.PosterSetID ===
-																											posterSet.ID
-																									)
-																										? "text-green-500"
-																										: "text-yellow-500"
-																								)}
-																								size={16}
-																							/>
-																						</PopoverTrigger>
-																						<PopoverContent
-																							side="top"
-																							sideOffset={5}
-																							className="bg-secondary border border-2 border-primary p-2"
-																						>
-																							<div className="flex items-center mb-2">
-																								<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
-																								<span className="text-sm text-yellow-600">
-																									This media item
-																									already exists in
-																									your database
-																								</span>
-																							</div>
-																							<div className="text-xs text-muted-foreground mb-2">
-																								You have previously
-																								saved it in the
-																								following sets
-																							</div>
-																							<ul className="space-y-2">
-																								{set.movie_id.MediaItem.DBSavedSets.map(
-																									(dbSet) => (
-																										<li
-																											key={
-																												dbSet.PosterSetID
-																											}
-																											className="flex items-center rounded-md px-2 py-1 shadow-sm"
-																										>
-																											<Button
-																												variant="outline"
-																												className={cn(
-																													"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
-																													dbSet.PosterSetID.toString() ===
-																														posterSet.ID.toString()
-																														? "text-green-600  hover:bg-green-100  hover:text-green-600"
-																														: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
-																												)}
-																												aria-label={`View saved set ${dbSet.PosterSetID} ${dbSet.PosterSetUser ? `by ${dbSet.PosterSetUser}` : ""}`}
-																												onClick={(
-																													e
-																												) => {
-																													e.stopPropagation();
-																													setSearchQuery(
-																														`${set.movie_id.MediaItem.Title} Y:${set.movie_id.MediaItem.Year}: ID:${set.movie_id.MediaItem.TMDB_ID}: L:${set.movie_id.MediaItem.LibraryTitle}:`
-																													);
-																													router.push(
-																														"/saved-sets"
-																													);
-																												}}
-																											>
-																												Set ID:{" "}
-																												{
-																													dbSet.PosterSetID
-																												}
-																												{dbSet.PosterSetUser
-																													? ` by ${dbSet.PosterSetUser}`
-																													: ""}
-																											</Button>
-																										</li>
-																									)
-																								)}
-																							</ul>
-																						</PopoverContent>
-																					</Popover>
-																				)}
-																		</Lead>
-																	</>
-
-																	{/* Poster */}
-																	{posterSet.Poster && (
-																		<AssetImage
-																			image={posterSet.Poster}
-																			aspect="poster"
-																			className="w-full mb-2"
 																		/>
-																	)}
-
-																	{/* Backdrop */}
-																	{posterSet.Backdrop && (
-																		<AssetImage
-																			image={posterSet.Backdrop}
-																			aspect="backdrop"
-																			className="w-full"
-																		/>
-																	)}
+																	</div>
+																	{/* Set Name */}
+																	<P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
+																		{set.title}
+																	</P>
 																</div>
-															);
-														})}
+
+																{/* Set User Name */}
+																<div className="flex items-center justify-start w-full mb-1">
+																	<div className="flex items-center gap-1">
+																		<Avatar className="rounded-lg mr-1 w-4 h-4">
+																			<AvatarImage
+																				src={`/api/images/mediux/avatar?username=${set.user_created}`}
+																				className="w-4 h-4"
+																			/>
+																			<AvatarFallback className="">
+																				<User className="w-4 h-4" />
+																			</AvatarFallback>
+																		</Avatar>
+																		<Link
+																			href={`/user/${set.user_created}`}
+																			className="text-sm hover:text-primary cursor-pointer underline truncate"
+																			style={{ wordBreak: "break-word" }}
+																		>
+																			{set.user_created}
+																		</Link>
+																	</div>
+																</div>
+
+																{/* Last Update */}
+																<Lead className="text-sm text-muted-foreground w-full mb-2">
+																	Last Update:{" "}
+																	{formatLastUpdatedDate(
+																		set.date_updated,
+																		set.date_created ||
+																			set.images[0]?.modified ||
+																			""
+																	)}
+																</Lead>
+
+																{/* Poster */}
+																{set.images.find(
+																	(image) => image.type === "poster"
+																) && (
+																	<AssetImage
+																		image={
+																			set.images.find(
+																				(image) => image.type === "poster"
+																			)!
+																		}
+																		imageType="mediux"
+																		aspect="poster"
+																		className="w-full mb-2"
+																	/>
+																)}
+
+																{/* Backdrop */}
+																{set.images.find(
+																	(image) => image.type === "backdrop"
+																) && (
+																	<AssetImage
+																		image={
+																			set.images.find(
+																				(image) => image.type === "backdrop"
+																			)!
+																		}
+																		imageType="mediux"
+																		aspect="backdrop"
+																		className="w-full"
+																	/>
+																)}
+															</div>
+														))}
 													</ResponsiveGrid>
 												</TabsContent>
 											)}
@@ -1181,10 +1074,9 @@ const UserSetPage = () => {
 																key={`${collectionSet.id}-collectionset`}
 																className="pb-6"
 															>
-																<RenderBoxSetDisplay
-																	key={collectionSet.id}
+																<RenderShowAndCollectionDisplay
+																	includedItems={setIncludedItems || {}}
 																	set={collectionSet}
-																	type="collection"
 																/>
 															</div>
 														))}
@@ -1195,12 +1087,11 @@ const UserSetPage = () => {
 											{paginatedBoxSets.length > 0 && (
 												<TabsContent value="boxSets">
 													<div className="divide-y divide-primary-dynamic/20 space-y-6">
-														{paginatedBoxSets.map((boxset) => (
+														{paginatedBoxSets.slice(1).map((boxset) => (
 															<div key={`${boxset.id}-boxset`} className="pb-6">
-																<RenderBoxSetDisplay
-																	key={boxset.id}
+																<RenderBoxsetDisplay
+																	includedItems={setIncludedItems || {}}
 																	set={boxset}
-																	type="boxset"
 																/>
 															</div>
 														))}
@@ -1218,12 +1109,12 @@ const UserSetPage = () => {
 										scrollToTop={true}
 										filterItemsLength={
 											activeTab === "boxSets"
-												? boxsets.length
+												? filteredBoxsets.length
 												: activeTab === "showSets"
-													? showSets.length
+													? filteredShowSets.length
 													: activeTab === "movieSets"
-														? movieSets.length
-														: collectionSets.length
+														? filteredMovieSets.length
+														: filteredCollectionSets.length
 										}
 										itemsPerPage={itemsPerPage}
 									/>

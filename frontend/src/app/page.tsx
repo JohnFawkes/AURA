@@ -1,8 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchMediaServerLibrarySectionItems } from "@/services/mediaserver/api-mediaserver-fetch-library-section-items";
-import { fetchMediaServerLibrarySections } from "@/services/mediaserver/api-mediaserver-fetch-library-sections";
+import { getLibrarySections } from "@/services/mediaserver/library-get-current";
+import { getLibrarySectionItems } from "@/services/mediaserver/library-get-items";
 import { Loader } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,9 +29,6 @@ import { APIResponse } from "@/types/api/api-response";
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
 
 export default function Home() {
-	useEffect(() => {
-		document.title = "aura | Home";
-	}, []);
 	const isMounted = useRef(false);
 
 	// -------------------------------
@@ -57,6 +54,8 @@ export default function Home() {
 		setFilteredLibraries,
 		filterInDB,
 		setFilterInDB,
+		filterIgnored,
+		setFilterIgnored,
 		currentPage,
 		setCurrentPage,
 		itemsPerPage,
@@ -130,7 +129,7 @@ export default function Home() {
 				}
 
 				// Fetch fresh data
-				const response = await fetchMediaServerLibrarySections();
+				const response = await getLibrarySections();
 				if (response.status === "error") {
 					setError(response);
 					setFullyLoaded(true);
@@ -144,33 +143,33 @@ export default function Home() {
 				}
 
 				// Initialize each section's MediaItems to an empty array
-				fetchedSections.forEach((section) => (section.MediaItems = []));
-				setLibrarySections(fetchedSections.slice().sort((a, b) => a.Title.localeCompare(b.Title)));
+				fetchedSections.forEach((section) => (section.media_items = []));
+				setLibrarySections(fetchedSections.slice().sort((a, b) => a.title.localeCompare(b.title)));
 
 				// Process each section concurrently
 				await Promise.all(
 					fetchedSections.map(async (section) => {
 						let itemsFetched = 0;
 						let totalSize = Infinity;
-						let allItems: LibrarySection["MediaItems"] = [];
+						let allItems: LibrarySection["media_items"] = [];
 
 						while (itemsFetched < totalSize) {
-							const itemsResponse = await fetchMediaServerLibrarySectionItems(section, itemsFetched);
+							const itemsResponse = await getLibrarySectionItems(section, itemsFetched);
 							if (itemsResponse.status === "error") {
 								setError(itemsResponse);
 								return;
 							}
 
 							const data = itemsResponse.data;
-							const items = data?.MediaItems || [];
+							const items = data?.media_items || [];
 							allItems = allItems.concat(items);
 							if (totalSize === Infinity) {
-								totalSize = data?.TotalSize ?? 0;
+								totalSize = data?.total_size ?? 0;
 							}
 							itemsFetched += items.length;
 							setSectionProgress((prev) => ({
 								...prev,
-								[section.ID]: {
+								[section.id]: {
 									loaded: itemsFetched,
 									total: totalSize,
 								},
@@ -179,17 +178,17 @@ export default function Home() {
 								break;
 							}
 						}
-						section.MediaItems = allItems;
-						section.TotalSize = totalSize;
+						section.media_items = allItems;
+						section.total_size = totalSize;
 					})
 				);
 
 				// Build the sections object for the store
 				const sectionsObj = fetchedSections.reduce<Record<string, LibrarySection>>((acc, section) => {
-					acc[section.Title] = section;
+					acc[section.title] = section;
 					return acc;
 				}, {});
-				const librarySections = fetchedSections.slice().sort((a, b) => a.Title.localeCompare(b.Title));
+				const librarySections = fetchedSections.slice().sort((a, b) => a.title.localeCompare(b.title));
 				// Store in zustand and update timestamp
 				setSections(sectionsObj, Date.now());
 				setFullyLoaded(true);
@@ -223,53 +222,60 @@ export default function Home() {
 	// Filter items based on the search query
 	useEffect(() => {
 		const filterAndSortItems = async () => {
-			let items = librarySections.flatMap((section) => section.MediaItems || []);
+			let items = librarySections.flatMap((section) => section.media_items || []);
 
 			// Sort items by Title
 			if (sortOption === "title") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => a.Title.localeCompare(b.Title));
+					items.sort((a, b) => a.title.localeCompare(b.title));
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => b.Title.localeCompare(a.Title));
+					items.sort((a, b) => b.title.localeCompare(a.title));
 				}
 			} else if (sortOption === "dateUpdated") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => (a.UpdatedAt ?? 0) - (b.UpdatedAt ?? 0));
+					items.sort((a, b) => (a.updated_at ?? 0) - (b.updated_at ?? 0));
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => (b.UpdatedAt ?? 0) - (a.UpdatedAt ?? 0));
+					items.sort((a, b) => (b.updated_at ?? 0) - (a.updated_at ?? 0));
 				}
 			} else if (sortOption === "dateAdded") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => (a.AddedAt ?? 0) - (b.AddedAt ?? 0));
+					items.sort((a, b) => (a.added_at ?? 0) - (b.added_at ?? 0));
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => (b.AddedAt ?? 0) - (a.AddedAt ?? 0));
+					items.sort((a, b) => (b.added_at ?? 0) - (a.added_at ?? 0));
 				}
 			} else if (sortOption === "dateReleased") {
 				if (sortOrder === "asc") {
-					items.sort((a, b) => (a.ReleasedAt ?? 0) - (b.ReleasedAt ?? 0));
+					items.sort((a, b) => (a.released_at ?? 0) - (b.released_at ?? 0));
 				} else if (sortOrder === "desc") {
-					items.sort((a, b) => (b.ReleasedAt ?? 0) - (a.ReleasedAt ?? 0));
+					items.sort((a, b) => (b.released_at ?? 0) - (a.released_at ?? 0));
 				}
 			}
 
 			// Filter by selected libraries
 			if (filteredLibraries.length > 0) {
-				items = items.filter((item) => filteredLibraries.includes(item.LibraryTitle));
+				items = items.filter((item) => filteredLibraries.includes(item.library_title));
 			}
 
 			// Filter out items already in the DB
 			if (filterInDB === "notInDB") {
-				items = items.filter((item) => !item.ExistInDatabase);
+				items = items.filter((item) => !item.db_saved_sets || item.db_saved_sets.length === 0);
 			} else if (filterInDB === "inDB") {
-				items = items.filter((item) => item.ExistInDatabase);
+				items = items.filter((item) => item.db_saved_sets && item.db_saved_sets.length > 0);
+			}
+
+			// Filter out items that are ignored
+			if (filterIgnored === "always") {
+				items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "always");
+			} else if (filterIgnored === "temp") {
+				items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "temp");
 			}
 
 			// Filter out items by search
 			const filteredItems = searchItems(items, searchQuery, {
-				getTitle: (item) => item.Title,
-				getYear: (item) => item.Year,
-				getLibraryTitle: (item) => item.LibraryTitle,
-				getID: (item) => item.TMDB_ID || item.RatingKey,
+				getTitle: (item) => item.title,
+				getYear: (item) => item.year,
+				getLibraryTitle: (item) => item.library_title,
+				getID: (item) => item.tmdb_id || item.rating_key,
 			});
 
 			// Store the filtered items in local storage
@@ -282,6 +288,7 @@ export default function Home() {
 		setFilteredAndSortedMediaItems,
 		searchQuery,
 		filterInDB,
+		filterIgnored,
 		sortOption,
 		sortOrder,
 	]);
@@ -290,7 +297,7 @@ export default function Home() {
 		return <ErrorMessage error={error} />;
 	}
 
-	const hasUpdatedAt = paginatedItems.some((item) => item.UpdatedAt !== undefined && item.UpdatedAt !== null);
+	const hasUpdatedAt = paginatedItems.some((item) => item.updated_at !== undefined && item.updated_at !== null);
 
 	return (
 		<div className="flex items-center justify-center">
@@ -300,12 +307,12 @@ export default function Home() {
 					<div className="flex flex-col items-center w-full px-4">
 						{[...librarySections]
 							.sort((a, b) => {
-								const progressA = sectionProgress[a.ID];
+								const progressA = sectionProgress[a.id];
 								const percentA =
 									progressA && progressA.total > 0
 										? Math.min((progressA.loaded / progressA.total) * 100, 100)
 										: 0;
-								const progressB = sectionProgress[b.ID];
+								const progressB = sectionProgress[b.id];
 								const percentB =
 									progressB && progressB.total > 0
 										? Math.min((progressB.loaded / progressB.total) * 100, 100)
@@ -313,7 +320,7 @@ export default function Home() {
 								return percentB - percentA; // Sort descending
 							})
 							.map((section) => {
-								const progressInfo = sectionProgress[section.ID];
+								const progressInfo = sectionProgress[section.id];
 								const percentage =
 									progressInfo && progressInfo.total > 0
 										? Math.min((progressInfo.loaded / progressInfo.total) * 100, 100)
@@ -321,11 +328,11 @@ export default function Home() {
 
 								return (
 									<div
-										key={section.ID}
+										key={section.id}
 										className="mb-6 w-full max-w-xl flex flex-col items-center px-2"
 									>
 										<Label className="text-lg font-semibold text-center mb-2">
-											Loading {section.Title}
+											Loading {section.title}
 										</Label>
 										<Progress
 											value={percentage}
@@ -364,6 +371,8 @@ export default function Home() {
 							setFilteredLibraries={setFilteredLibraries}
 							filterInDB={filterInDB}
 							setFilterInDB={setFilterInDB}
+							filterIgnored={filterIgnored}
+							setFilterIgnored={setFilterIgnored}
 							hasUpdatedAt={hasUpdatedAt}
 							sortOption={sortOption}
 							setSortOption={setSortOption}
@@ -394,7 +403,7 @@ export default function Home() {
 								/>
 							</div>
 						) : (
-							paginatedItems.map((item) => <HomeMediaItemCard key={item.RatingKey} item={item} />)
+							paginatedItems.map((item) => <HomeMediaItemCard key={item.rating_key} item={item} />)
 						)}
 					</ResponsiveGrid>
 

@@ -23,7 +23,11 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import {
+	DOWNLOAD_DEFAULT_LABELS,
+	DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+	TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+} from "@/types/ui-options";
 
 type CollectionItemFilterProps = {
 	numberOfActiveFilters?: number;
@@ -91,7 +95,7 @@ function CollectionItemFilterContent({
 									: undefined
 							}
 						>
-							{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1")}
+							{DOWNLOAD_DEFAULT_LABELS[type]}
 						</Badge>
 					))}
 				</ToggleGroup>

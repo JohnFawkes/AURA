@@ -1,15 +1,17 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchAllItemFromDBWithFilters } from "@/services/database/api-db-get-all";
-import { deleteMediaItemFromDB } from "@/services/database/api-db-item-delete";
-import { AutodownloadResult, postForceRecheckDBItemForAutoDownload } from "@/services/database/api-db-items-recheck";
-import { postApplyLabelsTagsToDBItem } from "@/services/labels-tags/apply-labels-tags";
+import { deleteItemFromDB } from "@/services/database/item-delete";
+import { getAllItemsFromDB } from "@/services/database/item-get-all";
+import { AutodownloadResult, checkSavedDBItemForUpdates } from "@/services/downloads/check-for-update";
+import { addItemToDownloadQueue } from "@/services/downloads/queue-add";
+import { applyLabelsAndTagsToItem } from "@/services/labels-tags/apply-labels-tags";
 import {
 	ArrowDownAZ,
 	ArrowDownZA,
 	ClockArrowDown,
 	ClockArrowUp,
+	CloudDownload,
 	RefreshCcw as RefreshIcon,
 	Tag,
 	Trash2,
@@ -46,10 +48,10 @@ import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
 import { APIResponse } from "@/types/api/api-response";
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBSavedItem } from "@/types/database/db-poster-set";
 
 const SavedSetsPage: React.FC = () => {
-	const [savedSets, setSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
+	const [savedSets, setSavedSets] = useState<DBSavedItem[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 	const isFetchingRef = useRef(false);
@@ -61,6 +63,7 @@ const SavedSetsPage: React.FC = () => {
 		{ value: "force-recheck", label: "Force Autodownload Recheck" },
 		{ value: "apply-label-tag", label: "Apply Labels/Tags" },
 		{ value: "delete-selected", label: "Delete Selected Sets" },
+		{ value: "force-redownload", label: "Force Redownload" },
 	]);
 	const [bulkEditSelectedAction, setBulkEditSelectedAction] = useState<string>("");
 	const [bulkEditSelectedItems, setBulkEditSelectedItems] = useState<Set<string>>(new Set());
@@ -99,18 +102,13 @@ const SavedSetsPage: React.FC = () => {
 	const typeOptions = [
 		{ label: "Poster", value: "poster" },
 		{ label: "Backdrop", value: "backdrop" },
-		{ label: "Season Posters", value: "seasonPoster" },
+		{ label: "Season Posters", value: "season_poster" },
 		{ label: "Title Cards", value: "titlecard" },
 		{ label: "No Selected Types", value: "none" },
 	]; // Total Items: Total items matching filters in DB (for pagination)
 	const [totalItems, setTotalItems] = useState(0);
 	// Is Wide Screen: for showing/hiding the ViewControl
 	const [isWideScreen, setIsWideScreen] = useState(false);
-
-	// Set the Document Title
-	useEffect(() => {
-		document.title = `aura | Saved Sets`;
-	}, []);
 
 	// Set sortOption to "dateDownloaded" if its not title, dateDownloaded, year, or library
 	useEffect(() => {
@@ -134,7 +132,7 @@ const SavedSetsPage: React.FC = () => {
 		try {
 			setLoading(true);
 
-			const response = await fetchAllItemFromDBWithFilters(
+			const response = await getAllItemsFromDB(
 				searchTMDBID,
 				searchLibrary,
 				searchYear,
@@ -232,9 +230,9 @@ const SavedSetsPage: React.FC = () => {
 		);
 	}
 
-	const handleRecheckItem = async (title: string, item: DBMediaItemWithPosterSets): Promise<void> => {
+	const handleRecheckItem = async (title: string, item: DBSavedItem): Promise<void> => {
 		try {
-			const response = await postForceRecheckDBItemForAutoDownload(item);
+			const response = await checkSavedDBItemForUpdates(item);
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to recheck item");
 				return;
@@ -250,9 +248,22 @@ const SavedSetsPage: React.FC = () => {
 		fetchSavedSets();
 	};
 
-	const handleApplyLabelsTagsToItem = async (item: DBMediaItemWithPosterSets): Promise<void> => {
+	const handleRedownloadItem = async (item: DBSavedItem): Promise<void> => {
 		try {
-			const response = await postApplyLabelsTagsToDBItem(item);
+			const response = await addItemToDownloadQueue(item);
+			if (response.status === "error") {
+				toast.error(response.error?.message || "Failed to add item to download queue");
+				return;
+			}
+		} catch (error) {
+			const errorResponse = ReturnErrorMessage<unknown>(error);
+			toast.error(errorResponse.error?.message || "An unexpected error occurred");
+		}
+	};
+
+	const handleApplyLabelsTagsToItem = async (item: DBSavedItem): Promise<void> => {
+		try {
+			const response = await applyLabelsAndTagsToItem(item);
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to apply labels/tags");
 				return;
@@ -263,9 +274,9 @@ const SavedSetsPage: React.FC = () => {
 		}
 	};
 
-	const handleDeleteItemFromDB = async (item: DBMediaItemWithPosterSets): Promise<void> => {
+	const handleDeleteItemFromDB = async (item: DBSavedItem): Promise<void> => {
 		try {
-			const response = await deleteMediaItemFromDB(item);
+			const response = await deleteItemFromDB(item);
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to delete item");
 				return;
@@ -276,7 +287,43 @@ const SavedSetsPage: React.FC = () => {
 		}
 	};
 
-	const actionForceAutoDownloadRecheck = async (setsToRecheck: DBMediaItemWithPosterSets[]) => {
+	const actionForceRedownload = async (itemsToRedownload: DBSavedItem[]) => {
+		if (isFetchingRef.current) return;
+		isFetchingRef.current = true;
+		setRecheckStatus({}); // Reset recheck status
+
+		log("INFO", "Saved Sets Page", "Force Redownload", `Forcing redownload for ${itemsToRedownload.length} sets`, {
+			itemsToRedownload,
+		});
+
+		// Show loading toast
+		toast.loading(`Adding ${itemsToRedownload.length} items to download queue...`, {
+			id: "force-redownload",
+			duration: 0, // Keep it open until we manually close it
+		});
+
+		for (const [index, item] of itemsToRedownload.entries()) {
+			toast.loading(
+				`Adding ${index + 1} of ${itemsToRedownload.length} - ${item.media_item.title} to download queue`,
+				{
+					id: "force-redownload",
+					duration: 0, // Keep it open until we manually close it
+				}
+			);
+			await handleRedownloadItem(item);
+		}
+
+		// Close loading toast
+		toast.success("Add to download queue completed", {
+			id: "force-redownload",
+			duration: 2000,
+		});
+
+		isFetchingRef.current = false;
+		fetchSavedSets();
+	};
+
+	const actionForceAutoDownloadRecheck = async (setsToRecheck: DBSavedItem[]) => {
 		if (isFetchingRef.current) return;
 		isFetchingRef.current = true;
 		setRecheckStatus({}); // Reset recheck status
@@ -292,11 +339,11 @@ const SavedSetsPage: React.FC = () => {
 		});
 
 		for (const [index, set] of setsToRecheck.entries()) {
-			toast.loading(`Rechecking ${index + 1} of ${setsToRecheck.length} - ${set.MediaItem.Title}`, {
+			toast.loading(`Rechecking ${index + 1} of ${setsToRecheck.length} - ${set.media_item.title}`, {
 				id: "force-recheck",
 				duration: 0, // Keep it open until we manually close it
 			});
-			await handleRecheckItem(set.MediaItem.Title, set);
+			await handleRecheckItem(set.media_item.title, set);
 		}
 
 		// Close loading toast
@@ -309,7 +356,7 @@ const SavedSetsPage: React.FC = () => {
 		fetchSavedSets();
 	};
 
-	const actionApplyLabelsTags = async (setsToApply: DBMediaItemWithPosterSets[]) => {
+	const actionApplyLabelsTags = async (setsToApply: DBSavedItem[]) => {
 		log("INFO", "Saved Sets Page", "Apply Labels/Tags", `Applying labels/tags to ${setsToApply.length} sets`, {
 			setsToApply,
 		});
@@ -321,7 +368,7 @@ const SavedSetsPage: React.FC = () => {
 		});
 
 		for (const [index, set] of setsToApply.entries()) {
-			toast.loading(`Applying labels/tags to ${index + 1} of ${setsToApply.length} - ${set.MediaItem.Title}`, {
+			toast.loading(`Applying labels/tags to ${index + 1} of ${setsToApply.length} - ${set.media_item.title}`, {
 				id: "apply-labels-tags",
 				duration: 0, // Keep it open until we manually close it
 			});
@@ -335,7 +382,7 @@ const SavedSetsPage: React.FC = () => {
 		});
 	};
 
-	const actionDeleteSelectedSets = async (setsToDelete: DBMediaItemWithPosterSets[]) => {
+	const actionDeleteSelectedSets = async (setsToDelete: DBSavedItem[]) => {
 		log("INFO", "Saved Sets Page", "Delete Selected Sets", `Deleting ${setsToDelete.length} sets`, {
 			setsToDelete,
 		});
@@ -347,7 +394,7 @@ const SavedSetsPage: React.FC = () => {
 		});
 
 		for (const [index, set] of setsToDelete.entries()) {
-			toast.loading(`Deleting ${index + 1} of ${setsToDelete.length} - ${set.MediaItem.Title}`, {
+			toast.loading(`Deleting ${index + 1} of ${setsToDelete.length} - ${set.media_item.title}`, {
 				id: "delete-sets",
 				duration: 0, // Keep it open until we manually close it
 			});
@@ -378,14 +425,16 @@ const SavedSetsPage: React.FC = () => {
 		const selectedKeys = Array.from(bulkEditSelectedItems);
 
 		// Find matching savedSets for each selected key
-		const selectedSavedSets = selectedKeys
+		const selectedSavedItems = selectedKeys
 			.map((key) => {
 				const [tmdbId, libraryTitle] = key.split("|||");
-				return savedSets.find((set) => String(set.TMDB_ID) === tmdbId && set.LibraryTitle === libraryTitle);
+				return savedSets.find(
+					(set) => String(set.media_item.tmdb_id) === tmdbId && set.media_item.library_title === libraryTitle
+				);
 			})
 			.filter(Boolean);
 
-		if (selectedSavedSets.length === 0) {
+		if (selectedSavedItems.length === 0) {
 			toast.warning("No matching saved sets found for the selected items", {
 				id: "force-recheck",
 				duration: 2000,
@@ -394,11 +443,13 @@ const SavedSetsPage: React.FC = () => {
 		}
 
 		if (bulkEditSelectedAction === "force-recheck") {
-			actionForceAutoDownloadRecheck(selectedSavedSets as DBMediaItemWithPosterSets[]);
+			actionForceAutoDownloadRecheck(selectedSavedItems as DBSavedItem[]);
 		} else if (bulkEditSelectedAction === "apply-label-tag") {
-			actionApplyLabelsTags(selectedSavedSets as DBMediaItemWithPosterSets[]);
+			actionApplyLabelsTags(selectedSavedItems as DBSavedItem[]);
 		} else if (bulkEditSelectedAction === "delete-selected") {
-			actionDeleteSelectedSets(selectedSavedSets as DBMediaItemWithPosterSets[]);
+			actionDeleteSelectedSets(selectedSavedItems as DBSavedItem[]);
+		} else if (bulkEditSelectedAction === "force-redownload") {
+			actionForceRedownload(selectedSavedItems as DBSavedItem[]);
 		}
 
 		// Set the Selected Action back to empty
@@ -490,12 +541,12 @@ const SavedSetsPage: React.FC = () => {
 					</div>
 					<div className="grid grid-cols-1 gap-2">
 						{Object.entries(recheckStatus)
-							.sort(([, a], [, b]) => a.MediaItemTitle.localeCompare(b.MediaItemTitle))
+							.sort(([, a], [, b]) => a.item.localeCompare(b.item))
 							.map(([title, result]) => (
 								<div key={title} className="rounded-md border p-3 flex flex-col gap-2 bg-background">
 									<div className="flex justify-between items-center">
 										<div className="flex items-center gap-2">
-											<span className="font-semibold">{result.MediaItemTitle}</span>
+											<span className="font-semibold">{result.item}</span>
 										</div>
 										<div className="flex items-center gap-2">
 											<Badge
@@ -503,52 +554,53 @@ const SavedSetsPage: React.FC = () => {
 													"inline-flex items-center rounded-full px-2 py-0.5 text-sm font-medium",
 													{
 														"bg-green-300 text-green-900":
-															result.OverAllResult === "Success",
+															result.overall_result === "success",
 														"bg-yellow-300 text-yellow-900":
-															result.OverAllResult === "Warn",
-														"bg-red-300 text-red-900": result.OverAllResult === "Error",
-														"bg-gray-300 text-gray-900": result.OverAllResult === "Skipped",
+															result.overall_result === "warn",
+														"bg-red-300 text-red-900": result.overall_result === "error",
+														"bg-gray-300 text-gray-900":
+															result.overall_result === "skipped",
 													}
 												)}
 											>
-												{["Success", "Warn", "Error", "Skipped"].includes(result.OverAllResult)
-													? result.OverAllResult
-													: "Unknown"}
+												{["success", "warn", "error", "skipped"].includes(result.overall_result)
+													? result.overall_result
+													: "unknown"}
 											</Badge>
 										</div>
 									</div>
-									<p className="text-sm text-muted-foreground">{result.OverAllResultMessage}</p>
-									{result.Sets &&
-										result.Sets.map((set, index) => {
-											const setStatus = ["Success", "Warn", "Error", "Skipped"].includes(
-												set.Result
+									<p className="text-sm text-muted-foreground">{result.overall_message}</p>
+									{result.sets &&
+										result.sets.map((set, index) => {
+											const setStatus = ["success", "warn", "error", "skipped"].includes(
+												set.result
 											)
-												? set.Result
-												: "Other";
+												? set.result
+												: "other";
 
 											return (
 												<div
-													key={`${set.PosterSetID}-${index}`}
+													key={`${set.id}-${index}`}
 													className="flex items-start gap-2 text-xs pl-2"
 												>
 													<span className="shrink-0 text-muted-foreground mt-1">
-														Set {set.PosterSetID}
+														Set {set.id} (created by {set.user_created}):
 													</span>
 
 													<Badge
 														className={cn(
 															"shrink-0 rounded-full px-2",
-															setStatus === "Success" && "bg-green-500/15 text-green-600",
-															setStatus === "Error" && "bg-red-500/15 text-red-600",
-															setStatus === "Skipped" && "bg-muted text-muted-foreground",
-															setStatus === "Other" && "bg-muted text-muted-foreground"
+															setStatus === "success" && "bg-green-500/15 text-green-600",
+															setStatus === "error" && "bg-red-500/15 text-red-600",
+															setStatus === "skipped" && "bg-muted text-muted-foreground",
+															setStatus === "other" && "bg-muted text-muted-foreground"
 														)}
 													>
 														{setStatus}
 													</Badge>
 
 													<span className="min-w-0 text-muted-foreground break-words mt-1">
-														{set.Reason}
+														{set.reason}
 													</span>
 												</div>
 											);
@@ -558,7 +610,7 @@ const SavedSetsPage: React.FC = () => {
 											variant="ghost"
 											size="icon"
 											onClick={async () => {
-												const item = savedSets.find((set) => set.MediaItem.Title === title);
+												const item = savedSets.find((set) => set.media_item.title === title);
 												if (!item) return;
 												setRecheckStatus((prev) => {
 													const newStatus = { ...prev };
@@ -662,7 +714,8 @@ const SavedSetsPage: React.FC = () => {
 												// Select all
 												const allKeys = new Set(
 													savedSets.map(
-														(set) => `${set.TMDB_ID}|||${set.LibraryTitle}` // Key format
+														(set) =>
+															`${set.media_item.tmdb_id}|||${set.media_item.library_title}` // Key format
 													)
 												);
 												setBulkEditSelectedItems(allKeys);
@@ -793,10 +846,11 @@ const SavedSetsPage: React.FC = () => {
 							savedSets.length > 0 &&
 							savedSets.map((savedSet) => (
 								<SavedSetsTableRow
-									key={savedSet.MediaItem.RatingKey}
+									key={savedSet.media_item.rating_key}
 									savedSet={savedSet}
 									onUpdate={fetchSavedSets}
 									handleRecheckItem={handleRecheckItem}
+									handleRedownloadItem={handleRedownloadItem}
 									bulkEditMode={bulkEditMode}
 									bulkEditSelectedItems={bulkEditSelectedItems}
 									setBulkEditSelectedItems={setBulkEditSelectedItems}
@@ -818,7 +872,9 @@ const SavedSetsPage: React.FC = () => {
 								onCheckedChange={(checked) => {
 									if (checked) {
 										// Select all items
-										const allKeys = savedSets.map((set) => `${set.TMDB_ID}|||${set.LibraryTitle}`);
+										const allKeys = savedSets.map(
+											(set) => `${set.media_item.tmdb_id}|||${set.media_item.library_title}`
+										);
 										setBulkEditSelectedItems(new Set(allKeys));
 									} else {
 										// Deselect all items
@@ -835,10 +891,11 @@ const SavedSetsPage: React.FC = () => {
 							savedSets.length > 0 &&
 							savedSets.map((savedSet) => (
 								<SavedSetsCard
-									key={savedSet.MediaItem.RatingKey}
+									key={savedSet.media_item.rating_key}
 									savedSet={savedSet}
 									onUpdate={fetchSavedSets}
 									handleRecheckItem={handleRecheckItem}
+									handleRedownloadItem={handleRedownloadItem}
 									bulkEditMode={bulkEditMode}
 									bulkEditSelectedItems={bulkEditSelectedItems}
 									setBulkEditSelectedItems={setBulkEditSelectedItems}
@@ -883,13 +940,16 @@ const SavedSetsPage: React.FC = () => {
 										{bulkEditSelectedAction === "force-recheck" && (
 											<RefreshIcon className="h-4 w-4" />
 										)}
+										{bulkEditSelectedAction === "force-redownload" && (
+											<CloudDownload className="h-4 w-4" />
+										)}
 									</Button>
 								)}
 							{bulkEditSelectedItems.size > 0 && bulkEditSelectedAction === "delete-selected" && (
 								<ConfirmDestructiveDialogActionButton
 									onConfirm={async () => {
 										// Your delete logic here
-										await handleBulkEditButtonRunClick();
+										handleBulkEditButtonRunClick();
 									}}
 									title="Confirm Bulk Delete"
 									description={`You are about to delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"} from the database. This action cannot be undone.`}

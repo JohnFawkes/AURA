@@ -10,12 +10,12 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigAuth } from "@/types/config/config-app";
+import { AppConfigAuth } from "@/types/config/config";
 
 interface ConfigSectionAuthProps {
 	value: AppConfigAuth;
 	editing: boolean;
-	dirtyFields?: { Enabled?: boolean; Password?: boolean };
+	dirtyFields?: { enabled?: boolean; password?: boolean };
 	onChange: <K extends keyof AppConfigAuth>(field: K, value: AppConfigAuth[K]) => void;
 	errorsUpdate?: (errors: Partial<Record<keyof AppConfigAuth, string>>) => void;
 }
@@ -35,16 +35,16 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 	const errors = useMemo<Partial<Record<keyof AppConfigAuth, string>>>(() => {
 		const errs: Partial<Record<keyof AppConfigAuth, string>> = {};
 		// Password Errors
-		if (value.Enabled) {
-			const password = value.Password.trim();
+		if (value.enabled) {
+			const password = value.password.trim();
 			if (password.length === 0) {
-				errs.Password = "Password hash is required when authentication is enabled.";
+				errs.password = "Password hash is required when authentication is enabled.";
 			} else if (!hashRegex.test(password)) {
-				errs.Password = "Invalid Argon2id hash format.";
+				errs.password = "Invalid Argon2id hash format.";
 			}
 		}
 		return errs;
-	}, [value.Enabled, value.Password]);
+	}, [value.enabled, value.password]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -65,15 +65,15 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 				className={cn(
 					"flex items-center justify-between border rounded-md p-3 transition",
 					"border-muted",
-					dirtyFields.Enabled && "border-amber-500"
+					dirtyFields.enabled && "border-amber-500"
 				)}
 			>
 				<Label className="mr-2">Enabled</Label>
 				<div className="flex items-center gap-2">
 					<Switch
 						disabled={!editing}
-						checked={value.Enabled}
-						onCheckedChange={(c) => onChange("Enabled", c)}
+						checked={value.enabled}
+						onCheckedChange={(c) => onChange("enabled", c)}
 					/>
 					{editing && (
 						<PopoverHelp ariaLabel="help-auth-enabled">
@@ -117,12 +117,12 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
 							disabled={!editing}
 							placeholder="$argon2id$v=19$m=65536,t=3,p=1$..."
 							type="text"
-							value={value.Password}
-							onChange={(e) => onChange("Password", e.target.value)}
-							className={cn("w-full mt-1", dirtyFields.Password && "ring-2 ring-amber-500")}
+							value={value.password}
+							onChange={(e) => onChange("password", e.target.value)}
+							className={cn("w-full mt-1", dirtyFields.password && "ring-2 ring-amber-500")}
 						/>
 					</div>
-					{errors.Password && <p className="text-xs text-red-500">{errors.Password}</p>}
+					{errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
 				</div>
 			</div>
 		</Card>

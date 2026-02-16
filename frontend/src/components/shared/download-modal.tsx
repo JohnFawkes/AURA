@@ -1,11 +1,11 @@
 "use client";
 
-import { posterSetToFormItem } from "@/helper/download-modal/poster-set-to-form-item";
 import { formatDownloadSize } from "@/helper/format-download-size";
-import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { postAddToQueue } from "@/services/download-queue/api-queue-add";
-import { patchDownloadPosterFileAndUpdateMediaServer } from "@/services/mediaserver/api-mediaserver-download-and-update";
-import { fetchMediaServerItemContent } from "@/services/mediaserver/api-mediaserver-fetch-item-content";
+import { upsertSavedSets } from "@/helper/media-item-update-saved-sets";
+import { addNewItemToDB } from "@/services/database/item-add";
+import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
+import { addItemToDownloadQueue } from "@/services/downloads/queue-add";
+import { getMediaItemContent } from "@/services/mediaserver/item-details";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Check,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import React from "react";
 import { ControllerRenderProps, useForm, useWatch } from "react-hook-form";
 
@@ -60,31 +60,24 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBPosterSetDetail, DBSavedItem, PosterSet } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
+import { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
+import {
+	DOWNLOAD_DEFAULT_LABELS,
+	DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+	TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+} from "@/types/ui-options";
 
 export interface FormItemDisplay {
-	MediaItemRatingKey: string;
-	MediaItemTitle: string;
 	MediaItem: MediaItem;
-	SetID: string;
 	Set: PosterSet;
 }
 
-const AssetTypes = {
-	poster: "Poster",
-	backdrop: "Backdrop",
-	seasonPoster: "Season Posters",
-	specialSeasonPoster: "Special Season Poster",
-	titlecard: "Titlecards",
-} as const;
-
-type AssetType = keyof typeof AssetTypes;
 type SourceType = "show" | "movie" | "collection";
 
 interface AssetTypeFormValues {
-	types: AssetType[];
+	types: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
 	autodownload?: boolean;
 	addToDBOnly?: boolean;
 	source?: SourceType;
@@ -96,8 +89,7 @@ type DownloadTaskPayload = {
 	kind: "download";
 	itemKey: string;
 	itemTitle: string;
-	posterFile: PosterFile;
-	posterFileType: AssetType;
+	imageFile: ImageFile;
 	fileName: string;
 	mediaItem: MediaItem;
 };
@@ -106,14 +98,15 @@ type AddToDBTaskPayload = {
 	kind: "addToDB";
 	itemKey: string;
 	itemTitle: string;
-	dbItem: DBMediaItemWithPosterSets;
+	mediaItem: MediaItem;
+	posterSet: DBPosterSetDetail;
 };
 
 type AddToQueueTaskPayload = {
 	kind: "addToQueue";
 	itemKey: string;
 	itemTitle: string;
-	dbItem: DBMediaItemWithPosterSets;
+	dbItem: DBSavedItem;
 };
 
 // Non-Retryable “record only” task (e.g. fetch latest media item failed)
@@ -188,7 +181,7 @@ const formSchema = z
 		selectedOptionsByItem: z.record(
 			z.string(),
 			z.object({
-				types: z.array(z.enum(Object.keys(AssetTypes) as [AssetType, ...AssetType[]])),
+				types: z.array(z.enum(DOWNLOAD_DEFAULT_TYPE_OPTIONS)),
 				autodownload: z.boolean().optional(),
 				source: z.enum(["movie", "collection"]).optional(),
 				addToDBOnly: z.boolean().optional(),
@@ -207,20 +200,17 @@ const formSchema = z
 	);
 
 export interface DownloadModalProps {
-	setType: "show" | "movie" | "boxset" | "collection" | "set";
-	setTitle: string;
-	setAuthor: string;
-	setID: string;
-	posterSets: PosterSet[];
+	baseSetInfo: BaseSetInfo;
+	formItems: FormItemDisplay[];
 	autoDownloadDefault?: boolean;
-	onMediaItemChange?: (item: MediaItem) => void;
+	onDownloadComplete?: (item: MediaItem) => void;
 }
 interface DuplicateMap {
 	[mediaItemKey: string]: {
 		options: Array<{
 			id: string;
 			type: "movie" | "collection";
-			image?: PosterFile;
+			image?: ImageFile;
 		}>;
 		selectedType?: "movie" | "collection" | "";
 	};
@@ -228,21 +218,25 @@ interface DuplicateMap {
 
 const findDuplicateMediaItems = (items: FormItemDisplay[]): DuplicateMap => {
 	return items.reduce((acc: DuplicateMap, item) => {
-		if (!acc[item.MediaItemRatingKey]) {
-			acc[item.MediaItemRatingKey] = {
+		if (!acc[item.MediaItem.rating_key]) {
+			acc[item.MediaItem.rating_key] = {
 				options: [
 					{
-						id: item.SetID,
-						type: item.Set.Type as "movie" | "collection",
-						image: item.Set.Poster || item.Set.Backdrop,
+						id: item.Set.id,
+						type: item.Set.type as "movie" | "collection",
+						image:
+							item.Set.images.find((img) => img.type === "poster") ||
+							item.Set.images.find((img) => img.type === "backdrop"),
 					},
 				],
 			};
 		} else {
-			acc[item.MediaItemRatingKey].options.push({
-				id: item.SetID,
-				type: item.Set.Type as "movie" | "collection",
-				image: item.Set.Poster || item.Set.Backdrop,
+			acc[item.MediaItem.rating_key].options.push({
+				id: item.Set.id,
+				type: item.Set.type as "movie" | "collection",
+				image:
+					item.Set.images.find((img) => img.type === "poster") ||
+					item.Set.images.find((img) => img.type === "backdrop"),
 			});
 		}
 		return acc;
@@ -250,13 +244,10 @@ const findDuplicateMediaItems = (items: FormItemDisplay[]): DuplicateMap => {
 };
 
 const DownloadModal: React.FC<DownloadModalProps> = ({
-	setType,
-	setTitle,
-	setAuthor,
-	setID,
-	posterSets,
+	baseSetInfo,
+	formItems,
 	autoDownloadDefault = true, // Default to false if not provided
-	onMediaItemChange,
+	onDownloadComplete,
 }) => {
 	const router = useRouter();
 	const [isMounted, setIsMounted] = useState(false);
@@ -321,62 +312,35 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	// Function - Handle Link Click
 	const getMediuxBaseUrl = () => {
-		if (setType === "boxset") {
-			return `https://mediux.io/boxset/${setID}`;
+		if (baseSetInfo.type === "boxset") {
+			return `https://mediux.io/boxset/${baseSetInfo.id}`;
 		} else {
-			return `https://mediux.io/${setType}-set/${setID}`;
+			return `https://mediux.io/${baseSetInfo.type}-set/${baseSetInfo.id}`;
 		}
 	};
 
-	// useMemo - set formItems based on posterSets
-	const formItems: FormItemDisplay[] = useMemo(() => {
-		const items: FormItemDisplay[] = [];
-		posterSets
-			.sort((a, b) => a.Title.localeCompare(b.Title))
-			.forEach((set) => {
-				const getItems = posterSetToFormItem(set);
-				if (getItems) {
-					items.push(...getItems);
-				}
-			});
-
-		// Make sure that the main item always appears first
-		if (setType === "boxset" || setType === "collection") {
-			items.sort((a, b) => {
-				if (a.Set.ID === setID) return -1;
-				if (b.Set.ID === setID) return 1;
-				return 0;
-			});
-		}
-
-		return items;
-	}, [posterSets, setID, setType]);
-
 	// Compute Asset Types based on what the form item has
-	const computeAssetTypes = (item: FormItemDisplay): AssetType[] => {
+	const computeAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_DEFAULT_OPTIONS[] => {
 		if (!item.Set) return [];
 
-		const setHasPoster = item.Set.Poster;
-		const setHasBackdrop = item.Set.Backdrop;
-		const setHasSeasonPosters = item.Set.SeasonPosters?.some(
-			(sp) => sp.Season?.Number !== 0 && sp.Show?.MediaItem.RatingKey
+		const setHasPoster = item.Set.images.some((img) => img.type === "poster");
+		const setHasBackdrop = item.Set.images.some((img) => img.type === "backdrop");
+		const setHasSeasonPosters = item.Set.images.some(
+			(img) => img.type === "season_poster" && img.season_number !== 0
 		);
-		const setHasSpecialSeasonPosters = item.Set.SeasonPosters?.some(
-			(sp) => sp.Season?.Number === 0 && sp.Show?.MediaItem.RatingKey
+		const setHasSpecialSeasonPosters = item.Set.images.some(
+			(img) => img.type === "special_season_poster" && img.season_number === 0
 		);
-		const setHasTitleCards =
-			item.Set.TitleCards &&
-			item.Set.TitleCards.length > 0 &&
-			item.Set.TitleCards.some((tc) => tc.Show?.MediaItem.RatingKey);
-		const types: (AssetType | null)[] = [
+		const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
+		const types: (TYPE_DOWNLOAD_DEFAULT_OPTIONS | null)[] = [
 			setHasPoster ? "poster" : null,
 			setHasBackdrop ? "backdrop" : null,
-			setHasSeasonPosters ? "seasonPoster" : null,
-			setHasSpecialSeasonPosters ? "specialSeasonPoster" : null,
+			setHasSeasonPosters ? "season_poster" : null,
+			setHasSpecialSeasonPosters ? "special_season_poster" : null,
 			setHasTitleCards ? "titlecard" : null,
 		];
 
-		return types.filter((type): type is AssetType => type !== null);
+		return types.filter((type): type is TYPE_DOWNLOAD_DEFAULT_OPTIONS => type !== null);
 	};
 
 	// Define Form
@@ -386,11 +350,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		defaultValues: {
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
-					acc[item.MediaItemRatingKey] = {
+					acc[item.MediaItem.rating_key] = {
 						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
+						autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
-						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
+						source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
 					};
 					return acc;
 				},
@@ -409,11 +373,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		form.reset({
 			selectedOptionsByItem: formItems.reduce(
 				(acc, item) => {
-					acc[item.MediaItemRatingKey] = {
+					acc[item.MediaItem.rating_key] = {
 						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-						autodownload: item.Set.Type === "show" ? autoDownloadDefault : false,
+						autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
 						addToDBOnly: false,
-						source: item.Set.Type === "movie" || item.Set.Type === "collection" ? item.Set.Type : undefined,
+						source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
 					};
 					return acc;
 				},
@@ -486,7 +450,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			// Iterate through each selected item
 			Object.entries(watchSelectedOptions).forEach(([ratingKey, selection]) => {
 				// Find the corresponding form item to access PosterFile sizes
-				const formItem = formItems.find((item) => item.MediaItemRatingKey === ratingKey);
+				const formItem = formItems.find((item) => item.MediaItem.rating_key === ratingKey);
 
 				if (!formItem || !selection.types || selection.addToDBOnly) return;
 
@@ -494,48 +458,81 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				selection.types.forEach((type) => {
 					switch (type) {
 						case "poster":
-							if (formItem.Set.Poster?.FileSize) {
-								totalSize += formItem.Set.Poster.FileSize;
+							const posterImage = formItem.Set.images.find(
+								(img) => img.type === "poster" && img.file_size
+							);
+							if (posterImage && posterImage.file_size) {
+								totalSize += posterImage.file_size;
 								totalFiles += 1;
 							}
 							break;
 						case "backdrop":
-							if (formItem.Set.Backdrop?.FileSize) {
-								totalSize += formItem.Set.Backdrop.FileSize;
+							const backdropImage = formItem.Set.images.find(
+								(img) => img.type === "backdrop" && img.file_size
+							);
+							if (backdropImage && backdropImage.file_size) {
+								totalSize += backdropImage.file_size;
 								totalFiles += 1;
 							}
 							break;
-						case "seasonPoster":
-							formItem.Set.SeasonPosters?.forEach((sp) => {
-								if (sp.Season?.Number !== 0 && sp.FileSize) {
-									totalSize += sp.FileSize;
-									totalFiles += 1;
+						case "season_poster":
+							formItem.Set.images.forEach((sp) => {
+								if (sp.type === "season_poster" && sp.season_number !== 0 && sp.file_size) {
+									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+										// Check if season exists in MediaItem
+										const seasonExists = formItem.MediaItem.series.seasons.some(
+											(season) => season.season_number === sp.season_number
+										);
+										if (seasonExists) {
+											totalSize += sp.file_size;
+											totalFiles += 1;
+										}
+									} else {
+										totalSize += sp.file_size;
+										totalFiles += 1;
+									}
 								}
 							});
 							break;
-						case "specialSeasonPoster":
-							formItem.Set.SeasonPosters?.forEach((sp) => {
-								if (sp.Season?.Number === 0 && sp.FileSize) {
-									totalSize += sp.FileSize;
-									totalFiles += 1;
+						case "special_season_poster":
+							formItem.Set.images.forEach((sp) => {
+								if (sp.type === "season_poster" && sp.season_number === 0 && sp.file_size) {
+									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+										// Check if special season exists in MediaItem
+										const specialSeasonExists = formItem.MediaItem.series.seasons.some(
+											(season) => season.season_number === 0
+										);
+										if (specialSeasonExists) {
+											totalSize += sp.file_size;
+											totalFiles += 1;
+										}
+									} else {
+										totalSize += sp.file_size;
+										totalFiles += 1;
+									}
 								}
 							});
 							break;
 						case "titlecard":
-							formItem.Set.TitleCards?.forEach((tc) => {
-								if (
-									tc.FileSize &&
-									tc.Episode?.SeasonNumber !== undefined &&
-									tc.Episode?.EpisodeNumber !== undefined
-								) {
-									if (
-										tc.Episode.SeasonNumber === 0 &&
-										!selection.types.includes("specialSeasonPoster")
-									) {
-										return; // Skip if it's a special season poster
+							formItem.Set.images.forEach((tc) => {
+								if (tc.type === "titlecard" && tc.file_size) {
+									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+										// Check if episode exists in MediaItem
+										const episodeExists = formItem.MediaItem.series.seasons.some((season) =>
+											season.episodes.some(
+												(ep) =>
+													ep.season_number === tc.season_number &&
+													ep.episode_number === tc.episode_number
+											)
+										);
+										if (episodeExists) {
+											totalSize += tc.file_size;
+											totalFiles += 1;
+										}
+									} else {
+										totalSize += tc.file_size;
+										totalFiles += 1;
 									}
-									totalSize += tc.FileSize;
-									totalFiles += 1;
 								}
 							});
 							break;
@@ -554,11 +551,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 	const LOG_VALUES = () => {
 		log("INFO", "Download Modal", "Debug Info", "Logging props values:", {
-			setType,
-			setTitle,
-			setAuthor,
-			setID,
-			posterSets,
+			baseSetInfo,
+			autoDownloadDefault,
 		});
 		log("INFO", "Download Modal", "Debug Info", "Logging form items:", formItems);
 		log("INFO", "Download Modal", "Debug Info", "Logging form values:", form);
@@ -635,10 +629,17 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		return undefined;
 	};
 
-	const getAssetStatus = (itemKey: string, assetType: AssetType): TaskStatus | undefined => {
+	const getAssetStatus = (itemKey: string, assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS): TaskStatus | undefined => {
 		const tasks = progress.items[itemKey]?.tasks ?? [];
-		const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.posterFileType === assetType);
-		return relevant.length ? relevant[relevant.length - 1].status : undefined;
+		const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.imageFile.type === assetType);
+		if (relevant.length === 0) return undefined;
+
+		// Aggregate status so multi-file types don't "lose" completion due to a final skipped task.
+		if (relevant.some((t) => t.status === "failed")) return "failed";
+		if (relevant.some((t) => t.status === "in-progress")) return "in-progress";
+		if (relevant.some((t) => t.status === "pending")) return "pending";
+		if (relevant.some((t) => t.status === "completed")) return "completed";
+		return "skipped"; // all skipped
 	};
 
 	const runDownloadTask = async (taskId: string, payload: DownloadTaskPayload): Promise<boolean> => {
@@ -651,8 +652,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		setCurrentText(`Downloading ${payload.fileName} for "${payload.itemTitle}"`);
 
 		try {
-			const response = await patchDownloadPosterFileAndUpdateMediaServer(
-				payload.posterFile,
+			const response = await downloadImageFileForMediaItem(
+				payload.imageFile,
 				payload.mediaItem,
 				payload.fileName
 			);
@@ -680,7 +681,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		setCurrentText(`Adding "${payload.itemTitle}" to DB`);
 
 		try {
-			const resp = await postAddItemToDB(payload.dbItem);
+			const resp = await addNewItemToDB(payload.mediaItem, payload.posterSet);
 			if (resp.status === "error") {
 				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
 			}
@@ -706,7 +707,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		setCurrentText(`Adding "${payload.itemTitle}" to queue`);
 
 		try {
-			const resp = await postAddToQueue(payload.dbItem);
+			const resp = await addItemToDownloadQueue(payload.dbItem);
 			if (resp.status === "error") {
 				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
 			}
@@ -745,42 +746,32 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			{ selectedOptionsByItem: Record<string, AssetTypeFormValues> },
 			`selectedOptionsByItem.${string}`
 		>,
-		assetType: AssetType,
+		assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS,
 		item: FormItemDisplay
 	) => {
 		const types = field.value?.types || [];
-		const isDuplicate = duplicates[item.MediaItemRatingKey];
+		const isDuplicate = duplicates[item.MediaItem.rating_key];
 
 		// Calculate checked state
-		const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.Type);
+		const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.type);
 
 		// Calculate disabled state
 		const isDisabled = Boolean(
-			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.Type
+			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
 		);
 
 		// Check download status from task state
-		const status = getAssetStatus(item.MediaItemRatingKey, assetType);
+		const status = getAssetStatus(item.MediaItem.rating_key, assetType);
 		const isDownloaded = status === "completed";
 		const isFailed = status === "failed";
 		const isLoading = status === "in-progress";
+		const isSkipped = status === "skipped";
 
-		// Check if this assetType is already downloaded in another set (using DBSavedSets)
-		let isDownloadedInAnotherSet = false;
-		if (!isDownloaded && !isLoading && item.MediaItem?.DBSavedSets) {
-			isDownloadedInAnotherSet = item.MediaItem.DBSavedSets.some((set) => {
-				const found =
-					set.PosterSetID !== item.Set.ID &&
-					Array.isArray(set.SelectedTypes) &&
-					set.SelectedTypes.some((typeStr) =>
-						typeStr
-							.split(",")
-							.map((t) => t.trim())
-							.includes(assetType)
-					);
-				return found;
-			});
-		}
+		// Check if *this assetType* is already downloaded in another set (using DBSavedSets)
+		const downloadedSetForType = item.MediaItem?.db_saved_sets?.find(
+			(set) => set.id !== item.Set.id && set.selected_types?.[assetType]
+		);
+		const isDownloadedInAnotherSet = Boolean(downloadedSetForType);
 
 		return (
 			<FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
@@ -797,16 +788,16 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							if (checked && isDuplicate) {
 								setDuplicates((prev) => ({
 									...prev,
-									[item.MediaItemRatingKey]: {
-										...prev[item.MediaItemRatingKey],
-										selectedType: item.Set.Type as "movie" | "collection",
+									[item.MediaItem.rating_key]: {
+										...prev[item.MediaItem.rating_key],
+										selectedType: item.Set.type as "movie" | "collection",
 									},
 								}));
 							} else if (!checked && isDuplicate) {
 								setDuplicates((prev) => ({
 									...prev,
-									[item.MediaItemRatingKey]: {
-										...prev[item.MediaItemRatingKey],
+									[item.MediaItem.rating_key]: {
+										...prev[item.MediaItem.rating_key],
 										selectedType: "",
 									},
 								}));
@@ -818,8 +809,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								autodownload: newTypes.length === 0 ? false : field.value?.autodownload,
 								addToDBOnly: newTypes.length === 0 ? false : field.value?.addToDBOnly,
 								source:
-									item.Set.Type === "movie" || item.Set.Type === "collection"
-										? item.Set.Type
+									item.Set.type === "movie" || item.Set.type === "collection"
+										? item.Set.type
 										: undefined,
 							});
 						}}
@@ -829,7 +820,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				<FormLabel
 					className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}
 				>
-					{assetType.charAt(0).toUpperCase() + assetType.slice(1).replace(/([A-Z])/g, " $1")}
+					{DOWNLOAD_DEFAULT_LABELS[assetType]}
 				</FormLabel>
 				{isDownloaded ? (
 					<Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
@@ -837,6 +828,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					<X className="h-4 w-4 text-destructive mt-1" strokeWidth={3} />
 				) : isLoading ? (
 					<Loader className="h-4 w-4 mt-1 animate-spin" />
+				) : isSkipped ? (
+					<Check className="h-4 w-4 text-yellow-500 mt-1" strokeWidth={3} />
 				) : isDownloadedInAnotherSet ? (
 					<PopoverHelp
 						ariaLabel="Type already downloaded in another set"
@@ -847,34 +840,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						<div className="flex items-center">
 							<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
 							<span className="text-xs">
-								{AssetTypes[assetType]} {AssetTypes[assetType].endsWith("s") ? "have" : "has"} already
-								been downloaded in set{" "}
-								{
-									item.MediaItem?.DBSavedSets?.find(
-										(set) =>
-											Array.isArray(set.SelectedTypes) &&
-											set.SelectedTypes.some((typeStr) =>
-												typeStr
-													.split(",")
-													.map((t) => t.trim())
-													.includes(assetType)
-											)
-									)?.PosterSetID
-								}{" "}
-								by user{" "}
-								{
-									item.MediaItem?.DBSavedSets?.find(
-										(set) =>
-											Array.isArray(set.SelectedTypes) &&
-											set.SelectedTypes.some((typeStr) =>
-												typeStr
-													.split(",")
-													.map((t) => t.trim())
-													.includes(assetType)
-											)
-									)?.PosterSetUser
-								}
-								.
+								{DOWNLOAD_DEFAULT_LABELS[assetType]}{" "}
+								{DOWNLOAD_DEFAULT_LABELS[assetType].endsWith("s") ? "have" : "has"} already been
+								downloaded in set {downloadedSetForType?.id} by user{" "}
+								{downloadedSetForType?.user_created}.
 							</span>
 						</div>
 					</PopoverHelp>
@@ -884,33 +853,35 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	};
 
 	const renderFormItem = (item: FormItemDisplay) => {
-		const isDuplicate = duplicates[item.MediaItemRatingKey];
+		const isDuplicate = duplicates[item.MediaItem.rating_key];
 		// Calculate disabled state
 		const isDisabled = Boolean(
-			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.Type
+			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
 		);
 
 		// Calculate whether the item is already in the database
-		const isInDatabase = item.MediaItem && item.MediaItem.ExistInDatabase;
+		const isInDatabase =
+			(item.MediaItem && item.MediaItem.db_saved_sets && item.MediaItem.db_saved_sets.length > 0) || false;
 
 		// Calculate whether the item is already in the database and has this set saved
 		const isInDatabaseWithSet =
 			isInDatabase &&
-			item.MediaItem.DBSavedSets &&
-			item.MediaItem.DBSavedSets.some((set) => set.PosterSetID === item.Set.ID);
+			item.MediaItem.db_saved_sets &&
+			item.MediaItem.db_saved_sets.some((set) => set.id === item.Set.id);
 
 		// Calculate whether the item has any error tasks
-		const itemProgress = progress.items[item.MediaItemRatingKey];
+		const itemProgress = progress.items[item.MediaItem.rating_key];
 		const hasErrorTasks = itemProgress ? itemProgress.tasks.some((t) => t.status === "failed") : false;
 		const allSuccessful = itemProgress
-			? itemProgress.tasks.length > 0 && itemProgress.tasks.every((t) => t.status === "completed")
+			? itemProgress.tasks.length > 0 &&
+				itemProgress.tasks.every((t) => t.status === "completed" || t.status === "skipped")
 			: false;
 
 		return (
 			<FormField
-				key={`${item.MediaItemRatingKey}-${item.Set.Type}`}
+				key={`${item.MediaItem.rating_key}-${item.Set.type}`}
 				control={form.control}
-				name={`selectedOptionsByItem.${item.MediaItemRatingKey}`}
+				name={`selectedOptionsByItem.${item.MediaItem.rating_key}`}
 				render={({ field }) => (
 					<div
 						className={cn("rounded-md border p-4 rounded-lg mb-4", {
@@ -926,68 +897,71 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							}}
 						>
 							<span className="flex items-center justify-between w-full">
-								{item.MediaItemTitle}
-								{item.MediaItem && item.MediaItem.ExistInDatabase && item.MediaItem.DBSavedSets && (
-									<Popover modal={true}>
-										<PopoverTrigger>
-											<Database
+								{item.MediaItem.title}{" "}
+								{/\(\d{4}\)$/.test(item.MediaItem.title) ? "" : `(${item.MediaItem.year})`}
+								{item.MediaItem &&
+									item.MediaItem.db_saved_sets &&
+									item.MediaItem.db_saved_sets.length > 0 && (
+										<Popover modal={true}>
+											<PopoverTrigger>
+												<Database
+													className={cn(
+														"h-4 w-4 ml-2 cursor-pointer",
+														isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
+													)}
+												/>
+											</PopoverTrigger>
+											<PopoverContent
 												className={cn(
-													"h-4 w-4 ml-2 cursor-pointer",
-													isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
+													"max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
+													isInDatabaseWithSet ? "border-green-800" : "border-yellow-800"
 												)}
-											/>
-										</PopoverTrigger>
-										<PopoverContent
-											className={cn(
-												"max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
-												isInDatabaseWithSet ? "border-green-800" : "border-yellow-800"
-											)}
-										>
-											<div className="flex items-center mb-2">
-												<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
-												<span className="text-sm text-muted-foreground">
-													This media item already exists in your database
-												</span>
-											</div>
-											<div className="text-xs text-muted-foreground mb-2">
-												You have previously saved it in the following sets
-											</div>
-											<ul className="space-y-2">
-												{item.MediaItem.DBSavedSets.map((set) => (
-													<li
-														key={set.PosterSetID}
-														className="flex items-center rounded-md px-2 py-1 shadow-sm"
-													>
-														<Button
-															variant="outline"
-															className={cn(
-																"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
-																set.PosterSetID.toString() === item.SetID.toString()
-																	? "text-green-600  hover:bg-green-100  hover:text-green-600"
-																	: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
-															)}
-															aria-label={`View saved set ${set.PosterSetID} ${set.PosterSetUser ? `by ${set.PosterSetUser}` : ""}`}
-															onClick={(e) => {
-																e.stopPropagation();
-																setSearchQuery(
-																	`${item.MediaItem.Title} Y:${item.MediaItem.Year}: ID:${item.MediaItem.TMDB_ID}: L:${item.MediaItem.LibraryTitle}:`
-																);
-																router.push("/saved-sets");
-															}}
+											>
+												<div className="flex items-center mb-2">
+													<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+													<span className="text-sm text-muted-foreground">
+														This media item already exists in your database
+													</span>
+												</div>
+												<div className="text-xs text-muted-foreground mb-2">
+													You have previously saved it in the following sets
+												</div>
+												<ul className="space-y-2">
+													{item.MediaItem.db_saved_sets.map((set) => (
+														<li
+															key={set.id}
+															className="flex items-center rounded-md px-2 py-1 shadow-sm"
 														>
-															Set ID: {set.PosterSetID}
-															{set.PosterSetUser ? ` by ${set.PosterSetUser}` : ""}
-														</Button>
-													</li>
-												))}
-											</ul>
-										</PopoverContent>
-									</Popover>
-								)}
-								{setType === "boxset" &&
+															<Button
+																variant="outline"
+																className={cn(
+																	"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+																	set.id.toString() === item.Set.id.toString()
+																		? "text-green-600  hover:bg-green-100  hover:text-green-600"
+																		: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+																)}
+																aria-label={`View saved set ${set.id} ${set.user_created ? `by ${set.user_created}` : ""}`}
+																onClick={(e) => {
+																	e.stopPropagation();
+																	setSearchQuery(
+																		`${item.MediaItem.title} Y:${item.MediaItem.year}: ID:${item.MediaItem.tmdb_id}: L:${item.MediaItem.library_title}:`
+																	);
+																	router.push("/saved-sets");
+																}}
+															>
+																Set ID: {set.id}
+																{set.user_created ? ` by ${set.user_created}` : ""}
+															</Button>
+														</li>
+													))}
+												</ul>
+											</PopoverContent>
+										</Popover>
+									)}
+								{baseSetInfo.type === "boxset" &&
 									isDuplicate &&
 									isDuplicate.selectedType !== "" &&
-									isDuplicate.selectedType !== item.Set.Type && (
+									isDuplicate.selectedType !== item.Set.type && (
 										<Popover modal={true}>
 											<PopoverTrigger>
 												<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
@@ -1004,7 +978,15 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 													const img = isDuplicate.options.find(
 														(o) => o.type === isDuplicate.selectedType
 													)?.image;
-													return img && <AssetImage className="mt-2" image={img} />;
+													return (
+														img && (
+															<AssetImage
+																className="mt-2"
+																image={img}
+																imageType="mediux"
+															/>
+														)
+													);
 												})()}
 											</PopoverContent>
 										</Popover>
@@ -1030,7 +1012,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							<FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
 								Download Options
 							</FormLabel>
-							{(item.Set.Type === "movie" || item.Set.Type === "collection") && (
+							{(item.Set.type === "movie" || item.Set.type === "collection") && (
 								<FormItem className="flex items-center space-x-2">
 									<FormControl>
 										<Checkbox
@@ -1056,7 +1038,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									<DownloadModalPopover type="add-to-db-only" />
 								</FormItem>
 							)}
-							{item.Set.Type === "show" && (
+							{item.Set.type === "show" && (
 								<>
 									<FormItem className="flex items-center space-x-2">
 										<FormControl>
@@ -1106,23 +1088,34 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 	const createDBItem = (
 		item: FormItemDisplay,
 		options: z.infer<typeof formSchema>["selectedOptionsByItem"][string],
-		mediaItem: MediaItem
+		latestMediaItem: MediaItem
 	): {
-		dbItem: DBMediaItemWithPosterSets;
+		dbItem: DBSavedItem;
 	} => {
 		return {
 			dbItem: {
-				TMDB_ID: mediaItem.TMDB_ID,
-				LibraryTitle: mediaItem.LibraryTitle,
-				MediaItem: mediaItem as MediaItem,
-				PosterSets: [
+				media_item: latestMediaItem,
+				poster_sets: [
 					{
-						PosterSetID: item.Set.ID,
-						PosterSet: item.Set,
-						SelectedTypes: options.types,
-						AutoDownload: options.autodownload || false,
-						LastDownloaded: "",
-						ToDelete: false,
+						id: item.Set.id,
+						type: item.Set.type,
+						title: item.Set.title,
+						user_created: item.Set.user_created,
+						date_created: item.Set.date_created,
+						date_updated: item.Set.date_updated,
+						popularity: item.Set.popularity,
+						popularity_global: item.Set.popularity_global,
+						images: item.Set.images,
+						selected_types: {
+							poster: options.types?.includes("poster") || false,
+							backdrop: options.types?.includes("backdrop") || false,
+							season_poster: options.types?.includes("season_poster") || false,
+							special_season_poster: options.types?.includes("special_season_poster") || false,
+							titlecard: options.types?.includes("titlecard") || false,
+						},
+						auto_download: options.autodownload || false,
+						last_downloaded: "",
+						to_delete: false,
 					},
 				],
 			},
@@ -1134,14 +1127,14 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 		let total = 0;
 
 		for (const item of formItems) {
-			const selected = data.selectedOptionsByItem[item.MediaItemRatingKey];
+			const selected = data.selectedOptionsByItem[item.MediaItem.rating_key];
 			if (!selected) continue;
 
 			// Skip duplicates that aren't selected
 			if (
-				(item.Set.Type === "movie" || item.Set.Type === "collection") &&
-				duplicates[item.MediaItemRatingKey]?.selectedType &&
-				duplicates[item.MediaItemRatingKey].selectedType !== item.Set.Type
+				(item.Set.type === "movie" || item.Set.type === "collection") &&
+				duplicates[item.MediaItem.rating_key]?.selectedType &&
+				duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
 			) {
 				continue;
 			}
@@ -1165,23 +1158,23 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 			for (const type of selected.types ?? []) {
 				switch (type) {
 					case "poster":
-						if (item.Set.Poster) total += 1;
+						if (item.Set.images.some((img) => img.type === "poster")) total += 1;
 						break;
 					case "backdrop":
-						if (item.Set.Backdrop) total += 1;
+						if (item.Set.images.some((img) => img.type === "backdrop")) total += 1;
 						break;
-					case "seasonPoster":
-						total += item.Set.SeasonPosters?.filter((sp) => sp.Season?.Number !== 0).length ?? 0;
+					case "season_poster":
+						total +=
+							item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
+								.length ?? 0;
 						break;
-					case "specialSeasonPoster":
-						total += item.Set.SeasonPosters?.filter((sp) => sp.Season?.Number === 0).length ?? 0;
+					case "special_season_poster":
+						total +=
+							item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number === 0)
+								.length ?? 0;
 						break;
 					case "titlecard":
-						total +=
-							item.Set.TitleCards?.filter(
-								(tc) =>
-									tc.Episode?.SeasonNumber !== undefined && tc.Episode?.EpisodeNumber !== undefined
-							).length ?? 0;
+						total += item.Set.images?.filter((tc) => tc.type === "titlecard").length ?? 0;
 						break;
 				}
 			}
@@ -1228,7 +1221,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				const item = sortedFormItems[idx];
 				log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
 
-				const selectedOptions = data.selectedOptionsByItem[item.MediaItemRatingKey];
+				const selectedOptions = data.selectedOptionsByItem[item.MediaItem.rating_key];
 				log("INFO", "Download Modal", "Debug Info", "Selected Types for Item:", selectedOptions);
 
 				// If no types are selected and not set to "Add to DB Only", skip this item
@@ -1237,58 +1230,36 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 						"INFO",
 						"Download Modal",
 						"Debug Info",
-						`Skipping ${item.MediaItemTitle} - Nothing to do here.`
+						`Skipping ${item.MediaItem.title} - Nothing to do here.`
 					);
 					continue;
 				}
 
-				upsertItem(item.MediaItemRatingKey, item.MediaItemTitle);
-
-				let currentMediaItem: MediaItem | undefined;
-				if (item.Set.Type === "movie" || item.Set.Type === "collection") {
-					currentMediaItem = item.Set.Poster?.Movie?.MediaItem || item.Set.Backdrop?.Movie?.MediaItem;
-				} else if (item.Set.Type === "show") {
-					currentMediaItem =
-						item.Set.Poster?.Show?.MediaItem ||
-						item.Set.Backdrop?.Show?.MediaItem ||
-						item.Set.SeasonPosters?.find((poster) => poster.Show?.MediaItem)?.Show?.MediaItem ||
-						item.Set.TitleCards?.find((card) => card.Show?.MediaItem)?.Show?.MediaItem;
-				}
-				if (!currentMediaItem) {
-					const noteId = newId();
-					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
-						id: noteId,
-						status: "failed",
-						label: "Resolve media item",
-						attempts: 1,
-						error: `No MediaItem found for ${item.MediaItemTitle}.`,
-						payload: { kind: "note", itemKey: item.MediaItemRatingKey, itemTitle: item.MediaItemTitle },
-					});
-					continue;
-				}
+				upsertItem(item.MediaItem.rating_key, item.MediaItem.title);
 
 				// If the item set is a movie or collection, check for duplicates
 				// If this duplicate type is not selected, skip it
 				if (
-					(item.Set.Type === "movie" || item.Set.Type === "collection") &&
-					duplicates[item.MediaItemRatingKey] &&
-					duplicates[item.MediaItemRatingKey].selectedType &&
-					duplicates[item.MediaItemRatingKey].selectedType !== item.Set.Type
+					(item.Set.type === "movie" || item.Set.type === "collection") &&
+					duplicates[item.MediaItem.rating_key] &&
+					duplicates[item.MediaItem.rating_key].selectedType &&
+					duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
 				) {
 					log(
 						"INFO",
 						"Download Modal",
 						"Debug Info",
-						`Skipping ${item.MediaItemTitle} in ${item.SetID} - Duplicate type selected: ${duplicates[item.MediaItemRatingKey].selectedType}`
+						`Skipping ${item.MediaItem.title} in ${item.Set.id} - Duplicate type selected: ${duplicates[item.MediaItem.rating_key].selectedType}`
 					);
 					continue;
 				}
 
 				// Get the latest media item from the server
-				const latestMediaItemResp = await fetchMediaServerItemContent(
-					item.MediaItemRatingKey,
-					currentMediaItem.LibraryTitle,
-					"mediaitem"
+				const latestMediaItemResp = await getMediaItemContent(
+					item.MediaItem.title,
+					item.MediaItem.rating_key,
+					item.MediaItem.library_title,
+					"item"
 				);
 				if (latestMediaItemResp.status === "error" || !latestMediaItemResp.data) {
 					const noteId = newId();
@@ -1300,58 +1271,72 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								"Unknown error"
 							: "No media item found.";
 
-					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 						id: noteId,
 						status: "failed",
 						label: "Fetch latest media item",
 						attempts: 1,
-						error: `Error fetching latest media item for ${item.MediaItemTitle}: ${msg}`,
-						payload: { kind: "note", itemKey: item.MediaItemRatingKey, itemTitle: item.MediaItemTitle },
+						error: `Error fetching latest media item for ${item.MediaItem.title}: ${msg}`,
+						payload: { kind: "note", itemKey: item.MediaItem.rating_key, itemTitle: item.MediaItem.title },
 					});
 					continue;
 				}
 
-				const latestMediaItem = latestMediaItemResp.data.mediaItem;
+				const latestMediaItem = latestMediaItemResp.data.media_item;
 				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
 
 				// Add to DB only
 				if (selectedOptions.addToDBOnly) {
 					const taskId = newId();
-					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 						id: taskId,
 						status: "pending",
-						label: `Add "${item.MediaItemTitle}" to DB`,
+						label: `Add "${item.MediaItem.title}" to DB`,
 						attempts: 0,
 						payload: {
 							kind: "addToDB",
-							itemKey: item.MediaItemRatingKey,
-							itemTitle: item.MediaItemTitle,
-							dbItem: createdSavedItem.dbItem,
+							itemKey: item.MediaItem.rating_key,
+							itemTitle: item.MediaItem.title,
+							mediaItem: createdSavedItem.dbItem.media_item,
+							posterSet: createdSavedItem.dbItem.poster_sets[0],
 						},
 					});
 
-					await runAddToDBTask(taskId, {
+					const ok = await runAddToDBTask(taskId, {
 						kind: "addToDB",
-						itemKey: item.MediaItemRatingKey,
-						itemTitle: item.MediaItemTitle,
-						dbItem: createdSavedItem.dbItem,
+						itemKey: item.MediaItem.rating_key,
+						itemTitle: item.MediaItem.title,
+						mediaItem: createdSavedItem.dbItem.media_item,
+						posterSet: createdSavedItem.dbItem.poster_sets[0],
 					});
 
-					if (onMediaItemChange) {
-						latestMediaItem.ExistInDatabase = true;
-						onMediaItemChange(latestMediaItem);
+					if (ok && onDownloadComplete) {
+						onDownloadComplete(
+							upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
+								poster: selectedOptions.types.includes("poster"),
+								backdrop: selectedOptions.types.includes("backdrop"),
+								season_poster: selectedOptions.types.includes("season_poster"),
+								special_season_poster: selectedOptions.types.includes("special_season_poster"),
+								titlecard: selectedOptions.types.includes("titlecard"),
+							})
+						);
 					}
 					continue;
 				}
 
 				const selectedTypes = selectedOptions.types.sort((a, b) => {
-					const order = ["poster", "backdrop", "seasonPoster", "specialSeasonPoster", "titlecard"];
+					const order = ["poster", "backdrop", "season_poster", "special_season_poster", "titlecard"];
 					return order.indexOf(a) - order.indexOf(b);
 				});
 
 				// If no types are selected, skip this item
 				if (selectedTypes.length === 0) {
-					log("INFO", "Download Modal", "Debug Info", `Skipping ${item.MediaItemTitle} - No types selected.`);
+					log(
+						"INFO",
+						"Download Modal",
+						"Debug Info",
+						`Skipping ${item.MediaItem.title} - No types selected.`
+					);
 					continue;
 				}
 
@@ -1359,30 +1344,30 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					"INFO",
 					"Download Modal",
 					"Debug Info",
-					`Selected Types for ${item.MediaItemTitle}:`,
+					`Selected Types for ${item.MediaItem.title}:`,
 					selectedTypes
 				);
 
 				// Add to queue only (for items that actually have types selected)
 				if (addToQueueOnly) {
 					const taskId = newId();
-					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 						id: taskId,
 						status: "pending",
-						label: `Add "${item.MediaItemTitle}" to queue`,
+						label: `Add "${item.MediaItem.title}" to queue`,
 						attempts: 0,
 						payload: {
 							kind: "addToQueue",
-							itemKey: item.MediaItemRatingKey,
-							itemTitle: item.MediaItemTitle,
+							itemKey: item.MediaItem.rating_key,
+							itemTitle: item.MediaItem.title,
 							dbItem: createdSavedItem.dbItem,
 						},
 					});
 
 					await runAddToQueueTask(taskId, {
 						kind: "addToQueue",
-						itemKey: item.MediaItemRatingKey,
-						itemTitle: item.MediaItemTitle,
+						itemKey: item.MediaItem.rating_key,
+						itemTitle: item.MediaItem.title,
 						dbItem: createdSavedItem.dbItem,
 					});
 					continue;
@@ -1395,19 +1380,19 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					if (cancelRef.current) return; // Exit if cancelled
 					switch (type) {
 						case "poster":
-							if (item.Set.Poster) {
+							const posterImg = item.Set.images.find((img) => img.type === "poster");
+							if (posterImg) {
 								const taskId = newId();
 								const payload: DownloadTaskPayload = {
 									kind: "download",
-									itemKey: item.MediaItemRatingKey,
-									itemTitle: item.MediaItemTitle,
-									posterFile: item.Set.Poster,
-									posterFileType: "poster",
+									itemKey: item.MediaItem.rating_key,
+									itemTitle: item.MediaItem.title,
+									imageFile: posterImg,
 									fileName: "Poster",
 									mediaItem: latestMediaItem,
 								};
 
-								addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+								addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 									id: taskId,
 									status: "pending",
 									label: payload.fileName,
@@ -1421,19 +1406,19 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							break;
 
 						case "backdrop":
-							if (item.Set.Backdrop) {
+							const backdropImg = item.Set.images.find((img) => img.type === "backdrop");
+							if (backdropImg) {
 								const taskId = newId();
 								const payload: DownloadTaskPayload = {
 									kind: "download",
-									itemKey: item.MediaItemRatingKey,
-									itemTitle: item.MediaItemTitle,
-									posterFile: item.Set.Backdrop,
-									posterFileType: "backdrop",
+									itemKey: item.MediaItem.rating_key,
+									itemTitle: item.MediaItem.title,
+									imageFile: backdropImg,
 									fileName: "Backdrop",
 									mediaItem: latestMediaItem,
 								};
 
-								addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+								addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 									id: taskId,
 									status: "pending",
 									label: payload.fileName,
@@ -1446,74 +1431,32 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 							}
 							break;
 
-						case "seasonPoster":
-							if (item.Set.SeasonPosters) {
-								const sorted = item.Set.SeasonPosters.filter((sp) => sp.Season?.Number !== 0).sort(
-									(a, b) => (a.Season?.Number || 0) - (b.Season?.Number || 0)
-								);
-
-								for (const sp of sorted) {
-									const seasonNum = sp.Season?.Number;
-									const seasonExists = latestMediaItem.Series?.Seasons.some(
-										(season) => season.SeasonNumber === seasonNum
-									);
-
-									const fileName = `Season ${seasonNum?.toString().padStart(2, "0")} Poster`;
-
-									const taskId = newId();
-									const payload: DownloadTaskPayload = {
-										kind: "download",
-										itemKey: item.MediaItemRatingKey,
-										itemTitle: item.MediaItemTitle,
-										posterFile: sp,
-										posterFileType: "seasonPoster",
-										fileName,
-										mediaItem: latestMediaItem,
-									};
-
-									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
-										id: taskId,
-										status: "pending",
-										label: fileName,
-										attempts: 0,
-										payload,
+						case "season_poster":
+							if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number !== 0)) {
+								const seasonPosters = item.Set.images
+									.filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
+									.sort((a, b) => {
+										if (a.season_number! < b.season_number!) return -1;
+										if (a.season_number! > b.season_number!) return 1;
+										return 0;
 									});
 
-									if (!seasonExists) {
-										updateTask(taskId, (t) => ({
-											...t,
-											status: "skipped",
-										}));
-										continue;
-									}
-
-									const okSeason = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeason;
-								}
-							}
-							break;
-
-						case "specialSeasonPoster":
-							if (item.Set.SeasonPosters) {
-								const specials = item.Set.SeasonPosters.filter((sp) => sp.Season?.Number === 0);
-
-								for (const sp of specials) {
-									const exists = latestMediaItem.Series?.Seasons.some(
-										(season) => season.SeasonNumber === 0
+								for (const sp of seasonPosters) {
+									const seasonNumber = sp.season_number!;
+									const exists = latestMediaItem.series?.seasons.some(
+										(season) => season.season_number === seasonNumber
 									);
-
 									const taskId = newId();
 									const payload: DownloadTaskPayload = {
 										kind: "download",
-										itemKey: item.MediaItemRatingKey,
-										itemTitle: item.MediaItemTitle,
-										posterFile: sp,
-										posterFileType: "specialSeasonPoster",
-										fileName: "Special Season Poster",
+										itemKey: item.MediaItem.rating_key,
+										itemTitle: item.MediaItem.title,
+										imageFile: sp,
+										fileName: `Season ${seasonNumber} Poster`,
 										mediaItem: latestMediaItem,
 									};
 
-									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 										id: taskId,
 										status: "pending",
 										label: payload.fileName,
@@ -1529,58 +1472,81 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										continue;
 									}
 
-									const okSpecialSeason = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeason;
+									const okSeasonPoster = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeasonPoster;
+								}
+							}
+							break;
+						case "special_season_poster":
+							if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number === 0)) {
+								const specialSeasonPosters = item.Set.images.filter(
+									(sp) => sp.type === "season_poster" && sp.season_number === 0
+								);
+
+								for (const sp of specialSeasonPosters) {
+									const taskId = newId();
+									const payload: DownloadTaskPayload = {
+										kind: "download",
+										itemKey: item.MediaItem.rating_key,
+										itemTitle: item.MediaItem.title,
+										imageFile: sp,
+										fileName: `Specials Season Poster`,
+										mediaItem: latestMediaItem,
+									};
+
+									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+										id: taskId,
+										status: "pending",
+										label: payload.fileName,
+										attempts: 0,
+										payload,
+									});
+
+									const okSpecialSeasonPoster = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeasonPoster;
 								}
 							}
 							break;
 
 						case "titlecard":
-							if (item.Set.TitleCards) {
-								const sorted = item.Set.TitleCards.filter(
-									(tc) =>
-										tc.Episode?.SeasonNumber !== undefined &&
-										tc.Episode?.EpisodeNumber !== undefined
-								).sort((a, b) => {
-									const sa = a.Episode?.SeasonNumber || 0;
-									const sb = b.Episode?.SeasonNumber || 0;
-									const ea = a.Episode?.EpisodeNumber || 0;
-									const eb = b.Episode?.EpisodeNumber || 0;
-									return sa - sb || ea - eb;
-								});
+							if (item.Set.images.some((tc) => tc.type === "titlecard")) {
+								const titlecards = item.Set.images
+									.filter((tc) => tc.type === "titlecard" && tc.season_number && tc.episode_number)
+									.sort((a, b) => {
+										if (a.season_number! < b.season_number!) return -1;
+										if (a.season_number! > b.season_number!) return 1;
+										if (a.episode_number! < b.episode_number!) return -1;
+										if (a.episode_number! > b.episode_number!) return 1;
+										return 0;
+									});
 
-								for (const tc of sorted) {
-									const season = tc.Episode!.SeasonNumber;
-									const episodeNum = tc.Episode!.EpisodeNumber;
-
-									const episodeExists = latestMediaItem.Series?.Seasons.flatMap(
-										(s) => s.Episodes || []
-									).some((e) => e.SeasonNumber === season && e.EpisodeNumber === episodeNum);
-
-									const fileName = `S${season.toString().padStart(2, "0")}E${episodeNum
-										.toString()
-										.padStart(2, "0")} Titlecard`;
-
+								for (const tc of titlecards) {
+									const seasonNumber = tc.season_number!;
+									const episodeNumber = tc.episode_number!;
+									const exists = latestMediaItem.series?.seasons.some(
+										(season) =>
+											season.season_number === seasonNumber &&
+											season.episodes.some((ep) => ep.episode_number === episodeNumber)
+									);
 									const taskId = newId();
 									const payload: DownloadTaskPayload = {
 										kind: "download",
-										itemKey: item.MediaItemRatingKey,
-										itemTitle: item.MediaItemTitle,
-										posterFile: tc,
-										posterFileType: "titlecard",
-										fileName,
+										itemKey: item.MediaItem.rating_key,
+										itemTitle: item.MediaItem.title,
+										imageFile: tc,
+										fileName: `S${seasonNumber}E${episodeNumber} Titlecard`,
 										mediaItem: latestMediaItem,
 									};
 
-									addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 										id: taskId,
 										status: "pending",
-										label: fileName,
+										label: payload.fileName,
 										attempts: 0,
 										payload,
 									});
 
-									if (!episodeExists) {
+									if (!exists) {
 										updateTask(taskId, (t) => ({
 											...t,
 											status: "skipped",
@@ -1588,8 +1554,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										continue;
 									}
 
-									const okTitleCard = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitleCard;
+									const okTitlecard = await runDownloadTask(taskId, payload);
+									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitlecard;
 								}
 							}
 							break;
@@ -1599,45 +1565,55 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 				// Only add to DB if at least one download succeeded
 				if (!downloadedAtLeastOneForItem) {
 					const taskId = newId();
-					addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 						id: taskId,
 						status: "skipped",
-						label: `Add "${item.MediaItemTitle}" to DB (skipped: no successful downloads)`,
+						label: `Add "${item.MediaItem.title}" to DB (skipped: no successful downloads)`,
 						attempts: 0,
 						payload: {
 							kind: "addToDB",
-							itemKey: item.MediaItemRatingKey,
-							itemTitle: item.MediaItemTitle,
-							dbItem: createdSavedItem.dbItem,
+							itemKey: item.MediaItem.rating_key,
+							itemTitle: item.MediaItem.title,
+							mediaItem: createdSavedItem.dbItem.media_item,
+							posterSet: createdSavedItem.dbItem.poster_sets[0],
 						},
 					});
 					continue;
 				}
 
 				const addId = newId();
-				addTask(item.MediaItemRatingKey, item.MediaItemTitle, {
+				addTask(item.MediaItem.rating_key, item.MediaItem.title, {
 					id: addId,
 					status: "pending",
-					label: `Add "${item.MediaItemTitle}" to DB`,
+					label: `Add "${item.MediaItem.title}" to DB`,
 					attempts: 0,
 					payload: {
 						kind: "addToDB",
-						itemKey: item.MediaItemRatingKey,
-						itemTitle: item.MediaItemTitle,
-						dbItem: createdSavedItem.dbItem,
+						itemKey: item.MediaItem.rating_key,
+						itemTitle: item.MediaItem.title,
+						mediaItem: createdSavedItem.dbItem.media_item,
+						posterSet: createdSavedItem.dbItem.poster_sets[0],
 					},
 				});
 
 				const ok = await runAddToDBTask(addId, {
 					kind: "addToDB",
-					itemKey: item.MediaItemRatingKey,
-					itemTitle: item.MediaItemTitle,
-					dbItem: createdSavedItem.dbItem,
+					itemKey: item.MediaItem.rating_key,
+					itemTitle: item.MediaItem.title,
+					mediaItem: createdSavedItem.dbItem.media_item,
+					posterSet: createdSavedItem.dbItem.poster_sets[0],
 				});
 
-				if (ok && onMediaItemChange) {
-					latestMediaItem.ExistInDatabase = true;
-					onMediaItemChange(latestMediaItem);
+				if (ok && onDownloadComplete) {
+					onDownloadComplete(
+						upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
+							poster: selectedOptions.types.includes("poster"),
+							backdrop: selectedOptions.types.includes("backdrop"),
+							season_poster: selectedOptions.types.includes("season_poster"),
+							special_season_poster: selectedOptions.types.includes("special_season_poster"),
+							titlecard: selectedOptions.types.includes("titlecard"),
+						})
+					);
 				}
 			}
 
@@ -1684,19 +1660,19 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
 				>
 					<DialogHeader>
-						<DialogTitle onClick={LOG_VALUES}>{setTitle}</DialogTitle>
+						<DialogTitle onClick={LOG_VALUES}>{baseSetInfo.title}</DialogTitle>
 						<div className="flex items-center justify-center sm:justify-start">
 							<Avatar className="rounded-lg mr-1 w-4 h-4">
 								<AvatarImage
-									src={`/api/mediux/avatar-image?username=${setAuthor}`}
+									src={`/api/images/mediux/avatar?username=${baseSetInfo.user_created}`}
 									className="w-4 h-4"
 								/>
 								<AvatarFallback className="">
 									<User className="w-4 h-4" />
 								</AvatarFallback>
 							</Avatar>
-							<Link href={`/user/${setAuthor}`} className="hover:underline">
-								{setAuthor}
+							<Link href={`/user/${baseSetInfo.user_created}`} className="hover:underline">
+								{baseSetInfo.user_created}
 							</Link>
 						</div>
 						<DialogDescription>
@@ -1706,7 +1682,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								{setType === "boxset" ? "Boxset" : "Set"} ID: {setID}
+								{baseSetInfo.type === "boxset" ? "Boxset" : "Set"} ID: {baseSetInfo.id}
 							</Link>
 						</DialogDescription>
 					</DialogHeader>
@@ -1720,8 +1696,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								{/* If the all items have no types selected, show a message */}
 								{formItems.every(
 									(item) =>
-										!watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length &&
-										!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+										!watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
+										!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 								) && (
 									<div className="text-sm text-destructive">
 										No image types selected for download. Please select at least one image type to
@@ -1734,8 +1710,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 								*/}
 								{formItems.some(
 									(item) =>
-										watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length > 0 &&
-										!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+										watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length > 0 &&
+										!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 								) && (
 									<FormItem className="flex items-center space-x-2 mb-4">
 										<FormControl>
@@ -1754,7 +1730,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 									{/* Number of Images and Total Download Size (only if there are images to download) */}
 									{selectedSizes.fileCount > 0 &&
 										formItems.some(
-											(item) => !watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+											(item) => !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 										) && (
 											<>
 												<div className="text-sm text-muted-foreground">
@@ -1769,7 +1745,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
 									{/* Always show the database-only message if any item is set to Add to DB Only or has types selected */}
 									{formItems.some(
-										(item) => watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+										(item) => watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 									) && (
 										<div className="text-sm text-muted-foreground mt-1">
 											* Will add{" "}
@@ -1777,9 +1753,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 												const titles = formItems
 													.filter(
 														(item) =>
-															watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+															watchSelectedOptions?.[item.MediaItem.rating_key]
+																?.addToDBOnly
 													)
-													.map((item) => item.MediaItemTitle);
+													.map((item) => item.MediaItem.title);
 
 												if (titles.length === 0) return "";
 												if (titles.length === 1)
@@ -1935,9 +1912,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 											// Only show if at least one item has types selected or is set to "Add to DB Only"
 											formItems.some(
 												(item) =>
-													watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length >
+													watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length >
 														0 ||
-													watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+													watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 											) && (
 												<Button
 													variant={"outline"}
@@ -1947,9 +1924,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 														(selectedSizes.fileCount === 0 &&
 															formItems.every(
 																(item) =>
-																	!watchSelectedOptions[item.MediaItemRatingKey].types
-																		.length &&
-																	!watchSelectedOptions[item.MediaItemRatingKey]
+																	!watchSelectedOptions[item.MediaItem.rating_key]
+																		.types.length &&
+																	!watchSelectedOptions[item.MediaItem.rating_key]
 																		.addToDBOnly
 															)) ||
 														isMounted
@@ -1998,8 +1975,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 										{/* Reset Form button: If the all items have no types selected and nothing is set to "Add to DB Only" */}
 										{formItems.every(
 											(item) =>
-												!watchSelectedOptions?.[item.MediaItemRatingKey]?.types?.length &&
-												!watchSelectedOptions?.[item.MediaItemRatingKey]?.addToDBOnly
+												!watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
+												!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
 										) && (
 											<Button
 												className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"

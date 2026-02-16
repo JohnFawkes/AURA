@@ -25,7 +25,11 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import {
+	DOWNLOAD_DEFAULT_LABELS,
+	DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+	TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+} from "@/types/ui-options";
 
 type MediaItemFilterProps = {
 	numberOfActiveFilters?: number;
@@ -48,8 +52,10 @@ function MediaItemFilterContent({
 }: MediaItemFilterProps) {
 	const downloadDefaultsTypes = useUserPreferencesStore((state) => state.downloadDefaults);
 	const setDownloadDefaultsTypes = useUserPreferencesStore((state) => state.setDownloadDefaults);
-	const showonlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
+	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 	const setShowOnlyDownloadDefaults = useUserPreferencesStore((state) => state.setShowOnlyDownloadDefaults);
+	const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+	const setShowDateModified = useUserPreferencesStore((state) => state.setShowDateModified);
 
 	return (
 		<div className="flex-grow space-y-4 overflow-y-auto px-4 py-2">
@@ -102,7 +108,7 @@ function MediaItemFilterContent({
 									: undefined
 							}
 						>
-							{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1")}
+							{DOWNLOAD_DEFAULT_LABELS[type]}
 						</Badge>
 					))}
 				</ToggleGroup>
@@ -110,8 +116,8 @@ function MediaItemFilterContent({
 					<div className="flex items-center space-x-2">
 						<Switch
 							className="ml-0"
-							checked={showonlyDownloadDefaults}
-							onCheckedChange={() => setShowOnlyDownloadDefaults(!showonlyDownloadDefaults)}
+							checked={showOnlyDownloadDefaults}
+							onCheckedChange={() => setShowOnlyDownloadDefaults(!showOnlyDownloadDefaults)}
 						/>{" "}
 						<Label>Only show selected image types</Label>
 					</div>
@@ -157,7 +163,7 @@ function MediaItemFilterContent({
 				)}
 
 				{/* Mandatory Titlecard Sets */}
-				{hasTitleCards && (!showonlyDownloadDefaults || downloadDefaultsTypes.includes("titlecard")) && (
+				{hasTitleCards && (!showOnlyDownloadDefaults || downloadDefaultsTypes.includes("titlecard")) && (
 					<>
 						<Separator className="my-4 w-full" />
 						<Label className="text-md font-semibold mb-1 block">Titlecard Filter</Label>
@@ -179,6 +185,26 @@ function MediaItemFilterContent({
 					</>
 				)}
 				<Separator className="my-4 w-full" />
+
+				{/* Show Date Modified */}
+				<div className="justify-between flex items-center">
+					<div className="flex items-center space-x-2">
+						<Switch
+							className="ml-0"
+							checked={showDateModified}
+							onCheckedChange={() => setShowDateModified(!showDateModified)}
+						/>
+						<Label>Show 'Date Modified' for MediUX Images</Label>
+					</div>
+					<PopoverHelp ariaLabel="media-item-filter-date-modified">
+						<p className="mb-2">
+							When enabled, the "Date Modified" for each image will be shown under the image.
+						</p>
+						<p className="text-muted-foreground">
+							This date is based on the last time the image was modified within MediUX.
+						</p>
+					</PopoverHelp>
+				</div>
 			</div>
 		</div>
 	);

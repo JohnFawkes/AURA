@@ -1,8 +1,9 @@
 "use client";
 
-import { AlertTriangle, Delete, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
+import { AlertTriangle, Delete, DownloadCloudIcon, Edit, MoreHorizontal, RefreshCcw, RefreshCwOff } from "lucide-react";
+import { toast } from "sonner";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import Link from "next/link";
 
@@ -35,16 +36,18 @@ import { H4 } from "@/components/ui/typography";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
 import { APIResponse } from "@/types/api/api-response";
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBSavedItem } from "@/types/database/db-poster-set";
+import { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 export function hasSelectedTypesOverlapOnAutoDownload(
-	posterSets: { SelectedTypes: string[]; AutoDownload: boolean }[]
+	posterSets: { selected_types: SelectedTypes; auto_download: boolean }[]
 ): boolean {
 	const typeToAutoDownloadSet = new Map<string, boolean>();
 	for (const set of posterSets) {
-		if (!set.AutoDownload) continue;
-		if (!Array.isArray(set.SelectedTypes)) continue;
-		for (const type of set.SelectedTypes) {
+		if (!set.auto_download) continue;
+		if (!Array.isArray(set.selected_types)) continue;
+		for (const type of set.selected_types) {
 			if (type && typeToAutoDownloadSet.has(type)) {
 				return true;
 			}
@@ -55,24 +58,36 @@ export function hasSelectedTypesOverlapOnAutoDownload(
 }
 
 const SavedSetsCard: React.FC<{
-	savedSet: DBMediaItemWithPosterSets;
+	savedSet: DBSavedItem;
 	onUpdate: () => void;
-	handleRecheckItem: (title: string, item: DBMediaItemWithPosterSets) => void;
+	handleRecheckItem: (title: string, item: DBSavedItem) => void;
+	handleRedownloadItem: (item: DBSavedItem) => void;
 	bulkEditMode: boolean;
 	bulkEditSelectedItems: Set<string>;
 	setBulkEditSelectedItems: React.Dispatch<React.SetStateAction<Set<string>>>;
-}> = ({ savedSet, onUpdate, handleRecheckItem, bulkEditMode, bulkEditSelectedItems, setBulkEditSelectedItems }) => {
-	// Initialize edit state from the savedSet.PosterSets array.
+}> = ({
+	savedSet,
+	onUpdate,
+	handleRecheckItem,
+	handleRedownloadItem,
+	bulkEditMode,
+	bulkEditSelectedItems,
+	setBulkEditSelectedItems,
+}) => {
+	// Normalize poster_sets so we never crash on undefined
+	const posterSets = useMemo(() => savedSet.poster_sets ?? [], [savedSet.poster_sets]);
+	const normalizedSavedSet = useMemo(() => ({ ...savedSet, poster_sets: posterSets }), [savedSet, posterSets]);
+
+	// Initialize edit state from the poster sets array.
 	const [editSets, setEditSets] = useState(() =>
-		savedSet.PosterSets.map((set) => ({
-			id: set.PosterSetID,
-			previousDateUpdated: set.PosterSet.DateUpdated,
-			set: set.PosterSet || "Unknown",
-			selectedTypes: set.SelectedTypes,
-			autoDownload: set.AutoDownload,
-			toDelete: false,
+		posterSets.map((set) => ({
+			...set,
+			previousDateUpdated: set.date_updated,
 		}))
 	);
+
+	const [refreshedSets, setRefreshedSets] = useState<SetRef[]>([]);
+	const [refreshedIncludedItems, setRefreshedIncludedItems] = useState<{ [tmdb_id: string]: IncludedItem }>({});
 
 	// State to track Modal visibility
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -91,11 +106,24 @@ const SavedSetsCard: React.FC<{
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
 	// Check if all sets are marked for deletion
-	const allToDelete = editSets.every((set) => set.toDelete);
+	const allToDelete = editSets.every((set) => set.to_delete);
 
-	// Track unignore loading state
-	const [unignoreLoading, setUnignoreLoading] = useState(false);
-	const onlyIgnore = savedSet.PosterSets.length === 1 && savedSet.PosterSets[0].PosterSetID === "ignore";
+	// Compute last-downloaded safely
+	const lastDownloadedLabel = useMemo(() => {
+		if (!posterSets.length) return "Never";
+		const latest = posterSets.reduce<number>((max, ps) => {
+			const t = ps.last_downloaded ? new Date(ps.last_downloaded).getTime() : 0;
+			return Math.max(max, Number.isFinite(t) ? t : 0);
+		}, 0);
+		if (!latest) return "Never";
+		const latestDate = new Date(latest);
+		return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString("en-US", {
+			hour: "numeric",
+			minute: "numeric",
+			second: "numeric",
+			hour12: true,
+		})}`;
+	}, [posterSets]);
 
 	return (
 		<Card className="relative w-full max-w-md mx-auto">
@@ -108,9 +136,9 @@ const SavedSetsCard: React.FC<{
 				)}
 
 				{/* Top Left: Auto Download Icon */}
-				{savedSet.MediaItem.Type === "show" && (
+				{normalizedSavedSet.media_item.type === "show" && (
 					<div className="absolute top-2 left-2 flex items-center gap-2">
-						{savedSet.PosterSets.some((set) => set.AutoDownload) ? (
+						{posterSets.some((set) => set.auto_download) ? (
 							<Popover>
 								<PopoverTrigger asChild>
 									<RefreshCcw className="text-green-500 cursor-help" size={24} />
@@ -135,7 +163,7 @@ const SavedSetsCard: React.FC<{
 								</PopoverContent>
 							</Popover>
 						)}
-						{hasSelectedTypesOverlapOnAutoDownload(savedSet.PosterSets) && (
+						{hasSelectedTypesOverlapOnAutoDownload(posterSets) && (
 							<Popover>
 								<PopoverTrigger asChild>
 									<AlertTriangle className="text-yellow-500 cursor-help" size={24} />
@@ -155,9 +183,11 @@ const SavedSetsCard: React.FC<{
 				{bulkEditMode && (
 					<div className="absolute top-2 left-1/2 transform -translate-x-1/2">
 						<Checkbox
-							checked={bulkEditSelectedItems.has(`${savedSet.TMDB_ID}|||${savedSet.LibraryTitle}`)}
+							checked={bulkEditSelectedItems.has(
+								`${normalizedSavedSet.media_item.tmdb_id}|||${normalizedSavedSet.media_item.library_title}`
+							)}
 							onCheckedChange={() => {
-								const key = `${savedSet.TMDB_ID}|||${savedSet.LibraryTitle}`;
+								const key = `${normalizedSavedSet.media_item.tmdb_id}|||${normalizedSavedSet.media_item.library_title}`;
 								setBulkEditSelectedItems((prev) => {
 									const newSet = new Set(prev);
 									if (newSet.has(key)) {
@@ -168,7 +198,7 @@ const SavedSetsCard: React.FC<{
 									return newSet;
 								});
 							}}
-							aria-label={`Select ${savedSet.MediaItem.Title} for bulk edit`}
+							aria-label={`Select ${normalizedSavedSet.media_item.title} for bulk edit`}
 						/>
 					</div>
 				)}
@@ -192,9 +222,11 @@ const SavedSetsCard: React.FC<{
 									await refreshPosterSet({
 										editSets,
 										setEditSets,
-										savedSet,
+										savedSet: normalizedSavedSet,
 										setIsRefreshing,
 										setUpdateError,
+										setRefreshedSets,
+										setRefreshedIncludedItems,
 									});
 									setIsEditModalOpen(true);
 								}}
@@ -203,23 +235,34 @@ const SavedSetsCard: React.FC<{
 								{isRefreshing ? "Refreshing..." : "Edit"}
 							</DropdownMenuItem>
 
-							{savedSet.PosterSets.some(
-								(set) =>
-									(set.AutoDownload || savedSet.MediaItem.Type === "movie") &&
-									set.PosterSetID !== "ignore"
+							{posterSets.some(
+								(set) => set.auto_download || normalizedSavedSet.media_item.type === "movie"
 							) && (
 								<DropdownMenuItem
 									className="cursor-pointer"
 									onClick={() => {
-										handleRecheckItem(savedSet.MediaItem.Title, savedSet);
+										handleRecheckItem(normalizedSavedSet.media_item.title, normalizedSavedSet);
 									}}
 								>
 									<RefreshCcw className="ml-2" />
-									{savedSet.MediaItem.Type === "movie"
+									{normalizedSavedSet.media_item.type === "movie"
 										? "Check Movie for Key Changes"
 										: "Force Autodownload Recheck"}
 								</DropdownMenuItem>
 							)}
+							<DropdownMenuItem
+								onClick={() => {
+									handleRedownloadItem(normalizedSavedSet);
+									toast.success("Redownload triggered", {
+										description:
+											"The item has been queued for redownload. Check the download queue page for progress.",
+									});
+								}}
+								className="cursor-pointer"
+							>
+								<DownloadCloudIcon className="ml-2" />
+								Redownload
+							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => setIsDeleteModalOpen(true)}
 								className="text-destructive cursor-pointer"
@@ -235,7 +278,8 @@ const SavedSetsCard: React.FC<{
 			{/* Middle: Image */}
 			<div className="flex justify-center">
 				<AssetImage
-					image={savedSet.MediaItem}
+					image={normalizedSavedSet.media_item}
+					imageType="item"
 					className="w-[90%] h-auto transition-transform hover:scale-105"
 				/>
 			</div>
@@ -245,60 +289,39 @@ const SavedSetsCard: React.FC<{
 				{/* Title */}
 				<H4>
 					<Link
-						//href={formatMediaItemUrl(savedSet.MediaItem)}
 						href={"/media-item/"}
 						className="text-primary hover:underline text-md"
 						onClick={() => {
-							setMediaItem(savedSet.MediaItem);
+							setMediaItem(normalizedSavedSet.media_item);
 						}}
 					>
-						{savedSet.MediaItem.Title}
+						{normalizedSavedSet.media_item.title}
 					</Link>
 				</H4>
 
 				<div className="flex flex-col gap-1 mb-2">
-					{/* Year and Library */}
 					<span className="text-xs sm:text-sm text-muted-foreground inline-block">
-						{savedSet.MediaItem.Year} · {savedSet.MediaItem.LibraryTitle}
+						{normalizedSavedSet.media_item.year} · {normalizedSavedSet.media_item.library_title}
 					</span>
 
-					{/* Last Downloaded */}
 					<span className="text-xs sm:text-sm text-muted-foreground inline-block">
 						Last Downloaded:
 						<br />
-						{(() => {
-							const latestTimestamp = Math.max(
-								...savedSet.PosterSets.map((ps) => new Date(ps.LastDownloaded).getTime())
-							);
-							const latestDate = new Date(latestTimestamp);
-							return `${latestDate.toLocaleDateString("en-US")} at ${latestDate.toLocaleTimeString(
-								"en-US",
-								{
-									hour: "numeric",
-									minute: "numeric",
-									second: "numeric",
-									hour12: true,
-								}
-							)}`;
-						})()}
+						{lastDownloadedLabel}
 					</span>
 				</div>
 
-				<SavedSetsList
-					savedSet={savedSet}
-					layout="card"
-					onUpdate={onUpdate}
-					unignoreLoading={unignoreLoading}
-					setUnignoreLoading={setUnignoreLoading}
-					setUpdateError={setUpdateError}
-				/>
+				<SavedSetsList savedSet={normalizedSavedSet} layout="card" />
 
-				{/* Selected Types Badges */}
 				<Separator className="my-4" />
-				{savedSet.PosterSets.some(
-					(set) => Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
+				{posterSets.some(
+					(set) =>
+						set.selected_types.poster ||
+						set.selected_types.backdrop ||
+						set.selected_types.season_poster ||
+						set.selected_types.titlecard
 				) ? (
-					<div className="flex flex-wrap gap-2">{renderTypeBadges(savedSet)}</div>
+					<div className="flex flex-wrap gap-2">{renderTypeBadges(normalizedSavedSet)}</div>
 				) : (
 					<div className="flex flex-wrap gap-2">
 						<Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
@@ -308,7 +331,6 @@ const SavedSetsCard: React.FC<{
 				)}
 			</CardContent>
 
-			{/* Edit Modal */}
 			<SavedSetEditModal
 				open={isEditModalOpen}
 				onClose={() =>
@@ -321,14 +343,15 @@ const SavedSetsCard: React.FC<{
 				}
 				editSets={editSets}
 				setEditSets={setEditSets}
-				savedSet={savedSet}
-				onlyIgnore={onlyIgnore}
+				savedSet={normalizedSavedSet}
 				allToDelete={allToDelete}
 				updateError={updateError}
+				refreshedSets={refreshedSets}
+				refreshedIncludedItems={refreshedIncludedItems}
 				confirmEdit={() =>
 					savedSetsConfirmEdit({
 						editSets,
-						savedSet,
+						savedSet: normalizedSavedSet,
 						onUpdate,
 						isMounted,
 						setIsMounted,
@@ -340,7 +363,6 @@ const SavedSetsCard: React.FC<{
 				}
 			/>
 
-			{/* Delete Modal */}
 			<SavedSetDeleteModal
 				open={isDeleteModalOpen}
 				onClose={() =>
@@ -351,10 +373,10 @@ const SavedSetsCard: React.FC<{
 						setIsMounted,
 					})
 				}
-				title={savedSet.MediaItem.Title}
+				title={normalizedSavedSet.media_item.title}
 				confirmDelete={() =>
 					savedSetsConfirmDelete({
-						savedSet,
+						savedSet: normalizedSavedSet,
 						onUpdate,
 						isMounted,
 						setIsMounted,

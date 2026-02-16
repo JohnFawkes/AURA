@@ -1,5 +1,5 @@
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { checkSonarrRadarrNewAPIKeyStatusResult } from "@/services/settings-onboarding/api-sonarr-radarr-test-connection";
+import { checkSonarrRadarrNewAPIKeyStatusResult } from "@/services/validation/sonarr-radarr";
 import { Plus, TestTube, Trash2 } from "lucide-react";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -18,13 +18,13 @@ import {
 	AppConfigMediaServerLibrary,
 	AppConfigSonarrRadarrApp,
 	AppConfigSonarrRadarrApps,
-} from "@/types/config/config-app";
+} from "@/types/config/config";
 
 interface ConfigSectionSonarrRadarrProps {
 	value: AppConfigSonarrRadarrApps;
 	editing: boolean;
 	dirtyFields?: {
-		Applications?: Array<Partial<{ Type: boolean; Library: boolean; URL: boolean; APIKey: boolean }>>;
+		applications?: Array<Partial<{ type: boolean; library: boolean; url: boolean; api_token: boolean }>>;
 	};
 	onChange: <K extends keyof AppConfigSonarrRadarrApps>(field: K, value: AppConfigSonarrRadarrApps[K]) => void;
 	errorsUpdate?: (errors: Record<string, string>) => void;
@@ -60,7 +60,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 	// Local select state for adding new application
 	const [newAppType, setNewAppType] = useState<string>("Sonarr");
 
-	const apps = useMemo(() => (Array.isArray(value.Applications) ? value.Applications : []), [value.Applications]);
+	const apps = useMemo(() => (Array.isArray(value.applications) ? value.applications : []), [value.applications]);
 
 	// State to track app connection testing
 	const [appConnectionStatus, setAppConnectionStatus] = useState<Record<number, ConfigConnectionStatus>>({});
@@ -71,30 +71,30 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 		const errs: Record<string, string> = {};
 
 		apps.forEach((app, index) => {
-			if (!app.Type) {
+			if (!app.type) {
 				errs[`Applications.[${index}].Type`] = "Type is required";
 			} else {
-				if (!SR_TYPES.includes(app.Type as (typeof SR_TYPES)[number])) {
+				if (!SR_TYPES.includes(app.type as (typeof SR_TYPES)[number])) {
 					errs[`Applications.[${index}].Type`] = "Invalid Type, must be Sonarr or Radarr";
 				}
 			}
-			if (!app.Library) {
+			if (!app.library) {
 				errs[`Applications.[${index}].Library`] = "Library is required";
 			}
-			if (!app.URL) {
-				const rawURL = (app.URL || "").trim();
+			if (!app.url) {
+				const rawURL = (app.url || "").trim();
 				if (!rawURL) errs[`Applications.[${index}].URL`] = "URL is required";
 				else {
 					const urlErr = ValidateURL(rawURL);
 					if (urlErr) errs[`Applications.[${index}].URL`] = urlErr;
 				}
 			}
-			if (!app.APIKey) {
-				errs[`Applications.[${index}].APIKey`] = "API Key is required";
+			if (!app.api_token) {
+				errs[`Applications.[${index}].APIToken`] = "API Token is required";
 			}
 			// Remote error (overrides local message if present)
 			if (remoteTokenErrors[index]) {
-				errs[`Applications.[${index}].APIKey`] = remoteTokenErrors[index] || "Connection failed";
+				errs[`Applications.[${index}].APIToken`] = remoteTokenErrors[index] || "Connection failed";
 			}
 		});
 
@@ -111,16 +111,16 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 	}, [errors, errorsUpdate]);
 
 	// ----- Mutators -----
-	const setApps = (next: AppConfigSonarrRadarrApp[]) => onChange("Applications", next);
+	const setApps = (next: AppConfigSonarrRadarrApp[]) => onChange("applications", next);
 
 	const addApp = () => {
 		if (!editing) return;
 		const type = newAppType as (typeof SR_TYPES)[number];
 		let newEntry: AppConfigSonarrRadarrApp;
 		if (type === "Sonarr") {
-			newEntry = { Type: "Sonarr", Library: "", URL: "", APIKey: "" };
+			newEntry = { type: "Sonarr", library: "", url: "", api_token: "" };
 		} else {
-			newEntry = { Type: "Radarr", Library: "", URL: "", APIKey: "" };
+			newEntry = { type: "Radarr", library: "", url: "", api_token: "" };
 		}
 		setApps([...apps, newEntry]);
 	};
@@ -146,7 +146,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 	const runRemoteValidation = useCallback(
 		async (idx: number, showToast = true) => {
 			const app = apps[idx];
-			if (!app || !app.URL || !app.APIKey) return;
+			if (!app || !app.url || !app.api_token) return;
 
 			// Set to unknown while testing
 			setAppConnectionStatus((s) => ({
@@ -189,7 +189,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 		if (configAlreadyLoaded && !hasRunInitialValidation.current) {
 			// Run remote validation for all apps that have URL and APIKey set
 			apps.forEach((app, idx) => {
-				if (app.URL && app.APIKey) {
+				if (app.url && app.api_token) {
 					// Delay slightly to allow UI to settle
 					setTimeout(() => {
 						runRemoteValidation(idx, false);
@@ -241,11 +241,11 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 				) : (
 					<>
 						{apps.map((app, idx) => {
-							const appDirty = dirtyFields.Applications?.[idx] as Partial<{
-								Type: string;
-								Library: string;
-								URL: string;
-								APIKey: string;
+							const appDirty = dirtyFields.applications?.[idx] as Partial<{
+								type: string;
+								library: string;
+								url: string;
+								api_token: string;
 							}>;
 							const appErrorEntries = Object.entries(errors).filter(([k]) =>
 								k.startsWith(`Applications.[${idx}]`)
@@ -273,7 +273,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 									<div className="flex items-center justify-between gap-3">
 										<div className="flex items-center gap-2">
 											<h2 className={`text-xl font-semibold text-${statusObj.color}`}>
-												{app.Type}
+												{app.type}
 											</h2>
 											<span
 												className={`h-2 w-2 rounded-full ${CONNECTION_STATUS_COLORS_BG[statusObj.status]} animate-pulse`}
@@ -284,8 +284,8 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 											<Button
 												variant="outline"
 												size="sm"
-												disabled={!app.URL || !app.APIKey}
-												hidden={!app.APIKey && !app.URL}
+												disabled={!app.url || !app.api_token}
+												hidden={!app.api_token && !app.url}
 												onClick={() => {
 													runRemoteValidation(idx);
 												}}
@@ -315,7 +315,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 												<PopoverHelp ariaLabel="help-apps-sr-library">
 													<p className="mb-2 font-medium">Library</p>
 													<p>
-														The Media Server library that this {app.Type} instance will
+														The Media Server library that this {app.type} instance will
 														manage.
 													</p>
 												</PopoverHelp>
@@ -323,15 +323,15 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 										</div>
 										<Select
 											disabled={!editing}
-											value={app.Library || ""}
-											onValueChange={(v) => updateApp(idx, "Library", v)}
+											value={app.library || ""}
+											onValueChange={(v) => updateApp(idx, "library", v)}
 										>
 											<SelectTrigger
 												className={cn(
 													"h-8",
-													!app.Library && "text-muted-foreground",
-													!hasError("Library") &&
-														appDirty?.Library &&
+													!app.library && "text-muted-foreground",
+													!hasError("library") &&
+														appDirty?.library &&
 														"rounded-md border border-amber-500 p-3"
 												)}
 											>
@@ -344,8 +344,8 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 											{libraries.length > 0 && (
 												<SelectContent>
 													{libraries.map((lib) => (
-														<SelectItem key={lib.Name} value={lib.Name}>
-															{lib.Name}
+														<SelectItem key={lib.title} value={lib.title}>
+															{lib.title}
 														</SelectItem>
 													))}
 												</SelectContent>
@@ -369,14 +369,14 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 													<p className="font-medium mb-1">App URL</p>
 													<p>Examples:</p>
 													<ul className="list-disc list-inside mb-1">
-														<li>https://{app.Type.toLowerCase()}.domain.com</li>
+														<li>https://{app.type.toLowerCase()}.domain.com</li>
 														<li>
 															http://192.168.1.10:
-															{app.Type === "Sonarr" ? "8989" : "7878"}
+															{app.type === "Sonarr" ? "8989" : "7878"}
 														</li>
 														<li>
-															http://{app.Type.toLowerCase()}:
-															{app.Type === "Sonarr" ? "8989" : "7878"}
+															http://{app.type.toLowerCase()}:
+															{app.type === "Sonarr" ? "8989" : "7878"}
 														</li>
 													</ul>
 													<p>Rules:</p>
@@ -391,12 +391,12 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 										<Input
 											disabled={!editing}
 											placeholder="http://app.domain.com"
-											value={app.URL || ""}
-											onChange={(e) => updateApp(idx, "URL", e.target.value)}
-											className={cn(appDirty?.URL && "rounded-md border border-amber-500 p-3")}
+											value={app.url || ""}
+											onChange={(e) => updateApp(idx, "url", e.target.value)}
+											className={cn(appDirty?.url && "rounded-md border border-amber-500 p-3")}
 										/>
 										{appErrorEntries
-											.filter(([k]) => k.endsWith("URL"))
+											.filter(([k]) => k.endsWith("url"))
 											.map(([, msg], i) => (
 												<p key={i} className="text-xs text-red-500">
 													{msg}
@@ -411,7 +411,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 											{editing && (
 												<PopoverHelp ariaLabel="help-apps-sr-apikey">
 													<p className="mb-2 font-medium">API Key</p>
-													<p>The API Key for your {app.Type} instance.</p>
+													<p>The API Key for your {app.type} instance.</p>
 													<p>
 														This can usually be found in the settings of your application.
 													</p>
@@ -421,15 +421,17 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 										<Input
 											disabled={!editing}
 											placeholder="API Key"
-											value={app.APIKey || ""}
-											onChange={(e) => updateApp(idx, "APIKey", e.target.value)}
+											value={app.api_token || ""}
+											onChange={(e) => updateApp(idx, "api_token", e.target.value)}
 											onBlur={() => {
 												runRemoteValidation(idx);
 											}}
-											className={cn(appDirty?.APIKey && "rounded-md border border-amber-500 p-3")}
+											className={cn(
+												appDirty?.api_token && "rounded-md border border-amber-500 p-3"
+											)}
 										/>
 										{appErrorEntries
-											.filter(([k]) => k.endsWith("APIKey"))
+											.filter(([k]) => k.endsWith("api_token"))
 											.map(([, msg], i) => (
 												<p key={i} className="text-xs text-red-500">
 													{msg}

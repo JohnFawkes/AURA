@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigTMDB } from "@/types/config/config-app";
+import { AppConfigTMDB } from "@/types/config/config";
 
 interface ConfigSectionTMDBProps {
 	value: AppConfigTMDB;
@@ -52,7 +52,7 @@ export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 				<h2 className="text-xl font-semibold">TMDB</h2>
 				<Button
 					variant="outline"
-					disabled={editing || !!errors.ApiKey}
+					disabled={editing || !!errors.api_token}
 					hidden={editing}
 					onClick={() => onTest?.(value)}
 				>
@@ -63,7 +63,7 @@ export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 			<div
 				className={cn(
 					"space-y-1 border rounded-md p-3 transition",
-					errors.ApiKey ? "border-red-500" : dirtyFields.ApiKey ? "border-amber-500" : "border-muted"
+					errors.api_token ? "border-red-500" : dirtyFields.api_token ? "border-amber-500" : "border-muted"
 				)}
 			>
 				<div className="flex items-center justify-between">
@@ -88,14 +88,14 @@ export const ConfigSectionTMDB: React.FC<ConfigSectionTMDBProps> = ({
 				<Input
 					disabled={!editing}
 					placeholder="TMDB API key"
-					value={value.ApiKey}
-					onChange={(e) => onChange("ApiKey", e.target.value)}
-					aria-invalid={!!errors.ApiKey}
+					value={value.api_token}
+					onChange={(e) => onChange("api_token", e.target.value)}
+					aria-invalid={!!errors.api_token}
 					onBlur={() => {
-						if (!errors.ApiKey) onTest?.(value);
+						if (!errors.api_token) onTest?.(value);
 					}}
 				/>
-				{errors.ApiKey && <p className="text-xs text-red-500">{errors.ApiKey}</p>}
+				{errors.api_token && <p className="text-xs text-red-500">{errors.api_token}</p>}
 			</div>
 		</Card>
 	);

@@ -14,22 +14,22 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigLabelsAndTags, AppConfigLabelsAndTagsApplication } from "@/types/config/config-app";
+import { AppConfigLabelsAndTags, AppConfigLabelsAndTagsApplication } from "@/types/config/config";
 
 interface ConfigSectionLabelsAndTagsProps {
 	value: AppConfigLabelsAndTags;
 	editing: boolean;
 	dirtyFields?: {
-		Applications?: Array<
+		applications?: Array<
 			Partial<
 				Record<
 					string,
 					| boolean
 					| {
-							Enabled?: boolean;
-							Add?: boolean;
-							Remove?: boolean;
-							AddLabelTagForSelectedTypes?: boolean;
+							enabled?: boolean;
+							add?: boolean;
+							remove?: boolean;
+							add_label_tag_for_selected_types?: boolean;
 					  }
 				>
 			>
@@ -66,8 +66,8 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 	const [newApplicationType, setNewApplicationType] = useState(APPLICATION_TYPES[0] || "");
 
 	const applications = React.useMemo(
-		() => (Array.isArray(value.Applications) ? value.Applications : []),
-		[value.Applications]
+		() => (Array.isArray(value.applications) ? value.applications : []),
+		[value.applications]
 	);
 
 	// ----- Validation -----
@@ -75,10 +75,10 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 		const errs: Record<string, string> = {};
 
 		applications.forEach((app, idx) => {
-			const addLabels = Array.isArray(app.Add) ? app.Add : [];
-			const removeLabels = Array.isArray(app.Remove) ? app.Remove : [];
-			const orLabelTag = app.Application === "Plex" ? "Label" : "Tag";
-			if (app.Enabled && addLabels.length === 0 && removeLabels.length === 0) {
+			const addLabels = Array.isArray(app.add) ? app.add : [];
+			const removeLabels = Array.isArray(app.remove) ? app.remove : [];
+			const orLabelTag = app.application === "Plex" ? "Label" : "Tag";
+			if (app.enabled && addLabels.length === 0 && removeLabels.length === 0) {
 				errs[`Applications.[${idx}]`] =
 					`At least one ${orLabelTag.toLowerCase()} to add or remove must be specified.`;
 			}
@@ -101,23 +101,35 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 	}, [errors, errorsUpdate]);
 
 	// ----- Mutators -----
-	const setApplications = (apps: AppConfigLabelsAndTagsApplication[]) => onChange("Applications", apps);
-	const providerExists = applications.some((app) => app.Application === newApplicationType);
+	const setApplications = (apps: AppConfigLabelsAndTagsApplication[]) => onChange("applications", apps);
+	const providerExists = applications.some((app) => app.application === newApplicationType);
 
 	const addApplication = () => {
 		if (!editing || providerExists) return;
 		const type = newApplicationType;
 		let newEntry: AppConfigLabelsAndTagsApplication;
 		if (type === "Plex") {
-			newEntry = { Application: "Plex", Enabled: true, Add: [], Remove: [], AddLabelTagForSelectedTypes: false };
+			newEntry = {
+				application: "Plex",
+				enabled: true,
+				add: [],
+				remove: [],
+				add_label_tag_for_selected_types: false,
+			};
 		} else if (Array.isArray(srOptions) && srOptions.includes(type)) {
-			newEntry = { Application: type, Enabled: true, Add: [], Remove: [], AddLabelTagForSelectedTypes: false };
+			newEntry = {
+				application: type,
+				enabled: true,
+				add: [],
+				remove: [],
+				add_label_tag_for_selected_types: false,
+			};
 		}
 		setApplications([...applications, newEntry!]);
 	};
 
 	useEffect(() => {
-		const usedTypes = applications.map((app) => app.Application);
+		const usedTypes = applications.map((app) => app.application);
 		const nextAvailable = APPLICATION_TYPES.find((type) => !usedTypes.includes(type)) || "";
 		setNewApplicationType(nextAvailable);
 	}, [APPLICATION_TYPES, applications]);
@@ -131,7 +143,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 
 	const updateEnabled = (index: number, enabled: boolean) => {
 		const next = applications.slice();
-		next[index] = { ...next[index], Enabled: enabled };
+		next[index] = { ...next[index], enabled: enabled };
 		setApplications(next);
 	};
 
@@ -155,7 +167,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 					{editing &&
 						(() => {
 							const availableTypes = APPLICATION_TYPES.filter(
-								(p) => !applications.some((app) => app.Application === p)
+								(p) => !applications.some((app) => app.application === p)
 							);
 							return availableTypes.length > 0 ? (
 								<div className="flex items-center gap-2">
@@ -196,15 +208,15 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 				) : null}
 
 				{applications.map((app, idx) => {
-					const appDirty = dirtyFields.Applications?.[idx] as Partial<{
-						Enabled?: boolean;
-						Add?: boolean;
-						Remove?: boolean;
+					const appDirty = dirtyFields.applications?.[idx] as Partial<{
+						enabled?: boolean;
+						add?: boolean;
+						remove?: boolean;
 					}>;
-					const appError = errors[`Applications.[${idx}]`];
-					const addLabels = Array.isArray(app.Add) ? app.Add : [];
-					const removeLabels = Array.isArray(app.Remove) ? app.Remove : [];
-					const orLabelTag = app.Application === "Plex" ? "Labels" : "Tags";
+					const appError = errors[`applications.[${idx}]`];
+					const addLabels = Array.isArray(app.add) ? app.add : [];
+					const removeLabels = Array.isArray(app.remove) ? app.remove : [];
+					const orLabelTag = app.application === "Plex" ? "Labels" : "Tags";
 					return (
 						<div
 							key={idx}
@@ -215,10 +227,10 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 						>
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-3">
-									<p className="font-medium text-lg">{app.Application}</p>
+									<p className="font-medium text-lg">{app.application}</p>
 									<Switch
 										disabled={!editing}
-										checked={app.Enabled}
+										checked={app.enabled}
 										onCheckedChange={(v) => updateEnabled(idx, v)}
 									/>
 								</div>
@@ -264,7 +276,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												editing &&
 												updateApplication(
 													idx,
-													"Add",
+													"add",
 													addLabels.filter((_, j) => j !== i)
 												)
 											}
@@ -281,12 +293,12 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 													"addLabel"
 												) as HTMLInputElement;
 												let val = input.value.trim();
-												if (app.Application && ["Sonarr", "Radarr"].includes(app.Application)) {
+												if (app.application && ["Sonarr", "Radarr"].includes(app.application)) {
 													// Lowercase tags for Sonarr/Radarr
 													val = val.toLowerCase();
 												}
 												if (val && !addLabels.includes(val)) {
-													updateApplication(idx, "Add", [...addLabels, val]);
+													updateApplication(idx, "add", [...addLabels, val]);
 												}
 												input.value = "";
 											}}
@@ -317,9 +329,9 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 								<div className="flex w-full items-center gap-2">
 									<Switch
 										disabled={!editing}
-										checked={app.AddLabelTagForSelectedTypes || false}
+										checked={app.add_label_tag_for_selected_types || false}
 										onCheckedChange={(v) =>
-											updateApplication(idx, "AddLabelTagForSelectedTypes", v)
+											updateApplication(idx, "add_label_tag_for_selected_types", v)
 										}
 									/>
 									{editing && (
@@ -382,7 +394,7 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 												editing &&
 												updateApplication(
 													idx,
-													"Remove",
+													"remove",
 													removeLabels.filter((_, j) => j !== i)
 												)
 											}
@@ -399,12 +411,12 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
 													"removeLabel"
 												) as HTMLInputElement;
 												let val = input.value.trim();
-												if (app.Application && ["Sonarr", "Radarr"].includes(app.Application)) {
+												if (app.application && ["Sonarr", "Radarr"].includes(app.application)) {
 													// Lowercase tags for Sonarr/Radarr
 													val = val.toLowerCase();
 												}
 												if (val && !removeLabels.includes(val)) {
-													updateApplication(idx, "Remove", [...removeLabels, val]);
+													updateApplication(idx, "remove", [...removeLabels, val]);
 												}
 												input.value = "";
 											}}

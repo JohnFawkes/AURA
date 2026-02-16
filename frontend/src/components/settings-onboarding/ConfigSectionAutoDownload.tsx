@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigAutoDownload } from "@/types/config/config-app";
+import { AppConfigAutoDownload } from "@/types/config/config";
 
 interface ConfigSectionAutoDownloadProps {
 	value: AppConfigAutoDownload;
@@ -25,6 +25,7 @@ interface ConfigSectionAutoDownloadProps {
 }
 
 const validateCron = (expr: string): string | null => {
+	if (!expr) return null;
 	const trimmed = expr.trim();
 	if (!trimmed) return "Cron expression is required when enabled.";
 	try {
@@ -45,12 +46,12 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 	const prevErrorsRef = useRef<string>("{}");
 	const errors = React.useMemo(() => {
 		const errs: Partial<Record<keyof AppConfigAutoDownload, string>> = {};
-		if (value.Enabled) {
-			const cronErr = validateCron(value.Cron);
-			if (cronErr) errs.Cron = cronErr;
+		if (value.enabled) {
+			const cronErr = validateCron(value.cron);
+			if (cronErr) errs.cron = cronErr;
 		}
 		return errs;
-	}, [value.Enabled, value.Cron]);
+	}, [value.enabled, value.cron]);
 
 	useEffect(() => {
 		if (!errorsUpdate) return;
@@ -69,22 +70,22 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 				className={cn(
 					"flex items-center justify-between border rounded-md p-3 transition",
 					"border-muted",
-					dirtyFields.Enabled && "border-amber-500"
+					dirtyFields.enabled && "border-amber-500"
 				)}
 			>
 				<Label className="mr-2">Enabled</Label>
 				<div className="flex items-center gap-2">
 					<Switch
 						disabled={!editing}
-						checked={value.Enabled}
-						onCheckedChange={(v) => onChange("Enabled", v)}
+						checked={value.enabled}
+						onCheckedChange={(v) => onChange("enabled", v)}
 					/>
 					{editing && (
 						<PopoverHelp ariaLabel="help-auto-download-enabled">
 							<p>
-								Auto Download will check periodically for new updates your saved sets. This is helpful
-								if you want to download and apply season poster/titlecard updates from future updates
-								your sets.
+								Auto Download will check periodically for new updates to your saved sets. This is
+								helpful if you want to download and apply season poster/titlecard updates from future
+								updates to your sets.
 							</p>
 						</PopoverHelp>
 					)}
@@ -114,15 +115,15 @@ export const ConfigSectionAutoDownload: React.FC<ConfigSectionAutoDownloadProps>
 					)}
 				</div>
 				<Input
-					disabled={!editing || !value.Enabled}
+					disabled={!editing || !value.enabled}
 					placeholder="e.g. 0 3 * * *"
-					value={value.Cron}
-					onChange={(e) => onChange("Cron", e.target.value)}
-					className={cn(dirtyFields.Cron && "border-amber-500")}
+					value={value.cron}
+					onChange={(e) => onChange("cron", e.target.value)}
+					className={cn(dirtyFields.cron && "border-amber-500")}
 				/>
-				{errors.Cron && <p className="text-xs text-red-500">{errors.Cron}</p>}
-				{value.Enabled && !errors.Cron && value.Cron.trim() && (
-					<p className="text-xs text-muted-foreground">{cronstrue.toString(value.Cron)}</p>
+				{errors.cron && <p className="text-xs text-red-500">{errors.cron}</p>}
+				{value.enabled && !errors.cron && value.cron && value.cron.trim() && (
+					<p className="text-xs text-muted-foreground">{cronstrue.toString(value.cron)}</p>
 				)}
 			</div>
 		</Card>

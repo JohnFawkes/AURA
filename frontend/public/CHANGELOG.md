@@ -1,3 +1,22 @@
+## [0.9.80] - 2026-02-16
+
+### Breaking
+
+- This is a massive rewrite of the backend to organize the codebase better and prepare for future features. Because of this, there are likely to be some bugs that slipped through testing. Please report any issues that you find to the Github issue page.
+
+### Added
+
+- New database schema. This is a breaking change, but all existing data should be migrated automatically. The new schema is more organized and will allow for better performance and future features.
+- New App Loading page so that you can see the current status of the backend API.
+
+
+
+### Fixed
+
+- Fixed issue where
+
+---
+
 ## [0.9.77] - 2026-01-15
 
 ### Fixed

@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
 
 export function UserPreferencesCard() {
 	// Download Defaults from User Preferences Store
@@ -16,6 +16,8 @@ export function UserPreferencesCard() {
 	const setDownloadDefaultTypes = useUserPreferencesStore((state) => state.setDownloadDefaults);
 	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 	const setShowOnlyDownloadDefaults = useUserPreferencesStore((state) => state.setShowOnlyDownloadDefaults);
+	const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+	const setShowDateModified = useUserPreferencesStore((state) => state.setShowDateModified);
 
 	// View Density
 	const { densityStep, setDensityStep } = useViewDensity();
@@ -115,7 +117,7 @@ export function UserPreferencesCard() {
 									: undefined
 							}
 						>
-							{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1")}
+							{DOWNLOAD_DEFAULT_LABELS[type]}
 						</Badge>
 					))}
 				</div>
@@ -136,6 +138,26 @@ export function UserPreferencesCard() {
 							change this setting here or in the Filters section of the Media Item Page. Section.
 						</p>
 					</PopoverHelp>
+				</div>
+			</Card>
+
+			<Card className="p-5 mt-6">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center justify-between">
+						<h2 className="text-xl font-semibold">MediUX Images</h2>
+					</div>
+					<PopoverHelp ariaLabel="media-item-filter-date-modified">
+						<p className="mb-2">
+							When enabled, the "Date Modified" for each image will be shown under the image.
+						</p>
+						<p className="text-muted-foreground">
+							This date is based on the last time the image was modified within MediUX.
+						</p>
+					</PopoverHelp>
+				</div>
+				<div className="flex items-center gap-5 mt-3">
+					<Label>Show Date Modified</Label>
+					<Switch checked={showDateModified} onCheckedChange={() => setShowDateModified(!showDateModified)} />
 				</div>
 			</Card>
 		</>

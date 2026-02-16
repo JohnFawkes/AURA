@@ -12,12 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { type AspectRatio, getAspectRatioClass, getImageSizes } from "@/lib/image-sizes";
 import { log } from "@/lib/logger";
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PosterFile } from "@/types/media-and-posters/poster-sets";
+import { ImageFile } from "@/types/media-and-posters/sets";
 
 interface AssetImageProps {
-	image: PosterFile | MediaItem | CollectionItem | string;
+	image: ImageFile | MediaItem | CollectionItem | string;
+	imageType: "item" | "collection" | "mediux" | "url";
 	aspect?: AspectRatio;
 	className?: string;
 	imageClassName?: string;
@@ -69,32 +71,45 @@ function decodeBlurhashToDataURL(blurhash: string): string | undefined {
 	}
 }
 
-export function AssetImage({ image, aspect = "poster", className, imageClassName, priority = false }: AssetImageProps) {
+export function AssetImage({
+	image,
+	imageType,
+	aspect = "poster",
+	className,
+	imageClassName,
+	priority = false,
+}: AssetImageProps) {
 	const [imageLoaded, setImageLoaded] = useState(false);
 	const [imageError, setImageError] = useState(false);
 
+	const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+
 	// Decode blurhash string to data URL client-side
 	const blurDataURL = useMemo(() => {
-		const blurhash = typeof image === "object" && "Blurhash" in image ? image.Blurhash : undefined;
+		const blurhash = typeof image === "object" && "blurhash" in image ? image.blurhash : undefined;
 		if (!blurhash) return undefined;
 		return decodeBlurhashToDataURL(blurhash);
 	}, [image]);
 
-	const imageSrc =
-		typeof image === "string"
-			? image
-			: "ID" in image && "Modified" in image
-				? `/api/mediux/image?assetID=${image.ID}&modifiedDate=${image.Modified}`
-				: "RatingKey" in image
-					? `/api/mediaserver/image?ratingKey=${image.RatingKey}&imageType=${aspect}`
-					: "";
+	let imageSrc = "";
+	if (imageType === "url") {
+		imageSrc = image as string;
+	} else if (imageType === "mediux") {
+		imageSrc = `/api/images/mediux/item?asset_id=${(image as ImageFile).id}&modified_date=${(image as ImageFile).modified}`;
+	} else if (imageType === "item") {
+		imageSrc = `/api/images/media/item?rating_key=${(image as MediaItem).rating_key}&image_type=${aspect}`;
+	} else if (imageType === "collection") {
+		imageSrc = `/api/images/media/collection?rating_key=${(image as CollectionItem).rating_key}&image_type=${aspect}&index=${(image as CollectionItem).index}`;
+	} else {
+		imageSrc = "";
+	}
 
 	const imageContent = (
 		<>
 			{!imageError ? (
 				<Image
 					src={imageSrc}
-					alt={typeof image === "string" ? `${image} ${aspect}` : "ID" in image ? image.ID : ""}
+					alt={typeof image === "string" ? `${image} ${aspect}` : "id" in image ? image.id : ""}
 					fill
 					sizes={getImageSizes(aspect)}
 					className={cn(
@@ -146,7 +161,7 @@ export function AssetImage({ image, aspect = "poster", className, imageClassName
 	);
 
 	return (
-		<div className={cn("relative flex flex-col", className)}>
+		<div className={className}>
 			<div
 				className={cn(
 					"relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
@@ -155,6 +170,13 @@ export function AssetImage({ image, aspect = "poster", className, imageClassName
 			>
 				{imageContent}
 			</div>
+			{imageType === "mediux" && showDateModified && (
+				<div className="mt-1 text-xs text-white/80 text-center w-full">
+					{typeof image === "object" && "modified" in image && image.modified
+						? new Date(image.modified).toLocaleString()
+						: ""}
+				</div>
+			)}
 		</div>
 	);
 }

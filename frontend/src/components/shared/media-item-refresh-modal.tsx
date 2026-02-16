@@ -1,6 +1,6 @@
 "use client";
 
-import { patchRefreshMediaServerItem } from "@/services/mediaserver/api-mediaserver-refresh-item";
+import { refreshMediaItem } from "@/services/mediaserver/item-refresh";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -27,7 +27,7 @@ type RefreshTask = {
 	kind: RefreshTaskKind;
 	status: RefreshTaskStatus;
 	label: string;
-	ratingKey?: string;
+	refresh_key?: string;
 	error?: string;
 };
 
@@ -55,7 +55,7 @@ const getRefreshPercent = (state: RefreshProgress) => {
 };
 
 export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDetailsRefreshMetadataProps) => {
-	const isShow = mediaItem.Type === "show";
+	const isShow = mediaItem.type === "show";
 
 	const [refreshProgress, setRefreshProgress] = useState<RefreshProgress>({
 		currentText: "",
@@ -63,29 +63,33 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 		tasks: [],
 	});
 
+	const [selectedSeasons, setSelectedSeasons] = useState<Record<number, boolean>>({});
+
 	const seasons = useMemo(() => {
 		if (!isShow) return [];
-		const count = mediaItem.Series?.SeasonCount ?? 0;
-		// Seasons are typically 1..N (skip Specials/0 here; adjust if you want season 0 too)
-		return Array.from({ length: Math.max(0, count) }, (_, i) => i + 1);
-	}, [isShow, mediaItem.Series?.SeasonCount]);
+		if (!mediaItem.series) return [];
+		if (!Array.isArray(mediaItem.series.seasons)) return [];
+		if (mediaItem.series.seasons.length === 0) return [];
+
+		return mediaItem.series.seasons
+			.filter((s) => s?.season_number && s.season_number > 0)
+			.map((s) => s!.season_number!);
+	}, [isShow, mediaItem.series]);
 
 	// Map: seasonNumber -> episodeCount (from mediaItem.Series.Seasons)
 	const seasonEpisodeCounts = useMemo(() => {
 		const map = new Map<number, number>();
 		if (!isShow) return map;
 
-		const seasonObjs = mediaItem.Series?.Seasons ?? [];
+		const seasonObjs = mediaItem.series?.seasons ?? [];
 		for (const s of seasonObjs) {
-			if (!s?.SeasonNumber || s.SeasonNumber === 0) continue;
-			const count = Array.isArray(s.Episodes) ? s.Episodes.length : 0;
-			map.set(s.SeasonNumber, count);
+			if (!s?.season_number || s.season_number === 0) continue;
+			const count = Array.isArray(s.episodes) ? s.episodes.length : 0;
+			map.set(s.season_number, count);
 		}
 
 		return map;
-	}, [isShow, mediaItem.Series?.Seasons]);
-
-	const [selectedSeasons, setSelectedSeasons] = useState<Record<number, boolean>>({});
+	}, [isShow, mediaItem.series?.seasons]);
 
 	useEffect(() => {
 		if (!isOpen) return;
@@ -133,8 +137,8 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 					id: newId(),
 					kind: "refresh-item",
 					status: "pending",
-					label: `Refresh "${mediaItem.Title}"`,
-					ratingKey: mediaItem.RatingKey,
+					label: `Refresh "${mediaItem.title}"`,
+					refresh_key: mediaItem.rating_key,
 				},
 			];
 		}
@@ -147,34 +151,34 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 			id: newId(),
 			kind: "refresh-item",
 			status: "pending",
-			label: `Refresh "${mediaItem.Title}"`,
-			ratingKey: mediaItem.RatingKey,
+			label: `${mediaItem.title}`,
+			refresh_key: mediaItem.rating_key,
 		});
 
-		const seasonObjs = mediaItem.Series?.Seasons ?? [];
+		const seasonObjs = mediaItem.series?.seasons ?? [];
 		for (const seasonNum of selectedSeasonNumbers) {
-			const season = seasonObjs.find((s) => s?.SeasonNumber === seasonNum);
+			const season = seasonObjs.find((s) => s?.season_number === seasonNum);
 
 			// Season refresh
 			tasks.push({
 				id: newId(),
 				kind: "refresh-season",
 				status: "pending",
-				label: `Refresh ${mediaItem.Title} - Season ${seasonNum}`,
-				ratingKey: (season as MediaItemSeason)?.RatingKey,
+				label: `Season ${seasonNum}`,
+				refresh_key: (season as MediaItemSeason)?.rating_key,
 			});
 
 			// Episode refreshes
-			const episodes = (season as MediaItemSeason)?.Episodes ?? [];
+			const episodes = (season as MediaItemSeason)?.episodes ?? [];
 			for (const ep of episodes) {
-				const epNum = (ep as MediaItemEpisode)?.EpisodeNumber;
-				const epTitle = `"${ep.Title}" (S${seasonNum}E${epNum?.toString().padStart(2, "0")})`;
+				const epNum = (ep as MediaItemEpisode)?.episode_number;
+				const epTitle = `"${ep.title}" (S${seasonNum.toString().padStart(2, "0")}E${epNum?.toString().padStart(2, "0")})`;
 				tasks.push({
 					id: newId(),
 					kind: "refresh-episode",
 					status: "pending",
-					label: `Refresh ${epTitle}`,
-					ratingKey: (ep as MediaItemEpisode)?.RatingKey,
+					label: `${epTitle}`,
+					refresh_key: (ep as MediaItemEpisode)?.rating_key,
 				});
 			}
 		}
@@ -182,15 +186,9 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 		return tasks;
 	};
 
-	const refreshByRatingKey = async (ratingKey: string, refreshTitle: string) => {
+	const refreshByRatingKey = async (refreshKey: string, refreshTitle: string) => {
 		try {
-			const response = await patchRefreshMediaServerItem(
-				{
-					...mediaItem,
-					RatingKey: ratingKey,
-				},
-				refreshTitle
-			);
+			const response = await refreshMediaItem(mediaItem, refreshTitle, refreshKey);
 			if (response.status === "error") {
 				throw new Error(response.error?.message || "Unknown error refreshing media server item");
 			}
@@ -202,7 +200,7 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 
 	const runRefreshTask = async (t: RefreshTask) => {
 		// Missing ratingKey => skip (counts as done so progress completes)
-		if (!t.ratingKey) {
+		if (!t.refresh_key) {
 			updateRefreshTask(t.id, (x) => ({
 				...x,
 				status: "skipped",
@@ -212,10 +210,10 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 		}
 
 		updateRefreshTask(t.id, (x) => ({ ...x, status: "in-progress", error: undefined }));
-		setRefreshText(t.label);
+		setRefreshText(`Refreshing ${t.label}`);
 
 		try {
-			await refreshByRatingKey(t.ratingKey, t.label);
+			await refreshByRatingKey(t.refresh_key, t.label);
 			updateRefreshTask(t.id, (x) => ({ ...x, status: "completed" }));
 		} catch (e) {
 			updateRefreshTask(t.id, (x) => ({
@@ -260,12 +258,12 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 
 					{!isShow ? (
 						<DialogDescription className="text-sm text-muted-foreground">
-							Refresh metadata for <span className="font-semibold">'{mediaItem.Title}'</span>
+							Refresh metadata for <span className="font-semibold">'{mediaItem.title}'</span>
 						</DialogDescription>
 					) : (
 						<DialogDescription className="text-sm text-muted-foreground">
 							Select which seasons to refresh for{" "}
-							<span className="font-semibold">'{mediaItem.Title}'</span>
+							<span className="font-semibold">'{mediaItem.title}'</span>
 						</DialogDescription>
 					)}
 				</DialogHeader>
@@ -320,7 +318,7 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 									>
 										<span className="min-w-0">
 											<span className={cn(isSelected ? "" : "text-muted-foreground")}>
-												Season {s}
+												{s === 0 ? "Special Season" : `Season ${s}`}
 											</span>
 											<span
 												className={cn(
@@ -404,6 +402,22 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 							`Refresh Show & ${selectedSeasonNumbers.length} Season${selectedSeasonNumbers.length === 1 ? "" : "s"}`}
 					</Button>
 				</div>
+
+				{refreshProgress.tasks.some((t) => t.status === "failed") && (
+					<div className="mt-4 space-y-2">
+						<div className="text-sm font-medium text-destructive">Some items failed to refresh:</div>
+						<div className="max-h-40 overflow-y-auto rounded-md border border-destructive">
+							{refreshProgress.tasks
+								.filter((t) => t.status === "failed")
+								.map((t) => (
+									<div key={t.id} className="flex flex-col p-2 bg-destructive/10">
+										<div className="text-sm font-medium">{t.label}</div>
+										<div className="text-xs text-destructive">{t.error}</div>
+									</div>
+								))}
+						</div>
+					</div>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

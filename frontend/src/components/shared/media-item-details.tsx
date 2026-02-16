@@ -1,7 +1,17 @@
 "use client";
 
-import { postAddItemToDB } from "@/services/database/api-db-item-add";
-import { ChevronDown, Database, FileIcon, RefreshCcw, Star, Trash2 } from "lucide-react";
+import { addIgnoreItemToDB, stopIgnoringItemInDB } from "@/services/database/item-ignore";
+import {
+	ChevronDown,
+	Database,
+	EyeClosedIcon,
+	EyeOffIcon,
+	FileIcon,
+	ImageIcon,
+	RefreshCcw,
+	Star,
+	Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { ViewCurrentImagesModal } from "@/components/shared/media-item-images-modal";
 import { ManualImportModal } from "@/components/shared/media-item-manual-import-modal";
 import { MediaItemRatingModal } from "@/components/shared/media-item-rating-modal";
 import { MediaItemRatings } from "@/components/shared/media-item-ratings";
@@ -30,29 +41,35 @@ import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 type MediaItemDetailsProps = {
 	mediaItem?: MediaItem;
-	existsInDB: boolean;
-	onExistsInDBChange?: (existsInDB: boolean) => void;
+
 	status: string;
 	otherMediaItem: MediaItem | null;
 	posterImageKeys?: string[];
 	serverType: string;
+
+	existsInDB: boolean;
+	ignoredInDB?: boolean;
+	ignoredMode?: string;
 };
 
 export function MediaItemDetails({
 	mediaItem,
-	existsInDB,
-	onExistsInDBChange,
 	status,
 	otherMediaItem,
 	posterImageKeys,
 	serverType,
+	existsInDB,
+	ignoredInDB,
+	ignoredMode,
 }: MediaItemDetailsProps) {
-	const [isInDB, setIsInDBLocal] = useState(existsInDB);
+	const [isInDBLocal, setIsInDBLocal] = useState(existsInDB);
+	const [isIgnoredLocal, setIsIgnoredLocal] = useState(ignoredInDB);
+	const [ignoreModeLocal, setIgnoreModeLocal] = useState(ignoredMode);
+
 	const router = useRouter();
 	const { setMediaItem } = useMediaStore();
 	const { setSearchQuery } = useSearchQueryStore();
@@ -63,78 +80,78 @@ export function MediaItemDetails({
 	const [isRefreshMetadataModalOpen, setIsRefreshMetadataModalOpen] = useState(false);
 	const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 	const [isManualImportModalOpen, setIsManualImportModalOpen] = useState(false);
+	const [isViewCurrentImagesModalOpen, setIsViewCurrentImagesModalOpen] = useState(false);
 
 	const touchStartXRef = useRef<number | undefined>(undefined);
 	const mouseStartXRef = useRef<number | undefined>(undefined);
 
-	const title = mediaItem?.Title || "";
-	const year = mediaItem?.Year || 0;
-	const contentRating = mediaItem?.ContentRating || "";
-	const mediaItemType = mediaItem?.Type || "";
-	const summary = mediaItem?.Summary || "";
-	const tmdbID = mediaItem?.TMDB_ID || "";
-	const libraryTitle = mediaItem?.LibraryTitle || "";
-	const seasonCount = mediaItemType === "show" ? mediaItem?.Series?.SeasonCount || 0 : 0;
-	const episodeCount = mediaItemType === "show" ? mediaItem?.Series?.EpisodeCount || 0 : 0;
-	const moviePath = mediaItem?.Movie?.File?.Path || "N/A";
-	const movieSize = mediaItem?.Movie?.File?.Size || 0;
-	const movieDuration = mediaItem?.Movie?.File?.Duration || 0;
-	const guids = mediaItem?.Guids || [];
+	const title = mediaItem?.title || "";
+	const year = mediaItem?.year || 0;
+	const contentRating = mediaItem?.content_rating || "";
+	const mediaItemType = mediaItem?.type || "";
+	const summary = mediaItem?.summary || "";
+	const tmdbID = mediaItem?.tmdb_id || "";
+	const libraryTitle = mediaItem?.library_title || "";
+	const seasonCount = mediaItemType === "show" ? mediaItem?.series?.season_count || 0 : 0;
+	const episodeCount = mediaItemType === "show" ? mediaItem?.series?.episode_count || 0 : 0;
+	const moviePath = mediaItem?.movie?.file?.path || "N/A";
+	const movieSize = mediaItem?.movie?.file?.size || 0;
+	const movieDuration = mediaItem?.movie?.file?.duration || 0;
+	const guids = mediaItem?.guids || [];
 
 	// Sync when parent prop changes (e.g. route change or external update)
 	useEffect(() => {
 		setIsInDBLocal(existsInDB);
-	}, [existsInDB]);
+		setIsIgnoredLocal(ignoredInDB || false);
+		setIgnoreModeLocal(ignoredMode || "");
+	}, [existsInDB, ignoredInDB, ignoredMode]);
 
-	const updateInDB = (next: boolean) => {
-		setIsInDBLocal(next); // local optimistic
-		onExistsInDBChange?.(next); // notify parent
+	const updateIgnoredInDB = (next: boolean) => {
+		setIsIgnoredLocal(next); // local optimistic
+	};
+
+	const updateIgnoreModeInDB = (next: string) => {
+		setIgnoreModeLocal(next); // local optimistic
 	};
 
 	const handleSavedSetsPageClick = () => {
-		if (isInDB) {
+		if (isInDBLocal) {
 			setSearchQuery(`${title} Y:${year}: ID:${tmdbID}: L:${libraryTitle}:`);
 			router.push("/saved-sets");
 		}
 	};
 
-	const handleAddToIgnoredClick = async () => {
-		// Create a DBMediaItemWithPosterSets object to add to DB
-		// with minimal required fields
-		const ignoreDBItem: DBMediaItemWithPosterSets = {
-			TMDB_ID: tmdbID,
-			LibraryTitle: libraryTitle,
-			MediaItem: mediaItem as MediaItem,
-			PosterSets: [
-				{
-					PosterSetID: "ignore",
-					PosterSet: {
-						Title: "",
-						ID: "ignore",
-						Type: mediaItem?.Type as "movie" | "show",
-						User: {
-							Name: "",
-						},
-						DateCreated: new Date().toISOString(),
-						DateUpdated: new Date().toISOString(),
-						Status: "",
-					},
-					LastDownloaded: new Date().toISOString(),
-					SelectedTypes: [],
-					AutoDownload: false,
-					ToDelete: false,
-				},
-			],
-		};
-
-		const addToDBResp = await postAddItemToDB(ignoreDBItem);
+	const handleAddToIgnoredClick = async (ignoreMode: string) => {
+		const addToDBResp = await addIgnoreItemToDB(tmdbID, libraryTitle, ignoreMode);
 		if (addToDBResp.status === "error") {
 			toast.error(`Failed to add ${title} to DB`);
 			return;
 		}
 
-		updateInDB(true);
-		toast.success(`Will successfully ignore ${title} in the future`);
+		updateIgnoredInDB(true);
+		updateIgnoreModeInDB(ignoreMode);
+		let toastMessage = "";
+		if (ignoreMode === "always") {
+			toastMessage = `Will always ignore ${title}`;
+		} else if (ignoreMode === "temp") {
+			toastMessage = `Will ignore ${title} until a set is available`;
+		}
+		toast.success(toastMessage);
+	};
+
+	const handleStopIgnoringClick = async () => {
+		if (!mediaItem) {
+			toast.error("Media item data is missing");
+			return;
+		}
+
+		const addToDBResp = await stopIgnoringItemInDB(mediaItem.tmdb_id, mediaItem.library_title);
+		if (addToDBResp.status === "error") {
+			toast.error(`Failed to stop ignoring ${title}`);
+			return;
+		}
+		updateIgnoredInDB(false);
+		toast.success(`No longer ignoring ${title}`);
 	};
 
 	return (
@@ -181,7 +198,8 @@ export function MediaItemDetails({
 						}}
 					>
 						<AssetImage
-							image={`/api/mediaserver/image?ratingKey=${posterImageKeys[currentPosterIndex]}&imageType=poster&cb=${Date.now()}`}
+							image={`/api/images/media/item?rating_key=${mediaItem?.rating_key}&image_rating_key=${posterImageKeys[currentPosterIndex]}&image_type=poster&cb=${Date.now()}`}
+							imageType="url"
 							className="w-[200px] h-auto transition-transform hover:scale-105 select-none"
 						/>
 					</div>
@@ -246,7 +264,7 @@ export function MediaItemDetails({
 							}}
 							className="text-primary-dynamic hover:text-primary underline"
 						>
-							{otherMediaItem.LibraryTitle}
+							{otherMediaItem.library_title}
 						</Link>{" "}
 						Library
 					</Lead>
@@ -254,16 +272,35 @@ export function MediaItemDetails({
 			) : null}
 
 			{/* Show Existence in Database */}
-			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
-				<Lead
-					className={cn("text-md", isInDB ? "hover:cursor-pointer text-green-500" : "text-red-500")}
-					onClick={() => {
-						if (isInDB) handleSavedSetsPageClick();
-					}}
-				>
-					<Database className="inline ml-1 mr-1" /> {isInDB ? "Already in Database" : "Not in Database"}
-				</Lead>
-			</div>
+			{mediaItem && !isIgnoredLocal && (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
+					<Lead
+						className={cn("text-md", isInDBLocal ? "hover:cursor-pointer text-green-500" : "text-red-500")}
+						onClick={() => {
+							if (isInDBLocal) handleSavedSetsPageClick();
+						}}
+					>
+						<Database className="inline ml-1 mr-1" />{" "}
+						{isInDBLocal ? "Already in Database" : "Not in Database"}
+					</Lead>
+				</div>
+			)}
+
+			{/* Show Existence in Database */}
+			{mediaItem && isIgnoredLocal && (
+				<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
+					{ignoreModeLocal === "always" ? (
+						<Lead className="text-md text-red-500">
+							<EyeOffIcon className="inline ml-1 mr-1" size={16} /> This item is set to be always ignored
+						</Lead>
+					) : (
+						<Lead className="text-md text-yellow-500">
+							<EyeClosedIcon className="inline ml-1 mr-1" size={16} /> This item is set to be temporarily
+							ignored until a set is available
+						</Lead>
+					)}
+				</div>
+			)}
 
 			{/* Actions */}
 			<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide mt-2">
@@ -287,20 +324,25 @@ export function MediaItemDetails({
 							<RefreshCcw className="mr-2 h-4 w-4" />
 							Refresh Metadata
 						</DropdownMenuItem>
-
 						<DropdownMenuItem className="cursor-pointer" onSelect={() => setIsRatingModalOpen(true)}>
 							<Star className="mr-2 h-4 w-4" />
 							Rate {mediaItemType === "movie" ? "Movie" : "Show"}
 						</DropdownMenuItem>
-
 						<DropdownMenuItem className="cursor-pointer" onSelect={() => setIsManualImportModalOpen(true)}>
 							<FileIcon className="mr-2 h-4 w-4" />
 							Manual YAML Import
 						</DropdownMenuItem>
-
+						{mediaItem && mediaItem.type === "show" && mediaItem.series && (
+							<DropdownMenuItem
+								className="cursor-pointer"
+								onSelect={() => setIsViewCurrentImagesModalOpen(true)}
+							>
+								<ImageIcon className="mr-2 h-4 w-4" />
+								View Current Images
+							</DropdownMenuItem>
+						)}
 						<DropdownMenuSeparator />
-
-						{isInDB ? (
+						{isInDBLocal ? (
 							<DropdownMenuItem
 								className="cursor-pointer"
 								onSelect={() => {
@@ -311,16 +353,40 @@ export function MediaItemDetails({
 								<Database className="mr-2 h-4 w-4" />
 								View in Saved Sets
 							</DropdownMenuItem>
-						) : (
+						) : isIgnoredLocal ? (
 							<DropdownMenuItem
-								className="cursor-pointer text-destructive focus:text-destructive"
+								className="cursor-pointer"
 								onSelect={() => {
-									void handleAddToIgnoredClick();
+									void handleStopIgnoringClick();
 								}}
 							>
 								<Trash2 className="mr-2 h-4 w-4" />
-								Mark as Ignored
+								Remove Ignore Status
 							</DropdownMenuItem>
+						) : (
+							<>
+								<DropdownMenuItem
+									className="cursor-pointer text-destructive focus:text-destructive"
+									onSelect={() => {
+										void handleAddToIgnoredClick("always");
+									}}
+								>
+									<EyeOffIcon className="text-red-500" size={20} />
+									Always Ignore
+								</DropdownMenuItem>
+
+								{!mediaItem?.has_mediux_sets && (
+									<DropdownMenuItem
+										className="cursor-pointer text-yellow-500 focus:text-yellow-800"
+										onSelect={() => {
+											void handleAddToIgnoredClick("temp");
+										}}
+									>
+										<EyeClosedIcon className="text-yellow-500" size={20} />
+										Ignore Until Set is Available
+									</DropdownMenuItem>
+								)}
+							</>
 						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -403,6 +469,15 @@ export function MediaItemDetails({
 					mediaItem={mediaItem}
 					isOpen={isManualImportModalOpen}
 					onClose={() => setIsManualImportModalOpen(false)}
+				/>
+			)}
+
+			{/* View Current Images Modal */}
+			{mediaItem && mediaItem.type === "show" && mediaItem.series && (
+				<ViewCurrentImagesModal
+					mediaItem={mediaItem}
+					isOpen={isViewCurrentImagesModalOpen}
+					onClose={() => setIsViewCurrentImagesModalOpen(false)}
 				/>
 			)}
 		</div>

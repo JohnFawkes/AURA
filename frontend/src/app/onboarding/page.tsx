@@ -1,7 +1,7 @@
 "use client";
 
-import { updateConfig } from "@/services/settings-onboarding/api-config-update";
-import { finalizeOnboarding } from "@/services/settings-onboarding/api-onboarding-finalize";
+import { finalizeOnboarding } from "@/services/config/api-onboarding-finalize";
+import { updateAppConfig } from "@/services/config/config-update";
 import yaml from "js-yaml";
 import { toast } from "sonner";
 
@@ -23,7 +23,7 @@ import { H2, P } from "@/components/ui/typography";
 
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
-import type { AppConfig } from "@/types/config/config-app";
+import { AppConfig } from "@/types/config/config";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
 interface StepDef {
@@ -42,16 +42,16 @@ const OnboardingPage = () => {
 	}, [status, fetchStatus]);
 
 	const [applyLoading, setApplyLoading] = useState(false);
-	const [configState, setConfigState] = useState<AppConfig>(() => status?.currentSetup || defaultAppConfig());
+	const [configState, setConfigState] = useState<AppConfig>(() => status?.current_setup || defaultAppConfig());
 	const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
 	const [errorSummaryOpen, setErrorSummaryOpen] = useState(false);
 
 	// Keep configState in sync with backend status if it changes
 	useEffect(() => {
-		if (status?.currentSetup) {
-			setConfigState(status.currentSetup);
+		if (status?.current_setup) {
+			setConfigState(status.current_setup);
 		}
-	}, [status?.currentSetup]);
+	}, [status?.current_setup]);
 
 	const updateSectionErrors = useCallback((section: string, errs?: Record<string, string>) => {
 		setValidationErrors((prev) => {
@@ -78,17 +78,17 @@ const OnboardingPage = () => {
 	);
 
 	const updateImagesField = useCallback(
-		<G extends keyof AppConfig["Images"], F extends keyof AppConfig["Images"][G]>(
+		<G extends keyof AppConfig["images"], F extends keyof AppConfig["images"][G]>(
 			group: G,
 			field: F,
-			value: AppConfig["Images"][G][F]
+			value: AppConfig["images"][G][F]
 		) => {
 			setConfigState((prev) => ({
 				...prev,
-				Images: {
-					...prev.Images,
+				images: {
+					...prev.images,
 					[group]: {
-						...prev.Images[group],
+						...prev.images[group],
 						[field]: value,
 					},
 				},
@@ -157,7 +157,7 @@ const OnboardingPage = () => {
 						</div>
 
 						<P className="text-muted-foreground max-w-xl">
-							{status?.configLoaded && (
+							{status?.config_loaded && (
 								<span className="text-destructive">
 									Your configuration file might have some errors.{" "}
 								</span>
@@ -173,12 +173,12 @@ const OnboardingPage = () => {
 				title: "Mediux",
 				render: () => (
 					<ConfigSectionMediux
-						value={configState.Mediux}
+						value={configState.mediux}
 						editing
-						configAlreadyLoaded={status?.configLoaded || false}
+						configAlreadyLoaded={status?.config_loaded || false}
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("Mediux", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("Mediux", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("mediux", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("mediux", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -187,12 +187,12 @@ const OnboardingPage = () => {
 				title: "Media Server",
 				render: () => (
 					<ConfigSectionMediaServer
-						value={configState.MediaServer}
+						value={configState.media_server}
 						editing
-						configAlreadyLoaded={status?.configLoaded || false}
+						configAlreadyLoaded={status?.config_loaded || false}
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("MediaServer", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("MediaServer", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("media_server", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("media_server", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -202,11 +202,11 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionAuth
-						value={configState.Auth}
+						value={configState.auth}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("Auth", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("Auth", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("auth", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("auth", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -215,11 +215,11 @@ const OnboardingPage = () => {
 				title: "Logging",
 				render: () => (
 					<ConfigSectionLogging
-						value={configState.Logging}
+						value={configState.logging}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("Logging", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("Logging", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("logging", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("logging", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -229,12 +229,12 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionImages
-						value={configState.Images}
+						value={configState.images}
 						editing
 						dirtyFields={{}}
 						onChange={updateImagesField}
-						errorsUpdate={(errs) => updateSectionErrors("Images", errs as Record<string, string>)}
-						mediaServerType={configState.MediaServer.Type}
+						errorsUpdate={(errs) => updateSectionErrors("images", errs as Record<string, string>)}
+						mediaServerType={configState.media_server.type}
 					/>
 				),
 			},
@@ -244,11 +244,11 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionAutoDownload
-						value={configState.AutoDownload}
+						value={configState.auto_download}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("AutoDownload", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("AutoDownload", errs as Record<string, string>)}
+						onChange={(f, v) => updateSectionField("auto_download", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("auto_download", errs as Record<string, string>)}
 					/>
 				),
 			},
@@ -258,13 +258,13 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionSonarrRadarr
-						value={configState.SonarrRadarr}
+						value={configState.sonarr_radarr}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("SonarrRadarr", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("SonarrRadarr", errs as Record<string, string>)}
-						configAlreadyLoaded={status?.configLoaded || false}
-						libraries={configState.MediaServer.Libraries || []}
+						onChange={(f, v) => updateSectionField("sonarr_radarr", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("sonarr_radarr", errs as Record<string, string>)}
+						configAlreadyLoaded={status?.config_loaded || false}
+						libraries={configState.media_server.libraries || []}
 					/>
 				),
 			},
@@ -274,20 +274,20 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionLabelsAndTags
-						value={configState.LabelsAndTags}
+						value={configState.labels_and_tags}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("LabelsAndTags", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("LabelsAndTags", errs as Record<string, string>)}
-						mediaServerType={configState.MediaServer.Type}
+						onChange={(f, v) => updateSectionField("labels_and_tags", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("labels_and_tags", errs as Record<string, string>)}
+						mediaServerType={configState.media_server.type}
 						srOptions={
 							Array.from(
 								new Set(
-									(Array.isArray(configState.SonarrRadarr?.Applications)
-										? configState.SonarrRadarr.Applications
+									(Array.isArray(configState.sonarr_radarr?.applications)
+										? configState.sonarr_radarr.applications
 										: []
 									)
-										.map((app) => app.Type)
+										.map((app) => app.type)
 										.filter((type) => !!type)
 								)
 							) || []
@@ -301,12 +301,12 @@ const OnboardingPage = () => {
 				optional: true,
 				render: () => (
 					<ConfigSectionNotifications
-						value={configState.Notifications}
+						value={configState.notifications}
 						editing
 						dirtyFields={{}}
-						onChange={(f, v) => updateSectionField("Notifications", f, v)}
-						errorsUpdate={(errs) => updateSectionErrors("Notifications", errs as Record<string, string>)}
-						configAlreadyLoaded={status?.configLoaded || false}
+						onChange={(f, v) => updateSectionField("notifications", f, v)}
+						errorsUpdate={(errs) => updateSectionErrors("notifications", errs as Record<string, string>)}
+						configAlreadyLoaded={status?.config_loaded || false}
 					/>
 				),
 			},
@@ -328,17 +328,17 @@ const OnboardingPage = () => {
 			},
 		],
 		[
-			configState.Auth,
-			configState.AutoDownload,
-			configState.Images,
-			configState.LabelsAndTags,
-			configState.Logging,
-			configState.MediaServer,
-			configState.Mediux,
-			configState.Notifications,
-			configState.SonarrRadarr,
+			configState.auth,
+			configState.auto_download,
+			configState.images,
+			configState.labels_and_tags,
+			configState.logging,
+			configState.media_server,
+			configState.mediux,
+			configState.notifications,
+			configState.sonarr_radarr,
 			reviewYaml,
-			status?.configLoaded,
+			status?.config_loaded,
 			updateImagesField,
 			updateSectionErrors,
 			updateSectionField,
@@ -362,12 +362,17 @@ const OnboardingPage = () => {
 		setApplyLoading(true);
 
 		try {
-			const resp = await updateConfig(configState);
+			const resp = await updateAppConfig(configState);
 			if (resp.status === "success") {
 				if (resp.data) {
-					const finalizeResp = await finalizeOnboarding(resp.data);
+					const finalizeResp = await finalizeOnboarding(resp.data.current_setup);
 					if (finalizeResp.status === "success") {
 						toast.success("Configuration applied successfully, redirecting...");
+						if (configState.auth.enabled) {
+							localStorage.removeItem("aura-auth-token");
+							setTimeout(() => (window.location.href = "/login"), 3000);
+							return;
+						}
 						setTimeout(() => (window.location.href = "/"), 50);
 					} else {
 						toast.error("Failed to finalize onboarding.");

@@ -1,13 +1,9 @@
 "use client";
 
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { checkMediaServerNewInfoConnectionStatus } from "@/services/settings-onboarding/api-mediaserver-connection";
-import {
-	PlexServersResponse,
-	fetchCheckAuthStatusWithPlex,
-	fetchMediaServerLibraryOptions,
-	fetchPinCodeAndIDFromBackend,
-} from "@/services/settings-onboarding/api-mediaserver-library-options";
+import { PlexServersResponse, checkAuthStatusWithPlex, getPlexPinCodeAndIDFromBackend } from "@/services/auth/plex";
+import { getLibrarySectionOptions } from "@/services/mediaserver/library-get-all";
+import { validateMediaServerInfo } from "@/services/validation/api-mediaserver-connection";
 import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -34,7 +30,7 @@ import {
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigMediaServer, AppConfigMediaServerLibrary } from "@/types/config/config-app";
+import { AppConfigMediaServer, AppConfigMediaServerLibrary } from "@/types/config/config";
 
 interface ConfigSectionMediaServerProps {
 	value: AppConfigMediaServer;
@@ -71,15 +67,15 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 	// Normalize libraries to array (avoid null errors)
 	const libraries: AppConfigMediaServerLibrary[] = React.useMemo(
-		() => (Array.isArray(value.Libraries) ? value.Libraries : []),
-		[value.Libraries]
+		() => (Array.isArray(value.libraries) ? value.libraries : []),
+		[value.libraries]
 	);
 
 	useEffect(() => {
-		if (!Array.isArray(value.Libraries)) {
-			onChange("Libraries", [] as AppConfigMediaServerLibrary[]);
+		if (!Array.isArray(value.libraries)) {
+			onChange("libraries", [] as AppConfigMediaServerLibrary[]);
 		}
-	}, [onChange, value.Libraries]);
+	}, [onChange, value.libraries]);
 
 	const [remoteTokenError, setRemoteTokenError] = useState<string | null>(null);
 	const [testingToken, setTestingToken] = useState(false);
@@ -104,7 +100,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 	const [libraryFetchLoading, setLibraryFetchLoading] = useState(false);
 
-	const typeNormalized = value.Type.trim();
+	const typeNormalized = value.type.trim();
 	const newLibRef = useRef<HTMLInputElement | null>(null);
 	const hasRunInitialValidation = useRef(false);
 
@@ -112,37 +108,37 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		const errs: Partial<Record<keyof AppConfigMediaServer, string>> = {};
 
 		// Type
-		if (!typeNormalized) errs.Type = "Type is required.";
-		else if (!SERVER_TYPES.includes(typeNormalized)) errs.Type = "Unsupported type.";
+		if (!typeNormalized) errs.type = "Type is required.";
+		else if (!SERVER_TYPES.includes(typeNormalized)) errs.type = "Unsupported type.";
 
 		// URL
-		if (!value.URL.trim()) errs.URL = "URL is required.";
+		if (!value.url.trim()) errs.url = "URL is required.";
 		else {
-			const urlErr = ValidateURL(value.URL.trim());
-			if (urlErr) errs.URL = urlErr;
+			const urlErr = ValidateURL(value.url.trim());
+			if (urlErr) errs.url = urlErr;
 		}
 
 		// Token
-		if (!value.Token.trim()) errs.Token = "Token is required.";
-		if (remoteTokenError) errs.Token = remoteTokenError;
+		if (!value.api_token.trim()) errs.api_token = "Token is required.";
+		if (remoteTokenError) errs.api_token = remoteTokenError;
 
 		// User ID requirement
-		if (USER_ID_REQUIRED_TYPES.has(typeNormalized) && !value.UserID?.trim()) {
-			errs.UserID = "User ID should be set automatically after URL & Token are valid.";
+		if (USER_ID_REQUIRED_TYPES.has(typeNormalized) && !value.user_id?.trim()) {
+			errs.user_id = "User ID should be set automatically after URL & Token are valid.";
 		}
 
 		// Libraries
 		if (libraries.length === 0) {
-			errs.Libraries = "Add at least one library.";
+			errs.libraries = "Add at least one library.";
 		} else {
-			if (libraries.some((l) => !l.Name?.trim())) errs.Libraries = "Library names cannot be empty.";
-			if (!errs.Libraries) {
+			if (libraries.some((l) => !l.title?.trim())) errs.libraries = "Library names cannot be empty.";
+			if (!errs.libraries) {
 				const seen = new Set<string>();
 				for (const l of libraries) {
-					const n = (l.Name || "").trim().toLowerCase();
+					const n = (l.title || "").trim().toLowerCase();
 					if (!n) continue;
 					if (seen.has(n)) {
-						errs.Libraries = "Duplicate library names are not allowed.";
+						errs.libraries = "Duplicate library names are not allowed.";
 						break;
 					}
 					seen.add(n);
@@ -151,7 +147,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		}
 
 		return errs;
-	}, [typeNormalized, value.URL, value.Token, value.UserID, libraries, remoteTokenError]);
+	}, [typeNormalized, value.url, value.api_token, value.user_id, libraries, remoteTokenError]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -165,25 +161,25 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	// Reset remote token error when URL or Token changes
 	useEffect(() => {
 		setRemoteTokenError(null);
-	}, [value.Token, value.URL]);
+	}, [value.api_token, value.url]);
 
 	useEffect(() => {
-		if (editing && value.URL) {
+		if (editing && value.url) {
 			runRemoteValidation();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [value.URL]);
+	}, [value.url]);
 
 	const runRemoteValidation = useCallback(
 		async (showToast = true) => {
 			setConnectionStatus({ status: "unknown", color: GetConnectionColor("unknown") });
 			const current = valueRef.current;
-			if (!current.Token.trim()) {
+			if (!current.api_token.trim()) {
 				setRemoteTokenError("Token is required.");
 				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
 			}
-			if (!current.URL.trim()) {
+			if (!current.url.trim()) {
 				setRemoteTokenError("URL is required.");
 				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
@@ -191,7 +187,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 			setTestingToken(true);
 			const start = Date.now();
-			const { ok, message, data } = await checkMediaServerNewInfoConnectionStatus(current, showToast);
+			const { valid, message, media_server } = await validateMediaServerInfo(current, showToast);
 			const elapsed = Date.now() - start;
 			const minDelay = 400; // milliseconds
 
@@ -200,11 +196,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			}
 			setTestingToken(false);
 
-			if (ok) {
+			if (valid) {
 				setRemoteTokenError(null);
 				setConnectionStatus({ status: "ok", color: GetConnectionColor("ok") });
-				if (data?.UserID && data.UserID !== current.UserID) {
-					onChange("UserID", data.UserID);
+				if (media_server && media_server.user_id && media_server.user_id !== current.user_id) {
+					onChange("user_id", media_server.user_id);
 				}
 			} else {
 				setRemoteTokenError(message || "Token invalid");
@@ -225,41 +221,41 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	const addLibraryByName = (name: string) => {
 		const trimmed = name.trim();
 		if (!trimmed) return;
-		if (libraries.some((l) => l.Name.trim().toLowerCase() === trimmed.toLowerCase())) return;
-		onChange("Libraries", [...libraries, { Name: trimmed, SectionID: "", Type: "" }]);
+		if (libraries.some((l) => l.title.trim().toLowerCase() === trimmed.toLowerCase())) return;
+		onChange("libraries", [...libraries, { title: trimmed, id: "", type: "" }]);
 	};
 
 	const removeLibraryByIndex = (index: number) => {
 		onChange(
-			"Libraries",
+			"libraries",
 			libraries.filter((_, i) => i !== index)
 		);
 	};
 
 	const replaceLibraries = (names: string[]) => {
 		onChange(
-			"Libraries",
-			names.map((n) => ({ Name: n, SectionID: "", Type: "" }))
+			"libraries",
+			names.map((n) => ({ title: n, id: "", type: "" }))
 		);
 	};
 
 	const fetchServerLibraries = async () => {
 		if (!editing || libraryFetchLoading) return;
 		setLibraryFetchLoading(true);
-		const { ok, data } = await fetchMediaServerLibraryOptions(value);
+		const resp = await getLibrarySectionOptions(value);
 		setLibraryFetchLoading(false);
-		if (!ok || !Array.isArray(data)) {
+		if (resp.status !== "success" || !Array.isArray(resp.data)) {
 			return;
 		}
-		replaceLibraries(data);
+		replaceLibraries(resp.data.map((lib) => lib.title));
 	};
 
 	// Plex OAuth Flow (Get PIN and ID)
 	const handleGetPlexPinAndID = async () => {
-		const { ok, pinCode, plexID } = await fetchPinCodeAndIDFromBackend();
+		const { ok, plex_pin, plex_id } = await getPlexPinCodeAndIDFromBackend();
 		if (!ok) return;
-		setPlexPIN(pinCode);
-		setPlexID(plexID);
+		setPlexPIN(plex_pin);
+		setPlexID(plex_id);
 	};
 
 	// Plex OAuth Flow (Open Plex OAuth Window)
@@ -286,12 +282,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 		if (plexID === "" || plexPIN === "" || !plexOAuthWindow) return;
 
 		const interval = setInterval(async () => {
-			const { ok, authenticated, authToken, connectionsAvailable } = await fetchCheckAuthStatusWithPlex(plexID);
+			const { ok, authenticated, auth_token, connections_available } = await checkAuthStatusWithPlex(plexID);
 			if (!ok) return;
 			if (authenticated) {
 				// Set the token and available connections
-				onChange("Token", authToken || "");
-				setPlexConnectionsAvailable(connectionsAvailable);
+				onChange("api_token", auth_token || "");
+				setPlexConnectionsAvailable(connections_available || []);
 				setSignInWithPlex(true);
 				// Close the OAuth window
 				if (plexOAuthWindow && !plexOAuthWindow.closed) {
@@ -305,13 +301,13 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 	}, [plexID, plexPIN, plexOAuthWindow, onChange]);
 
 	let displayValue = "Select server connection...";
-	if (value.URL) {
+	if (value.url) {
 		try {
-			const url = new URL(value.URL);
+			const url = new URL(value.url);
 			const showPort = url.port && url.port !== "443";
 			displayValue = showPort ? `${url.hostname}:${url.port}` : url.hostname;
 		} catch {
-			displayValue = value.URL;
+			displayValue = value.url;
 		}
 	}
 
@@ -354,17 +350,17 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				</div>
 				<Select
 					disabled={!editing}
-					value={value.Type}
+					value={value.type}
 					onValueChange={(v) => {
-						value.URL = "";
-						value.Token = "";
-						value.UserID = "";
-						value.Libraries = [];
+						value.url = "";
+						value.api_token = "";
+						value.user_id = "";
+						value.libraries = [];
 						setPlexID("");
 						setPlexPIN("");
 						setPlexConnectionsAvailable([]);
 						setSignInWithPlex(false);
-						onChange("Type", v);
+						onChange("type", v);
 						if (v === "Plex") {
 							handleGetPlexPinAndID();
 						}
@@ -372,7 +368,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 				>
 					<SelectTrigger
 						id="media-server-type-trigger"
-						className={cn("w-full", dirtyFields.Type && "border-amber-500")}
+						className={cn("w-full", dirtyFields.type && "border-amber-500")}
 					>
 						<SelectValue placeholder="Select type..." />
 					</SelectTrigger>
@@ -386,11 +382,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						<SelectScrollDownButton />
 					</SelectContent>
 				</Select>
-				{errors.Type && <p className="text-xs text-red-500">{errors.Type}</p>}
+				{errors.type && <p className="text-xs text-red-500">{errors.type}</p>}
 			</div>
 
 			{/* If the Type is Plex, then show a Sign in with Plex button here */}
-			{editing && value.Type === "Plex" && plexPIN && plexID && plexConnectionsAvailable.length === 0 && (
+			{editing && value.type === "Plex" && plexPIN && plexID && plexConnectionsAvailable.length === 0 && (
 				<div className="flex flex-col items-center">
 					<div
 						className="flex flex-row items-center justify-center rounded-lg"
@@ -428,7 +424,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 			)}
 
 			{/* URL */}
-			{signInWithPlex && value.Type === "Plex" && plexConnectionsAvailable.length > 0 ? (
+			{signInWithPlex && value.type === "Plex" && plexConnectionsAvailable.length > 0 ? (
 				<div className={cn("space-y-1")}>
 					<div className="flex items-center justify-between">
 						<Label>Server Connection</Label>
@@ -441,14 +437,14 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
 					<Select
 						disabled={!editing}
-						value={value.URL}
+						value={value.url}
 						onValueChange={(v) => {
-							onChange("URL", v);
+							onChange("url", v);
 						}}
 					>
 						<SelectTrigger
 							id="media-server-connection-trigger"
-							className={cn("w-full", dirtyFields.URL && "border-amber-500")}
+							className={cn("w-full", dirtyFields.url && "border-amber-500")}
 						>
 							<SelectValue placeholder={displayValue} />
 						</SelectTrigger>
@@ -487,7 +483,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						</SelectContent>
 					</Select>
 
-					{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
+					{errors.url && <p className="text-xs text-red-500">{errors.url}</p>}
 				</div>
 			) : (
 				<div className={cn("space-y-1")}>
@@ -498,10 +494,10 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 								<p className="font-medium mb-1">Base server URL</p>
 								<p>Examples:</p>
 								<ul className="list-disc list-inside mb-1">
-									<li>https://{value.Type.toLowerCase()}.domain.com</li>
-									<li>http://192.168.1.10:{value.Type === "Plex" ? "32400" : "8096"}</li>
+									<li>https://{value.type.toLowerCase()}.domain.com</li>
+									<li>http://192.168.1.10:{value.type === "Plex" ? "32400" : "8096"}</li>
 									<li>
-										http://{value.Type.toLowerCase()}:{value.Type === "Plex" ? "32400" : "8096"}
+										http://{value.type.toLowerCase()}:{value.type === "Plex" ? "32400" : "8096"}
 									</li>
 								</ul>
 								<p>Rules:</p>
@@ -517,13 +513,13 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					<Input
 						disabled={!editing}
 						placeholder="https://server.example.com"
-						value={value.URL}
-						onChange={(e) => onChange("URL", e.target.value)}
+						value={value.url}
+						onChange={(e) => onChange("url", e.target.value)}
 						onBlur={() => runRemoteValidation()}
-						className={cn("w-full", dirtyFields.URL && "border-amber-500")}
+						className={cn("w-full", dirtyFields.url && "border-amber-500")}
 					/>
 
-					{errors.URL && <p className="text-xs text-red-500">{errors.URL}</p>}
+					{errors.url && <p className="text-xs text-red-500">{errors.url}</p>}
 				</div>
 			)}
 
@@ -539,19 +535,19 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					)}
 				</div>
 				<Input
-					disabled={!editing || (value.Type === "Plex" && signInWithPlex)}
+					disabled={!editing || (value.type === "Plex" && signInWithPlex)}
 					type="text"
 					placeholder="API token"
-					value={value.Token}
-					onChange={(e) => onChange("Token", e.target.value)}
+					value={value.api_token}
+					onChange={(e) => onChange("api_token", e.target.value)}
 					onBlur={() => runRemoteValidation()}
-					className={cn("w-full", dirtyFields.Token && "border-amber-500")}
+					className={cn("w-full", dirtyFields.api_token && "border-amber-500")}
 				/>
-				{errors.Token && <p className="text-xs text-red-500">{errors.Token}</p>}
+				{errors.api_token && <p className="text-xs text-red-500">{errors.api_token}</p>}
 			</div>
 
 			{/* User ID (Emby / Jellyfin) */}
-			{USER_ID_REQUIRED_TYPES.has(value.Type) && (
+			{USER_ID_REQUIRED_TYPES.has(value.type) && (
 				<div className={cn("space-y-1")}>
 					<div className="flex items-center justify-between">
 						<Label>User ID</Label>
@@ -566,11 +562,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 					</div>
 					<Input
 						disabled={true}
-						value={value.UserID ?? ""}
+						value={value.user_id ?? ""}
 						placeholder="Emby/Jellyfin user id"
-						className={cn("w-full", dirtyFields.UserID && "border-amber-500")}
+						className={cn("w-full", dirtyFields.user_id && "border-amber-500")}
 					/>
-					{errors.UserID && <p className="text-xs text-red-500">{errors.UserID}</p>}
+					{errors.user_id && <p className="text-xs text-red-500">{errors.user_id}</p>}
 				</div>
 			)}
 
@@ -612,15 +608,15 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 								editing
 									? "bg-secondary text-secondary-foreground hover:bg-red-500 hover:text-white"
 									: "bg-muted text-muted-foreground",
-								dirtyFields.Libraries && "border-amber-500"
+								dirtyFields.libraries && "border-amber-500"
 							)}
 							onClick={() => {
 								if (!editing) return;
 								removeLibraryByIndex(i);
 							}}
-							title={editing ? "Remove library" : lib.Name}
+							title={editing ? "Remove library" : lib.title}
 						>
-							{lib.Name}
+							{lib.title}
 						</Badge>
 					))}
 
@@ -653,7 +649,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 						</form>
 					)}
 				</div>
-				{errors.Libraries && <p className="text-xs text-red-500">{errors.Libraries}</p>}
+				{errors.libraries && <p className="text-xs text-red-500">{errors.libraries}</p>}
 			</div>
 		</Card>
 	);

@@ -1,10 +1,8 @@
-import apiClient from "@/services/api-client";
-
 import { useEffect, useState } from "react";
 
 import { AssetImage } from "@/components/shared/asset-image";
 
-import { log } from "@/lib/logger";
+import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
 import { Guid } from "@/types/media-and-posters/media-item-and-library";
 
@@ -52,6 +50,29 @@ type MediaItemRatingsProps = {
 
 export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatingsProps) {
 	const [mediuxURL, setMediuxURL] = useState<string>("");
+	const { status } = useOnboardingStore();
+	const mediuxSiteLink = status?.mediux_site_link || "https://mediux.io";
+
+	useEffect(() => {
+		const tmdbID = guids?.find((g) => g.provider === "tmdb")?.id;
+		if (!tmdbID) {
+			setMediuxURL("");
+			return;
+		}
+
+		if (mediuxSiteLink.endsWith("mediux.pro")) {
+			// https://mediux.pro/[itemType]s/tmdbID
+			setMediuxURL(`${mediuxSiteLink}/${mediaItemType}s/${tmdbID}`);
+			return;
+		} else if (mediuxSiteLink.endsWith("mediux.io")) {
+			// https://mediux.io/[itemType]/tmdbID
+			setMediuxURL(`${mediuxSiteLink}/${mediaItemType}/${tmdbID}`);
+			return;
+		}
+
+		// Unknown host: don't render the link
+		setMediuxURL("");
+	}, [mediuxSiteLink, guids, mediaItemType]);
 
 	const guidMap: { [provider: string]: ProviderInfo } = {};
 
@@ -63,53 +84,35 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 	};
 
 	guids.forEach((guid: Guid) => {
-		if (guid.Provider) {
-			const providerInfo = providerLogoMap[guid.Provider];
+		if (guid.provider) {
+			const providerInfo = providerLogoMap[guid.provider];
 			if (providerInfo) {
-				guidMap[guid.Provider] = {
-					id: guid.ID || "",
-					rating: guids.find((g) => g.Provider === guid.Provider)?.Rating || "",
+				guidMap[guid.provider] = {
+					id: guid.id || "",
+					rating: guids.find((g) => g.provider === guid.provider)?.rating || "",
 					logoUrl: providerInfo.logoUrl,
 					linkUrl:
-						guid.Provider === "tvdb"
+						guid.provider === "tvdb"
 							? `https://www.thetvdb.com/dereferrer/${
 									mediaItemType === "show" ? "series" : "movie"
-								}/${guid.ID}`
-							: guid.Provider === "tmdb"
+								}/${guid.id}`
+							: guid.provider === "tmdb"
 								? mediaItemType === "show"
-									? `https://www.themoviedb.org/tv/${guid.ID}`
-									: `https://www.themoviedb.org/movie/${guid.ID}`
-								: guid.Provider === "rottentomatoes"
+									? `https://www.themoviedb.org/tv/${guid.id}`
+									: `https://www.themoviedb.org/movie/${guid.id}`
+								: guid.provider === "rottentomatoes"
 									? `https://www.rottentomatoes.com/${mediaItemType === "show" ? "tv" : "m"}/${convertTitleToSlug(title)}`
-									: guid.Provider === "imdb"
-										? `https://www.imdb.com/title/${guid.ID}`
-										: guid.Provider === "community"
+									: guid.provider === "imdb"
+										? `https://www.imdb.com/title/${guid.id}`
+										: guid.provider === "community"
 											? ""
 											: // Default case for any other provider
-												`${providerInfo.urlPrefix}${guid.ID}`,
+												`${providerInfo.urlPrefix}${guid.id}`,
 				};
 			}
 		}
 	});
-	const tmdbID = guids?.find((g) => g.Provider === "tmdb")?.ID;
-
-	// On Load -- Set the MediUX URL
-	useEffect(() => {
-		async function fetchMediuxURL() {
-			if (tmdbID && (mediaItemType === "movie" || mediaItemType === "show")) {
-				const response = await apiClient.get<{
-					data: { status: string; exists: boolean; url: string };
-				}>(`/mediux/check-link?itemType=${mediaItemType}&tmdbID=${tmdbID}`);
-				if (response.data.data.url) {
-					setMediuxURL(response.data.data.url);
-				}
-				log("INFO", "MediaItemRatings", "Fetched MediUX URL", `Found: ${response.data.data.exists}`, {
-					response: response.data.data,
-				});
-			}
-		}
-		fetchMediuxURL();
-	}, [tmdbID, mediaItemType]);
+	const tmdbID = guids?.find((g) => g.provider === "tmdb")?.id;
 
 	return (
 		<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
@@ -136,6 +139,7 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 							<a href={info.linkUrl!} target="_blank" rel="noopener noreferrer">
 								<AssetImage
 									image={info.logoUrl}
+									imageType="url"
 									aspect="logo"
 									className="relative mt-2 w-[40px] h-[30px]"
 									imageClassName="object-contain"
@@ -148,8 +152,10 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 						<>
 							<AssetImage
 								image={info.logoUrl}
-								className="relative w-[35px] h-[30px]"
-								imageClassName="object-fill"
+								imageType="url"
+								aspect="logo"
+								className="relative mt-2 w-[40px] h-[30px]"
+								imageClassName="object-contain"
 							/>
 							{/* Only display rating if it exists */}
 							{info.rating && <span className="text-sm">{info.rating}</span>}
@@ -162,8 +168,9 @@ export function MediaItemRatings({ guids, mediaItemType, title }: MediaItemRatin
 				<a href={mediuxURL} target="_blank" rel="noopener noreferrer" className="border-none">
 					<AssetImage
 						image={"/mediux_logo.svg"}
+						imageType="url"
 						aspect="logo"
-						className="relative lg:mt-5 w-[50px] h-[45px]"
+						className="relative sm:mt-5 w-[50px] h-[45px]"
 						imageClassName="object-contain border-none"
 					/>
 				</a>

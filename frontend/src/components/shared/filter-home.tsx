@@ -26,15 +26,23 @@ import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
 import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
-import { FILTER_IN_DB_OPTIONS, TYPE_FILTER_IN_DB_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import {
+	FILTER_IGNORED_OPTIONS,
+	FILTER_IN_DB_OPTIONS,
+	TYPE_FILTER_IGNORED_OPTIONS,
+	TYPE_FILTER_IN_DB_OPTIONS,
+	TYPE_ITEMS_PER_PAGE_OPTIONS,
+} from "@/types/ui-options";
 
 type HomeFilterProps = {
 	// Filtering
 	librarySections: LibrarySection[];
 	filteredLibraries: string[];
 	setFilteredLibraries: (libs: string[]) => void;
-	filterInDB: string;
+	filterInDB: TYPE_FILTER_IN_DB_OPTIONS;
 	setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
+	filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
+	setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
 
 	// Sorting
 	hasUpdatedAt: boolean;
@@ -55,6 +63,8 @@ function FilterHomeContent({
 	setFilteredLibraries,
 	filterInDB,
 	setFilterInDB,
+	filterIgnored,
+	setFilterIgnored,
 
 	hasUpdatedAt,
 	sortOption,
@@ -190,23 +200,25 @@ function FilterHomeContent({
 					>
 						{librarySections.map((section) => (
 							<Badge
-								key={section.Title}
+								key={section.title}
 								className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
-								variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
+								variant={filteredLibraries.includes(section.title) ? "default" : "outline"}
 								onClick={() => {
-									if (filteredLibraries.includes(section.Title)) {
-										setFilteredLibraries(filteredLibraries.filter((lib) => lib !== section.Title));
+									if (filteredLibraries.includes(section.title)) {
+										setFilteredLibraries(filteredLibraries.filter((lib) => lib !== section.title));
 									} else {
-										setFilteredLibraries([...filteredLibraries, section.Title]);
+										setFilteredLibraries([...filteredLibraries, section.title]);
 									}
+									setCurrentPage(1);
 								}}
 							>
-								{section.Title}
+								{section.title}
 							</Badge>
 						))}
 					</ToggleGroup>
 					<Separator className="my-4 w-full" />
 				</>
+
 				{/* In-Database Filter */}
 				<div className="flex flex-col">
 					<Label className="text-md font-semibold mb-1">In-Database Filter</Label>
@@ -239,10 +251,62 @@ function FilterHomeContent({
 										setFilterInDB("all");
 									} else {
 										setFilterInDB(option as TYPE_FILTER_IN_DB_OPTIONS);
+										setFilterIgnored("none");
 									}
+									setCurrentPage(1);
 								}}
 							>
 								{option === "all" ? "All Items" : option === "inDB" ? "In Database" : "Not In Database"}
+							</Badge>
+						))}
+					</ToggleGroup>
+					<Separator className="my-4 w-full" />
+				</div>
+
+				{/* Ignored Filter */}
+				<div className="flex flex-col">
+					<Label className="text-md font-semibold mb-1">Ignored Filter</Label>
+					<ToggleGroup
+						type="single"
+						className="flex flex-wrap gap-2 ml-2"
+						value={filterIgnored}
+						onValueChange={(value) => {
+							if (value) {
+								setFilterIgnored(value as TYPE_FILTER_IGNORED_OPTIONS);
+							}
+						}}
+					>
+						{FILTER_IGNORED_OPTIONS.map((option) => (
+							<Badge
+								key={option}
+								className={cn(
+									"cursor-pointer text-sm active:scale-95 hover:brightness-120",
+									filterIgnored === option &&
+										option === "none" &&
+										"bg-primary text-primary-foreground",
+									filterIgnored === option &&
+										option === "always" &&
+										"bg-red-500 text-primary-foreground",
+									filterIgnored === option &&
+										option === "temp" &&
+										"bg-yellow-500 text-primary-foreground"
+								)}
+								variant={filterIgnored === option ? "default" : "outline"}
+								onClick={() => {
+									if (filterIgnored === option) {
+										setFilterIgnored("none");
+									} else {
+										setFilterIgnored(option as TYPE_FILTER_IGNORED_OPTIONS);
+										setFilterInDB("all");
+									}
+									setCurrentPage(1);
+								}}
+							>
+								{option === "none"
+									? "None"
+									: option === "always"
+										? "Always Ignored"
+										: "Temporarily Ignored"}
 							</Badge>
 						))}
 					</ToggleGroup>
@@ -258,6 +322,8 @@ export function FilterHome({
 	setFilteredLibraries,
 	filterInDB,
 	setFilterInDB,
+	filterIgnored,
+	setFilterIgnored,
 
 	hasUpdatedAt,
 	sortOption,
@@ -306,6 +372,8 @@ export function FilterHome({
 					setFilteredLibraries={setFilteredLibraries}
 					filterInDB={filterInDB}
 					setFilterInDB={setFilterInDB}
+					filterIgnored={filterIgnored}
+					setFilterIgnored={setFilterIgnored}
 					hasUpdatedAt={hasUpdatedAt}
 					sortOption={sortOption}
 					setSortOption={setSortOption}

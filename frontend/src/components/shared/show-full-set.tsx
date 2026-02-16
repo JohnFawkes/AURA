@@ -1,79 +1,69 @@
+import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { ReturnErrorMessage } from "@/services/api-error-return";
+import { CalendarDays, User } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
 import { AssetImage } from "@/components/shared/asset-image";
+import { hasEpisode, hasSeason, isInServer } from "@/components/shared/carousel-display";
 import { DimmedBackground } from "@/components/shared/dimmed_backdrop";
-import DownloadModal, { DownloadModalProps } from "@/components/shared/download-modal";
+import DownloadModal from "@/components/shared/download-modal";
 import { ErrorMessage } from "@/components/shared/error-message";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { H1, Lead } from "@/components/ui/typography";
 
 import { log } from "@/lib/logger";
+import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
+import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { PosterFile, PosterSet } from "@/types/media-and-posters/poster-sets";
+import { BaseSetInfo, ImageFile, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
-export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
-	setType,
-	setTitle,
-	setAuthor,
-	setID,
-	posterSets,
-}) => {
-	const allPosters: PosterFile[] = [];
-	const allBackdrops: PosterFile[] = [];
-	const seasonPostersByShow: Record<string, PosterFile[]> = {};
-	const titleCardsByShowAndSeason: Record<string, Record<number, PosterFile[]>> = {};
+export const ShowFullSetsDisplay: React.FC<{
+	baseSetInfo: BaseSetInfo;
+	posterSets: SetRef[];
+	includedItems?: { [tmdb_id: string]: IncludedItem };
+	dimNotFound?: boolean;
+}> = ({ baseSetInfo, posterSets, includedItems = {}, dimNotFound = false }) => {
+	const allPosters: ImageFile[] = [];
+	const allBackdrops: ImageFile[] = [];
+	const seasonPostersByShow: Record<string, ImageFile[]> = {};
+	const titleCardsByShowAndSeason: Record<string, Record<number, ImageFile[]>> = {};
 
 	if (!posterSets || posterSets.length === 0) {
 		return <ErrorMessage error={ReturnErrorMessage<string>("No Poster Sets found")} />;
 	}
 
-	posterSets.forEach((posterSet: PosterSet) => {
+	posterSets.forEach((item: SetRef) => {
 		// All Posters are the poster and other posters
-		if (posterSet.Poster) {
-			allPosters.push(posterSet.Poster as PosterFile);
-		}
-		if (posterSet.OtherPosters) {
-			allPosters.push(...posterSet.OtherPosters);
-		}
+		for (const image of item.images || []) {
+			if (image.type === "poster") {
+				allPosters.push(image as ImageFile);
+			} else if (image.type === "backdrop") {
+				allBackdrops.push(image as ImageFile);
+			} else if (image.type === "season_poster" || image.type === "special_season_poster") {
+				const showTitle = includedItems?.[image.item_tmdb_id]?.mediux_info.title || "Unknown Show";
 
-		// All Backdrops are the backdrop and other backdrops
-		if (posterSet.Backdrop) {
-			allBackdrops.push(posterSet.Backdrop as PosterFile);
-		}
-		if (posterSet.OtherBackdrops) {
-			allBackdrops.push(...posterSet.OtherBackdrops);
-		}
-
-		// Season Posters by Show
-		if (posterSet.SeasonPosters) {
-			posterSet.SeasonPosters.forEach((poster) => {
-				if (poster.Type === "seasonPoster" || poster.Type === "specialSeasonPoster") {
-					const showTitle = poster.Show?.Title || "";
-					if (!seasonPostersByShow[showTitle]) {
-						seasonPostersByShow[showTitle] = [];
-					}
-					seasonPostersByShow[showTitle].push(poster as PosterFile);
+				if (!seasonPostersByShow[showTitle]) {
+					seasonPostersByShow[showTitle] = [];
 				}
-			});
-		}
-		// Title Cards by Show and Season
-		if (posterSet.TitleCards) {
-			posterSet.TitleCards.forEach((card) => {
-				const showTitle = card.Show?.Title || "";
-				const seasonNumber = card.Episode?.SeasonNumber ?? "Unknown Season";
+				seasonPostersByShow[showTitle].push(image as ImageFile);
+			} else if (image.type === "titlecard") {
+				const showTitle = includedItems?.[image.item_tmdb_id]?.mediux_info.title || "Unknown Show";
+				const seasonNumber = (image.season_number as number) || 0;
 
 				if (!titleCardsByShowAndSeason[showTitle]) {
 					titleCardsByShowAndSeason[showTitle] = {};
 				}
-				if (!titleCardsByShowAndSeason[showTitle][seasonNumber as number]) {
-					titleCardsByShowAndSeason[showTitle][seasonNumber as number] = [];
+				if (!titleCardsByShowAndSeason[showTitle][seasonNumber]) {
+					titleCardsByShowAndSeason[showTitle][seasonNumber] = [];
 				}
-				titleCardsByShowAndSeason[showTitle][seasonNumber as number].push(card as PosterFile);
-			});
+				titleCardsByShowAndSeason[showTitle][seasonNumber].push(image as ImageFile);
+			}
 		}
 	});
 
@@ -81,13 +71,11 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 		<div>
 			<div className="p-2 lg:p-3">
 				<div className="pb-4">
-					{setType !== "boxset" && (
+					{baseSetInfo.type !== "boxset" && (
 						<ShowFullSetDetails
-							setType={setType}
-							setTitle={setTitle}
-							setAuthor={setAuthor}
-							setID={setID}
+							baseSetInfo={baseSetInfo}
 							posterSets={posterSets}
+							includedItems={includedItems}
 						/>
 					)}
 
@@ -105,6 +93,7 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 										const backdropText = allBackdrops.length === 1 ? "Backdrop" : "Backdrops";
 
 										if (allBackdrops.length === 0) return posterText;
+										if (allPosters.length === 0) return backdropText;
 										return `${posterText} & ${backdropText}`;
 									})()}
 								</AccordionTrigger>
@@ -118,39 +107,100 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 										className="w-full"
 									>
 										<CarouselContent>
-											{allPosters.map((poster) => {
-												// Determine the type from the first poster
-												const isShowType = poster.Show?.ID !== undefined;
+											{(() => {
+												const getAvail = (tmdbId: string) => {
+													const found = isInServer(includedItems, tmdbId);
+													return Boolean(found && typeof found !== "boolean");
+												};
 
-												const matchingBackdrop =
-													allBackdrops.length > 0 &&
-													allBackdrops.find((backdrop) => {
-														if (isShowType) {
-															return backdrop.Show?.ID === poster.Show?.ID;
-														} else {
-															return backdrop.Movie?.ID === poster.Movie?.ID;
-														}
-													});
-
-												return (
-													<CarouselItem key={`poster-${poster.ID}`}>
-														<div className="space-y-2">
-															<AssetImage
-																image={poster as unknown as PosterFile}
-																aspect="poster"
-																className="w-full h-auto"
-															/>
-															{matchingBackdrop && (
-																<AssetImage
-																	image={matchingBackdrop as unknown as PosterFile}
-																	aspect="backdrop"
-																	className="w-full h-auto"
-																/>
-															)}
-														</div>
-													</CarouselItem>
+												// Group by tmdbId so we can sort once and also support "backdrops-only" cases.
+												const tmdbIds = Array.from(
+													new Set<string>([
+														...allPosters
+															.map((p) =>
+																typeof p.item_tmdb_id === "string" ? p.item_tmdb_id : ""
+															)
+															.filter((id) => id.trim() !== ""),
+														...allBackdrops
+															.map((b) =>
+																typeof b.item_tmdb_id === "string" ? b.item_tmdb_id : ""
+															)
+															.filter((id) => id.trim() !== ""),
+													])
 												);
-											})}
+
+												tmdbIds.sort((a, b) => {
+													// available first (only meaningful when dimNotFound=true, but safe either way)
+													if (dimNotFound) {
+														const aAvail = getAvail(a) ? 1 : 0;
+														const bAvail = getAvail(b) ? 1 : 0;
+														if (aAvail !== bAvail) return bAvail - aAvail;
+													}
+
+													// tie-breaker: title (from included items) then tmdbId
+													const aTitle = includedItems?.[a]?.mediux_info?.title ?? "";
+													const bTitle = includedItems?.[b]?.mediux_info?.title ?? "";
+													const t = String(aTitle).localeCompare(String(bTitle));
+													if (t !== 0) return t;
+													return a.localeCompare(b);
+												});
+
+												const newestFirst = (x: ImageFile, y: ImageFile) =>
+													new Date(y.modified ?? 0).getTime() -
+													new Date(x.modified ?? 0).getTime();
+
+												return tmdbIds.map((tmdbId) => {
+													const posters = allPosters
+														.filter((p) => p.item_tmdb_id === tmdbId)
+														.slice()
+														.sort(newestFirst);
+													const backdrops = allBackdrops
+														.filter((b) => b.item_tmdb_id === tmdbId)
+														.slice()
+														.sort(newestFirst);
+
+													const poster = posters[0];
+													const matchingBackdrop = backdrops[0];
+
+													if (!poster && !matchingBackdrop) return null;
+
+													const isAvailable = getAvail(tmdbId);
+
+													return (
+														<CarouselItem
+															key={`${baseSetInfo.id ?? "set"}-posterbackdrop-${tmdbId}`}
+														>
+															<div className="space-y-2">
+																{poster && (
+																	<AssetImage
+																		image={poster as unknown as ImageFile}
+																		imageType="mediux"
+																		aspect="poster"
+																		className={`w-full ${
+																			!isAvailable && dimNotFound
+																				? "opacity-35"
+																				: ""
+																		}`}
+																	/>
+																)}
+
+																{matchingBackdrop && (
+																	<AssetImage
+																		image={matchingBackdrop as unknown as ImageFile}
+																		imageType="mediux"
+																		aspect="backdrop"
+																		className={`w-full ${
+																			!isAvailable && dimNotFound
+																				? "opacity-35"
+																				: ""
+																		}`}
+																	/>
+																)}
+															</div>
+														</CarouselItem>
+													);
+												});
+											})()}
 										</CarouselContent>
 									</Carousel>
 								</AccordionContent>
@@ -164,34 +214,77 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 								<AccordionContent>
 									{Object.entries(seasonPostersByShow)
 										.filter(([, posters]) => posters.length > 0)
-										.map(([showTitle, posters]) => (
-											<div key={showTitle} className="mb-8">
-												<Lead className="mb-4">{showTitle}</Lead>
-												<Carousel
-													opts={{
-														align: "start",
-														dragFree: true,
-														slidesToScroll: "auto",
-													}}
-													className="w-full"
-												>
-													<CarouselContent>
-														{posters.map((poster) => (
-															<CarouselItem key={`season-poster-${poster.ID}`}>
-																<div className="space-y-2">
-																	<AssetImage
-																		key={poster.ID}
-																		image={poster}
-																		aspect="poster"
-																		className="w-full h-auto"
-																	/>
-																</div>
-															</CarouselItem>
-														))}
-													</CarouselContent>
-												</Carousel>
-											</div>
-										))}
+										.map(([showTitle, posters]) => {
+											const sortedPosters = posters.slice().sort((a, b) => {
+												const aTmdb = typeof a.item_tmdb_id === "string" ? a.item_tmdb_id : "";
+												const bTmdb = typeof b.item_tmdb_id === "string" ? b.item_tmdb_id : "";
+
+												const aSeason = a.season_number ?? 0;
+												const bSeason = b.season_number ?? 0;
+
+												// available first (only when dimNotFound=true)
+												if (dimNotFound) {
+													const aAvail = aTmdb
+														? hasSeason(includedItems, aTmdb, aSeason)
+															? 1
+															: 0
+														: 0;
+													const bAvail = bTmdb
+														? hasSeason(includedItems, bTmdb, bSeason)
+															? 1
+															: 0
+														: 0;
+													if (aAvail !== bAvail) return bAvail - aAvail;
+												}
+
+												// season high -> low (Specials=0 will fall to the end)
+												if (aSeason !== bSeason) return bSeason - aSeason;
+
+												// newest modified first as a final tie-breaker
+												return (
+													new Date(b.modified ?? 0).getTime() -
+													new Date(a.modified ?? 0).getTime()
+												);
+											});
+
+											return (
+												<div key={showTitle} className="mb-8">
+													<Lead className="mb-4">{showTitle}</Lead>
+													<Carousel
+														opts={{
+															align: "start",
+															dragFree: true,
+															slidesToScroll: "auto",
+														}}
+														className="w-full"
+													>
+														<CarouselContent>
+															{sortedPosters.map((poster) => (
+																<CarouselItem key={`season-poster-${poster.id}`}>
+																	<div className="space-y-2">
+																		<AssetImage
+																			key={poster.id}
+																			image={poster}
+																			imageType="mediux"
+																			aspect="poster"
+																			className={`w-full ${
+																				!hasSeason(
+																					includedItems,
+																					poster.item_tmdb_id as string,
+																					poster.season_number || 0
+																				) && dimNotFound
+																					? "opacity-35"
+																					: ""
+																			}`}
+																		/>
+																	</div>
+																</CarouselItem>
+															))}
+														</CarouselContent>
+													</Carousel>
+												</div>
+											);
+										})}
 								</AccordionContent>
 							</AccordionItem>
 						)}
@@ -207,44 +300,175 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 										.filter(([, seasons]) =>
 											Object.values(seasons).some((cards) => cards.length > 0)
 										)
+										// NEW: sort shows by availability first (when dimNotFound), then title
+										.sort(([aTitle, aSeasons], [bTitle, bSeasons]) => {
+											if (dimNotFound) {
+												const aAnyCard = Object.values(aSeasons).flat()[0];
+												const bAnyCard = Object.values(bSeasons).flat()[0];
+
+												const aTmdb =
+													typeof aAnyCard?.item_tmdb_id === "string"
+														? (aAnyCard.item_tmdb_id as string)
+														: "";
+												const bTmdb =
+													typeof bAnyCard?.item_tmdb_id === "string"
+														? (bAnyCard.item_tmdb_id as string)
+														: "";
+
+												const aAvail = aTmdb
+													? isInServer(includedItems, aTmdb) &&
+														typeof isInServer(includedItems, aTmdb) !== "boolean"
+														? 1
+														: 0
+													: 0;
+												const bAvail = bTmdb
+													? isInServer(includedItems, bTmdb) &&
+														typeof isInServer(includedItems, bTmdb) !== "boolean"
+														? 1
+														: 0
+													: 0;
+
+												if (aAvail !== bAvail) return bAvail - aAvail;
+											}
+											return String(aTitle).localeCompare(String(bTitle));
+										})
 										.map(([showTitle, seasons]) => (
 											<div key={showTitle} className="mb-8">
 												<Lead className="mb-4">{showTitle}</Lead>
+
 												<Accordion type="multiple" className="w-full">
-													{Object.entries(seasons).map(([seasonNumber, cards]) => (
-														<AccordionItem
-															key={`${showTitle}-season-${seasonNumber}`}
-															value={`${showTitle}-season-${seasonNumber}`}
-														>
-															<AccordionTrigger>Season {seasonNumber}</AccordionTrigger>
-															<AccordionContent>
-																<Carousel
-																	opts={{
-																		align: "start",
-																		dragFree: true,
-																		slidesToScroll: "auto",
-																	}}
-																	className="w-full"
+													{Object.entries(seasons)
+														.filter(([, cards]) => (cards as ImageFile[]).length > 0)
+														// NEW: sort seasons available-first (when dimNotFound), then season high->low
+														.sort(([aSeason, aCards], [bSeason, bCards]) => {
+															const aSeasonNum = Number(aSeason);
+															const bSeasonNum = Number(bSeason);
+
+															if (dimNotFound) {
+																const aTmdb =
+																	typeof (aCards as any)?.[0]?.item_tmdb_id ===
+																	"string"
+																		? ((aCards as any)[0].item_tmdb_id as string)
+																		: "";
+																const bTmdb =
+																	typeof (bCards as any)?.[0]?.item_tmdb_id ===
+																	"string"
+																		? ((bCards as any)[0].item_tmdb_id as string)
+																		: "";
+
+																const aAvail = aTmdb
+																	? hasSeason(includedItems, aTmdb, aSeasonNum)
+																		? 1
+																		: 0
+																	: 0;
+																const bAvail = bTmdb
+																	? hasSeason(includedItems, bTmdb, bSeasonNum)
+																		? 1
+																		: 0
+																	: 0;
+
+																if (aAvail !== bAvail) return bAvail - aAvail;
+															}
+
+															return bSeasonNum - aSeasonNum; // high -> low
+														})
+														.map(([seasonNumber, cards]) => {
+															const seasonNum = Number(seasonNumber);
+
+															// NEW: sort cards available-first (when dimNotFound), then latest episode, then newest modified
+															const sortedCards = (cards as ImageFile[])
+																.slice()
+																.sort((a, b) => {
+																	if (dimNotFound) {
+																		const aAvail =
+																			typeof a.item_tmdb_id === "string" &&
+																			typeof a.episode_number === "number"
+																				? hasEpisode(
+																						includedItems,
+																						a.item_tmdb_id,
+																						seasonNum,
+																						a.episode_number
+																					)
+																					? 1
+																					: 0
+																				: 0;
+																		const bAvail =
+																			typeof b.item_tmdb_id === "string" &&
+																			typeof b.episode_number === "number"
+																				? hasEpisode(
+																						includedItems,
+																						b.item_tmdb_id,
+																						seasonNum,
+																						b.episode_number
+																					)
+																					? 1
+																					: 0
+																				: 0;
+
+																		if (aAvail !== bAvail) return bAvail - aAvail;
+																	}
+
+																	const epDiff =
+																		(b.episode_number ?? 0) -
+																		(a.episode_number ?? 0);
+																	if (epDiff !== 0) return epDiff;
+
+																	return (
+																		new Date(b.modified ?? 0).getTime() -
+																		new Date(a.modified ?? 0).getTime()
+																	);
+																});
+
+															return (
+																<AccordionItem
+																	key={`${showTitle}-season-${seasonNumber}`}
+																	value={`${showTitle}-season-${seasonNumber}`}
 																>
-																	<CarouselContent>
-																		{cards.map((card) => (
-																			<CarouselItem key={`title-card-${card.ID}`}>
-																				<div className="space-y-2">
-																					<AssetImage
-																						image={
-																							card as unknown as PosterFile
-																						}
-																						aspect="backdrop"
-																						className="w-full h-auto"
-																					/>
-																				</div>
-																			</CarouselItem>
-																		))}
-																	</CarouselContent>
-																</Carousel>
-															</AccordionContent>
-														</AccordionItem>
-													))}
+																	<AccordionTrigger>
+																		Season {seasonNumber}
+																	</AccordionTrigger>
+																	<AccordionContent>
+																		<Carousel
+																			opts={{
+																				align: "start",
+																				dragFree: true,
+																				slidesToScroll: "auto",
+																			}}
+																			className="w-full"
+																		>
+																			<CarouselContent>
+																				{sortedCards.map((card) => (
+																					<CarouselItem
+																						key={`title-card-${card.id}`}
+																					>
+																						<div className="space-y-2">
+																							<AssetImage
+																								image={
+																									card as unknown as ImageFile
+																								}
+																								imageType="mediux"
+																								aspect="backdrop"
+																								className={`w-full ${
+																									!hasEpisode(
+																										includedItems,
+																										card.item_tmdb_id as string,
+																										card.season_number ||
+																											0,
+																										card.episode_number
+																									) && dimNotFound
+																										? "opacity-35"
+																										: ""
+																								}`}
+																							/>
+																						</div>
+																					</CarouselItem>
+																				))}
+																			</CarouselContent>
+																		</Carousel>
+																	</AccordionContent>
+																</AccordionItem>
+															);
+														})}
 												</Accordion>
 											</div>
 										))}
@@ -259,73 +483,84 @@ export const ShowFullSetsDisplay: React.FC<DownloadModalProps> = ({
 };
 
 const ShowFullSetDetails: React.FC<{
-	setType: "show" | "movie" | "collection" | "boxset" | "set";
-	setTitle: string;
-	setAuthor: string;
-	setID: string;
-	posterSets: PosterSet[];
-}> = ({ setType, setTitle, setAuthor, setID, posterSets }) => {
+	baseSetInfo: BaseSetInfo;
+	posterSets: SetRef[];
+	includedItems?: { [tmdb_id: string]: IncludedItem };
+}> = ({ baseSetInfo, posterSets, includedItems }) => {
 	const [backdropURL, setBackdropURL] = useState("");
-	// Construct the backdrop URL
-	// If the posterSet has a backdrop, use that
-	// Otherwise, use the mediaItem's backdrop
+
+	const [mediuxURL, setMediuxURL] = useState<string>("");
+	const { status, hasHydrated } = useOnboardingStore();
+	const mediuxSiteLink = status?.mediux_site_link || "https://mediux.io";
+
 	useEffect(() => {
-		if (typeof window !== "undefined") {
-			document.title = "aura | Poster Set";
+		if (!hasHydrated) return;
+		if (!baseSetInfo.id || !baseSetInfo.type) {
+			setMediuxURL("");
+			return;
 		}
 
-		if (posterSets.length > 0 && posterSets.some((set) => set.Backdrop)) {
-			const backdropSet = posterSets.find((set) => set.Backdrop);
-			if (backdropSet && backdropSet.Backdrop) {
-				setBackdropURL(
-					`/api/mediux/image/?assetID=${backdropSet.Backdrop.ID}&modifiedDate=${backdropSet.Backdrop.Modified}&quality=optimized`
-				);
-			}
-		} else {
-			// Get all unique RatingKeys from all assets
-			const uniqueRatingKeys = new Set<string>();
+		if (mediuxSiteLink.endsWith("mediux.pro")) {
+			// https://mediux.pro/[itemType]s/tmdbID
+			setMediuxURL(`${mediuxSiteLink}/sets/${baseSetInfo.id}`);
+			return;
+		} else if (mediuxSiteLink.endsWith("mediux.io")) {
+			// https://mediux.io/[itemType]/tmdbID
+			setMediuxURL(`${mediuxSiteLink}/${baseSetInfo.type}/${baseSetInfo.id}`);
+			return;
+		}
+	}, [hasHydrated, mediuxSiteLink, baseSetInfo.id, baseSetInfo.type]);
 
-			posterSets.forEach((set) => {
-				// Check Poster
-				if (set.Poster?.Movie?.MediaItem.RatingKey) {
-					uniqueRatingKeys.add(set.Poster.Movie.MediaItem.RatingKey);
+	const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+	const setShowDateModified = useUserPreferencesStore((state) => state.setShowDateModified);
+
+	// Construct the backdrop URL
+	// If there is only one set, then check to see if there is a backdrop image in that set
+	// If there are multiple sets, randomly select one of the backdrops from those sets
+	// If there are no backdrops in the sets, randomly select one from the included items' TMDB backdrops
+	useEffect(() => {
+		let selectedBackdropURL = "";
+
+		const allBackdrops: ImageFile[] = [];
+
+		posterSets.forEach((item) => {
+			item.images.forEach((image) => {
+				if (image.type === "backdrop") {
+					allBackdrops.push(image);
 				}
-
-				// Check Backdrop
-				if (set.Backdrop?.Movie?.MediaItem.RatingKey) {
-					uniqueRatingKeys.add(set.Backdrop.Movie.MediaItem.RatingKey);
-				}
-
-				// Check OtherPosters
-				set.OtherPosters?.forEach((poster) => {
-					if (poster.Movie?.MediaItem.RatingKey) {
-						uniqueRatingKeys.add(poster.Movie.MediaItem.RatingKey);
-					}
-				});
-
-				// Check OtherBackdrops
-				set.OtherBackdrops?.forEach((backdrop) => {
-					if (backdrop.Movie?.MediaItem.RatingKey) {
-						uniqueRatingKeys.add(backdrop.Movie.MediaItem.RatingKey);
-					}
-				});
 			});
+		});
 
-			// Convert Set to Array and get random RatingKey
-			const ratingKeysArray = Array.from(uniqueRatingKeys);
-			log(
-				"INFO",
-				"ShowFullSetDetails",
-				"Set to Array",
-				"Unique RatingKeys for Backdrop Selection",
-				ratingKeysArray
-			);
-			if (ratingKeysArray.length > 0) {
-				const randomRatingKey = ratingKeysArray[Math.floor(Math.random() * ratingKeysArray.length)];
-				setBackdropURL(`/api/mediaserver/image?ratingKey=${randomRatingKey}&imageType=backdrop`);
+		if (allBackdrops.length > 0) {
+			// Randomly select one of the backdrops from the sets
+			const randomIndex = Math.floor(Math.random() * allBackdrops.length);
+			selectedBackdropURL = `/api/images/mediux/item?asset_id=${allBackdrops[randomIndex].id}&modified_date=${allBackdrops[randomIndex].modified}&quality=optimized`;
+		} else {
+			// No backdrops in the sets -> pick a TMDB backdrop for ANY unique item_tmdb_id found in posterSets images
+			const tmdbIDs = new Set<string>();
+
+			for (const ps of posterSets || []) {
+				for (const img of ps.images || []) {
+					const tmdb = img.item_tmdb_id;
+					if (typeof tmdb === "string" && tmdb.trim() !== "") {
+						tmdbIDs.add(tmdb);
+					}
+				}
+			}
+
+			const includedBackdrops = Array.from(tmdbIDs)
+				.map((tmdbId) => includedItems?.[tmdbId]?.mediux_info?.tmdb_backdrop_path)
+				.filter((p): p is string => typeof p === "string" && p.trim() !== "")
+				.map((p) => `https://image.tmdb.org/t/p/original${p}`);
+
+			if (includedBackdrops.length > 0) {
+				const randomIndex = Math.floor(Math.random() * includedBackdrops.length);
+				selectedBackdropURL = includedBackdrops[randomIndex];
 			}
 		}
-	}, [posterSets]);
+
+		setBackdropURL(selectedBackdropURL);
+	}, [posterSets, includedItems]);
 
 	return (
 		<>
@@ -338,14 +573,11 @@ const ShowFullSetDetails: React.FC<{
 					className="mb-1"
 					onClick={() => {
 						log("INFO", "ShowFullSetDetails", "Return to Set Details", "Set Details Clicked", {
-							setID,
-							setType,
-							setTitle,
-							setAuthor,
+							baseSetInfo,
 						});
 					}}
 				>
-					{setTitle}
+					{baseSetInfo.title}
 				</H1>
 			</div>
 
@@ -356,16 +588,25 @@ const ShowFullSetDetails: React.FC<{
 						className="flex items-center text-sm hover:text-white transition-colors hover:brightness-120 cursor-pointer active:scale-95"
 						onClick={(e) => {
 							e.stopPropagation();
-							window.location.href = `/user/${setAuthor}`;
+							window.location.href = `/user/${baseSetInfo.user_created}`;
 						}}
 					>
-						Set Author: {setAuthor}
+						<Avatar className="rounded-lg mr-1 w-4 h-4">
+							<AvatarImage
+								src={`/api/images/mediux/avatar?username=${baseSetInfo.user_created}`}
+								className="w-4 h-4"
+							/>
+							<AvatarFallback className="">
+								<User className="w-4 h-4" />
+							</AvatarFallback>
+						</Avatar>
+						{baseSetInfo.user_created}
 					</Badge>
 					<Badge
 						className="flex items-center text-sm hover:text-white transition-colors hover:brightness-120 cursor-pointer active:scale-95"
 						onClick={(e) => {
 							e.stopPropagation();
-							window.open(`https://mediux.io/${setType}-set/${setID}`, "_blank");
+							window.open(`${mediuxURL}`, "_blank");
 						}}
 					>
 						View on MediUX
@@ -373,74 +614,108 @@ const ShowFullSetDetails: React.FC<{
 				</div>
 
 				{/* Season/Episode Information */}
-				{setType === "show" &&
-					posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length > 0 && (
-						<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
-							<Lead className="flex items-center text-md text-primary-dynamic">
-								{posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length}{" "}
-								{posterSets.flatMap((set) => set.SeasonPosters || [] || set.TitleCards || []).length ===
-								1
-									? "Season"
-									: "Seasons"}
-								{posterSets.flatMap((set) => set.TitleCards || []).length > 0 && (
-									<>
-										{" with "}
-										{posterSets.flatMap((set) => set.TitleCards || []).length}{" "}
-										{posterSets.flatMap((set) => set.TitleCards || []).length === 1
-											? "Title Card"
-											: "Title Cards"}
-									</>
-								)}
-							</Lead>
-						</div>
-					)}
+				{baseSetInfo.type === "show" &&
+					(() => {
+						let seasonPosterCount = 0;
+						let titleCardCount = 0;
+
+						for (const set of posterSets || []) {
+							for (const image of set.images || []) {
+								if (image.type === "season_poster" || image.type === "special_season_poster") {
+									seasonPosterCount += 1;
+								} else if (image.type === "titlecard") {
+									titleCardCount += 1;
+								}
+							}
+						}
+
+						if (seasonPosterCount === 0 && titleCardCount === 0) return null;
+
+						return (
+							<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
+								<Lead className="flex items-center text-md text-primary-dynamic">
+									{seasonPosterCount > 0 && (
+										<>
+											{seasonPosterCount}{" "}
+											{seasonPosterCount === 1 ? "Season Poster" : "Season Posters"}
+										</>
+									)}
+
+									{titleCardCount > 0 && (
+										<>
+											{seasonPosterCount > 0 ? " with " : ""}
+											{titleCardCount} {titleCardCount === 1 ? "Title Card" : "Title Cards"}
+										</>
+									)}
+								</Lead>
+							</div>
+						);
+					})()}
 
 				{/* Movies Information 
 				Get a count of total number of posters and backdrops for movies in the set
 				Only display if posters or backdrops exist
 				*/}
-				{setType === "movie" &&
+				{baseSetInfo.type === "movie" &&
 					(() => {
-						// Collect all posters and backdrops (including "other" ones)
-						const allPosters = posterSets.flatMap((set) => [
-							...(set.Poster ? [set.Poster] : []),
-							...(set.OtherPosters || []),
-						]);
-						const allBackdrops = posterSets.flatMap((set) => [
-							...(set.Backdrop ? [set.Backdrop] : []),
-							...(set.OtherBackdrops || []),
-						]);
-						// Use a Set to ensure uniqueness by ID
-						const uniquePosters = Array.from(new Map(allPosters.map((p) => [p.ID, p])).values());
-						const uniqueBackdrops = Array.from(new Map(allBackdrops.map((b) => [b.ID, b])).values());
+						let posterCount = 0;
+						let backdropCount = 0;
 
-						const posterCount = uniquePosters.length;
-						const backdropCount = uniqueBackdrops.length;
+						for (const set of posterSets || []) {
+							for (const image of set.images || []) {
+								if (image.type === "poster") {
+									posterCount += 1;
+								} else if (image.type === "backdrop") {
+									backdropCount += 1;
+								}
+							}
+						}
 
 						if (posterCount === 0 && backdropCount === 0) return null;
 
-						let text = "";
-						if (posterCount > 0 && backdropCount > 0) {
-							text = `${posterCount} ${posterCount === 1 ? "Poster" : "Posters"} and ${backdropCount} ${backdropCount === 1 ? "Backdrop" : "Backdrops"}`;
-						} else if (posterCount > 0) {
-							text = `${posterCount} ${posterCount === 1 ? "Poster" : "Posters"}`;
-						} else if (backdropCount > 0) {
-							text = `${backdropCount} ${backdropCount === 1 ? "Backdrop" : "Backdrops"}`;
-						}
+						return (
+							<div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-start items-center gap-4 tracking-wide">
+								<Lead className="flex items-center text-md text-primary-dynamic">
+									{posterCount > 0 && (
+										<>
+											{posterCount} {posterCount === 1 ? "Poster" : "Posters"}
+										</>
+									)}
 
-						return <Lead className="flex items-center text-md text-primary-dynamic">{text}</Lead>;
+									{backdropCount > 0 && (
+										<>
+											{posterCount > 0 ? " with " : ""}
+											{backdropCount} {backdropCount === 1 ? "Backdrop" : "Backdrops"}
+										</>
+									)}
+								</Lead>
+							</div>
+						);
 					})()}
 
 				{/* Download Button */}
 				<div className="ml-auto">
 					<DownloadModal
-						setType={setType}
-						setTitle={setTitle}
-						setAuthor={setAuthor}
-						setID={setID}
-						posterSets={posterSets}
+						baseSetInfo={baseSetInfo}
+						formItems={setRefsToFormItems(posterSets, includedItems || {})}
 					/>
 				</div>
+			</div>
+
+			<div className="flex justify-center lg:justify-start items-center gap-4 mt-4">
+				<Label
+					htmlFor="overlay-date-switch"
+					className="flex items-center text-sm cursor-pointer hover:text-white transition-colors hover:brightness-120"
+				>
+					<CalendarDays className="w-4 h-4 mr-1" />
+					Show Modified Date
+				</Label>
+				<Switch
+					id="overlay-date-switch"
+					checked={showDateModified}
+					onCheckedChange={() => setShowDateModified(!showDateModified)}
+					aria-label="Toggle bookmark"
+				/>
 			</div>
 		</>
 	);

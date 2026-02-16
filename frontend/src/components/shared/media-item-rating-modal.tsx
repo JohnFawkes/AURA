@@ -1,15 +1,19 @@
 "use client";
 
-import { patchAddRatingToMediaItem } from "@/services/mediaserver/api-mediaserver-rate-media-item";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+import { rateMediaItem } from "@/services/mediaserver/item-rate";
 import { Star } from "lucide-react";
+import { toast } from "sonner";
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ErrorMessage } from "@/components/shared/error-message";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 import { cn } from "@/lib/cn";
 
+import { APIResponse } from "@/types/api/api-response";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export type MediaItemRatingModalProps = {
@@ -24,10 +28,10 @@ const clampToHalfStar = (value: number) => {
 };
 
 const getInitialRatingFromMediaItem = (mediaItem: MediaItem) => {
-	const userGuid = mediaItem.Guids?.find((g) => g.Provider === "user" && g.Rating);
-	if (!userGuid?.Rating) return 0;
+	const userGuid = mediaItem.guids?.find((g) => g.provider === "user" && g.rating);
+	if (!userGuid?.rating) return 0;
 
-	const parsed = parseFloat(userGuid.Rating);
+	const parsed = parseFloat(userGuid.rating);
 	return Number.isFinite(parsed) ? parsed : 0;
 };
 
@@ -56,15 +60,16 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
 	const [rating, setRating] = useState<number>(0);
 	const [hoverRating, setHoverRating] = useState<number | null>(null);
 	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 
 	useEffect(() => {
 		if (!isOpen) return;
-
 		const start = clampToHalfStar(getInitialRatingFromMediaItem(mediaItem));
 		setInitialRating(start);
 		setRating(start);
 		setHoverRating(null);
 		setSaving(false);
+		setError(null);
 	}, [isOpen, mediaItem]);
 
 	const displayRating = hoverRating ?? rating;
@@ -82,12 +87,14 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
 	const handleSave = async () => {
 		try {
 			setSaving(true);
-			const response = await patchAddRatingToMediaItem(mediaItem, rating);
+			const response = await rateMediaItem(mediaItem, rating);
 			if (response.status === "error") {
 				throw new Error(response.error?.message || "Unknown error rating media item");
 			}
-
+			toast.success(`Rated '${mediaItem.title}' ${rating} stars`);
 			onClose();
+		} catch (error) {
+			setError(ReturnErrorMessage<unknown>(error));
 		} finally {
 			setSaving(false);
 		}
@@ -104,7 +111,7 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
 				<DialogHeader>
 					<DialogTitle className="text-lg font-bold">Rate</DialogTitle>
 					<DialogDescription className="text-sm text-muted-foreground">
-						Choose a rating for <span className="font-semibold">{mediaItem.Title}</span> ({mediaItem.Year})
+						Choose a rating for <span className="font-semibold">{mediaItem.title}</span> ({mediaItem.year})
 					</DialogDescription>
 				</DialogHeader>
 
@@ -188,6 +195,8 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
 						{saving ? "Saving..." : "Save"}
 					</Button>
 				</div>
+
+				{error && <ErrorMessage error={error} />}
 			</DialogContent>
 		</Dialog>
 	);

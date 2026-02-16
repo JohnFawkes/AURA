@@ -1,7 +1,8 @@
 "use client";
 
+import { formatUnixSeconds } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchSearchResults } from "@/services/search/api-search";
+import { runSearch } from "@/services/search/api-search";
 import { BookmarkIcon, EyeOff, Film, FilmIcon, Search, Star, TvIcon, User, UserIcon, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -26,7 +27,7 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 import { APIResponse } from "@/types/api/api-response";
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBSavedItem } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
@@ -99,8 +100,10 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 
 	// Search Results States
 	const [searchResultMediaItems, setSearchResultMediaitems] = useState<MediaItem[]>([]);
+	const [searchResultMediaItemLastUpdate, setSearchResultMediaItemLastUpdate] = useState<number>(0);
 	const [searchResultMediuxUsers, setSearchResultsMediuxUsers] = useState<MediuxUserInfo[]>([]);
-	const [searchResultSavedSets, setSearchResultsSavedSets] = useState<DBMediaItemWithPosterSets[]>([]);
+	const [searchResultMediuxUserLastUpdate, setSearchResultMediuxUserLastUpdate] = useState<number>(0);
+	const [searchResultSavedSets, setSearchResultsSavedSets] = useState<DBSavedItem[]>([]);
 
 	// --- Handlers and Effects ---
 
@@ -159,7 +162,9 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	// Clear Results
 	const clearAllResults = () => {
 		setSearchResultMediaitems([]);
+		setSearchResultMediaItemLastUpdate(0);
 		setSearchResultsMediuxUsers([]);
+		setSearchResultMediuxUserLastUpdate(0);
 		setSearchResultsSavedSets([]);
 	};
 
@@ -193,7 +198,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 			setSearchQuery(searchInput);
 
 			try {
-				const searchResp = await fetchSearchResults({
+				const searchResp = await runSearch({
 					searchQuery: searchInput,
 					searchMediaItems: filters.mediaItem,
 					searchMediuxUsers: filters.mediuxUser,
@@ -211,7 +216,9 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 				}
 
 				setSearchResultMediaitems(results?.media_items || []);
+				setSearchResultMediaItemLastUpdate(results?.media_items_last_full_update || 0);
 				setSearchResultsMediuxUsers(results?.mediux_usernames || []);
+				setSearchResultMediuxUserLastUpdate(results?.mediux_usernames_last_full_update || 0);
 				setSearchResultsSavedSets(results?.saved_sets || []);
 			} catch (error) {
 				clearAllResults();
@@ -253,7 +260,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 					handleMediaItemClick(filteredMediaItems[focusedIndex]);
 				} else if (focusedIndex < filteredMediaItems.length + filteredMediuxUsers.length) {
 					// Selecting from MediUX Users
-					handleMediuxUserClick(filteredMediuxUsers[focusedIndex - filteredMediaItems.length].Username);
+					handleMediuxUserClick(filteredMediuxUsers[focusedIndex - filteredMediaItems.length].username);
 				} else {
 					// Selecting from Saved Sets
 					handleSavedSetsClick(
@@ -288,15 +295,15 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 	};
 
 	// Handle Saved Sets Click
-	const handleSavedSetsClick = (set: DBMediaItemWithPosterSets) => {
+	const handleSavedSetsClick = (set: DBSavedItem) => {
 		setSearchQuery(
-			`${set.MediaItem.Title} Y:${set.MediaItem.Year}: ID:${set.MediaItem.TMDB_ID}: L:${set.LibraryTitle}:`
+			`${set.media_item.title} Y:${set.media_item.year}: ID:${set.media_item.tmdb_id}: L:${set.media_item.library_title}:`
 		);
 		setIsExpanded(false);
 		router.push("/saved-sets/");
 	};
 
-	const mediaTypes = Array.from(new Set(filteredMediaItems.map((item) => item.Type)));
+	const mediaTypes = Array.from(new Set(filteredMediaItems.map((item) => item.type)));
 	let mediaSectionTitle = "Media Items";
 	if (mediaTypes.length === 1) {
 		if (mediaTypes[0] === "movie") mediaSectionTitle = "Movies";
@@ -428,21 +435,27 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 														<TvIcon className="h-4 w-4" />
 													)}
 													{mediaSectionTitle} ({filteredMediaItems.length})
+													{searchResultMediaItemLastUpdate > 0 && (
+														<span className="ml-auto text-[10px] text-muted-foreground whitespace-nowrap">
+															(Last Update:{" "}
+															{formatUnixSeconds(searchResultMediaItemLastUpdate)})
+														</span>
+													)}
 												</h3>
 												<div className="space-y-1">
 													{filteredMediaItems.map((item, index) => {
 														const isHighlighted = index === focusedIndex;
 														return (
 															<SearchResultMediaItem
-																key={`media-item-${item.RatingKey}`}
-																title={item.Title}
-																subtitle={`${item.LibraryTitle} • ${item.Year}`}
+																key={`media-item-${item.rating_key}`}
+																title={item.title}
+																subtitle={`${item.library_title} • ${item.year}`}
 																href={`/media-item/`}
 																isHighlighted={isHighlighted}
-																imageSrc={`/api/mediaserver/image?ratingKey=${item.RatingKey}&imageType=poster`}
-																imageAlt={item.Title}
+																imageSrc={`/api/images/media/item?rating_key=${item.rating_key}&image_type=poster`}
+																imageAlt={item.title}
 																fallbackIcon={
-																	item.Type === "movie" ? (
+																	item.type === "movie" ? (
 																		<FilmIcon className="h-4 w-4 text-muted-foreground" />
 																	) : (
 																		<TvIcon className="h-4 w-4 text-muted-foreground" />
@@ -474,20 +487,20 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 													{filteredSavedSets.map((set, index) => {
 														const adjustedIndex = filteredMediaItems.length + index;
 														const isHighlighted = adjustedIndex === focusedIndex;
-														const subtitle = `${set.LibraryTitle} • ${
-															set.PosterSets.length > 1
-																? `${set.PosterSets.length} sets`
-																: `Set by ${set.PosterSets[0].PosterSet.User.Name}`
+														const subtitle = `${set.media_item.library_title} • ${
+															set.poster_sets.length > 1
+																? `${set.poster_sets.length} sets`
+																: `Set by ${set.poster_sets[0].user_created}`
 														}`;
 														return (
 															<SearchResultMediaItem
-																key={`saved-set-${set.LibraryTitle}-${set.TMDB_ID}`}
-																title={set.MediaItem.Title}
+																key={`saved-set-${set.media_item.library_title}-${set.media_item.tmdb_id}`}
+																title={set.media_item.title}
 																subtitle={subtitle}
 																href={`/saved-sets/`}
 																isHighlighted={isHighlighted}
-																imageSrc={`/api/mediaserver/image?ratingKey=${set.MediaItem.RatingKey}&imageType=poster`}
-																imageAlt={set.MediaItem.Title}
+																imageSrc={`/api/images/media/item?rating_key=${set.media_item.rating_key}&image_type=poster`}
+																imageAlt={set.media_item.title}
 																fallbackIcon={
 																	<Film className="h-4 w-4 text-muted-foreground" />
 																}
@@ -510,7 +523,14 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 												<h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
 													<UserIcon className="h-4 w-4" />
 													MediUX Users ({filteredMediuxUsers.length})
+													{searchResultMediuxUserLastUpdate > 0 && (
+														<span className="ml-auto text-[10px] text-muted-foreground whitespace-nowrap">
+															(Last Update:{" "}
+															{formatUnixSeconds(searchResultMediuxUserLastUpdate)})
+														</span>
+													)}
 												</h3>
+
 												<div className="space-y-1">
 													{filteredMediuxUsers.map((item, index) => {
 														const adjustedIndex =
@@ -520,11 +540,11 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
 														const isHighlighted = adjustedIndex === focusedIndex;
 														return (
 															<SearchResultUserItem
-																key={`user-${item.Username}`}
+																key={`user-${item.username}`}
 																user={item}
 																isHighlighted={isHighlighted}
 																onLinkClick={() => {
-																	handleMediuxUserClick(item.Username);
+																	handleMediuxUserClick(item.username);
 																}}
 															/>
 														);
@@ -621,20 +641,20 @@ interface SearchResultUserItemProps {
 }
 
 const SearchResultUserItem: React.FC<SearchResultUserItemProps> = ({ user, isHighlighted, onLinkClick }) => {
-	const avatarSrc = user.Avatar
-		? `/api/mediux/avatar-image?avatarID=${user.Avatar}`
-		: `/api/mediux/avatar-image?username=${user.Username}`;
+	const avatarSrc = user.avatar
+		? `/api/images/mediux/avatar?avatar_id=${user.avatar}`
+		: `/api/images/mediux/avatar?username=${user.username}`;
 
 	return (
 		<Link
-			href={`/user/${user.Username}`}
+			href={`/user/${user.username}`}
 			className={cn(
 				"flex items-center gap-3 p-1.5 rounded-lg cursor-pointer transition-colors group",
 				isHighlighted ? "bg-muted" : "hover:bg-primary/50"
 			)}
 			onClick={onLinkClick}
-			aria-label={user.Username}
-			title={user.Username}
+			aria-label={user.username}
+			title={user.username}
 		>
 			<Avatar className="rounded-lg mr-1 w-7 h-7 min-w-[1.75rem] min-h-[1.75rem]">
 				<AvatarImage src={avatarSrc} className="w-7 h-7" />
@@ -643,13 +663,13 @@ const SearchResultUserItem: React.FC<SearchResultUserItemProps> = ({ user, isHig
 				</AvatarFallback>
 			</Avatar>
 			<div className="flex-1 min-w-0">
-				<div className="font-medium text-sm truncate">{user.Username}</div>
-				<div className="text-xs text-muted-foreground truncate">{`${user.TotalSets ?? 0} ${user.TotalSets === 1 ? "set" : "sets"}`}</div>
+				<div className="font-medium text-sm truncate">{user.username}</div>
+				<div className="text-xs text-muted-foreground truncate">{`${user.total_sets ?? 0} ${user.total_sets === 1 ? "set" : "sets"}`}</div>
 			</div>
 
 			<div className="flex items-center gap-1">
-				{user.Follow && <Star className="h-4 w-4 text-yellow-400" />}
-				{user.Hide && <EyeOff className="h-4 w-4 text-red-500" />}
+				{user.follow && <Star className="h-4 w-4 text-yellow-400" />}
+				{user.hide && <EyeOff className="h-4 w-4 text-red-500" />}
 			</div>
 		</Link>
 	);

@@ -1,6 +1,6 @@
 "use client";
 
-import { postClearOldLogs } from "@/services/settings-onboarding/api-logs-actions";
+import { clearLogFile } from "@/services/logs/logs-clear";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigLogging } from "@/types/config/config-app";
+import { AppConfigLogging } from "@/types/config/config";
 
 interface ConfigSectionLoggingProps {
 	value: AppConfigLogging;
@@ -41,11 +41,11 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 
 	const errors = React.useMemo(() => {
 		const errs: Partial<Record<keyof AppConfigLogging, string>> = {};
-		if (!value.Level?.trim()) errs.Level = "Level is required.";
-		else if (!LOG_LEVEL_OPTIONS.includes(value.Level as (typeof LOG_LEVEL_OPTIONS)[number]))
-			errs.Level = "Invalid log level.";
+		if (!value.level?.trim()) errs.level = "Level is required.";
+		else if (!LOG_LEVEL_OPTIONS.includes(value.level as (typeof LOG_LEVEL_OPTIONS)[number]))
+			errs.level = "Invalid log level.";
 		return errs;
-	}, [value.Level]);
+	}, [value.level]);
 
 	useEffect(() => {
 		if (!errorsUpdate) return;
@@ -61,7 +61,7 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 
 	const handleClearOldLogs = async () => {
 		try {
-			const response = await postClearOldLogs();
+			const response = await clearLogFile();
 			if (response.status === "error") {
 				toast.error(response.error?.message || "Failed to clear old logs");
 				return;
@@ -74,10 +74,10 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 
 	// If no level is set, default to INFO
 	useEffect(() => {
-		if (!value.Level) {
-			onChange("Level", "INFO");
+		if (!value.level) {
+			onChange("level", "INFO");
 		}
-	}, [value.Level, onChange]);
+	}, [value.level, onChange]);
 
 	return (
 		<Card className={`p-5 ${Object.values(errors).some(Boolean) ? "border-red-500" : "border-muted"}`}>
@@ -112,12 +112,12 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 				</div>
 				<Select
 					disabled={!editing}
-					value={value.Level}
-					onValueChange={(v) => onChange("Level", v as AppConfigLogging["Level"])}
+					value={value.level}
+					onValueChange={(v) => onChange("level", v as AppConfigLogging["level"])}
 				>
 					<SelectTrigger
 						id="logging-level-trigger"
-						className={cn("w-full", dirtyFields.Level && "border-amber-500")}
+						className={cn("w-full", dirtyFields.level && "border-amber-500")}
 					>
 						<SelectValue placeholder="Select level..." />
 					</SelectTrigger>
@@ -129,7 +129,7 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 						))}
 					</SelectContent>
 				</Select>
-				{errors.Level && <p className="text-xs text-red-500">{errors.Level}</p>}
+				{errors.level && <p className="text-xs text-red-500">{errors.level}</p>}
 			</div>
 
 			{/* File (read-only) */}
@@ -158,7 +158,7 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 						</ConfirmDestructiveDialogActionButton>
 					</div>
 				</div>
-				<Input disabled value={value.File || ""} placeholder="aura.log" />
+				<Input disabled value={value.file || ""} placeholder="aura.log" />
 			</div>
 		</Card>
 	);

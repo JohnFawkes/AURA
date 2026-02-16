@@ -1,6 +1,6 @@
 "use client";
 
-import { checkMediuxNewTokenStatusResult } from "@/services/settings-onboarding/api-mediux-connection";
+import { validateMediuxInfo } from "@/services/validation/mediux";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigMediux } from "@/types/config/config-app";
+import { AppConfigMediux } from "@/types/config/config";
 
 interface ConfigSectionMediuxProps {
 	value: AppConfigMediux;
@@ -53,14 +53,14 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 	// Validation (local + remote)
 	const errors = React.useMemo(() => {
 		const errs: Partial<Record<keyof AppConfigMediux, string>> = {};
-		if (!value.Token.trim()) errs.Token = "Token is required.";
-		if (!value.DownloadQuality.trim()) errs.DownloadQuality = "Select a download quality.";
-		else if (!QUALITY_OPTIONS.includes(value.DownloadQuality as (typeof QUALITY_OPTIONS)[number]))
-			errs.DownloadQuality = "Invalid quality option.";
+		if (!value.api_token.trim()) errs.api_token = "Token is required.";
+		if (!value.download_quality.trim()) errs.download_quality = "Select a download quality.";
+		else if (!QUALITY_OPTIONS.includes(value.download_quality as (typeof QUALITY_OPTIONS)[number]))
+			errs.download_quality = "Invalid quality option.";
 		// Merge remote error (overrides local message for Token if present)
-		if (remoteTokenError) errs.Token = remoteTokenError;
+		if (remoteTokenError) errs.api_token = remoteTokenError;
 		return errs;
-	}, [value.Token, value.DownloadQuality, remoteTokenError]);
+	}, [value.api_token, value.download_quality, remoteTokenError]);
 
 	// Emit errors upward
 	useEffect(() => {
@@ -74,12 +74,12 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 	// Reset remote error when token text changes
 	useEffect(() => {
 		setRemoteTokenError(null);
-	}, [value.Token]);
+	}, [value.api_token]);
 
 	const runRemoteValidation = useCallback(
 		async (showToast = true) => {
 			setRunningRemoteValidation(true);
-			if (!value.Token.trim()) {
+			if (!value.api_token.trim()) {
 				setRemoteTokenError("Token is required.");
 				setConnectionStatus({ status: "error", color: GetConnectionColor("error") });
 				return;
@@ -87,7 +87,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 			setTestingToken(true);
 			const start = Date.now();
-			const { ok, message } = await checkMediuxNewTokenStatusResult(value, showToast);
+			const { valid, message } = await validateMediuxInfo(value, showToast);
 			const elapsed = Date.now() - start;
 			const minDelay = 400; // milliseconds
 
@@ -97,7 +97,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
 			setTestingToken(false);
 
-			if (ok) {
+			if (valid) {
 				setRemoteTokenError(null);
 				setConnectionStatus({ status: "ok", color: GetConnectionColor("ok") });
 			} else {
@@ -157,14 +157,14 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				<Input
 					disabled={!editing}
 					placeholder="MediUX API token"
-					value={value.Token}
-					onChange={(e) => onChange("Token", e.target.value)}
+					value={value.api_token}
+					onChange={(e) => onChange("api_token", e.target.value)}
 					onBlur={() => {
 						runRemoteValidation();
 					}}
-					className={cn(dirtyFields.Token && "border-amber-500")}
+					className={cn(dirtyFields.api_token && "border-amber-500")}
 				/>
-				{errors.Token && <p className="text-xs text-red-500">{errors.Token}</p>}
+				{errors.api_token && <p className="text-xs text-red-500">{errors.api_token}</p>}
 			</div>
 
 			{/* Download Quality */}
@@ -197,12 +197,12 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 				</div>
 				<Select
 					disabled={!editing}
-					value={value.DownloadQuality}
-					onValueChange={(v) => onChange("DownloadQuality", v as AppConfigMediux["DownloadQuality"])}
+					value={value.download_quality}
+					onValueChange={(v) => onChange("download_quality", v as AppConfigMediux["download_quality"])}
 				>
 					<SelectTrigger
 						id="mediux-download-quality-trigger"
-						className={cn("w-full", dirtyFields.DownloadQuality && "border-amber-500")}
+						className={cn("w-full", dirtyFields.download_quality && "border-amber-500")}
 					>
 						<SelectValue placeholder="Select quality..." />
 					</SelectTrigger>
@@ -214,7 +214,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 						))}
 					</SelectContent>
 				</Select>
-				{errors.DownloadQuality && <p className="text-xs text-red-500">{errors.DownloadQuality}</p>}
+				{errors.download_quality && <p className="text-xs text-red-500">{errors.download_quality}</p>}
 			</div>
 		</Card>
 	);
