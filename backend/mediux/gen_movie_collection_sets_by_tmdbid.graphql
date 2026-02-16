@@ -1,0 +1,78 @@
+query getMovieItemCollectionSetsByTMDBID($tmdb_id: ID!) {
+  movies_by_id(id: $tmdb_id) {
+    collection_id {
+      id
+      collection_name
+      posters {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie(filter: { id: { _eq: null } }) {
+          id
+        }
+      }
+      backdrops {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie(filter: { id: { _eq: null } }) {
+          id
+        }
+      }
+      movies {
+        id
+        date_updated
+        status
+        title
+        tagline
+        release_date
+        tvdb_id
+        imdb_id
+        trakt_id
+        slug
+        poster_path
+        backdrop_path
+        posters(filter: { collection_set: { id: { _nnull: true } } }) {
+          id
+          modified_on
+          filesize
+          src
+          blurhash
+          collection_set {
+            id
+            set_title
+            user_created {
+              username
+            }
+            date_created
+            date_updated
+            popularity
+            popularity_global
+          }
+        }
+        backdrops(filter: { collection_set: { id: { _nnull: true } } }) {
+          id
+          modified_on
+          filesize
+          src
+          blurhash
+          collection_set {
+            id
+            set_title
+            user_created {
+              username
+            }
+            date_created
+            date_updated
+            popularity
+            popularity_global
+          }
+        }
+      }
+    }
+  }
+}

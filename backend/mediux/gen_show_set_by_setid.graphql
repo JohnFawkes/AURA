@@ -1,0 +1,65 @@
+query getShowSetBySetID($set_id: ID!) {
+  show_sets_by_id(id: $set_id) {
+    id
+    set_title
+    user_created {
+      username
+    }
+    date_created
+    date_updated
+    popularity
+    popularity_global
+    show_id {
+      id
+      date_updated
+      status
+      title
+      tagline
+      first_air_date
+      tvdb_id
+      imdb_id
+      trakt_id
+      slug
+      poster_path
+      backdrop_path
+    }
+    show_poster {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+    }
+    show_backdrop {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+    }
+    season_posters {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      season {
+        season_number
+      }
+    }
+    titlecards {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      episode {
+        episode_title
+        episode_number
+        season_id {
+          season_number
+        }
+      }
+    }
+  }
+}

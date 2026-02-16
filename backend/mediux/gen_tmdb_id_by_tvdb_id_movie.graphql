@@ -1,0 +1,6 @@
+query findMovieTMDBIDByTVDBID($tvdb_id: String!) {
+	movies(filter: { tvdb_id: { _eq: $tvdb_id } }) {
+		id
+		tvdb_id
+	}
+}

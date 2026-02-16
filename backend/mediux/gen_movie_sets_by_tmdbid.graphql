@@ -1,0 +1,48 @@
+query getMovieItemSetsByTMDBID($tmdb_id: ID!) {
+  movies_by_id(id: $tmdb_id) {
+    id
+    date_updated
+    status
+    title
+    tagline
+    release_date
+    tvdb_id
+    imdb_id
+    trakt_id
+    slug
+    poster_path
+    backdrop_path
+    movie_sets(
+      filter: {
+        _or: [
+          { movie_poster: { id: { _neq: null } } }
+          { movie_backdrop: { id: { _neq: null } } }
+        ]
+      }
+    ) {
+      id
+      set_title
+      user_created {
+        username
+      }
+      date_created
+      date_updated
+      popularity
+      popularity_global
+      movie_poster {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+      }
+      movie_backdrop {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+      }
+    }
+  }
+}

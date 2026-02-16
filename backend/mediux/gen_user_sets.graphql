@@ -1,0 +1,360 @@
+query getAllUserSets($username: String!) {
+  show_sets(
+    limit: -1
+    filter: {
+      user_created: { username: { _eq: $username } }
+      _or: [
+        { show_poster: { id: { _nnull: true } } }
+        { show_backdrop: { id: { _nnull: true } } }
+        { season_posters: { id: { _nnull: true } } }
+        { titlecards: { id: { _nnull: true } } }
+      ]
+    }
+  ) {
+    id
+    set_title
+    user_created {
+      username
+    }
+    date_created
+    date_updated
+    popularity
+    popularity_global
+    show_id {
+      id
+      date_updated
+      status
+      title
+      tagline
+      first_air_date
+      tvdb_id
+      imdb_id
+      trakt_id
+      slug
+      poster_path
+      backdrop_path
+    }
+    show_poster {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+    }
+    show_backdrop {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+    }
+    season_posters {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      season {
+        season_number
+      }
+    }
+    titlecards {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      episode {
+        episode_title
+        episode_number
+        season_id {
+          season_number
+        }
+      }
+    }
+  }
+  movie_sets(
+    limit: -1
+    filter: { user_created: { username: { _eq: $username } } }
+  ) {
+    id
+    set_title
+    user_created {
+      username
+    }
+    date_created
+    date_updated
+    popularity
+    popularity_global
+    movie_id {
+      id
+      date_updated
+      status
+      title
+      tagline
+      release_date
+      tvdb_id
+      imdb_id
+      trakt_id
+      slug
+      poster_path
+      backdrop_path
+    }
+    movie_poster {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      movie {
+        id
+      }
+    }
+    movie_backdrop {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      movie {
+        id
+      }
+    }
+  }
+  collection_sets(
+    limit: -1
+    filter: { user_created: { username: { _eq: $username } } }
+  ) {
+    id
+    user_created {
+      username
+    }
+    set_title
+    date_created
+    date_updated
+    popularity
+    popularity_global
+    movie_posters {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      movie {
+        id
+        date_updated
+        status
+        title
+        tagline
+        release_date
+        tvdb_id
+        imdb_id
+        trakt_id
+        slug
+        poster_path
+        backdrop_path
+      }
+    }
+    movie_backdrops {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      movie {
+        id
+        date_updated
+        status
+        title
+        tagline
+        release_date
+        tvdb_id
+        imdb_id
+        trakt_id
+        slug
+        poster_path
+        backdrop_path
+      }
+    }
+  }
+  boxsets(
+    limit: -1
+    filter: {
+      user_created: { username: { _eq: $username } }
+      _or: [
+        { movie_sets: { id: { _null: false } } }
+        { show_sets: { id: { _null: false } } }
+        { collection_sets: { id: { _null: false } } }
+      ]
+    }
+  ) {
+    id
+    user_created {
+      username
+    }
+    boxset_title
+    date_created
+    date_updated
+    show_sets(limit: -1) {
+      id
+      set_title
+      user_created {
+        username
+      }
+      date_created
+      date_updated
+      popularity
+      popularity_global
+      show_id {
+        id
+        date_updated
+        status
+        title
+        tagline
+        first_air_date
+        tvdb_id
+        imdb_id
+        trakt_id
+        slug
+        poster_path
+        backdrop_path
+      }
+      show_poster {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+      }
+      show_backdrop {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+      }
+      season_posters {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        season {
+          season_number
+        }
+      }
+      titlecards {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        episode {
+          episode_title
+          episode_number
+          season_id {
+            season_number
+          }
+        }
+      }
+    }
+    movie_sets(limit: -1) {
+      id
+      set_title
+      user_created {
+        username
+      }
+      date_created
+      date_updated
+      popularity
+      popularity_global
+      movie_id {
+        id
+        date_updated
+        status
+        title
+        tagline
+        release_date
+        tvdb_id
+        imdb_id
+        trakt_id
+        slug
+        poster_path
+        backdrop_path
+      }
+      movie_poster {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie {
+          id
+        }
+      }
+      movie_backdrop {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie {
+          id
+        }
+      }
+    }
+    collection_sets {
+      id
+      set_title
+      date_created
+      date_updated
+      popularity
+      popularity_global
+      user_created {
+        username
+      }
+      movie_posters {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie {
+          id
+          date_updated
+          status
+          title
+          tagline
+          release_date
+          tvdb_id
+          imdb_id
+          trakt_id
+          slug
+          poster_path
+          backdrop_path
+        }
+      }
+      movie_backdrops {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        movie {
+          id
+          date_updated
+          status
+          title
+          tagline
+          release_date
+          tvdb_id
+          imdb_id
+          trakt_id
+          slug
+          poster_path
+          backdrop_path
+        }
+      }
+    }
+  }
+}

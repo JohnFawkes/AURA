@@ -1,0 +1,6 @@
+query getItemsWithSets {
+	content_ids(limit: -1) {
+		id
+		type
+	}
+}
