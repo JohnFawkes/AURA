@@ -130,10 +130,7 @@ func v1_2_ConvertOldData(ctx context.Context, conn *sql.DB) logging.LogErrorInfo
 	// SavedItemsBackup1 has columns: tmdb_id, library_title, poster_set_id
 	query := `
 		SELECT TMDB_ID, LibraryTitle, PosterSetID
-		FROM SavedItemsBackup1 
-		WHERE (TMDB_ID = '100088' AND LibraryTitle = '4K Series') OR 
-			  (TMDB_ID = '370172' AND LibraryTitle = '4K Movies')
-		LIMIT 5;
+		FROM SavedItemsBackup1;
 	`
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
