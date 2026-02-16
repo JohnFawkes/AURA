@@ -6,8 +6,7 @@ export interface TMDBLookupMap {
 
 export const createTMDBLookupMap = (mediaItems: MediaItem[]): TMDBLookupMap =>
 	mediaItems.reduce((map: TMDBLookupMap, item) => {
-		const tmdbGuid = item.Guids?.find((g) => g.Provider === "tmdb");
-		if (tmdbGuid?.ID) map[tmdbGuid.ID] = item;
+		if (item.tmdb_id) map[item.tmdb_id] = item;
 		return map;
 	}, {});
 
