@@ -23,120 +23,120 @@ import { DBSavedItem } from "@/types/database/db-poster-set";
 import { BaseSetInfo } from "@/types/media-and-posters/sets";
 
 const DownloadQueueEntry: React.FC<{
-	entry: DBSavedItem;
-	fetchQueueEntries?: () => Promise<void>;
+    entry: DBSavedItem;
+    fetchQueueEntries?: () => Promise<void>;
 }> = ({ entry, fetchQueueEntries }) => {
-	const baseSetInfo: BaseSetInfo = {
-		id: entry.poster_sets[0]?.id || "",
-		title: entry.poster_sets[0]?.title || "",
-		type: entry.poster_sets[0]?.type || "movie",
-		user_created: entry.poster_sets[0]?.user_created || "",
-		date_created: entry.poster_sets[0]?.date_created || "",
-		date_updated: entry.poster_sets[0]?.date_updated || "",
-		popularity: entry.poster_sets[0]?.popularity || 0,
-		popularity_global: entry.poster_sets[0]?.popularity_global || 0,
-	};
+    const baseSetInfo: BaseSetInfo = {
+        id: entry.poster_sets[0]?.id || "",
+        title: entry.poster_sets[0]?.title || "",
+        type: entry.poster_sets[0]?.type || "movie",
+        user_created: entry.poster_sets[0]?.user_created || "",
+        date_created: entry.poster_sets[0]?.date_created || "",
+        date_updated: entry.poster_sets[0]?.date_updated || "",
+        popularity: entry.poster_sets[0]?.popularity || 0,
+        popularity_global: entry.poster_sets[0]?.popularity_global || 0,
+    };
 
-	const formItems: FormItemDisplay[] = entry.poster_sets.map((set) => ({
-		MediaItem: entry.media_item,
-		Set: set,
-	}));
+    const formItems: FormItemDisplay[] = entry.poster_sets.map((set) => ({
+        MediaItem: entry.media_item,
+        Set: set,
+    }));
 
-	// Access global stores
-	const { setMediaItem } = useMediaStore();
+    // Access global stores
+    const { setMediaItem } = useMediaStore();
 
-	const onDeleteConfirm = async () => {
-		try {
-			const response = await removeItemFromQueue(entry);
-			if (response.status === "error") {
-				toast.error(
-					`Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
-				);
-			} else {
-				toast.success(response.data || "Successfully deleted from queue.");
-			}
-		} catch (error) {
-			toast.error(
-				`Error deleting from queue: ${error instanceof Error ? error.message : "Unknown error occurred trying to delete."}`
-			);
-		}
-		if (fetchQueueEntries) {
-			await fetchQueueEntries();
-		}
-	};
+    const onDeleteConfirm = async () => {
+        try {
+            const response = await removeItemFromQueue(entry);
+            if (response.status === "error") {
+                toast.error(
+                    `Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
+                );
+            } else {
+                toast.success(response.data || "Successfully deleted from queue.");
+            }
+        } catch (error) {
+            toast.error(
+                `Error deleting from queue: ${error instanceof Error ? error.message : "Unknown error occurred trying to delete."}`
+            );
+        }
+        if (fetchQueueEntries) {
+            await fetchQueueEntries();
+        }
+    };
 
-	return (
-		<Card className="relative w-full max-w-md mx-auto">
-			<CardHeader>
-				{/* Top Left: Delete File */}
-				<div className="absolute top-2 left-2">
-					<ConfirmDestructiveDialogActionButton
-						variant="outline"
-						className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
-						confirmText="Delete File"
-						title="Delete Downloaded File?"
-						description="Are you sure you want to delete the downloaded file for this media item? This action cannot be undone."
-						onConfirm={onDeleteConfirm}
-					>
-						<Trash2 className="w-5 h-5" />
-					</ConfirmDestructiveDialogActionButton>
-				</div>
-				{/* Top Right: Dropdown Menu */}
-				<div className="absolute top-2 right-2 justify-end">
-					<DownloadModal baseSetInfo={baseSetInfo} formItems={formItems} />
-				</div>
-			</CardHeader>
+    return (
+        <Card className="relative w-full max-w-md mx-auto">
+            <CardHeader>
+                {/* Top Left: Delete File */}
+                <div className="absolute top-2 left-2">
+                    <ConfirmDestructiveDialogActionButton
+                        variant="outline"
+                        className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+                        confirmText="Delete File"
+                        title="Delete Downloaded File?"
+                        description="Are you sure you want to delete the downloaded file for this media item? This action cannot be undone."
+                        onConfirm={onDeleteConfirm}
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </ConfirmDestructiveDialogActionButton>
+                </div>
+                {/* Top Right: Dropdown Menu */}
+                <div className="absolute top-2 right-2 justify-end">
+                    <DownloadModal baseSetInfo={baseSetInfo} formItems={formItems} />
+                </div>
+            </CardHeader>
 
-			{/* Middle: Image */}
-			<div className="flex justify-center">
-				<AssetImage
-					image={entry.media_item}
-					imageType="item"
-					className="w-[80%] h-auto transition-transform hover:scale-105"
-				/>
-			</div>
+            {/* Middle: Image */}
+            <div className="flex justify-center">
+                <AssetImage
+                    image={entry.media_item}
+                    imageType="item"
+                    className="w-[80%] h-auto transition-transform hover:scale-105"
+                />
+            </div>
 
-			{/* Content */}
-			<CardContent className="p-0 ml-2 mr-2">
-				{/* Title */}
-				<H4>
-					<Link
-						//href={formatMediaItemUrl(entry.MediaItem)}
-						href={"/media-item/"}
-						className="text-primary hover:underline"
-						onClick={() => {
-							setMediaItem(entry.media_item);
-						}}
-					>
-						{entry.media_item.title}
-					</Link>
-				</H4>
+            {/* Content */}
+            <CardContent className="p-0 ml-2 mr-2">
+                {/* Title */}
+                <H4>
+                    <Link
+                        //href={formatMediaItemUrl(entry.MediaItem)}
+                        href={"/media-item/"}
+                        className="text-primary hover:underline"
+                        onClick={() => {
+                            setMediaItem(entry.media_item);
+                        }}
+                    >
+                        {entry.media_item.title}
+                    </Link>
+                </H4>
 
-				{/* Year and Library */}
-				<span className="text-xs sm:text-sm text-muted-foreground inline-block">
-					{entry.media_item.year} · {entry.media_item.library_title}
-				</span>
+                {/* Year and Library */}
+                <span className="text-xs sm:text-sm text-muted-foreground inline-block">
+                    {entry.media_item.year} · {entry.media_item.library_title}
+                </span>
 
-				<Separator className="my-4" />
+                <Separator className="my-4" />
 
-				{entry.poster_sets.some(
-					(set) =>
-						set.selected_types.poster ||
-						set.selected_types.backdrop ||
-						set.selected_types.season_poster ||
-						set.selected_types.titlecard
-				) ? (
-					<div className="flex flex-wrap gap-2">{renderTypeBadges(entry)}</div>
-				) : (
-					<div className="flex flex-wrap gap-2">
-						<Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
-							No Selected Types
-						</Badge>
-					</div>
-				)}
-			</CardContent>
-		</Card>
-	);
+                {entry.poster_sets.some(
+                    (set) =>
+                        set.selected_types.poster ||
+                        set.selected_types.backdrop ||
+                        set.selected_types.season_poster ||
+                        set.selected_types.titlecard
+                ) ? (
+                    <div className="flex flex-wrap gap-2">{renderTypeBadges(entry)}</div>
+                ) : (
+                    <div className="flex flex-wrap gap-2">
+                        <Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
+                            No Selected Types
+                        </Badge>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
 };
 
 export default DownloadQueueEntry;

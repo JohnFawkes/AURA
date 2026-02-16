@@ -18,16 +18,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Dialog,
-	DialogClose,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogOverlay,
-	DialogPortal,
-	DialogTitle,
-	DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogOverlay,
+    DialogPortal,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
@@ -39,434 +39,434 @@ import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 import { ImageFile, SetRef } from "@/types/media-and-posters/sets";
 
 export interface CollectionsDownloadModalProps {
-	item: CollectionItem;
-	set: SetRef;
+    item: CollectionItem;
+    set: SetRef;
 }
 
 const downloadSchema = z.object({
-	poster: z.boolean(),
-	backdrop: z.boolean(),
+    poster: z.boolean(),
+    backdrop: z.boolean(),
 });
 
 const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ item, set }) => {
-	const [isMounted, setIsMounted] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
-	// Cancel Button Text
-	const [cancelButtonText, setCancelButtonText] = useState<string>("Cancel");
+    // Cancel Button Text
+    const [cancelButtonText, setCancelButtonText] = useState<string>("Cancel");
 
-	// Download Button Text
-	const [downloadButtonText, setDownloadButtonText] = useState<string>("Download");
+    // Download Button Text
+    const [downloadButtonText, setDownloadButtonText] = useState<string>("Download");
 
-	const [progress, setProgress] = useState<{
-		poster_progress?: string;
-		backdrop_progress?: string;
-	}>({});
+    const [progress, setProgress] = useState<{
+        poster_progress?: string;
+        backdrop_progress?: string;
+    }>({});
 
-	const [errors, setErrors] = useState<{
-		poster_error?: string;
-		backdrop_error?: string;
-	}>({});
+    const [errors, setErrors] = useState<{
+        poster_error?: string;
+        backdrop_error?: string;
+    }>({});
 
-	// User Preferences
-	const { downloadDefaults } = useUserPreferencesStore();
+    // User Preferences
+    const { downloadDefaults } = useUserPreferencesStore();
 
-	const posterImage = set.images.find((img) => img.type === "collection-poster") || null;
-	const backdropImage = set.images.find((img) => img.type === "collection-backdrop") || null;
+    const posterImage = set.images.find((img) => img.type === "collection-poster") || null;
+    const backdropImage = set.images.find((img) => img.type === "collection-backdrop") || null;
 
-	const form = useForm({
-		resolver: zodResolver(downloadSchema),
-		defaultValues: {
-			poster: downloadDefaults.includes("poster") && !!posterImage,
-			backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
-		},
-	});
+    const form = useForm({
+        resolver: zodResolver(downloadSchema),
+        defaultValues: {
+            poster: downloadDefaults.includes("poster") && !!posterImage,
+            backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
+        },
+    });
 
-	// Reset form on mount
-	useEffect(() => {
-		form.reset({
-			poster: downloadDefaults.includes("poster") && !!posterImage,
-			backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
-		});
-	}, [form, downloadDefaults, posterImage, backdropImage]);
+    // Reset form on mount
+    useEffect(() => {
+        form.reset({
+            poster: downloadDefaults.includes("poster") && !!posterImage,
+            backdrop: downloadDefaults.includes("backdrop") && !!backdropImage,
+        });
+    }, [form, downloadDefaults, posterImage, backdropImage]);
 
-	const selectedValues = useWatch({ control: form.control });
+    const selectedValues = useWatch({ control: form.control });
 
-	const numberOfImagesSelected = useMemo(() => {
-		let count = 0;
-		if (selectedValues.poster) count += 1;
-		if (selectedValues.backdrop) count += 1;
-		return count;
-	}, [selectedValues.poster, selectedValues.backdrop]);
+    const numberOfImagesSelected = useMemo(() => {
+        let count = 0;
+        if (selectedValues.poster) count += 1;
+        if (selectedValues.backdrop) count += 1;
+        return count;
+    }, [selectedValues.poster, selectedValues.backdrop]);
 
-	const sizeOfImagesSelected = useMemo(() => {
-		let size = 0;
-		if (selectedValues.poster && posterImage) size += posterImage.file_size || 0;
-		if (selectedValues.backdrop && backdropImage) size += backdropImage.file_size || 0;
-		return formatDownloadSize(size);
-	}, [selectedValues.poster, selectedValues.backdrop, posterImage, backdropImage]);
+    const sizeOfImagesSelected = useMemo(() => {
+        let size = 0;
+        if (selectedValues.poster && posterImage) size += posterImage.file_size || 0;
+        if (selectedValues.backdrop && backdropImage) size += backdropImage.file_size || 0;
+        return formatDownloadSize(size);
+    }, [selectedValues.poster, selectedValues.backdrop, posterImage, backdropImage]);
 
-	// Function - Close Modal
-	const handleClose = () => {
-		form.reset();
-		// Reset progress and errors
-		setProgress({});
-		setErrors({});
-		resetProgressValues();
-		progressDownloadRef.current = 0;
-	};
+    // Function - Close Modal
+    const handleClose = () => {
+        form.reset();
+        // Reset progress and errors
+        setProgress({});
+        setErrors({});
+        resetProgressValues();
+        progressDownloadRef.current = 0;
+    };
 
-	type ProgressValues = {
-		value: number;
-		color: string;
-	};
+    type ProgressValues = {
+        value: number;
+        color: string;
+    };
 
-	// Download Progress
-	const [progressValues, setProgressValues] = useState<ProgressValues>({
-		value: 0,
-		color: "",
-	});
+    // Download Progress
+    const [progressValues, setProgressValues] = useState<ProgressValues>({
+        value: 0,
+        color: "",
+    });
 
-	// Add this with your other state declarations
-	const progressRef = useRef(0);
-	const progressIncrementRef = useRef(0);
-	const progressDownloadRef = useRef(0);
+    // Add this with your other state declarations
+    const progressRef = useRef(0);
+    const progressIncrementRef = useRef(0);
+    const progressDownloadRef = useRef(0);
 
-	const updateProgressValue = (value: number) => {
-		// Update the ref immediately
-		progressRef.current = Math.min(value, 100);
+    const updateProgressValue = (value: number) => {
+        // Update the ref immediately
+        progressRef.current = Math.min(value, 100);
 
-		// Update the state
-		setProgressValues((prev) => ({
-			...prev,
-			value: progressRef.current,
-		}));
-	};
+        // Update the state
+        setProgressValues((prev) => ({
+            ...prev,
+            value: progressRef.current,
+        }));
+    };
 
-	const resetProgressValues = () => {
-		progressRef.current = 0;
-		progressIncrementRef.current = 0;
-		progressDownloadRef.current = 0;
-		setProgressValues({
-			value: 0,
-			color: "",
-		});
-	};
+    const resetProgressValues = () => {
+        progressRef.current = 0;
+        progressIncrementRef.current = 0;
+        progressDownloadRef.current = 0;
+        setProgressValues({
+            value: 0,
+            color: "",
+        });
+    };
 
-	const downloadImageFileAndApply = async (
-		imageType: "poster" | "backdrop",
-		collectionItem: CollectionItem,
-		imageFile: ImageFile
-	) => {
-		let isDone = false;
-		let interval: NodeJS.Timeout | undefined; // Declare interval here
+    const downloadImageFileAndApply = async (
+        imageType: "poster" | "backdrop",
+        collectionItem: CollectionItem,
+        imageFile: ImageFile
+    ) => {
+        let isDone = false;
+        let interval: NodeJS.Timeout | undefined; // Declare interval here
 
-		try {
-			setProgress((prev) => ({
-				...prev,
-				[`${imageType}_progress`]: `Downloading ${imageType}...`,
-			}));
+        try {
+            setProgress((prev) => ({
+                ...prev,
+                [`${imageType}_progress`]: `Downloading ${imageType}...`,
+            }));
 
-			const targetProgress = progressRef.current + progressIncrementRef.current;
-			let currentProgress = progressRef.current;
+            const targetProgress = progressRef.current + progressIncrementRef.current;
+            let currentProgress = progressRef.current;
 
-			// Start progress animation
-			interval = setInterval(() => {
-				if (currentProgress < targetProgress && !isDone) {
-					currentProgress += 1;
-					updateProgressValue(currentProgress);
-				}
-			}, 50);
+            // Start progress animation
+            interval = setInterval(() => {
+                if (currentProgress < targetProgress && !isDone) {
+                    currentProgress += 1;
+                    updateProgressValue(currentProgress);
+                }
+            }, 50);
 
-			const response = await downloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
-			if (response.status === "error") {
-				throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
-			}
+            const response = await downloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
+            if (response.status === "error") {
+                throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
+            }
 
-			// Mark as done and set progress to target
-			isDone = true;
-			clearInterval(interval);
-			updateProgressValue(targetProgress);
+            // Mark as done and set progress to target
+            isDone = true;
+            clearInterval(interval);
+            updateProgressValue(targetProgress);
 
-			setProgress((prev) => ({
-				...prev,
-				[`${imageType}_progress`]: `Downloaded ${imageType.charAt(0).toUpperCase() + imageType.slice(1)}`,
-			}));
-		} catch {
-			isDone = true;
-			if (interval) clearInterval(interval);
-			setProgress((prev) => ({
-				...prev,
-				[`${imageType}_progress`]: `Failed to download ${imageType}`,
-			}));
-			setErrors((prev) => ({
-				...prev,
-				[`${imageType}_error`]: `Failed to download ${imageType}.`,
-			}));
-		} finally {
-			updateProgressValue(progressRef.current + progressIncrementRef.current);
-		}
-	};
+            setProgress((prev) => ({
+                ...prev,
+                [`${imageType}_progress`]: `Downloaded ${imageType.charAt(0).toUpperCase() + imageType.slice(1)}`,
+            }));
+        } catch {
+            isDone = true;
+            if (interval) clearInterval(interval);
+            setProgress((prev) => ({
+                ...prev,
+                [`${imageType}_progress`]: `Failed to download ${imageType}`,
+            }));
+            setErrors((prev) => ({
+                ...prev,
+                [`${imageType}_error`]: `Failed to download ${imageType}.`,
+            }));
+        } finally {
+            updateProgressValue(progressRef.current + progressIncrementRef.current);
+        }
+    };
 
-	const onSubmit = async (data: z.infer<typeof downloadSchema>) => {
-		if (isMounted) return;
+    const onSubmit = async (data: z.infer<typeof downloadSchema>) => {
+        if (isMounted) return;
 
-		if (!data.poster && !data.backdrop) {
-			return;
-		}
+        if (!data.poster && !data.backdrop) {
+            return;
+        }
 
-		setIsMounted(true);
+        setIsMounted(true);
 
-		try {
-			// Reset errors and progress
-			setErrors({});
-			setProgress({});
-			resetProgressValues();
-			progressDownloadRef.current = 0;
+        try {
+            // Reset errors and progress
+            setErrors({});
+            setProgress({});
+            resetProgressValues();
+            progressDownloadRef.current = 0;
 
-			log("INFO", "Collections Download Modal", "Debug Info", "Form submitted with data:", {
-				data,
-				item,
-				set,
-			});
-			log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
-			updateProgressValue(1);
+            log("INFO", "Collections Download Modal", "Debug Info", "Form submitted with data:", {
+                data,
+                item,
+                set,
+            });
+            log("INFO", "Download Modal", "Debug Info", "Logging progress values:", progressValues);
+            updateProgressValue(1);
 
-			// Progress Increment Calculation
-			const totalItemsToDownload =
-				(data.poster && posterImage ? 1 : 0) + (data.backdrop && backdropImage ? 1 : 0);
-			progressIncrementRef.current = 95 / (totalItemsToDownload * 2); // Multiply by 2 for start and end progress
+            // Progress Increment Calculation
+            const totalItemsToDownload =
+                (data.poster && posterImage ? 1 : 0) + (data.backdrop && backdropImage ? 1 : 0);
+            progressIncrementRef.current = 95 / (totalItemsToDownload * 2); // Multiply by 2 for start and end progress
 
-			if (data.poster && posterImage) {
-				await downloadImageFileAndApply("poster", item, posterImage);
-			}
+            if (data.poster && posterImage) {
+                await downloadImageFileAndApply("poster", item, posterImage);
+            }
 
-			if (data.backdrop && backdropImage) {
-				await downloadImageFileAndApply("backdrop", item, backdropImage);
-			}
+            if (data.backdrop && backdropImage) {
+                await downloadImageFileAndApply("backdrop", item, backdropImage);
+            }
 
-			updateProgressValue(100);
-		} catch (error) {
-			log("ERROR", "Collections Download Modal", "Debug Info", "Download Error:", error);
-		} finally {
-			setIsMounted(false);
-			setDownloadButtonText("Download");
-			setCancelButtonText("Close");
-		}
-	};
+            updateProgressValue(100);
+        } catch (error) {
+            log("ERROR", "Collections Download Modal", "Debug Info", "Download Error:", error);
+        } finally {
+            setIsMounted(false);
+            setDownloadButtonText("Download");
+            setCancelButtonText("Close");
+        }
+    };
 
-	const logInfoForPage = () => {
-		log("INFO", "Collections Download Modal", "Debug Info", "Rendering with props:", {
-			item,
-			set,
-			posterImage,
-			backdropImage,
-			downloadDefaults,
-		});
-	};
+    const logInfoForPage = () => {
+        log("INFO", "Collections Download Modal", "Debug Info", "Rendering with props:", {
+            item,
+            set,
+            posterImage,
+            backdropImage,
+            downloadDefaults,
+        });
+    };
 
-	return (
-		<Dialog
-			onOpenChange={(open) => {
-				if (!open) {
-					handleClose();
-				}
-			}}
-		>
-			<DialogTrigger asChild>
-				<Download className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
-			</DialogTrigger>
-			<DialogPortal>
-				<DialogOverlay />
-				<DialogContent
-					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
-				>
-					<DialogHeader>
-						<DialogTitle onClick={logInfoForPage}>{set.title}</DialogTitle>
-						<DialogDescription>
-							<div className="flex items-center justify-center sm:justify-start">
-								<Avatar className="rounded-lg mr-1 w-4 h-4">
-									<AvatarImage
-										src={`/api/images/mediux/avatar?username=${set.user_created}`}
-										className="w-4 h-4"
-									/>
-									<AvatarFallback className="">
-										<User className="w-4 h-4" />
-									</AvatarFallback>
-								</Avatar>
-								<Link href={`/user/${set.user_created}`} className="hover:underline">
-									{set.user_created}
-								</Link>
-							</div>
-						</DialogDescription>
-						<DialogDescription>Library: {item.library_title}</DialogDescription>
-						<DialogDescription>Collection ID: {set.id}</DialogDescription>
-					</DialogHeader>
+    return (
+        <Dialog
+            onOpenChange={(open) => {
+                if (!open) {
+                    handleClose();
+                }
+            }}
+        >
+            <DialogTrigger asChild>
+                <Download className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+            </DialogTrigger>
+            <DialogPortal>
+                <DialogOverlay />
+                <DialogContent
+                    className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+                >
+                    <DialogHeader>
+                        <DialogTitle onClick={logInfoForPage}>{set.title}</DialogTitle>
+                        <DialogDescription>
+                            <div className="flex items-center justify-center sm:justify-start">
+                                <Avatar className="rounded-lg mr-1 w-4 h-4">
+                                    <AvatarImage
+                                        src={`/api/images/mediux/avatar?username=${set.user_created}`}
+                                        className="w-4 h-4"
+                                    />
+                                    <AvatarFallback className="">
+                                        <User className="w-4 h-4" />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <Link href={`/user/${set.user_created}`} className="hover:underline">
+                                    {set.user_created}
+                                </Link>
+                            </div>
+                        </DialogDescription>
+                        <DialogDescription>Library: {item.library_title}</DialogDescription>
+                        <DialogDescription>Collection ID: {set.id}</DialogDescription>
+                    </DialogHeader>
 
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-								{posterImage && (
-									<FormField
-										control={form.control}
-										name="poster"
-										render={({ field }) => (
-											<FormItem className="flex flex-col items-center border rounded-md p-4">
-												<FormLabel className="font-medium mb-2">Poster</FormLabel>
-												<FormControl>
-													<Checkbox checked={field.value} onCheckedChange={field.onChange} />
-												</FormControl>
-												{posterImage && (
-													<AssetImage
-														image={posterImage}
-														imageType="mediux"
-														aspect="poster"
-														className="w-32 h-auto mt-2 rounded shadow"
-													/>
-												)}
-											</FormItem>
-										)}
-									/>
-								)}
-								{backdropImage && (
-									<FormField
-										control={form.control}
-										name="backdrop"
-										render={({ field }) => (
-											<FormItem className="flex flex-col items-center border rounded-md p-4">
-												<FormLabel className="font-medium mb-2">Backdrop</FormLabel>
-												<FormControl>
-													<Checkbox checked={field.value} onCheckedChange={field.onChange} />
-												</FormControl>
-												{backdropImage && (
-													<AssetImage
-														image={backdropImage}
-														imageType="mediux"
-														aspect="backdrop"
-														className="w-full"
-													/>
-												)}
-											</FormItem>
-										)}
-									/>
-								)}
-							</div>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {posterImage && (
+                                    <FormField
+                                        control={form.control}
+                                        name="poster"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col items-center border rounded-md p-4">
+                                                <FormLabel className="font-medium mb-2">Poster</FormLabel>
+                                                <FormControl>
+                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                </FormControl>
+                                                {posterImage && (
+                                                    <AssetImage
+                                                        image={posterImage}
+                                                        imageType="mediux"
+                                                        aspect="poster"
+                                                        className="w-32 h-auto mt-2 rounded shadow"
+                                                    />
+                                                )}
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+                                {backdropImage && (
+                                    <FormField
+                                        control={form.control}
+                                        name="backdrop"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col items-center border rounded-md p-4">
+                                                <FormLabel className="font-medium mb-2">Backdrop</FormLabel>
+                                                <FormControl>
+                                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                </FormControl>
+                                                {backdropImage && (
+                                                    <AssetImage
+                                                        image={backdropImage}
+                                                        imageType="mediux"
+                                                        aspect="backdrop"
+                                                        className="w-full"
+                                                    />
+                                                )}
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+                            </div>
 
-							{numberOfImagesSelected > 0 ? (
-								<>
-									<div className="text-sm text-muted-foreground">
-										Number of Images: {numberOfImagesSelected}
-									</div>
-									<div className="text-sm text-muted-foreground">
-										Total Download Size: ~{sizeOfImagesSelected}
-									</div>
-								</>
-							) : (
-								<div className="text-sm text-destructive">
-									No image types selected for download. Please select at least one image type to
-									download.
-								</div>
-							)}
+                            {numberOfImagesSelected > 0 ? (
+                                <>
+                                    <div className="text-sm text-muted-foreground">
+                                        Number of Images: {numberOfImagesSelected}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Total Download Size: ~{sizeOfImagesSelected}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-sm text-destructive">
+                                    No image types selected for download. Please select at least one image type to
+                                    download.
+                                </div>
+                            )}
 
-							{progressValues.value > 0 && (
-								<div className="w-full">
-									<div className="flex items-center justify-between">
-										<Progress
-											value={progressValues.value}
-											className={`flex-1 
+                            {progressValues.value > 0 && (
+                                <div className="w-full">
+                                    <div className="flex items-center justify-between">
+                                        <Progress
+                                            value={progressValues.value}
+                                            className={`flex-1 
 												rounded-md ${progressValues.value < 100 ? "animate-pulse" : ""}
 												${progressValues.color ? `[&>div]:bg-${progressValues.color}-500` : ""}`}
-										/>
-										<span className="ml-2 text-sm text-muted-foreground">
-											{Math.round(progressValues.value)}%
-										</span>
-									</div>
+                                        />
+                                        <span className="ml-2 text-sm text-muted-foreground">
+                                            {Math.round(progressValues.value)}%
+                                        </span>
+                                    </div>
 
-									{(progress.poster_progress || progress.backdrop_progress) && (
-										<div className="space-y-1 mt-2">
-											<div className="text-xs font-semibold mb-1">Progress</div>
-											{progress.poster_progress && (
-												<div>{getProgressStatus(progress.poster_progress)}</div>
-											)}
-											{progress.backdrop_progress && (
-												<div>{getProgressStatus(progress.backdrop_progress)}</div>
-											)}
-										</div>
-									)}
+                                    {(progress.poster_progress || progress.backdrop_progress) && (
+                                        <div className="space-y-1 mt-2">
+                                            <div className="text-xs font-semibold mb-1">Progress</div>
+                                            {progress.poster_progress && (
+                                                <div>{getProgressStatus(progress.poster_progress)}</div>
+                                            )}
+                                            {progress.backdrop_progress && (
+                                                <div>{getProgressStatus(progress.backdrop_progress)}</div>
+                                            )}
+                                        </div>
+                                    )}
 
-									{(errors.poster_error || errors.backdrop_error) && (
-										<div className="space-y-1 mt-2">
-											<div className="text-xs font-semibold mb-1 text-red-600">Errors</div>
-											{errors.poster_error && (
-												<div className="text-red-600 flex items-center gap-1">
-													<X className="mr-1 h-4 w-4" />
-													Poster: {errors.poster_error}
-												</div>
-											)}
-											{errors.backdrop_error && (
-												<div className="text-red-600 flex items-center gap-1">
-													<X className="mr-1 h-4 w-4" />
-													Backdrop: {errors.backdrop_error}
-												</div>
-											)}
-										</div>
-									)}
-								</div>
-							)}
+                                    {(errors.poster_error || errors.backdrop_error) && (
+                                        <div className="space-y-1 mt-2">
+                                            <div className="text-xs font-semibold mb-1 text-red-600">Errors</div>
+                                            {errors.poster_error && (
+                                                <div className="text-red-600 flex items-center gap-1">
+                                                    <X className="mr-1 h-4 w-4" />
+                                                    Poster: {errors.poster_error}
+                                                </div>
+                                            )}
+                                            {errors.backdrop_error && (
+                                                <div className="text-red-600 flex items-center gap-1">
+                                                    <X className="mr-1 h-4 w-4" />
+                                                    Backdrop: {errors.backdrop_error}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
-							<DialogFooter>
-								{/* Cancel button to close the modal */}
-								<DialogClose asChild>
-									<Button
-										className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
-										variant="ghost"
-										onClick={() => {
-											handleClose();
-										}}
-									>
-										{cancelButtonText}
-									</Button>
-								</DialogClose>
-								<Button type="submit" disabled={!form.watch("poster") && !form.watch("backdrop")}>
-									{downloadButtonText}
-								</Button>
-							</DialogFooter>
-						</form>
-					</Form>
-				</DialogContent>
-			</DialogPortal>
-		</Dialog>
-	);
+                            <DialogFooter>
+                                {/* Cancel button to close the modal */}
+                                <DialogClose asChild>
+                                    <Button
+                                        className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+                                        variant="ghost"
+                                        onClick={() => {
+                                            handleClose();
+                                        }}
+                                    >
+                                        {cancelButtonText}
+                                    </Button>
+                                </DialogClose>
+                                <Button type="submit" disabled={!form.watch("poster") && !form.watch("backdrop")}>
+                                    {downloadButtonText}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </DialogPortal>
+        </Dialog>
+    );
 };
 
 // Helper for status styling and icon
 const getProgressStatus = (status?: string) => {
-	if (!status) return null;
-	const lower = status.toLowerCase();
-	if (lower.startsWith("downloading")) {
-		return (
-			<span className="flex items-center gap-1 text-muted-foreground">
-				<LoaderIcon className="mr-1 animate-spin h-4 w-4" />
-				{status}
-			</span>
-		);
-	}
-	if (lower.startsWith("downloaded")) {
-		return (
-			<span className="flex items-center gap-1 text-green-600">
-				<Check className="mr-1 h-4 w-4" />
-				{status}
-			</span>
-		);
-	}
-	if (lower.startsWith("failed")) {
-		return (
-			<span className="flex items-center gap-1 text-red-600">
-				<X className="mr-1 h-4 w-4" />
-				{status}
-			</span>
-		);
-	}
-	return <span>{status}</span>;
+    if (!status) return null;
+    const lower = status.toLowerCase();
+    if (lower.startsWith("downloading")) {
+        return (
+            <span className="flex items-center gap-1 text-muted-foreground">
+                <LoaderIcon className="mr-1 animate-spin h-4 w-4" />
+                {status}
+            </span>
+        );
+    }
+    if (lower.startsWith("downloaded")) {
+        return (
+            <span className="flex items-center gap-1 text-green-600">
+                <Check className="mr-1 h-4 w-4" />
+                {status}
+            </span>
+        );
+    }
+    if (lower.startsWith("failed")) {
+        return (
+            <span className="flex items-center gap-1 text-red-600">
+                <X className="mr-1 h-4 w-4" />
+                {status}
+            </span>
+        );
+    }
+    return <span>{status}</span>;
 };
 
 export default CollectionsDownloadModal;

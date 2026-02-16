@@ -18,25 +18,25 @@ import { GlobalStore, PageStore } from "@/lib/stores/stores";
  * removing all persisted keys (fresh start).
  */
 export const ClearAllStores = async (options?: { deep?: boolean }) => {
-	// 1. Clear each store's state (in memory + persisted slice contents).
-	// Page stores
-	useHomePageStore.getState().clear();
-	useMediaPageStore.getState().clear();
-	useSavedSetsPageStore.getState().clear();
-	useUserPageStore.getState().clear();
+    // 1. Clear each store's state (in memory + persisted slice contents).
+    // Page stores
+    useHomePageStore.getState().clear();
+    useMediaPageStore.getState().clear();
+    useSavedSetsPageStore.getState().clear();
+    useUserPageStore.getState().clear();
 
-	// Global stores
-	useSearchQueryStore.getState().clear();
-	usePosterSetsStore.getState().clear();
-	useOnboardingStore.getState().clear();
-	useMediaStore.getState().clear();
-	useLibrarySectionsStore.getState().clear();
-	useUserPreferencesStore.getState().clear();
+    // Global stores
+    useSearchQueryStore.getState().clear();
+    usePosterSetsStore.getState().clear();
+    useOnboardingStore.getState().clear();
+    useMediaStore.getState().clear();
+    useLibrarySectionsStore.getState().clear();
+    useUserPreferencesStore.getState().clear();
 
-	// 2. Optional deep clear: remove every persisted entry (including any future stores).
-	if (options?.deep) {
-		await Promise.all([PageStore.clear().catch(() => {}), GlobalStore.clear().catch(() => {})]);
-	}
+    // 2. Optional deep clear: remove every persisted entry (including any future stores).
+    if (options?.deep) {
+        await Promise.all([PageStore.clear().catch(() => {}), GlobalStore.clear().catch(() => {})]);
+    }
 };
 
 /**

@@ -14,23 +14,23 @@ import { LibrarySection } from "@/types/media-and-posters/media-item-and-library
  * @returns {Promise<APIResponse<LibrarySection[]>>} A promise that resolves to the API response containing an array of library sections.
  */
 export const getLibrarySections = async (): Promise<APIResponse<LibrarySection[]>> => {
-	log("INFO", "API - Media Server", "Fetch Library Sections", "Fetching all library sections");
-	try {
-		const response = await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/libraries/`);
-		if (response.data.status === "error") {
-			throw new Error(response.data.error?.message || "Unknown error fetching all library sections");
-		} else {
-			log("INFO", "API - Media Server", "Fetch Library Sections", `Fetched all library sections successfully`);
-		}
-		return response.data;
-	} catch (error) {
-		log(
-			"ERROR",
-			"API - Media Server",
-			"Fetch Library Sections",
-			`Failed to fetch all library sections: ${error instanceof Error ? error.message : "Unknown error"}`,
-			error
-		);
-		return ReturnErrorMessage<LibrarySection[]>(error);
-	}
+    log("INFO", "API - Media Server", "Fetch Library Sections", "Fetching all library sections");
+    try {
+        const response = await apiClient.get<APIResponse<LibrarySection[]>>(`/mediaserver/libraries/`);
+        if (response.data.status === "error") {
+            throw new Error(response.data.error?.message || "Unknown error fetching all library sections");
+        } else {
+            log("INFO", "API - Media Server", "Fetch Library Sections", `Fetched all library sections successfully`);
+        }
+        return response.data;
+    } catch (error) {
+        log(
+            "ERROR",
+            "API - Media Server",
+            "Fetch Library Sections",
+            `Failed to fetch all library sections: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error
+        );
+        return ReturnErrorMessage<LibrarySection[]>(error);
+    }
 };

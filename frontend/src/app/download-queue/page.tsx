@@ -22,284 +22,284 @@ import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
 const DownloadQueuePage: React.FC = () => {
-	// Refs - Fetching
-	const isFetchingRef = useRef(false);
+    // Refs - Fetching
+    const isFetchingRef = useRef(false);
 
-	// States - Queue Entries
-	const [inProgressEntries, setInProgressEntries] = useState<DBSavedItem[]>([]);
-	const [errorEntries, setErrorEntries] = useState<DBSavedItem[]>([]);
-	const [warningEntries, setWarningEntries] = useState<DBSavedItem[]>([]);
+    // States - Queue Entries
+    const [inProgressEntries, setInProgressEntries] = useState<DBSavedItem[]>([]);
+    const [errorEntries, setErrorEntries] = useState<DBSavedItem[]>([]);
+    const [warningEntries, setWarningEntries] = useState<DBSavedItem[]>([]);
 
-	// States - Queue Status
-	const [queueStatus, setQueueStatus] = useState<DownloadQueueStatus>({
-		time: "",
-		status: "",
-		message: "",
-		warnings: [],
-		errors: [],
-	});
-	const [secondsToNextRun, setSecondsToNextRun] = useState<number>(0);
+    // States - Queue Status
+    const [queueStatus, setQueueStatus] = useState<DownloadQueueStatus>({
+        time: "",
+        status: "",
+        message: "",
+        warnings: [],
+        errors: [],
+    });
+    const [secondsToNextRun, setSecondsToNextRun] = useState<number>(0);
 
-	// States - Loading & Error
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<APIResponse<unknown> | null>(null);
+    // States - Loading & Error
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<APIResponse<unknown> | null>(null);
 
-	// Fetch Queue Entries
-	const fetchQueueEntries = useCallback(async () => {
-		if (isFetchingRef.current) return;
-		isFetchingRef.current = true;
+    // Fetch Queue Entries
+    const fetchQueueEntries = useCallback(async () => {
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
 
-		try {
-			setLoading(true);
+        try {
+            setLoading(true);
 
-			const response = await getAllDownloadQueueItems();
+            const response = await getAllDownloadQueueItems();
 
-			if (response.status === "error") {
-				setError(response);
-				return;
-			}
+            if (response.status === "error") {
+                setError(response);
+                return;
+            }
 
-			setInProgressEntries(response.data?.in_progress_entries || []);
-			setErrorEntries(response.data?.error_entries || []);
-			setWarningEntries(response.data?.warning_entries || []);
-			setError(null);
-		} catch (error) {
-			setError(ReturnErrorMessage<unknown>(error));
-		} finally {
-			isFetchingRef.current = false;
-			setLoading(false);
-		}
-	}, []);
+            setInProgressEntries(response.data?.in_progress_entries || []);
+            setErrorEntries(response.data?.error_entries || []);
+            setWarningEntries(response.data?.warning_entries || []);
+            setError(null);
+        } catch (error) {
+            setError(ReturnErrorMessage<unknown>(error));
+        } finally {
+            isFetchingRef.current = false;
+            setLoading(false);
+        }
+    }, []);
 
-	useEffect(() => {
-		fetchQueueEntries();
-	}, [fetchQueueEntries, queueStatus.status]);
+    useEffect(() => {
+        fetchQueueEntries();
+    }, [fetchQueueEntries, queueStatus.status]);
 
-	useEffect(() => {
-		const fetchStatus = async () => {
-			try {
-				const statusResponse = await getDownloadQueueStatus();
-				if (statusResponse.status === "error") {
-					throw new Error("Error fetching status");
-				}
-				const status = statusResponse.data || {
-					time: new Date().toISOString(),
-					status: "Error",
-					message: "Unable to get status from server",
-					warnings: [],
-					errors: ["No status data"],
-				};
-				setQueueStatus(status);
-			} catch {
-				const errorResponse: DownloadQueueStatus = {
-					time: new Date().toISOString(),
-					status: "Error",
-					message: "Failed to fetch status",
-					warnings: [],
-					errors: [],
-				};
-				setQueueStatus(errorResponse);
-			}
-		};
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const statusResponse = await getDownloadQueueStatus();
+                if (statusResponse.status === "error") {
+                    throw new Error("Error fetching status");
+                }
+                const status = statusResponse.data || {
+                    time: new Date().toISOString(),
+                    status: "Error",
+                    message: "Unable to get status from server",
+                    warnings: [],
+                    errors: ["No status data"],
+                };
+                setQueueStatus(status);
+            } catch {
+                const errorResponse: DownloadQueueStatus = {
+                    time: new Date().toISOString(),
+                    status: "Error",
+                    message: "Failed to fetch status",
+                    warnings: [],
+                    errors: [],
+                };
+                setQueueStatus(errorResponse);
+            }
+        };
 
-		fetchStatus();
-		const interval = setInterval(fetchStatus, 1000 * 2); // Refresh every 2 seconds
+        fetchStatus();
+        const interval = setInterval(fetchStatus, 1000 * 2); // Refresh every 2 seconds
 
-		return () => clearInterval(interval);
-	}, []);
+        return () => clearInterval(interval);
+    }, []);
 
-	useEffect(() => {
-		const updateNextRunTime = () => {
-			const now = new Date();
-			const next = new Date(now);
-			next.setSeconds(0, 0);
-			if (now.getSeconds() !== 0 || now.getMilliseconds() !== 0) {
-				next.setMinutes(now.getMinutes() + 1);
-			}
+    useEffect(() => {
+        const updateNextRunTime = () => {
+            const now = new Date();
+            const next = new Date(now);
+            next.setSeconds(0, 0);
+            if (now.getSeconds() !== 0 || now.getMilliseconds() !== 0) {
+                next.setMinutes(now.getMinutes() + 1);
+            }
 
-			const diff = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 1000));
-			setSecondsToNextRun(diff);
-		};
+            const diff = Math.max(0, Math.floor((next.getTime() - now.getTime()) / 1000));
+            setSecondsToNextRun(diff);
+        };
 
-		updateNextRunTime();
-		const interval = setInterval(updateNextRunTime, 1000);
+        updateNextRunTime();
+        const interval = setInterval(updateNextRunTime, 1000);
 
-		return () => clearInterval(interval);
-	}, []);
+        return () => clearInterval(interval);
+    }, []);
 
-	if (loading) {
-		return <Loader className="mt-10" message="Loading download queue entries..." />;
-	}
+    if (loading) {
+        return <Loader className="mt-10" message="Loading download queue entries..." />;
+    }
 
-	if (error) {
-		return (
-			<div className="flex flex-col items-center p-6 gap-4">
-				<ErrorMessage error={error} />
-			</div>
-		);
-	}
+    if (error) {
+        return (
+            <div className="flex flex-col items-center p-6 gap-4">
+                <ErrorMessage error={error} />
+            </div>
+        );
+    }
 
-	const defaultAccordionValues = [
-		inProgressEntries.length > 0 ? "in_progress" : null,
-		errorEntries.length > 0 ? "error_entries" : null,
-		warningEntries.length > 0 ? "warning_entries" : null,
-	].filter(Boolean) as string[];
+    const defaultAccordionValues = [
+        inProgressEntries.length > 0 ? "in_progress" : null,
+        errorEntries.length > 0 ? "error_entries" : null,
+        warningEntries.length > 0 ? "warning_entries" : null,
+    ].filter(Boolean) as string[];
 
-	return (
-		<div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
-			<H2 className="text-3xl font-bold mb-4">Download Queue</H2>
+    return (
+        <div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
+            <H2 className="text-3xl font-bold mb-4">Download Queue</H2>
 
-			{typeof secondsToNextRun === "number" && (
-				<div className="w-full max-w-4xl mb-2 text-xs text-muted-foreground text-right flex items-center justify-end gap-2">
-					<span className="font-mono">Next Run: {secondsToNextRun}s</span>
-					<span title="HTTP Polling">
-						<Globe className="inline-block h-4 w-4 text-blue-500" />
-					</span>
-				</div>
-			)}
-			<pre
-				className={cn(
-					"w-full max-w-4xl mb-4 p-3 rounded text-xs whitespace-pre-wrap border",
-					queueStatus.status === "Error"
-						? "border-red-400 text-red-500"
-						: queueStatus.status === "Warning"
-							? "border-yellow-400 text-yellow-500"
-							: queueStatus.status === "Success"
-								? "border-green-400 text-green-500"
-								: queueStatus.status === "Idle - Queue Empty"
-									? "border-gray-400 text-gray-500"
-									: "border-primary text-primary"
-				)}
-			>
-				{queueStatus.time && (
-					<div>
-						<b>Last Run:</b> {formatExactDateTime(queueStatus.time)}
-					</div>
-				)}
-				{queueStatus.status && (
-					<div>
-						<b>Status:</b> {queueStatus.status}
-					</div>
-				)}
-				{queueStatus.message && <div className="mt-2 mb-2">{queueStatus.message}</div>}
-				{queueStatus.warnings && queueStatus.warnings.length > 0 && (
-					<div className="mt-1">
-						<b className="text-yellow-500">Warnings:</b>
-						<ul className="list-disc ml-5 text-yellow-500">
-							{queueStatus.warnings.map((w, i) => (
-								<li key={i}>{w}</li>
-							))}
-						</ul>
-					</div>
-				)}
-				{queueStatus.errors && queueStatus.errors.length > 0 && (
-					<div className="mt-1">
-						<b className="text-red-500">Errors:</b>
-						<ul className="list-disc ml-5 text-red-500">
-							{queueStatus.errors.map((e, i) => (
-								<li key={i}>{e}</li>
-							))}
-						</ul>
-					</div>
-				)}
-			</pre>
+            {typeof secondsToNextRun === "number" && (
+                <div className="w-full max-w-4xl mb-2 text-xs text-muted-foreground text-right flex items-center justify-end gap-2">
+                    <span className="font-mono">Next Run: {secondsToNextRun}s</span>
+                    <span title="HTTP Polling">
+                        <Globe className="inline-block h-4 w-4 text-blue-500" />
+                    </span>
+                </div>
+            )}
+            <pre
+                className={cn(
+                    "w-full max-w-4xl mb-4 p-3 rounded text-xs whitespace-pre-wrap border",
+                    queueStatus.status === "Error"
+                        ? "border-red-400 text-red-500"
+                        : queueStatus.status === "Warning"
+                          ? "border-yellow-400 text-yellow-500"
+                          : queueStatus.status === "Success"
+                            ? "border-green-400 text-green-500"
+                            : queueStatus.status === "Idle - Queue Empty"
+                              ? "border-gray-400 text-gray-500"
+                              : "border-primary text-primary"
+                )}
+            >
+                {queueStatus.time && (
+                    <div>
+                        <b>Last Run:</b> {formatExactDateTime(queueStatus.time)}
+                    </div>
+                )}
+                {queueStatus.status && (
+                    <div>
+                        <b>Status:</b> {queueStatus.status}
+                    </div>
+                )}
+                {queueStatus.message && <div className="mt-2 mb-2">{queueStatus.message}</div>}
+                {queueStatus.warnings && queueStatus.warnings.length > 0 && (
+                    <div className="mt-1">
+                        <b className="text-yellow-500">Warnings:</b>
+                        <ul className="list-disc ml-5 text-yellow-500">
+                            {queueStatus.warnings.map((w, i) => (
+                                <li key={i}>{w}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                {queueStatus.errors && queueStatus.errors.length > 0 && (
+                    <div className="mt-1">
+                        <b className="text-red-500">Errors:</b>
+                        <ul className="list-disc ml-5 text-red-500">
+                            {queueStatus.errors.map((e, i) => (
+                                <li key={i}>{e}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </pre>
 
-			{inProgressEntries.length === 0 && errorEntries.length === 0 && warningEntries.length === 0 && (
-				<p className="text-gray-500">No download queue entries found</p>
-			)}
+            {inProgressEntries.length === 0 && errorEntries.length === 0 && warningEntries.length === 0 && (
+                <p className="text-gray-500">No download queue entries found</p>
+            )}
 
-			<div className="w-full">
-				<Accordion type="multiple" className="mb-4" defaultValue={defaultAccordionValues}>
-					{inProgressEntries.length > 0 && (
-						<AccordionItem value="in_progress">
-							<AccordionTrigger
-								className={cn(
-									"cursor-pointer",
-									"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
-								)}
-							>
-								<H3>In Progress Entries</H3>
-							</AccordionTrigger>
-							<AccordionContent>
-								{inProgressEntries.length === 0 ? (
-									<p className="text-gray-500">No entries in progress.</p>
-								) : (
-									<ResponsiveGrid size="regular">
-										{inProgressEntries.map((entry) => (
-											<DownloadQueueEntry
-												key={entry.media_item.tmdb_id}
-												entry={entry}
-												fetchQueueEntries={fetchQueueEntries}
-											/>
-										))}
-									</ResponsiveGrid>
-								)}
-							</AccordionContent>
-						</AccordionItem>
-					)}
+            <div className="w-full">
+                <Accordion type="multiple" className="mb-4" defaultValue={defaultAccordionValues}>
+                    {inProgressEntries.length > 0 && (
+                        <AccordionItem value="in_progress">
+                            <AccordionTrigger
+                                className={cn(
+                                    "cursor-pointer",
+                                    "hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
+                                )}
+                            >
+                                <H3>In Progress Entries</H3>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                {inProgressEntries.length === 0 ? (
+                                    <p className="text-gray-500">No entries in progress.</p>
+                                ) : (
+                                    <ResponsiveGrid size="regular">
+                                        {inProgressEntries.map((entry) => (
+                                            <DownloadQueueEntry
+                                                key={entry.media_item.tmdb_id}
+                                                entry={entry}
+                                                fetchQueueEntries={fetchQueueEntries}
+                                            />
+                                        ))}
+                                    </ResponsiveGrid>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
 
-					{errorEntries.length > 0 && (
-						<AccordionItem value="error_entries">
-							<AccordionTrigger
-								className={cn(
-									"cursor-pointer",
-									"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
-								)}
-							>
-								<H3>Error Entries</H3>
-							</AccordionTrigger>
-							<AccordionContent>
-								{errorEntries.length === 0 ? (
-									<p className="text-gray-500">No error entries.</p>
-								) : (
-									<ResponsiveGrid size="regular">
-										{errorEntries.map((entry) => (
-											<DownloadQueueEntry
-												key={entry.media_item.tmdb_id}
-												entry={entry}
-												fetchQueueEntries={fetchQueueEntries}
-											/>
-										))}
-									</ResponsiveGrid>
-								)}
-							</AccordionContent>
-						</AccordionItem>
-					)}
+                    {errorEntries.length > 0 && (
+                        <AccordionItem value="error_entries">
+                            <AccordionTrigger
+                                className={cn(
+                                    "cursor-pointer",
+                                    "hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
+                                )}
+                            >
+                                <H3>Error Entries</H3>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                {errorEntries.length === 0 ? (
+                                    <p className="text-gray-500">No error entries.</p>
+                                ) : (
+                                    <ResponsiveGrid size="regular">
+                                        {errorEntries.map((entry) => (
+                                            <DownloadQueueEntry
+                                                key={entry.media_item.tmdb_id}
+                                                entry={entry}
+                                                fetchQueueEntries={fetchQueueEntries}
+                                            />
+                                        ))}
+                                    </ResponsiveGrid>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
 
-					{warningEntries.length > 0 && (
-						<AccordionItem value="warning_entries">
-							<AccordionTrigger
-								className={cn(
-									"cursor-pointer",
-									"hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
-								)}
-							>
-								<H3>Warning Entries</H3>
-							</AccordionTrigger>
-							<AccordionContent>
-								{warningEntries.length === 0 ? (
-									<p className="text-gray-500">No warning entries.</p>
-								) : (
-									<ResponsiveGrid size="larger">
-										{warningEntries.map((entry) => (
-											<DownloadQueueEntry
-												key={entry.media_item.tmdb_id}
-												entry={entry}
-												fetchQueueEntries={fetchQueueEntries}
-											/>
-										))}
-									</ResponsiveGrid>
-								)}
-							</AccordionContent>
-						</AccordionItem>
-					)}
-				</Accordion>
-			</div>
+                    {warningEntries.length > 0 && (
+                        <AccordionItem value="warning_entries">
+                            <AccordionTrigger
+                                className={cn(
+                                    "cursor-pointer",
+                                    "hover:underline-none focus:underline-none underline-none hover:no-underline focus:no-underline justify-center"
+                                )}
+                            >
+                                <H3>Warning Entries</H3>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                {warningEntries.length === 0 ? (
+                                    <p className="text-gray-500">No warning entries.</p>
+                                ) : (
+                                    <ResponsiveGrid size="larger">
+                                        {warningEntries.map((entry) => (
+                                            <DownloadQueueEntry
+                                                key={entry.media_item.tmdb_id}
+                                                entry={entry}
+                                                fetchQueueEntries={fetchQueueEntries}
+                                            />
+                                        ))}
+                                    </ResponsiveGrid>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                </Accordion>
+            </div>
 
-			{/* Refresh Button */}
-			<RefreshButton onClick={() => fetchQueueEntries()} />
-		</div>
-	);
+            {/* Refresh Button */}
+            <RefreshButton onClick={() => fetchQueueEntries()} />
+        </div>
+    );
 };
 
 export default DownloadQueuePage;

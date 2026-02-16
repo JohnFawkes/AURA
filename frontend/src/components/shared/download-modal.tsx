@@ -8,18 +8,18 @@ import { addItemToDownloadQueue } from "@/services/downloads/queue-add";
 import { getMediaItemContent } from "@/services/mediaserver/item-details";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-	Check,
-	CircleAlert,
-	Database,
-	DatabaseZap,
-	Download,
-	ListEnd,
-	Loader,
-	OctagonMinus,
-	RefreshCcw,
-	TriangleAlert,
-	User,
-	X,
+    Check,
+    CircleAlert,
+    Database,
+    DatabaseZap,
+    Download,
+    ListEnd,
+    Loader,
+    OctagonMinus,
+    RefreshCcw,
+    TriangleAlert,
+    User,
+    X,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -38,16 +38,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Dialog,
-	DialogClose,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogOverlay,
-	DialogPortal,
-	DialogTitle,
-	DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogOverlay,
+    DialogPortal,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -64,79 +64,79 @@ import { DBPosterSetDetail, DBSavedItem, PosterSet } from "@/types/database/db-p
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
 import {
-	DOWNLOAD_DEFAULT_LABELS,
-	DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-	TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+    DOWNLOAD_DEFAULT_LABELS,
+    DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+    TYPE_DOWNLOAD_DEFAULT_OPTIONS,
 } from "@/types/ui-options";
 
 export interface FormItemDisplay {
-	MediaItem: MediaItem;
-	Set: PosterSet;
+    MediaItem: MediaItem;
+    Set: PosterSet;
 }
 
 type SourceType = "show" | "movie" | "collection";
 
 interface AssetTypeFormValues {
-	types: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
-	autodownload?: boolean;
-	addToDBOnly?: boolean;
-	source?: SourceType;
+    types: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
+    autodownload?: boolean;
+    addToDBOnly?: boolean;
+    source?: SourceType;
 }
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "failed" | "skipped";
 
 type DownloadTaskPayload = {
-	kind: "download";
-	itemKey: string;
-	itemTitle: string;
-	imageFile: ImageFile;
-	fileName: string;
-	mediaItem: MediaItem;
+    kind: "download";
+    itemKey: string;
+    itemTitle: string;
+    imageFile: ImageFile;
+    fileName: string;
+    mediaItem: MediaItem;
 };
 
 type AddToDBTaskPayload = {
-	kind: "addToDB";
-	itemKey: string;
-	itemTitle: string;
-	mediaItem: MediaItem;
-	posterSet: DBPosterSetDetail;
+    kind: "addToDB";
+    itemKey: string;
+    itemTitle: string;
+    mediaItem: MediaItem;
+    posterSet: DBPosterSetDetail;
 };
 
 type AddToQueueTaskPayload = {
-	kind: "addToQueue";
-	itemKey: string;
-	itemTitle: string;
-	dbItem: DBSavedItem;
+    kind: "addToQueue";
+    itemKey: string;
+    itemTitle: string;
+    dbItem: DBSavedItem;
 };
 
 // Non-Retryable “record only” task (e.g. fetch latest media item failed)
 type NoteTaskPayload = {
-	kind: "note";
-	itemKey: string;
-	itemTitle: string;
+    kind: "note";
+    itemKey: string;
+    itemTitle: string;
 };
 
 type TaskPayload = DownloadTaskPayload | AddToDBTaskPayload | AddToQueueTaskPayload | NoteTaskPayload;
 
 type Task = {
-	id: string;
-	status: TaskStatus;
-	label: string;
-	attempts: number;
-	payload: TaskPayload;
-	error?: string;
+    id: string;
+    status: TaskStatus;
+    label: string;
+    attempts: number;
+    payload: TaskPayload;
+    error?: string;
 };
 
 type ItemProgress = {
-	itemKey: string;
-	title: string;
-	tasks: Task[];
+    itemKey: string;
+    title: string;
+    tasks: Task[];
 };
 
 type DownloadProgress = {
-	currentText: string;
-	totalPlanned: number;
-	items: Record<string, ItemProgress>;
+    currentText: string;
+    totalPlanned: number;
+    items: Record<string, ItemProgress>;
 };
 
 // helper for stable ids
@@ -144,1870 +144,1870 @@ const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.r
 
 // derive progress counts from tasks (uses totalPlanned so total doesn't grow as tasks are added)
 const getOverallCounts = (state: DownloadProgress) => {
-	const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
+    const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
 
-	// Notes shouldn't affect progress totals
-	const relevant = allTasks.filter((t) => t.payload.kind !== "note");
+    // Notes shouldn't affect progress totals
+    const relevant = allTasks.filter((t) => t.payload.kind !== "note");
 
-	// Treat skipped as "done" so we always end at 100%
-	const done = relevant.filter(
-		(t) => t.status === "completed" || t.status === "failed" || t.status === "skipped"
-	).length;
+    // Treat skipped as "done" so we always end at 100%
+    const done = relevant.filter(
+        (t) => t.status === "completed" || t.status === "failed" || t.status === "skipped"
+    ).length;
 
-	// Use the planned total when present; fallback for safety
-	const total = Math.max(1, state.totalPlanned || relevant.length || 1);
+    // Use the planned total when present; fallback for safety
+    const total = Math.max(1, state.totalPlanned || relevant.length || 1);
 
-	return { done, total };
+    return { done, total };
 };
 
 // derive progress (0..100) from tasks
 const getOverallProgress = (state: DownloadProgress) => {
-	const { done, total } = getOverallCounts(state);
-	return Math.round((done / total) * 100);
+    const { done, total } = getOverallCounts(state);
+    return Math.round((done / total) * 100);
 };
 
 // derive “errors per item” for the accordion
 const getErrorsByItem = (state: DownloadProgress) =>
-	Object.values(state.items)
-		.map((i) => ({
-			itemKey: i.itemKey,
-			title: i.title,
-			errors: i.tasks.filter((t) => t.status === "failed"),
-		}))
-		.filter((x) => x.errors.length > 0);
+    Object.values(state.items)
+        .map((i) => ({
+            itemKey: i.itemKey,
+            title: i.title,
+            errors: i.tasks.filter((t) => t.status === "failed"),
+        }))
+        .filter((x) => x.errors.length > 0);
 
 const formSchema = z
-	.object({
-		selectedOptionsByItem: z.record(
-			z.string(),
-			z.object({
-				types: z.array(z.enum(DOWNLOAD_DEFAULT_TYPE_OPTIONS)),
-				autodownload: z.boolean().optional(),
-				source: z.enum(["movie", "collection"]).optional(),
-				addToDBOnly: z.boolean().optional(),
-			})
-		),
-	})
-	.refine(
-		(data) =>
-			Object.values(data.selectedOptionsByItem).some(
-				(item) => Array.isArray(item.types) && item.types.length > 0
-			),
-		{
-			message: "Please select at least one image type to download.",
-			path: ["selectedOptionsByItem.message"],
-		}
-	);
+    .object({
+        selectedOptionsByItem: z.record(
+            z.string(),
+            z.object({
+                types: z.array(z.enum(DOWNLOAD_DEFAULT_TYPE_OPTIONS)),
+                autodownload: z.boolean().optional(),
+                source: z.enum(["movie", "collection"]).optional(),
+                addToDBOnly: z.boolean().optional(),
+            })
+        ),
+    })
+    .refine(
+        (data) =>
+            Object.values(data.selectedOptionsByItem).some(
+                (item) => Array.isArray(item.types) && item.types.length > 0
+            ),
+        {
+            message: "Please select at least one image type to download.",
+            path: ["selectedOptionsByItem.message"],
+        }
+    );
 
 export interface DownloadModalProps {
-	baseSetInfo: BaseSetInfo;
-	formItems: FormItemDisplay[];
-	autoDownloadDefault?: boolean;
-	onDownloadComplete?: (item: MediaItem) => void;
+    baseSetInfo: BaseSetInfo;
+    formItems: FormItemDisplay[];
+    autoDownloadDefault?: boolean;
+    onDownloadComplete?: (item: MediaItem) => void;
 }
 interface DuplicateMap {
-	[mediaItemKey: string]: {
-		options: Array<{
-			id: string;
-			type: "movie" | "collection";
-			image?: ImageFile;
-		}>;
-		selectedType?: "movie" | "collection" | "";
-	};
+    [mediaItemKey: string]: {
+        options: Array<{
+            id: string;
+            type: "movie" | "collection";
+            image?: ImageFile;
+        }>;
+        selectedType?: "movie" | "collection" | "";
+    };
 }
 
 const findDuplicateMediaItems = (items: FormItemDisplay[]): DuplicateMap => {
-	return items.reduce((acc: DuplicateMap, item) => {
-		if (!acc[item.MediaItem.rating_key]) {
-			acc[item.MediaItem.rating_key] = {
-				options: [
-					{
-						id: item.Set.id,
-						type: item.Set.type as "movie" | "collection",
-						image:
-							item.Set.images.find((img) => img.type === "poster") ||
-							item.Set.images.find((img) => img.type === "backdrop"),
-					},
-				],
-			};
-		} else {
-			acc[item.MediaItem.rating_key].options.push({
-				id: item.Set.id,
-				type: item.Set.type as "movie" | "collection",
-				image:
-					item.Set.images.find((img) => img.type === "poster") ||
-					item.Set.images.find((img) => img.type === "backdrop"),
-			});
-		}
-		return acc;
-	}, {});
+    return items.reduce((acc: DuplicateMap, item) => {
+        if (!acc[item.MediaItem.rating_key]) {
+            acc[item.MediaItem.rating_key] = {
+                options: [
+                    {
+                        id: item.Set.id,
+                        type: item.Set.type as "movie" | "collection",
+                        image:
+                            item.Set.images.find((img) => img.type === "poster") ||
+                            item.Set.images.find((img) => img.type === "backdrop"),
+                    },
+                ],
+            };
+        } else {
+            acc[item.MediaItem.rating_key].options.push({
+                id: item.Set.id,
+                type: item.Set.type as "movie" | "collection",
+                image:
+                    item.Set.images.find((img) => img.type === "poster") ||
+                    item.Set.images.find((img) => img.type === "backdrop"),
+            });
+        }
+        return acc;
+    }, {});
 };
 
 const DownloadModal: React.FC<DownloadModalProps> = ({
-	baseSetInfo,
-	formItems,
-	autoDownloadDefault = true, // Default to false if not provided
-	onDownloadComplete,
+    baseSetInfo,
+    formItems,
+    autoDownloadDefault = true, // Default to false if not provided
+    onDownloadComplete,
 }) => {
-	const router = useRouter();
-	const [isMounted, setIsMounted] = useState(false);
-
-	// Download Progress
-	const [progress, setProgress] = useState<DownloadProgress>({
-		currentText: "",
-		totalPlanned: 0,
-		items: {},
-	});
-
-	// State - Modal Button Texts
-	const [buttonTexts, setButtonTexts] = useState({
-		cancel: "Cancel",
-		download: "Download",
-	});
-
-	// State - Selected Types - Files Size and Download Size
-	const [selectedSizes, setSelectedSizes] = useState({
-		fileCount: 0,
-		downloadSize: 0,
-	});
-
-	// State - Duplicate Media Items
-	const [duplicates, setDuplicates] = useState<DuplicateMap>({});
-
-	// State - Add to Queue Only
-	const [addToQueueOnly, setAddToQueueOnly] = useState(false);
-
-	// User Preferences
-	const { downloadDefaults } = useUserPreferencesStore();
-
-	// Media Store
-	const { setMediaItem } = useMediaStore();
-
-	// Search Query Store
-	const { setSearchQuery } = useSearchQueryStore();
-
-	// Cancel Ref
-	const cancelRef = useRef(false);
-
-	// Function - Reset Progress Values
-	const resetProgress = () => {
-		setProgress({
-			currentText: "",
-			totalPlanned: 0,
-			items: {},
-		});
-	};
-
-	// Function - Close Modal
-	const handleClose = () => {
-		cancelRef.current = true;
-		setIsMounted(false);
-		resetProgress();
-		setButtonTexts({
-			cancel: "Cancel",
-			download: "Download",
-		});
-		form.reset();
-	};
-
-	// Function - Handle Link Click
-	const getMediuxBaseUrl = () => {
-		if (baseSetInfo.type === "boxset") {
-			return `https://mediux.io/boxset/${baseSetInfo.id}`;
-		} else {
-			return `https://mediux.io/${baseSetInfo.type}-set/${baseSetInfo.id}`;
-		}
-	};
-
-	// Compute Asset Types based on what the form item has
-	const computeAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_DEFAULT_OPTIONS[] => {
-		if (!item.Set) return [];
-
-		const setHasPoster = item.Set.images.some((img) => img.type === "poster");
-		const setHasBackdrop = item.Set.images.some((img) => img.type === "backdrop");
-		const setHasSeasonPosters = item.Set.images.some(
-			(img) => img.type === "season_poster" && img.season_number !== 0
-		);
-		const setHasSpecialSeasonPosters = item.Set.images.some(
-			(img) => img.type === "special_season_poster" && img.season_number === 0
-		);
-		const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
-		const types: (TYPE_DOWNLOAD_DEFAULT_OPTIONS | null)[] = [
-			setHasPoster ? "poster" : null,
-			setHasBackdrop ? "backdrop" : null,
-			setHasSeasonPosters ? "season_poster" : null,
-			setHasSpecialSeasonPosters ? "special_season_poster" : null,
-			setHasTitleCards ? "titlecard" : null,
-		];
-
-		return types.filter((type): type is TYPE_DOWNLOAD_DEFAULT_OPTIONS => type !== null);
-	};
-
-	// Define Form
-	const form = useForm<z.infer<typeof formSchema>>({
-		resolver: zodResolver(formSchema),
-		mode: "onChange",
-		defaultValues: {
-			selectedOptionsByItem: formItems.reduce(
-				(acc, item) => {
-					acc[item.MediaItem.rating_key] = {
-						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-						autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
-						addToDBOnly: false,
-						source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
-					};
-					return acc;
-				},
-				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
-			),
-		},
-	});
-
-	const watchSelectedOptions = useWatch({
-		control: form.control,
-		name: "selectedOptionsByItem",
-	});
-
-	// Reset form on mount
-	useEffect(() => {
-		form.reset({
-			selectedOptionsByItem: formItems.reduce(
-				(acc, item) => {
-					acc[item.MediaItem.rating_key] = {
-						types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-						autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
-						addToDBOnly: false,
-						source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
-					};
-					return acc;
-				},
-				{} as z.infer<typeof formSchema>["selectedOptionsByItem"]
-			),
-		});
-	}, [formItems, form, autoDownloadDefault, downloadDefaults]);
-
-	useEffect(() => {
-		// If all the form items are set to "Add to Database Only", change button text
-		if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types.length === 0)) {
-			setButtonTexts((prev) => ({
-				...prev,
-				download: "Add to Database",
-			}));
-		} else if (addToQueueOnly) {
-			setButtonTexts((prev) => ({
-				...prev,
-				download: "Add to Queue",
-			}));
-		} else {
-			setButtonTexts((prev) => ({
-				...prev,
-				download: "Download",
-			}));
-		}
-	}, [addToQueueOnly, watchSelectedOptions]);
-
-	useEffect(() => {
-		const dups = findDuplicateMediaItems(formItems);
-		setDuplicates(
-			Object.fromEntries(
-				Object.entries(dups)
-					.filter(([, value]) => value.options.length > 1)
-					.map(([key, value]) => {
-						// Set initial selection to "movie" if available
-						const hasMovie = value.options.some((opt) => opt.type === "movie");
-						return [
-							key,
-							{
-								...value,
-								selectedType: hasMovie ? "movie" : "collection",
-							},
-						];
-					})
-			)
-		);
-
-		// Update form values for duplicates
-		Object.entries(dups)
-			.filter(([, value]) => value.options.length > 1)
-			.forEach(([key, value]) => {
-				const hasMovie = value.options.some((opt) => opt.type === "movie");
-
-				// Uncheck collection if movie is available
-				if (hasMovie) {
-					form.setValue(`selectedOptionsByItem.${key}`, {
-						...form.getValues(`selectedOptionsByItem.${key}`),
-						source: "movie",
-					});
-				}
-			});
-	}, [formItems, form]);
-
-	useEffect(() => {
-		const calculateSizes = () => {
-			let totalFiles = 0;
-			let totalSize = 0;
-
-			// Iterate through each selected item
-			Object.entries(watchSelectedOptions).forEach(([ratingKey, selection]) => {
-				// Find the corresponding form item to access PosterFile sizes
-				const formItem = formItems.find((item) => item.MediaItem.rating_key === ratingKey);
-
-				if (!formItem || !selection.types || selection.addToDBOnly) return;
-
-				// Count files and sum sizes for each selected type
-				selection.types.forEach((type) => {
-					switch (type) {
-						case "poster":
-							const posterImage = formItem.Set.images.find(
-								(img) => img.type === "poster" && img.file_size
-							);
-							if (posterImage && posterImage.file_size) {
-								totalSize += posterImage.file_size;
-								totalFiles += 1;
-							}
-							break;
-						case "backdrop":
-							const backdropImage = formItem.Set.images.find(
-								(img) => img.type === "backdrop" && img.file_size
-							);
-							if (backdropImage && backdropImage.file_size) {
-								totalSize += backdropImage.file_size;
-								totalFiles += 1;
-							}
-							break;
-						case "season_poster":
-							formItem.Set.images.forEach((sp) => {
-								if (sp.type === "season_poster" && sp.season_number !== 0 && sp.file_size) {
-									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
-										// Check if season exists in MediaItem
-										const seasonExists = formItem.MediaItem.series.seasons.some(
-											(season) => season.season_number === sp.season_number
-										);
-										if (seasonExists) {
-											totalSize += sp.file_size;
-											totalFiles += 1;
-										}
-									} else {
-										totalSize += sp.file_size;
-										totalFiles += 1;
-									}
-								}
-							});
-							break;
-						case "special_season_poster":
-							formItem.Set.images.forEach((sp) => {
-								if (sp.type === "season_poster" && sp.season_number === 0 && sp.file_size) {
-									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
-										// Check if special season exists in MediaItem
-										const specialSeasonExists = formItem.MediaItem.series.seasons.some(
-											(season) => season.season_number === 0
-										);
-										if (specialSeasonExists) {
-											totalSize += sp.file_size;
-											totalFiles += 1;
-										}
-									} else {
-										totalSize += sp.file_size;
-										totalFiles += 1;
-									}
-								}
-							});
-							break;
-						case "titlecard":
-							formItem.Set.images.forEach((tc) => {
-								if (tc.type === "titlecard" && tc.file_size) {
-									if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
-										// Check if episode exists in MediaItem
-										const episodeExists = formItem.MediaItem.series.seasons.some((season) =>
-											season.episodes.some(
-												(ep) =>
-													ep.season_number === tc.season_number &&
-													ep.episode_number === tc.episode_number
-											)
-										);
-										if (episodeExists) {
-											totalSize += tc.file_size;
-											totalFiles += 1;
-										}
-									} else {
-										totalSize += tc.file_size;
-										totalFiles += 1;
-									}
-								}
-							});
-							break;
-					}
-				});
-			});
-
-			setSelectedSizes({
-				fileCount: totalFiles,
-				downloadSize: totalSize,
-			});
-		};
-
-		calculateSizes();
-	}, [formItems, watchSelectedOptions]);
-
-	const LOG_VALUES = () => {
-		log("INFO", "Download Modal", "Debug Info", "Logging props values:", {
-			baseSetInfo,
-			autoDownloadDefault,
-		});
-		log("INFO", "Download Modal", "Debug Info", "Logging form items:", formItems);
-		log("INFO", "Download Modal", "Debug Info", "Logging form values:", form);
-		log("INFO", "Download Modal", "Debug Info", "Logging watch selected types:", watchSelectedOptions);
-		log("INFO", "Download Modal", "Debug Info", "Logging progress:", progress);
-		log("INFO", "Download Modal", "Debug Info", "Logging duplicates:", duplicates);
-	};
-
-	// --- Progress/Task Helpers ---
-	const setCurrentText = (text: string) => {
-		setProgress((prev) => ({
-			...prev,
-			currentText: text,
-		}));
-	};
-
-	const upsertItem = (itemKey: string, title: string) => {
-		setProgress((prev) => {
-			if (prev.items[itemKey]) return prev;
-			return {
-				...prev,
-				items: {
-					...prev.items,
-					[itemKey]: { itemKey, title, tasks: [] },
-				},
-			};
-		});
-	};
-
-	const addTask = (itemKey: string, title: string, task: Task) => {
-		setProgress((prev) => {
-			const existing = prev.items[itemKey] ?? { itemKey, title, tasks: [] as Task[] };
-			return {
-				...prev,
-				items: {
-					...prev.items,
-					[itemKey]: {
-						...existing,
-						title: existing.title || title,
-						tasks: [...existing.tasks, task],
-					},
-				},
-			};
-		});
-	};
-
-	const updateTask = (taskId: string, updater: (t: Task) => Task) => {
-		setProgress((prev) => {
-			let changed = false;
-			const nextItems: Record<string, ItemProgress> = {};
-
-			for (const [itemKey, item] of Object.entries(prev.items)) {
-				const idx = item.tasks.findIndex((t) => t.id === taskId);
-				if (idx === -1) {
-					nextItems[itemKey] = item;
-					continue;
-				}
-
-				const nextTasks = [...item.tasks];
-				nextTasks[idx] = updater(nextTasks[idx]);
-				nextItems[itemKey] = { ...item, tasks: nextTasks };
-				changed = true;
-			}
-
-			return changed ? { ...prev, items: nextItems } : prev;
-		});
-	};
-
-	const findTask = (state: DownloadProgress, taskId: string): Task | undefined => {
-		for (const item of Object.values(state.items)) {
-			const t = item.tasks.find((x) => x.id === taskId);
-			if (t) return t;
-		}
-		return undefined;
-	};
-
-	const getAssetStatus = (itemKey: string, assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS): TaskStatus | undefined => {
-		const tasks = progress.items[itemKey]?.tasks ?? [];
-		const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.imageFile.type === assetType);
-		if (relevant.length === 0) return undefined;
-
-		// Aggregate status so multi-file types don't "lose" completion due to a final skipped task.
-		if (relevant.some((t) => t.status === "failed")) return "failed";
-		if (relevant.some((t) => t.status === "in-progress")) return "in-progress";
-		if (relevant.some((t) => t.status === "pending")) return "pending";
-		if (relevant.some((t) => t.status === "completed")) return "completed";
-		return "skipped"; // all skipped
-	};
-
-	const runDownloadTask = async (taskId: string, payload: DownloadTaskPayload): Promise<boolean> => {
-		updateTask(taskId, (t) => ({
-			...t,
-			status: "in-progress",
-			attempts: (t.attempts ?? 0) + 1,
-			error: undefined,
-		}));
-		setCurrentText(`Downloading ${payload.fileName} for "${payload.itemTitle}"`);
-
-		try {
-			const response = await downloadImageFileForMediaItem(
-				payload.imageFile,
-				payload.mediaItem,
-				payload.fileName
-			);
-
-			if (response.status === "error") {
-				throw new Error(response.error?.message || "Unknown error");
-			}
-
-			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
-			return true;
-		} catch (error) {
-			const message = `"${payload.itemTitle}" - ${payload.fileName} - ${error instanceof Error ? error.message : "Unknown error"}`;
-			updateTask(taskId, (t) => ({ ...t, status: "failed", error: message }));
-			return false;
-		}
-	};
-
-	const runAddToDBTask = async (taskId: string, payload: AddToDBTaskPayload): Promise<boolean> => {
-		updateTask(taskId, (t) => ({
-			...t,
-			status: "in-progress",
-			attempts: (t.attempts ?? 0) + 1,
-			error: undefined,
-		}));
-		setCurrentText(`Adding "${payload.itemTitle}" to DB`);
-
-		try {
-			const resp = await addNewItemToDB(payload.mediaItem, payload.posterSet);
-			if (resp.status === "error") {
-				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
-			}
-			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
-			return true;
-		} catch (error) {
-			updateTask(taskId, (t) => ({
-				...t,
-				status: "failed",
-				error: `"${payload.itemTitle}" - Add to DB failed - ${error instanceof Error ? error.message : "Unknown error"}`,
-			}));
-			return false;
-		}
-	};
-
-	const runAddToQueueTask = async (taskId: string, payload: AddToQueueTaskPayload): Promise<boolean> => {
-		updateTask(taskId, (t) => ({
-			...t,
-			status: "in-progress",
-			attempts: (t.attempts ?? 0) + 1,
-			error: undefined,
-		}));
-		setCurrentText(`Adding "${payload.itemTitle}" to queue`);
-
-		try {
-			const resp = await addItemToDownloadQueue(payload.dbItem);
-			if (resp.status === "error") {
-				throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
-			}
-			updateTask(taskId, (t) => ({ ...t, status: "completed" }));
-			return true;
-		} catch (error) {
-			updateTask(taskId, (t) => ({
-				...t,
-				status: "failed",
-				error: `"${payload.itemTitle}" - Add to queue failed - ${error instanceof Error ? error.message : "Unknown error"}`,
-			}));
-			return false;
-		}
-	};
-
-	const retryTask = async (taskId: string) => {
-		const t = findTask(progress, taskId);
-		if (!t) return;
-
-		// NOTE: "note" tasks are not retryable
-		if (t.payload.kind === "note") return;
-
-		if (t.payload.kind === "download") {
-			await runDownloadTask(taskId, t.payload);
-		} else if (t.payload.kind === "addToDB") {
-			await runAddToDBTask(taskId, t.payload);
-		} else if (t.payload.kind === "addToQueue") {
-			await runAddToQueueTask(taskId, t.payload);
-		}
-
-		setButtonTexts((prev) => ({ ...prev, download: "Download Again" }));
-	};
-
-	const renderFormItemAssetType = (
-		field: ControllerRenderProps<
-			{ selectedOptionsByItem: Record<string, AssetTypeFormValues> },
-			`selectedOptionsByItem.${string}`
-		>,
-		assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS,
-		item: FormItemDisplay
-	) => {
-		const types = field.value?.types || [];
-		const isDuplicate = duplicates[item.MediaItem.rating_key];
-
-		// Calculate checked state
-		const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.type);
-
-		// Calculate disabled state
-		const isDisabled = Boolean(
-			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
-		);
-
-		// Check download status from task state
-		const status = getAssetStatus(item.MediaItem.rating_key, assetType);
-		const isDownloaded = status === "completed";
-		const isFailed = status === "failed";
-		const isLoading = status === "in-progress";
-		const isSkipped = status === "skipped";
-
-		// Check if *this assetType* is already downloaded in another set (using DBSavedSets)
-		const downloadedSetForType = item.MediaItem?.db_saved_sets?.find(
-			(set) => set.id !== item.Set.id && set.selected_types?.[assetType]
-		);
-		const isDownloadedInAnotherSet = Boolean(downloadedSetForType);
-
-		return (
-			<FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
-				<FormControl className="mt-1">
-					<Checkbox
-						checked={isChecked}
-						disabled={isDisabled}
-						onCheckedChange={(checked) => {
-							const newTypes = checked
-								? [...types, assetType]
-								: types.filter((type: string) => type !== assetType);
-
-							// Update duplicates tracking
-							if (checked && isDuplicate) {
-								setDuplicates((prev) => ({
-									...prev,
-									[item.MediaItem.rating_key]: {
-										...prev[item.MediaItem.rating_key],
-										selectedType: item.Set.type as "movie" | "collection",
-									},
-								}));
-							} else if (!checked && isDuplicate) {
-								setDuplicates((prev) => ({
-									...prev,
-									[item.MediaItem.rating_key]: {
-										...prev[item.MediaItem.rating_key],
-										selectedType: "",
-									},
-								}));
-							}
-
-							field.onChange({
-								...(field.value ?? {}),
-								types: newTypes,
-								autodownload: newTypes.length === 0 ? false : field.value?.autodownload,
-								addToDBOnly: newTypes.length === 0 ? false : field.value?.addToDBOnly,
-								source:
-									item.Set.type === "movie" || item.Set.type === "collection"
-										? item.Set.type
-										: undefined,
-							});
-						}}
-						className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-					/>
-				</FormControl>
-				<FormLabel
-					className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}
-				>
-					{DOWNLOAD_DEFAULT_LABELS[assetType]}
-				</FormLabel>
-				{isDownloaded ? (
-					<Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
-				) : isFailed ? (
-					<X className="h-4 w-4 text-destructive mt-1" strokeWidth={3} />
-				) : isLoading ? (
-					<Loader className="h-4 w-4 mt-1 animate-spin" />
-				) : isSkipped ? (
-					<Check className="h-4 w-4 text-yellow-500 mt-1" strokeWidth={3} />
-				) : isDownloadedInAnotherSet ? (
-					<PopoverHelp
-						ariaLabel="Type already downloaded in another set"
-						side="bottom"
-						className="max-w-xs"
-						trigger={<TriangleAlert className="h-4 w-4 mt-1 text-yellow-500 cursor-help" />}
-					>
-						<div className="flex items-center">
-							<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
-							<span className="text-xs">
-								{DOWNLOAD_DEFAULT_LABELS[assetType]}{" "}
-								{DOWNLOAD_DEFAULT_LABELS[assetType].endsWith("s") ? "have" : "has"} already been
-								downloaded in set {downloadedSetForType?.id} by user{" "}
-								{downloadedSetForType?.user_created}.
-							</span>
-						</div>
-					</PopoverHelp>
-				) : null}
-			</FormItem>
-		);
-	};
-
-	const renderFormItem = (item: FormItemDisplay) => {
-		const isDuplicate = duplicates[item.MediaItem.rating_key];
-		// Calculate disabled state
-		const isDisabled = Boolean(
-			isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
-		);
-
-		// Calculate whether the item is already in the database
-		const isInDatabase =
-			(item.MediaItem && item.MediaItem.db_saved_sets && item.MediaItem.db_saved_sets.length > 0) || false;
-
-		// Calculate whether the item is already in the database and has this set saved
-		const isInDatabaseWithSet =
-			isInDatabase &&
-			item.MediaItem.db_saved_sets &&
-			item.MediaItem.db_saved_sets.some((set) => set.id === item.Set.id);
-
-		// Calculate whether the item has any error tasks
-		const itemProgress = progress.items[item.MediaItem.rating_key];
-		const hasErrorTasks = itemProgress ? itemProgress.tasks.some((t) => t.status === "failed") : false;
-		const allSuccessful = itemProgress
-			? itemProgress.tasks.length > 0 &&
-				itemProgress.tasks.every((t) => t.status === "completed" || t.status === "skipped")
-			: false;
-
-		return (
-			<FormField
-				key={`${item.MediaItem.rating_key}-${item.Set.type}`}
-				control={form.control}
-				name={`selectedOptionsByItem.${item.MediaItem.rating_key}`}
-				render={({ field }) => (
-					<div
-						className={cn("rounded-md border p-4 rounded-lg mb-4", {
-							"border-green-500": isInDatabaseWithSet || allSuccessful,
-							"border-yellow-500": isInDatabase && !isInDatabaseWithSet,
-							"border-destructive": hasErrorTasks,
-						})}
-					>
-						<FormLabel
-							className="text-md font-normal mb-4"
-							onDoubleClick={() => {
-								setMediaItem(item.MediaItem);
-							}}
-						>
-							<span className="flex items-center justify-between w-full">
-								{item.MediaItem.title}{" "}
-								{/\(\d{4}\)$/.test(item.MediaItem.title) ? "" : `(${item.MediaItem.year})`}
-								{item.MediaItem &&
-									item.MediaItem.db_saved_sets &&
-									item.MediaItem.db_saved_sets.length > 0 && (
-										<Popover modal={true}>
-											<PopoverTrigger>
-												<Database
-													className={cn(
-														"h-4 w-4 ml-2 cursor-pointer",
-														isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
-													)}
-												/>
-											</PopoverTrigger>
-											<PopoverContent
-												className={cn(
-													"max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
-													isInDatabaseWithSet ? "border-green-800" : "border-yellow-800"
-												)}
-											>
-												<div className="flex items-center mb-2">
-													<CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
-													<span className="text-sm text-muted-foreground">
-														This media item already exists in your database
-													</span>
-												</div>
-												<div className="text-xs text-muted-foreground mb-2">
-													You have previously saved it in the following sets
-												</div>
-												<ul className="space-y-2">
-													{item.MediaItem.db_saved_sets.map((set) => (
-														<li
-															key={set.id}
-															className="flex items-center rounded-md px-2 py-1 shadow-sm"
-														>
-															<Button
-																variant="outline"
-																className={cn(
-																	"flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
-																	set.id.toString() === item.Set.id.toString()
-																		? "text-green-600  hover:bg-green-100  hover:text-green-600"
-																		: "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
-																)}
-																aria-label={`View saved set ${set.id} ${set.user_created ? `by ${set.user_created}` : ""}`}
-																onClick={(e) => {
-																	e.stopPropagation();
-																	setSearchQuery(
-																		`${item.MediaItem.title} Y:${item.MediaItem.year}: ID:${item.MediaItem.tmdb_id}: L:${item.MediaItem.library_title}:`
-																	);
-																	router.push("/saved-sets");
-																}}
-															>
-																Set ID: {set.id}
-																{set.user_created ? ` by ${set.user_created}` : ""}
-															</Button>
-														</li>
-													))}
-												</ul>
-											</PopoverContent>
-										</Popover>
-									)}
-								{baseSetInfo.type === "boxset" &&
-									isDuplicate &&
-									isDuplicate.selectedType !== "" &&
-									isDuplicate.selectedType !== item.Set.type && (
-										<Popover modal={true}>
-											<PopoverTrigger>
-												<TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
-											</PopoverTrigger>
-											<PopoverContent className="max-w-[400px] w-60">
-												<div className="text-sm text-yellow-500">
-													This item is selected in the{" "}
-													{isDuplicate.selectedType === "movie"
-														? "Movie Set"
-														: "Collection Set"}
-													.
-												</div>
-												{(() => {
-													const img = isDuplicate.options.find(
-														(o) => o.type === isDuplicate.selectedType
-													)?.image;
-													return (
-														img && (
-															<AssetImage
-																className="mt-2"
-																image={img}
-																imageType="mediux"
-															/>
-														)
-													);
-												})()}
-											</PopoverContent>
-										</Popover>
-									)}
-							</span>
-						</FormLabel>
-
-						<div className="space-y-2">
-							{computeAssetTypes(item).map((assetType) => (
-								<div key={assetType}>
-									{renderFormItemAssetType(
-										field as ControllerRenderProps<
-											{
-												selectedOptionsByItem: Record<string, AssetTypeFormValues>;
-											},
-											`selectedOptionsByItem.${string}`
-										>,
-										assetType,
-										item
-									)}
-								</div>
-							))}
-							<FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
-								Download Options
-							</FormLabel>
-							{(item.Set.type === "movie" || item.Set.type === "collection") && (
-								<FormItem className="flex items-center space-x-2">
-									<FormControl>
-										<Checkbox
-											checked={
-												isDisabled || field.value?.types.length === 0
-													? false
-													: field.value?.addToDBOnly || false
-											}
-											disabled={isDisabled || field.value?.types.length === 0}
-											onCheckedChange={(checked) => {
-												field.onChange({
-													...(field.value ?? {}),
-													addToDBOnly: checked,
-												});
-											}}
-											className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-										/>
-									</FormControl>
-									<FormLabel className="text-md font-normal cursor-pointer">
-										Add to Database Only
-									</FormLabel>
-
-									<DownloadModalPopover type="add-to-db-only" />
-								</FormItem>
-							)}
-							{item.Set.type === "show" && (
-								<>
-									<FormItem className="flex items-center space-x-2">
-										<FormControl>
-											<Checkbox
-												checked={field.value?.addToDBOnly || false}
-												onCheckedChange={(checked) => {
-													field.onChange({
-														...(field.value ?? {}),
-														addToDBOnly: checked,
-													});
-												}}
-												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-											/>
-										</FormControl>
-										<FormLabel className="text-md font-normal cursor-pointer">
-											Future Updates Only
-										</FormLabel>
-										<DownloadModalPopover type="future-updated-only" />
-									</FormItem>
-									<FormItem className="flex items-center space-x-2">
-										<FormControl>
-											<Checkbox
-												checked={field.value?.autodownload || false}
-												onCheckedChange={(checked) => {
-													field.onChange({
-														...(field.value ?? {}),
-														autodownload: checked,
-													});
-												}}
-												className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-											/>
-										</FormControl>
-										<FormLabel className="text-md font-normal cursor-pointer">
-											Auto Download
-										</FormLabel>
-										<DownloadModalPopover type="autodownload" />
-									</FormItem>
-								</>
-							)}
-						</div>
-					</div>
-				)}
-			/>
-		);
-	};
-
-	const createDBItem = (
-		item: FormItemDisplay,
-		options: z.infer<typeof formSchema>["selectedOptionsByItem"][string],
-		latestMediaItem: MediaItem
-	): {
-		dbItem: DBSavedItem;
-	} => {
-		return {
-			dbItem: {
-				media_item: latestMediaItem,
-				poster_sets: [
-					{
-						id: item.Set.id,
-						type: item.Set.type,
-						title: item.Set.title,
-						user_created: item.Set.user_created,
-						date_created: item.Set.date_created,
-						date_updated: item.Set.date_updated,
-						popularity: item.Set.popularity,
-						popularity_global: item.Set.popularity_global,
-						images: item.Set.images,
-						selected_types: {
-							poster: options.types?.includes("poster") || false,
-							backdrop: options.types?.includes("backdrop") || false,
-							season_poster: options.types?.includes("season_poster") || false,
-							special_season_poster: options.types?.includes("special_season_poster") || false,
-							titlecard: options.types?.includes("titlecard") || false,
-						},
-						auto_download: options.autodownload || false,
-						last_downloaded: "",
-						to_delete: false,
-					},
-				],
-			},
-		};
-	};
-
-	// Compute how many tasks we *expect* to run before starting
-	const computePlannedTotal = (data: z.infer<typeof formSchema>) => {
-		let total = 0;
-
-		for (const item of formItems) {
-			const selected = data.selectedOptionsByItem[item.MediaItem.rating_key];
-			if (!selected) continue;
-
-			// Skip duplicates that aren't selected
-			if (
-				(item.Set.type === "movie" || item.Set.type === "collection") &&
-				duplicates[item.MediaItem.rating_key]?.selectedType &&
-				duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
-			) {
-				continue;
-			}
-
-			// Nothing selected and not DB-only => no tasks
-			if ((selected.types?.length ?? 0) === 0 && !selected.addToDBOnly) continue;
-
-			// DB-only => just one task
-			if (selected.addToDBOnly) {
-				total += 1;
-				continue;
-			}
-
-			// Add-to-queue-only => just one task (no downloads, no add-to-db)
-			if (addToQueueOnly) {
-				total += 1;
-				continue;
-			}
-
-			// Download tasks
-			for (const type of selected.types ?? []) {
-				switch (type) {
-					case "poster":
-						if (item.Set.images.some((img) => img.type === "poster")) total += 1;
-						break;
-					case "backdrop":
-						if (item.Set.images.some((img) => img.type === "backdrop")) total += 1;
-						break;
-					case "season_poster":
-						total +=
-							item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
-								.length ?? 0;
-						break;
-					case "special_season_poster":
-						total +=
-							item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number === 0)
-								.length ?? 0;
-						break;
-					case "titlecard":
-						total += item.Set.images?.filter((tc) => tc.type === "titlecard").length ?? 0;
-						break;
-				}
-			}
-
-			// After downloads, you *attempt* add-to-db (or mark it skipped) => count it as a planned task
-			if ((selected.types?.length ?? 0) > 0) total += 1;
-		}
-
-		return total;
-	};
-
-	const onSubmit = async (data: z.infer<typeof formSchema>) => {
-		if (isMounted) return;
-		cancelRef.current = false;
-
-		try {
-			setIsMounted(true);
-			setButtonTexts({
-				cancel: "Cancel",
-				download: "Starting...",
-			});
-			resetProgress();
-			// Reset + set the planned total up front (fixed total)
-			const plannedTotal = computePlannedTotal(data);
-			setProgress({
-				currentText: "Starting...",
-				totalPlanned: plannedTotal,
-				items: {},
-			});
-
-			// Your download logic here
-			log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
-			log("INFO", "Download Modal", "Debug Info", "Progress:", progress);
-			log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
-			log("INFO", "Download Modal", "Debug Info", "Add to Queue Only:", addToQueueOnly);
-
-			// Sort formItems by MediaItemTitle for consistent order
-			const sortedFormItems = formItems;
-			log("INFO", "Download Modal", "Debug Info", "Sorted Form Items:", sortedFormItems);
-
-			// Go through each item in the formItems
-			for (let idx = 0; idx < sortedFormItems.length; idx++) {
-				if (cancelRef.current) return; // Exit if cancelled
-				const item = sortedFormItems[idx];
-				log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
-
-				const selectedOptions = data.selectedOptionsByItem[item.MediaItem.rating_key];
-				log("INFO", "Download Modal", "Debug Info", "Selected Types for Item:", selectedOptions);
-
-				// If no types are selected and not set to "Add to DB Only", skip this item
-				if (selectedOptions.types.length === 0 && !selectedOptions.addToDBOnly) {
-					log(
-						"INFO",
-						"Download Modal",
-						"Debug Info",
-						`Skipping ${item.MediaItem.title} - Nothing to do here.`
-					);
-					continue;
-				}
-
-				upsertItem(item.MediaItem.rating_key, item.MediaItem.title);
-
-				// If the item set is a movie or collection, check for duplicates
-				// If this duplicate type is not selected, skip it
-				if (
-					(item.Set.type === "movie" || item.Set.type === "collection") &&
-					duplicates[item.MediaItem.rating_key] &&
-					duplicates[item.MediaItem.rating_key].selectedType &&
-					duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
-				) {
-					log(
-						"INFO",
-						"Download Modal",
-						"Debug Info",
-						`Skipping ${item.MediaItem.title} in ${item.Set.id} - Duplicate type selected: ${duplicates[item.MediaItem.rating_key].selectedType}`
-					);
-					continue;
-				}
-
-				// Get the latest media item from the server
-				const latestMediaItemResp = await getMediaItemContent(
-					item.MediaItem.title,
-					item.MediaItem.rating_key,
-					item.MediaItem.library_title,
-					"item"
-				);
-				if (latestMediaItemResp.status === "error" || !latestMediaItemResp.data) {
-					const noteId = newId();
-					const msg =
-						latestMediaItemResp.status === "error"
-							? latestMediaItemResp.error?.help ||
-								latestMediaItemResp.error?.detail ||
-								latestMediaItemResp.error?.message ||
-								"Unknown error"
-							: "No media item found.";
-
-					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-						id: noteId,
-						status: "failed",
-						label: "Fetch latest media item",
-						attempts: 1,
-						error: `Error fetching latest media item for ${item.MediaItem.title}: ${msg}`,
-						payload: { kind: "note", itemKey: item.MediaItem.rating_key, itemTitle: item.MediaItem.title },
-					});
-					continue;
-				}
-
-				const latestMediaItem = latestMediaItemResp.data.media_item;
-				const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
-
-				// Add to DB only
-				if (selectedOptions.addToDBOnly) {
-					const taskId = newId();
-					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-						id: taskId,
-						status: "pending",
-						label: `Add "${item.MediaItem.title}" to DB`,
-						attempts: 0,
-						payload: {
-							kind: "addToDB",
-							itemKey: item.MediaItem.rating_key,
-							itemTitle: item.MediaItem.title,
-							mediaItem: createdSavedItem.dbItem.media_item,
-							posterSet: createdSavedItem.dbItem.poster_sets[0],
-						},
-					});
-
-					const ok = await runAddToDBTask(taskId, {
-						kind: "addToDB",
-						itemKey: item.MediaItem.rating_key,
-						itemTitle: item.MediaItem.title,
-						mediaItem: createdSavedItem.dbItem.media_item,
-						posterSet: createdSavedItem.dbItem.poster_sets[0],
-					});
-
-					if (ok && onDownloadComplete) {
-						onDownloadComplete(
-							upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
-								poster: selectedOptions.types.includes("poster"),
-								backdrop: selectedOptions.types.includes("backdrop"),
-								season_poster: selectedOptions.types.includes("season_poster"),
-								special_season_poster: selectedOptions.types.includes("special_season_poster"),
-								titlecard: selectedOptions.types.includes("titlecard"),
-							})
-						);
-					}
-					continue;
-				}
-
-				const selectedTypes = selectedOptions.types.sort((a, b) => {
-					const order = ["poster", "backdrop", "season_poster", "special_season_poster", "titlecard"];
-					return order.indexOf(a) - order.indexOf(b);
-				});
-
-				// If no types are selected, skip this item
-				if (selectedTypes.length === 0) {
-					log(
-						"INFO",
-						"Download Modal",
-						"Debug Info",
-						`Skipping ${item.MediaItem.title} - No types selected.`
-					);
-					continue;
-				}
-
-				log(
-					"INFO",
-					"Download Modal",
-					"Debug Info",
-					`Selected Types for ${item.MediaItem.title}:`,
-					selectedTypes
-				);
-
-				// Add to queue only (for items that actually have types selected)
-				if (addToQueueOnly) {
-					const taskId = newId();
-					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-						id: taskId,
-						status: "pending",
-						label: `Add "${item.MediaItem.title}" to queue`,
-						attempts: 0,
-						payload: {
-							kind: "addToQueue",
-							itemKey: item.MediaItem.rating_key,
-							itemTitle: item.MediaItem.title,
-							dbItem: createdSavedItem.dbItem,
-						},
-					});
-
-					await runAddToQueueTask(taskId, {
-						kind: "addToQueue",
-						itemKey: item.MediaItem.rating_key,
-						itemTitle: item.MediaItem.title,
-						dbItem: createdSavedItem.dbItem,
-					});
-					continue;
-				}
-
-				// Track whether THIS item had at least one successful download
-				let downloadedAtLeastOneForItem = false;
-
-				for (const type of selectedTypes) {
-					if (cancelRef.current) return; // Exit if cancelled
-					switch (type) {
-						case "poster":
-							const posterImg = item.Set.images.find((img) => img.type === "poster");
-							if (posterImg) {
-								const taskId = newId();
-								const payload: DownloadTaskPayload = {
-									kind: "download",
-									itemKey: item.MediaItem.rating_key,
-									itemTitle: item.MediaItem.title,
-									imageFile: posterImg,
-									fileName: "Poster",
-									mediaItem: latestMediaItem,
-								};
-
-								addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-									id: taskId,
-									status: "pending",
-									label: payload.fileName,
-									attempts: 0,
-									payload,
-								});
-
-								const okPoster = await runDownloadTask(taskId, payload);
-								downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okPoster;
-							}
-							break;
-
-						case "backdrop":
-							const backdropImg = item.Set.images.find((img) => img.type === "backdrop");
-							if (backdropImg) {
-								const taskId = newId();
-								const payload: DownloadTaskPayload = {
-									kind: "download",
-									itemKey: item.MediaItem.rating_key,
-									itemTitle: item.MediaItem.title,
-									imageFile: backdropImg,
-									fileName: "Backdrop",
-									mediaItem: latestMediaItem,
-								};
-
-								addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-									id: taskId,
-									status: "pending",
-									label: payload.fileName,
-									attempts: 0,
-									payload,
-								});
-
-								const okBackdrop = await runDownloadTask(taskId, payload);
-								downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okBackdrop;
-							}
-							break;
-
-						case "season_poster":
-							if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number !== 0)) {
-								const seasonPosters = item.Set.images
-									.filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
-									.sort((a, b) => {
-										if (a.season_number! < b.season_number!) return -1;
-										if (a.season_number! > b.season_number!) return 1;
-										return 0;
-									});
-
-								for (const sp of seasonPosters) {
-									const seasonNumber = sp.season_number!;
-									const exists = latestMediaItem.series?.seasons.some(
-										(season) => season.season_number === seasonNumber
-									);
-									const taskId = newId();
-									const payload: DownloadTaskPayload = {
-										kind: "download",
-										itemKey: item.MediaItem.rating_key,
-										itemTitle: item.MediaItem.title,
-										imageFile: sp,
-										fileName: `Season ${seasonNumber} Poster`,
-										mediaItem: latestMediaItem,
-									};
-
-									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-										id: taskId,
-										status: "pending",
-										label: payload.fileName,
-										attempts: 0,
-										payload,
-									});
-
-									if (!exists) {
-										updateTask(taskId, (t) => ({
-											...t,
-											status: "skipped",
-										}));
-										continue;
-									}
-
-									const okSeasonPoster = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeasonPoster;
-								}
-							}
-							break;
-						case "special_season_poster":
-							if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number === 0)) {
-								const specialSeasonPosters = item.Set.images.filter(
-									(sp) => sp.type === "season_poster" && sp.season_number === 0
-								);
-
-								for (const sp of specialSeasonPosters) {
-									const taskId = newId();
-									const payload: DownloadTaskPayload = {
-										kind: "download",
-										itemKey: item.MediaItem.rating_key,
-										itemTitle: item.MediaItem.title,
-										imageFile: sp,
-										fileName: `Specials Season Poster`,
-										mediaItem: latestMediaItem,
-									};
-
-									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-										id: taskId,
-										status: "pending",
-										label: payload.fileName,
-										attempts: 0,
-										payload,
-									});
-
-									const okSpecialSeasonPoster = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeasonPoster;
-								}
-							}
-							break;
-
-						case "titlecard":
-							if (item.Set.images.some((tc) => tc.type === "titlecard")) {
-								const titlecards = item.Set.images
-									.filter((tc) => tc.type === "titlecard" && tc.season_number && tc.episode_number)
-									.sort((a, b) => {
-										if (a.season_number! < b.season_number!) return -1;
-										if (a.season_number! > b.season_number!) return 1;
-										if (a.episode_number! < b.episode_number!) return -1;
-										if (a.episode_number! > b.episode_number!) return 1;
-										return 0;
-									});
-
-								for (const tc of titlecards) {
-									const seasonNumber = tc.season_number!;
-									const episodeNumber = tc.episode_number!;
-									const exists = latestMediaItem.series?.seasons.some(
-										(season) =>
-											season.season_number === seasonNumber &&
-											season.episodes.some((ep) => ep.episode_number === episodeNumber)
-									);
-									const taskId = newId();
-									const payload: DownloadTaskPayload = {
-										kind: "download",
-										itemKey: item.MediaItem.rating_key,
-										itemTitle: item.MediaItem.title,
-										imageFile: tc,
-										fileName: `S${seasonNumber}E${episodeNumber} Titlecard`,
-										mediaItem: latestMediaItem,
-									};
-
-									addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-										id: taskId,
-										status: "pending",
-										label: payload.fileName,
-										attempts: 0,
-										payload,
-									});
-
-									if (!exists) {
-										updateTask(taskId, (t) => ({
-											...t,
-											status: "skipped",
-										}));
-										continue;
-									}
-
-									const okTitlecard = await runDownloadTask(taskId, payload);
-									downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitlecard;
-								}
-							}
-							break;
-					}
-				}
-
-				// Only add to DB if at least one download succeeded
-				if (!downloadedAtLeastOneForItem) {
-					const taskId = newId();
-					addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-						id: taskId,
-						status: "skipped",
-						label: `Add "${item.MediaItem.title}" to DB (skipped: no successful downloads)`,
-						attempts: 0,
-						payload: {
-							kind: "addToDB",
-							itemKey: item.MediaItem.rating_key,
-							itemTitle: item.MediaItem.title,
-							mediaItem: createdSavedItem.dbItem.media_item,
-							posterSet: createdSavedItem.dbItem.poster_sets[0],
-						},
-					});
-					continue;
-				}
-
-				const addId = newId();
-				addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-					id: addId,
-					status: "pending",
-					label: `Add "${item.MediaItem.title}" to DB`,
-					attempts: 0,
-					payload: {
-						kind: "addToDB",
-						itemKey: item.MediaItem.rating_key,
-						itemTitle: item.MediaItem.title,
-						mediaItem: createdSavedItem.dbItem.media_item,
-						posterSet: createdSavedItem.dbItem.poster_sets[0],
-					},
-				});
-
-				const ok = await runAddToDBTask(addId, {
-					kind: "addToDB",
-					itemKey: item.MediaItem.rating_key,
-					itemTitle: item.MediaItem.title,
-					mediaItem: createdSavedItem.dbItem.media_item,
-					posterSet: createdSavedItem.dbItem.poster_sets[0],
-				});
-
-				if (ok && onDownloadComplete) {
-					onDownloadComplete(
-						upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
-							poster: selectedOptions.types.includes("poster"),
-							backdrop: selectedOptions.types.includes("backdrop"),
-							season_poster: selectedOptions.types.includes("season_poster"),
-							special_season_poster: selectedOptions.types.includes("special_season_poster"),
-							titlecard: selectedOptions.types.includes("titlecard"),
-						})
-					);
-				}
-			}
-
-			setCurrentText("Completed!");
-			setButtonTexts({
-				cancel: "Close",
-				download: "Download Again",
-			});
-			setIsMounted(false);
-		} catch (error) {
-			const taskId = newId();
-			addTask("general", "General", {
-				id: taskId,
-				status: "failed",
-				label: "Unexpected error",
-				attempts: 1,
-				error: error instanceof Error ? error.message : "An unknown error occurred",
-				payload: { kind: "note", itemKey: "general", itemTitle: "General" },
-			});
-
-			setButtonTexts({
-				cancel: "Close",
-				download: "Retry Download",
-			});
-			setIsMounted(false);
-		}
-	};
-
-	return (
-		<Dialog
-			onOpenChange={(open) => {
-				if (!open) {
-					handleClose();
-				}
-			}}
-		>
-			<DialogTrigger asChild>
-				<Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
-			</DialogTrigger>
-
-			<DialogPortal>
-				<DialogOverlay />
-				<DialogContent
-					className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
-				>
-					<DialogHeader>
-						<DialogTitle onClick={LOG_VALUES}>{baseSetInfo.title}</DialogTitle>
-						<div className="flex items-center justify-center sm:justify-start">
-							<Avatar className="rounded-lg mr-1 w-4 h-4">
-								<AvatarImage
-									src={`/api/images/mediux/avatar?username=${baseSetInfo.user_created}`}
-									className="w-4 h-4"
-								/>
-								<AvatarFallback className="">
-									<User className="w-4 h-4" />
-								</AvatarFallback>
-							</Avatar>
-							<Link href={`/user/${baseSetInfo.user_created}`} className="hover:underline">
-								{baseSetInfo.user_created}
-							</Link>
-						</div>
-						<DialogDescription>
-							<Link
-								href={getMediuxBaseUrl()}
-								className="hover:text-primary transition-colors text-sm text-muted-foreground"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								{baseSetInfo.type === "boxset" ? "Boxset" : "Set"} ID: {baseSetInfo.id}
-							</Link>
-						</DialogDescription>
-					</DialogHeader>
-
-					{formItems.length > 0 ? (
-						<Form {...form}>
-							<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-								{/* Form Items */}
-								{formItems.map(renderFormItem)}
-
-								{/* If the all items have no types selected, show a message */}
-								{formItems.every(
-									(item) =>
-										!watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
-										!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-								) && (
-									<div className="text-sm text-destructive">
-										No image types selected for download. Please select at least one image type to
-										download.
-									</div>
-								)}
-
-								{/* Add to Queue 
+    const router = useRouter();
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Download Progress
+    const [progress, setProgress] = useState<DownloadProgress>({
+        currentText: "",
+        totalPlanned: 0,
+        items: {},
+    });
+
+    // State - Modal Button Texts
+    const [buttonTexts, setButtonTexts] = useState({
+        cancel: "Cancel",
+        download: "Download",
+    });
+
+    // State - Selected Types - Files Size and Download Size
+    const [selectedSizes, setSelectedSizes] = useState({
+        fileCount: 0,
+        downloadSize: 0,
+    });
+
+    // State - Duplicate Media Items
+    const [duplicates, setDuplicates] = useState<DuplicateMap>({});
+
+    // State - Add to Queue Only
+    const [addToQueueOnly, setAddToQueueOnly] = useState(false);
+
+    // User Preferences
+    const { downloadDefaults } = useUserPreferencesStore();
+
+    // Media Store
+    const { setMediaItem } = useMediaStore();
+
+    // Search Query Store
+    const { setSearchQuery } = useSearchQueryStore();
+
+    // Cancel Ref
+    const cancelRef = useRef(false);
+
+    // Function - Reset Progress Values
+    const resetProgress = () => {
+        setProgress({
+            currentText: "",
+            totalPlanned: 0,
+            items: {},
+        });
+    };
+
+    // Function - Close Modal
+    const handleClose = () => {
+        cancelRef.current = true;
+        setIsMounted(false);
+        resetProgress();
+        setButtonTexts({
+            cancel: "Cancel",
+            download: "Download",
+        });
+        form.reset();
+    };
+
+    // Function - Handle Link Click
+    const getMediuxBaseUrl = () => {
+        if (baseSetInfo.type === "boxset") {
+            return `https://mediux.io/boxset/${baseSetInfo.id}`;
+        } else {
+            return `https://mediux.io/${baseSetInfo.type}-set/${baseSetInfo.id}`;
+        }
+    };
+
+    // Compute Asset Types based on what the form item has
+    const computeAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_DEFAULT_OPTIONS[] => {
+        if (!item.Set) return [];
+
+        const setHasPoster = item.Set.images.some((img) => img.type === "poster");
+        const setHasBackdrop = item.Set.images.some((img) => img.type === "backdrop");
+        const setHasSeasonPosters = item.Set.images.some(
+            (img) => img.type === "season_poster" && img.season_number !== 0
+        );
+        const setHasSpecialSeasonPosters = item.Set.images.some(
+            (img) => img.type === "special_season_poster" && img.season_number === 0
+        );
+        const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
+        const types: (TYPE_DOWNLOAD_DEFAULT_OPTIONS | null)[] = [
+            setHasPoster ? "poster" : null,
+            setHasBackdrop ? "backdrop" : null,
+            setHasSeasonPosters ? "season_poster" : null,
+            setHasSpecialSeasonPosters ? "special_season_poster" : null,
+            setHasTitleCards ? "titlecard" : null,
+        ];
+
+        return types.filter((type): type is TYPE_DOWNLOAD_DEFAULT_OPTIONS => type !== null);
+    };
+
+    // Define Form
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        mode: "onChange",
+        defaultValues: {
+            selectedOptionsByItem: formItems.reduce(
+                (acc, item) => {
+                    acc[item.MediaItem.rating_key] = {
+                        types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
+                        autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
+                        addToDBOnly: false,
+                        source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
+                    };
+                    return acc;
+                },
+                {} as z.infer<typeof formSchema>["selectedOptionsByItem"]
+            ),
+        },
+    });
+
+    const watchSelectedOptions = useWatch({
+        control: form.control,
+        name: "selectedOptionsByItem",
+    });
+
+    // Reset form on mount
+    useEffect(() => {
+        form.reset({
+            selectedOptionsByItem: formItems.reduce(
+                (acc, item) => {
+                    acc[item.MediaItem.rating_key] = {
+                        types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
+                        autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
+                        addToDBOnly: false,
+                        source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
+                    };
+                    return acc;
+                },
+                {} as z.infer<typeof formSchema>["selectedOptionsByItem"]
+            ),
+        });
+    }, [formItems, form, autoDownloadDefault, downloadDefaults]);
+
+    useEffect(() => {
+        // If all the form items are set to "Add to Database Only", change button text
+        if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types.length === 0)) {
+            setButtonTexts((prev) => ({
+                ...prev,
+                download: "Add to Database",
+            }));
+        } else if (addToQueueOnly) {
+            setButtonTexts((prev) => ({
+                ...prev,
+                download: "Add to Queue",
+            }));
+        } else {
+            setButtonTexts((prev) => ({
+                ...prev,
+                download: "Download",
+            }));
+        }
+    }, [addToQueueOnly, watchSelectedOptions]);
+
+    useEffect(() => {
+        const dups = findDuplicateMediaItems(formItems);
+        setDuplicates(
+            Object.fromEntries(
+                Object.entries(dups)
+                    .filter(([, value]) => value.options.length > 1)
+                    .map(([key, value]) => {
+                        // Set initial selection to "movie" if available
+                        const hasMovie = value.options.some((opt) => opt.type === "movie");
+                        return [
+                            key,
+                            {
+                                ...value,
+                                selectedType: hasMovie ? "movie" : "collection",
+                            },
+                        ];
+                    })
+            )
+        );
+
+        // Update form values for duplicates
+        Object.entries(dups)
+            .filter(([, value]) => value.options.length > 1)
+            .forEach(([key, value]) => {
+                const hasMovie = value.options.some((opt) => opt.type === "movie");
+
+                // Uncheck collection if movie is available
+                if (hasMovie) {
+                    form.setValue(`selectedOptionsByItem.${key}`, {
+                        ...form.getValues(`selectedOptionsByItem.${key}`),
+                        source: "movie",
+                    });
+                }
+            });
+    }, [formItems, form]);
+
+    useEffect(() => {
+        const calculateSizes = () => {
+            let totalFiles = 0;
+            let totalSize = 0;
+
+            // Iterate through each selected item
+            Object.entries(watchSelectedOptions).forEach(([ratingKey, selection]) => {
+                // Find the corresponding form item to access PosterFile sizes
+                const formItem = formItems.find((item) => item.MediaItem.rating_key === ratingKey);
+
+                if (!formItem || !selection.types || selection.addToDBOnly) return;
+
+                // Count files and sum sizes for each selected type
+                selection.types.forEach((type) => {
+                    switch (type) {
+                        case "poster":
+                            const posterImage = formItem.Set.images.find(
+                                (img) => img.type === "poster" && img.file_size
+                            );
+                            if (posterImage && posterImage.file_size) {
+                                totalSize += posterImage.file_size;
+                                totalFiles += 1;
+                            }
+                            break;
+                        case "backdrop":
+                            const backdropImage = formItem.Set.images.find(
+                                (img) => img.type === "backdrop" && img.file_size
+                            );
+                            if (backdropImage && backdropImage.file_size) {
+                                totalSize += backdropImage.file_size;
+                                totalFiles += 1;
+                            }
+                            break;
+                        case "season_poster":
+                            formItem.Set.images.forEach((sp) => {
+                                if (sp.type === "season_poster" && sp.season_number !== 0 && sp.file_size) {
+                                    if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+                                        // Check if season exists in MediaItem
+                                        const seasonExists = formItem.MediaItem.series.seasons.some(
+                                            (season) => season.season_number === sp.season_number
+                                        );
+                                        if (seasonExists) {
+                                            totalSize += sp.file_size;
+                                            totalFiles += 1;
+                                        }
+                                    } else {
+                                        totalSize += sp.file_size;
+                                        totalFiles += 1;
+                                    }
+                                }
+                            });
+                            break;
+                        case "special_season_poster":
+                            formItem.Set.images.forEach((sp) => {
+                                if (sp.type === "season_poster" && sp.season_number === 0 && sp.file_size) {
+                                    if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+                                        // Check if special season exists in MediaItem
+                                        const specialSeasonExists = formItem.MediaItem.series.seasons.some(
+                                            (season) => season.season_number === 0
+                                        );
+                                        if (specialSeasonExists) {
+                                            totalSize += sp.file_size;
+                                            totalFiles += 1;
+                                        }
+                                    } else {
+                                        totalSize += sp.file_size;
+                                        totalFiles += 1;
+                                    }
+                                }
+                            });
+                            break;
+                        case "titlecard":
+                            formItem.Set.images.forEach((tc) => {
+                                if (tc.type === "titlecard" && tc.file_size) {
+                                    if (formItem.MediaItem.series && formItem.MediaItem.series.seasons) {
+                                        // Check if episode exists in MediaItem
+                                        const episodeExists = formItem.MediaItem.series.seasons.some((season) =>
+                                            season.episodes.some(
+                                                (ep) =>
+                                                    ep.season_number === tc.season_number &&
+                                                    ep.episode_number === tc.episode_number
+                                            )
+                                        );
+                                        if (episodeExists) {
+                                            totalSize += tc.file_size;
+                                            totalFiles += 1;
+                                        }
+                                    } else {
+                                        totalSize += tc.file_size;
+                                        totalFiles += 1;
+                                    }
+                                }
+                            });
+                            break;
+                    }
+                });
+            });
+
+            setSelectedSizes({
+                fileCount: totalFiles,
+                downloadSize: totalSize,
+            });
+        };
+
+        calculateSizes();
+    }, [formItems, watchSelectedOptions]);
+
+    const LOG_VALUES = () => {
+        log("INFO", "Download Modal", "Debug Info", "Logging props values:", {
+            baseSetInfo,
+            autoDownloadDefault,
+        });
+        log("INFO", "Download Modal", "Debug Info", "Logging form items:", formItems);
+        log("INFO", "Download Modal", "Debug Info", "Logging form values:", form);
+        log("INFO", "Download Modal", "Debug Info", "Logging watch selected types:", watchSelectedOptions);
+        log("INFO", "Download Modal", "Debug Info", "Logging progress:", progress);
+        log("INFO", "Download Modal", "Debug Info", "Logging duplicates:", duplicates);
+    };
+
+    // --- Progress/Task Helpers ---
+    const setCurrentText = (text: string) => {
+        setProgress((prev) => ({
+            ...prev,
+            currentText: text,
+        }));
+    };
+
+    const upsertItem = (itemKey: string, title: string) => {
+        setProgress((prev) => {
+            if (prev.items[itemKey]) return prev;
+            return {
+                ...prev,
+                items: {
+                    ...prev.items,
+                    [itemKey]: { itemKey, title, tasks: [] },
+                },
+            };
+        });
+    };
+
+    const addTask = (itemKey: string, title: string, task: Task) => {
+        setProgress((prev) => {
+            const existing = prev.items[itemKey] ?? { itemKey, title, tasks: [] as Task[] };
+            return {
+                ...prev,
+                items: {
+                    ...prev.items,
+                    [itemKey]: {
+                        ...existing,
+                        title: existing.title || title,
+                        tasks: [...existing.tasks, task],
+                    },
+                },
+            };
+        });
+    };
+
+    const updateTask = (taskId: string, updater: (t: Task) => Task) => {
+        setProgress((prev) => {
+            let changed = false;
+            const nextItems: Record<string, ItemProgress> = {};
+
+            for (const [itemKey, item] of Object.entries(prev.items)) {
+                const idx = item.tasks.findIndex((t) => t.id === taskId);
+                if (idx === -1) {
+                    nextItems[itemKey] = item;
+                    continue;
+                }
+
+                const nextTasks = [...item.tasks];
+                nextTasks[idx] = updater(nextTasks[idx]);
+                nextItems[itemKey] = { ...item, tasks: nextTasks };
+                changed = true;
+            }
+
+            return changed ? { ...prev, items: nextItems } : prev;
+        });
+    };
+
+    const findTask = (state: DownloadProgress, taskId: string): Task | undefined => {
+        for (const item of Object.values(state.items)) {
+            const t = item.tasks.find((x) => x.id === taskId);
+            if (t) return t;
+        }
+        return undefined;
+    };
+
+    const getAssetStatus = (itemKey: string, assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS): TaskStatus | undefined => {
+        const tasks = progress.items[itemKey]?.tasks ?? [];
+        const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.imageFile.type === assetType);
+        if (relevant.length === 0) return undefined;
+
+        // Aggregate status so multi-file types don't "lose" completion due to a final skipped task.
+        if (relevant.some((t) => t.status === "failed")) return "failed";
+        if (relevant.some((t) => t.status === "in-progress")) return "in-progress";
+        if (relevant.some((t) => t.status === "pending")) return "pending";
+        if (relevant.some((t) => t.status === "completed")) return "completed";
+        return "skipped"; // all skipped
+    };
+
+    const runDownloadTask = async (taskId: string, payload: DownloadTaskPayload): Promise<boolean> => {
+        updateTask(taskId, (t) => ({
+            ...t,
+            status: "in-progress",
+            attempts: (t.attempts ?? 0) + 1,
+            error: undefined,
+        }));
+        setCurrentText(`Downloading ${payload.fileName} for "${payload.itemTitle}"`);
+
+        try {
+            const response = await downloadImageFileForMediaItem(
+                payload.imageFile,
+                payload.mediaItem,
+                payload.fileName
+            );
+
+            if (response.status === "error") {
+                throw new Error(response.error?.message || "Unknown error");
+            }
+
+            updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+            return true;
+        } catch (error) {
+            const message = `"${payload.itemTitle}" - ${payload.fileName} - ${error instanceof Error ? error.message : "Unknown error"}`;
+            updateTask(taskId, (t) => ({ ...t, status: "failed", error: message }));
+            return false;
+        }
+    };
+
+    const runAddToDBTask = async (taskId: string, payload: AddToDBTaskPayload): Promise<boolean> => {
+        updateTask(taskId, (t) => ({
+            ...t,
+            status: "in-progress",
+            attempts: (t.attempts ?? 0) + 1,
+            error: undefined,
+        }));
+        setCurrentText(`Adding "${payload.itemTitle}" to DB`);
+
+        try {
+            const resp = await addNewItemToDB(payload.mediaItem, payload.posterSet);
+            if (resp.status === "error") {
+                throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
+            }
+            updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+            return true;
+        } catch (error) {
+            updateTask(taskId, (t) => ({
+                ...t,
+                status: "failed",
+                error: `"${payload.itemTitle}" - Add to DB failed - ${error instanceof Error ? error.message : "Unknown error"}`,
+            }));
+            return false;
+        }
+    };
+
+    const runAddToQueueTask = async (taskId: string, payload: AddToQueueTaskPayload): Promise<boolean> => {
+        updateTask(taskId, (t) => ({
+            ...t,
+            status: "in-progress",
+            attempts: (t.attempts ?? 0) + 1,
+            error: undefined,
+        }));
+        setCurrentText(`Adding "${payload.itemTitle}" to queue`);
+
+        try {
+            const resp = await addItemToDownloadQueue(payload.dbItem);
+            if (resp.status === "error") {
+                throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
+            }
+            updateTask(taskId, (t) => ({ ...t, status: "completed" }));
+            return true;
+        } catch (error) {
+            updateTask(taskId, (t) => ({
+                ...t,
+                status: "failed",
+                error: `"${payload.itemTitle}" - Add to queue failed - ${error instanceof Error ? error.message : "Unknown error"}`,
+            }));
+            return false;
+        }
+    };
+
+    const retryTask = async (taskId: string) => {
+        const t = findTask(progress, taskId);
+        if (!t) return;
+
+        // NOTE: "note" tasks are not retryable
+        if (t.payload.kind === "note") return;
+
+        if (t.payload.kind === "download") {
+            await runDownloadTask(taskId, t.payload);
+        } else if (t.payload.kind === "addToDB") {
+            await runAddToDBTask(taskId, t.payload);
+        } else if (t.payload.kind === "addToQueue") {
+            await runAddToQueueTask(taskId, t.payload);
+        }
+
+        setButtonTexts((prev) => ({ ...prev, download: "Download Again" }));
+    };
+
+    const renderFormItemAssetType = (
+        field: ControllerRenderProps<
+            { selectedOptionsByItem: Record<string, AssetTypeFormValues> },
+            `selectedOptionsByItem.${string}`
+        >,
+        assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+        item: FormItemDisplay
+    ) => {
+        const types = field.value?.types || [];
+        const isDuplicate = duplicates[item.MediaItem.rating_key];
+
+        // Calculate checked state
+        const isChecked = types.includes(assetType) && (!isDuplicate || isDuplicate.selectedType === item.Set.type);
+
+        // Calculate disabled state
+        const isDisabled = Boolean(
+            isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
+        );
+
+        // Check download status from task state
+        const status = getAssetStatus(item.MediaItem.rating_key, assetType);
+        const isDownloaded = status === "completed";
+        const isFailed = status === "failed";
+        const isLoading = status === "in-progress";
+        const isSkipped = status === "skipped";
+
+        // Check if *this assetType* is already downloaded in another set (using DBSavedSets)
+        const downloadedSetForType = item.MediaItem?.db_saved_sets?.find(
+            (set) => set.id !== item.Set.id && set.selected_types?.[assetType]
+        );
+        const isDownloadedInAnotherSet = Boolean(downloadedSetForType);
+
+        return (
+            <FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
+                <FormControl className="mt-1">
+                    <Checkbox
+                        checked={isChecked}
+                        disabled={isDisabled}
+                        onCheckedChange={(checked) => {
+                            const newTypes = checked
+                                ? [...types, assetType]
+                                : types.filter((type: string) => type !== assetType);
+
+                            // Update duplicates tracking
+                            if (checked && isDuplicate) {
+                                setDuplicates((prev) => ({
+                                    ...prev,
+                                    [item.MediaItem.rating_key]: {
+                                        ...prev[item.MediaItem.rating_key],
+                                        selectedType: item.Set.type as "movie" | "collection",
+                                    },
+                                }));
+                            } else if (!checked && isDuplicate) {
+                                setDuplicates((prev) => ({
+                                    ...prev,
+                                    [item.MediaItem.rating_key]: {
+                                        ...prev[item.MediaItem.rating_key],
+                                        selectedType: "",
+                                    },
+                                }));
+                            }
+
+                            field.onChange({
+                                ...(field.value ?? {}),
+                                types: newTypes,
+                                autodownload: newTypes.length === 0 ? false : field.value?.autodownload,
+                                addToDBOnly: newTypes.length === 0 ? false : field.value?.addToDBOnly,
+                                source:
+                                    item.Set.type === "movie" || item.Set.type === "collection"
+                                        ? item.Set.type
+                                        : undefined,
+                            });
+                        }}
+                        className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                    />
+                </FormControl>
+                <FormLabel
+                    className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}
+                >
+                    {DOWNLOAD_DEFAULT_LABELS[assetType]}
+                </FormLabel>
+                {isDownloaded ? (
+                    <Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
+                ) : isFailed ? (
+                    <X className="h-4 w-4 text-destructive mt-1" strokeWidth={3} />
+                ) : isLoading ? (
+                    <Loader className="h-4 w-4 mt-1 animate-spin" />
+                ) : isSkipped ? (
+                    <Check className="h-4 w-4 text-yellow-500 mt-1" strokeWidth={3} />
+                ) : isDownloadedInAnotherSet ? (
+                    <PopoverHelp
+                        ariaLabel="Type already downloaded in another set"
+                        side="bottom"
+                        className="max-w-xs"
+                        trigger={<TriangleAlert className="h-4 w-4 mt-1 text-yellow-500 cursor-help" />}
+                    >
+                        <div className="flex items-center">
+                            <CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+                            <span className="text-xs">
+                                {DOWNLOAD_DEFAULT_LABELS[assetType]}{" "}
+                                {DOWNLOAD_DEFAULT_LABELS[assetType].endsWith("s") ? "have" : "has"} already been
+                                downloaded in set {downloadedSetForType?.id} by user{" "}
+                                {downloadedSetForType?.user_created}.
+                            </span>
+                        </div>
+                    </PopoverHelp>
+                ) : null}
+            </FormItem>
+        );
+    };
+
+    const renderFormItem = (item: FormItemDisplay) => {
+        const isDuplicate = duplicates[item.MediaItem.rating_key];
+        // Calculate disabled state
+        const isDisabled = Boolean(
+            isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type
+        );
+
+        // Calculate whether the item is already in the database
+        const isInDatabase =
+            (item.MediaItem && item.MediaItem.db_saved_sets && item.MediaItem.db_saved_sets.length > 0) || false;
+
+        // Calculate whether the item is already in the database and has this set saved
+        const isInDatabaseWithSet =
+            isInDatabase &&
+            item.MediaItem.db_saved_sets &&
+            item.MediaItem.db_saved_sets.some((set) => set.id === item.Set.id);
+
+        // Calculate whether the item has any error tasks
+        const itemProgress = progress.items[item.MediaItem.rating_key];
+        const hasErrorTasks = itemProgress ? itemProgress.tasks.some((t) => t.status === "failed") : false;
+        const allSuccessful = itemProgress
+            ? itemProgress.tasks.length > 0 &&
+              itemProgress.tasks.every((t) => t.status === "completed" || t.status === "skipped")
+            : false;
+
+        return (
+            <FormField
+                key={`${item.MediaItem.rating_key}-${item.Set.type}`}
+                control={form.control}
+                name={`selectedOptionsByItem.${item.MediaItem.rating_key}`}
+                render={({ field }) => (
+                    <div
+                        className={cn("rounded-md border p-4 rounded-lg mb-4", {
+                            "border-green-500": isInDatabaseWithSet || allSuccessful,
+                            "border-yellow-500": isInDatabase && !isInDatabaseWithSet,
+                            "border-destructive": hasErrorTasks,
+                        })}
+                    >
+                        <FormLabel
+                            className="text-md font-normal mb-4"
+                            onDoubleClick={() => {
+                                setMediaItem(item.MediaItem);
+                            }}
+                        >
+                            <span className="flex items-center justify-between w-full">
+                                {item.MediaItem.title}{" "}
+                                {/\(\d{4}\)$/.test(item.MediaItem.title) ? "" : `(${item.MediaItem.year})`}
+                                {item.MediaItem &&
+                                    item.MediaItem.db_saved_sets &&
+                                    item.MediaItem.db_saved_sets.length > 0 && (
+                                        <Popover modal={true}>
+                                            <PopoverTrigger>
+                                                <Database
+                                                    className={cn(
+                                                        "h-4 w-4 ml-2 cursor-pointer",
+                                                        isInDatabaseWithSet ? "text-green-500" : "text-yellow-500"
+                                                    )}
+                                                />
+                                            </PopoverTrigger>
+                                            <PopoverContent
+                                                className={cn(
+                                                    "max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
+                                                    isInDatabaseWithSet ? "border-green-800" : "border-yellow-800"
+                                                )}
+                                            >
+                                                <div className="flex items-center mb-2">
+                                                    <CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+                                                    <span className="text-sm text-muted-foreground">
+                                                        This media item already exists in your database
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mb-2">
+                                                    You have previously saved it in the following sets
+                                                </div>
+                                                <ul className="space-y-2">
+                                                    {item.MediaItem.db_saved_sets.map((set) => (
+                                                        <li
+                                                            key={set.id}
+                                                            className="flex items-center rounded-md px-2 py-1 shadow-sm"
+                                                        >
+                                                            <Button
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+                                                                    set.id.toString() === item.Set.id.toString()
+                                                                        ? "text-green-600  hover:bg-green-100  hover:text-green-600"
+                                                                        : "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+                                                                )}
+                                                                aria-label={`View saved set ${set.id} ${set.user_created ? `by ${set.user_created}` : ""}`}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSearchQuery(
+                                                                        `${item.MediaItem.title} Y:${item.MediaItem.year}: ID:${item.MediaItem.tmdb_id}: L:${item.MediaItem.library_title}:`
+                                                                    );
+                                                                    router.push("/saved-sets");
+                                                                }}
+                                                            >
+                                                                Set ID: {set.id}
+                                                                {set.user_created ? ` by ${set.user_created}` : ""}
+                                                            </Button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
+                                {baseSetInfo.type === "boxset" &&
+                                    isDuplicate &&
+                                    isDuplicate.selectedType !== "" &&
+                                    isDuplicate.selectedType !== item.Set.type && (
+                                        <Popover modal={true}>
+                                            <PopoverTrigger>
+                                                <TriangleAlert className="h-4 w-4 text-yellow-500 cursor-help" />
+                                            </PopoverTrigger>
+                                            <PopoverContent className="max-w-[400px] w-60">
+                                                <div className="text-sm text-yellow-500">
+                                                    This item is selected in the{" "}
+                                                    {isDuplicate.selectedType === "movie"
+                                                        ? "Movie Set"
+                                                        : "Collection Set"}
+                                                    .
+                                                </div>
+                                                {(() => {
+                                                    const img = isDuplicate.options.find(
+                                                        (o) => o.type === isDuplicate.selectedType
+                                                    )?.image;
+                                                    return (
+                                                        img && (
+                                                            <AssetImage
+                                                                className="mt-2"
+                                                                image={img}
+                                                                imageType="mediux"
+                                                            />
+                                                        )
+                                                    );
+                                                })()}
+                                            </PopoverContent>
+                                        </Popover>
+                                    )}
+                            </span>
+                        </FormLabel>
+
+                        <div className="space-y-2">
+                            {computeAssetTypes(item).map((assetType) => (
+                                <div key={assetType}>
+                                    {renderFormItemAssetType(
+                                        field as ControllerRenderProps<
+                                            {
+                                                selectedOptionsByItem: Record<string, AssetTypeFormValues>;
+                                            },
+                                            `selectedOptionsByItem.${string}`
+                                        >,
+                                        assetType,
+                                        item
+                                    )}
+                                </div>
+                            ))}
+                            <FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
+                                Download Options
+                            </FormLabel>
+                            {(item.Set.type === "movie" || item.Set.type === "collection") && (
+                                <FormItem className="flex items-center space-x-2">
+                                    <FormControl>
+                                        <Checkbox
+                                            checked={
+                                                isDisabled || field.value?.types.length === 0
+                                                    ? false
+                                                    : field.value?.addToDBOnly || false
+                                            }
+                                            disabled={isDisabled || field.value?.types.length === 0}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange({
+                                                    ...(field.value ?? {}),
+                                                    addToDBOnly: checked,
+                                                });
+                                            }}
+                                            className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="text-md font-normal cursor-pointer">
+                                        Add to Database Only
+                                    </FormLabel>
+
+                                    <DownloadModalPopover type="add-to-db-only" />
+                                </FormItem>
+                            )}
+                            {item.Set.type === "show" && (
+                                <>
+                                    <FormItem className="flex items-center space-x-2">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value?.addToDBOnly || false}
+                                                onCheckedChange={(checked) => {
+                                                    field.onChange({
+                                                        ...(field.value ?? {}),
+                                                        addToDBOnly: checked,
+                                                    });
+                                                }}
+                                                className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="text-md font-normal cursor-pointer">
+                                            Future Updates Only
+                                        </FormLabel>
+                                        <DownloadModalPopover type="future-updated-only" />
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={field.value?.autodownload || false}
+                                                onCheckedChange={(checked) => {
+                                                    field.onChange({
+                                                        ...(field.value ?? {}),
+                                                        autodownload: checked,
+                                                    });
+                                                }}
+                                                className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="text-md font-normal cursor-pointer">
+                                            Auto Download
+                                        </FormLabel>
+                                        <DownloadModalPopover type="autodownload" />
+                                    </FormItem>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+            />
+        );
+    };
+
+    const createDBItem = (
+        item: FormItemDisplay,
+        options: z.infer<typeof formSchema>["selectedOptionsByItem"][string],
+        latestMediaItem: MediaItem
+    ): {
+        dbItem: DBSavedItem;
+    } => {
+        return {
+            dbItem: {
+                media_item: latestMediaItem,
+                poster_sets: [
+                    {
+                        id: item.Set.id,
+                        type: item.Set.type,
+                        title: item.Set.title,
+                        user_created: item.Set.user_created,
+                        date_created: item.Set.date_created,
+                        date_updated: item.Set.date_updated,
+                        popularity: item.Set.popularity,
+                        popularity_global: item.Set.popularity_global,
+                        images: item.Set.images,
+                        selected_types: {
+                            poster: options.types?.includes("poster") || false,
+                            backdrop: options.types?.includes("backdrop") || false,
+                            season_poster: options.types?.includes("season_poster") || false,
+                            special_season_poster: options.types?.includes("special_season_poster") || false,
+                            titlecard: options.types?.includes("titlecard") || false,
+                        },
+                        auto_download: options.autodownload || false,
+                        last_downloaded: "",
+                        to_delete: false,
+                    },
+                ],
+            },
+        };
+    };
+
+    // Compute how many tasks we *expect* to run before starting
+    const computePlannedTotal = (data: z.infer<typeof formSchema>) => {
+        let total = 0;
+
+        for (const item of formItems) {
+            const selected = data.selectedOptionsByItem[item.MediaItem.rating_key];
+            if (!selected) continue;
+
+            // Skip duplicates that aren't selected
+            if (
+                (item.Set.type === "movie" || item.Set.type === "collection") &&
+                duplicates[item.MediaItem.rating_key]?.selectedType &&
+                duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
+            ) {
+                continue;
+            }
+
+            // Nothing selected and not DB-only => no tasks
+            if ((selected.types?.length ?? 0) === 0 && !selected.addToDBOnly) continue;
+
+            // DB-only => just one task
+            if (selected.addToDBOnly) {
+                total += 1;
+                continue;
+            }
+
+            // Add-to-queue-only => just one task (no downloads, no add-to-db)
+            if (addToQueueOnly) {
+                total += 1;
+                continue;
+            }
+
+            // Download tasks
+            for (const type of selected.types ?? []) {
+                switch (type) {
+                    case "poster":
+                        if (item.Set.images.some((img) => img.type === "poster")) total += 1;
+                        break;
+                    case "backdrop":
+                        if (item.Set.images.some((img) => img.type === "backdrop")) total += 1;
+                        break;
+                    case "season_poster":
+                        total +=
+                            item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
+                                .length ?? 0;
+                        break;
+                    case "special_season_poster":
+                        total +=
+                            item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number === 0)
+                                .length ?? 0;
+                        break;
+                    case "titlecard":
+                        total += item.Set.images?.filter((tc) => tc.type === "titlecard").length ?? 0;
+                        break;
+                }
+            }
+
+            // After downloads, you *attempt* add-to-db (or mark it skipped) => count it as a planned task
+            if ((selected.types?.length ?? 0) > 0) total += 1;
+        }
+
+        return total;
+    };
+
+    const onSubmit = async (data: z.infer<typeof formSchema>) => {
+        if (isMounted) return;
+        cancelRef.current = false;
+
+        try {
+            setIsMounted(true);
+            setButtonTexts({
+                cancel: "Cancel",
+                download: "Starting...",
+            });
+            resetProgress();
+            // Reset + set the planned total up front (fixed total)
+            const plannedTotal = computePlannedTotal(data);
+            setProgress({
+                currentText: "Starting...",
+                totalPlanned: plannedTotal,
+                items: {},
+            });
+
+            // Your download logic here
+            log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
+            log("INFO", "Download Modal", "Debug Info", "Progress:", progress);
+            log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
+            log("INFO", "Download Modal", "Debug Info", "Add to Queue Only:", addToQueueOnly);
+
+            // Sort formItems by MediaItemTitle for consistent order
+            const sortedFormItems = formItems;
+            log("INFO", "Download Modal", "Debug Info", "Sorted Form Items:", sortedFormItems);
+
+            // Go through each item in the formItems
+            for (let idx = 0; idx < sortedFormItems.length; idx++) {
+                if (cancelRef.current) return; // Exit if cancelled
+                const item = sortedFormItems[idx];
+                log("INFO", "Download Modal", "Debug Info", "Processing Item:", item);
+
+                const selectedOptions = data.selectedOptionsByItem[item.MediaItem.rating_key];
+                log("INFO", "Download Modal", "Debug Info", "Selected Types for Item:", selectedOptions);
+
+                // If no types are selected and not set to "Add to DB Only", skip this item
+                if (selectedOptions.types.length === 0 && !selectedOptions.addToDBOnly) {
+                    log(
+                        "INFO",
+                        "Download Modal",
+                        "Debug Info",
+                        `Skipping ${item.MediaItem.title} - Nothing to do here.`
+                    );
+                    continue;
+                }
+
+                upsertItem(item.MediaItem.rating_key, item.MediaItem.title);
+
+                // If the item set is a movie or collection, check for duplicates
+                // If this duplicate type is not selected, skip it
+                if (
+                    (item.Set.type === "movie" || item.Set.type === "collection") &&
+                    duplicates[item.MediaItem.rating_key] &&
+                    duplicates[item.MediaItem.rating_key].selectedType &&
+                    duplicates[item.MediaItem.rating_key].selectedType !== item.Set.type
+                ) {
+                    log(
+                        "INFO",
+                        "Download Modal",
+                        "Debug Info",
+                        `Skipping ${item.MediaItem.title} in ${item.Set.id} - Duplicate type selected: ${duplicates[item.MediaItem.rating_key].selectedType}`
+                    );
+                    continue;
+                }
+
+                // Get the latest media item from the server
+                const latestMediaItemResp = await getMediaItemContent(
+                    item.MediaItem.title,
+                    item.MediaItem.rating_key,
+                    item.MediaItem.library_title,
+                    "item"
+                );
+                if (latestMediaItemResp.status === "error" || !latestMediaItemResp.data) {
+                    const noteId = newId();
+                    const msg =
+                        latestMediaItemResp.status === "error"
+                            ? latestMediaItemResp.error?.help ||
+                              latestMediaItemResp.error?.detail ||
+                              latestMediaItemResp.error?.message ||
+                              "Unknown error"
+                            : "No media item found.";
+
+                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                        id: noteId,
+                        status: "failed",
+                        label: "Fetch latest media item",
+                        attempts: 1,
+                        error: `Error fetching latest media item for ${item.MediaItem.title}: ${msg}`,
+                        payload: { kind: "note", itemKey: item.MediaItem.rating_key, itemTitle: item.MediaItem.title },
+                    });
+                    continue;
+                }
+
+                const latestMediaItem = latestMediaItemResp.data.media_item;
+                const createdSavedItem = createDBItem(item, selectedOptions, latestMediaItem);
+
+                // Add to DB only
+                if (selectedOptions.addToDBOnly) {
+                    const taskId = newId();
+                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                        id: taskId,
+                        status: "pending",
+                        label: `Add "${item.MediaItem.title}" to DB`,
+                        attempts: 0,
+                        payload: {
+                            kind: "addToDB",
+                            itemKey: item.MediaItem.rating_key,
+                            itemTitle: item.MediaItem.title,
+                            mediaItem: createdSavedItem.dbItem.media_item,
+                            posterSet: createdSavedItem.dbItem.poster_sets[0],
+                        },
+                    });
+
+                    const ok = await runAddToDBTask(taskId, {
+                        kind: "addToDB",
+                        itemKey: item.MediaItem.rating_key,
+                        itemTitle: item.MediaItem.title,
+                        mediaItem: createdSavedItem.dbItem.media_item,
+                        posterSet: createdSavedItem.dbItem.poster_sets[0],
+                    });
+
+                    if (ok && onDownloadComplete) {
+                        onDownloadComplete(
+                            upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
+                                poster: selectedOptions.types.includes("poster"),
+                                backdrop: selectedOptions.types.includes("backdrop"),
+                                season_poster: selectedOptions.types.includes("season_poster"),
+                                special_season_poster: selectedOptions.types.includes("special_season_poster"),
+                                titlecard: selectedOptions.types.includes("titlecard"),
+                            })
+                        );
+                    }
+                    continue;
+                }
+
+                const selectedTypes = selectedOptions.types.sort((a, b) => {
+                    const order = ["poster", "backdrop", "season_poster", "special_season_poster", "titlecard"];
+                    return order.indexOf(a) - order.indexOf(b);
+                });
+
+                // If no types are selected, skip this item
+                if (selectedTypes.length === 0) {
+                    log(
+                        "INFO",
+                        "Download Modal",
+                        "Debug Info",
+                        `Skipping ${item.MediaItem.title} - No types selected.`
+                    );
+                    continue;
+                }
+
+                log(
+                    "INFO",
+                    "Download Modal",
+                    "Debug Info",
+                    `Selected Types for ${item.MediaItem.title}:`,
+                    selectedTypes
+                );
+
+                // Add to queue only (for items that actually have types selected)
+                if (addToQueueOnly) {
+                    const taskId = newId();
+                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                        id: taskId,
+                        status: "pending",
+                        label: `Add "${item.MediaItem.title}" to queue`,
+                        attempts: 0,
+                        payload: {
+                            kind: "addToQueue",
+                            itemKey: item.MediaItem.rating_key,
+                            itemTitle: item.MediaItem.title,
+                            dbItem: createdSavedItem.dbItem,
+                        },
+                    });
+
+                    await runAddToQueueTask(taskId, {
+                        kind: "addToQueue",
+                        itemKey: item.MediaItem.rating_key,
+                        itemTitle: item.MediaItem.title,
+                        dbItem: createdSavedItem.dbItem,
+                    });
+                    continue;
+                }
+
+                // Track whether THIS item had at least one successful download
+                let downloadedAtLeastOneForItem = false;
+
+                for (const type of selectedTypes) {
+                    if (cancelRef.current) return; // Exit if cancelled
+                    switch (type) {
+                        case "poster":
+                            const posterImg = item.Set.images.find((img) => img.type === "poster");
+                            if (posterImg) {
+                                const taskId = newId();
+                                const payload: DownloadTaskPayload = {
+                                    kind: "download",
+                                    itemKey: item.MediaItem.rating_key,
+                                    itemTitle: item.MediaItem.title,
+                                    imageFile: posterImg,
+                                    fileName: "Poster",
+                                    mediaItem: latestMediaItem,
+                                };
+
+                                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                                    id: taskId,
+                                    status: "pending",
+                                    label: payload.fileName,
+                                    attempts: 0,
+                                    payload,
+                                });
+
+                                const okPoster = await runDownloadTask(taskId, payload);
+                                downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okPoster;
+                            }
+                            break;
+
+                        case "backdrop":
+                            const backdropImg = item.Set.images.find((img) => img.type === "backdrop");
+                            if (backdropImg) {
+                                const taskId = newId();
+                                const payload: DownloadTaskPayload = {
+                                    kind: "download",
+                                    itemKey: item.MediaItem.rating_key,
+                                    itemTitle: item.MediaItem.title,
+                                    imageFile: backdropImg,
+                                    fileName: "Backdrop",
+                                    mediaItem: latestMediaItem,
+                                };
+
+                                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                                    id: taskId,
+                                    status: "pending",
+                                    label: payload.fileName,
+                                    attempts: 0,
+                                    payload,
+                                });
+
+                                const okBackdrop = await runDownloadTask(taskId, payload);
+                                downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okBackdrop;
+                            }
+                            break;
+
+                        case "season_poster":
+                            if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number !== 0)) {
+                                const seasonPosters = item.Set.images
+                                    .filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
+                                    .sort((a, b) => {
+                                        if (a.season_number! < b.season_number!) return -1;
+                                        if (a.season_number! > b.season_number!) return 1;
+                                        return 0;
+                                    });
+
+                                for (const sp of seasonPosters) {
+                                    const seasonNumber = sp.season_number!;
+                                    const exists = latestMediaItem.series?.seasons.some(
+                                        (season) => season.season_number === seasonNumber
+                                    );
+                                    const taskId = newId();
+                                    const payload: DownloadTaskPayload = {
+                                        kind: "download",
+                                        itemKey: item.MediaItem.rating_key,
+                                        itemTitle: item.MediaItem.title,
+                                        imageFile: sp,
+                                        fileName: `Season ${seasonNumber} Poster`,
+                                        mediaItem: latestMediaItem,
+                                    };
+
+                                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                                        id: taskId,
+                                        status: "pending",
+                                        label: payload.fileName,
+                                        attempts: 0,
+                                        payload,
+                                    });
+
+                                    if (!exists) {
+                                        updateTask(taskId, (t) => ({
+                                            ...t,
+                                            status: "skipped",
+                                        }));
+                                        continue;
+                                    }
+
+                                    const okSeasonPoster = await runDownloadTask(taskId, payload);
+                                    downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeasonPoster;
+                                }
+                            }
+                            break;
+                        case "special_season_poster":
+                            if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number === 0)) {
+                                const specialSeasonPosters = item.Set.images.filter(
+                                    (sp) => sp.type === "season_poster" && sp.season_number === 0
+                                );
+
+                                for (const sp of specialSeasonPosters) {
+                                    const taskId = newId();
+                                    const payload: DownloadTaskPayload = {
+                                        kind: "download",
+                                        itemKey: item.MediaItem.rating_key,
+                                        itemTitle: item.MediaItem.title,
+                                        imageFile: sp,
+                                        fileName: `Specials Season Poster`,
+                                        mediaItem: latestMediaItem,
+                                    };
+
+                                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                                        id: taskId,
+                                        status: "pending",
+                                        label: payload.fileName,
+                                        attempts: 0,
+                                        payload,
+                                    });
+
+                                    const okSpecialSeasonPoster = await runDownloadTask(taskId, payload);
+                                    downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeasonPoster;
+                                }
+                            }
+                            break;
+
+                        case "titlecard":
+                            if (item.Set.images.some((tc) => tc.type === "titlecard")) {
+                                const titlecards = item.Set.images
+                                    .filter((tc) => tc.type === "titlecard" && tc.season_number && tc.episode_number)
+                                    .sort((a, b) => {
+                                        if (a.season_number! < b.season_number!) return -1;
+                                        if (a.season_number! > b.season_number!) return 1;
+                                        if (a.episode_number! < b.episode_number!) return -1;
+                                        if (a.episode_number! > b.episode_number!) return 1;
+                                        return 0;
+                                    });
+
+                                for (const tc of titlecards) {
+                                    const seasonNumber = tc.season_number!;
+                                    const episodeNumber = tc.episode_number!;
+                                    const exists = latestMediaItem.series?.seasons.some(
+                                        (season) =>
+                                            season.season_number === seasonNumber &&
+                                            season.episodes.some((ep) => ep.episode_number === episodeNumber)
+                                    );
+                                    const taskId = newId();
+                                    const payload: DownloadTaskPayload = {
+                                        kind: "download",
+                                        itemKey: item.MediaItem.rating_key,
+                                        itemTitle: item.MediaItem.title,
+                                        imageFile: tc,
+                                        fileName: `S${seasonNumber}E${episodeNumber} Titlecard`,
+                                        mediaItem: latestMediaItem,
+                                    };
+
+                                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                                        id: taskId,
+                                        status: "pending",
+                                        label: payload.fileName,
+                                        attempts: 0,
+                                        payload,
+                                    });
+
+                                    if (!exists) {
+                                        updateTask(taskId, (t) => ({
+                                            ...t,
+                                            status: "skipped",
+                                        }));
+                                        continue;
+                                    }
+
+                                    const okTitlecard = await runDownloadTask(taskId, payload);
+                                    downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitlecard;
+                                }
+                            }
+                            break;
+                    }
+                }
+
+                // Only add to DB if at least one download succeeded
+                if (!downloadedAtLeastOneForItem) {
+                    const taskId = newId();
+                    addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                        id: taskId,
+                        status: "skipped",
+                        label: `Add "${item.MediaItem.title}" to DB (skipped: no successful downloads)`,
+                        attempts: 0,
+                        payload: {
+                            kind: "addToDB",
+                            itemKey: item.MediaItem.rating_key,
+                            itemTitle: item.MediaItem.title,
+                            mediaItem: createdSavedItem.dbItem.media_item,
+                            posterSet: createdSavedItem.dbItem.poster_sets[0],
+                        },
+                    });
+                    continue;
+                }
+
+                const addId = newId();
+                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                    id: addId,
+                    status: "pending",
+                    label: `Add "${item.MediaItem.title}" to DB`,
+                    attempts: 0,
+                    payload: {
+                        kind: "addToDB",
+                        itemKey: item.MediaItem.rating_key,
+                        itemTitle: item.MediaItem.title,
+                        mediaItem: createdSavedItem.dbItem.media_item,
+                        posterSet: createdSavedItem.dbItem.poster_sets[0],
+                    },
+                });
+
+                const ok = await runAddToDBTask(addId, {
+                    kind: "addToDB",
+                    itemKey: item.MediaItem.rating_key,
+                    itemTitle: item.MediaItem.title,
+                    mediaItem: createdSavedItem.dbItem.media_item,
+                    posterSet: createdSavedItem.dbItem.poster_sets[0],
+                });
+
+                if (ok && onDownloadComplete) {
+                    onDownloadComplete(
+                        upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
+                            poster: selectedOptions.types.includes("poster"),
+                            backdrop: selectedOptions.types.includes("backdrop"),
+                            season_poster: selectedOptions.types.includes("season_poster"),
+                            special_season_poster: selectedOptions.types.includes("special_season_poster"),
+                            titlecard: selectedOptions.types.includes("titlecard"),
+                        })
+                    );
+                }
+            }
+
+            setCurrentText("Completed!");
+            setButtonTexts({
+                cancel: "Close",
+                download: "Download Again",
+            });
+            setIsMounted(false);
+        } catch (error) {
+            const taskId = newId();
+            addTask("general", "General", {
+                id: taskId,
+                status: "failed",
+                label: "Unexpected error",
+                attempts: 1,
+                error: error instanceof Error ? error.message : "An unknown error occurred",
+                payload: { kind: "note", itemKey: "general", itemTitle: "General" },
+            });
+
+            setButtonTexts({
+                cancel: "Close",
+                download: "Retry Download",
+            });
+            setIsMounted(false);
+        }
+    };
+
+    return (
+        <Dialog
+            onOpenChange={(open) => {
+                if (!open) {
+                    handleClose();
+                }
+            }}
+        >
+            <DialogTrigger asChild>
+                <Download className="mr-2 h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+            </DialogTrigger>
+
+            <DialogPortal>
+                <DialogOverlay />
+                <DialogContent
+                    className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+                >
+                    <DialogHeader>
+                        <DialogTitle onClick={LOG_VALUES}>{baseSetInfo.title}</DialogTitle>
+                        <div className="flex items-center justify-center sm:justify-start">
+                            <Avatar className="rounded-lg mr-1 w-4 h-4">
+                                <AvatarImage
+                                    src={`/api/images/mediux/avatar?username=${baseSetInfo.user_created}`}
+                                    className="w-4 h-4"
+                                />
+                                <AvatarFallback className="">
+                                    <User className="w-4 h-4" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <Link href={`/user/${baseSetInfo.user_created}`} className="hover:underline">
+                                {baseSetInfo.user_created}
+                            </Link>
+                        </div>
+                        <DialogDescription>
+                            <Link
+                                href={getMediuxBaseUrl()}
+                                className="hover:text-primary transition-colors text-sm text-muted-foreground"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {baseSetInfo.type === "boxset" ? "Boxset" : "Set"} ID: {baseSetInfo.id}
+                            </Link>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {formItems.length > 0 ? (
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+                                {/* Form Items */}
+                                {formItems.map(renderFormItem)}
+
+                                {/* If the all items have no types selected, show a message */}
+                                {formItems.every(
+                                    (item) =>
+                                        !watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
+                                        !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                ) && (
+                                    <div className="text-sm text-destructive">
+                                        No image types selected for download. Please select at least one image type to
+                                        download.
+                                    </div>
+                                )}
+
+                                {/* Add to Queue 
 									Only show this button if at least one item has types selected for download and not set to Add to DB Only
 								*/}
-								{formItems.some(
-									(item) =>
-										watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length > 0 &&
-										!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-								) && (
-									<FormItem className="flex items-center space-x-2 mb-4">
-										<FormControl>
-											<Checkbox
-												checked={addToQueueOnly}
-												onCheckedChange={(checked) => setAddToQueueOnly(checked ? true : false)}
-											/>
-										</FormControl>
-										<FormLabel className="text-md font-normal cursor-pointer">
-											Add to Queue
-										</FormLabel>
-										<DownloadModalPopover type="add-to-queue-only" />
-									</FormItem>
-								)}
-								<div>
-									{/* Number of Images and Total Download Size (only if there are images to download) */}
-									{selectedSizes.fileCount > 0 &&
-										formItems.some(
-											(item) => !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-										) && (
-											<>
-												<div className="text-sm text-muted-foreground">
-													Number of Images: {selectedSizes.fileCount}
-												</div>
-												<div className="text-sm text-muted-foreground">
-													Total Download Size: ~
-													{formatDownloadSize(selectedSizes.downloadSize)}
-												</div>
-											</>
-										)}
+                                {formItems.some(
+                                    (item) =>
+                                        watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length > 0 &&
+                                        !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                ) && (
+                                    <FormItem className="flex items-center space-x-2 mb-4">
+                                        <FormControl>
+                                            <Checkbox
+                                                checked={addToQueueOnly}
+                                                onCheckedChange={(checked) => setAddToQueueOnly(checked ? true : false)}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="text-md font-normal cursor-pointer">
+                                            Add to Queue
+                                        </FormLabel>
+                                        <DownloadModalPopover type="add-to-queue-only" />
+                                    </FormItem>
+                                )}
+                                <div>
+                                    {/* Number of Images and Total Download Size (only if there are images to download) */}
+                                    {selectedSizes.fileCount > 0 &&
+                                        formItems.some(
+                                            (item) => !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                        ) && (
+                                            <>
+                                                <div className="text-sm text-muted-foreground">
+                                                    Number of Images: {selectedSizes.fileCount}
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    Total Download Size: ~
+                                                    {formatDownloadSize(selectedSizes.downloadSize)}
+                                                </div>
+                                            </>
+                                        )}
 
-									{/* Always show the database-only message if any item is set to Add to DB Only or has types selected */}
-									{formItems.some(
-										(item) => watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-									) && (
-										<div className="text-sm text-muted-foreground mt-1">
-											* Will add{" "}
-											{(() => {
-												const titles = formItems
-													.filter(
-														(item) =>
-															watchSelectedOptions?.[item.MediaItem.rating_key]
-																?.addToDBOnly
-													)
-													.map((item) => item.MediaItem.title);
+                                    {/* Always show the database-only message if any item is set to Add to DB Only or has types selected */}
+                                    {formItems.some(
+                                        (item) => watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                    ) && (
+                                        <div className="text-sm text-muted-foreground mt-1">
+                                            * Will add{" "}
+                                            {(() => {
+                                                const titles = formItems
+                                                    .filter(
+                                                        (item) =>
+                                                            watchSelectedOptions?.[item.MediaItem.rating_key]
+                                                                ?.addToDBOnly
+                                                    )
+                                                    .map((item) => item.MediaItem.title);
 
-												if (titles.length === 0) return "";
-												if (titles.length === 1)
-													return (
-														<span className="font-medium text-yellow-500">{`'${titles[0]}' `}</span>
-													);
-												if (titles.length === 2)
-													return (
-														<>
-															<span className="font-medium text-yellow-500">{`'${titles[0]}'`}</span>
-															{" and "}
-															<span className="font-medium text-yellow-500">{`'${titles[1]}' `}</span>
-														</>
-													);
+                                                if (titles.length === 0) return "";
+                                                if (titles.length === 1)
+                                                    return (
+                                                        <span className="font-medium text-yellow-500">{`'${titles[0]}' `}</span>
+                                                    );
+                                                if (titles.length === 2)
+                                                    return (
+                                                        <>
+                                                            <span className="font-medium text-yellow-500">{`'${titles[0]}'`}</span>
+                                                            {" and "}
+                                                            <span className="font-medium text-yellow-500">{`'${titles[1]}' `}</span>
+                                                        </>
+                                                    );
 
-												return (
-													<>
-														{titles.slice(0, -1).map((title, idx) => (
-															<Fragment key={title}>
-																<span className="font-medium text-yellow-500">{`'${title}'`}</span>
-																{idx < titles.length - 2 ? ", " : ""}
-															</Fragment>
-														))}
-														{" and "}
-														<span className="font-medium text-yellow-500">{`'${titles[titles.length - 1]}' `}</span>
-													</>
-												);
-											})()}
-											to database without downloading any images.
-										</div>
-									)}
-								</div>
+                                                return (
+                                                    <>
+                                                        {titles.slice(0, -1).map((title, idx) => (
+                                                            <Fragment key={title}>
+                                                                <span className="font-medium text-yellow-500">{`'${title}'`}</span>
+                                                                {idx < titles.length - 2 ? ", " : ""}
+                                                            </Fragment>
+                                                        ))}
+                                                        {" and "}
+                                                        <span className="font-medium text-yellow-500">{`'${titles[titles.length - 1]}' `}</span>
+                                                    </>
+                                                );
+                                            })()}
+                                            to database without downloading any images.
+                                        </div>
+                                    )}
+                                </div>
 
-								{/* Progress Bar */}
-								{Object.values(progress.items).some((i) => i.tasks.length > 0) &&
-									(() => {
-										const overall = getOverallProgress(progress);
-										const errors = getErrorsByItem(progress);
-										const hasErrors = errors.length > 0;
+                                {/* Progress Bar */}
+                                {Object.values(progress.items).some((i) => i.tasks.length > 0) &&
+                                    (() => {
+                                        const overall = getOverallProgress(progress);
+                                        const errors = getErrorsByItem(progress);
+                                        const hasErrors = errors.length > 0;
 
-										return (
-											<div className="w-full">
-												<div className="flex items-center justify-between w-full">
-													<div className="relative w-full min-w-0">
-														<Progress
-															value={overall}
-															className={cn(
-																"w-full rounded-md overflow-hidden h-3",
-																overall < 100 && "animate-pulse h-5",
-																overall === 100 && !hasErrors && "[&>div]:bg-green-500",
-																overall === 100 && hasErrors && "[&>div]:bg-destructive"
-															)}
-														/>
+                                        return (
+                                            <div className="w-full">
+                                                <div className="flex items-center justify-between w-full">
+                                                    <div className="relative w-full min-w-0">
+                                                        <Progress
+                                                            value={overall}
+                                                            className={cn(
+                                                                "w-full rounded-md overflow-hidden h-3",
+                                                                overall < 100 && "animate-pulse h-5",
+                                                                overall === 100 && !hasErrors && "[&>div]:bg-green-500",
+                                                                overall === 100 && hasErrors && "[&>div]:bg-destructive"
+                                                            )}
+                                                        />
 
-														{overall < 100 && (
-															<span
-																className={cn(
-																	"absolute inset-0 flex items-center justify-center",
-																	"text-xs text-white pointer-events-none mt-0.5",
-																	"px-2 min-w-0"
-																)}
-																title={progress.currentText}
-															>
-																<span className="w-full min-w-0 truncate text-center">
-																	{progress.currentText}
-																</span>
-															</span>
-														)}
-													</div>
+                                                        {overall < 100 && (
+                                                            <span
+                                                                className={cn(
+                                                                    "absolute inset-0 flex items-center justify-center",
+                                                                    "text-xs text-white pointer-events-none mt-0.5",
+                                                                    "px-2 min-w-0"
+                                                                )}
+                                                                title={progress.currentText}
+                                                            >
+                                                                <span className="w-full min-w-0 truncate text-center">
+                                                                    {progress.currentText}
+                                                                </span>
+                                                            </span>
+                                                        )}
+                                                    </div>
 
-													<span className="ml-1 text-sm text-muted-foreground min-w-[30px] text-right">
-														{overall}%
-													</span>
-												</div>
-											</div>
-										);
-									})()}
+                                                    <span className="ml-1 text-sm text-muted-foreground min-w-[30px] text-right">
+                                                        {overall}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
-								{/* Errors */}
-								{getErrorsByItem(progress).length > 0 && (
-									<div className="my-2">
-										{(() => {
-											const grouped = getErrorsByItem(progress);
-											const errorCount = grouped.reduce((acc, g) => acc + g.errors.length, 0);
+                                {/* Errors */}
+                                {getErrorsByItem(progress).length > 0 && (
+                                    <div className="my-2">
+                                        {(() => {
+                                            const grouped = getErrorsByItem(progress);
+                                            const errorCount = grouped.reduce((acc, g) => acc + g.errors.length, 0);
 
-											return (
-												<Accordion type="single" collapsible>
-													<AccordionItem value="errors">
-														<AccordionTrigger
-															className={cn(
-																"text-destructive justify-start gap-2 [&>svg]:ml-0"
-															)}
-														>
-															Errors ({errorCount})
-														</AccordionTrigger>
-														<AccordionContent>
-															<div className="flex flex-col space-y-2">
-																{grouped.map((g) => (
-																	<div
-																		key={g.itemKey}
-																		className="flex flex-col space-y-2"
-																	>
-																		{g.errors.map((t) => (
-																			<div
-																				key={t.id}
-																				className="flex items-center text-destructive"
-																			>
-																				{t.payload.kind !== "note" ? (
-																					<button
-																						type="button"
-																						className="mr-2 h-4 w-4 text-yellow-500 cursor-pointer"
-																						onClick={() => retryTask(t.id)}
-																						aria-label="Retry"
-																					>
-																						<RefreshCcw className="h-4 w-4" />
-																					</button>
-																				) : (
-																					<span className="mr-1 h-4 w-4">
-																						<X className="h-4 w-4" />
-																					</span>
-																				)}
-																				<span>{t.error || t.label}</span>
-																			</div>
-																		))}
-																	</div>
-																))}
-															</div>
-														</AccordionContent>
-													</AccordionItem>
-												</Accordion>
-											);
-										})()}
-									</div>
-								)}
+                                            return (
+                                                <Accordion type="single" collapsible>
+                                                    <AccordionItem value="errors">
+                                                        <AccordionTrigger
+                                                            className={cn(
+                                                                "text-destructive justify-start gap-2 [&>svg]:ml-0"
+                                                            )}
+                                                        >
+                                                            Errors ({errorCount})
+                                                        </AccordionTrigger>
+                                                        <AccordionContent>
+                                                            <div className="flex flex-col space-y-2">
+                                                                {grouped.map((g) => (
+                                                                    <div
+                                                                        key={g.itemKey}
+                                                                        className="flex flex-col space-y-2"
+                                                                    >
+                                                                        {g.errors.map((t) => (
+                                                                            <div
+                                                                                key={t.id}
+                                                                                className="flex items-center text-destructive"
+                                                                            >
+                                                                                {t.payload.kind !== "note" ? (
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        className="mr-2 h-4 w-4 text-yellow-500 cursor-pointer"
+                                                                                        onClick={() => retryTask(t.id)}
+                                                                                        aria-label="Retry"
+                                                                                    >
+                                                                                        <RefreshCcw className="h-4 w-4" />
+                                                                                    </button>
+                                                                                ) : (
+                                                                                    <span className="mr-1 h-4 w-4">
+                                                                                        <X className="h-4 w-4" />
+                                                                                    </span>
+                                                                                )}
+                                                                                <span>{t.error || t.label}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </AccordionContent>
+                                                    </AccordionItem>
+                                                </Accordion>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
 
-								<DialogFooter>
-									<div className="flex space-x-4 justify-end w-full">
-										{/* Cancel button to close the modal */}
-										<DialogClose asChild>
-											<Button
-												className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
-												variant="ghost"
-												onClick={() => {
-													handleClose();
-												}}
-											>
-												{buttonTexts.cancel}
-											</Button>
-										</DialogClose>
+                                <DialogFooter>
+                                    <div className="flex space-x-4 justify-end w-full">
+                                        {/* Cancel button to close the modal */}
+                                        <DialogClose asChild>
+                                            <Button
+                                                className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    handleClose();
+                                                }}
+                                            >
+                                                {buttonTexts.cancel}
+                                            </Button>
+                                        </DialogClose>
 
-										{/* Download button to display download info */}
-										{
-											// Only show if at least one item has types selected or is set to "Add to DB Only"
-											formItems.some(
-												(item) =>
-													watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length >
-														0 ||
-													watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-											) && (
-												<Button
-													variant={"outline"}
-													className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
-													disabled={
-														// Disable if no items are selected and nothing is set to "Add to DB Only"
-														(selectedSizes.fileCount === 0 &&
-															formItems.every(
-																(item) =>
-																	!watchSelectedOptions[item.MediaItem.rating_key]
-																		.types.length &&
-																	!watchSelectedOptions[item.MediaItem.rating_key]
-																		.addToDBOnly
-															)) ||
-														isMounted
-													}
-												>
-													{(() => {
-														const isBusy =
-															buttonTexts.download.startsWith("Starting") ||
-															buttonTexts.download.startsWith("Adding") ||
-															buttonTexts.download.startsWith("Downloading");
+                                        {/* Download button to display download info */}
+                                        {
+                                            // Only show if at least one item has types selected or is set to "Add to DB Only"
+                                            formItems.some(
+                                                (item) =>
+                                                    watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length >
+                                                        0 ||
+                                                    watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                            ) && (
+                                                <Button
+                                                    variant={"outline"}
+                                                    className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
+                                                    disabled={
+                                                        // Disable if no items are selected and nothing is set to "Add to DB Only"
+                                                        (selectedSizes.fileCount === 0 &&
+                                                            formItems.every(
+                                                                (item) =>
+                                                                    !watchSelectedOptions[item.MediaItem.rating_key]
+                                                                        .types.length &&
+                                                                    !watchSelectedOptions[item.MediaItem.rating_key]
+                                                                        .addToDBOnly
+                                                            )) ||
+                                                        isMounted
+                                                    }
+                                                >
+                                                    {(() => {
+                                                        const isBusy =
+                                                            buttonTexts.download.startsWith("Starting") ||
+                                                            buttonTexts.download.startsWith("Adding") ||
+                                                            buttonTexts.download.startsWith("Downloading");
 
-														const { done, total } = getOverallCounts(progress);
+                                                        const { done, total } = getOverallCounts(progress);
 
-														if (isBusy) {
-															return (
-																<>
-																	<Loader className="h-4 w-4 animate-spin" />
-																	{progress.totalPlanned > 0 && done !== total && (
-																		<span className="ml-2 text-muted-foreground tabular-nums">
-																			{done}/{total}
-																		</span>
-																	)}
-																</>
-															);
-														}
+                                                        if (isBusy) {
+                                                            return (
+                                                                <>
+                                                                    <Loader className="h-4 w-4 animate-spin" />
+                                                                    {progress.totalPlanned > 0 && done !== total && (
+                                                                        <span className="ml-2 text-muted-foreground tabular-nums">
+                                                                            {done}/{total}
+                                                                        </span>
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        }
 
-														return (
-															<>
-																{buttonTexts.download === "Download" ||
-																buttonTexts.download === "Download Again" ||
-																buttonTexts.download === "Retry Download" ? (
-																	<Download className="h-4 w-4" />
-																) : buttonTexts.download === "Add to Queue" ? (
-																	<ListEnd className="h-4 w-4" />
-																) : buttonTexts.download === "Add to Database" ? (
-																	<DatabaseZap className="h-4 w-4" />
-																) : null}
-																{buttonTexts.download}
-															</>
-														);
-													})()}
-												</Button>
-											)
-										}
+                                                        return (
+                                                            <>
+                                                                {buttonTexts.download === "Download" ||
+                                                                buttonTexts.download === "Download Again" ||
+                                                                buttonTexts.download === "Retry Download" ? (
+                                                                    <Download className="h-4 w-4" />
+                                                                ) : buttonTexts.download === "Add to Queue" ? (
+                                                                    <ListEnd className="h-4 w-4" />
+                                                                ) : buttonTexts.download === "Add to Database" ? (
+                                                                    <DatabaseZap className="h-4 w-4" />
+                                                                ) : null}
+                                                                {buttonTexts.download}
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </Button>
+                                            )
+                                        }
 
-										{/* Reset Form button: If the all items have no types selected and nothing is set to "Add to DB Only" */}
-										{formItems.every(
-											(item) =>
-												!watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
-												!watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
-										) && (
-											<Button
-												className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
-												variant="secondary"
-												onClick={() => {
-													form.reset();
-													setSelectedSizes({ fileCount: 0, downloadSize: 0 });
-													resetProgress();
-													setDuplicates({});
-												}}
-											>
-												<OctagonMinus className="h-4 w-4" />
-												Reset Form
-											</Button>
-										)}
-									</div>
-								</DialogFooter>
-							</form>
-						</Form>
-					) : (
-						<div className="p-4 text-center">
-							<Lead className="text-md text-muted-foreground mb-2">No items found in this set.</Lead>
-							<p className="text-sm text-muted-foreground">
-								Please ensure the set has items with images available for download.
-							</p>
-						</div>
-					)}
-				</DialogContent>
-			</DialogPortal>
-		</Dialog>
-	);
+                                        {/* Reset Form button: If the all items have no types selected and nothing is set to "Add to DB Only" */}
+                                        {formItems.every(
+                                            (item) =>
+                                                !watchSelectedOptions?.[item.MediaItem.rating_key]?.types?.length &&
+                                                !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                                        ) && (
+                                            <Button
+                                                className="cursor-pointer hover:text-primary hover:brightness-120 transition-colors"
+                                                variant="secondary"
+                                                onClick={() => {
+                                                    form.reset();
+                                                    setSelectedSizes({ fileCount: 0, downloadSize: 0 });
+                                                    resetProgress();
+                                                    setDuplicates({});
+                                                }}
+                                            >
+                                                <OctagonMinus className="h-4 w-4" />
+                                                Reset Form
+                                            </Button>
+                                        )}
+                                    </div>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    ) : (
+                        <div className="p-4 text-center">
+                            <Lead className="text-md text-muted-foreground mb-2">No items found in this set.</Lead>
+                            <p className="text-sm text-muted-foreground">
+                                Please ensure the set has items with images available for download.
+                            </p>
+                        </div>
+                    )}
+                </DialogContent>
+            </DialogPortal>
+        </Dialog>
+    );
 };
 
 export default DownloadModal;

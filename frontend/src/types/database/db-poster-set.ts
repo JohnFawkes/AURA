@@ -5,37 +5,37 @@ import { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
 // What is used to save a record into the database
 // This contains the MediaItem details, as well as an array of PosterSets that are associated with it
 export interface DBSavedItem {
-	//tmdb_id: string;
-	//library_title: string;
-	media_item: MediaItem;
-	poster_sets: DBPosterSetDetail[];
+    //tmdb_id: string;
+    //library_title: string;
+    media_item: MediaItem;
+    poster_sets: DBPosterSetDetail[];
 }
 
 export interface DBPosterSetDetail extends PosterSet {
-	last_downloaded: string;
-	selected_types: SelectedTypes;
-	auto_download: boolean;
-	to_delete: boolean; // Flag to indicate if the poster set should be deleted (Not used in DB)
+    last_downloaded: string;
+    selected_types: SelectedTypes;
+    auto_download: boolean;
+    to_delete: boolean; // Flag to indicate if the poster set should be deleted (Not used in DB)
 }
 
 export interface PosterSet extends Omit<BaseSetInfo, "type"> {
-	type: TYPE_DB_SET_TYPE_OPTIONS;
-	images: ImageFile[];
+    type: TYPE_DB_SET_TYPE_OPTIONS;
+    images: ImageFile[];
 }
 
 export interface DBFilter {
-	item_tmdb_id: string;
-	item_library_title: string;
-	item_year: number;
-	item_title: string;
-	set_id: number;
-	library_titles: string[];
-	image_types: string[];
-	autodownload: string;
-	multiset_only: boolean;
-	usernames: string[];
-	page_items: number;
-	page_number: number;
-	sort_option: string;
-	sort_order: string;
+    item_tmdb_id: string;
+    item_library_title: string;
+    item_year: number;
+    item_title: string;
+    set_id: number;
+    library_titles: string[];
+    image_types: string[];
+    autodownload: string;
+    multiset_only: boolean;
+    usernames: string[];
+    page_items: number;
+    page_number: number;
+    sort_option: string;
+    sort_order: string;
 }

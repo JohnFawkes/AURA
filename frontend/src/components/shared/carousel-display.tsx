@@ -12,366 +12,366 @@ import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 import { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 export function CarouselDisplay({
-	sets,
-	includedItems = {},
-	dimNotFound = false,
+    sets,
+    includedItems = {},
+    dimNotFound = false,
 }: {
-	sets: SetRef[];
-	includedItems?: { [tmdb_id: string]: IncludedItem };
-	dimNotFound?: boolean;
+    sets: SetRef[];
+    includedItems?: { [tmdb_id: string]: IncludedItem };
+    dimNotFound?: boolean;
 }) {
-	const downloadDefaultTypes = useUserPreferencesStore((state) => state.downloadDefaults);
-	const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
+    const downloadDefaultTypes = useUserPreferencesStore((state) => state.downloadDefaults);
+    const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 
-	function shouldShow(type: TYPE_DOWNLOAD_DEFAULT_OPTIONS) {
-		return !showOnlyDownloadDefaults || downloadDefaultTypes.includes(type);
-	}
+    function shouldShow(type: TYPE_DOWNLOAD_DEFAULT_OPTIONS) {
+        return !showOnlyDownloadDefaults || downloadDefaultTypes.includes(type);
+    }
 
-	return (
-		<>
-			{sets.map((set) => {
-				if (!set.images || set.images.length === 0) return null;
+    return (
+        <>
+            {sets.map((set) => {
+                if (!set.images || set.images.length === 0) return null;
 
-				return (
-					<React.Fragment key={set.id}>
-						{/* Posters and Backdrops grouped by item_tmdb_id */}
-						{(() => {
-							// Unique tmdbIds for posters/backdrops
-							const uniqueTmdbIds = [
-								...new Set(
-									set.images
-										.filter(
-											(img) =>
-												(img.type === "poster" || img.type === "backdrop") &&
-												(shouldShow("poster") || shouldShow("backdrop")) &&
-												typeof img.item_tmdb_id === "string" &&
-												img.item_tmdb_id.trim() !== ""
-										)
-										.map((img) => img.item_tmdb_id as string)
-								),
-							];
+                return (
+                    <React.Fragment key={set.id}>
+                        {/* Posters and Backdrops grouped by item_tmdb_id */}
+                        {(() => {
+                            // Unique tmdbIds for posters/backdrops
+                            const uniqueTmdbIds = [
+                                ...new Set(
+                                    set.images
+                                        .filter(
+                                            (img) =>
+                                                (img.type === "poster" || img.type === "backdrop") &&
+                                                (shouldShow("poster") || shouldShow("backdrop")) &&
+                                                typeof img.item_tmdb_id === "string" &&
+                                                img.item_tmdb_id.trim() !== ""
+                                        )
+                                        .map((img) => img.item_tmdb_id as string)
+                                ),
+                            ];
 
-							// Sort: available-first (only when dimNotFound=true), then by release date (newest first)
-							const sortedTmdbIds = uniqueTmdbIds.sort((a, b) => {
-								if (dimNotFound) {
-									const aAvail =
-										isInServer(includedItems, a) &&
-										typeof isInServer(includedItems, a) !== "boolean"
-											? 1
-											: 0;
-									const bAvail =
-										isInServer(includedItems, b) &&
-										typeof isInServer(includedItems, b) !== "boolean"
-											? 1
-											: 0;
-									if (aAvail !== bAvail) return bAvail - aAvail;
-								}
+                            // Sort: available-first (only when dimNotFound=true), then by release date (newest first)
+                            const sortedTmdbIds = uniqueTmdbIds.sort((a, b) => {
+                                if (dimNotFound) {
+                                    const aAvail =
+                                        isInServer(includedItems, a) &&
+                                        typeof isInServer(includedItems, a) !== "boolean"
+                                            ? 1
+                                            : 0;
+                                    const bAvail =
+                                        isInServer(includedItems, b) &&
+                                        typeof isInServer(includedItems, b) !== "boolean"
+                                            ? 1
+                                            : 0;
+                                    if (aAvail !== bAvail) return bAvail - aAvail;
+                                }
 
-								return getReleaseEpoch(includedItems, b) - getReleaseEpoch(includedItems, a);
-							});
+                                return getReleaseEpoch(includedItems, b) - getReleaseEpoch(includedItems, a);
+                            });
 
-							return sortedTmdbIds.map((tmdbId) => {
-								const posters = set.images.filter(
-									(img) => img.type === "poster" && img.item_tmdb_id === tmdbId
-								);
-								const backdrops = set.images.filter(
-									(img) => img.type === "backdrop" && img.item_tmdb_id === tmdbId
-								);
+                            return sortedTmdbIds.map((tmdbId) => {
+                                const posters = set.images.filter(
+                                    (img) => img.type === "poster" && img.item_tmdb_id === tmdbId
+                                );
+                                const backdrops = set.images.filter(
+                                    (img) => img.type === "backdrop" && img.item_tmdb_id === tmdbId
+                                );
 
-								const available = isInServer(includedItems, tmdbId);
-								const isAvailable = available && typeof available !== "boolean";
+                                const available = isInServer(includedItems, tmdbId);
+                                const isAvailable = available && typeof available !== "boolean";
 
-								if (posters.length === 0 && backdrops.length === 0) return null;
+                                if (posters.length === 0 && backdrops.length === 0) return null;
 
-								return (
-									<CarouselItem key={`${set.id}-media-${tmdbId}`}>
-										<div className="space-y-2">
-											{shouldShow("poster") &&
-												posters.map((img) => (
-													<AssetImage
-														key={img.id}
-														image={img}
-														imageType="mediux"
-														aspect="poster"
-														className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
-													/>
-												))}
-											{shouldShow("backdrop") &&
-												backdrops.map((img) => (
-													<AssetImage
-														key={img.id}
-														image={img}
-														imageType="mediux"
-														aspect="backdrop"
-														className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
-													/>
-												))}
-										</div>
-									</CarouselItem>
-								);
-							});
-						})()}
+                                return (
+                                    <CarouselItem key={`${set.id}-media-${tmdbId}`}>
+                                        <div className="space-y-2">
+                                            {shouldShow("poster") &&
+                                                posters.map((img) => (
+                                                    <AssetImage
+                                                        key={img.id}
+                                                        image={img}
+                                                        imageType="mediux"
+                                                        aspect="poster"
+                                                        className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                                                    />
+                                                ))}
+                                            {shouldShow("backdrop") &&
+                                                backdrops.map((img) => (
+                                                    <AssetImage
+                                                        key={img.id}
+                                                        image={img}
+                                                        imageType="mediux"
+                                                        aspect="backdrop"
+                                                        className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                                                    />
+                                                ))}
+                                        </div>
+                                    </CarouselItem>
+                                );
+                            });
+                        })()}
 
-						{/* Season Posters with Latest Titlecards */}
-						{(() => {
-							const seasonPosterCandidates = (set.images ?? []).filter((img) => {
-								const isSeasonPoster =
-									img.type === "season_poster" || img.type === "special_season_poster";
-								if (!isSeasonPoster) return false;
+                        {/* Season Posters with Latest Titlecards */}
+                        {(() => {
+                            const seasonPosterCandidates = (set.images ?? []).filter((img) => {
+                                const isSeasonPoster =
+                                    img.type === "season_poster" || img.type === "special_season_poster";
+                                if (!isSeasonPoster) return false;
 
-								// respect toggles
-								if (img.type === "season_poster" && !shouldShow("season_poster")) return false;
-								if (img.type === "special_season_poster" && !shouldShow("special_season_poster"))
-									return false;
+                                // respect toggles
+                                if (img.type === "season_poster" && !shouldShow("season_poster")) return false;
+                                if (img.type === "special_season_poster" && !shouldShow("special_season_poster"))
+                                    return false;
 
-								return typeof img.item_tmdb_id === "string" && img.item_tmdb_id.trim() !== "";
-							});
+                                return typeof img.item_tmdb_id === "string" && img.item_tmdb_id.trim() !== "";
+                            });
 
-							if (seasonPosterCandidates.length === 0) return null;
+                            if (seasonPosterCandidates.length === 0) return null;
 
-							// Deduplicate: keep newest poster per (tmdbId, season_number)
-							const bestByKey = new Map<string, (typeof set.images)[number]>();
-							for (const img of seasonPosterCandidates) {
-								const tmdbId = String(img.item_tmdb_id);
-								const seasonNum = img.season_number ?? 0;
-								const key = `${tmdbId}:${seasonNum}`;
+                            // Deduplicate: keep newest poster per (tmdbId, season_number)
+                            const bestByKey = new Map<string, (typeof set.images)[number]>();
+                            for (const img of seasonPosterCandidates) {
+                                const tmdbId = String(img.item_tmdb_id);
+                                const seasonNum = img.season_number ?? 0;
+                                const key = `${tmdbId}:${seasonNum}`;
 
-								const prev = bestByKey.get(key);
-								if (!prev) {
-									bestByKey.set(key, img);
-									continue;
-								}
+                                const prev = bestByKey.get(key);
+                                if (!prev) {
+                                    bestByKey.set(key, img);
+                                    continue;
+                                }
 
-								const prevT = new Date(prev.modified ?? 0).getTime();
-								const nextT = new Date(img.modified ?? 0).getTime();
-								if (nextT > prevT) bestByKey.set(key, img);
-							}
+                                const prevT = new Date(prev.modified ?? 0).getTime();
+                                const nextT = new Date(img.modified ?? 0).getTime();
+                                if (nextT > prevT) bestByKey.set(key, img);
+                            }
 
-							const seasonPosters = Array.from(bestByKey.values()).sort((a, b) => {
-								const aTmdb = typeof a.item_tmdb_id === "string" ? a.item_tmdb_id : "";
-								const bTmdb = typeof b.item_tmdb_id === "string" ? b.item_tmdb_id : "";
+                            const seasonPosters = Array.from(bestByKey.values()).sort((a, b) => {
+                                const aTmdb = typeof a.item_tmdb_id === "string" ? a.item_tmdb_id : "";
+                                const bTmdb = typeof b.item_tmdb_id === "string" ? b.item_tmdb_id : "";
 
-								const aSeason = a.season_number ?? 0;
-								const bSeason = b.season_number ?? 0;
+                                const aSeason = a.season_number ?? 0;
+                                const bSeason = b.season_number ?? 0;
 
-								if (dimNotFound) {
-									const aAvail = aTmdb ? (hasSeason(includedItems, aTmdb, aSeason) ? 1 : 0) : 0;
-									const bAvail = bTmdb ? (hasSeason(includedItems, bTmdb, bSeason) ? 1 : 0) : 0;
-									if (aAvail !== bAvail) return bAvail - aAvail;
-								}
+                                if (dimNotFound) {
+                                    const aAvail = aTmdb ? (hasSeason(includedItems, aTmdb, aSeason) ? 1 : 0) : 0;
+                                    const bAvail = bTmdb ? (hasSeason(includedItems, bTmdb, bSeason) ? 1 : 0) : 0;
+                                    if (aAvail !== bAvail) return bAvail - aAvail;
+                                }
 
-								// keep shows with newer release dates first (tie-breaker across multiple tmdbIds)
-								const rel =
-									getReleaseEpoch(includedItems, bTmdb) - getReleaseEpoch(includedItems, aTmdb);
-								if (rel !== 0) return rel;
+                                // keep shows with newer release dates first (tie-breaker across multiple tmdbIds)
+                                const rel =
+                                    getReleaseEpoch(includedItems, bTmdb) - getReleaseEpoch(includedItems, aTmdb);
+                                if (rel !== 0) return rel;
 
-								// season high -> low (Specials=0 naturally fall to the end)
-								if (aSeason !== bSeason) return bSeason - aSeason;
+                                // season high -> low (Specials=0 naturally fall to the end)
+                                if (aSeason !== bSeason) return bSeason - aSeason;
 
-								// newest modified first
-								return new Date(b.modified ?? 0).getTime() - new Date(a.modified ?? 0).getTime();
-							});
+                                // newest modified first
+                                return new Date(b.modified ?? 0).getTime() - new Date(a.modified ?? 0).getTime();
+                            });
 
-							return seasonPosters.map((seasonPoster) => {
-								const tmdbId = seasonPoster.item_tmdb_id as string;
-								const seasonNum = seasonPoster.season_number ?? 0;
+                            return seasonPosters.map((seasonPoster) => {
+                                const tmdbId = seasonPoster.item_tmdb_id as string;
+                                const seasonNum = seasonPoster.season_number ?? 0;
 
-								// Find the latest titlecard for THIS tmdbId + season
-								const matchingTitlecards = (set.images ?? []).filter(
-									(img) =>
-										img.type === "titlecard" &&
-										img.item_tmdb_id === tmdbId &&
-										img.season_number === seasonNum
-								);
+                                // Find the latest titlecard for THIS tmdbId + season
+                                const matchingTitlecards = (set.images ?? []).filter(
+                                    (img) =>
+                                        img.type === "titlecard" &&
+                                        img.item_tmdb_id === tmdbId &&
+                                        img.season_number === seasonNum
+                                );
 
-								const latestTitlecard =
-									matchingTitlecards.length > 0
-										? matchingTitlecards
-												.slice()
-												.sort((a, b) => (b.episode_number ?? 0) - (a.episode_number ?? 0))[0]
-										: null;
+                                const latestTitlecard =
+                                    matchingTitlecards.length > 0
+                                        ? matchingTitlecards
+                                              .slice()
+                                              .sort((a, b) => (b.episode_number ?? 0) - (a.episode_number ?? 0))[0]
+                                        : null;
 
-								return (
-									<CarouselItem key={`${set.id}-season-${seasonPoster.id}`}>
-										<div className="space-y-2">
-											{shouldShow("season_poster") && seasonPoster.type === "season_poster" && (
-												<AssetImage
-													image={seasonPoster}
-													imageType="mediux"
-													aspect="poster"
-													className={`w-full ${
-														!hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
-															? "opacity-35"
-															: ""
-													}`}
-												/>
-											)}
+                                return (
+                                    <CarouselItem key={`${set.id}-season-${seasonPoster.id}`}>
+                                        <div className="space-y-2">
+                                            {shouldShow("season_poster") && seasonPoster.type === "season_poster" && (
+                                                <AssetImage
+                                                    image={seasonPoster}
+                                                    imageType="mediux"
+                                                    aspect="poster"
+                                                    className={`w-full ${
+                                                        !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
+                                                            ? "opacity-35"
+                                                            : ""
+                                                    }`}
+                                                />
+                                            )}
 
-											{shouldShow("special_season_poster") &&
-												seasonPoster.type === "special_season_poster" && (
-													<AssetImage
-														image={seasonPoster}
-														imageType="mediux"
-														aspect="poster"
-														className={`w-full ${
-															!hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
-																? "opacity-35"
-																: ""
-														}`}
-													/>
-												)}
+                                            {shouldShow("special_season_poster") &&
+                                                seasonPoster.type === "special_season_poster" && (
+                                                    <AssetImage
+                                                        image={seasonPoster}
+                                                        imageType="mediux"
+                                                        aspect="poster"
+                                                        className={`w-full ${
+                                                            !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
+                                                                ? "opacity-35"
+                                                                : ""
+                                                        }`}
+                                                    />
+                                                )}
 
-											{shouldShow("titlecard") && latestTitlecard && (
-												<AssetImage
-													image={latestTitlecard}
-													imageType="mediux"
-													aspect="titlecard"
-													className={`w-full ${
-														!hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
-															? "opacity-35"
-															: ""
-													}`}
-												/>
-											)}
-										</div>
-									</CarouselItem>
-								);
-							});
-						})()}
+                                            {shouldShow("titlecard") && latestTitlecard && (
+                                                <AssetImage
+                                                    image={latestTitlecard}
+                                                    imageType="mediux"
+                                                    aspect="titlecard"
+                                                    className={`w-full ${
+                                                        !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound
+                                                            ? "opacity-35"
+                                                            : ""
+                                                    }`}
+                                                />
+                                            )}
+                                        </div>
+                                    </CarouselItem>
+                                );
+                            });
+                        })()}
 
-						{/* Standalone Titlecards (only if no season posters exist) */}
-						{!set.images.some(
-							(img) => img.type === "season_poster" || img.type === "special_season_poster"
-						) &&
-							shouldShow("titlecard") && (
-								<>
-									{Object.entries(
-										set.images
-											.filter((img) => img.type === "titlecard" && img.season_number != null)
-											.reduce(
-												(acc, img) => {
-													const season = img.season_number!;
-													if (!acc[season]) acc[season] = [];
-													acc[season].push(img);
-													return acc;
-												},
-												{} as Record<number, typeof set.images>
-											)
-									)
-										.sort(([aSeason, aCards], [bSeason, bCards]) => {
-											const aSeasonNum = Number(aSeason);
-											const bSeasonNum = Number(bSeason);
+                        {/* Standalone Titlecards (only if no season posters exist) */}
+                        {!set.images.some(
+                            (img) => img.type === "season_poster" || img.type === "special_season_poster"
+                        ) &&
+                            shouldShow("titlecard") && (
+                                <>
+                                    {Object.entries(
+                                        set.images
+                                            .filter((img) => img.type === "titlecard" && img.season_number != null)
+                                            .reduce(
+                                                (acc, img) => {
+                                                    const season = img.season_number!;
+                                                    if (!acc[season]) acc[season] = [];
+                                                    acc[season].push(img);
+                                                    return acc;
+                                                },
+                                                {} as Record<number, typeof set.images>
+                                            )
+                                    )
+                                        .sort(([aSeason, aCards], [bSeason, bCards]) => {
+                                            const aSeasonNum = Number(aSeason);
+                                            const bSeasonNum = Number(bSeason);
 
-											if (dimNotFound) {
-												const aTmdbId =
-													typeof (aCards as any)?.[0]?.item_tmdb_id === "string"
-														? ((aCards as any)[0].item_tmdb_id as string)
-														: "";
-												const bTmdbId =
-													typeof (bCards as any)?.[0]?.item_tmdb_id === "string"
-														? ((bCards as any)[0].item_tmdb_id as string)
-														: "";
+                                            if (dimNotFound) {
+                                                const aTmdbId =
+                                                    typeof (aCards as any)?.[0]?.item_tmdb_id === "string"
+                                                        ? ((aCards as any)[0].item_tmdb_id as string)
+                                                        : "";
+                                                const bTmdbId =
+                                                    typeof (bCards as any)?.[0]?.item_tmdb_id === "string"
+                                                        ? ((bCards as any)[0].item_tmdb_id as string)
+                                                        : "";
 
-												const aAvail = aTmdbId
-													? hasSeason(includedItems, aTmdbId, aSeasonNum)
-														? 1
-														: 0
-													: 0;
-												const bAvail = bTmdbId
-													? hasSeason(includedItems, bTmdbId, bSeasonNum)
-														? 1
-														: 0
-													: 0;
+                                                const aAvail = aTmdbId
+                                                    ? hasSeason(includedItems, aTmdbId, aSeasonNum)
+                                                        ? 1
+                                                        : 0
+                                                    : 0;
+                                                const bAvail = bTmdbId
+                                                    ? hasSeason(includedItems, bTmdbId, bSeasonNum)
+                                                        ? 1
+                                                        : 0
+                                                    : 0;
 
-												if (aAvail !== bAvail) return bAvail - aAvail; // available first
-											}
+                                                if (aAvail !== bAvail) return bAvail - aAvail; // available first
+                                            }
 
-											return bSeasonNum - aSeasonNum; // high -> low
-										})
-										.map(([season, cards]) =>
-											(cards as typeof set.images)
-												.sort(
-													(a, b) =>
-														new Date(b.modified).getTime() - new Date(a.modified).getTime()
-												)
-												.slice(0, 3)
-												.map((card) => (
-													<CarouselItem key={`${set.id}-titlecard-${season}-${card.id}`}>
-														<div className="space-y-2">
-															<AssetImage
-																image={card}
-																imageType="mediux"
-																aspect="titlecard"
-																className={`w-full ${!hasEpisode(includedItems, card.item_tmdb_id as string, card.season_number || 0, card.episode_number) && dimNotFound ? "opacity-35" : ""}`}
-															/>
-														</div>
-													</CarouselItem>
-												))
-										)}
-								</>
-							)}
-					</React.Fragment>
-				);
-			})}
-		</>
-	);
+                                            return bSeasonNum - aSeasonNum; // high -> low
+                                        })
+                                        .map(([season, cards]) =>
+                                            (cards as typeof set.images)
+                                                .sort(
+                                                    (a, b) =>
+                                                        new Date(b.modified).getTime() - new Date(a.modified).getTime()
+                                                )
+                                                .slice(0, 3)
+                                                .map((card) => (
+                                                    <CarouselItem key={`${set.id}-titlecard-${season}-${card.id}`}>
+                                                        <div className="space-y-2">
+                                                            <AssetImage
+                                                                image={card}
+                                                                imageType="mediux"
+                                                                aspect="titlecard"
+                                                                className={`w-full ${!hasEpisode(includedItems, card.item_tmdb_id as string, card.season_number || 0, card.episode_number) && dimNotFound ? "opacity-35" : ""}`}
+                                                            />
+                                                        </div>
+                                                    </CarouselItem>
+                                                ))
+                                        )}
+                                </>
+                            )}
+                    </React.Fragment>
+                );
+            })}
+        </>
+    );
 }
 
 // Look at the included items to see if the Media Item is filled out for that tmdb id
 export function isInServer(includedItems: { [tmdb_id: string]: IncludedItem }, tmdbId: string): MediaItem | boolean {
-	const includedItem = includedItems ? includedItems[tmdbId] : undefined;
-	if (!includedItem) return false;
-	if (!includedItem.media_item) return false;
-	if (
-		includedItem.media_item &&
-		includedItem.media_item.library_title !== "" &&
-		includedItem.media_item.rating_key !== ""
-	)
-		return includedItem.media_item;
-	return false;
+    const includedItem = includedItems ? includedItems[tmdbId] : undefined;
+    if (!includedItem) return false;
+    if (!includedItem.media_item) return false;
+    if (
+        includedItem.media_item &&
+        includedItem.media_item.library_title !== "" &&
+        includedItem.media_item.rating_key !== ""
+    )
+        return includedItem.media_item;
+    return false;
 }
 
 export function hasSeason(
-	includedItems: { [tmdb_id: string]: IncludedItem },
-	tmdbId: string,
-	season_number: number
+    includedItems: { [tmdb_id: string]: IncludedItem },
+    tmdbId: string,
+    season_number: number
 ): boolean {
-	const inServer = isInServer(includedItems, tmdbId);
-	if (!inServer || typeof inServer === "boolean") return false;
-	const mediaItem = inServer as MediaItem;
-	if (!mediaItem.series) return false;
-	const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
-	return season !== undefined;
+    const inServer = isInServer(includedItems, tmdbId);
+    if (!inServer || typeof inServer === "boolean") return false;
+    const mediaItem = inServer as MediaItem;
+    if (!mediaItem.series) return false;
+    const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
+    return season !== undefined;
 }
 
 export function hasEpisode(
-	includedItems: { [tmdb_id: string]: IncludedItem },
-	tmdbId: string,
-	season_number: number,
-	episode_number?: number
+    includedItems: { [tmdb_id: string]: IncludedItem },
+    tmdbId: string,
+    season_number: number,
+    episode_number?: number
 ): boolean {
-	const inServer = isInServer(includedItems, tmdbId);
-	if (!inServer || typeof inServer === "boolean") return false;
-	const mediaItem = inServer as MediaItem;
-	if (!mediaItem.series) return false;
-	const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
-	if (!season) return false;
-	if (episode_number == null) return false;
-	const episode = season.episodes.find((e) => e.episode_number === episode_number);
-	return episode !== undefined;
+    const inServer = isInServer(includedItems, tmdbId);
+    if (!inServer || typeof inServer === "boolean") return false;
+    const mediaItem = inServer as MediaItem;
+    if (!mediaItem.series) return false;
+    const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
+    if (!season) return false;
+    if (episode_number == null) return false;
+    const episode = season.episodes.find((e) => e.episode_number === episode_number);
+    return episode !== undefined;
 }
 
 export function getReleaseEpoch(includedItems: { [tmdb_id: string]: IncludedItem }, tmdbId: string): number {
-	const ii = includedItems?.[tmdbId];
-	const raw =
-		(ii as any)?.mediux_info?.release_date ??
-		(ii as any)?.mediux_info?.first_air_date ??
-		(ii as any)?.mediux_info?.air_date ??
-		(ii as any)?.mediux_info?.date ??
-		null;
+    const ii = includedItems?.[tmdbId];
+    const raw =
+        (ii as any)?.mediux_info?.release_date ??
+        (ii as any)?.mediux_info?.first_air_date ??
+        (ii as any)?.mediux_info?.air_date ??
+        (ii as any)?.mediux_info?.date ??
+        null;
 
-	if (typeof raw !== "string" || raw.trim() === "") return 0;
+    if (typeof raw !== "string" || raw.trim() === "") return 0;
 
-	const t = Date.parse(raw);
-	return Number.isFinite(t) ? t : 0;
+    const t = Date.parse(raw);
+    return Number.isFinite(t) ? t : 0;
 }
