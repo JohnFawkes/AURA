@@ -4,15 +4,17 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { log } from "@/lib/logger";
 
 import { APIResponse, LogErrorInfo } from "@/types/api/api-response";
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBSavedItem } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 interface SearchQueryResultsResponse {
 	search_query: string;
 	media_items: MediaItem[];
+	media_items_last_full_update: number;
 	mediux_usernames: MediuxUserInfo[];
-	saved_sets: DBMediaItemWithPosterSets[];
+	mediux_usernames_last_full_update: number;
+	saved_sets: DBSavedItem[];
 	error: LogErrorInfo | null;
 }
 
@@ -23,9 +25,7 @@ interface SearchResultQueryProps {
 	searchSavedSets: boolean;
 }
 
-export const fetchSearchResults = async (
-	props: SearchResultQueryProps
-): Promise<APIResponse<SearchQueryResultsResponse>> => {
+export const runSearch = async (props: SearchResultQueryProps): Promise<APIResponse<SearchQueryResultsResponse>> => {
 	log("INFO", "API - Search", "Fetch Search Results", `Fetching search results for query: ${props.searchQuery}`);
 	try {
 		const response = await apiClient.get<APIResponse<SearchQueryResultsResponse>>(`/search`, {

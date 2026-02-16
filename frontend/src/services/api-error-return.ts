@@ -6,9 +6,9 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 	const defaultError = {
 		message: "",
 		help: "",
+		detail: {},
 		function: "",
 		line_number: 0,
-		detail: {},
 	};
 
 	if (error instanceof AxiosError) {
@@ -17,9 +17,13 @@ export const ReturnErrorMessage = <T>(error: unknown): APIResponse<T> => {
 			error: {
 				message:
 					error.response?.data.message || error.response?.data.error?.message || "Failed to connect to API",
-				help: "Please make sure the backend API is running and accessible.",
-				function: "Axios Request",
-				line_number: -1,
+				help:
+					error.response?.data?.help ||
+					error.response?.data.error?.help ||
+					"Please make sure the aura API is running and accessible.",
+				detail: error.response?.data?.detail || error.response?.data.error?.detail || null,
+				function: error.response?.data?.function || error.response?.data.error?.function || "Axios Request",
+				line_number: error.response?.data?.line_number || error.response?.data.error?.line_number || -1,
 			},
 		} as APIResponse<T>;
 	}
