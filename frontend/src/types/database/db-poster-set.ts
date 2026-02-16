@@ -1,18 +1,41 @@
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PosterSet } from "@/types/media-and-posters/poster-sets";
+import { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
+import { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
-export interface DBPosterSetDetail {
-	PosterSetID: string;
-	PosterSet: PosterSet;
-	LastDownloaded: string;
-	SelectedTypes: string[];
-	AutoDownload: boolean;
-	ToDelete: boolean;
+// What is used to save a record into the database
+// This contains the MediaItem details, as well as an array of PosterSets that are associated with it
+export interface DBSavedItem {
+	//tmdb_id: string;
+	//library_title: string;
+	media_item: MediaItem;
+	poster_sets: DBPosterSetDetail[];
 }
 
-export interface DBMediaItemWithPosterSets {
-	TMDB_ID: string;
-	LibraryTitle: string;
-	MediaItem: MediaItem;
-	PosterSets: DBPosterSetDetail[];
+export interface DBPosterSetDetail extends PosterSet {
+	last_downloaded: string;
+	selected_types: SelectedTypes;
+	auto_download: boolean;
+	to_delete: boolean; // Flag to indicate if the poster set should be deleted (Not used in DB)
+}
+
+export interface PosterSet extends Omit<BaseSetInfo, "type"> {
+	type: TYPE_DB_SET_TYPE_OPTIONS;
+	images: ImageFile[];
+}
+
+export interface DBFilter {
+	item_tmdb_id: string;
+	item_library_title: string;
+	item_year: number;
+	item_title: string;
+	set_id: number;
+	library_titles: string[];
+	image_types: string[];
+	autodownload: string;
+	multiset_only: boolean;
+	usernames: string[];
+	page_items: number;
+	page_number: number;
+	sort_option: string;
+	sort_order: string;
 }
