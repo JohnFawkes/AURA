@@ -1,12 +1,16 @@
-package mediux
+package autodownload
 
 import (
 	"aura/config"
+	"aura/database"
 	"aura/logging"
+	"aura/mediux"
+	"aura/models"
+	"aura/utils"
+	"context"
 	"encoding/json"
 	"net/url"
-	"os"
-	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,7 +32,7 @@ func StartWebSocketClient() {
 func connectAndSubscribe(collectionType string) error {
 
 	// Build WebSocket URL with token
-	u, err := url.Parse(MediuxApiURL)
+	u, err := url.Parse(mediux.MediuxApiURL)
 	if err != nil {
 		return err
 	}
@@ -86,24 +90,61 @@ func connectAndSubscribe(collectionType string) error {
 			continue
 		}
 
-		// Write payload to file
-		err = writePayloadToFile(msg, path.Join(config.ConfigPath, "mediux-websocket", time.Now().Format("20060102_150405")+"_mediux_ws_payload.json"))
-		if err != nil {
-			logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to write WebSocket payload to file")
-		}
-
 		// Handle message based on type/event as needed
 		if msg.Event == "init" {
 			continue
 		} else if msg.Event == "update" {
 			for set := range msg.UpdatedSets {
-				logging.LOGGER.Info().Timestamp().
-					Int("set_id", msg.UpdatedSets[set].ID).
-					Str("set_title", msg.UpdatedSets[set].Title).
-					Str("show_id", msg.UpdatedSets[set].ShowID).
-					Str("date_updated", msg.UpdatedSets[set].DateUpdated).
-					Msg("Received update for Mediux Show Set")
+				ctx, ld := logging.CreateLoggingContext(context.Background(), "Mediux Update - Processing Set")
+				logAction := ld.AddAction("Fetching All Items from DB", logging.LevelDebug)
+				ctx = logging.WithCurrentAction(ctx, logAction)
 
+				setID := msg.UpdatedSets[set].ID
+				showID := msg.UpdatedSets[set].ShowID
+				showTitle := msg.UpdatedSets[set].Title
+
+				logAction.AppendResult("set_id", setID)
+				logAction.AppendResult("set_show_id", showID)
+				logAction.AppendResult("set_title", showTitle)
+
+				logging.LOGGER.Info().Timestamp().Int("set_id", msg.UpdatedSets[set].ID).Str("set_title", msg.UpdatedSets[set].Title).Msg("Show set updated")
+
+				// Get all items from the database that match this Set
+				dbFilter := models.DBFilter{
+					ItemTMDB_ID: showID,
+					SetID:       strconv.Itoa(setID),
+				}
+				out, Err := database.GetAllSavedSets(ctx, dbFilter)
+				if Err.Message != "" {
+					logging.LOGGER.Error().Timestamp().Str("error", Err.Message).Msg("Failed to fetch items from DB for updated set")
+					continue
+				}
+				if len(out.Items) == 0 {
+					continue // No items found in database for this set, skip processing
+				}
+
+				logging.LOGGER.Debug().Timestamp().Int("num_items", len(out.Items)).Msg("Found Items in DB for updated set")
+
+				// Process each item in the set
+				for _, dbItem := range out.Items {
+					logging.LOGGER.Debug().Timestamp().Msgf("Processing %s since a set it contains was updated", utils.MediaItemInfo(dbItem.MediaItem))
+					result := CheckItem(ctx, dbItem)
+					switch result.OverallResult {
+					case "Success":
+						logging.LOGGER.Info().Timestamp().Msgf("Auto-download success for item %s", utils.MediaItemInfo(dbItem.MediaItem))
+						logAction.AppendResult("auto_download_result", result)
+					case "Warn":
+						logging.LOGGER.Warn().Timestamp().Msgf("Auto-download warning for item %s", utils.MediaItemInfo(dbItem.MediaItem))
+						logAction.AppendResult("auto_download_result", result)
+					case "Error":
+						logging.LOGGER.Error().Timestamp().Msgf("Auto-download error for item %s", utils.MediaItemInfo(dbItem.MediaItem))
+						logAction.AppendResult("auto_download_result", result)
+					case "Skipped":
+						logging.LOGGER.Debug().Timestamp().Msgf("Auto-download skipped for item %s", utils.MediaItemInfo(dbItem.MediaItem))
+						logAction.AppendResult("auto_download_result", result)
+					}
+				}
+				ld.Log()
 			}
 		} else {
 			logging.LOGGER.Warn().Timestamp().
@@ -127,12 +168,4 @@ type MediuxWebSocketUpdateData struct {
 	Title       string `json:"set_title"`
 	ShowID      string `json:"show_id"`
 	DateUpdated string `json:"date_updated"`
-}
-
-func writePayloadToFile(payload any, filename string) error {
-	data, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(filename, data, 0644)
 }
