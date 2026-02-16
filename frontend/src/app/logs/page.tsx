@@ -352,7 +352,7 @@ function LogList({
   );
 }
 
-function LogActionAccordion({ action }: { action: any }) {
+function LogActionAccordion({ action }: { action: LogAction }) {
   const hasExpandableContent =
     (action.sub_actions && action.sub_actions.length > 0) ||
     action.result !== undefined ||
