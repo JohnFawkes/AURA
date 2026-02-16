@@ -2,8 +2,8 @@
 
 import { formatExactDateTime } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { fetchDownloadQueueEntries } from "@/services/download-queue/fetch-queue-entries";
-import { DownloadQueueStatus, fetchDownloadQueueStatus } from "@/services/download-queue/get-status";
+import { getAllDownloadQueueItems } from "@/services/downloads/queue-get";
+import { DownloadQueueStatus, getDownloadQueueStatus } from "@/services/downloads/queue-status";
 import { Globe } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -19,16 +19,16 @@ import { H2, H3 } from "@/components/ui/typography";
 import { cn } from "@/lib/cn";
 
 import { APIResponse } from "@/types/api/api-response";
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import { DBSavedItem } from "@/types/database/db-poster-set";
 
 const DownloadQueuePage: React.FC = () => {
 	// Refs - Fetching
 	const isFetchingRef = useRef(false);
 
 	// States - Queue Entries
-	const [inProgressEntries, setInProgressEntries] = useState<DBMediaItemWithPosterSets[]>([]);
-	const [errorEntries, setErrorEntries] = useState<DBMediaItemWithPosterSets[]>([]);
-	const [warningEntries, setWarningEntries] = useState<DBMediaItemWithPosterSets[]>([]);
+	const [inProgressEntries, setInProgressEntries] = useState<DBSavedItem[]>([]);
+	const [errorEntries, setErrorEntries] = useState<DBSavedItem[]>([]);
+	const [warningEntries, setWarningEntries] = useState<DBSavedItem[]>([]);
 
 	// States - Queue Status
 	const [queueStatus, setQueueStatus] = useState<DownloadQueueStatus>({
@@ -44,11 +44,6 @@ const DownloadQueuePage: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<APIResponse<unknown> | null>(null);
 
-	// Set the Document Title
-	useEffect(() => {
-		document.title = `aura | Download Queue`;
-	}, []);
-
 	// Fetch Queue Entries
 	const fetchQueueEntries = useCallback(async () => {
 		if (isFetchingRef.current) return;
@@ -57,7 +52,7 @@ const DownloadQueuePage: React.FC = () => {
 		try {
 			setLoading(true);
 
-			const response = await fetchDownloadQueueEntries();
+			const response = await getAllDownloadQueueItems();
 
 			if (response.status === "error") {
 				setError(response);
@@ -83,7 +78,7 @@ const DownloadQueuePage: React.FC = () => {
 	useEffect(() => {
 		const fetchStatus = async () => {
 			try {
-				const statusResponse = await fetchDownloadQueueStatus();
+				const statusResponse = await getDownloadQueueStatus();
 				if (statusResponse.status === "error") {
 					throw new Error("Error fetching status");
 				}
@@ -232,7 +227,7 @@ const DownloadQueuePage: React.FC = () => {
 									<ResponsiveGrid size="regular">
 										{inProgressEntries.map((entry) => (
 											<DownloadQueueEntry
-												key={entry.TMDB_ID}
+												key={entry.media_item.tmdb_id}
 												entry={entry}
 												fetchQueueEntries={fetchQueueEntries}
 											/>
@@ -260,7 +255,7 @@ const DownloadQueuePage: React.FC = () => {
 									<ResponsiveGrid size="regular">
 										{errorEntries.map((entry) => (
 											<DownloadQueueEntry
-												key={entry.TMDB_ID}
+												key={entry.media_item.tmdb_id}
 												entry={entry}
 												fetchQueueEntries={fetchQueueEntries}
 											/>
@@ -288,7 +283,7 @@ const DownloadQueuePage: React.FC = () => {
 									<ResponsiveGrid size="larger">
 										{warningEntries.map((entry) => (
 											<DownloadQueueEntry
-												key={entry.TMDB_ID}
+												key={entry.media_item.tmdb_id}
 												entry={entry}
 												fetchQueueEntries={fetchQueueEntries}
 											/>
