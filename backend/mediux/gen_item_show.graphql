@@ -1,16 +1,16 @@
 query getShowInfoByTMDB_ID($tmdb_id: ID!) {
-  shows_by_id(id: $tmdb_id) {
-    id
-    date_updated
-    status
-    title
-    tagline
-    release_date
-    tvdb_id
-    imdb_id
-    trakt_id
-    slug
-    poster_path
-    backdrop_path
-  }
+	shows_by_id(id: $tmdb_id) {
+		id
+		date_updated
+		status
+		title
+		tagline
+		first_air_date
+		tvdb_id
+		imdb_id
+		trakt_id
+		slug
+		poster_path
+		backdrop_path
+	}
 }
