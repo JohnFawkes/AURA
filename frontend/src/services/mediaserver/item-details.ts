@@ -27,24 +27,42 @@ export const getMediaItemContent = async (
     "Fetch",
     `Fetching ${returnType} content for '${itemTitle}' [${ratingKey}] from library '${libraryTitle}'`
   );
+
   try {
     const response = await apiClient.get<APIResponse<getItemContentResponse>>(`/mediaserver/item`, {
       params: {
         rating_key: ratingKey,
         return_type: returnType,
       },
+      // Important: do not throw on non-2xx for this endpoint
+      validateStatus: () => true,
     });
-    if (response.data.status === "error" && response.data.data?.media_item == null) {
-      throw new Error(response.data.error?.message || `Unknown error fetching item content for ratingKey ${ratingKey}`);
-    } else {
-      log(
-        "INFO",
-        "API - Media Server",
-        "Fetch",
-        `Fetched ${returnType} content for '${itemTitle}' [${ratingKey}] from library '${libraryTitle}'`
-      );
+
+    const payload = response.data;
+
+    // If backend says error but still sends partial data, return it.
+    if (payload?.status === "error") {
+      if (payload.data?.media_item != null) {
+        log(
+          "WARN",
+          "API - Media Server",
+          "Fetch",
+          `Partial ${returnType} content returned for '${itemTitle}' [${ratingKey}]`
+        );
+        return payload;
+      }
+
+      throw new Error(payload.error?.message || `Unknown error fetching item content for ratingKey ${ratingKey}`);
     }
-    return response.data;
+
+    log(
+      "INFO",
+      "API - Media Server",
+      "Fetch",
+      `Fetched ${returnType} content for '${itemTitle}' [${ratingKey}] from library '${libraryTitle}'`
+    );
+
+    return payload;
   } catch (error) {
     log(
       "ERROR",
