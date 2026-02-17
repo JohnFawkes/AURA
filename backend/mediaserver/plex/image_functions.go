@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func getCurrentImages(ctx context.Context, item *models.MediaItem, itr string, imageType string) (images []PlexGetAllImagesMetadata, Err logging.LogErrorInfo) {
+func getAllImages(ctx context.Context, item *models.MediaItem, itemRatingKey string, itr string, imageType string) (images []PlexGetAllImagesMetadata, Err logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf(
 		"Plex: Getting %s Images for %s", itr, utils.MediaItemInfo(*item)),
 		logging.LevelDebug)
@@ -34,7 +34,7 @@ func getCurrentImages(ctx context.Context, item *models.MediaItem, itr string, i
 		logAction.SetError(logging.Error_BaseUrlParsing(err))
 		return images, *logAction.Error
 	}
-	u.Path = path.Join(u.Path, "library", "metadata", item.RatingKey, imageType)
+	u.Path = path.Join(u.Path, "library", "metadata", itemRatingKey, imageType)
 	URL := u.String()
 
 	// Make the HTTP Request to Plex
@@ -51,7 +51,21 @@ func getCurrentImages(ctx context.Context, item *models.MediaItem, itr string, i
 		return images, *logAction.Error
 	}
 
-	images = respData.MediaContainer.Metadata
+	for _, img := range respData.MediaContainer.Metadata {
+		if img.Provider != "local" {
+			continue
+		}
+		images = append(images, img)
+	}
+
+	logAction.AppendResult("image_rating_keys", func() []string {
+		keys := make([]string, len(images))
+		for i, img := range images {
+			keys[i] = img.RatingKey
+		}
+		return keys
+	}())
+	logAction.AppendResult("current_image_count", len(images))
 
 	return images, Err
 }
@@ -76,43 +90,44 @@ func findNewImage(ctx context.Context, item *models.MediaItem, itemRatingKey str
 	// Retry logic for the entire process (up to 3 attempts)
 	for attempt := 1; attempt <= 3; attempt++ {
 		attemptAction := logAction.AddSubAction(fmt.Sprintf("Attempt %d to fetch new image", attempt), logging.LevelDebug)
+
 		// Get all current images from Plex
-		currentImages, fetchErr := GetAllImages(ctx, item, imageType)
+		currentImages, fetchErr := getAllImages(ctx, item, itemRatingKey, "New", imageType)
+
 		if fetchErr.Message != "" {
 			attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{"error": fetchErr.Message})
 			lastErrorMsg = fetchErr.Message
 			lastErrorDetail = fetchErr.Detail
 		} else {
-			// Compare current images with previous images to find a new one
-			for _, currentImage := range currentImages {
-				if currentImage.Provider != "local" {
+			prevKeys := make(map[string]struct{}, len(previousImages))
+			for _, p := range previousImages {
+				if p.Provider != "local" {
 					continue
 				}
-				isNew := true
-				for _, previousImage := range previousImages {
-					if previousImage.Provider != "local" {
-						continue
-					}
-					if currentImage.RatingKey == previousImage.RatingKey {
-						isNew = false
-						break
-					}
+				prevKeys[p.RatingKey] = struct{}{}
+			}
+
+			for _, c := range currentImages {
+				if c.Provider != "local" {
+					continue
 				}
-				if isNew {
-					attemptAction.AppendResult(fmt.Sprintf("attempt_%d", attempt), map[string]any{"new_image_rating_key": currentImage.RatingKey})
-					return currentImage.RatingKey, logging.LogErrorInfo{}
+				if _, exists := prevKeys[c.RatingKey]; !exists {
+					attemptAction.AppendResult(fmt.Sprintf("attempt_%d", attempt), map[string]any{
+						"new_image_rating_key": c.RatingKey,
+					})
+					return c.RatingKey, logging.LogErrorInfo{}
 				}
 			}
+
 			attemptAction.AppendWarning(fmt.Sprintf("attempt_%d", attempt), map[string]any{
-				"error": "No new image found; all images match previous ones.",
+				"error": "No local images found after refresh.",
 			})
-			lastErrorMsg = "No new image found; all images match previous ones."
+			lastErrorMsg = "No local images found after refresh."
 			lastErrorDetail = nil
 		}
-		// If we reach here, the attempt failed; refresh the item before retrying
+
 		if attempt < 3 {
-			numberOfSeconds := 1
-			time.Sleep(time.Duration(numberOfSeconds) * time.Second) // Wait before retrying
+			time.Sleep(1 * time.Second)
 			refreshErr := RefreshItemMetadata(ctx, item, itemRatingKey, false)
 			if refreshErr.Message != "" {
 				attemptAction.AppendWarning("refresh_error", map[string]any{"error": refreshErr.Message})
@@ -122,7 +137,5 @@ func findNewImage(ctx context.Context, item *models.MediaItem, itemRatingKey str
 		}
 	}
 
-	// All attempts failed, set error only now
-	finalError := logging.LogErrorInfo{Message: lastErrorMsg, Detail: lastErrorDetail}
-	return "", finalError
+	return "", logging.LogErrorInfo{Message: lastErrorMsg, Detail: lastErrorDetail}
 }

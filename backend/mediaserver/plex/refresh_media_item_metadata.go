@@ -41,13 +41,13 @@ func RefreshItemMetadata(ctx context.Context, item *models.MediaItem, refreshKey
 	defer resp.Body.Close()
 
 	if !updateImage {
-		time.Sleep(500 * time.Millisecond) // Give Plex a moment to process the refresh before any further actions
+		time.Sleep(200 * time.Millisecond) // Give Plex a moment to process the refresh before any further actions
 		return logging.LogErrorInfo{}
 	}
 
 	// When we refresh metadata, we can also update the selected image to be local (if present)
 	// We run this in a separate goroutine to avoid blocking
-	currentImages, Err := getCurrentImages(ctx, item, "current", "poster")
+	currentImages, Err := getAllImages(ctx, item, refreshKey, "All", "poster")
 	if Err.Message != "" {
 		return *logAction.Error
 	}
@@ -65,7 +65,7 @@ func RefreshItemMetadata(ctx context.Context, item *models.MediaItem, refreshKey
 			// If there is no selected image, select a local one if it exists, else select the first one
 			for _, img := range currentImages {
 				if img.Provider == "local" {
-					Err = applyImageToMediaItem(ctx, item, item.RatingKey, img.RatingKey, "poster")
+					Err = applyImageToMediaItem(ctx, item, refreshKey, img.RatingKey, "poster")
 					if Err.Message != "" {
 						return Err
 					}
@@ -74,7 +74,7 @@ func RefreshItemMetadata(ctx context.Context, item *models.MediaItem, refreshKey
 				}
 			}
 			if !hasLocal {
-				Err = applyImageToMediaItem(ctx, item, item.RatingKey, currentImages[0].RatingKey, "poster")
+				Err = applyImageToMediaItem(ctx, item, refreshKey, currentImages[0].RatingKey, "poster")
 				if Err.Message != "" {
 					return Err
 				}

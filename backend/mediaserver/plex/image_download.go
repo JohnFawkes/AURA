@@ -8,11 +8,14 @@ import (
 	"aura/models"
 	"aura/utils"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func (p *Plex) DownloadApplyImageToMediaItem(ctx context.Context, item *models.MediaItem, imageFile models.ImageFile) (Err logging.LogErrorInfo) {
@@ -46,11 +49,10 @@ func (p *Plex) DownloadApplyImageToMediaItem(ctx context.Context, item *models.M
 	// Before we download and save the image locally, we need to get a list of the current posters in Plex
 	// This is to handle the case where the image is already set in Plex, and we need to replace it
 	// with the new image after saving it locally
-	currentImages, logErr := getCurrentImages(ctx, item, "Current", imageFile.Type)
+	currentImages, logErr := getAllImages(ctx, item, itemRatingKey, "Current", imageFile.Type)
 	if logErr.Message != "" {
 		return logErr
 	}
-	logAction.AppendResult("current_image_count", len(currentImages))
 
 	// Save the Image Locally
 	isCustomLocalPath, Err := saveImageLocally(ctx, p, item, imageFile, imageData)
@@ -318,6 +320,8 @@ func saveImageLocally(ctx context.Context, p *Plex, item *models.MediaItem, imag
 	createFileAction.AppendResult("saved_file_path", savedFilePath)
 	createFileAction.Complete()
 
+	makeFileBytesUnique(savedFilePath)
+
 	return isCustomLocalPath, Err
 }
 
@@ -337,4 +341,29 @@ func convertWindowsPathToDockerPath(windowsPath string) string {
 	}
 
 	return dockerPath
+}
+
+func makeFileBytesUnique(filePath string) error {
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	r := make([]byte, 6)
+	if _, err := rand.Read(r); err != nil {
+		return err
+	}
+
+	tag := fmt.Sprintf("\nAURA:%s:%s",
+		time.Now().UTC().Format("20060102T150405.000000000Z"),
+		hex.EncodeToString(r),
+	)
+
+	if _, err := f.Write([]byte(tag)); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	return os.Chtimes(filePath, now, now)
 }
