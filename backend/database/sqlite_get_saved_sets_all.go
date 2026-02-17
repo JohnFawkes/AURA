@@ -36,13 +36,9 @@ func (s *SQliteDB) GetAllSavedSets(ctx context.Context, filter models.DBFilter) 
 		sortCol = "mi.title"
 	case "year":
 		sortCol = "mi.year"
-	case "tmdb_id":
-		sortCol = "mi.tmdb_id"
-	case "library_title":
+	case "library":
 		sortCol = "mi.library_title"
-	case "set_count":
-		sortCol = "set_count"
-	case "last_downloaded":
+	case "last_downloaded", "date_downloaded":
 		sortCol = "max_last_downloaded"
 	}
 
@@ -53,7 +49,7 @@ func (s *SQliteDB) GetAllSavedSets(ctx context.Context, filter models.DBFilter) 
 	}
 
 	// Pagination
-	pageItems := filter.PageItems
+	pageItems := filter.ItemsPerPage
 	if pageItems <= 0 {
 		pageItems = 25
 	}
@@ -333,15 +329,6 @@ func buildSavedItemsWhere(filter models.DBFilter) (whereSQL string, args []any) 
 		inSQL, inArgs := makeInClause(filter.LibraryTitles)
 		add("mi.library_title IN ("+inSQL+")", inArgs...)
 	}
-	if !filter.IncludeIgnored {
-		add(`
-NOT EXISTS (
-  SELECT 1
-  FROM IgnoredItems ii
-  WHERE ii.tmdb_id = mi.tmdb_id
-    AND ii.library_title = mi.library_title
-)`)
-	}
 
 	// Filters that apply to poster sets/images via EXISTS
 	posterSetExists := make([]string, 0, 8)
@@ -360,9 +347,9 @@ NOT EXISTS (
 
 	// IMPORTANT: autodownload is now stored on SavedItems (si), not PosterSets (ps)
 	switch strings.ToLower(strings.TrimSpace(filter.Autodownload)) {
-	case "true", "1", "yes":
+	case "true", "1", "yes", "on":
 		posterSetExists = append(posterSetExists, "si.autodownload = 1")
-	case "false", "0", "no":
+	case "false", "0", "no", "off":
 		posterSetExists = append(posterSetExists, "si.autodownload = 0")
 	}
 

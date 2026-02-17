@@ -54,7 +54,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	dbFilter.ImageTypes = filteredTypes
 
 	// Query Param - AutoDownload Only (Filter)
-	filterAutodownload := r.URL.Query().Get("filter_autodownload")
+	filterAutodownload := r.URL.Query().Get("autodownload")
 	if filterAutodownload == "" {
 		filterAutodownload = "all"
 	}
@@ -73,7 +73,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	dbFilter.MultiSetOnly = multisetOnly
 
 	// Query Param - Filtered Usernames (Filter)
-	filteredUsernamesStr := r.URL.Query().Get("filtered_usernames")
+	filteredUsernamesStr := r.URL.Query().Get("usernames")
 	var filteredUsernames []string
 	if filteredUsernamesStr != "" {
 		filteredUsernames = strings.Split(filteredUsernamesStr, ",")
@@ -85,7 +85,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	// Query Param - Pagination & Sorting
 	// Items Per Page (Default: 20, -1 for no pagination)
 	// Page Number (Default: 1)
-	// Sort Option (Default: dateDownloaded)
+	// Sort Option (Default: date_downloaded)
 	// Sort Order (Default: desc)
 	itemsPerPage := 20
 	pageNumber := 1
@@ -106,7 +106,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	sortOption = r.URL.Query().Get("sort_option")
 	sortOrder = r.URL.Query().Get("sort_order")
 	getQueryParamsAction.Complete()
-	dbFilter.PageItems = itemsPerPage
+	dbFilter.ItemsPerPage = itemsPerPage
 	dbFilter.PageNumber = pageNumber
 	dbFilter.SortOption = sortOption
 	dbFilter.SortOrder = sortOrder

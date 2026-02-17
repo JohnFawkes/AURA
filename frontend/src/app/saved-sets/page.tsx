@@ -110,15 +110,15 @@ const SavedSetsPage: React.FC = () => {
   // Is Wide Screen: for showing/hiding the ViewControl
   const [isWideScreen, setIsWideScreen] = useState(false);
 
-  // Set sortOption to "dateDownloaded" if its not title, dateDownloaded, year, or library
+  // Set sortOption to "date_downloaded" if its not title, date_downloaded, year, or library
   useEffect(() => {
     if (
       sortOption !== "title" &&
-      sortOption !== "dateDownloaded" &&
+      sortOption !== "date_downloaded" &&
       sortOption !== "year" &&
       sortOption !== "library"
     ) {
-      setSortOption("dateDownloaded");
+      setSortOption("date_downloaded");
       setSortOrder("desc");
     }
   }, [sortOption, setSortOption, setSortOrder]);
@@ -789,10 +789,10 @@ const SavedSetsPage: React.FC = () => {
               <TableHead
                 className="w-[150px] group cursor-pointer select-none"
                 onClick={() => {
-                  if (sortOption === "dateDownloaded") {
+                  if (sortOption === "date_downloaded") {
                     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                   } else {
-                    setSortOption("dateDownloaded");
+                    setSortOption("date_downloaded");
                     setSortOrder("desc");
                   }
                 }}
@@ -800,7 +800,7 @@ const SavedSetsPage: React.FC = () => {
                 <span className="inline-flex items-center gap-1">
                   Last Downloaded
                   <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center">
-                    {sortOption === "dateDownloaded" ? (
+                    {sortOption === "date_downloaded" ? (
                       sortOrder === "asc" ? (
                         <ClockArrowUp className="h-4 w-4 ml-1" />
                       ) : (

@@ -153,7 +153,7 @@ function SavedSetsFilterContent({
       <SortControl
         options={[
           {
-            value: "dateDownloaded",
+            value: "date_downloaded",
             label: "Date Downloaded",
             ascIcon: <ClockArrowUp />,
             descIcon: <ClockArrowDown />,

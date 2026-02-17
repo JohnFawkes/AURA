@@ -33,9 +33,8 @@ type DBFilter struct {
 	ImageTypes       []string `json:"image_types"`
 	Autodownload     string   `json:"autodownload"`
 	MultiSetOnly     bool     `json:"multiset_only"`
-	IncludeIgnored   bool     `json:"include_ignored"`
 	Usernames        []string `json:"usernames"`
-	PageItems        int      `json:"page_items"`
+	ItemsPerPage     int      `json:"items_per_page"`
 	PageNumber       int      `json:"page_number"`
 	SortOption       string   `json:"sort_option"`
 	SortOrder        string   `json:"sort_order"`

@@ -41,7 +41,7 @@ interface SavedSets_PageStore
 export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
   persist(
     (set) => ({
-      sortOption: "dateDownloaded",
+      sortOption: "date_downloaded",
       setSortOption: (option) => set({ sortOption: option }),
 
       sortOrder: "desc",
@@ -77,7 +77,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
 
       clear: () =>
         set({
-          sortOption: "dateDownloaded",
+          sortOption: "date_downloaded",
           sortOrder: "desc",
           currentPage: 1,
           itemsPerPage: 20,
