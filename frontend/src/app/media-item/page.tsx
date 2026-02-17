@@ -178,7 +178,8 @@ const MediaItemPage = () => {
           partialMediaItem.rating_key,
           partialMediaItem.library_title
         );
-        if (resp.status === "error") {
+
+        if (resp.status === "error" && !resp.data?.media_item) {
           setError(resp);
           setHasError(true);
           setResponseLoading(false);
@@ -274,7 +275,7 @@ const MediaItemPage = () => {
             error: {
               message: `No poster sets found for '${mediaItemResponse.title}'`,
               help: "Use the MediUX site to confirm that images exist for this item",
-              detail: {
+              detail: resp.error?.detail || {
                 tmdb_id: mediaItemResponse.tmdb_id,
                 item_type: mediaItemResponse.type,
               },
