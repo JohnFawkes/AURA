@@ -570,7 +570,9 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
                 <div>
                   {editSet.previousDateUpdated &&
                     editSet.date_updated &&
-                    editSet.previousDateUpdated !== editSet.date_updated && (
+                    editSet.previousDateUpdated !== editSet.date_updated &&
+                    // Compare the two dates to check if the set has been updated since it was last fetched
+                    new Date(editSet.date_updated) > new Date(editSet.previousDateUpdated) && (
                       <div className="text-green-600 text-xs mt-1">Set has updates</div>
                     )}
                 </div>
