@@ -15,6 +15,16 @@ import (
 	"path"
 )
 
+func finalizeQueueFile(filePath, fileName string, hasErrors, hasWarnings bool) error {
+	if hasErrors {
+		return os.Rename(filePath, path.Join(FolderPath, fmt.Sprintf("error_%s", fileName)))
+	}
+	if hasWarnings {
+		return os.Rename(filePath, path.Join(FolderPath, fmt.Sprintf("warning_%s", fileName)))
+	}
+	return os.Remove(filePath)
+}
+
 func ProcessQueueItems() {
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Download Queue Processing")
 	logAction := ld.AddAction("Processing Download Queue", logging.LevelInfo)
@@ -37,8 +47,6 @@ func ProcessQueueItems() {
 		logAction.AppendResult("result", "queue is empty")
 		return
 	}
-
-	fileIssuesMap := make(map[string]FileIssues)
 
 	// Process each file in the directory
 	for _, file := range files {
@@ -67,83 +75,97 @@ func ProcessQueueItems() {
 
 		filePath := path.Join(FolderPath, file.Name())
 
+		finalizeAndNotify := func(
+			itemTitle string,
+			posterSet models.DBPosterSetDetail,
+			tmdbPoster string,
+			tmdbBackdrop string,
+		) {
+			issues := FileIssues{Errors: fileErrors, Warnings: fileWarnings}
+			SendNotification(issues, itemTitle, posterSet, tmdbPoster, tmdbBackdrop)
+
+			if err := finalizeQueueFile(filePath, file.Name(), len(fileErrors) > 0, len(fileWarnings) > 0); err != nil {
+				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to move or delete processed file")
+			}
+			ld.Log()
+		}
+
 		// Read and parse the JSON file
 		data, err := os.ReadFile(filePath)
 		if err != nil {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to read file")
-			fileErrors = append(fileErrors, fmt.Sprintf("Failed to read file: %s", err.Error()))
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], "Unknown Title", models.DBPosterSetDetail{}, "", "")
-			ld.Log()
+			fileErrors = append(fileErrors, fmt.Sprintf("read file failed: %v", err))
+			finalizeAndNotify("Unknown Title", models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
 		var queueItem models.DBSavedItem
-		err = json.Unmarshal(data, &queueItem)
-		if err != nil {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to parse JSON")
-			fileErrors = append(fileErrors, fmt.Sprintf("Failed to parse JSON: %s", err.Error()))
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], "Unknown Title", models.DBPosterSetDetail{}, "", "")
-			ld.Log()
+		if err := json.Unmarshal(data, &queueItem); err != nil {
+			fileErrors = append(fileErrors, fmt.Sprintf("parse json failed: %v", err))
+			finalizeAndNotify("Unknown Title", models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
-		// Ensure the Media Item has the basic required info
 		if queueItem.MediaItem.RatingKey == "" || queueItem.MediaItem.Title == "" || queueItem.MediaItem.LibraryTitle == "" || queueItem.MediaItem.TMDB_ID == "" {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Media item is missing required information (ID, Title, LibraryTitle, or TMDB_ID)")
-			fileErrors = append(fileErrors, "Media item is missing required information (ID, Title, LibraryTitle, or TMDB_ID)")
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], "Unknown Title", models.DBPosterSetDetail{}, "", "")
-			ld.Log()
+			fileErrors = append(fileErrors, "media item missing required fields: ratingKey/title/libraryTitle/tmdbId")
+			finalizeAndNotify(queueItem.MediaItem.Title, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
-		// Ensure there is at least one Poster Set in the item
 		if len(queueItem.PosterSets) == 0 {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "No poster sets found in the item")
-			fileWarnings = append(fileWarnings, "No poster sets found in the item")
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, models.DBPosterSetDetail{}, "", "")
-			ld.Log()
+			fileWarnings = append(fileWarnings, "no poster sets found")
+			finalizeAndNotify(queueItem.MediaItem.Title, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
-		// Fetch the Mediux Info for this Item so that we can get the TMDB poster/backdrop paths for the notification
-		mediuxItemInfo, Err := mediux.GetBaseItemInfoByTMDB_ID(queueItem.MediaItem.TMDB_ID, queueItem.MediaItem.Type)
-		if Err.Message != "" {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to fetch MediUX info for the item")
-			fileWarnings = append(fileWarnings, fmt.Sprintf("Failed to fetch MediUX info for the item: %s", Err.Message))
+		mediuxItemInfo, mErr := mediux.GetBaseItemInfoByTMDB_ID(queueItem.MediaItem.TMDB_ID, queueItem.MediaItem.Type)
+		if mErr.Message != "" {
+			fileWarnings = append(fileWarnings, fmt.Sprintf("mediux lookup failed: %s", mErr.Message))
 		}
 
-		// Fetch the latest Media Item info
-		found, Err := mediaserver.GetMediaItemDetails(ctx, &queueItem.MediaItem)
-		if Err.Message != "" || !found {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to fetch media item details")
-			fileErrors = append(fileErrors, fmt.Sprintf("Failed to fetch latest data for '%s (%s): %s", queueItem.MediaItem.Title, queueItem.MediaItem.LibraryTitle, Err.Message))
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, models.DBPosterSetDetail{}, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
-			ld.Log()
+		found, mediaErr := mediaserver.GetMediaItemDetails(ctx, &queueItem.MediaItem)
+		if mediaErr.Message != "" || !found {
+			fileErrors = append(fileErrors, fmt.Sprintf("media server lookup failed for '%s' in '%s': %s", queueItem.MediaItem.Title, queueItem.MediaItem.LibraryTitle, mediaErr.Message))
+			// Stop retry flood: mark file as error_ immediately
+			finalizeAndNotify(
+				queueItem.MediaItem.Title,
+				models.DBPosterSetDetail{},
+				mediuxItemInfo.TMDB_PosterPath,
+				mediuxItemInfo.TMDB_BackdropPath,
+			)
 			continue
 		}
 
 		for _, posterSet := range queueItem.PosterSets {
-			// Ensure that the poster set has the required info
+			setErrors := []string{}
+			setWarnings := []string{}
+
 			if posterSet.ID == "" || posterSet.Type == "" || posterSet.Title == "" {
-				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), fmt.Sprintf("Poster set '%s' is missing required information (ID, Type, or Title)", posterSet.Title))
-				fileErrors = append(fileErrors, fmt.Sprintf("Poster set '%s' is missing required information (ID, Type, or Title)", posterSet.Title))
-				fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-				go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, posterSet, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
+				setErrors = append(setErrors, "poster set missing required fields: id/type/title")
+				fileErrors = append(fileErrors, setErrors...)
+				SendNotification(
+					FileIssues{Errors: setErrors, Warnings: setWarnings},
+					queueItem.MediaItem.Title,
+					posterSet,
+					mediuxItemInfo.TMDB_PosterPath,
+					mediuxItemInfo.TMDB_BackdropPath,
+				)
 				continue
 			}
 
 			if !posterSet.SelectedTypes.Poster &&
 				!posterSet.SelectedTypes.Backdrop &&
 				!posterSet.SelectedTypes.SeasonPoster &&
+				!posterSet.SelectedTypes.SpecialSeasonPoster &&
 				!posterSet.SelectedTypes.Titlecard {
-				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), fmt.Sprintf("Poster set '%s' has no selected image types", posterSet.Title))
-				fileWarnings = append(fileWarnings, fmt.Sprintf("Poster set '%s' has no selected image types", posterSet.Title))
-				go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, posterSet, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
+				setWarnings = append(setWarnings, "poster set has no selected image types")
+				fileWarnings = append(fileWarnings, setWarnings...)
+				SendNotification(
+					FileIssues{Errors: setErrors, Warnings: setWarnings},
+					queueItem.MediaItem.Title,
+					posterSet,
+					mediuxItemInfo.TMDB_PosterPath,
+					mediuxItemInfo.TMDB_BackdropPath,
+				)
 				continue
 			}
 
@@ -162,7 +184,21 @@ func ProcessQueueItems() {
 				case "season_poster":
 					if image.SeasonNumber == nil {
 						continue
-					} else if *image.SeasonNumber == 0 {
+					}
+					// Check if the Media Item contains the season number for this image, if not skip it
+					mediaItemHasSeason := false
+					if queueItem.MediaItem.Series != nil {
+						for _, season := range queueItem.MediaItem.Series.Seasons {
+							if *image.SeasonNumber == season.SeasonNumber {
+								mediaItemHasSeason = true
+								break
+							}
+						}
+					}
+					if !mediaItemHasSeason {
+						continue
+					}
+					if *image.SeasonNumber == 0 {
 						if !posterSet.SelectedTypes.SpecialSeasonPoster {
 							continue
 						}
@@ -172,6 +208,28 @@ func ProcessQueueItems() {
 						}
 					}
 				case "titlecard":
+					// Check if the Media Item contains the Season and Episode numbers for this image, if not skip it
+					mediaItemHasEpisode := false
+					if queueItem.MediaItem.Series != nil {
+						for _, season := range queueItem.MediaItem.Series.Seasons {
+							for _, episode := range season.Episodes {
+								if image.SeasonNumber != nil && *image.SeasonNumber != season.SeasonNumber {
+									continue
+								}
+								if image.EpisodeNumber != nil && *image.EpisodeNumber != episode.EpisodeNumber {
+									continue
+								}
+								mediaItemHasEpisode = true
+								break
+							}
+							if mediaItemHasEpisode {
+								break
+							}
+						}
+					}
+					if !mediaItemHasEpisode {
+						continue
+					}
 					if !posterSet.SelectedTypes.Titlecard {
 						continue
 					}
@@ -181,46 +239,40 @@ func ProcessQueueItems() {
 					continue
 				}
 
-				// Get the Download File Name
 				downloadFileName := utils.GetFileDownloadName(queueItem.MediaItem.Title, image)
-
-				// Download and apply the Image to the Media Item
 				Err := mediaserver.DownloadApplyImageToMediaItem(ctx, &queueItem.MediaItem, image)
 				if Err.Message != "" {
-					subAction.AppendWarning(downloadFileName, "Failed to download and apply image")
-					fileErrors = append(fileErrors, fmt.Sprintf("Failed to download and apply image: %s", Err.Message))
+					setErrors = append(setErrors, fmt.Sprintf("%s: %s", downloadFileName, Err.Message))
 				}
 			}
+
+			// Per-set notification (success/warning/error)
+			SendNotification(
+				FileIssues{Errors: setErrors, Warnings: setWarnings},
+				queueItem.MediaItem.Title,
+				posterSet,
+				mediuxItemInfo.TMDB_PosterPath,
+				mediuxItemInfo.TMDB_BackdropPath,
+			)
+
+			fileErrors = append(fileErrors, setErrors...)
+			fileWarnings = append(fileWarnings, setWarnings...)
 		}
 
-		// Now that all of the images have been processed for this item, upsert into the database
-		Err = database.UpsertSavedItem(ctx, queueItem)
+		Err := database.UpsertSavedItem(ctx, queueItem)
 		if Err.Message != "" {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to upsert item into database")
-			fileErrors = append(fileErrors, fmt.Sprintf("Failed to upsert item into database: %s", Err.Message))
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, models.DBPosterSetDetail{}, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
-			ld.Log()
+			fileErrors = append(fileErrors, fmt.Sprintf("db upsert failed: %s", Err.Message))
+			finalizeAndNotify(
+				queueItem.MediaItem.Title,
+				models.DBPosterSetDetail{},
+				mediuxItemInfo.TMDB_PosterPath,
+				mediuxItemInfo.TMDB_BackdropPath,
+			)
 			continue
 		}
 
-		var finalErr error
-		if len(fileErrors) > 0 {
-			newPath := path.Join(FolderPath, fmt.Sprintf("error_%s", file.Name()))
-			finalErr = os.Rename(filePath, newPath)
-		} else if len(fileWarnings) > 0 {
-			newPath := path.Join(FolderPath, fmt.Sprintf("warning_%s", file.Name()))
-			finalErr = os.Rename(filePath, newPath)
-		} else {
-			finalErr = os.Remove(filePath)
-		}
-		if finalErr != nil {
-			subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to move or delete processed file")
-			fileWarnings = append(fileWarnings, fmt.Sprintf("Failed to move or delete processed file: %s", finalErr.Error()))
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			go SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, models.DBPosterSetDetail{}, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
-			ld.Log()
-			continue
+		if err := finalizeQueueFile(filePath, file.Name(), len(fileErrors) > 0, len(fileWarnings) > 0); err != nil {
+			fileWarnings = append(fileWarnings, fmt.Sprintf("finalize file failed: %v", err))
 		}
 
 		// Handle any labels and tags asynchronously
@@ -229,10 +281,6 @@ func ProcessQueueItems() {
 			logAction := ld.AddAction("Handle Labels and Tags for Added Item", logging.LevelInfo)
 			ctx = logging.WithCurrentAction(ctx, logAction)
 			defer ld.Log()
-
-			fileIssuesMap[file.Name()] = FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			SendNotification(fileIssuesMap[file.Name()], queueItem.MediaItem.Title, models.DBPosterSetDetail{}, mediuxItemInfo.TMDB_PosterPath, mediuxItemInfo.TMDB_BackdropPath)
-
 			selectedTypes := models.SelectedTypes{}
 			for _, posterSet := range queueItem.PosterSets {
 				selectedTypes.Poster = selectedTypes.Poster || posterSet.SelectedTypes.Poster

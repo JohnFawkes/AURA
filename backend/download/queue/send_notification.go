@@ -12,7 +12,13 @@ import (
 	"time"
 )
 
-func SendNotification(fileIssues FileIssues, itemTitle string, posterSet models.DBPosterSetDetail, tmdbPoster, tmdbBackdrop string) {
+func SendNotification(
+	fileIssues FileIssues,
+	itemTitle string,
+	posterSet models.DBPosterSetDetail,
+	tmdbPoster string,
+	tmdbBackdrop string,
+) {
 	if len(config.Current.Notifications.Providers) == 0 || !config.Current.Notifications.Enabled {
 		return
 	}
@@ -26,31 +32,29 @@ func SendNotification(fileIssues FileIssues, itemTitle string, posterSet models.
 		result = LAST_STATUS_SUCCESS
 	}
 
-	notificationTitle := ""
-	messageBody := ""
-
-	var imageURL string
 	if posterSet.ID == "" {
 		posterSet.ID = "Unknown Set ID"
-	} else {
-		imageURL = getImageURLFromPosterSet(posterSet, tmdbPoster, tmdbBackdrop)
 	}
+
+	imageURL := getImageURLFromPosterSet(posterSet, tmdbPoster, tmdbBackdrop)
+
+	notificationTitle := ""
+	messageBody := ""
 
 	switch result {
 	case LAST_STATUS_SUCCESS:
 		notificationTitle = "Download Queue - Success"
-		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.ID)
+		messageBody = fmt.Sprintf("%s (Set: %s)%s", itemTitle, posterSet.ID)
 	case LAST_STATUS_WARNING:
 		notificationTitle = "Download Queue - Warning"
-		messageBody = fmt.Sprintf("%s (Set: %s)\n\nWarnings:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Warnings, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nWarnings:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Warnings, "\n"))
 	case LAST_STATUS_ERROR:
 		notificationTitle = "Download Queue - Error"
-		messageBody = fmt.Sprintf("%s (Set: %s)\n\nErrors:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Errors, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nErrors:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Errors, "\n"))
 		if len(fileIssues.Warnings) > 0 {
 			messageBody += fmt.Sprintf("\n\nWarnings:\n%s", strings.Join(fileIssues.Warnings, "\n"))
 		}
 	}
-
 	// Update the Global LatestInfo
 	LatestInfo.Time = time.Now()
 	LatestInfo.Status = result
@@ -106,15 +110,6 @@ func SendNotification(fileIssues FileIssues, itemTitle string, posterSet models.
 }
 
 func getImageURLFromPosterSet(posterSet models.DBPosterSetDetail, tmdbPoster, tmdbBackdrop string) string {
-
-	// Order for Image Selection:
-	// 1. Poster Set Poster
-	// 2. TMDB Poster
-	// 3. Poster Set Backdrop
-	// 4. TMDB Backdrop
-	// 5. Poster Set Season Posters (first available)
-	// 6. Poster Set Title Cards (first available)
-
 	item_tmdb_id := ""
 	posterURL := ""
 	backdropURL := ""
@@ -165,19 +160,25 @@ func getImageURLFromPosterSet(posterSet models.DBPosterSetDetail, tmdbPoster, tm
 		}
 	}
 
+	// Single-image fallback order:
+	// poster -> tmdb poster -> backdrop -> tmdb backdrop -> season -> titlecard
 	if posterURL != "" {
 		return posterURL
-	} else if tmdbPosterURL != "" {
+	}
+	if tmdbPosterURL != "" {
 		return tmdbPosterURL
-	} else if backdropURL != "" {
+	}
+	if backdropURL != "" {
 		return backdropURL
-	} else if tmdbBackdropURL != "" {
+	}
+	if tmdbBackdropURL != "" {
 		return tmdbBackdropURL
-	} else if seasonURL != "" {
+	}
+	if seasonURL != "" {
 		return seasonURL
-	} else if titlecardURL != "" {
+	}
+	if titlecardURL != "" {
 		return titlecardURL
 	}
-
 	return ""
 }
