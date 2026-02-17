@@ -21,10 +21,7 @@ func applyImageToMediaItem(ctx context.Context, item *models.MediaItem, imageFil
 	// Determine the Item Rating Key from Emby/Jellyfin
 	itemRatingKey := getItemRatingKeyFromImageFile(*item, imageFile)
 	if itemRatingKey == "" {
-		logAction.SetError("Failed to determine Rating Key for Media Item", "Ensure the Media Item and Image File data are correct", map[string]any{
-			"Item":      *item,
-			"ImageFile": imageFile,
-		})
+		logAction.SetError("Failed to determine Rating Key for Media Item", "Ensure the Media Item and Image File data are correct", nil)
 		return *logAction.Error
 	}
 
