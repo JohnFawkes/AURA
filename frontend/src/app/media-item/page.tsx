@@ -305,8 +305,7 @@ const MediaItemPage = () => {
     };
 
     fetchMediaItem();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [librarySectionsHasHydrated, hasError, responseLoading]);
+  }, [librarySectionsHasHydrated, hasError, responseLoading, partialMediaItem, librarySectionsMap, mediaItem]);
 
   // 3. Filtering logic for poster sets
   useEffect(() => {
