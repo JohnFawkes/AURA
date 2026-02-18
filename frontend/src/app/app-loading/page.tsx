@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { H2 } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
@@ -17,6 +18,25 @@ const AppStatusPage: React.FC = () => {
   // Get Onboarding Status
   const status = useOnboardingStore((state) => state.status);
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
+  const fetchStatus = useOnboardingStore((state) => state.fetchStatus);
+
+  // Fetch status on mount
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    // If we have hydrated and the app is fully loaded, redirect to dashboard
+    if (
+      hasHydrated &&
+      status?.app_fully_loaded &&
+      !status?.needs_setup &&
+      status?.config_valid &&
+      status?.config_loaded
+    ) {
+      window.location.href = "/";
+    }
+  }, [hasHydrated, status]);
 
   return (
     <div className="container mx-auto p-4 min-h-screen flex flex-col items-center">
@@ -41,12 +61,15 @@ const AppStatusPage: React.FC = () => {
           <div className="mb-2">
             <b>Needs Setup:</b> {boolBadge(status?.needs_setup)}
           </div>
-          <div className="mb-2">
-            <b>Current Setup:</b>
-            <pre className="bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
-              {JSON.stringify(status?.current_setup, null, 2)}
-            </pre>
-          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              fetchStatus();
+            }}
+          >
+            Refresh Status
+          </Button>
         </div>
       )}
     </div>
