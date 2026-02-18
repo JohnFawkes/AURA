@@ -1,10 +1,57 @@
 package database
 
 import (
+	"aura/cache"
 	"aura/logging"
+	"aura/models"
 	"context"
 	"strings"
 )
+
+func (s *SQliteDB) GetTempIgnoredItems(ctx context.Context) (items []models.MediaItem, Err logging.LogErrorInfo) {
+	Err = logging.LogErrorInfo{}
+	if s == nil || s.conn == nil {
+		return nil, logging.LogErrorInfo{Message: "Database connection is nil"}
+	}
+
+	// Query the database for temp ignored items
+	rows, err := s.conn.QueryContext(ctx, `
+        SELECT tmdb_id, library_title
+        FROM IgnoredItems
+        WHERE mode = 'temp';
+    `)
+	if err != nil {
+		return nil, logging.LogErrorInfo{
+			Message: "Failed to get temp ignored items",
+			Detail:  map[string]any{"error": err.Error()},
+		}
+	}
+	defer rows.Close()
+
+	var tmdbID string
+	var libraryTitle string
+	for rows.Next() {
+		if err := rows.Scan(&tmdbID, &libraryTitle); err != nil {
+			return nil, logging.LogErrorInfo{
+				Message: "Failed to scan temp ignored item",
+				Detail:  map[string]any{"error": err.Error()},
+			}
+		}
+
+		// Get the Media Item from the cache
+		cachedItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(libraryTitle, tmdbID)
+		if !found {
+			logging.LOGGER.Warn().Timestamp().
+				Str("tmdb_id", tmdbID).
+				Str("library_title", libraryTitle).
+				Msg("Temp ignored item not found in cache")
+			continue
+		}
+		items = append(items, *cachedItem)
+	}
+
+	return items, Err
+}
 
 func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode string) (Err logging.LogErrorInfo) {
 	Err = logging.LogErrorInfo{}

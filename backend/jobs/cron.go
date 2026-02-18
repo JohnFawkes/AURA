@@ -20,6 +20,7 @@ var (
 	refreshMediuxUsersJobID              cron.EntryID = 0
 	checkMediuxSiteLinkJobID             cron.EntryID = 0
 	checkForRatingKeyChangesJobID        cron.EntryID = 0
+	handleTempIgnoredItemsJobID          cron.EntryID = 0
 
 	// Configurable
 	autodownloadJobID cron.EntryID = 0
@@ -88,6 +89,8 @@ func GetListOfJobs() []JobInfo {
 				jobInfo.JobName = "Check Mediux Site Link Availability Job"
 			case checkForRatingKeyChangesJobID:
 				jobInfo.JobName = "Check for Rating Key Changes Job"
+			case handleTempIgnoredItemsJobID:
+				jobInfo.JobName = "Handle Temp Ignored Items Job"
 			default:
 				jobInfo.JobName = "Unknown Job"
 			}

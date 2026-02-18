@@ -84,6 +84,9 @@ type DB interface {
 
 	// Stop Ignoring Media Item
 	StopIgnoringMediaItem(ctx context.Context, TMDB_ID, libraryTitle string) (Err logging.LogErrorInfo)
+
+	// Get Temp Ignored Items
+	GetTempIgnoredItems(ctx context.Context) (items []models.MediaItem, Err logging.LogErrorInfo)
 }
 
 func NewDatabaseClient() (DB, logging.LogErrorInfo) {
@@ -270,4 +273,11 @@ func StopIgnoringMediaItem(ctx context.Context, TMDB_ID, libraryTitle string) (E
 		return logging.Error_DBClientNotInitialized()
 	}
 	return Client.StopIgnoringMediaItem(ctx, TMDB_ID, libraryTitle)
+}
+
+func GetTempIgnoredItems(ctx context.Context) (items []models.MediaItem, Err logging.LogErrorInfo) {
+	if Client == nil {
+		return []models.MediaItem{}, logging.Error_DBClientNotInitialized()
+	}
+	return Client.GetTempIgnoredItems(ctx)
 }
