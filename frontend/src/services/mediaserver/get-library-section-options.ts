@@ -11,10 +11,10 @@ export interface GetLibrarySectionOptions_Request {
   media_server: AppConfigMediaServer;
 }
 export interface GetLibrarySectionOptions_Response {
-  librarySections: LibrarySection[];
+  library_sections: LibrarySection[];
 }
 
-export const getLibrarySectionOptions = async (
+export const GetLibrarySectionOptions = async (
   config: AppConfigMediaServer
 ): Promise<APIResponse<GetLibrarySectionOptions_Response>> => {
   log("INFO", "API - Media Server", "Fetch Library Section Options", "Fetching all library section options");
