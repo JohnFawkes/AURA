@@ -1,6 +1,6 @@
 "use client";
 
-import { refreshMediaItem } from "@/services/mediaserver/item-refresh";
+import { RefreshMediaItemMetadata } from "@/services/mediaserver/media-item-refresh";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -188,7 +188,7 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 
   const refreshByRatingKey = async (refreshKey: string, refreshTitle: string) => {
     try {
-      const response = await refreshMediaItem(mediaItem, refreshTitle, refreshKey);
+      const response = await RefreshMediaItemMetadata(mediaItem, refreshTitle, refreshKey);
       if (response.status === "error") {
         throw new Error(response.error?.message || "Unknown error refreshing media server item");
       }

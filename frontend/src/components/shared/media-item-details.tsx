@@ -1,6 +1,6 @@
 "use client";
 
-import { addIgnoreItemToDB, stopIgnoringItemInDB } from "@/services/database/item-ignore";
+import { IgnoreItemInDB, StopIgnoringItemInDB } from "@/services/database/ignore";
 import {
   ChevronDown,
   Database,
@@ -122,7 +122,7 @@ export function MediaItemDetails({
   };
 
   const handleAddToIgnoredClick = async (ignoreMode: string) => {
-    const addToDBResp = await addIgnoreItemToDB(tmdbID, libraryTitle, ignoreMode);
+    const addToDBResp = await IgnoreItemInDB(tmdbID, libraryTitle, ignoreMode);
     if (addToDBResp.status === "error") {
       toast.error(`Failed to add ${title} to DB`);
       return;
@@ -145,7 +145,7 @@ export function MediaItemDetails({
       return;
     }
 
-    const addToDBResp = await stopIgnoringItemInDB(mediaItem.tmdb_id, mediaItem.library_title);
+    const addToDBResp = await StopIgnoringItemInDB(mediaItem.tmdb_id, mediaItem.library_title);
     if (addToDBResp.status === "error") {
       toast.error(`Failed to stop ignoring ${title}`);
       return;

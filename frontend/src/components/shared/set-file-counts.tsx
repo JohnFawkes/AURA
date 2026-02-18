@@ -183,87 +183,138 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
     });
 
     // --- Analyze for missing items ---
-    SeasonsAndEpisodesMap.forEach((seasonInfo, season_number) => {
-      let missingEntireSeason = false;
-      // Season/Season Poster
-      if (seasonInfo.inMediaItem) {
-        if (seasonInfo.inSet) {
-          // All good
-        } else {
-          if (seasonInfo.setHasSeasonPoster) {
-            missingFromSet.push(`Season ${season_number} Poster`);
-          } else {
-            // Set doesn't contain season posters, all good
-          }
-        }
-      } else if (seasonInfo.inSet) {
-        if (seasonInfo.setHasSeasonPoster) {
-          missingEntireSeason = true;
-          if (season_number === 0) {
-            missingFromServer.push(`Special Season`);
-          } else {
-            missingFromServer.push(
-              `Season ${season_number} ${seasonInfo.episodes.length > 0 ? `(${seasonInfo.episodes.length} Episode${seasonInfo.episodes.length > 1 ? "s" : ""}) ` : ""}`
-            );
-            seasonInfo.episodes.forEach(() => {
-              missingFromServer.push("");
-            });
-          }
-        }
-      }
 
-      // Episodes/Titlecards
-      seasonInfo.episodes.forEach((epInfo) => {
-        if (epInfo.inMediaItem) {
-          if (epInfo.inSet) {
-            // All good
+    // 1. Missing from Set
+    // Only check for missing if the set contains season posters or titlecards
+    const setHasAnySeasonPoster = set.images.some((img) => img.type === "season_poster");
+    const setHasAnyTitlecard = set.images.some((img) => img.type === "titlecard");
+
+    // For each season in the media item, check if it's missing from the set (season poster)
+    if (setHasAnySeasonPoster) {
+      mediaSeasons.forEach((season) => {
+        const hasPoster = setSeasonPosters.some((img) => img.season_number === season.season_number);
+        if (!hasPoster) {
+          if (season.season_number === 0) {
+            missingFromSet.push(`Special Season Poster`);
           } else {
-            if (epInfo.setHasTitlecard) {
-              missingFromSet.push(
-                `S${season_number}E${epInfo.episode_number} Titlecard ${epInfo.title ? `- ${epInfo.title}` : ""}`
-              );
-            } else {
-              // Set doesn't contain titlecards, all good
-            }
-          }
-        } else if (epInfo.inSet) {
-          if (epInfo.setHasTitlecard) {
-            if (seasonInfo.setHasSeasonPoster) {
-              if (!missingEntireSeason) {
-                missingFromServer.push(
-                  `Season ${season_number} Episode ${epInfo.episode_number} ${epInfo.title ? `- ${epInfo.title}` : ""}`
-                );
-              }
-            } else {
-              // If all episodes are missing, list season instead
-              const allEpisodesMissing = seasonInfo.episodes.every((ep) => ep.inSet && ep.setHasTitlecard);
-              if (allEpisodesMissing) {
-                if (
-                  !missingFromServer.includes(
-                    `Season ${season_number} (${seasonInfo.episodes.length} Episode${seasonInfo.episodes.length > 1 ? "s" : ""})`
-                  )
-                ) {
-                  missingFromServer.push(
-                    `Season ${season_number} (${seasonInfo.episodes.length} Episode${seasonInfo.episodes.length > 1 ? "s" : ""})`
-                  );
-                  // Subtract one episode, this is so that we don't double-list episodes
-                  seasonInfo.episodes.slice(1).forEach(() => {
-                    missingFromServer.push("");
-                  });
-                }
-              } else {
-                missingFromServer.push(
-                  `S${season_number}E${epInfo.episode_number} ${epInfo.title ? `- ${epInfo.title}` : ""}`
-                );
-              }
-            }
+            missingFromSet.push(`Season ${String(season.season_number).padStart(2, "0")} Poster`);
           }
         }
       });
+    }
+
+    // For each episode in the media item, check if it's missing from the set (titlecard)
+    if (setHasAnyTitlecard) {
+      mediaSeasons.forEach((season) => {
+        const totalEpisodes = (season.episodes ?? []).length;
+        let missingCount = 0;
+        const samples: string[] = [];
+
+        (season.episodes ?? []).forEach((ep) => {
+          const hasTitlecard = setTitlecards.some(
+            (img) => img.season_number === season.season_number && img.episode_number === ep.episode_number
+          );
+          if (!hasTitlecard) {
+            missingCount++;
+            if (season.season_number === 0) {
+              samples.push(`Special Season Episode ${ep.episode_number}${ep.title ? ` - ${ep.title}` : ""}`);
+            } else {
+              samples.push(
+                `S${String(season.season_number).padStart(2, "0")}E${String(ep.episode_number).padStart(2, "0")} Titlecard${ep.title ? ` - ${ep.title}` : ""}`
+              );
+            }
+          }
+        });
+
+        if (missingCount === totalEpisodes && totalEpisodes > 0) {
+          if (season.season_number === 0) {
+            missingFromSet.push(`Special Season Titlecards (${totalEpisodes} episode${totalEpisodes > 1 ? "s" : ""})`);
+          } else {
+            missingFromSet.push(
+              `Season ${String(season.season_number).padStart(2, "0")} Titlecards (${totalEpisodes} episode${totalEpisodes > 1 ? "s" : ""})`
+            );
+          }
+          for (let i = 0; i < samples.length - 1; i++) {
+            missingFromSet.push("");
+          }
+        } else {
+          missingFromSet.push(...samples);
+        }
+      });
+    }
+
+    // Track summarized seasons
+    const summarizedSeasons = new Set<number>();
+
+    // For each titlecard in the set, check if the media item has this episode
+    const missingEpisodesBySeason: { [season: number]: { total: number; missing: number; samples: string[] } } = {};
+
+    setTitlecards.forEach((img) => {
+      const season = mediaSeasons.find((s) => s.season_number === img.season_number);
+      const hasEpisode = !!season && (season.episodes ?? []).some((ep) => ep.episode_number === img.episode_number);
+
+      if (!hasEpisode) {
+        if (!missingEpisodesBySeason[img.season_number!]) {
+          const total = setTitlecards.filter((tc) => tc.season_number === img.season_number).length;
+          missingEpisodesBySeason[img.season_number!] = { total, missing: 0, samples: [] };
+        }
+        missingEpisodesBySeason[img.season_number!].missing++;
+        missingEpisodesBySeason[img.season_number!].samples.push(
+          `S${String(img.season_number).padStart(2, "0")}E${String(img.episode_number).padStart(2, "0")}${img.title ? ` - ${img.title}` : ""}`
+        );
+      }
+    });
+
+    // If all episodes in a season are missing, just display the season summary
+    Object.entries(missingEpisodesBySeason).forEach(([seasonNum, info]) => {
+      if (info.missing === info.total) {
+        summarizedSeasons.add(Number(seasonNum));
+        if (seasonNum === "0") {
+          missingFromServer.push(`Special Season (${info.total} Episode${info.total > 1 ? "s" : ""})`);
+        } else {
+          missingFromServer.push(
+            `Season ${String(seasonNum).padStart(2, "0")} (${info.total} Episode${info.total > 1 ? "s" : ""})`
+          );
+        }
+        // Remove individual episode samples for this season
+        for (let i = 0; i < info.samples.length - 1; i++) {
+          missingFromServer.push("");
+        }
+      } else {
+        missingFromServer.push(...info.samples);
+      }
+    });
+
+    // For each season poster in the set, check if the media item has this season
+    setSeasonPosters.forEach((img) => {
+      // Only push if not already summarized above
+      if (
+        !mediaSeasons.some((season) => season.season_number === img.season_number) &&
+        !summarizedSeasons.has(img.season_number!)
+      ) {
+        missingFromServer.push(
+          img.season_number === 0 ? `Special Season` : `Season ${String(img.season_number).padStart(2, "0")}`
+        );
+      }
     });
 
     missingFromSet.sort();
-    missingFromServer.sort();
+    missingFromServer.sort((a, b) => {
+      // Special Season first
+      if (a.startsWith("Special Season") && !b.startsWith("Special Season")) return -1;
+      if (!a.startsWith("Special Season") && b.startsWith("Special Season")) return 1;
+
+      // Then Season XX
+      const seasonRegex = /^Season \d{2}/;
+      const aIsSeason = seasonRegex.test(a);
+      const bIsSeason = seasonRegex.test(b);
+
+      if (aIsSeason && !bIsSeason) return -1;
+      if (!aIsSeason && bIsSeason) return 1;
+
+      // Otherwise, sort alphabetically
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
 
     return {
       line1: line1Parts.join(" • "),
@@ -350,9 +401,7 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
                       <>
                         <div className="font-semibold">Missing from Set</div>
                         <ul className="text-sm list-disc list-inside">
-                          {showResult.missingFromSet.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
+                          {showResult.missingFromSet.map((item, idx) => item !== "" && <li key={idx}>{item}</li>)}
                         </ul>
                       </>
                     )}

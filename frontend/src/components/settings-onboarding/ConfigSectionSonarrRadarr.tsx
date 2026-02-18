@@ -1,5 +1,5 @@
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { checkSonarrRadarrNewAPIKeyStatusResult } from "@/services/validation/sonarr-radarr";
+import { ValidateSonarrRadarrInfo } from "@/services/validation/sonarr-radarr";
 import { Plus, TestTube, Trash2 } from "lucide-react";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -156,7 +156,7 @@ export const ConfigSectionSonarrRadarr: React.FC<ConfigSectionSonarrRadarrProps>
 
       try {
         const start = Date.now();
-        const { ok, message } = await checkSonarrRadarrNewAPIKeyStatusResult(app, showToast);
+        const { ok, message } = await ValidateSonarrRadarrInfo(app, showToast);
         const elapsed = Date.now() - start;
         const minDelay = 400; // milliseconds
 

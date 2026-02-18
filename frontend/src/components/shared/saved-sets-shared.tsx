@@ -1,8 +1,8 @@
 import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
-import { deleteItemFromDB } from "@/services/database/item-delete";
-import { updateItemInDB } from "@/services/database/item-update";
-import { getMediaItemContent } from "@/services/mediaserver/item-details";
-import { getSetByID } from "@/services/mediux/set-by-id";
+import { DeleteItemFromDB } from "@/services/database/delete";
+import { UpdateItemInDB } from "@/services/database/update";
+import { GetMediaItemDetails } from "@/services/mediaserver/get-media-item-details";
+import { GetSetByID } from "@/services/mediux/get-set-by-id";
 import { User } from "lucide-react";
 
 import React from "react";
@@ -64,7 +64,7 @@ export const refreshPosterSet = async ({
         }
 
         // Update the media item in the backend store by calling fetchMediaServerItemContent
-        const resp = await getMediaItemContent(
+        const resp = await GetMediaItemDetails(
           savedSet.media_item.title,
           savedSet.media_item.rating_key,
           savedSet.media_item.library_title
@@ -80,7 +80,7 @@ export const refreshPosterSet = async ({
           return;
         }
 
-        const response = await getSetByID(
+        const response = await GetSetByID(
           savedSet.media_item.library_title,
           savedSet.media_item.tmdb_id,
           set.id,
@@ -220,7 +220,7 @@ export const handleStopIgnoring = async (
 ) => {
   if (unignoreLoading) return;
   setUnignoreLoading(true);
-  const resp = await deleteItemFromDB(savedSet);
+  const resp = await DeleteItemFromDB(savedSet);
   if (!resp || resp.status === "error") {
     log("ERROR", "Saved Sets Shared", "handleStopIgnoring", resp?.error?.message || "Unknown error");
     setUpdateError(resp);
@@ -303,7 +303,7 @@ export const savedSetsConfirmEdit = async ({
     })),
   };
 
-  const response = await updateItemInDB(updatedSavedSet);
+  const response = await UpdateItemInDB(updatedSavedSet);
   if (!response || response.status === "error") {
     log("ERROR", "Saved Sets Shared", "savedSetsConfirmEdit", response?.error?.message || "Unknown error");
     setUpdateError(response);
@@ -335,7 +335,7 @@ export const savedSetsConfirmDelete = async ({
 }) => {
   if (isMounted) return;
   setIsMounted(true);
-  const resp = await deleteItemFromDB(savedSet);
+  const resp = await DeleteItemFromDB(savedSet);
   if (!resp || resp.status === "error") {
     log("ERROR", "Saved Sets Shared", "savedSetsConfirmDelete", resp?.error?.message || "Unknown error");
     setUpdateError(resp);

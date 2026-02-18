@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { rateMediaItem } from "@/services/mediaserver/item-rate";
+import { RateMediaItem } from "@/services/mediaserver/media-item-rate";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,7 +82,7 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await rateMediaItem(mediaItem, rating);
+      const response = await RateMediaItem(mediaItem, rating);
       if (response.status === "error") {
         throw new Error(response.error?.message || "Unknown error rating media item");
       }

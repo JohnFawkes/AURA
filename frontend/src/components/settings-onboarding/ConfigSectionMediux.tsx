@@ -1,6 +1,6 @@
 "use client";
 
-import { validateMediuxInfo } from "@/services/validation/mediux";
+import { ValidateMediuxInfo } from "@/services/validation/mediux";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -87,7 +87,7 @@ export const ConfigSectionMediux: React.FC<ConfigSectionMediuxProps> = ({
 
       setTestingToken(true);
       const start = Date.now();
-      const { valid, message } = await validateMediuxInfo(value, showToast);
+      const { valid, message } = await ValidateMediuxInfo(value, showToast);
       const elapsed = Date.now() - start;
       const minDelay = 400; // milliseconds
 

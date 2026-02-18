@@ -2,7 +2,7 @@
 
 import { formatUnixSeconds } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { runSearch } from "@/services/search/api-search";
+import { HandleSearch } from "@/services/search/api-search";
 import { BookmarkIcon, EyeOff, Film, FilmIcon, Search, Star, TvIcon, User, UserIcon, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -198,7 +198,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
       setSearchQuery(searchInput);
 
       try {
-        const searchResp = await runSearch({
+        const searchResp = await HandleSearch({
           searchQuery: searchInput,
           searchMediaItems: filters.mediaItem,
           searchMediuxUsers: filters.mediuxUser,
@@ -209,7 +209,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
           return;
         }
         const results = searchResp.data;
-        const respError = searchResp.data?.error;
+        const respError = searchResp.error;
 
         if (respError) {
           setError(searchResp);

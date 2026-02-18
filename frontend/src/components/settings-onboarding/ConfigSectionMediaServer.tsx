@@ -1,9 +1,9 @@
 "use client";
 
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { PlexServersResponse, checkAuthStatusWithPlex, getPlexPinCodeAndIDFromBackend } from "@/services/auth/plex";
-import { getLibrarySectionOptions } from "@/services/mediaserver/library-get-all";
-import { validateMediaServerInfo } from "@/services/validation/api-mediaserver-connection";
+import { getLibrarySectionOptions } from "@/services/mediaserver/get-library-section-options";
+import { CheckAuthStatusWithPlex, GetPlexPinAndID, PlexServersResponse } from "@/services/mediaserver/plex";
+import { ValidateMediaServerInfo } from "@/services/validation/mediaserver";
 import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -187,7 +187,7 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
       setTestingToken(true);
       const start = Date.now();
-      const { valid, message, media_server } = await validateMediaServerInfo(current, showToast);
+      const { valid, message, media_server } = await ValidateMediaServerInfo(current, showToast);
       const elapsed = Date.now() - start;
       const minDelay = 400; // milliseconds
 
@@ -252,8 +252,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
 
   // Plex OAuth Flow (Get PIN and ID)
   const handleGetPlexPinAndID = async () => {
-    const { ok, plex_pin, plex_id } = await getPlexPinCodeAndIDFromBackend();
-    if (!ok) return;
+    const resp = await GetPlexPinAndID();
+    if (resp.status !== "success" || !resp.data?.plex_id || !resp.data?.plex_pin) {
+      return;
+    }
+    const { plex_id, plex_pin } = resp.data;
     setPlexPIN(plex_pin);
     setPlexID(plex_id);
   };
@@ -282,8 +285,11 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
     if (plexID === "" || plexPIN === "" || !plexOAuthWindow) return;
 
     const interval = setInterval(async () => {
-      const { ok, authenticated, auth_token, connections_available } = await checkAuthStatusWithPlex(plexID);
-      if (!ok) return;
+      const resp = await CheckAuthStatusWithPlex(plexID);
+      if (resp.status !== "success" || !resp.data) {
+        return;
+      }
+      const { authenticated, auth_token, connections_available } = resp.data;
       if (authenticated) {
         // Set the token and available connections
         onChange("api_token", auth_token || "");

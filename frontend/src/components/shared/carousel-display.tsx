@@ -252,7 +252,30 @@ export function CarouselDisplay({
                     })
                     .map(([season, cards]) =>
                       (cards as typeof set.images)
-                        .sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime())
+                        .sort((a, b) => {
+                          // Prioritize available episodes if dimNotFound is enabled
+                          if (dimNotFound) {
+                            const aAvail = hasEpisode(
+                              includedItems,
+                              a.item_tmdb_id as string,
+                              a.season_number || 0,
+                              a.episode_number
+                            )
+                              ? 1
+                              : 0;
+                            const bAvail = hasEpisode(
+                              includedItems,
+                              b.item_tmdb_id as string,
+                              b.season_number || 0,
+                              b.episode_number
+                            )
+                              ? 1
+                              : 0;
+                            if (aAvail !== bAvail) return bAvail - aAvail; // available first
+                          }
+                          // Newest modified first
+                          return new Date(b.modified).getTime() - new Date(a.modified).getTime();
+                        })
                         .slice(0, 3)
                         .map((card) => (
                           <CarouselItem key={`${set.id}-titlecard-${season}-${card.id}`}>
@@ -310,14 +333,30 @@ export function hasEpisode(
   episode_number?: number
 ): boolean {
   const inServer = isInServer(includedItems, tmdbId);
-  if (!inServer || typeof inServer === "boolean") return false;
+  if (!inServer || typeof inServer === "boolean") {
+    console.warn("hasEpisode: Media item not found in server", { tmdbId });
+    return false;
+  }
   const mediaItem = inServer as MediaItem;
-  if (!mediaItem.series) return false;
+  if (!mediaItem.series) {
+    console.warn("hasEpisode: No series data", { tmdbId });
+    return false;
+  }
   const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
-  if (!season) return false;
-  if (episode_number == null) return false;
+  if (!season) {
+    console.warn("hasEpisode: Season not found", { tmdbId, season_number });
+    return false;
+  }
+  if (episode_number == null) {
+    console.warn("hasEpisode: Episode number missing", { tmdbId, season_number });
+    return false;
+  }
   const episode = season.episodes.find((e) => e.episode_number === episode_number);
-  return episode !== undefined;
+  if (!episode) {
+    console.warn("hasEpisode: Episode not found", { tmdbId, season, episode_number });
+    return false;
+  }
+  return true;
 }
 
 type MediuxInfoDateFields = {

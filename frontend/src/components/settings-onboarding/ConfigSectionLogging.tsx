@@ -1,6 +1,6 @@
 "use client";
 
-import { clearLogFile } from "@/services/logs/logs-clear";
+import { ClearLogFiles } from "@/services/logs/clear";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -61,12 +61,12 @@ export const ConfigSectionLogging: React.FC<ConfigSectionLoggingProps> = ({
 
   const handleClearOldLogs = async () => {
     try {
-      const response = await clearLogFile();
+      const response = await ClearLogFiles();
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to clear old logs");
         return;
       }
-      toast.success(response.data || "Old logs cleared successfully");
+      toast.success(response.data?.message || "Old logs cleared successfully");
     } catch {
       toast.error("An unexpected error occurred");
     }

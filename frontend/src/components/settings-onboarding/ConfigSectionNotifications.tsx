@@ -1,7 +1,7 @@
 "use client";
 
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { sendTestNotification } from "@/services/notifications/test";
+import { SendTestNotification } from "@/services/validation/notification";
 import { Plus, TestTube, Trash2 } from "lucide-react";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -372,7 +372,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
       try {
         const start = Date.now();
-        const { ok, message } = await sendTestNotification(provider, showToast);
+        const { ok, message } = await SendTestNotification(provider, showToast);
         const elapsed = Date.now() - start;
         const minDelay = 400;
 

@@ -2,10 +2,10 @@
 
 import { formatDownloadSize } from "@/helper/format-download-size";
 import { upsertSavedSets } from "@/helper/media-item-update-saved-sets";
-import { addNewItemToDB } from "@/services/database/item-add";
+import { AddNewItemToDB } from "@/services/database/add";
 import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
-import { addItemToDownloadQueue } from "@/services/downloads/queue-add";
-import { getMediaItemContent } from "@/services/mediaserver/item-details";
+import { AddItemToDownloadQueue } from "@/services/downloads/queue-add";
+import { GetMediaItemDetails } from "@/services/mediaserver/get-media-item-details";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Check,
@@ -669,7 +669,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     setCurrentText(`Adding "${payload.itemTitle}" to DB`);
 
     try {
-      const resp = await addNewItemToDB(payload.mediaItem, payload.posterSet);
+      const resp = await AddNewItemToDB(payload.mediaItem, payload.posterSet);
       if (resp.status === "error") {
         throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
       }
@@ -695,7 +695,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     setCurrentText(`Adding "${payload.itemTitle}" to queue`);
 
     try {
-      const resp = await addItemToDownloadQueue(payload.dbItem);
+      const resp = await AddItemToDownloadQueue(payload.dbItem);
       if (resp.status === "error") {
         throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
       }
@@ -1194,7 +1194,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         }
 
         // Get the latest media item from the server
-        const latestMediaItemResp = await getMediaItemContent(
+        const latestMediaItemResp = await GetMediaItemDetails(
           item.MediaItem.title,
           item.MediaItem.rating_key,
           item.MediaItem.library_title,

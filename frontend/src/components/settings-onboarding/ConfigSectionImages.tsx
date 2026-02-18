@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { postClearTempImagesFolder } from "@/services/images/api-images-actions";
+import { DeleteTempImages } from "@/services/images/api-images-actions";
 import { toast } from "sonner";
 
 import React, { useEffect, useRef } from "react";
@@ -60,12 +60,12 @@ export const ConfigSectionImages: React.FC<ConfigSectionImagesProps> = ({
 
   const clearTempImagesFolder = async () => {
     try {
-      const response = await postClearTempImagesFolder();
+      const response = await DeleteTempImages();
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to clear temp images folder");
         return;
       }
-      toast.success(response.data || "Temp images folder cleared successfully");
+      toast.success(response.data?.message || "Temp images folder cleared successfully");
     } catch (error) {
       const errorResponse = ReturnErrorMessage<void>(error);
       toast.error(errorResponse.error?.message || "An unexpected error occurred");

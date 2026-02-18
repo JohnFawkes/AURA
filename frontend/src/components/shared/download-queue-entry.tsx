@@ -1,6 +1,6 @@
 "use client";
 
-import { removeItemFromQueue } from "@/services/downloads/queue-remove";
+import { RemoveItemFromQueue } from "@/services/downloads/queue-remove";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,13 +47,13 @@ const DownloadQueueEntry: React.FC<{
 
   const onDeleteConfirm = async () => {
     try {
-      const response = await removeItemFromQueue(entry);
+      const response = await RemoveItemFromQueue(entry);
       if (response.status === "error") {
         toast.error(
           `Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
         );
       } else {
-        toast.success(response.data || "Successfully deleted from queue.");
+        toast.success(response.data?.result || "Successfully deleted from queue.");
       }
     } catch (error) {
       toast.error(
