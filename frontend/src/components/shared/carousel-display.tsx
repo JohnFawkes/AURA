@@ -334,26 +334,21 @@ export function hasEpisode(
 ): boolean {
   const inServer = isInServer(includedItems, tmdbId);
   if (!inServer || typeof inServer === "boolean") {
-    console.warn("hasEpisode: Media item not found in server", { tmdbId });
     return false;
   }
   const mediaItem = inServer as MediaItem;
   if (!mediaItem.series) {
-    console.warn("hasEpisode: No series data", { tmdbId });
     return false;
   }
   const season = mediaItem.series.seasons.find((s) => s.season_number === season_number);
   if (!season) {
-    console.warn("hasEpisode: Season not found", { tmdbId, season_number });
     return false;
   }
   if (episode_number == null) {
-    console.warn("hasEpisode: Episode number missing", { tmdbId, season_number });
     return false;
   }
   const episode = season.episodes.find((e) => e.episode_number === episode_number);
   if (!episode) {
-    console.warn("hasEpisode: Episode not found", { tmdbId, season, episode_number });
     return false;
   }
   return true;
