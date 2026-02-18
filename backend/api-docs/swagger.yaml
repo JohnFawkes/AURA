@@ -1,5 +1,31 @@
 basePath: /
 definitions:
+  autodownload.AutoDownloadResult:
+    properties:
+      item:
+        type: string
+      overall_message:
+        type: string
+      overall_result:
+        type: string
+      sets:
+        items:
+          $ref: '#/definitions/autodownload.AutoDownloadSetResult'
+        type: array
+    type: object
+  autodownload.AutoDownloadSetResult:
+    properties:
+      id:
+        type: string
+      reason:
+        type: string
+      result:
+        type: string
+      title:
+        type: string
+      user_created:
+        type: string
+    type: object
   config.Config:
     properties:
       auth:
@@ -70,6 +96,21 @@ definitions:
       enabled:
         description: Whether to enable caching of images.
         type: boolean
+    type: object
+  config.Config_CustomNotification:
+    properties:
+      enabled:
+        description: Whether custom notifications are enabled.
+        type: boolean
+      include_image:
+        description: Whether to include an image with the custom notification.
+        type: boolean
+      message:
+        description: Message for the custom notification.
+        type: string
+      title:
+        description: Title for the custom notification.
+        type: string
     type: object
   config.Config_Database:
     properties:
@@ -234,6 +275,41 @@ definitions:
         description: URL for the Webhook notification provider.
         type: string
     type: object
+  config.Config_NotificationTemplate:
+    properties:
+      app_startup:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for application startup.
+      autodownload:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for auto-download events.
+      download_queue_error:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for download queue events with errors.
+      download_queue_success:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for successful download queue events.
+      download_queue_warning:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for download queue events with warnings.
+      sonarr_download_new:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for new Sonarr downloads.
+      sonarr_download_upgrade:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for Sonarr download upgrades.
+      test_notification:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for test notifications.
+    type: object
   config.Config_Notifications:
     properties:
       enabled:
@@ -244,6 +320,10 @@ definitions:
         items:
           $ref: '#/definitions/config.Config_Notification_Provider'
         type: array
+      templates:
+        allOf:
+        - $ref: '#/definitions/config.Config_NotificationTemplate'
+        description: Custom notification templates for different events
     type: object
   config.Config_SaveImagesLocally:
     properties:
@@ -289,16 +369,382 @@ definitions:
     type: object
   config.Config_TMDB:
     type: object
+  downloadqueue.Status:
+    enum:
+    - Success
+    - Warning
+    - Error
+    - Idle - Queue Empty
+    - Processing
+    type: string
+    x-enum-varnames:
+    - LAST_STATUS_SUCCESS
+    - LAST_STATUS_WARNING
+    - LAST_STATUS_ERROR
+    - LAST_STATUS_IDLE
+    - LAST_STATUS_PROCESSING
+  httpx.JSONResponse:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/logging.LogErrorInfo'
+      status:
+        example: success
+        type: string
+    type: object
+  httpx.UnauthorizedResponse:
+    properties:
+      message:
+        example: Invalid or expired token
+        type: string
+    type: object
+  jobs.JobInfo:
+    properties:
+      id:
+        type: integer
+      job_name:
+        type: string
+      next_run:
+        type: string
+      prev_run:
+        type: string
+      spec:
+        type: string
+    type: object
+  logging.LogAction:
+    properties:
+      elapsed_us:
+        description: Elapsed time for the action in microseconds
+        type: integer
+      error:
+        allOf:
+        - $ref: '#/definitions/logging.LogErrorInfo'
+        description: Optional error details (omitted when nil)
+      level:
+        description: Optional level for UI filtering (e.g. "trace", "debug","info","warn","error")
+        type: string
+      name:
+        description: 'Human name for the action: "Query DB", "Call External API"'
+        type: string
+      result:
+        additionalProperties: {}
+        description: Optional result data
+        type: object
+      status:
+        description: '"success", "error", or "warn"'
+        type: string
+      sub_actions:
+        description: Optional nested sub-actions
+        items:
+          $ref: '#/definitions/logging.LogAction'
+        type: array
+      timestamp:
+        description: When the action started (useful for ordering)
+        type: string
+      warnings:
+        additionalProperties: {}
+        description: Warning message (if any)
+        type: object
+    type: object
+  logging.LogData:
+    properties:
+      actions:
+        description: Slice of actions within this operation
+        items:
+          $ref: '#/definitions/logging.LogAction'
+        type: array
+      elapsed_us:
+        description: Elapsed time in microseconds
+        type: integer
+      level:
+        description: Optional level for UI filtering (e.g. "trace", "debug","info","warn","error")
+        type: string
+      message:
+        description: 'Human name for the overall operation: "Add to DB", "Fetch All
+          Media Items" or Route.Path'
+        type: string
+      route:
+        allOf:
+        - $ref: '#/definitions/logging.LogRouteInfo'
+        description: Optional route metadata (nil for background jobs)
+      status:
+        description: 'Status: "success", "error", or "warn"'
+        type: string
+      time:
+        description: Time of the log entry (same as Timestamp, kept for compatibility)
+        type: string
+      timestamp:
+        description: When the operation started
+        type: string
+    type: object
+  logging.LogErrorInfo:
+    properties:
+      detail:
+        type: object
+      function:
+        example: Reload
+        type: string
+      help:
+        example: Check server logs for more details
+        type: string
+      line_number:
+        example: 42
+        type: integer
+      message:
+        example: Invalid or expired token
+        type: string
+    type: object
+  logging.LogRouteInfo:
+    properties:
+      ip:
+        description: Client IP address (middleware can capture)
+        type: string
+      method:
+        description: HTTP method (e.g. GET, POST)
+        type: string
+      params:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: 'Query/path/route params: map[string][]string to preserve multiple
+          values'
+        type: object
+      path:
+        description: Registered route path (e.g. /api/v1/media/{id})
+        type: string
+      response_bytes:
+        description: Number of bytes written in the response (middleware can capture)
+        type: integer
+    type: object
+  models.BaseMediuxItemInfo:
+    properties:
+      date_updated:
+        description: Last update for the Movie/Show info
+        type: string
+      imdb_id:
+        description: IMDB ID of the item
+        type: string
+      release_date:
+        description: Release date of the item
+        type: string
+      slug:
+        description: Slug of the item
+        type: string
+      status:
+        description: Status of the item (returning, ended, etc.)
+        type: string
+      tagline:
+        description: Tagline of the item
+        type: string
+      title:
+        description: Title of the item
+        type: string
+      tmdb_backdrop_path:
+        description: TMDB Backdrop path
+        type: string
+      tmdb_id:
+        description: TMDB ID of the item
+        type: string
+      tmdb_poster_path:
+        description: TMDB Poster path
+        type: string
+      trakt_id:
+        description: Trakt ID of the item
+        type: string
+      tvdb_id:
+        description: TVDB ID (for shows)
+        type: string
+      type:
+        description: Item type (movie, show)
+        type: string
+    type: object
+  models.BoxsetRef:
+    properties:
+      date_created:
+        description: Creation date
+        type: string
+      date_updated:
+        description: Last updated date
+        type: string
+      id:
+        description: Set ID
+        type: string
+      popularity:
+        description: Popularity score of the set
+        type: integer
+      popularity_global:
+        description: Global popularity score of the set
+        type: integer
+      set_ids:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: IDs of sets (show, movie, collection) in this boxset
+        type: object
+      title:
+        description: Set Title
+        type: string
+      type:
+        description: Set Type (movie, show, collection, boxset)
+        type: string
+      user_created:
+        description: User who created the set
+        type: string
+    type: object
+  models.CollectionItem:
+    properties:
+      child_count:
+        type: integer
+      index:
+        description: Unique identifier for the collection in Plex
+        type: string
+      library_title:
+        type: string
+      media_items:
+        items:
+          $ref: '#/definitions/models.MediaItem'
+        type: array
+      rating_key:
+        type: string
+      summary:
+        type: string
+      title:
+        type: string
+      tmdb_id:
+        type: string
+    type: object
+  models.CreatorSetsResponse:
+    properties:
+      boxsets:
+        description: List of boxsets
+        items:
+          $ref: '#/definitions/models.BoxsetRef'
+        type: array
+      collection_sets:
+        description: List of collection sets
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+      included_items:
+        additionalProperties:
+          $ref: '#/definitions/models.IncludedItem'
+        description: Map of included items by TMDB ID
+        type: object
+      movie_sets:
+        description: List of movie sets
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+      show_sets:
+        description: List of show sets
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+    type: object
+  models.DBPosterSetDetail:
+    properties:
+      auto_download:
+        type: boolean
+      date_created:
+        description: Creation date
+        type: string
+      date_updated:
+        description: Last updated date
+        type: string
+      id:
+        description: Set ID
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/models.ImageFile'
+        type: array
+      last_downloaded:
+        type: string
+      popularity:
+        description: Popularity score of the set
+        type: integer
+      popularity_global:
+        description: Global popularity score of the set
+        type: integer
+      selected_types:
+        $ref: '#/definitions/models.SelectedTypes'
+      title:
+        description: Set Title
+        type: string
+      to_delete:
+        description: Flag to indicate if the poster set should be deleted (Not used
+          in DB)
+        type: boolean
+      type:
+        description: Set Type (movie, show, collection, boxset)
+        type: string
+      user_created:
+        description: User who created the set
+        type: string
+    type: object
+  models.DBSavedItem:
+    properties:
+      media_item:
+        $ref: '#/definitions/models.MediaItem'
+      poster_sets:
+        items:
+          $ref: '#/definitions/models.DBPosterSetDetail'
+        type: array
+    type: object
   models.DBSavedSet:
     properties:
       id:
         type: string
       selected_types:
-        items:
-          type: string
-        type: array
+        $ref: '#/definitions/models.SelectedTypes'
       user_created:
         type: string
+    type: object
+  models.ImageFile:
+    properties:
+      blurhash:
+        description: Blurhash string for preview
+        type: string
+      episode_number:
+        description: Present for Titlecards
+        type: integer
+      file_size:
+        description: Size of the file in bytes
+        type: integer
+      id:
+        description: Unique asset ID for the poster file
+        type: string
+      item_tmdb_id:
+        description: TMDB ID of the parent item
+        type: string
+      modified:
+        description: Last modified date
+        type: string
+      season_number:
+        description: Present for Season Posters and Titlecards
+        type: integer
+      src:
+        description: Source URL (ID+Date - calculated by MediUX API)
+        type: string
+      title:
+        description: Present for Titlecards
+        type: string
+      type:
+        description: (poster, backdrop, seasonPoster, specialSeasonPoster, titlecard)
+        type: string
+    type: object
+  models.IncludedItem:
+    properties:
+      media_item:
+        allOf:
+        - $ref: '#/definitions/models.MediaItem'
+        description: Full media item info from Aura
+      mediux_info:
+        allOf:
+        - $ref: '#/definitions/models.BaseMediuxItemInfo'
+        description: MediUX item info
     type: object
   models.LibrarySection:
     properties:
@@ -326,11 +772,6 @@ definitions:
       added_at:
         description: Added timestamp
         type: integer
-      collection_ids:
-        description: IDs of collections this item belongs to
-        items:
-          type: string
-        type: array
       content_rating:
         description: Used in MediaItem Details Page - For more information about the
           item
@@ -452,8 +893,133 @@ definitions:
           $ref: '#/definitions/models.MediaItemSeason'
         type: array
     type: object
+  models.MediuxUserInfo:
+    properties:
+      avatar:
+        type: string
+      follow:
+        type: boolean
+      hide:
+        type: boolean
+      id:
+        type: string
+      total_sets:
+        type: integer
+      username:
+        type: string
+    type: object
+  models.PosterSetsResponse:
+    properties:
+      included_items:
+        additionalProperties:
+          $ref: '#/definitions/models.IncludedItem'
+        description: Map of included items by TMDB ID
+        type: object
+      sets:
+        description: List of sets
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+    type: object
+  models.SelectedTypes:
+    properties:
+      backdrop:
+        type: boolean
+      poster:
+        type: boolean
+      season_poster:
+        type: boolean
+      special_season_poster:
+        type: boolean
+      titlecard:
+        type: boolean
+    type: object
+  models.SetRef:
+    properties:
+      date_created:
+        description: Creation date
+        type: string
+      date_updated:
+        description: Last updated date
+        type: string
+      id:
+        description: Set ID
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/models.ImageFile'
+        type: array
+      item_ids:
+        description: IDs of items in the set
+        items:
+          type: string
+        type: array
+      popularity:
+        description: Popularity score of the set
+        type: integer
+      popularity_global:
+        description: Global popularity score of the set
+        type: integer
+      title:
+        description: Set Title
+        type: string
+      type:
+        description: Set Type (movie, show, collection, boxset)
+        type: string
+      user_created:
+        description: User who created the set
+        type: string
+    type: object
+  plex.PlexServerConnections:
+    properties:
+      address:
+        type: string
+      ipv6:
+        type: boolean
+      local:
+        type: boolean
+      port:
+        type: integer
+      protocol:
+        type: string
+      relay:
+        type: boolean
+      uri:
+        type: string
+    type: object
+  plex.PlexServersResponse:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/plex.PlexServerConnections'
+        type: array
+      name:
+        type: string
+      owned:
+        type: boolean
+    type: object
+  routes_auth.loginRequest:
+    properties:
+      password:
+        type: string
+    type: object
+  routes_auth.loginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  routes_base.healthCheckResponse:
+    properties:
+      status:
+        type: string
+      version:
+        type: string
+    type: object
   routes_config.AppConfigStatus:
     properties:
+      app_fully_loaded:
+        description: Whether the app is fully loaded and ready to use
+        type: boolean
       config_loaded:
         description: Whether a config file is loaded
         type: boolean
@@ -467,8 +1033,427 @@ definitions:
       media_server_name:
         description: Friendly name of the media server
         type: string
+      mediux_site_link:
+        description: Current Mediux site link
+        type: string
       needs_setup:
         description: Whether the app needs initial setup
+        type: boolean
+    type: object
+  routes_config.configStatusResponse:
+    properties:
+      status:
+        $ref: '#/definitions/routes_config.AppConfigStatus'
+    type: object
+  routes_config.reloadConfigResponse:
+    properties:
+      status:
+        $ref: '#/definitions/routes_config.AppConfigStatus'
+    type: object
+  routes_config.updateConfigRequest:
+    properties:
+      config:
+        $ref: '#/definitions/config.Config'
+    type: object
+  routes_config.updateConfigResponse:
+    properties:
+      message:
+        type: string
+      status:
+        $ref: '#/definitions/routes_config.AppConfigStatus'
+    type: object
+  routes_db.DeleteItemFromDB_Response:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_db.addItemRequest:
+    properties:
+      complete:
+        type: boolean
+      media_item:
+        $ref: '#/definitions/models.MediaItem'
+      poster_set:
+        $ref: '#/definitions/models.DBPosterSetDetail'
+    type: object
+  routes_db.addItemResponse:
+    properties:
+      saved_item:
+        $ref: '#/definitions/models.DBSavedItem'
+    type: object
+  routes_db.autodownloadForceCheckRequest:
+    properties:
+      complete:
+        description: Whether the provided data is complete or if we need to fetch
+          missing information
+        type: boolean
+      item:
+        $ref: '#/definitions/models.DBSavedItem'
+    type: object
+  routes_db.autodownloadForceCheckResponse:
+    properties:
+      result:
+        $ref: '#/definitions/autodownload.AutoDownloadResult'
+    type: object
+  routes_db.getAllItemsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/models.DBSavedItem'
+        type: array
+      total_items:
+        type: integer
+      unique_users:
+        items:
+          type: string
+        type: array
+    type: object
+  routes_db.ignoreItemResponse:
+    properties:
+      ignored:
+        type: boolean
+      library_title:
+        type: string
+      mode:
+        description: e.g., "always", "temp"
+        type: string
+      tmdb_id:
+        type: string
+    type: object
+  routes_db.updateItemRequest:
+    properties:
+      complete:
+        type: boolean
+      update_item:
+        $ref: '#/definitions/models.DBSavedItem'
+    type: object
+  routes_db.updateItemResponse:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.AddItemToDownloadQueue_Request:
+    properties:
+      item:
+        $ref: '#/definitions/models.DBSavedItem'
+    type: object
+  routes_download.AddItemToDownloadQueue_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.DownloadCollectionImage_Request:
+    properties:
+      collection_item:
+        $ref: '#/definitions/models.CollectionItem'
+      image_file:
+        $ref: '#/definitions/models.ImageFile'
+    type: object
+  routes_download.DownloadCollectionImage_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.DownloadImageFileForMediaItem_Request:
+    properties:
+      image_file:
+        $ref: '#/definitions/models.ImageFile'
+      media_item:
+        $ref: '#/definitions/models.MediaItem'
+    type: object
+  routes_download.DownloadImageFileForMediaItem_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.GetAllDownloadQueueItems_Response:
+    properties:
+      error_entries:
+        items:
+          $ref: '#/definitions/models.DBSavedItem'
+        type: array
+      in_progress_entries:
+        items:
+          $ref: '#/definitions/models.DBSavedItem'
+        type: array
+      warning_entries:
+        items:
+          $ref: '#/definitions/models.DBSavedItem'
+        type: array
+    type: object
+  routes_download.GetDownloadQueueStatus_Response:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      status:
+        $ref: '#/definitions/downloadqueue.Status'
+      time:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  routes_download.RemoveItemFromDownloadQueue_Request:
+    properties:
+      item:
+        $ref: '#/definitions/models.DBSavedItem'
+    type: object
+  routes_download.RemoveItemFromDownloadQueue_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_images.DeleteTempImages_Response:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_jobs.GetAllJobs_Response:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/jobs.JobInfo'
+        type: array
+    type: object
+  routes_jobs.runJobResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_labels_tags.applyLabelsTagsRequest:
+    properties:
+      media_item:
+        $ref: '#/definitions/models.MediaItem'
+      selected_types:
+        $ref: '#/definitions/models.SelectedTypes'
+    type: object
+  routes_labels_tags.applyLabelsTagsResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_logging.ClearLogFiles_Response:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_logging.GetLogContents_Response:
+    properties:
+      log_entries:
+        items:
+          $ref: '#/definitions/logging.LogData'
+        type: array
+      possible_actions_paths:
+        additionalProperties:
+          $ref: '#/definitions/routes_logging.structActionLabelSection'
+        type: object
+      total_log_entries:
+        type: integer
+    type: object
+  routes_logging.structActionLabelSection:
+    properties:
+      label:
+        type: string
+      section:
+        type: string
+    type: object
+  routes_mediux.GetAllUserSets_Response:
+    properties:
+      sets:
+        $ref: '#/definitions/models.CreatorSetsResponse'
+    type: object
+  routes_mediux.GetSetByID_Response:
+    properties:
+      included_items:
+        additionalProperties:
+          $ref: '#/definitions/models.IncludedItem'
+        type: object
+      set:
+        $ref: '#/definitions/models.SetRef'
+    type: object
+  routes_mediux.GetUserFollowingAndHiding_Response:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/models.MediuxUserInfo'
+        type: array
+    type: object
+  routes_mediux.getItemSetsResponse:
+    properties:
+      included_items:
+        additionalProperties:
+          $ref: '#/definitions/models.IncludedItem'
+        type: object
+      sets:
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+    type: object
+  routes_ms.GetAllCollectionChildrenItems_Response:
+    properties:
+      collection_item:
+        $ref: '#/definitions/models.CollectionItem'
+      sets:
+        items:
+          $ref: '#/definitions/models.SetRef'
+        type: array
+      user_follow_hide:
+        items:
+          $ref: '#/definitions/models.MediuxUserInfo'
+        type: array
+    type: object
+  routes_ms.GetLibrarySectionItems_Response:
+    properties:
+      library_section:
+        $ref: '#/definitions/models.LibrarySection'
+    type: object
+  routes_ms.GetLibrarySections_Response:
+    properties:
+      sections:
+        items:
+          $ref: '#/definitions/models.LibrarySection'
+        type: array
+    type: object
+  routes_ms.GetMediaItemDetails_Response:
+    properties:
+      media_item:
+        $ref: '#/definitions/models.MediaItem'
+      poster_sets:
+        $ref: '#/definitions/models.PosterSetsResponse'
+      server_type:
+        type: string
+      user_follow_hide:
+        items:
+          $ref: '#/definitions/models.MediuxUserInfo'
+        type: array
+    type: object
+  routes_ms.GetMovieCollections_Response:
+    properties:
+      collections:
+        items:
+          $ref: '#/definitions/models.CollectionItem'
+        type: array
+    type: object
+  routes_ms.RateMediaItem_Response:
+    properties:
+      rated:
+        type: boolean
+      rating:
+        type: number
+    type: object
+  routes_ms.RefreshMediaItemMetadata_Response:
+    properties:
+      refreshed:
+        type: boolean
+    type: object
+  routes_ms.getLibrarySectionOptionsRequest:
+    properties:
+      media_server:
+        $ref: '#/definitions/config.Config_MediaServer'
+    type: object
+  routes_ms.getLibrarySectionOptionsResponse:
+    properties:
+      library_sections:
+        items:
+          $ref: '#/definitions/models.LibrarySection'
+        type: array
+    type: object
+  routes_plex.CheckAuthStatusWithPlex_Response:
+    properties:
+      auth_token:
+        type: string
+      authenticated:
+        type: boolean
+      connections_available:
+        items:
+          $ref: '#/definitions/plex.PlexServersResponse'
+        type: array
+    type: object
+  routes_plex.GetPlexPinAndID_Response:
+    properties:
+      plex_id:
+        type: integer
+      plex_pin:
+        type: string
+    type: object
+  routes_search.HandleSearch_Response:
+    properties:
+      collection_items:
+        items:
+          $ref: '#/definitions/models.CollectionItem'
+        type: array
+      collection_items_last_full_update:
+        type: integer
+      media_items:
+        items:
+          $ref: '#/definitions/models.MediaItem'
+        type: array
+      media_items_last_full_update:
+        type: integer
+      mediux_usernames:
+        items:
+          $ref: '#/definitions/models.MediuxUserInfo'
+        type: array
+      mediux_usernames_last_full_update:
+        type: integer
+      saved_sets:
+        items:
+          $ref: '#/definitions/models.DBSavedItem'
+        type: array
+      search_query:
+        type: string
+    type: object
+  routes_validation.SendTestNotification_Request:
+    properties:
+      provider:
+        $ref: '#/definitions/config.Config_Notification_Provider'
+    type: object
+  routes_validation.SendTestNotification_Response:
+    properties:
+      message:
+        type: string
+    type: object
+  routes_validation.ValidateMediaServerInfo_Request:
+    properties:
+      media_server:
+        $ref: '#/definitions/config.Config_MediaServer'
+    type: object
+  routes_validation.ValidateMediaServerInfo_Response:
+    properties:
+      media_server:
+        $ref: '#/definitions/config.Config_MediaServer'
+      message:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  routes_validation.ValidateMediuxInfo_Request:
+    properties:
+      mediux_info:
+        $ref: '#/definitions/config.Config_Mediux'
+    type: object
+  routes_validation.ValidateMediuxInfo_Response:
+    properties:
+      message:
+        type: string
+      valid:
+        type: boolean
+    type: object
+  routes_validation.ValidateSonarrRadarrInfo_Request:
+    properties:
+      sonarr_radarr_info:
+        $ref: '#/definitions/config.Config_SonarrRadarrApp'
+    type: object
+  routes_validation.ValidateSonarrRadarrInfo_Response:
+    properties:
+      message:
+        type: string
+      valid:
         type: boolean
     type: object
 info:
@@ -476,19 +1461,1892 @@ info:
   title: Aura API
   version: "1.0"
 paths:
-  /api/config:
+  /api/:
     get:
-      description: Returns current config status and sanitized setup data
+      description: Check the health status of the application
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/routes_config.AppConfigStatus'
+            $ref: '#/definitions/routes_base.healthCheckResponse'
+      summary: Health Check
+      tags:
+      - Health
+  /api/config:
+    get:
+      description: Get the current status of the app configuration and onboarding
+        process
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_config.configStatusResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+      security:
+      - BearerAuth: []
       summary: Get Config Status
       tags:
-      - config
+      - Config
+    patch:
+      description: Reload the configuration file and return the current config status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_config.reloadConfigResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Reload Config
+      tags:
+      - Config
+    post:
+      consumes:
+      - application/json
+      description: Update the application configuration
+      parameters:
+      - description: New Configuration
+        in: body
+        name: newConfig
+        required: true
+        schema:
+          $ref: '#/definitions/routes_config.updateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_config.updateConfigResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Config
+      tags:
+      - Config
+  /api/db:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a Media Item and all associated Poster Sets from the database
+        based on TMDB ID and Library Title.
+      parameters:
+      - description: TMDB ID of the Media Item
+        in: query
+        name: tmdb_id
+        required: true
+        type: string
+      - description: Library Title of the Media Item
+        in: query
+        name: library_title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.DeleteItemFromDB_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Item From Database
+      tags:
+      - Database
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all media items and their associated poster sets from
+        the database, with optional filtering and pagination.
+      parameters:
+      - description: Filter by TMDB ID (partial match)
+        in: query
+        name: item_tmdb_id
+        type: string
+      - description: Filter by Library Title (partial match)
+        in: query
+        name: item_library_title
+        type: string
+      - description: Filter by Year
+        in: query
+        name: item_year
+        type: integer
+      - description: Filter by Title (partial match)
+        in: query
+        name: item_title
+        type: string
+      - description: Filter by Library Titles (comma-separated for multiple)
+        in: query
+        name: library_titles
+        type: string
+      - description: Filter by Image Types (comma-separated for multiple)
+        in: query
+        name: image_types
+        type: string
+      - description: Filter by Autodownload status (on, off, all)
+        in: query
+        name: autodownload
+        type: string
+      - description: Filter to only items with multiple poster sets
+        in: query
+        name: multiset_only
+        type: boolean
+      - description: Filter by Usernames (comma-separated for multiple)
+        in: query
+        name: usernames
+        type: string
+      - description: 'Number of items per page for pagination (default: 20, -1 for
+          no pagination)'
+        in: query
+        name: items_per_page
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page_number
+        type: integer
+      - description: Sort option (e.g., date_downloaded, title, year)
+        in: query
+        name: sort_option
+        type: string
+      - description: Sort order (asc or desc)
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.getAllItemsResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get All Database Items
+      tags:
+      - Database
+    patch:
+      consumes:
+      - application/json
+      description: Update a Media Item and its associated Poster Sets in the database.
+        Poster Sets marked with "to_delete" will be removed, while others will be
+        upserted.
+      parameters:
+      - description: Update Item Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_db.updateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.updateItemResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Item In Database
+      tags:
+      - Database
+    post:
+      consumes:
+      - application/json
+      description: Add a Media Item and Poster Set to the database. If the item already
+        exists, it will be updated with the new Media Item and Poster Set information.
+      parameters:
+      - description: Add Item Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_db.addItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.addItemResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Add Item To Database
+      tags:
+      - Database
+  /api/db/force-recheck:
+    post:
+      consumes:
+      - application/json
+      description: Force a check to see if any of the images need to be re-downloaded
+        for a given Media Item and its associated Poster Sets.
+      parameters:
+      - description: Auto Download Force Check Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_db.autodownloadForceCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.autodownloadForceCheckResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Auto Download - Force Check
+      tags:
+      - Database
+  /api/db/ignore:
+    patch:
+      consumes:
+      - application/json
+      description: Mark a Media Item as ignored in the database, preventing it from
+        being processed by other parts of the application. The ignore can be temporary
+        or permanent based on the mode parameter.
+      parameters:
+      - description: TMDB ID of the Media Item
+        in: query
+        name: tmdb_id
+        required: true
+        type: string
+      - description: Library Title of the Media Item
+        in: query
+        name: library_title
+        required: true
+        type: string
+      - description: Ignore mode (e.g., 'always' for permanent ignore, 'temp' for
+          temporary ignore)
+        in: query
+        name: mode
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.ignoreItemResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Ignore Item In Database
+      tags:
+      - Database
+  /api/db/ignore/stop:
+    patch:
+      consumes:
+      - application/json
+      description: Remove the ignored status from a Media Item in the database, allowing
+        it to be processed by other parts of the application again.
+      parameters:
+      - description: TMDB ID of the Media Item
+        in: query
+        name: tmdb_id
+        required: true
+        type: string
+      - description: Library Title of the Media Item
+        in: query
+        name: library_title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_db.ignoreItemResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Stop Ignoring Item In Database
+      tags:
+      - Database
+  /api/download/image/collection:
+    post:
+      consumes:
+      - application/json
+      description: Download and apply an image for a Collection Item in the media
+        server.
+      parameters:
+      - description: Download Collection Image Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_download.DownloadCollectionImage_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.DownloadCollectionImage_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Collection Image
+      tags:
+      - Download
+  /api/download/image/item:
+    post:
+      consumes:
+      - application/json
+      description: Download and apply an image for a Media Item in the media server.
+      parameters:
+      - description: Download Image Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_download.DownloadImageFileForMediaItem_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.DownloadImageFileForMediaItem_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Image
+      tags:
+      - Download
+  /api/download/queue:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the current status of the download queue, including the
+        latest status message, any warnings or errors, and the timestamp of the last
+        update. This endpoint provides insight into the overall health and activity
+        of the download queue.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.GetDownloadQueueStatus_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Queue - Get Status
+      tags:
+      - Download
+  /api/download/queue/item:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a specific Media Item from the download queue. This can
+        be used to cancel pending download tasks or clean up items that are no longer
+        needed in the queue.
+      parameters:
+      - description: Queue Remove Item Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_download.RemoveItemFromDownloadQueue_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.RemoveItemFromDownloadQueue_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Queue - Remove Item
+      tags:
+      - Download
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the current items in the download queue, categorized by
+        their status (in-progress, warning, error). This endpoint allows clients to
+        monitor the progress of queued download tasks and identify any issues that
+        may have occurred during processing.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.GetAllDownloadQueueItems_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Queue - Get Items
+      tags:
+      - Download
+    post:
+      consumes:
+      - application/json
+      description: Add a Media Item and its associated Poster Sets to the download
+        queue. The item will be processed by the download worker and removed from
+        the queue once completed.
+      parameters:
+      - description: Queue Add Item Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_download.AddItemToDownloadQueue_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.AddItemToDownloadQueue_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Download Queue - Add Item
+      tags:
+      - Download
+  /api/health:
+    get:
+      description: Check the health status of the application
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes_base.healthCheckResponse'
+      summary: Health Check
+      tags:
+      - Health
+  /api/images/media/collection:
+    get:
+      description: Get a collection item image (poster or backdrop) from the media
+        server by rating key and image type
+      parameters:
+      - description: Rating Key of the collection item
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      - description: Type of image to fetch (poster or backdrop)
+        in: query
+        name: image_type
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: Image data in JPEG format
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Get Collection Item Image
+      tags:
+      - Images
+  /api/images/media/item:
+    get:
+      description: Get a media item image (poster, backdrop or thumb) from the media
+        server by rating key and image type
+      parameters:
+      - description: Rating Key of the media item
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      - description: Rating Key of the specific image to fetch (if different from
+          the media item rating key)
+        in: query
+        name: image_rating_key
+        type: string
+      - description: Type of image to fetch (poster, backdrop or thumb)
+        in: query
+        name: image_type
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: Image data in JPEG format
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Get Media Item Image
+      tags:
+      - Images
+  /api/images/mediux/avatar:
+    get:
+      description: Get a user avatar image from Mediux by avatar ID or username
+      parameters:
+      - description: Avatar ID of the user to fetch the avatar for
+        in: query
+        name: avatar_id
+        type: string
+      - description: Username of the user to fetch the avatar for (only used if avatar_id
+          is not provided)
+        in: query
+        name: username
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: Avatar image data in JPEG format
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Get Mediux Avatar Image
+      tags:
+      - Images
+  /api/images/mediux/item:
+    get:
+      description: Get an image from Mediux by asset ID, modified date and quality
+      parameters:
+      - description: Asset ID of the image to fetch
+        in: query
+        name: asset_id
+        required: true
+        type: string
+      - description: Modified date of the image in ISO format (e.g. 2024-01-01T12:00:00Z)
+        in: query
+        name: modified_date
+        required: true
+        type: string
+      - description: Quality of the image to fetch (thumb, optimized, original). Default
+          is thumb.
+        in: query
+        name: quality
+        type: string
+      produces:
+      - image/jpeg
+      responses:
+        "200":
+          description: Image data in JPEG format
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Get Mediux Image
+      tags:
+      - Images
+  /api/images/temp:
+    delete:
+      description: Clear all temporary images from the server's temp-images directory.
+        This endpoint is useful for maintenance and cleanup of temporary files that
+        are no longer needed.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_images.DeleteTempImages_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Temporary Images
+      tags:
+      - Images
+  /api/jobs:
+    get:
+      description: Retrieve a list of all scheduled jobs in the system, including
+        their name, description, schedule, and next run time. This endpoint provides
+        insight into the background tasks that are set up to run at specific intervals
+        or times.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_jobs.GetAllJobs_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get All Scheduled Jobs
+      tags:
+      - Jobs
+    post:
+      consumes:
+      - application/json
+      description: Trigger a specific job to run immediately by providing the job
+        name and ID as query parameters. This endpoint allows for manual execution
+        of scheduled jobs outside of their regular schedule, which can be useful for
+        testing or urgent tasks.
+      parameters:
+      - description: Name of the Job to Run
+        in: query
+        name: job_name
+        required: true
+        type: string
+      - description: ID of the Job to Run
+        in: query
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_jobs.runJobResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Job
+      tags:
+      - Jobs
+  /api/labels-tags/apply:
+    post:
+      consumes:
+      - application/json
+      description: Apply labels and tags to a Media Item in the media server and Sonarr/Radarr.
+      parameters:
+      - description: Apply Labels/Tags Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_labels_tags.applyLabelsTagsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_labels_tags.applyLabelsTagsResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Apply Labels/Tags
+      tags:
+      - Labels/Tags
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return a JWT token
+      parameters:
+      - description: Login Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_auth.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_auth.loginResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Auth Login
+      tags:
+      - Auth
+  /api/logs:
+    delete:
+      description: Clear log files from the server. You can choose to clear the current
+        log file or all old log files while keeping the current one. This endpoint
+        is useful for maintenance and managing disk space used by logs.
+      parameters:
+      - default: current
+        description: Clear Option (current or old)
+        in: query
+        name: option
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_logging.ClearLogFiles_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Clear Logs
+      tags:
+      - Logging
+    get:
+      description: Retrieve log entries from the server's log file with optional filtering
+        by log level, status, and route/action. This endpoint allows clients to access
+        and analyze logs for monitoring and debugging purposes.
+      parameters:
+      - description: Comma-separated list of log levels to filter by (e.g. info,error,debug)
+        in: query
+        name: log_levels
+        type: string
+      - description: Comma-separated list of statuses to filter by (e.g. success,error)
+        in: query
+        name: statuses
+        type: string
+      - description: Comma-separated list of route paths or action names to filter
+          by (e.g. GET:/api/db,User Login)
+        in: query
+        name: actions
+        type: string
+      - description: 'Number of log entries to return per page (default: 20)'
+        in: query
+        name: items_per_page
+        type: integer
+      - description: 'Page number to return (default: 1)'
+        in: query
+        name: page_number
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_logging.GetLogContents_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Log Entries
+      tags:
+      - Logging
+  /api/mediaserver/collections:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of movie collections from the media server. This
+        endpoint fetches all movie collections available in the media server's movie
+        libraries, allowing clients to display and interact with the collections of
+        movies configured on the media server.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.GetMovieCollections_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Movie Collections
+      tags:
+      - MediaServer
+  /api/mediaserver/collections/item:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all child items of a movie collection from the media server,
+        along with their associated posters. This endpoint accepts a query parameter
+        to identify the collection and returns the child items contained within that
+        collection, as well as any relevant poster sets for those items. This allows
+        clients to display the contents of a movie collection along with visual representations
+        (posters) for each item.
+      parameters:
+      - description: Rating Key of the Collection
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.GetAllCollectionChildrenItems_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get All Movie Collection Children Items And Posters
+      tags:
+      - MediaServer
+  /api/mediaserver/item:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information about a specific media item from
+        the media server, including its metadata, associated poster sets, and user
+        follow/hide status. This endpoint accepts a rating key as a query parameter
+        to identify the media item and returns comprehensive details that can be used
+        to display the media item information and related sets in the client application.
+      parameters:
+      - description: Rating Key of the Media Item
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      - description: Return Type (full or item, default is full)
+        in: query
+        name: return_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.GetMediaItemDetails_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Media Item Details
+      tags:
+      - MediaServer
+  /api/mediaserver/libraries:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of library sections from the configured media server.
+        This endpoint fetches the available library sections, including their ID,
+        title, type, and path, allowing clients to display and interact with the media
+        libraries configured on the media server.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.GetLibrarySections_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Library Sections
+      tags:
+      - MediaServer
+  /api/mediaserver/libraries/options:
+    post:
+      consumes:
+      - application/json
+      description: Retrieve a list of library sections from a specified media server
+        configuration. This endpoint accepts a media server configuration in the request
+        body and returns the available library sections for that media server, allowing
+        clients to display options for users to select which library section they
+        want to interact with.
+      parameters:
+      - description: Media Server Configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes_ms.getLibrarySectionOptionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.getLibrarySectionOptionsResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Library Section Options
+      tags:
+      - MediaServer
+  /api/mediaserver/library/items:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve items from a specific library section in the media server.
+        This endpoint accepts query parameters to identify the library section and
+        pagination options, and returns the items contained within that library section,
+        allowing clients to display the media items available in the selected library
+        section.
+      parameters:
+      - description: Library Section ID
+        in: query
+        name: section_id
+        required: true
+        type: string
+      - description: Library Section Title
+        in: query
+        name: section_title
+        required: true
+        type: string
+      - description: Library Section Type
+        in: query
+        name: section_type
+        required: true
+        type: string
+      - description: Start Index for Pagination
+        in: query
+        name: section_start_index
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.GetLibrarySectionItems_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Library Section Items
+      tags:
+      - MediaServer
+  /api/mediaserver/rate:
+    patch:
+      consumes:
+      - application/json
+      description: Rate a media item on the media server. This endpoint allows clients
+        to submit a user rating for a specific media item, which will be sent to the
+        media server (currently only supported for Plex). The rating should be a number
+        between 0 and 5, and it will be converted to the appropriate scale for the
+        media server before being submitted.
+      parameters:
+      - description: The rating key of the media item to rate
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      - description: The user rating for the media item (0-5)
+        in: query
+        name: rating
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.RateMediaItem_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Rate Media Item
+      tags:
+      - MediaServer
+  /api/mediaserver/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh the metadata of a media item on the media server. This
+        endpoint accepts a rating_key for the media item to be refreshed and an optional
+        refresh_rating_key to specify which metadata entry to refresh. It triggers
+        a metadata refresh on the media server for the specified media item, allowing
+        clients to update the displayed information for that item after changes have
+        been made on the media server or to fix any metadata issues.
+      parameters:
+      - description: Rating Key of the media item to refresh
+        in: query
+        name: rating_key
+        required: true
+        type: string
+      - description: Rating Key to specify which metadata entry to refresh
+        in: query
+        name: refresh_rating_key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_ms.RefreshMediaItemMetadata_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh Media Item Metadata
+      tags:
+      - MediaServer
+  /api/mediux/set:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific item set (such as a show set for TV shows or
+        a movie set/collection for movies) by its unique identifier. This endpoint
+        accepts query parameters to identify the set, including the set ID, set type
+        (show, movie, or collection), and the library section it belongs to. The response
+        includes details about the set and any related media items that are part of
+        the set, allowing clients to display comprehensive information about the set
+        and its contents in the UI.
+      parameters:
+      - description: Unique identifier of the item set
+        in: query
+        name: set_id
+        required: true
+        type: string
+      - description: Type of the item set (show, movie, or collection)
+        in: query
+        name: set_type
+        required: true
+        type: string
+      - description: TMDB ID of the media item (required for collection sets)
+        in: query
+        name: tmdb_id
+        type: string
+      - description: Title of the library the set belongs to
+        in: query
+        name: item_library_title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_mediux.GetSetByID_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Mediux Set By ID
+      tags:
+      - Mediux
+  /api/mediux/sets/item:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve item sets for a specific media item in the library. This
+        endpoint accepts query parameters to identify the media item and its library,
+        and returns any related item sets (such as show sets for TV shows or movie
+        sets/collections for movies) that the media item belongs to, allowing clients
+        to display related items and collections in the UI.
+      parameters:
+      - description: TMDB ID of the media item
+        in: query
+        name: tmdb_id
+        required: true
+        type: string
+      - description: Type of the media item (movie or show)
+        in: query
+        name: item_type
+        required: true
+        type: string
+      - description: Title of the library the media item belongs to
+        in: query
+        name: item_library_title
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_mediux.getItemSetsResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Mediux Item Sets
+      tags:
+      - Mediux
+  /api/mediux/sets/user:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all item sets created by the specified user in Mediux.
+        This endpoint returns an array of item sets, including details such as the
+        set name, type (show, movie, or collection), and the items contained within
+        each set. This allows clients to display the user's custom collections and
+        preferences within the Mediux ecosystem in the UI.
+      parameters:
+      - description: Username of the user whose sets are being retrieved
+        in: query
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_mediux.GetAllUserSets_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Mediux User Sets
+      tags:
+      - Mediux
+  /api/mediux/user:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the list of users that the current user is following or
+        hiding in Mediux. This endpoint returns an array of user information, including
+        their username, display name, and whether they are being followed or hidden
+        by the current user. This allows clients to display the user's social connections
+        and preferences within the Mediux ecosystem in the UI.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_mediux.GetUserFollowingAndHiding_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Mediux User Following and Hiding
+      tags:
+      - Mediux
+  /api/oauth/plex:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a new Plex Pin and the associated Plex ID for authentication.
+        This endpoint is used to initiate the Plex authentication process by providing
+        the necessary credentials for the user to authenticate their Plex account.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_plex.GetPlexPinAndID_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Plex Pin and ID
+      tags:
+      - Plex
+    post:
+      consumes:
+      - application/json
+      description: Check if the provided Plex ID has authenticated with Plex and retrieve
+        available server connections if authenticated. This endpoint is used during
+        the Plex authentication process to verify the user's Plex account and gather
+        necessary information for integration.
+      parameters:
+      - description: Plex ID to check for authentication
+        in: query
+        name: plex_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_plex.CheckAuthStatusWithPlex_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Check Plex Pin for Authentication
+      tags:
+      - Plex
+  /api/search:
+    get:
+      consumes:
+      - application/json
+      description: Perform a search across media items, collection items, Mediux users,
+        and saved sets based on the provided query and filters. The search supports
+        filtering by year, library section, and unique identifiers (TMDB ID or RatingKey)
+        using specific query syntax. The response includes matching media items, collection
+        items, Mediux users, and saved sets, along with metadata about the last full
+        update for each category to help clients determine if they need to refresh
+        their cached data.
+      parameters:
+      - description: The search query string with optional filters (e.g., 'Inception
+          y:2010 l:Movies id:12345')
+        in: query
+        name: query
+        required: true
+        type: string
+      - description: Whether to include media items in the search results
+        in: query
+        name: search_media_items
+        type: boolean
+      - description: Whether to include collection items in the search results
+        in: query
+        name: search_collection_items
+        type: boolean
+      - description: Whether to include Mediux users in the search results
+        in: query
+        name: search_mediux_users
+        type: boolean
+      - description: Whether to include saved sets in the search results
+        in: query
+        name: search_saved_sets
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_search.HandleSearch_Response'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      summary: Search
+      tags:
+      - Search
+  /api/validate/mediaserver:
+    post:
+      consumes:
+      - application/json
+      description: Validate the provided media server information by attempting to
+        connect to the media server. This endpoint is used during the onboarding process
+        to ensure that the media server settings entered by the user are correct and
+        that a connection can be established. The response will indicate whether the
+        connection was successful and provide details about the media server if it
+        was validated successfully.
+      parameters:
+      - description: Media Server Information to Validate
+        in: body
+        name: media_server
+        required: true
+        schema:
+          $ref: '#/definitions/routes_validation.ValidateMediaServerInfo_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_validation.ValidateMediaServerInfo_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate Media Server Info
+      tags:
+      - Validation
+  /api/validate/mediux:
+    post:
+      consumes:
+      - application/json
+      description: Validate the provided Mediux API token by attempting to connect
+        to the Mediux site. This endpoint is used during the onboarding process to
+        ensure that the Mediux settings entered by the user are correct and that a
+        connection can be established. The response will indicate whether the connection
+        was successful.
+      parameters:
+      - description: Mediux Information to Validate
+        in: body
+        name: mediux_info
+        required: true
+        schema:
+          $ref: '#/definitions/routes_validation.ValidateMediuxInfo_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_validation.ValidateMediuxInfo_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate Mediux Token
+      tags:
+      - Validation
+  /api/validate/notifications:
+    post:
+      consumes:
+      - application/json
+      description: Send a test notification using the specified notification provider.
+        This endpoint is used to verify that the notification settings are correct
+        and that notifications can be sent successfully. The request should include
+        the notification provider information, and the response will indicate whether
+        the test notification was sent successfully or if there were any errors.
+      parameters:
+      - description: Notification Provider Information for sending the test notification
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/routes_validation.SendTestNotification_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_validation.SendTestNotification_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Send Test Notification
+      tags:
+      - Validation
+  /api/validate/radarr:
+    post:
+      consumes:
+      - application/json
+      description: Validate the provided Sonarr/Radarr information by attempting to
+        connect to the application. This endpoint is used during the onboarding process
+        to ensure that the Sonarr/Radarr settings entered by the user are correct
+        and that a connection can be established. The response will indicate whether
+        the connection was successful and provide details about the application if
+        it was validated successfully.
+      parameters:
+      - description: Sonarr/Radarr Information to Validate
+        in: body
+        name: sonarr_radarr_info
+        required: true
+        schema:
+          $ref: '#/definitions/routes_validation.ValidateSonarrRadarrInfo_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_validation.ValidateSonarrRadarrInfo_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate Sonarr/Radarr Information
+      tags:
+      - Validation
+  /api/validate/sonarr:
+    post:
+      consumes:
+      - application/json
+      description: Validate the provided Sonarr/Radarr information by attempting to
+        connect to the application. This endpoint is used during the onboarding process
+        to ensure that the Sonarr/Radarr settings entered by the user are correct
+        and that a connection can be established. The response will indicate whether
+        the connection was successful and provide details about the application if
+        it was validated successfully.
+      parameters:
+      - description: Sonarr/Radarr Information to Validate
+        in: body
+        name: sonarr_radarr_info
+        required: true
+        schema:
+          $ref: '#/definitions/routes_validation.ValidateSonarrRadarrInfo_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_validation.ValidateSonarrRadarrInfo_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate Sonarr/Radarr Information
+      tags:
+      - Validation
 securityDefinitions:
   BearerAuth:
     in: header
