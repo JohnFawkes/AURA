@@ -36,6 +36,7 @@ type ImageFile struct {
 	FileSize      int64     `json:"file_size"`                // Size of the file in bytes
 	Src           string    `json:"src"`                      // Source URL (ID+Date - calculated by MediUX API)
 	Blurhash      string    `json:"blurhash"`                 // Blurhash string for preview
+	Language      string    `json:"language"`                 // Language Name
 	ItemTMDB_ID   string    `json:"item_tmdb_id"`             // TMDB ID of the parent item
 	Title         string    `json:"title,omitempty"`          // Present for Titlecards
 	SeasonNumber  *int      `json:"season_number,omitempty"`  // Present for Season Posters and Titlecards
