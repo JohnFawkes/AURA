@@ -7,9 +7,13 @@ import (
 )
 
 type JSONResponse struct {
-	Status string                `json:"status"` // "success", "error" or "warn"
+	Status string                `json:"status" example:"success"`
 	Data   any                   `json:"data"`
 	Error  *logging.LogErrorInfo `json:"error"`
+}
+
+type UnauthorizedResponse struct {
+	Message string `json:"message" example:"Invalid or expired token"`
 }
 
 func SendResponse(w http.ResponseWriter, log *logging.LogData, data any) {
