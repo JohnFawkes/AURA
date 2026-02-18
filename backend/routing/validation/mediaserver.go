@@ -35,16 +35,16 @@ func ValidateMediaServerInfo(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Validate Media Server Info", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
-	var request ValidateMediaServerInfo_Request
+	var req ValidateMediaServerInfo_Request
 	var response ValidateMediaServerInfo_Response
 
 	// Get the Media Server Info from the request body
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &request, "Media Server Info")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Media Server Info")
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return
 	}
-	mediaServerInfo := request.MediaServer
+	mediaServerInfo := req.MediaServer
 
 	// If the Media Server Token is masked, retrieve the actual token from the config
 	if config.IsMaskedField(mediaServerInfo.ApiToken) {

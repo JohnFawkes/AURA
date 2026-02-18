@@ -33,15 +33,17 @@ func GetLibrarySectionOptions(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Library Section Options", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var req getLibrarySectionOptionsRequest
 	var response getLibrarySectionOptionsResponse
 
 	// Get the reqeuest body
-	var msConfig config.Config_MediaServer
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &msConfig, "Get Library Section Options - Decode Request Body")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Get Library Section Options - Decode Request Body")
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return
 	}
+
+	msConfig := req.MediaServer
 
 	// Get all available library sections from the Media Server
 	response.LibrarySections, Err = mediaserver.GetLibrarySections(ctx, &msConfig)

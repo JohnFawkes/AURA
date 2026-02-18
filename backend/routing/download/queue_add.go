@@ -37,7 +37,7 @@ func AddItemToDownloadQueue(w http.ResponseWriter, r *http.Request) {
 	var response AddItemToDownloadQueue_Response
 
 	// Parse and validate request body
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req.Item, "Queue Add Item - Decode Request Body")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Queue Add Item - Decode Request Body")
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return
