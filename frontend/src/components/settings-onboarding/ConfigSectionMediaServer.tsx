@@ -1,7 +1,7 @@
 "use client";
 
 import { ValidateURL } from "@/helper/validation/validate-url";
-import { getLibrarySectionOptions } from "@/services/mediaserver/get-library-section-options";
+import { GetLibrarySectionOptions } from "@/services/mediaserver/get-library-section-options";
 import { CheckAuthStatusWithPlex, GetPlexPinAndID, PlexServersResponse } from "@/services/mediaserver/plex";
 import { ValidateMediaServerInfo } from "@/services/validation/mediaserver";
 import { Plus, RefreshCcw } from "lucide-react";
@@ -242,12 +242,12 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
   const fetchServerLibraries = async () => {
     if (!editing || libraryFetchLoading) return;
     setLibraryFetchLoading(true);
-    const resp = await getLibrarySectionOptions(value);
+    const resp = await GetLibrarySectionOptions(value);
     setLibraryFetchLoading(false);
-    if (resp.status !== "success" || !Array.isArray(resp.data)) {
+    if (resp.status !== "success" || !Array.isArray(resp.data?.library_sections)) {
       return;
     }
-    replaceLibraries(resp.data.map((lib) => lib.title));
+    replaceLibraries(resp.data.library_sections.map((lib) => lib.title));
   };
 
   // Plex OAuth Flow (Get PIN and ID)
