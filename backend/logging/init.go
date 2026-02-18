@@ -75,7 +75,7 @@ func init() {
 	// rotate logs using lumberjack; output is written as JSON lines (jsonl)
 	logFile := &lumberjack.Logger{
 		Filename:   LogFilePath,
-		MaxSize:    5,     // megabytes
+		MaxSize:    25,    // megabytes
 		MaxBackups: 7,     // number of backups
 		MaxAge:     14,    // days
 		LocalTime:  true,  // use local time
