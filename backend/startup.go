@@ -192,6 +192,12 @@ func runWarmup() (success bool) {
 		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Check for Rating Key Changes cron job")
 	}
 
+	// Cronjob: Start Handle Temp Ignored Items Job
+	err = jobs.StartHandleTempIgnoredItemsJob()
+	if err != nil {
+		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Handle Temp Ignored Items cron job")
+	}
+
 	// Cron: Start Jobs Scheduler
 	jobs.StartJobs()
 
