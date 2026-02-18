@@ -42,6 +42,9 @@ query getMovieItemCollectionSetsByTMDBID($tmdb_id: ID!) {
           filesize
           src
           blurhash
+          language {
+            display_name
+          }
           collection_set {
             id
             set_title
@@ -60,6 +63,9 @@ query getMovieItemCollectionSetsByTMDBID($tmdb_id: ID!) {
           filesize
           src
           blurhash
+          language {
+            display_name
+          }
           collection_set {
             id
             set_title

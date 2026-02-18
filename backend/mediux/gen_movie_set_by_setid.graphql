@@ -29,6 +29,9 @@ query getMovieSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
       movie {
         id
       }
@@ -39,6 +42,9 @@ query getMovieSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
       movie {
         id
       }

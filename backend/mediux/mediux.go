@@ -42,6 +42,7 @@ type ImageAsset struct {
 	Filesize   string    `json:"filesize"`
 	Src        string    `json:"src"`
 	Blurhash   *string   `json:"blurhash"`
+	Language   Language  `json:"language"`
 	Season     *Season   `json:"season"`
 	Episode    *Episode  `json:"episode"`
 }
@@ -54,6 +55,13 @@ type Episode struct {
 	EpisodeTitle  string `json:"episode_title"`
 	EpisodeNumber int    `json:"episode_number"`
 	Season        Season `json:"season_id"`
+}
+
+type Language struct {
+	DisplayName string `json:"display_name"`
+	Iso639_1    string `json:"iso639_1"`
+	Iso639_2    string `json:"iso639_2"`
+	Iso639_3    string `json:"iso639_3"`
 }
 
 type SetUser struct {
@@ -159,6 +167,13 @@ func convertMediuxImageAssetToImageFile(a *ImageAsset, imageType string) *models
 		if a.Episode.Season.SeasonNumber != 0 {
 			imageFile.SeasonNumber = &a.Episode.Season.SeasonNumber
 		}
+	}
+
+	// Handle Language
+	if a.Language != (Language{}) {
+		imageFile.Language = a.Language.DisplayName
+	} else {
+		imageFile.Language = "English" // Default to English if no language provided
 	}
 
 	return imageFile

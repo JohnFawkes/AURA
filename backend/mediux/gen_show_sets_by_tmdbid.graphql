@@ -37,6 +37,9 @@ query getShowItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
       }
       show_backdrop {
         id
@@ -44,6 +47,9 @@ query getShowItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
       }
       season_posters(filter: { season: { season_number: { _nnull: true } } }) {
         season {
@@ -54,6 +60,9 @@ query getShowItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
       }
       titlecards(
         filter: {
@@ -68,6 +77,9 @@ query getShowItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
         episode {
           episode_title
           episode_number

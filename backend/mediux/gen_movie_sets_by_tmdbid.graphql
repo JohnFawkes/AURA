@@ -35,6 +35,9 @@ query getMovieItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
       }
       movie_backdrop {
         id
@@ -42,6 +45,9 @@ query getMovieItemSetsByTMDBID($tmdb_id: ID!) {
         filesize
         src
         blurhash
+        language {
+          display_name
+        }
       }
     }
   }

@@ -29,6 +29,9 @@ query getShowSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
     }
     show_backdrop {
       id
@@ -36,6 +39,9 @@ query getShowSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
     }
     season_posters {
       id
@@ -43,6 +49,9 @@ query getShowSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
       season {
         season_number
       }
@@ -53,6 +62,9 @@ query getShowSetBySetID($set_id: ID!) {
       filesize
       src
       blurhash
+      language {
+        display_name
+      }
       episode {
         episode_title
         episode_number

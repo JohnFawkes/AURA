@@ -34,6 +34,9 @@ query getMovieCollectionSetBySetID(
           filesize
           src
           blurhash
+          language {
+            display_name
+          }
         }
         backdrops(
           filter: { collection_set: { id: { _eq: $collection_set_id_str } } }
@@ -43,6 +46,8 @@ query getMovieCollectionSetBySetID(
           filesize
           src
           blurhash
+          language {
+            display_name
         }
       }
     }
