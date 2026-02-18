@@ -30,9 +30,14 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 
 	// Get the latest Show Media Item from the media server
 	found, Err := mediaserver.GetMediaItemDetails(ctx, mediaItem)
-	if Err.Message != "" || !found {
+	if Err.Message != "" {
 		result.OverallResult = "error"
 		result.OverallMessage = "Failed to get latest Media Item details from media server"
+		return result
+	}
+	if !found {
+		result.OverallResult = "error"
+		result.OverallMessage = "Media Item not found on media server"
 		return result
 	}
 
@@ -146,16 +151,32 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 		imagesToRedownload := []ImageFileWithReason{}
 
 		for idx, image := range mediuxSet.Images {
-			// Skip any images that are not selected for download in the set
-			if (image.Type == "poster" && !dbSet.SelectedTypes.Poster) ||
-				(image.Type == "backdrop" && !dbSet.SelectedTypes.Backdrop) ||
-				(image.Type == "season_poster" && (!dbSet.SelectedTypes.SeasonPoster || !dbSet.SelectedTypes.SpecialSeasonPoster)) ||
-				(image.Type == "titlecard" && !dbSet.SelectedTypes.Titlecard) {
+			imageFileCheckResult := make(map[string]any)
+			imageFileCheckResult["image"] = utils.GetFileDownloadName(mediaItem.Title, image)
+			imageFileCheckResult["image_type"] = image.Type
+
+			if image.Type == "poster" && !dbSet.SelectedTypes.Poster {
+				imageFileCheckResult["check_result"] = "Skipping this image as it is a poster and posters are not selected for this set"
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
+				continue
+			} else if image.Type == "backdrop" && !dbSet.SelectedTypes.Backdrop {
+				imageFileCheckResult["check_result"] = "Skipping this image as it is a backdrop and backdrops are not selected for this set"
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
+				continue
+			} else if image.Type == "season_poster" && !dbSet.SelectedTypes.SeasonPoster && !dbSet.SelectedTypes.SpecialSeasonPoster {
+				imageFileCheckResult["check_result"] = "Skipping this image as it is a season poster and season posters are not selected for this set"
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
+				continue
+			} else if image.Type == "titlecard" && !dbSet.SelectedTypes.Titlecard {
+				imageFileCheckResult["check_result"] = "Skipping this image as it is a titlecard and titlecards are not selected for this set"
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 				continue
 			}
 
 			// Skip any season posters and titlecards if there is no season or episode information in the Media Item for this image, as there is nothing to match against and download for
 			if (image.Type == "season_poster" || image.Type == "titlecard") && (image.SeasonNumber == nil || (image.Type == "titlecard" && image.EpisodeNumber == nil)) {
+				imageFileCheckResult["check_result"] = "Skipping this image as it is a season poster or titlecard and there is no season or episode information in the Media Item for this image, so there is nothing to match against and download for"
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 				continue
 			}
 
@@ -168,6 +189,9 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 					ReasonTitle: "Show Info Changed",
 					Reason:      getShowInfoReasons(itemChanges),
 				})
+				imageFileCheckResult["check_result"] = "Show info has changed, redownloading this image based on the detected changes in show info"
+				imageFileCheckResult["item_changes"] = itemChanges
+				actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 				handled = true
 			} else if itemChanges["seasons_added"] || itemChanges["episodes_added"] || itemChanges["episodes_changed"] {
 				// If there are changes related to seasons or episodes, we will redownload season posters and titlecards, but not regular posters or backdrops
@@ -185,6 +209,9 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 								ReasonTitle: "Season Added",
 								Reason:      seasonStr,
 							})
+							imageFileCheckResult["check_result"] = "Season added since last download, redownloading this season poster based on the detected season added"
+							imageFileCheckResult["added_seasons"] = addedSeasons
+							actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 							handled = true
 						}
 					}
@@ -198,6 +225,9 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 									ReasonTitle: "Episode Added",
 									Reason:      "New episode added since last download",
 								})
+								imageFileCheckResult["check_result"] = "Episode added since last download, redownloading this titlecard based on the detected episode added"
+								imageFileCheckResult["added_episodes"] = addedEpisodes
+								actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 								handled = true
 							}
 						}
@@ -213,6 +243,9 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 									ReasonTitle: "Episode Changed",
 									Reason:      fmt.Sprintf("Episode changed since last download\n%s", episodeStr),
 								})
+								imageFileCheckResult["check_result"] = "Episode changed since last download, redownloading this titlecard based on the detected episode change"
+								imageFileCheckResult["episodes_changed"] = episodesChanged
+								actionCheckChanges.AppendResult(fmt.Sprintf("image_check_%d", idx+1), imageFileCheckResult)
 								handled = true
 							}
 						}
