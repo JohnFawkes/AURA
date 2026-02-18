@@ -386,6 +386,7 @@ export function yamlToPosterSet(
       season_number: seasonNumber,
       episode_number: episodeNumber,
       item_tmdb_id: mediaItem.tmdb_id,
+      language: "",
     };
   };
 
