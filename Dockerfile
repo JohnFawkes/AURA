@@ -37,7 +37,7 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 
 # Install the dependencies
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Copy the source code
 COPY frontend/ ./
@@ -50,7 +50,7 @@ ENV NEXT_PUBLIC_APP_VERSION=${APP_VERSION}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-RUN npm run build || (echo "Build failed" && cat /frontend/.next/build-diagnostics.json && exit 1)
+RUN npm run build || (echo "Build failed" && cat /frontend/.next/build-diagnostics.json 2>/dev/null || true && exit 1)
 
 ############################################################################
 ##### Stage 3: Build the final image
