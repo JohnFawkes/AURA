@@ -4,6 +4,7 @@ import (
 	"aura/logging"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/robfig/cron/v3"
 )
@@ -25,6 +26,8 @@ var (
 	// Configurable
 	autodownloadJobID cron.EntryID = 0
 )
+
+var manualPrevRun = map[cron.EntryID]string{}
 
 func init() {
 	c = cron.New()
@@ -54,7 +57,9 @@ func GetListOfJobs() []JobInfo {
 		entries := c.Entries()
 		for _, entry := range entries {
 			prevRun := entry.Prev.String()
-			if prevRun == "0001-01-01 00:00:00 +0000 UTC" {
+			if manual, ok := manualPrevRun[entry.ID]; ok {
+				prevRun = manual
+			} else if prevRun == "0001-01-01 00:00:00 +0000 UTC" {
 				prevRun = ""
 			} else {
 				prevRun = entry.Prev.Format("2006-01-02 15:04:05")
@@ -98,4 +103,47 @@ func GetListOfJobs() []JobInfo {
 		}
 	}
 	return jobs
+}
+
+func TriggerJob(jobName string, jobID string) error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var entryID cron.EntryID
+	switch jobName {
+	case "Download Queue Processing Job":
+		entryID = downloadQueueJobID
+	case "AutoDownload Job":
+		entryID = autodownloadJobID
+	case "Refresh Media Items and Collections Job":
+		entryID = refreshMediaItemsAndCollectionsJobID
+	case "Refresh Mediux Users Job":
+		entryID = refreshMediuxUsersJobID
+	case "Check Mediux Site Link Availability Job":
+		entryID = checkMediuxSiteLinkJobID
+	case "Check for Rating Key Changes Job":
+		entryID = checkForRatingKeyChangesJobID
+	case "Handle Temp Ignored Items Job":
+		entryID = handleTempIgnoredItemsJobID
+	default:
+		return fmt.Errorf("unknown job name: %s", jobName)
+	}
+
+	if entryID == 0 {
+		return fmt.Errorf("job not found or not scheduled: %s", jobName)
+	}
+
+	entry := c.Entry(entryID)
+	if entry.ID == 0 {
+		return fmt.Errorf("job entry not found for ID: %d", entryID)
+	}
+
+	go func() {
+		if entry.Job != nil {
+			manualPrevRun[entry.ID] = time.Now().Format("2006-01-02 15:04:05")
+			entry.Job.Run()
+		}
+	}()
+
+	return nil
 }
