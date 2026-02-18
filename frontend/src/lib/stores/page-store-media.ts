@@ -23,8 +23,8 @@ interface Media_PageStore {
   showOnlyTitlecardSets: boolean;
   setShowOnlyTitlecardSets: (show: boolean) => void;
 
-  //showOnlyDownloadDefaults: boolean;
-  //setShowOnlyDownloadDefaults: (show: boolean) => void;
+  filterByLanguage: string[];
+  setFilterByLanguage: (languages: string[]) => void;
 
   // Hydrate and Clear
   hasHydrated: boolean;
@@ -60,8 +60,8 @@ export const useMediaPageStore = create<Media_PageStore>()(
       showOnlyTitlecardSets: false,
       setShowOnlyTitlecardSets: (show) => set({ showOnlyTitlecardSets: show }),
 
-      //showOnlyDownloadDefaults: false,
-      //setShowOnlyDownloadDefaults: (show) => set({ showOnlyDownloadDefaults: show }),
+      filterByLanguage: [""],
+      setFilterByLanguage: (languages) => set({ filterByLanguage: languages }),
 
       hasHydrated: false,
       hydrate: () => set({ hasHydrated: true }),
@@ -74,7 +74,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
           },
           showHiddenUsers: false,
           showOnlyTitlecardSets: false,
-          //showOnlyDownloadDefaults: false,
+          filterByLanguage: [""],
         }),
     }),
     {
@@ -84,7 +84,7 @@ export const useMediaPageStore = create<Media_PageStore>()(
         sortStates: state.sortStates,
         showHiddenUsers: state.showHiddenUsers,
         showOnlyTitlecardSets: state.showOnlyTitlecardSets,
-        //showOnlyDownloadDefaults: state.showOnlyDownloadDefaults,
+        filterByLanguage: state.filterByLanguage,
       }),
       onRehydrateStorage: () => (state) => {
         state?.hydrate();

@@ -86,6 +86,8 @@ const MediaItemPage = () => {
     setShowOnlyTitlecardSets,
     showHiddenUsers,
     setShowHiddenUsers,
+    filterByLanguage,
+    setFilterByLanguage,
   } = useMediaPageStore();
   const sortType = partialMediaItem?.type as "movie" | "show";
   const sortOption = sortStates[sortType]?.sortOption ?? "date";
@@ -322,6 +324,7 @@ const MediaItemPage = () => {
       sortStates,
       mediaItem,
       showOnlyTitlecardSets,
+      filterByLanguage,
     });
 
     let filtered = posterSets.filter((set) => {
@@ -342,6 +345,16 @@ const MediaItemPage = () => {
 
     if (mediaItem && mediaItem.type === "show" && showOnlyTitlecardSets) {
       filtered = filtered.filter((set) => set.images.some((img) => img.type === "titlecard"));
+    }
+
+    if (
+      filterByLanguage &&
+      filterByLanguage.length > 0 &&
+      !(filterByLanguage.length === 1 && filterByLanguage[0] === "")
+    ) {
+      filtered = filtered.filter((set) =>
+        set.images.some((img) => img.language && filterByLanguage.includes(img.language))
+      );
     }
 
     // If showOnlyDownloadDefaults is true, check sets to see if they have at least one of the download default types
@@ -486,6 +499,7 @@ const MediaItemPage = () => {
     mediaItem,
     showOnlyTitlecardSets,
     setShowOnlyTitlecardSets,
+    filterByLanguage,
     downloadDefaultsTypes,
     showOnlyDownloadDefaults,
     hasError,
@@ -504,8 +518,25 @@ const MediaItemPage = () => {
         uniqueHiddenUsers.add(set.user_created);
       }
     });
+
     return uniqueHiddenUsers.size;
   }, [posterSets, userHides]);
+
+  // 4b. Compute hidden by language count based on posterSets and filterByLanguage
+  const hiddenByLanguageCount = useMemo(() => {
+    if (!posterSets) return 0;
+    if (!filterByLanguage || filterByLanguage.length === 0) return 0;
+    if (filterByLanguage.some((lang) => lang === "")) return 0; // If "All Languages" is selected, nothing is hidden by language
+
+    let count = 0;
+    posterSets.forEach((set) => {
+      // If NONE of the images in the set match the selected languages, the set is hidden by language
+      if (!set.images.some((img) => img.language && filterByLanguage.includes(img.language))) {
+        count++;
+      }
+    });
+    return count;
+  }, [posterSets, filterByLanguage]);
 
   // 5. Compute adjacent items when mediaItem changes
   useEffect(() => {
@@ -542,8 +573,23 @@ const MediaItemPage = () => {
     if (!showHiddenUsers) count++;
     if (showOnlyTitlecardSets) count++;
     if (showOnlyDownloadDefaults) count++;
+    if (
+      filterByLanguage &&
+      filterByLanguage.length > 0 &&
+      !filterByLanguage.some((lang) => lang === "") && // "All Languages" disables the filter
+      posterSets &&
+      posterSets.some((set) => set.images.some((img) => img.language && !filterByLanguage.includes(img.language)))
+    ) {
+      count++;
+    }
     return count;
-  }, [showHiddenUsers, showOnlyTitlecardSets, showOnlyDownloadDefaults]);
+  }, [
+    showHiddenUsers,
+    showOnlyTitlecardSets,
+    showOnlyDownloadDefaults,
+    filterByLanguage,
+    posterSets, // <-- add this to dependencies
+  ]);
 
   if (!partialMediaItem && !mediaItem && hasError) {
     return (
@@ -646,6 +692,8 @@ const MediaItemPage = () => {
                   showOnlyTitlecardSets={showOnlyTitlecardSets}
                   handleShowSetsWithTitleCardsOnly={handleShowSetsWithTitleCardsOnly}
                   showOnlyDownloadDefaults={showOnlyDownloadDefaults}
+                  filterByLanguage={filterByLanguage}
+                  setFilterByLanguage={setFilterByLanguage}
                 />
 
                 {/* Right column: sort options */}
@@ -669,8 +717,8 @@ const MediaItemPage = () => {
                       {
                         value: "popularity",
                         label: "Popularity",
-                        ascIcon: <ChartBarIncreasing />,
-                        descIcon: <ChartBarDecreasing />,
+                        ascIcon: <ChartBarDecreasing />,
+                        descIcon: <ChartBarIncreasing />,
                         type: "number" as const,
                       },
                       ...(mediaItem?.type === "movie"
@@ -740,7 +788,14 @@ const MediaItemPage = () => {
                         {showOnlyDownloadDefaults && downloadDefaultsTypes && downloadDefaultsTypes.length > 0 && (
                           <li>You are filtering to show only sets with your selected download default types.</li>
                         )}
+                        {hiddenByLanguageCount > 0 && (
+                          <li>
+                            You have {hiddenByLanguageCount} hidden set
+                            {hiddenByLanguageCount > 1 ? "s" : ""} due to language filters.
+                          </li>
+                        )}
                       </ul>
+
                       <p>
                         You can adjust your filters using the checkboxes on this page. You can also adjust your default
                         download image types in{" "}
