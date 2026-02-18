@@ -35,6 +35,7 @@ export interface ImageFile {
   file_size: number;
   src: string;
   blurhash: string;
+  language: string;
   item_tmdb_id: string;
   title?: string;
   season_number?: number;
