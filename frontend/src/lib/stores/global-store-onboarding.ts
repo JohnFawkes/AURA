@@ -1,4 +1,4 @@
-import { getAppConfigStatus } from "@/services/config/app-status";
+import { AppConfigStatus_Response, GetAppConfigStatus } from "@/services/config/status";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -37,8 +37,8 @@ export const useOnboardingStore = create<OnboardingStore>()(
       fetchStatus: async () => {
         set({ loading: true, error: null });
         try {
-          const response: APIResponse<AppStatusResponse> = await getAppConfigStatus(false);
-          set({ status: response.data, loading: false });
+          const response: APIResponse<AppConfigStatus_Response> = await GetAppConfigStatus(false);
+          set({ status: response.data?.status, loading: false });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Failed to fetch onboarding status";
           set({ error: message, loading: false });
