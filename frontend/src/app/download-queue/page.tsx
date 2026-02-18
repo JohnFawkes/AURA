@@ -2,8 +2,8 @@
 
 import { formatExactDateTime } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getAllDownloadQueueItems } from "@/services/downloads/queue-get";
-import { DownloadQueueStatus, getDownloadQueueStatus } from "@/services/downloads/queue-status";
+import { GetAllDownloadQueueItems } from "@/services/downloads/queue-get";
+import { GetDownloadQueueStatus, GetDownloadQueueStatus_Response } from "@/services/downloads/queue-status";
 import { Globe } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -31,7 +31,7 @@ const DownloadQueuePage: React.FC = () => {
   const [warningEntries, setWarningEntries] = useState<DBSavedItem[]>([]);
 
   // States - Queue Status
-  const [queueStatus, setQueueStatus] = useState<DownloadQueueStatus>({
+  const [queueStatus, setQueueStatus] = useState<GetDownloadQueueStatus_Response>({
     time: "",
     status: "",
     message: "",
@@ -52,7 +52,7 @@ const DownloadQueuePage: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await getAllDownloadQueueItems();
+      const response = await GetAllDownloadQueueItems();
 
       if (response.status === "error") {
         setError(response);
@@ -78,7 +78,7 @@ const DownloadQueuePage: React.FC = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const statusResponse = await getDownloadQueueStatus();
+        const statusResponse = await GetDownloadQueueStatus();
         if (statusResponse.status === "error") {
           throw new Error("Error fetching status");
         }
@@ -91,7 +91,7 @@ const DownloadQueuePage: React.FC = () => {
         };
         setQueueStatus(status);
       } catch {
-        const errorResponse: DownloadQueueStatus = {
+        const errorResponse: GetDownloadQueueStatus_Response = {
           time: new Date().toISOString(),
           status: "Error",
           message: "Failed to fetch status",

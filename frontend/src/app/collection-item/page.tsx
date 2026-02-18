@@ -4,7 +4,7 @@ import CollectionsDownloadModal from "@/app/collection-item/collection-download-
 import { CollectionItem } from "@/app/collections/page";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getCollectionItemContent } from "@/services/mediaserver/collection-details";
+import { GetAllCollectionChildrenItems } from "@/services/mediaserver/get-movie-collection-children-items";
 import {
   ArrowDownAZ,
   ArrowDownZA,
@@ -123,7 +123,7 @@ export default function CollectionItemPage() {
           `Fetching full collection item for: ${partialCollectionItem.title} (${partialCollectionItem.rating_key})`
         );
 
-        const resp = await getCollectionItemContent(partialCollectionItem);
+        const resp = await GetAllCollectionChildrenItems(partialCollectionItem);
         if (resp.status === "error") {
           setError(resp);
           setHasError(true);
@@ -138,7 +138,7 @@ export default function CollectionItemPage() {
           return;
         }
 
-        const errorResponse = resp.data?.error;
+        const errorResponse = resp.error || null;
         const collectionItem = resp.data.collection_item || null;
         const collectionItemSets = resp.data.sets || [];
         const userFollowHide = resp.data.user_follow_hide || null;

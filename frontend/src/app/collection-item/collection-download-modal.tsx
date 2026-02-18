@@ -2,7 +2,7 @@
 
 import { CollectionItem } from "@/app/collections/page";
 import { formatDownloadSize } from "@/helper/format-download-size";
-import { downloadImageFileForCollectionItem } from "@/services/downloads/download-collection-image";
+import { DownloadImageFileForCollectionItem } from "@/services/downloads/download-collection-image";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Download, LoaderIcon, User, X } from "lucide-react";
 import { z } from "zod";
@@ -177,7 +177,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
         }
       }, 50);
 
-      const response = await downloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
+      const response = await DownloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
       if (response.status === "error") {
         throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
       }

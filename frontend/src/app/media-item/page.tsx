@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getMediaItemContent } from "@/services/mediaserver/item-details";
+import { GetMediaItemDetails } from "@/services/mediaserver/get-media-item-details";
 import {
   ArrowDown01,
   ArrowDown10,
@@ -173,7 +173,7 @@ const MediaItemPage = () => {
           "Fetch",
           `Getting full media item for ${partialMediaItem.title} (${partialMediaItem.rating_key})`
         );
-        const resp = await getMediaItemContent(
+        const resp = await GetMediaItemDetails(
           partialMediaItem.title,
           partialMediaItem.rating_key,
           partialMediaItem.library_title

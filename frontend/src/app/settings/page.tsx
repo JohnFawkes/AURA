@@ -1,8 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getAppConfigStatus } from "@/services/config/app-status";
-import { updateAppConfig } from "@/services/config/config-update";
+import { GetAppConfigStatus } from "@/services/config/status";
+import { UpdateAppConfig } from "@/services/config/update";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -133,7 +133,7 @@ const SettingsPage: React.FC = () => {
   const fetchAndSetConfig = async (reload: boolean = false) => {
     try {
       setLoading(true);
-      const response = await getAppConfigStatus(reload);
+      const response = await GetAppConfigStatus(reload);
       if (response.status === "error") {
         setError(response);
         setInitialConfig(defaultAppConfig());
@@ -141,7 +141,7 @@ const SettingsPage: React.FC = () => {
         return;
       }
 
-      const cfg = response.data?.current_setup ?? defaultAppConfig();
+      const cfg = response.data?.status.current_setup ?? defaultAppConfig();
       setInitialConfig(cfg);
       setNewConfig(cfg);
       setError(null);
@@ -177,7 +177,7 @@ const SettingsPage: React.FC = () => {
     setEditing(false);
 
     try {
-      const resp = await updateAppConfig(newConfig);
+      const resp = await UpdateAppConfig(newConfig);
 
       if (resp.status === "error") {
         setError(resp);

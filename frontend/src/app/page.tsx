@@ -1,8 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getLibrarySections } from "@/services/mediaserver/library-get-current";
-import { getLibrarySectionItems } from "@/services/mediaserver/library-get-items";
+import { GetLibrarySectionItems } from "@/services/mediaserver/get-library-section-items";
+import { GetLibrarySections } from "@/services/mediaserver/get-library-sections";
 import { Loader } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -129,14 +129,14 @@ export default function Home() {
         }
 
         // Fetch fresh data
-        const response = await getLibrarySections();
+        const response = await GetLibrarySections();
         if (response.status === "error") {
           setError(response);
           setFullyLoaded(true);
           return;
         }
 
-        const fetchedSections = response.data || [];
+        const fetchedSections = response.data?.sections || [];
         if (!fetchedSections || fetchedSections.length === 0) {
           setError(ReturnErrorMessage<unknown>(new Error("No sections found, please check the logs.")));
           return;
@@ -154,14 +154,15 @@ export default function Home() {
             let allItems: LibrarySection["media_items"] = [];
 
             while (itemsFetched < totalSize) {
-              const itemsResponse = await getLibrarySectionItems(section, itemsFetched);
+              const itemsResponse = await GetLibrarySectionItems(section, itemsFetched);
               if (itemsResponse.status === "error") {
                 setError(itemsResponse);
                 return;
               }
 
-              const data = itemsResponse.data;
+              const data = itemsResponse.data?.library_section;
               const items = data?.media_items || [];
+
               allItems = allItems.concat(items);
               if (totalSize === Infinity) {
                 totalSize = data?.total_size ?? 0;

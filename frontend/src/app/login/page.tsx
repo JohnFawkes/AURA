@@ -1,6 +1,6 @@
 "use client";
 
-import { attemptLogin } from "@/services/auth/login";
+import { AttemptLogin } from "@/services/auth/login";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -45,7 +45,7 @@ export default function LoginPage() {
     }
     try {
       setLoading(true);
-      const resp = await attemptLogin(password);
+      const resp = await AttemptLogin(password);
       const token = (resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
       if (!token) {
         throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");

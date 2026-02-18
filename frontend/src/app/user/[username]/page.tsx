@@ -4,7 +4,7 @@ import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getAllUserSets } from "@/services/mediux/sets-user";
+import { GetAllUserSets } from "@/services/mediux/get-user-sets";
 import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -193,7 +193,7 @@ const UserSetPage = () => {
       try {
         setIsLoading(true);
         setLoadMessage(`Loading sets for ${username}`);
-        const response = await getAllUserSets(username as string);
+        const response = await GetAllUserSets(username as string);
 
         if (response.status === "error") {
           setError(response);
@@ -201,7 +201,7 @@ const UserSetPage = () => {
         }
         setSelectedLibrarySection(null);
 
-        setCreatorSetsResponse(response.data || null);
+        setCreatorSetsResponse(response.data?.sets || null);
       } catch (error) {
         log("ERROR", "User Page", "Fetch User Sets", "Failed to fetch user sets:", error);
         setError(ReturnErrorMessage<unknown>(error));

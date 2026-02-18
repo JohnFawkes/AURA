@@ -1,7 +1,7 @@
 "use client";
 
-import { finalizeOnboarding } from "@/services/config/api-onboarding-finalize";
-import { updateAppConfig } from "@/services/config/config-update";
+import { finalizeOnboarding } from "@/services/config/onboarding-finalize";
+import { UpdateAppConfig } from "@/services/config/update";
 import yaml from "js-yaml";
 import { toast } from "sonner";
 
@@ -355,10 +355,10 @@ const OnboardingPage = () => {
     setApplyLoading(true);
 
     try {
-      const resp = await updateAppConfig(configState);
+      const resp = await UpdateAppConfig(configState);
       if (resp.status === "success") {
-        if (resp.data) {
-          const finalizeResp = await finalizeOnboarding(resp.data.current_setup);
+        if (resp.data?.status) {
+          const finalizeResp = await finalizeOnboarding(resp.data.status.current_setup);
           if (finalizeResp.status === "success") {
             toast.success("Configuration applied successfully, redirecting...");
             if (configState.auth.enabled) {

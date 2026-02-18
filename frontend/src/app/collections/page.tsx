@@ -1,7 +1,7 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { getCollectionItems } from "@/services/mediaserver/collections";
+import { GetMovieCollections } from "@/services/mediaserver/get-movie-collections";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -136,14 +136,14 @@ export default function CollectionsPage() {
           }
         }
 
-        const response = await getCollectionItems();
+        const response = await GetMovieCollections();
         if (response.status === "error") {
           setError(response);
           setFullyLoaded(true);
           return;
         }
 
-        const fetchedCollectionItems = response.data || [];
+        const fetchedCollectionItems = response.data?.collections || [];
         if (!fetchedCollectionItems || fetchedCollectionItems.length === 0) {
           setError(ReturnErrorMessage("No Collection Items found in Media Server"));
           return;

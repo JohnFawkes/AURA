@@ -1,11 +1,11 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { deleteItemFromDB } from "@/services/database/item-delete";
-import { getAllItemsFromDB } from "@/services/database/item-get-all";
-import { AutodownloadResult, checkSavedDBItemForUpdates } from "@/services/downloads/check-for-update";
-import { addItemToDownloadQueue } from "@/services/downloads/queue-add";
-import { applyLabelsAndTagsToItem } from "@/services/labels-tags/apply-labels-tags";
+import { AutoDownloadForceCheck, AutodownloadResult } from "@/services/database/autodownload-force-check";
+import { DeleteItemFromDB } from "@/services/database/delete";
+import { getAllItemsFromDB } from "@/services/database/get-all";
+import { AddItemToDownloadQueue } from "@/services/downloads/queue-add";
+import { ApplyLabelsAndTagsToItem } from "@/services/labels-tags/apply";
 import {
   ArrowDownAZ,
   ArrowDownZA,
@@ -232,14 +232,14 @@ const SavedSetsPage: React.FC = () => {
 
   const handleRecheckItem = async (title: string, item: DBSavedItem): Promise<void> => {
     try {
-      const response = await checkSavedDBItemForUpdates(item);
+      const response = await AutoDownloadForceCheck(item);
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to recheck item");
         return;
       }
       setRecheckStatus((prev) => ({
         ...prev,
-        [title]: response.data as AutodownloadResult,
+        [title]: response.data?.result as AutodownloadResult,
       }));
     } catch (error) {
       const errorResponse = ReturnErrorMessage<unknown>(error);
@@ -250,7 +250,7 @@ const SavedSetsPage: React.FC = () => {
 
   const handleRedownloadItem = async (item: DBSavedItem): Promise<void> => {
     try {
-      const response = await addItemToDownloadQueue(item);
+      const response = await AddItemToDownloadQueue(item);
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to add item to download queue");
         return;
@@ -263,7 +263,7 @@ const SavedSetsPage: React.FC = () => {
 
   const handleApplyLabelsTagsToItem = async (item: DBSavedItem): Promise<void> => {
     try {
-      const response = await applyLabelsAndTagsToItem(item);
+      const response = await ApplyLabelsAndTagsToItem(item);
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to apply labels/tags");
         return;
@@ -276,7 +276,7 @@ const SavedSetsPage: React.FC = () => {
 
   const handleDeleteItemFromDB = async (item: DBSavedItem): Promise<void> => {
     try {
-      const response = await deleteItemFromDB(item);
+      const response = await DeleteItemFromDB(item);
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to delete item");
         return;

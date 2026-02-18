@@ -1,7 +1,9 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { JobInfo, getJobs } from "@/services/jobs/get";
+import { GetAllJobs, JobInfo } from "@/services/jobs/get";
+import { RunJob } from "@/services/jobs/run";
+import { toast } from "sonner";
 
 import { useEffect, useState } from "react";
 
@@ -27,14 +29,14 @@ export default function JobsPage() {
     try {
       setLoading(true);
 
-      const response = await getJobs();
+      const response = await GetAllJobs();
       if (response.status === "error") {
-        setError(response);
+        setError(ReturnErrorMessage<JobInfo[]>(response.error?.message || "Failed to fetch jobs"));
         setJobs([]);
         return;
       }
 
-      const items = response.data || [];
+      const items = response.data?.jobs || [];
 
       // Sort jobs by next_run date ascending
       items.sort((a, b) => {
@@ -53,14 +55,15 @@ export default function JobsPage() {
     }
   };
 
-  // const triggerJob = (job: JobInfo) => {
-  // 	// TODO: replace with API call when backend endpoint exists
-  // 	console.warn("Trigger job requested", {
-  // 		id: job.id,
-  // 		job_name: job.job_name,
-  // 		spec: job.spec,
-  // 	});
-  // };
+  const handleRunJobNowClick = async (job: JobInfo) => {
+    const response = await RunJob(job.job_name, job.id);
+    if (response.status === "error") {
+      setError(ReturnErrorMessage<JobInfo[]>(response.error?.message || "Failed to trigger job"));
+    } else {
+      toast.success(`Job "${job.job_name}" triggered successfully`);
+      void fetchJobs();
+    }
+  };
 
   useEffect(() => {
     void fetchJobs();
@@ -110,15 +113,15 @@ export default function JobsPage() {
                             <code className="px-2 py-1 rounded bg-muted text-xs">—</code>
                           )}
 
-                          {/* <Button
-														variant="secondary"
-														size="sm"
-														onClick={() => triggerJob(job)}
-														disabled={loading}
-														className="w-fit"
-													>
-														Run Now
-													</Button> */}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleRunJobNowClick(job)}
+                            disabled={loading}
+                            className="w-fit"
+                          >
+                            Run Now
+                          </Button>
                         </div>
                       </div>
 

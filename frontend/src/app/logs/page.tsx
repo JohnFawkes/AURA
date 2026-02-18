@@ -1,8 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { clearLogFile } from "@/services/logs/logs-clear";
-import { FetchLogContentsResponse, fetchLogContents } from "@/services/logs/logs-get";
+import { ClearLogFiles } from "@/services/logs/clear";
+import { GetLogContents, GetLogContents_Response } from "@/services/logs/get";
 import { EllipsisIcon, SaveIcon, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +32,7 @@ import { APIResponse, LogAction, LogData } from "@/types/api/api-response";
 export default function LogsPage() {
   // States - Loading & Error
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<APIResponse<FetchLogContentsResponse> | null>(null);
+  const [error, setError] = useState<APIResponse<GetLogContents_Response> | null>(null);
   // States - Responses and Data
   const [logEntries, setLogEntries] = useState<LogData[]>([]);
   const [totalLogEntries, setTotalLogEntries] = useState<number>(0);
@@ -58,7 +58,7 @@ export default function LogsPage() {
     const fetchLogs = async () => {
       try {
         setLoading(true);
-        const response = await fetchLogContents(levelsFilter, statusFilter, actionsFilter, itemsPerPage, currentPage);
+        const response = await GetLogContents(levelsFilter, statusFilter, actionsFilter, itemsPerPage, currentPage);
         if (response.status === "error") {
           setError(response);
           setLogEntries([]);
@@ -96,12 +96,12 @@ export default function LogsPage() {
 
   const clearLogsFromToday = async () => {
     try {
-      const response = await clearLogFile(true);
+      const response = await ClearLogFiles(true);
       if (response.status === "error") {
         toast.error(response.error?.message || "Failed to clear old logs");
         return;
       }
-      toast.success(response.data || "Logs from today cleared successfully");
+      toast.success(response.data?.message || "Logs from today cleared successfully");
       setLogEntries([]);
       setTotalLogEntries(0);
       setCurrentPage(1);
