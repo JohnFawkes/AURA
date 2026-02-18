@@ -1,4 +1,4 @@
-package routes_download
+package routes_db
 
 import (
 	autodownload "aura/download/auto"
@@ -10,18 +10,38 @@ import (
 	"net/http"
 )
 
+type autodownloadForceCheckRequest struct {
+	Item     models.DBSavedItem `json:"item"`
+	Complete bool               `json:"complete"` // Whether the provided data is complete or if we need to fetch missing information
+}
+
+type autodownloadForceCheckResponse struct {
+	Result autodownload.AutoDownloadResult `json:"result"`
+}
+
+// AutoDownloadForceCheck godoc
+// @Summary      Auto Download - Force Check
+// @Description  Force a check to see if any of the images need to be re-downloaded for a given Media Item and its associated Poster Sets.
+// @Tags         Database
+// @Accept       json
+// @Produce      json
+// @Param        req  body      autodownloadForceCheckRequest  true  "Auto Download Force Check Request"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200           {object}  httpx.JSONResponse{data=autodownloadForceCheckResponse}
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/db/force-recheck [post]
 func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Auto Download - Force Check", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
-	var req struct {
-		Item     models.DBSavedItem
-		Complete bool
-	}
+	var req autodownloadForceCheckRequest
+	var response autodownloadForceCheckResponse
+
 	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Autodownload Force Check - Decode Request Body")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -31,7 +51,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 			"tmdb_id":       req.Item.MediaItem.TMDB_ID,
 			"library_title": req.Item.MediaItem.LibraryTitle,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -44,7 +64,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				"set_id":        posterSet.ID,
 				"set_type":      posterSet.Type,
 			})
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	}
@@ -58,7 +78,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 		// Get the MediaItem details from the Media Server
 		found, Err := mediaserver.GetMediaItemDetails(ctx, &req.Item.MediaItem)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 		if !found {
@@ -66,7 +86,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				"tmdb_id":       req.Item.MediaItem.TMDB_ID,
 				"library_title": req.Item.MediaItem.LibraryTitle,
 			})
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 
@@ -75,7 +95,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 			case "show":
 				showSet, _, Err := mediux.GetShowSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle)
 				if Err.Message != "" {
-					httpx.SendResponse(w, ld, nil)
+					httpx.SendResponse(w, ld, response)
 					return
 				}
 				posterSet.PosterSet = showSet.PosterSet
@@ -83,7 +103,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 			case "movie":
 				movieSet, _, Err := mediux.GetMovieSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle)
 				if Err.Message != "" {
-					httpx.SendResponse(w, ld, nil)
+					httpx.SendResponse(w, ld, response)
 					return
 				}
 				posterSet.PosterSet = movieSet.PosterSet
@@ -91,7 +111,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 			case "collection":
 				collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, posterSet.ID, req.Item.MediaItem.TMDB_ID, req.Item.MediaItem.LibraryTitle)
 				if Err.Message != "" {
-					httpx.SendResponse(w, ld, nil)
+					httpx.SendResponse(w, ld, response)
 					return
 				}
 				posterSet.PosterSet = collectionSet.PosterSet
@@ -100,7 +120,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				logAction.SetError("Invalid Poster Set Type", "Poster Set type must be either 'show' or 'movie'", map[string]any{
 					"set_type": posterSet.Type,
 				})
-				httpx.SendResponse(w, ld, nil)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 		}
@@ -115,6 +135,6 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 
 	// Perform the Force Check
 	result := autodownload.CheckItem(ctx, saveItem)
-
-	httpx.SendResponse(w, ld, result)
+	response.Result = result
+	httpx.SendResponse(w, ld, response)
 }

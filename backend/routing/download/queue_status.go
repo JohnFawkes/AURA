@@ -5,18 +5,39 @@ import (
 	"aura/logging"
 	"aura/utils/httpx"
 	"net/http"
+	"time"
 )
 
-func QueueGetStatus(w http.ResponseWriter, r *http.Request) {
+type GetDownloadQueueStatus_Response struct {
+	Time     time.Time            `json:"time"`
+	Status   downloadqueue.Status `json:"status"`
+	Message  string               `json:"message"`
+	Warnings []string             `json:"warnings"`
+	Errors   []string             `json:"errors"`
+}
+
+// GetDownloadQueueStatus godoc
+// @Summary      Download Queue - Get Status
+// @Description  Retrieve the current status of the download queue, including the latest status message, any warnings or errors, and the timestamp of the last update. This endpoint provides insight into the overall health and activity of the download queue.
+// @Tags         Download
+// @Accept       json
+// @Produce      json
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=GetDownloadQueueStatus_Response}
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/download/queue [get]
+func GetDownloadQueueStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Download Queue - Get Status", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
-	httpx.SendResponse(w, ld, map[string]any{
-		"time":     downloadqueue.LatestInfo.Time,
-		"status":   downloadqueue.LatestInfo.Status,
-		"message":  downloadqueue.LatestInfo.Message,
-		"warnings": downloadqueue.LatestInfo.Warnings,
-		"errors":   downloadqueue.LatestInfo.Errors,
-	})
+	var response GetDownloadQueueStatus_Response
+	response.Time = downloadqueue.LatestInfo.Time
+	response.Status = downloadqueue.LatestInfo.Status
+	response.Message = downloadqueue.LatestInfo.Message
+	response.Warnings = downloadqueue.LatestInfo.Warnings
+	response.Errors = downloadqueue.LatestInfo.Errors
+
+	httpx.SendResponse(w, ld, response)
 }

@@ -12,10 +12,36 @@ import (
 	"strings"
 )
 
-func Search(w http.ResponseWriter, r *http.Request) {
+type HandleSearch_Response struct {
+	SearchQuery                   string                  `json:"search_query"`
+	MediaItems                    []models.MediaItem      `json:"media_items"`
+	MediaItemsLastFullUpdate      int64                   `json:"media_items_last_full_update"`
+	CollectionItems               []models.CollectionItem `json:"collection_items"`
+	CollectionItemsLastFullUpdate int64                   `json:"collection_items_last_full_update"`
+	MediuxUsernames               []models.MediuxUserInfo `json:"mediux_usernames"`
+	MediuxUsernamesLastFullUpdate int64                   `json:"mediux_usernames_last_full_update"`
+	SavedSets                     []models.DBSavedItem    `json:"saved_sets"`
+}
+
+// HandleSearch godoc
+// @Summary      Search
+// @Description  Perform a search across media items, collection items, Mediux users, and saved sets based on the provided query and filters. The search supports filtering by year, library section, and unique identifiers (TMDB ID or RatingKey) using specific query syntax. The response includes matching media items, collection items, Mediux users, and saved sets, along with metadata about the last full update for each category to help clients determine if they need to refresh their cached data.
+// @Tags         Search
+// @Accept       json
+// @Produce      json
+// @Param        query query string true "The search query string with optional filters (e.g., 'Inception y:2010 l:Movies id:12345')"
+// @Param        search_media_items query bool false "Whether to include media items in the search results"
+// @Param        search_collection_items query bool false "Whether to include collection items in the search results"
+// @Param        search_mediux_users query bool false "Whether to include Mediux users in the search results"
+// @Param        search_saved_sets query bool false "Whether to include saved sets in the search results"
+// @Success	  200  {object}  httpx.JSONResponse{data=HandleSearch_Response}
+// @Failure	  500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/search [get]
+func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Search Handler", logging.LevelDebug)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response HandleSearch_Response
 
 	// Get the Search Query Parameter
 	searchQuery := r.URL.Query().Get("query")
@@ -62,16 +88,6 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	var Err logging.LogErrorInfo
 
-	var response struct {
-		SearchQuery                   string                  `json:"search_query"`
-		MediaItems                    []models.MediaItem      `json:"media_items"`
-		MediaItemsLastFullUpdate      int64                   `json:"media_items_last_full_update"`
-		CollectionItems               []models.CollectionItem `json:"collection_items"`
-		CollectionItemsLastFullUpdate int64                   `json:"collection_items_last_full_update"`
-		MediuxUsernames               []models.MediuxUserInfo `json:"mediux_usernames"`
-		MediuxUsernamesLastFullUpdate int64                   `json:"mediux_usernames_last_full_update"`
-		SavedSets                     []models.DBSavedItem    `json:"saved_sets"`
-	}
 	response.MediaItemsLastFullUpdate = cache.LibraryStore.LastFullUpdate
 	response.MediuxUsernamesLastFullUpdate = cache.MediuxUsers.LastFullUpdate
 	response.CollectionItemsLastFullUpdate = cache.CollectionsStore.LastFullUpdate

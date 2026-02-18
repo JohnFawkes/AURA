@@ -19,14 +19,28 @@ type AppConfigStatus struct {
 	AppFullyLoaded  bool          `json:"app_fully_loaded"`            // Whether the app is fully loaded and ready to use
 }
 
-func Status(w http.ResponseWriter, r *http.Request) {
+type configStatusResponse struct {
+	Status AppConfigStatus `json:"status"`
+}
+
+// Status godoc
+// @Summary      Get Config Status
+// @Description  Get the current status of the app configuration and onboarding process
+// @Tags         Config
+// @Produce      json
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=routes_config.configStatusResponse}
+// @Router       /api/config [get]
+func GetAppConfigStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Config Status", logging.LevelTrace)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response configStatusResponse
 
 	currentConfig := config.Current // Make a local copy of the current config for sanitization
 
-	status := AppConfigStatus{
+	response.Status = AppConfigStatus{
 		ConfigLoaded:    config.Loaded,
 		ConfigValid:     (config.Valid && config.MediuxValid && config.MediaServerValid),
 		NeedsSetup:      !(config.Loaded && config.Valid && config.MediuxValid && config.MediaServerValid),
@@ -35,6 +49,5 @@ func Status(w http.ResponseWriter, r *http.Request) {
 		MediuxSiteLink:  mediux.MediuxSiteLink,
 		AppFullyLoaded:  config.AppFullyLoaded,
 	}
-
-	httpx.SendResponse(w, ld, status)
+	httpx.SendResponse(w, ld, response)
 }

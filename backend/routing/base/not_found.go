@@ -6,7 +6,12 @@ import (
 	"net/http"
 )
 
-// NotFound handles requests to undefined routes.
+// RouteNotFound godoc
+// @Summary      Route Not Found Handler
+// @Description  Handle requests to routes that are not defined in the application
+// @Tags         Base
+// @Produce      json
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
 func NotFound(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Route Not Found", logging.LevelInfo)

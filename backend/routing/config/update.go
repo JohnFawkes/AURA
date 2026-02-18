@@ -18,18 +18,42 @@ import (
 	"strings"
 )
 
-func Update(w http.ResponseWriter, r *http.Request) {
+type updateConfigRequest struct {
+	Config config.Config `json:"config"`
+}
+
+type updateConfigResponse struct {
+	Message string          `json:"message"`
+	Status  AppConfigStatus `json:"status"`
+}
+
+// UpdateConfig godoc
+// @Summary      Update Config
+// @Description  Update the application configuration
+// @Tags         Config
+// @Accept       json
+// @Produce      json
+// @Param        newConfig  body      updateConfigRequest  true  "New Configuration"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200        {object}  httpx.JSONResponse{data=routes_config.updateConfigResponse}
+// @Failure      500        {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/config [post]
+func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Update Config", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
+	var req updateConfigRequest
+	var response updateConfigResponse
+
 	// Decode the incoming JSON request body
-	var newConfig config.Config
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &newConfig, "New Config")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "New Config")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
+	newConfig := req.Config
 
 	authChanged, authValid := checkConfigDifferences_Auth(ctx, config.Current.Auth, &newConfig.Auth)
 	loggingChanged, loggingValid := checkConfigDifferences_Logging(ctx, config.Current.Logging, &newConfig.Logging)
@@ -43,48 +67,23 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	sonarrRadarrChanged, sonarrRadarrValid := checkConfigDifferences_SonarrRadarr(ctx, config.Current.SonarrRadarr, &newConfig.SonarrRadarr, newConfig.MediaServer)
 	databaseChanged, databaseValid := checkConfigDifferences_Database(ctx, config.Current.Database, &newConfig.Database)
 
-	if !authValid {
-		httpx.SendResponse(w, ld, "Invalid Auth Configuration")
-		return
-	}
-	if !loggingValid {
-		httpx.SendResponse(w, ld, "Invalid Logging Configuration")
-		return
-	}
-	if !mediaServerValid {
-		httpx.SendResponse(w, ld, "Invalid Media Server Configuration")
-		return
-	}
-	if !mediuxValid {
-		httpx.SendResponse(w, ld, "Invalid Mediux Configuration")
-		return
-	}
-	if !autoDownloadValid {
-		httpx.SendResponse(w, ld, "Invalid AutoDownload Configuration")
-		return
-	}
-	if !imagesValid {
-		httpx.SendResponse(w, ld, "Invalid Images Configuration")
-		return
-	}
-	if !tmdbValid {
-		httpx.SendResponse(w, ld, "Invalid TMDB Configuration")
-		return
-	}
-	if !labelsAndTagsValid {
-		httpx.SendResponse(w, ld, "Invalid Labels and Tags Configuration")
-		return
-	}
-	if !notificationsValid {
-		httpx.SendResponse(w, ld, "Invalid Notifications Configuration")
-		return
-	}
-	if !sonarrRadarrValid {
-		httpx.SendResponse(w, ld, "Invalid Sonarr/Radarr Configuration")
-		return
-	}
-	if !databaseValid {
-		httpx.SendResponse(w, ld, "Invalid Database Configuration")
+	if !authValid || !loggingValid || !mediaServerValid || !mediuxValid || !autoDownloadValid || !imagesValid || !tmdbValid || !labelsAndTagsValid || !notificationsValid || !sonarrRadarrValid || !databaseValid {
+		ld.Status = logging.StatusError
+		logAction.SetError("Invalid configuration", "The provided configuration is invalid. Check the results for details.", map[string]any{
+			"auth_valid":            authValid,
+			"logging_valid":         loggingValid,
+			"media_server_valid":    mediaServerValid,
+			"mediux_valid":          mediuxValid,
+			"auto_download_valid":   autoDownloadValid,
+			"images_valid":          imagesValid,
+			"tmdb_valid":            tmdbValid,
+			"labels_and_tags_valid": labelsAndTagsValid,
+			"notifications_valid":   notificationsValid,
+			"sonarr_radarr_valid":   sonarrRadarrValid,
+			"database_valid":        databaseValid,
+		})
+		response.Message = "Invalid configuration. Check the results for details."
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -94,21 +93,24 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		// If nothing has changed AND the config is valid, log a warning
 		if config.Valid {
 			ld.Status = logging.StatusWarn
-			logging.LOGGER.Warn().Timestamp().Msg("No changes detected in configuration")
-			httpx.SendResponse(w, ld, "No changes detected in configuration")
+			response.Message = "No changes detected in configuration"
+			logging.LOGGER.Warn().Timestamp().Msg(response.Message)
+			httpx.SendResponse(w, ld, response)
 			return
 		} else if !config.Valid {
 			// If nothing has changed AND the config is invalid, re-validate
 			newConfig.Validate(ctx)
 			if !config.Valid {
 				ld.Status = logging.StatusError
-				logging.LOGGER.Error().Timestamp().Msg("Configuration is still invalid after update attempt")
-				httpx.SendResponse(w, ld, "Configuration is still invalid after update attempt")
+				response.Message = "Configuration is still invalid after update attempt"
+				logging.LOGGER.Error().Timestamp().Msg(response.Message)
+				httpx.SendResponse(w, ld, response)
 				return
 			} else {
 				ld.Status = logging.StatusSuccess
-				logging.LOGGER.Info().Timestamp().Msg("Configuration has been validated successfully")
-				httpx.SendResponse(w, ld, "Configuration has been validated successfully")
+				response.Message = "Configuration has been validated successfully"
+				logging.LOGGER.Info().Timestamp().Msg(response.Message)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 		}
@@ -117,7 +119,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	// Save the new config
 	saveErr := newConfig.Save(ctx)
 	if saveErr.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -133,7 +135,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		jobs.StartAutoDownloadJob()
 	}
 
-	status := AppConfigStatus{
+	response.Status = AppConfigStatus{
 		ConfigLoaded:    config.Loaded,
 		ConfigValid:     (config.Valid && config.MediuxValid && config.MediaServerValid),
 		NeedsSetup:      !(config.Loaded && config.Valid && config.MediuxValid && config.MediaServerValid),
@@ -141,7 +143,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		MediaServerName: config.MediaServerName,
 	}
 
-	httpx.SendResponse(w, ld, status)
+	httpx.SendResponse(w, ld, response)
 }
 
 // checkConfigDifferences_Auth compares old and new Auth configurations.

@@ -249,10 +249,32 @@ var possible_actions_paths = map[string]structActionLabelSection{
 	},
 }
 
-func GetLogContent(w http.ResponseWriter, r *http.Request) {
+type GetLogContents_Response struct {
+	PossibleActionsPaths map[string]structActionLabelSection `json:"possible_actions_paths"`
+	LogEntries           []*logging.LogData                  `json:"log_entries"`
+	TotalLogEntries      int                                 `json:"total_log_entries"`
+}
+
+// GetLogContents godoc
+// @Summary      Get Log Entries
+// @Description  Retrieve log entries from the server's log file with optional filtering by log level, status, and route/action. This endpoint allows clients to access and analyze logs for monitoring and debugging purposes.
+// @Tags         Logging
+// @Produce      json
+// @Param        log_levels  query     string  false  "Comma-separated list of log levels to filter by (e.g. info,error,debug)"
+// @Param        statuses    query     string  false  "Comma-separated list of statuses to filter by (e.g. success,error)"
+// @Param        actions     query     string  false  "Comma-separated list of route paths or action names to filter by (e.g. GET:/api/db,User Login)"
+// @Param        items_per_page query   int     false  "Number of log entries to return per page (default: 20)"
+// @Param        page_number query     int     false  "Page number to return (default: 1)"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=GetLogContents_Response}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/logs [get]
+func GetLogContents(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
-	logAction := ld.AddAction("Get Log Content", logging.LevelInfo)
+	logAction := ld.AddAction("Get Log Contents", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response GetLogContents_Response
 
 	// Read the log file
 	readContentsAction := logAction.AddSubAction("Read Log File", logging.LevelTrace)
@@ -261,7 +283,7 @@ func GetLogContent(w http.ResponseWriter, r *http.Request) {
 		readContentsAction.SetError("Failed to open log file", "Make sure the log file exists and is accessible", map[string]any{
 			"path":  logging.LogFilePath,
 			"error": err.Error()})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 	defer file.Close()
@@ -314,7 +336,7 @@ func GetLogContent(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			parseLogAction.SetError("Failed to read log file line", err.Error(), nil)
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 		var entry logging.LogData
@@ -483,11 +505,10 @@ func GetLogContent(w http.ResponseWriter, r *http.Request) {
 	logAction.AppendResult("log_entries_returned", len(logEntries))
 	logAction.AppendResult("log_entries_filtered", totalNumberOfLogEntries-len(logEntries))
 
-	httpx.SendResponse(w, ld, map[string]any{
-		"total_log_entries":      totalNumberOfLogEntries,
-		"possible_actions_paths": possible_actions_paths,
-		"log_entries":            logEntries,
-	})
+	response.LogEntries = logEntries
+	response.PossibleActionsPaths = possible_actions_paths
+	response.TotalLogEntries = totalNumberOfLogEntries
+	httpx.SendResponse(w, ld, response)
 }
 
 // Recursively filter sub-actions by log level

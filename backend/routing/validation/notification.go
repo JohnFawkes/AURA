@@ -10,30 +10,52 @@ import (
 	"net/http"
 )
 
+type SendTestNotification_Request struct {
+	Provider config.Config_Notification_Provider `json:"provider"`
+}
+
+type SendTestNotification_Response struct {
+	Message string `json:"message"`
+}
+
+// SendTestNotification godoc
+// @Summary      Send Test Notification
+// @Description  Send a test notification using the specified notification provider. This endpoint is used to verify that the notification settings are correct and that notifications can be sent successfully. The request should include the notification provider information, and the response will indicate whether the test notification was sent successfully or if there were any errors.
+// @Tags         Validation
+// @Accept       json
+// @Produce      json
+// @Param        provider body SendTestNotification_Request true "Notification Provider Information for sending the test notification"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=SendTestNotification_Response}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/validate/notifications [post]
 func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Send Test Notification", logging.LevelDebug)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var req SendTestNotification_Request
+	var response SendTestNotification_Response
 
 	// Get the Notification Provider from the request body
-	var nProvider config.Config_Notification_Provider
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &nProvider, "Notification Provider")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Notification Provider")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
+	nProvider := req.Provider
 
 	// If the provider is not enabled, return early
 	if !nProvider.Enabled {
 		logAction.SetError("Notification provider is not enabled", fmt.Sprintf("%s is not enabled, cannot send test notification", nProvider.Provider), nil)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	// Validate the provider settings
 	validProvider := config.ValidateNotificationsProvider(ctx, &nProvider)
 	if !validProvider {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -55,14 +77,14 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 			unmasked := getUnmaskedDiscordWebhook(webhook)
 			if unmasked == "" {
 				logAction.SetError("Unable to unmask Discord webhook", "Please provide the full Discord webhook URL", nil)
-				httpx.SendResponse(w, ld, nil)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 			nProvider.Discord.Webhook = unmasked
 		}
 		Err := notification.SendDiscordMessage(ctx, nProvider.Discord, message, imageURL, title)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	case "Pushover":
@@ -76,14 +98,14 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		}
 		if userKey == "" || apiToken == "" {
 			logAction.SetError("Unable to unmask Pushover credentials", "Please provide the full Pushover UserKey and ApiToken", nil)
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 		nProvider.Pushover.UserKey = userKey
 		nProvider.Pushover.ApiToken = apiToken
 		Err := notification.SendPushoverMessage(ctx, nProvider.Pushover, message, imageURL, title)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	case "Gotify":
@@ -97,29 +119,29 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		}
 		if url == "" || apiToken == "" {
 			logAction.SetError("Unable to unmask Gotify credentials", "Please provide the full Gotify URL and ApiToken", nil)
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 		nProvider.Gotify.URL = url
 		nProvider.Gotify.ApiToken = apiToken
 		Err := notification.SendGotifyMessage(ctx, nProvider.Gotify, message, imageURL, title)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	case "Webhook":
 		Err := notification.SendWebhookMessage(ctx, nProvider.Webhook, message, imageURL, title)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	default:
 		logAction.SetError("Unsupported notification provider", fmt.Sprintf("The notification provider '%s' is not supported for test messages", nProvider.Provider), nil)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
-
-	httpx.SendResponse(w, ld, "ok")
+	response.Message = fmt.Sprintf("Test notification sent successfully via %s", nProvider.Provider)
+	httpx.SendResponse(w, ld, response)
 }
 
 func getUnmaskedPushoverField(field, currentValue string) string {

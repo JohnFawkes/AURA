@@ -13,20 +13,39 @@ import (
 	"net/http"
 )
 
-func AddItem(w http.ResponseWriter, r *http.Request) {
+type addItemRequest struct {
+	Complete  bool                     `json:"complete"`
+	MediaItem models.MediaItem         `json:"media_item"`
+	PosterSet models.DBPosterSetDetail `json:"poster_set"`
+}
+
+type addItemResponse struct {
+	SavedItem models.DBSavedItem `json:"saved_item"`
+}
+
+// AddItem godoc
+// @Summary      Add Item To Database
+// @Description  Add a Media Item and Poster Set to the database. If the item already exists, it will be updated with the new Media Item and Poster Set information.
+// @Tags         Database
+// @Accept       json
+// @Produce      json
+// @Param        req  body      addItemRequest  true  "Add Item Request"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200           {object}  httpx.JSONResponse{data=addItemResponse}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/db [post]
+func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Add Item To Database", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
-	var req struct {
-		Complete  bool                     `json:"complete"`
-		MediaItem models.MediaItem         `json:"media_item"`
-		PosterSet models.DBPosterSetDetail `json:"poster_set"`
-	}
+	var req addItemRequest
+	var response addItemResponse
 
 	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Add Item To Database - Decode Request Body")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 	logAction.AppendResult("complete", req.Complete)
@@ -37,7 +56,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 			"tmdb_id":       req.MediaItem.TMDB_ID,
 			"library_title": req.MediaItem.LibraryTitle,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -48,7 +67,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 			"library_title": req.MediaItem.LibraryTitle,
 			"poster_set":    req.PosterSet,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -61,7 +80,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 		// Get the MediaItem details from the Media Server
 		found, Err := mediaserver.GetMediaItemDetails(ctx, &req.MediaItem)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 		if !found {
@@ -69,7 +88,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 				"tmdb_id":       req.MediaItem.TMDB_ID,
 				"library_title": req.MediaItem.LibraryTitle,
 			})
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 
@@ -78,21 +97,21 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 		case "show":
 			showSet, _, Err := mediux.GetShowSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle)
 			if Err.Message != "" {
-				httpx.SendResponse(w, ld, nil)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 			fullSet.PosterSet = showSet.PosterSet
 		case "movie":
 			movieSet, _, Err := mediux.GetMovieSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle)
 			if Err.Message != "" {
-				httpx.SendResponse(w, ld, nil)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 			fullSet.PosterSet = movieSet.PosterSet
 		case "collection":
 			collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, req.PosterSet.ID, req.MediaItem.TMDB_ID, req.MediaItem.LibraryTitle)
 			if Err.Message != "" {
-				httpx.SendResponse(w, ld, nil)
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 			fullSet.PosterSet = collectionSet.PosterSet
@@ -100,14 +119,12 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 			logAction.SetError("Invalid Poster Set Type", "Poster Set type must be either 'show' or 'movie'", map[string]any{
 				"set_type": req.PosterSet.Type,
 			})
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	}
 
 	saveItem := models.DBSavedItem{
-		//		TMDB_ID:      req.MediaItem.TMDB_ID,
-		//		LibraryTitle: req.MediaItem.LibraryTitle,
 		MediaItem:  req.MediaItem,
 		PosterSets: []models.DBPosterSetDetail{fullSet},
 	}
@@ -115,7 +132,7 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 	// Save the Item to the Database
 	Err = database.UpsertSavedItem(ctx, saveItem)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -138,5 +155,6 @@ func AddItem(w http.ResponseWriter, r *http.Request) {
 		sonarr_radarr.HandleTags(ctx, saveItem.MediaItem, fullSet.SelectedTypes)
 	}()
 
-	httpx.SendResponse(w, ld, saveItem)
+	response.SavedItem = saveItem
+	httpx.SendResponse(w, ld, response)
 }

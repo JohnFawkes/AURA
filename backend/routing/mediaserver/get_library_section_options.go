@@ -4,35 +4,57 @@ import (
 	"aura/config"
 	"aura/logging"
 	"aura/mediaserver"
+	"aura/models"
 	"aura/utils/httpx"
 	"net/http"
 )
 
+type getLibrarySectionOptionsRequest struct {
+	MediaServer config.Config_MediaServer `json:"media_server"`
+}
+
+type getLibrarySectionOptionsResponse struct {
+	LibrarySections []models.LibrarySection `json:"library_sections"`
+}
+
+// GetLibrarySectionOptions godoc
+// @Summary      Get Library Section Options
+// @Description  Retrieve a list of library sections from a specified media server configuration. This endpoint accepts a media server configuration in the request body and returns the available library sections for that media server, allowing clients to display options for users to select which library section they want to interact with.
+// @Tags         MediaServer
+// @Accept       json
+// @Produce      json
+// @Param        request body getLibrarySectionOptionsRequest true "Media Server Configuration"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=getLibrarySectionOptionsResponse}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/mediaserver/libraries/options [post]
 func GetLibrarySectionOptions(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Library Section Options", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response getLibrarySectionOptionsResponse
 
 	// Get the reqeuest body
 	var msConfig config.Config_MediaServer
 	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &msConfig, "Get Library Section Options - Decode Request Body")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	// Get all available library sections from the Media Server
-	librarySections, Err := mediaserver.GetLibrarySections(ctx, &msConfig)
+	response.LibrarySections, Err = mediaserver.GetLibrarySections(ctx, &msConfig)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	if len(librarySections) == 0 {
+	if len(response.LibrarySections) == 0 {
 		logAction.SetError("No library sections found", "No library sections could be retrieved from the Media Server", nil)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	httpx.SendResponse(w, ld, librarySections)
+	httpx.SendResponse(w, ld, response)
 }

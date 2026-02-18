@@ -9,6 +9,17 @@ import (
 	"net/http"
 )
 
+// GetMediuxImage godoc
+// @Summary      Get Mediux Image
+// @Description  Get an image from Mediux by asset ID, modified date and quality
+// @Tags         Images
+// @Produce      image/jpeg
+// @Param        asset_id   query     string  true  "Asset ID of the image to fetch"
+// @Param        modified_date   query     string  true  "Modified date of the image in ISO format (e.g. 2024-01-01T12:00:00Z)"
+// @Param        quality   query     string  false  "Quality of the image to fetch (thumb, optimized, original). Default is thumb."
+// @Success      200  {string}  string "Image data in JPEG format"
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/images/mediux/item [get]
 func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Mediux Image", logging.LevelInfo)
@@ -52,6 +63,16 @@ func GetMediuxImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
+// GetMediuxAvatarImage godoc
+// @Summary      Get Mediux Avatar Image
+// @Description  Get a user avatar image from Mediux by avatar ID or username
+// @Tags         Images
+// @Produce      image/jpeg
+// @Param        avatar_id   query     string  false  "Avatar ID of the user to fetch the avatar for"
+// @Param        username    query     string  false  "Username of the user to fetch the avatar for (only used if avatar_id is not provided)"
+// @Success      200  {string}  string "Avatar image data in JPEG format"
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/images/mediux/avatar [get]
 func GetMediuxAvatarImage(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Mediux Avatar Image", logging.LevelInfo)

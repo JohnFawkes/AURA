@@ -10,19 +10,38 @@ import (
 	"net/http"
 )
 
-func DownloadImage(w http.ResponseWriter, r *http.Request) {
+type DownloadImageFileForMediaItem_Request struct {
+	ImageFile models.ImageFile `json:"image_file"`
+	MediaItem models.MediaItem `json:"media_item"`
+}
+
+type DownloadImageFileForMediaItem_Response struct {
+	Result string `json:"result"`
+}
+
+// DownloadImageFileForMediaItem godoc
+// @Summary      Download Image
+// @Description  Download and apply an image for a Media Item in the media server.
+// @Tags         Download
+// @Accept       json
+// @Produce      json
+// @Param        req  body      DownloadImageFileForMediaItem_Request  true  "Download Image Request"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200           {object}  httpx.JSONResponse{data=DownloadImageFileForMediaItem_Response}
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/download/image/item [post]
+func DownloadImageFileForMediaItem(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Download Image", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var req DownloadImageFileForMediaItem_Request
+	var response DownloadImageFileForMediaItem_Response
 
 	// Parse the request body
-	var req struct {
-		ImageFile models.ImageFile `json:"image_file"`
-		MediaItem models.MediaItem `json:"media_item"`
-	}
 	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Download Image - Decode Request Body")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -36,7 +55,7 @@ func DownloadImage(w http.ResponseWriter, r *http.Request) {
 			"library_title": req.MediaItem.LibraryTitle,
 		})
 		actionValidate.Complete()
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -49,7 +68,7 @@ func DownloadImage(w http.ResponseWriter, r *http.Request) {
 			"type": req.ImageFile.Type,
 		})
 		actionValidate.Complete()
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 	actionValidate.Complete()
@@ -57,9 +76,10 @@ func DownloadImage(w http.ResponseWriter, r *http.Request) {
 	// Make the download and apply the image
 	Err = mediaserver.DownloadApplyImageToMediaItem(ctx, &req.MediaItem, req.ImageFile)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	httpx.SendResponse(w, ld, fmt.Sprintf("Sucessfully downloaded %s", utils.GetFileDownloadName(req.MediaItem.Title, req.ImageFile)))
+	response.Result = fmt.Sprintf("Sucessfully downloaded %s", utils.GetFileDownloadName(req.MediaItem.Title, req.ImageFile))
+	httpx.SendResponse(w, ld, response)
 }

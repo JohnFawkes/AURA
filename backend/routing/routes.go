@@ -29,6 +29,10 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT Token Authentication using the Bearer scheme. Example: "Authorization: Bearer {token}"
 func AddRoutes(r *chi.Mux) {
 	// If the config is not valid, only allow access to the /onboarding routes
 	if !(config.Loaded && config.Valid) {
@@ -61,10 +65,10 @@ func AddRoutes(r *chi.Mux) {
 		//////////////////
 
 		// Login - Obtain JWT Token
-		r.Post("/login", routes_auth.Login)
+		r.Post("/login", routes_auth.AttemptLogin)
 
 		// Search - Public Search Endpoint (Media Items, Saved Sets and MediUX Users)
-		r.Get("/search", routes_search.Search)
+		r.Get("/search", routes_search.HandleSearch)
 
 		// Sonarr Webhook Routes - Public since Sonarr/Radarr need to access it without authentication
 		r.Post("/sonarr/webhook", routes_sonarr_radarr.SonarrWebhookHandler)
@@ -79,43 +83,34 @@ func AddRoutes(r *chi.Mux) {
 
 			// Config Routes
 			r.Route("/config", func(r chi.Router) {
-				r.Get("/", routes_config.Status)
-				r.Post("/", routes_config.Update)
-				r.Patch("/", routes_config.Reload)
-			})
-
-			// Jobs Routes
-			r.Route("/jobs", func(r chi.Router) {
-				r.Get("/", routes_jobs.GetAllJobs)
-				// r.Post("/run/refresh-media-items-collections", StartRefreshMediaItemsCollectionsJobHandler)
-				// r.Post("/run/refresh-mediux-users", StartRefreshMediuxUsersJobHandler)
-				// r.Post("/run/check-mediux-site-link", StartCheckMediuxSiteLinkJobHandler)
-				// r.Post("/run/check-rating-key-changes", StartCheckForRatingKeyChangesJobHandler)
+				r.Get("/", routes_config.GetAppConfigStatus)
+				r.Post("/", routes_config.UpdateAppConfig)
+				r.Patch("/", routes_config.ReloadAppConfig)
 			})
 
 			// Database Routes
 			r.Route("/db", func(r chi.Router) {
 				r.Get("/", routes_db.GetAllItems)
-				r.Post("/", routes_db.AddItem)
-				r.Patch("/", routes_db.UpdateItem)
-				r.Delete("/", routes_db.DeleteItem)
-				r.Patch("/ignore", routes_db.IgnoreItem)
-				r.Patch("/ignore/stop", routes_db.StopIgnoringItem)
-				r.Post("/force-check", routes_download.AutoDownloadForceCheck)
+				r.Post("/", routes_db.AddNewItemToDB)
+				r.Patch("/", routes_db.UpdateItemInDB)
+				r.Delete("/", routes_db.DeleteItemFromDB)
+				r.Patch("/ignore", routes_db.IgnoreItemInDB)
+				r.Patch("/ignore/stop", routes_db.StopIgnoringItemInDB)
+				r.Post("/force-check", routes_db.AutoDownloadForceCheck)
 			})
 
 			// Download Routes
 			r.Route("/download", func(r chi.Router) {
 				// Download
-				r.Post("/image/item", routes_download.DownloadImage)
-				r.Post("/image/collection", routes_download.DownloadCollectionImage)
+				r.Post("/image/item", routes_download.DownloadImageFileForMediaItem)
+				r.Post("/image/collection", routes_download.DownloadImageFileForCollectionItem)
 
 				// Download Queue Routes
 				r.Route("/queue", func(r chi.Router) {
-					r.Get("/", routes_download.QueueGetStatus)
-					r.Get("/item", routes_download.QueueGetItems)
-					r.Post("/item", routes_download.QueueAddItem)
-					r.Delete("/item", routes_download.QueueRemoveItem)
+					r.Get("/", routes_download.GetDownloadQueueStatus)
+					r.Get("/item", routes_download.GetAllDownloadQueueItems)
+					r.Post("/item", routes_download.AddItemToDownloadQueue)
+					r.Delete("/item", routes_download.RemoveItemFromDownloadQueue)
 				})
 			})
 
@@ -128,14 +123,24 @@ func AddRoutes(r *chi.Mux) {
 				r.Delete("/temp", routes_images.DeleteTempImages)
 			})
 
+			// Jobs Routes
+			r.Route("/jobs", func(r chi.Router) {
+				r.Get("/", routes_jobs.GetAllJobs)
+				r.Post("/", routes_jobs.RunJob)
+			})
+
 			// Labels & Tags Route
-			r.Post("/labels-tags", routes_labels_tags.ApplyLabelsTags)
+			r.Post("/labels-tags", routes_labels_tags.ApplyLabelsAndTagsToItem)
 
 			// Logging Routes
 			r.Route("/logs", func(r chi.Router) {
-				r.Get("/", routes_logging.GetLogContent)
-				r.Delete("/", routes_logging.ClearLogs)
+				r.Get("/", routes_logging.GetLogContents)
+				r.Delete("/", routes_logging.ClearLogFiles)
 			})
+
+			// Plex OAuth Routes
+			r.Get("/oauth/plex", routes_plex.GetPlexPinAndID)
+			r.Post("/oauth/plex", routes_plex.CheckAuthStatusWithPlex)
 
 			// Media Server Routes
 			r.Route("/mediaserver", func(r chi.Router) {
@@ -149,16 +154,12 @@ func AddRoutes(r *chi.Mux) {
 				r.Post("/refresh", routes_ms.RefreshMediaItemMetadata)
 			})
 
-			// Plex OAuth Routes
-			r.Get("/oauth/plex", routes_plex.GetPlexPinAndID)
-			r.Post("/oauth/plex", routes_plex.CheckPlexPin)
-
 			// MediUX Routes
 			r.Route("/mediux", func(r chi.Router) {
 				r.Get("/user", routes_mediux.GetUserFollowingAndHiding)
 				r.Get("/set", routes_mediux.GetSetByID)
 				r.Get("/sets/item", routes_mediux.GetItemSets)
-				r.Get("/sets/user", routes_mediux.GetUserSets)
+				r.Get("/sets/user", routes_mediux.GetAllUserSets)
 			})
 
 			// Validation Routes
@@ -186,18 +187,18 @@ func addOnboardingRoutes(r *chi.Mux) {
 
 		// Config Routes
 		r.Route("/config", func(r chi.Router) {
-			r.Get("/", routes_config.Status)
-			r.Post("/", routes_config.Update)
+			r.Get("/", routes_config.GetAppConfigStatus)
+			r.Post("/", routes_config.UpdateAppConfig)
 		})
 
 		// Plex OAuth Routes
 		r.Get("/oauth/plex", routes_plex.GetPlexPinAndID)
-		r.Post("/oauth/plex", routes_plex.CheckPlexPin)
+		r.Post("/oauth/plex", routes_plex.CheckAuthStatusWithPlex)
 
 		// Logging Routes
 		r.Route("/logs", func(r chi.Router) {
-			r.Get("/", routes_logging.GetLogContent)
-			r.Delete("/", routes_logging.ClearLogs)
+			r.Get("/", routes_logging.GetLogContents)
+			r.Delete("/", routes_logging.ClearLogFiles)
 		})
 
 		r.Post("/mediaserver/libraries/options", routes_ms.GetLibrarySectionOptions)

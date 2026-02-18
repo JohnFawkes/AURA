@@ -9,19 +9,37 @@ import (
 	"net/http"
 )
 
-func ApplyLabelsTags(w http.ResponseWriter, r *http.Request) {
+type applyLabelsTagsRequest struct {
+	MediaItem     models.MediaItem     `json:"media_item"`
+	SelectedTypes models.SelectedTypes `json:"selected_types"`
+}
+
+type applyLabelsTagsResponse struct {
+	Message string `json:"message"`
+}
+
+// ApplyLabelsTags godoc
+// @Summary      Apply Labels/Tags
+// @Description  Apply labels and tags to a Media Item in the media server and Sonarr/Radarr.
+// @Tags         Labels/Tags
+// @Accept       json
+// @Produce      json
+// @Param        req  body      applyLabelsTagsRequest  true  "Apply Labels/Tags Request"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200           {object}  httpx.JSONResponse{data=applyLabelsTagsResponse}
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/labels-tags/apply [post]
+func ApplyLabelsAndTagsToItem(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Apply Labels/Tags", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var req applyLabelsTagsRequest
+	var response applyLabelsTagsResponse
 
-	// Parse and validate request body
-	var req struct {
-		MediaItem     models.MediaItem     `json:"media_item"`
-		SelectedTypes models.SelectedTypes `json:"selected_types"`
-	}
 	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Apply Labels/Tags - Decode Request Body")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -33,16 +51,17 @@ func ApplyLabelsTags(w http.ResponseWriter, r *http.Request) {
 				"media_item": req.MediaItem,
 			},
 		)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	mediaserver.AddLabelToMediaItem(ctx, req.MediaItem, req.SelectedTypes)
 	Err = sonarr_radarr.HandleTags(ctx, req.MediaItem, req.SelectedTypes)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	httpx.SendResponse(w, ld, "ok")
+	response.Message = "Labels/Tags applied successfully"
+	httpx.SendResponse(w, ld, response)
 }

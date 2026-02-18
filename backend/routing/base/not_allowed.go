@@ -6,6 +6,12 @@ import (
 	"net/http"
 )
 
+// MethodNotAllowed godoc
+// @Summary      Method Not Allowed Handler
+// @Description  Handle requests with HTTP methods that are not allowed for the endpoint
+// @Tags         Base
+// @Produce      json
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
 func MethodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Method Not Allowed", logging.LevelInfo)

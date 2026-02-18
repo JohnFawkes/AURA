@@ -8,6 +8,17 @@ import (
 	"net/http"
 )
 
+// GetMediaItemImage godoc
+// @Summary      Get Media Item Image
+// @Description  Get a media item image (poster, backdrop or thumb) from the media server by rating key and image type
+// @Tags         Images
+// @Produce      image/jpeg
+// @Param        rating_key   query     string  true  "Rating Key of the media item"
+// @Param        image_rating_key   query     string  false  "Rating Key of the specific image to fetch (if different from the media item rating key)"
+// @Param        image_type   query     string  true  "Type of image to fetch (poster, backdrop or thumb)"
+// @Success      200  {string}  string "Image data in JPEG format"
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/images/media/item [get]
 func GetMediaItemImage(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Media Item Image From Media Server", logging.LevelInfo)
@@ -66,6 +77,16 @@ func GetMediaItemImage(w http.ResponseWriter, r *http.Request) {
 	w.Write(imageData)
 }
 
+// GetCollectionItemImage godoc
+// @Summary      Get Collection Item Image
+// @Description  Get a collection item image (poster or backdrop) from the media server by rating key and image type
+// @Tags         Images
+// @Produce      image/jpeg
+// @Param        rating_key   query     string  true  "Rating Key of the collection item"
+// @Param        image_type   query     string  true  "Type of image to fetch (poster or backdrop)"
+// @Success      200  {string}  string "Image data in JPEG format"
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/images/media/collection [get]
 func GetCollectionItemImage(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Collection Item Image From Media Server", logging.LevelInfo)

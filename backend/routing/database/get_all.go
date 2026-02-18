@@ -10,12 +10,43 @@ import (
 	"strings"
 )
 
+type getAllItemsResponse struct {
+	Items       []models.DBSavedItem `json:"items"`
+	TotalItems  int                  `json:"total_items"`
+	UniqueUsers []string             `json:"unique_users"`
+}
+
+// GetAllItems godoc
+// @Summary      Get All Database Items
+// @Description  Retrieve all media items and their associated poster sets from the database, with optional filtering and pagination.
+// @Tags         Database
+// @Accept       json
+// @Produce      json
+// @Param        item_tmdb_id       query     string  false  "Filter by TMDB ID (partial match)"
+// @Param        item_library_title query     string  false  "Filter by Library Title (partial match)"
+// @Param        item_year          query     int     false  "Filter by Year"
+// @Param        item_title         query     string  false  "Filter by Title (partial match)"
+// @Param        library_titles     query     string  false  "Filter by Library Titles (comma-separated for multiple)"
+// @Param        image_types        query     string  false  "Filter by Image Types (comma-separated for multiple)"
+// @Param        autodownload       query     string  false  "Filter by Autodownload status (on, off, all)"
+// @Param        multiset_only      query     bool    false  "Filter to only items with multiple poster sets"
+// @Param        usernames          query     string  false  "Filter by Usernames (comma-separated for multiple)"
+// @Param        items_per_page     query     int     false  "Number of items per page for pagination (default: 20, -1 for no pagination)"
+// @Param        page_number        query     int     false  "Page number for pagination (default: 1)"
+// @Param        sort_option        query     string  false  "Sort option (e.g., date_downloaded, title, year)"
+// @Param        sort_order         query     string  false  "Sort order (asc or desc)"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200               {object}   httpx.JSONResponse{data=getAllItemsResponse}
+// @Failure      500  			   {object}   httpx.JSONResponse "Internal Server Error"
+// @Router       /api/db [get]
 func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get All Database Items", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
 
 	dbFilter := models.DBFilter{}
+	var response getAllItemsResponse
 
 	getQueryParamsAction := logAction.AddSubAction("Get Query Parameters", logging.LevelDebug)
 	// Query Param - TMDB ID (Search Term)
@@ -114,7 +145,7 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	// Get the items from the database
 	out, Err := database.GetAllSavedSets(ctx, dbFilter)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 	totalItems := out.Total
@@ -122,21 +153,19 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	// // Get Saved Sets Count
 	// totalSets, ErrCount := database.GetCountSavedSets(ctx)
 	// if ErrCount.Message != "" {
-	// 	httpx.SendResponse(w, ld, nil)
+	// 	httpx.SendResponse(w, ld, response)
 	// 	return
 	// }
 
 	// Get a list of unique users
 	uniqueUsers, Err := database.GetAllUniqueUsers(ctx)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	httpx.SendResponse(w, ld, map[string]any{
-		"items":        out.Items,
-		"total_items":  totalItems,
-		"unique_users": uniqueUsers,
-		//"total_sets":   totalSets,
-	})
+	response.Items = out.Items
+	response.TotalItems = totalItems
+	response.UniqueUsers = uniqueUsers
+	httpx.SendResponse(w, ld, response)
 }

@@ -11,17 +11,38 @@ import (
 	"net/http"
 )
 
+type GetMediaItemDetails_Response struct {
+	ServerType     string                    `json:"server_type"`
+	MediaItem      models.MediaItem          `json:"media_item"`
+	PosterSets     models.PosterSetsResponse `json:"poster_sets"`
+	UserFollowHide []models.MediuxUserInfo   `json:"user_follow_hide"`
+}
+
+// GetMediaItemDetails godoc
+// @Summary      Get Media Item Details
+// @Description  Retrieve detailed information about a specific media item from the media server, including its metadata, associated poster sets, and user follow/hide status. This endpoint accepts a rating key as a query parameter to identify the media item and returns comprehensive details that can be used to display the media item information and related sets in the client application.
+// @Tags         MediaServer
+// @Accept       json
+// @Produce      json
+// @Param        rating_key query string true "Rating Key of the Media Item"
+// @Param        return_type query string false "Return Type (full or item, default is full)"
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=GetMediaItemDetails_Response}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/mediaserver/item [get]
 func GetMediaItemDetails(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Media Item Details", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response GetMediaItemDetails_Response
 
 	actionGetQueryParams := logAction.AddSubAction("Get Query Params", logging.LevelTrace)
 	ratingKey := r.URL.Query().Get("rating_key")
 	returnType := r.URL.Query().Get("return_type")
 	if ratingKey == "" {
 		actionGetQueryParams.SetError("Missing query parameter: rating_key", "Make sure to provide a valid rating_key", nil)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 	if returnType == "" || (returnType != "full" && returnType != "item") {
@@ -34,14 +55,14 @@ func GetMediaItemDetails(w http.ResponseWriter, r *http.Request) {
 		actionGetQueryParams.SetError("Media item not found in cache", "Make sure the rating_key is correct and the media server is connected", map[string]any{
 			"rating_key": ratingKey,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	// Get detailed info from the media server
 	found, Err := mediaserver.GetMediaItemDetails(ctx, mediaItem)
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -49,16 +70,8 @@ func GetMediaItemDetails(w http.ResponseWriter, r *http.Request) {
 		logAction.SetError("Media item details not found", "The media item details could not be retrieved from the media server", map[string]any{
 			"rating_key": ratingKey,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
-	}
-
-	// Prepare response
-	var response struct {
-		ServerType     string                    `json:"server_type"`
-		MediaItem      models.MediaItem          `json:"media_item"`
-		PosterSets     models.PosterSetsResponse `json:"poster_sets"`
-		UserFollowHide []models.MediuxUserInfo   `json:"user_follow_hide"`
 	}
 
 	response.ServerType = config.Current.MediaServer.Type
@@ -102,7 +115,7 @@ func GetMediaItemDetails(w http.ResponseWriter, r *http.Request) {
 		logAction.SetError("Invalid Media Item Type", "The media item type is not valid for fetching sets", map[string]any{
 			"item_type": mediaItem.Type,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 

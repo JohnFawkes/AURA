@@ -11,41 +11,55 @@ import (
 	"net/http"
 )
 
+type GetMovieCollections_Response struct {
+	Collections []models.CollectionItem `json:"collections"`
+}
+
+// GetMovieCollections godoc
+// @Summary      Get Movie Collections
+// @Description  Retrieve a list of movie collections from the media server. This endpoint fetches all movie collections available in the media server's movie libraries, allowing clients to display and interact with the collections of movies configured on the media server.
+// @Tags         MediaServer
+// @Accept       json
+// @Produce      json
+// @Security 	 BearerAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
+// @Success      200  {object}  httpx.JSONResponse{data=GetMovieCollections_Response}
+// @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"
+// @Router       /api/mediaserver/collections [get]
 func GetMovieCollections(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Get Movie Collections", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+	var response GetMovieCollections_Response
 
-	var collections []models.CollectionItem
 	var Err logging.LogErrorInfo
 	switch config.Current.MediaServer.Type {
 	case "Plex":
 		logging.DevMsg("Fetching movie collections from Plex media server")
-		collections, Err = getPlexMovieCollections(ctx)
+		response.Collections, Err = getPlexMovieCollections(ctx)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	case "Emby", "Jellyfin":
 		logging.DevMsg("Fetching movie collections from Emby/Jellyfin media server")
-		collections, Err = getEmbyJellyfinMovieCollections(ctx)
+		response.Collections, Err = getEmbyJellyfinMovieCollections(ctx)
 		if Err.Message != "" {
-			httpx.SendResponse(w, ld, nil)
+			httpx.SendResponse(w, ld, response)
 			return
 		}
 	default:
 		logAction.SetError("Unsupported media server type", "The configured media server type is not supported for fetching collections", map[string]any{
 			"media_server_type": config.Current.MediaServer.Type,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	httpx.SendResponse(w, ld, collections)
+	httpx.SendResponse(w, ld, response)
 }
 
 func getPlexMovieCollections(ctx context.Context) (collections []models.CollectionItem, Err logging.LogErrorInfo) {
-
 	collections = []models.CollectionItem{}
 
 	// Get all Movie Library Sections
