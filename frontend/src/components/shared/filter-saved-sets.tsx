@@ -33,7 +33,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 type SavedSetsFilterProps = {
   getSectionSummaries: () => { title?: string; type?: string }[];

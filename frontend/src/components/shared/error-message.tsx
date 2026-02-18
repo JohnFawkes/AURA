@@ -10,7 +10,7 @@ import { H3, H4, Lead } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 
 interface ErrorMessageProps<T> {
   error: APIResponse<T> | null;

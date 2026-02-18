@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { ITEMS_PER_PAGE_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import { ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 export function SelectItemsPerPage({
   setCurrentPage,

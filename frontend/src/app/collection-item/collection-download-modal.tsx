@@ -1,6 +1,6 @@
 "use client";
 
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { formatDownloadSize } from "@/helper/format-download-size";
 import { DownloadImageFileForCollectionItem } from "@/services/downloads/download-collection-image";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,7 +36,7 @@ import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { ImageFile, SetRef } from "@/types/media-and-posters/sets";
+import type { ImageFile, SetRef } from "@/types/media-and-posters/sets";
 
 export interface CollectionsDownloadModalProps {
   item: CollectionItem;

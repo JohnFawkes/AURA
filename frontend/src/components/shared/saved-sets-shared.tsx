@@ -26,10 +26,10 @@ import {
 import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBPosterSetDetail, DBSavedItem } from "@/types/database/db-poster-set";
-import { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBPosterSetDetail, DBSavedItem } from "@/types/database/db-poster-set";
+import type { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 export const refreshPosterSet = async ({
   editSets,

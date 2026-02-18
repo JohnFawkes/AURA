@@ -8,7 +8,7 @@ import { H1, Lead } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 interface ViewCurrentImagesModalProps {
   mediaItem: MediaItem;

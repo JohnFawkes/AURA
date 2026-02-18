@@ -1,6 +1,6 @@
 "use client";
 
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { decode } from "blurhash";
 
 import { useMemo, useState } from "react";
@@ -14,8 +14,8 @@ import { type AspectRatio, getAspectRatioClass, getImageSizes } from "@/lib/imag
 import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { ImageFile } from "@/types/media-and-posters/sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { ImageFile } from "@/types/media-and-posters/sets";
 
 interface AssetImageProps {
   image: ImageFile | MediaItem | CollectionItem | string;

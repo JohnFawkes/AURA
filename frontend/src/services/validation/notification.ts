@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfigNotificationProviders } from "@/types/config/config";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfigNotificationProviders } from "@/types/config/config";
 
 export interface SendTestNotification_Request {
   provider: AppConfigNotificationProviders;

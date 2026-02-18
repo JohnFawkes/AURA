@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 
 import { cn } from "@/lib/cn";
 
-import { MediaItem, MediaItemEpisode, MediaItemSeason } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem, MediaItemEpisode, MediaItemSeason } from "@/types/media-and-posters/media-item-and-library";
 
 export interface MediaItemDetailsRefreshMetadataProps {
   mediaItem: MediaItem;

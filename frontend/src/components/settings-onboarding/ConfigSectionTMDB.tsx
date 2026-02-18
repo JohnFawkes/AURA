@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigTMDB } from "@/types/config/config";
+import type { AppConfigTMDB } from "@/types/config/config";
 
 interface ConfigSectionTMDBProps {
   value: AppConfigTMDB;

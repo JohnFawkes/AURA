@@ -1,10 +1,10 @@
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import apiClient from "@/services/api-client";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 
 export interface GetCollectionItems_Response {
   collections: CollectionItem[];

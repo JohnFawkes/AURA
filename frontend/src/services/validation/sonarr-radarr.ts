@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfigSonarrRadarrApp } from "@/types/config/config";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfigSonarrRadarrApp } from "@/types/config/config";
 
 export interface ValidateSonarrRadarrInfo_Request {
   sonarr_radarr_info: AppConfigSonarrRadarrApp;

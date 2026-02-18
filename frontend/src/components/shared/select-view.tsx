@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
+import type { TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
 
 export type ViewControlOption = {
   value: string;

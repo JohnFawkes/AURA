@@ -4,7 +4,7 @@ import { AssetImage } from "@/components/shared/asset-image";
 
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
-import { Guid } from "@/types/media-and-posters/media-item-and-library";
+import type { Guid } from "@/types/media-and-posters/media-item-and-library";
 
 interface ProviderInfo {
   id: string;

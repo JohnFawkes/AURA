@@ -3,9 +3,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfigMediaServer } from "@/types/config/config";
-import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfigMediaServer } from "@/types/config/config";
+import type { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
 
 export interface GetLibrarySectionOptions_Request {
   media_server: AppConfigMediaServer;

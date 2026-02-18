@@ -7,9 +7,9 @@ import { CarouselItem } from "@/components/ui/carousel";
 
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
-import { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
 
 export function CarouselDisplay({
   sets,

@@ -2,7 +2,8 @@
 
 import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
-import { TMDBLookupMap, createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
+import type { TMDBLookupMap } from "@/helper/search-idb-for-tmdb-id";
+import { createTMDBLookupMap, searchWithLookupMap } from "@/helper/search-idb-for-tmdb-id";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAllUserSets } from "@/services/mediux/get-user-sets";
 import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
@@ -33,9 +34,9 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useUserPageStore } from "@/lib/stores/page-store-user";
 
-import { APIResponse } from "@/types/api/api-response";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { BoxsetRef, CreatorSetsResponse, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { BoxsetRef, CreatorSetsResponse, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 function processSets(
   sets: SetRef[],

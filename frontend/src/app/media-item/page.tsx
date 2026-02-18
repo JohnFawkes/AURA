@@ -36,9 +36,9 @@ import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 import { useHomePageStore } from "@/lib/stores/page-store-home";
 import { useMediaPageStore } from "@/lib/stores/page-store-media";
 
-import { APIResponse } from "@/types/api/api-response";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 const MediaItemPage = () => {
   const router = useRouter();

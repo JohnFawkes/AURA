@@ -1,4 +1,4 @@
-import { AppConfig } from "@/types/config/config";
+import type { AppConfig } from "@/types/config/config";
 
 export interface AppStatusResponse {
   config_loaded: boolean;

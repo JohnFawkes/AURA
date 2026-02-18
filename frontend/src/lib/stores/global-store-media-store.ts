@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 interface MediaStore {
   mediaItem: MediaItem | null;

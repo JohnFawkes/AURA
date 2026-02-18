@@ -4,9 +4,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { log } from "@/lib/logger";
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBPosterSetDetail, DBSavedItem } from "@/types/database/db-poster-set";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBPosterSetDetail, DBSavedItem } from "@/types/database/db-poster-set";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface AddNewItemToDB_Request {
   complete: boolean;

@@ -1,4 +1,4 @@
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface TMDBLookupMap {
   [tmdbId: string]: MediaItem;

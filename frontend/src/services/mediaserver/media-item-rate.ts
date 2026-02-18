@@ -3,8 +3,8 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { APIResponse } from "@/types/api/api-response";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface RateMediaItem_Response {
   rating: number;

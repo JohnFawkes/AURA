@@ -3,9 +3,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
-import { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
 
 export interface ApplyLabelsAndTagsToItem_Request {
   media_item: MediaItem;

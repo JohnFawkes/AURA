@@ -19,8 +19,8 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 type MediaCarouselProps = {
   set: SetRef;

@@ -3,9 +3,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { ImageFile } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { ImageFile } from "@/types/media-and-posters/sets";
 
 export interface DownloadImageFileForMediaItem_Request {
   media_item: MediaItem;

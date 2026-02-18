@@ -1,6 +1,6 @@
-import { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
-import { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
-import { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import type { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
+import type { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
 // What is used to save a record into the database
 // This contains the MediaItem details, as well as an array of PosterSets that are associated with it

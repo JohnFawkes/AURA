@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { PageStore } from "@/lib/stores/stores";
 
-import { SortStore } from "@/types/store-interfaces";
-import { TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
+import type { SortStore } from "@/types/store-interfaces";
+import type { TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
 
 interface CollectionItem_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS> {
   showHiddenUsers: boolean;

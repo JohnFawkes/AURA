@@ -3,7 +3,7 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 
 export interface DeleteTempImages_Response {
   message: string;

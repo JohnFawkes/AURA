@@ -24,9 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/cn";
 
-import { PosterSet } from "@/types/database/db-poster-set";
+import type { PosterSet } from "@/types/database/db-poster-set";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { ImageFile } from "@/types/media-and-posters/sets";
+import type { ImageFile } from "@/types/media-and-posters/sets";
 
 export type MediaItemManualImportModalProps = {
   mediaItem: MediaItem;

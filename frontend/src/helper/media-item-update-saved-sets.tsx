@@ -1,4 +1,4 @@
-import { DBSavedSet, MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { DBSavedSet, MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
 
 export function upsertSavedSets(
   mediaItem: MediaItem,

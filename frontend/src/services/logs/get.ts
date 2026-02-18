@@ -3,7 +3,7 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse, LogData } from "@/types/api/api-response";
+import type { APIResponse, LogData } from "@/types/api/api-response";
 
 export interface GetLogContents_Response {
   possible_actions_paths: Record<string, { label: string; section: string }>;

@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigLabelsAndTags, AppConfigLabelsAndTagsApplication } from "@/types/config/config";
+import type { AppConfigLabelsAndTags, AppConfigLabelsAndTagsApplication } from "@/types/config/config";
 
 interface ConfigSectionLabelsAndTagsProps {
   value: AppConfigLabelsAndTags;

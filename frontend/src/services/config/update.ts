@@ -3,9 +3,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfig } from "@/types/config/config";
-import { AppStatusResponse } from "@/types/config/response-status";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfig } from "@/types/config/config";
+import type { AppStatusResponse } from "@/types/config/response-status";
 
 export interface UpdateAppConfig_Request {
   config: AppConfig;

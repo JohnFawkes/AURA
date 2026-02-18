@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigImages } from "@/types/config/config";
+import type { AppConfigImages } from "@/types/config/config";
 
 const EPISODE_NAMING_CONVENTION_OPTIONS = ["match", "static"];
 

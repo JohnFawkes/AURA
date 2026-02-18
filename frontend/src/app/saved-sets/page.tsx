@@ -1,7 +1,8 @@
 "use client";
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
-import { AutoDownloadForceCheck, AutodownloadResult } from "@/services/database/autodownload-force-check";
+import type { AutodownloadResult } from "@/services/database/autodownload-force-check";
+import { AutoDownloadForceCheck } from "@/services/database/autodownload-force-check";
 import { DeleteItemFromDB } from "@/services/database/delete";
 import { getAllItemsFromDB } from "@/services/database/get-all";
 import { AddItemToDownloadQueue } from "@/services/downloads/queue-add";
@@ -47,8 +48,8 @@ import { useSavedSetsPageStore } from "@/lib/stores/page-store-saved-sets";
 
 import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
 
 const SavedSetsPage: React.FC = () => {
   const [savedSets, setSavedSets] = useState<DBSavedItem[]>([]);

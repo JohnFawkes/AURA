@@ -3,8 +3,8 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppStatusResponse } from "@/types/config/response-status";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppStatusResponse } from "@/types/config/response-status";
 
 export interface AppConfigStatus_Response {
   status: AppStatusResponse;

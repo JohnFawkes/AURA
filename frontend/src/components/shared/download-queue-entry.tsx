@@ -10,7 +10,8 @@ import Link from "next/link";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
-import DownloadModal, { FormItemDisplay } from "@/components/shared/download-modal";
+import type { FormItemDisplay } from "@/components/shared/download-modal";
+import DownloadModal from "@/components/shared/download-modal";
 import { renderTypeBadges } from "@/components/shared/saved-sets-shared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,8 +20,8 @@ import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { DBSavedItem } from "@/types/database/db-poster-set";
-import { BaseSetInfo } from "@/types/media-and-posters/sets";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { BaseSetInfo } from "@/types/media-and-posters/sets";
 
 const DownloadQueueEntry: React.FC<{
   entry: DBSavedItem;

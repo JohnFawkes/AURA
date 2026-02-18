@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 
 export interface GetPlexPinAndID_Response {
   plex_pin: string;

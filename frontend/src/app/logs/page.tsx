@@ -2,7 +2,8 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { ClearLogFiles } from "@/services/logs/clear";
-import { GetLogContents, GetLogContents_Response } from "@/services/logs/get";
+import type { GetLogContents_Response } from "@/services/logs/get";
+import { GetLogContents } from "@/services/logs/get";
 import { EllipsisIcon, SaveIcon, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,7 +28,7 @@ import { Small } from "@/components/ui/typography";
 import { cn } from "@/lib/cn";
 import { useLogsPageStore } from "@/lib/stores/page-store-logs";
 
-import { APIResponse, LogAction, LogData } from "@/types/api/api-response";
+import type { APIResponse, LogAction, LogData } from "@/types/api/api-response";
 
 export default function LogsPage() {
   // States - Loading & Error

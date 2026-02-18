@@ -42,9 +42,9 @@ import { TableCell, TableRow } from "@/components/ui/table";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 const SavedSetsTableRow: React.FC<{
   savedSet: DBSavedItem;

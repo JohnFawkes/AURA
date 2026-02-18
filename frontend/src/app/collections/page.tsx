@@ -21,8 +21,8 @@ import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 
 import { searchItems } from "@/hooks/search-query";
 
-import { APIResponse } from "@/types/api/api-response";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { APIResponse } from "@/types/api/api-response";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export interface CollectionItem {
   rating_key: string;

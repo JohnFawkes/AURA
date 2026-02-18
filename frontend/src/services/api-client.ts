@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosRequestHeaders } from "axios";
 
 const apiClient = axios.create({
   baseURL: "/api",
@@ -13,7 +13,7 @@ apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("aura-auth-token");
     if (token) {
       config.headers = config.headers || {};
-      (config.headers as import("axios").AxiosRequestHeaders).Authorization = `Bearer ${token}`;
+      (config.headers as AxiosRequestHeaders).Authorization = `Bearer ${token}`;
     }
   }
   return config;

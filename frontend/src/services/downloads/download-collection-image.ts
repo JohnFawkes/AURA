@@ -1,12 +1,12 @@
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { collectionItemInfo } from "@/helper/item-info";
 import apiClient from "@/services/api-client";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { ImageFile } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { ImageFile } from "@/types/media-and-posters/sets";
 
 export interface DownloadCollectionImage_Request {
   collection_item: CollectionItem;

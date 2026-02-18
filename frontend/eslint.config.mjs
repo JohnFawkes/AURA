@@ -51,21 +51,22 @@ export default [
       },
     },
     rules: {
-      /* =========================
-         React
-         ========================= */
+      /* React */
       "react/react-in-jsx-scope": "off",
       "react/jsx-uses-react": "off",
+      "react/jsx-key": "error",
+      "react/no-unknown-property": "error",
+      "react/jsx-filename-extension": ["warn", { extensions: [".tsx"] }],
 
-      /* =========================
-         Hooks
-         ========================= */
+      /* Hooks */
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
 
-      /* =========================
-         TypeScript
-         ========================= */
+      /* Accessibility (lightweight) */
+      "jsx-a11y/alt-text": "warn",
+      "jsx-a11y/anchor-is-valid": "warn",
+
+      /* TypeScript */
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
     },

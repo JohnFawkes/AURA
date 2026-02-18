@@ -9,7 +9,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 interface CustomPaginationProps {
   currentPage: number;

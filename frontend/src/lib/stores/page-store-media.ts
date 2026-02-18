@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 import { PageStore } from "@/lib/stores/stores";
 
-import { TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
+import type { TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
 
 type MediaType = "movie" | "show";
 

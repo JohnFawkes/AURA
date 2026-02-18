@@ -2,7 +2,7 @@ import apiClient from "@/services/api-client";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 
 export interface GetDownloadQueueStatus_Response {
   time: string;

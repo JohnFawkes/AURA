@@ -1,12 +1,12 @@
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import apiClient from "@/services/api-client";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { SetRef } from "@/types/media-and-posters/sets";
-import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
+import type { APIResponse } from "@/types/api/api-response";
+import type { SetRef } from "@/types/media-and-posters/sets";
+import type { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 interface GetAllCollectionChildrenItems_Response {
   collection_item: CollectionItem;

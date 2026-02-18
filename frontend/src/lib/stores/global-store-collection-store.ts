@@ -1,4 +1,4 @@
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

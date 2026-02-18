@@ -5,7 +5,8 @@ import { UpdateAppConfig } from "@/services/config/update";
 import yaml from "js-yaml";
 import { toast } from "sonner";
 
-import { JSX, useCallback, useEffect, useMemo, useState } from "react";
+import type { JSX } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 
@@ -23,7 +24,7 @@ import { H2, P } from "@/components/ui/typography";
 
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
-import { AppConfig } from "@/types/config/config";
+import type { AppConfig } from "@/types/config/config";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
 interface StepDef {

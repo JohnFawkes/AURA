@@ -3,8 +3,8 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
 
 export interface GetAllDBItems_Response {
   items: DBSavedItem[];

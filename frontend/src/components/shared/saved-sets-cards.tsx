@@ -35,10 +35,10 @@ import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
-import { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 export function hasSelectedTypesOverlapOnAutoDownload(
   posterSets: { selected_types: SelectedTypes; auto_download: boolean }[]

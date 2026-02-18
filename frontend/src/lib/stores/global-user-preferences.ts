@@ -3,7 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { DOWNLOAD_DEFAULT_TYPE_OPTIONS, TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
 
 interface UserPreferencesStore {
   downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];

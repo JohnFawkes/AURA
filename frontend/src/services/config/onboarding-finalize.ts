@@ -3,8 +3,8 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfig } from "@/types/config/config";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfig } from "@/types/config/config";
 
 export const finalizeOnboarding = async (
   newConfig: AppConfig

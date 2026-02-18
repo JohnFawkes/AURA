@@ -28,8 +28,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { ClearAllStores } from "@/lib/stores/clear-all-stores";
 
-import { APIResponse } from "@/types/api/api-response";
-import {
+import type { APIResponse } from "@/types/api/api-response";
+import type {
   AppConfig,
   AppConfigNotificationDiscord,
   AppConfigNotificationGotify,

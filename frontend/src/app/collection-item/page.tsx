@@ -1,7 +1,7 @@
 "use client";
 
 import CollectionsDownloadModal from "@/app/collection-item/collection-download-modal";
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAllCollectionChildrenItems } from "@/services/mediaserver/get-movie-collection-children-items";
@@ -39,9 +39,9 @@ import { useCollectionStore } from "@/lib/stores/global-store-collection-store";
 import { useCollectionItemPageStore } from "@/lib/stores/page-store-collection-item";
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 
-import { APIResponse } from "@/types/api/api-response";
-import { SetRef } from "@/types/media-and-posters/sets";
-import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
+import type { APIResponse } from "@/types/api/api-response";
+import type { SetRef } from "@/types/media-and-posters/sets";
+import type { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 export default function CollectionItemPage() {
   const router = useRouter();

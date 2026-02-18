@@ -2,8 +2,8 @@ import apiClient from "@/services/api-client";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { toast } from "sonner";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfigMediux } from "@/types/config/config";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfigMediux } from "@/types/config/config";
 
 interface ValidateMediuxInfo_Request {
   mediux_info: AppConfigMediux;

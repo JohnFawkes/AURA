@@ -21,7 +21,7 @@ import { log } from "@/lib/logger";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { BaseSetInfo, ImageFile, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { BaseSetInfo, ImageFile, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 export const ShowFullSetsDisplay: React.FC<{
   baseSetInfo: BaseSetInfo;

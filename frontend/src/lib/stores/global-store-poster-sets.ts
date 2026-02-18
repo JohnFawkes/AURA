@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { BaseSetInfo, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
-import { TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import type { BaseSetInfo, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
 interface PosterSetsStore {
   setBaseInfo: BaseSetInfo;

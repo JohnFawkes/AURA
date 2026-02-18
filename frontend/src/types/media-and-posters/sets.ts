@@ -1,5 +1,5 @@
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { TYPE_DB_SET_TYPE_OPTIONS, TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { TYPE_DB_SET_TYPE_OPTIONS, TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
 export interface BaseMediuxItemInfo {
   tmdb_id: string;

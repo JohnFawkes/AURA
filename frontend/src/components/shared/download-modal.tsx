@@ -25,7 +25,8 @@ import { z } from "zod";
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import React from "react";
-import { ControllerRenderProps, useForm, useWatch } from "react-hook-form";
+import type { ControllerRenderProps } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -60,14 +61,11 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DBPosterSetDetail, DBSavedItem, PosterSet } from "@/types/database/db-poster-set";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
-import {
-  DOWNLOAD_DEFAULT_LABELS,
-  DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-  TYPE_DOWNLOAD_DEFAULT_OPTIONS,
-} from "@/types/ui-options";
+import type { DBPosterSetDetail, DBSavedItem, PosterSet } from "@/types/database/db-poster-set";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
+import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
 
 export interface FormItemDisplay {
   MediaItem: MediaItem;

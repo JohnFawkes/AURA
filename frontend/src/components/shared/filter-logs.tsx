@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/cn";
 
-import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 const levelsOptions = [
   { label: "TRACE", value: "trace" },

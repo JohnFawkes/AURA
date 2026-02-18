@@ -41,7 +41,7 @@ import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 type MediaItemDetailsProps = {
   mediaItem?: MediaItem;

@@ -5,10 +5,8 @@ import { ValidateMediuxInfo } from "@/services/validation/mediux";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { GetConnectionColor } from "@/components/settings-onboarding/ConfigSectionMediaServer";
-import {
-  CONNECTION_STATUS_COLORS_BG,
-  ConfigConnectionStatus,
-} from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
+import type { ConfigConnectionStatus } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
+import { CONNECTION_STATUS_COLORS_BG } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigMediux } from "@/types/config/config";
+import type { AppConfigMediux } from "@/types/config/config";
 
 interface ConfigSectionMediuxProps {
   value: AppConfigMediux;

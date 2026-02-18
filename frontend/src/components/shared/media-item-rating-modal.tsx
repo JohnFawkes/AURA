@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 import { cn } from "@/lib/cn";
 
-import { APIResponse } from "@/types/api/api-response";
+import type { APIResponse } from "@/types/api/api-response";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export type MediaItemRatingModalProps = {

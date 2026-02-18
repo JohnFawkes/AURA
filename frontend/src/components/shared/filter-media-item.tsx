@@ -26,11 +26,8 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import {
-  DOWNLOAD_DEFAULT_LABELS,
-  DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-  TYPE_DOWNLOAD_DEFAULT_OPTIONS,
-} from "@/types/ui-options";
+import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
 
 type MediaItemFilterProps = {
   numberOfActiveFilters?: number;

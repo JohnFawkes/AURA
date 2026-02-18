@@ -3,9 +3,9 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
-import { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import type { APIResponse } from "@/types/api/api-response";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
 export interface GetSetByID_Response {
   set: SetRef;

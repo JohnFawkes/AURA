@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigAutoDownload } from "@/types/config/config";
+import type { AppConfigAutoDownload } from "@/types/config/config";
 
 interface ConfigSectionAutoDownloadProps {
   value: AppConfigAutoDownload;

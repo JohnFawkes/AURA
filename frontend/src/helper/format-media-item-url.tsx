@@ -1,4 +1,4 @@
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export function formatMediaItemUrl(mediaItem: MediaItem): string {
   const formattedTitle = mediaItem.title.replace(/\s+/g, "_");

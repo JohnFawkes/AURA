@@ -26,10 +26,10 @@ import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 // Props for DynamicSearch component
 export interface DynamicSearchProps {

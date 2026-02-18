@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigAuth } from "@/types/config/config";
+import type { AppConfigAuth } from "@/types/config/config";
 
 interface ConfigSectionAuthProps {
   value: AppConfigAuth;

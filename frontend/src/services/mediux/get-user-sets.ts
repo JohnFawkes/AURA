@@ -3,8 +3,8 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { CreatorSetsResponse } from "@/types/media-and-posters/sets";
+import type { APIResponse } from "@/types/api/api-response";
+import type { CreatorSetsResponse } from "@/types/media-and-posters/sets";
 
 export interface GetAllUserSets_Response {
   sets: CreatorSetsResponse;

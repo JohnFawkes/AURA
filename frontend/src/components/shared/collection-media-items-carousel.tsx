@@ -5,7 +5,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
 export function CollectionMediaItemsCarousel({ mediaItems }: { mediaItems: MediaItem[] }) {
   const router = useRouter();

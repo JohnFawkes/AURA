@@ -1,4 +1,4 @@
-import { BoxsetsWithSetInfo } from "@/app/user/[username]/page";
+import type { BoxsetsWithSetInfo } from "@/app/user/[username]/page";
 import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 
 import DownloadModal from "@/components/shared/download-modal";
@@ -6,8 +6,8 @@ import { MediaCarousel } from "@/components/shared/media-carousel";
 import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 export const RenderShowAndCollectionDisplay = ({
   set,

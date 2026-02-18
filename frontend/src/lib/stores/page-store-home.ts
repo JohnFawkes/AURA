@@ -3,10 +3,14 @@ import { persist } from "zustand/middleware";
 
 import { PageStore } from "@/lib/stores/stores";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PaginationStore, SortStore } from "@/types/store-interfaces";
-import { TYPE_FILTER_IGNORED_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
-import { TYPE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { PaginationStore, SortStore } from "@/types/store-interfaces";
+import type {
+  TYPE_FILTER_IGNORED_OPTIONS,
+  TYPE_ITEMS_PER_PAGE_OPTIONS,
+  TYPE_SORT_ORDER_OPTIONS,
+} from "@/types/ui-options";
+import type { TYPE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type Direction = "next" | "previous";
 

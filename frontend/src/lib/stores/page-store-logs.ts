@@ -3,8 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { PageStore } from "@/lib/stores/stores";
 
-import { PaginationStore } from "@/types/store-interfaces";
-import { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { PaginationStore } from "@/types/store-interfaces";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
 interface Logs_PageStore extends PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
   // Filters

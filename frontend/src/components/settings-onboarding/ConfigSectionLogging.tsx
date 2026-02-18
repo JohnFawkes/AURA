@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigLogging } from "@/types/config/config";
+import type { AppConfigLogging } from "@/types/config/config";
 
 interface ConfigSectionLoggingProps {
   value: AppConfigLogging;

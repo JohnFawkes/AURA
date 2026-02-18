@@ -6,7 +6,7 @@ import { log } from "@/lib/logger";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { LibrarySection, MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import type { LibrarySection, MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
 
 // Max Cache Duration: 1 Hour
 export const MAX_CACHE_DURATION = 60 * 60 * 1000;

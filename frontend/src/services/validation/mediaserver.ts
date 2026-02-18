@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppConfigMediaServer } from "@/types/config/config";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppConfigMediaServer } from "@/types/config/config";
 
 export interface ValidateMediaServerInfo_Request {
   media_server: AppConfigMediaServer;

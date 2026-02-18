@@ -1,11 +1,12 @@
-import { AppConfigStatus_Response, GetAppConfigStatus } from "@/services/config/status";
+import type { AppConfigStatus_Response } from "@/services/config/status";
+import { GetAppConfigStatus } from "@/services/config/status";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import { APIResponse } from "@/types/api/api-response";
-import { AppStatusResponse } from "@/types/config/response-status";
+import type { APIResponse } from "@/types/api/api-response";
+import type { AppStatusResponse } from "@/types/config/response-status";
 
 interface OnboardingStore {
   status: AppStatusResponse | null;

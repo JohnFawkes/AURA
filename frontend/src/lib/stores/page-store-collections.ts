@@ -1,11 +1,11 @@
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { PageStore } from "@/lib/stores/stores";
 
-import { PaginationStore, SortStore } from "@/types/store-interfaces";
-import { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
+import type { PaginationStore, SortStore } from "@/types/store-interfaces";
+import type { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
 
 type Direction = "next" | "previous";
 

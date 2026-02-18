@@ -1,7 +1,7 @@
-import { FormItemDisplay } from "@/components/shared/download-modal";
+import type { FormItemDisplay } from "@/components/shared/download-modal";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { ImageFile, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { ImageFile, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 const createBaseItem = (set: SetRef): FormItemDisplay => ({
   MediaItem: {} as MediaItem,

@@ -3,7 +3,8 @@
 import { formatExactDateTime } from "@/helper/format-date-last-updates";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAllDownloadQueueItems } from "@/services/downloads/queue-get";
-import { GetDownloadQueueStatus, GetDownloadQueueStatus_Response } from "@/services/downloads/queue-status";
+import type { GetDownloadQueueStatus_Response } from "@/services/downloads/queue-status";
+import { GetDownloadQueueStatus } from "@/services/downloads/queue-status";
 import { Globe } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -18,8 +19,8 @@ import { H2, H3 } from "@/components/ui/typography";
 
 import { cn } from "@/lib/cn";
 
-import { APIResponse } from "@/types/api/api-response";
-import { DBSavedItem } from "@/types/database/db-poster-set";
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
 
 const DownloadQueuePage: React.FC = () => {
   // Refs - Fetching

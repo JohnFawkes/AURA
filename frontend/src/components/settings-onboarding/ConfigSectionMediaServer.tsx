@@ -2,16 +2,15 @@
 
 import { ValidateURL } from "@/helper/validation/validate-url";
 import { GetLibrarySectionOptions } from "@/services/mediaserver/get-library-section-options";
-import { CheckAuthStatusWithPlex, GetPlexPinAndID, PlexServersResponse } from "@/services/mediaserver/plex";
+import type { PlexServersResponse } from "@/services/mediaserver/plex";
+import { CheckAuthStatusWithPlex, GetPlexPinAndID } from "@/services/mediaserver/plex";
 import { ValidateMediaServerInfo } from "@/services/validation/mediaserver";
 import { Plus, RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  CONNECTION_STATUS_COLORS_BG,
-  ConfigConnectionStatus,
-} from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
+import type { ConfigConnectionStatus } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
+import { CONNECTION_STATUS_COLORS_BG } from "@/components/settings-onboarding/ConfigSectionSonarrRadarr";
 import { PopoverHelp } from "@/components/shared/popover-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,7 @@ import {
 
 import { cn } from "@/lib/cn";
 
-import { AppConfigMediaServer, AppConfigMediaServerLibrary } from "@/types/config/config";
+import type { AppConfigMediaServer, AppConfigMediaServerLibrary } from "@/types/config/config";
 
 interface ConfigSectionMediaServerProps {
   value: AppConfigMediaServer;

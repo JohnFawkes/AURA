@@ -1,6 +1,6 @@
 "use client";
 
-import { CollectionItem } from "@/app/collections/page";
+import type { CollectionItem } from "@/app/collections/page";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import { CollectionMediaItemsCarousel } from "@/components/shared/collection-media-items-carousel";

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { cn } from "@/lib/cn";
 
-import {
+import type {
   AppConfigMediaServerLibrary,
   AppConfigSonarrRadarrApp,
   AppConfigSonarrRadarrApps,

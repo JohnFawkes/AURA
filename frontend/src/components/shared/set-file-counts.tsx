@@ -5,8 +5,8 @@ import { Lead } from "@/components/ui/typography";
 
 import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-sections";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 interface SetFileCountsProps {
   mediaItem: MediaItem;
