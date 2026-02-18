@@ -14,17 +14,27 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-// Status godoc
+type loginResponse struct {
+	Token string `json:"token"`
+}
+
+// Login godoc
 // @Summary      Auth Login
-// @Description  Obtain a JWT token by providing valid credentials
-// @Tags         auth
+// @Description  Authenticate user and return a JWT token
+// @Tags         Auth
+// @Accept       json
 // @Produce      json
-// @Success      200  {object}  routes_auth.loginRequest
+// @Param        req  body      loginRequest  true  "Login Request"
+// @Success      200           {object}  httpx.JSONResponse{data=loginResponse}
+// @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"
 // @Router       /api/login [post]
-func Login(w http.ResponseWriter, r *http.Request) {
+func AttemptLogin(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("User Login", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
+
+	var req loginRequest
+	var response loginResponse
 
 	if !config.Current.Auth.Enabled {
 		httpx.SendResponse(w, ld, "Authentication is disabled")
@@ -33,24 +43,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if TokenAuth == nil {
 		logAction.SetError("Authentication not configured", "The authentication system is not properly configured", nil)
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
-	var loginReq loginRequest
-	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &loginReq, "Login Request")
+	Err := httpx.DecodeRequestBodyToJSON(ctx, r.Body, &req, "Login Request")
 	if Err.Message != "" {
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	// Compare password
-	ok, err := argon2id.ComparePasswordAndHash(loginReq.Password, config.Current.Auth.Password)
+	ok, err := argon2id.ComparePasswordAndHash(req.Password, config.Current.Auth.Password)
 	if err != nil || !ok {
 		logAction.SetError("Invalid credentials", "The provided password is incorrect", map[string]any{
 			"error": err,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
@@ -67,15 +76,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		logAction.SetError("Failed to generate token", "An error occurred while generating the JWT token", map[string]any{
 			"error": err,
 		})
-		httpx.SendResponse(w, ld, nil)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
 	logAction.AppendResult("token_generated", true)
 
-	var response struct {
-		Token string `json:"token"`
-	}
 	response.Token = signedToken
 	httpx.SendResponse(w, ld, response)
 }
