@@ -56,9 +56,9 @@ type LogAction struct {
 
 // LogErrorInfo contains structured error information.
 type LogErrorInfo struct {
-	Function   string         `json:"function,omitempty"`    // Function name where the error occurred
-	LineNumber int            `json:"line_number,omitempty"` // Line number in the source code
-	Message    string         `json:"message"`               // Error message
-	Detail     map[string]any `json:"detail,omitempty"`      // Optional detailed error information
-	Help       string         `json:"help,omitempty"`        // Optional help or remediation steps
+	Function   string         `json:"function,omitempty" example:"Reload"`
+	LineNumber int            `json:"line_number,omitempty" example:"42"`
+	Message    string         `json:"message" example:"Invalid or expired token"`
+	Detail     map[string]any `json:"detail,omitempty" swaggertype:"object"`
+	Help       string         `json:"help,omitempty" example:"Check server logs for more details"`
 }
