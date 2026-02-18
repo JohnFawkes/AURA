@@ -44,13 +44,13 @@ func SendNotification(
 	switch result {
 	case LAST_STATUS_SUCCESS:
 		notificationTitle = "Download Queue - Success"
-		messageBody = fmt.Sprintf("%s (Set: %s)%s", itemTitle, posterSet.ID)
+		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.ID)
 	case LAST_STATUS_WARNING:
 		notificationTitle = "Download Queue - Warning"
-		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nWarnings:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Warnings, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nWarnings:\n", itemTitle, posterSet.ID, strings.Join(fileIssues.Warnings, "\n"))
 	case LAST_STATUS_ERROR:
 		notificationTitle = "Download Queue - Error"
-		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nErrors:\n%s", itemTitle, posterSet.ID, strings.Join(fileIssues.Errors, "\n"))
+		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nErrors:\n", itemTitle, posterSet.ID, strings.Join(fileIssues.Errors, "\n"))
 		if len(fileIssues.Warnings) > 0 {
 			messageBody += fmt.Sprintf("\n\nWarnings:\n%s", strings.Join(fileIssues.Warnings, "\n"))
 		}
