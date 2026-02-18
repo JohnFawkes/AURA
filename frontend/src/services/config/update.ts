@@ -7,9 +7,20 @@ import { APIResponse } from "@/types/api/api-response";
 import { AppConfig } from "@/types/config/config";
 import { AppStatusResponse } from "@/types/config/response-status";
 
-export const updateAppConfig = async (newConfig: AppConfig): Promise<APIResponse<AppStatusResponse>> => {
+export interface UpdateAppConfig_Request {
+  config: AppConfig;
+}
+
+export interface UpdateAppConfig_Response {
+  status: AppStatusResponse;
+}
+
+export const UpdateAppConfig = async (newConfig: AppConfig): Promise<APIResponse<UpdateAppConfig_Response>> => {
   try {
-    const response = await apiClient.post<APIResponse<AppStatusResponse>>(`/config`, newConfig);
+    const requestBody: UpdateAppConfig_Request = {
+      config: newConfig,
+    };
+    const response = await apiClient.post<APIResponse<UpdateAppConfig_Response>>(`/config`, requestBody);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error updating onboarding status");
     }
@@ -22,6 +33,6 @@ export const updateAppConfig = async (newConfig: AppConfig): Promise<APIResponse
       `Failed to update onboarding status: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<AppStatusResponse>(error);
+    return ReturnErrorMessage<UpdateAppConfig_Response>(error);
   }
 };

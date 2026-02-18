@@ -3,39 +3,37 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
-import { APIResponse, LogErrorInfo } from "@/types/api/api-response";
+import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
-interface SearchQueryResultsResponse {
+interface HandleSearch_Response {
   search_query: string;
   media_items: MediaItem[];
   media_items_last_full_update: number;
   mediux_usernames: MediuxUserInfo[];
   mediux_usernames_last_full_update: number;
   saved_sets: DBSavedItem[];
-  error: LogErrorInfo | null;
 }
 
-interface SearchResultQueryProps {
+interface HandleSearch_QueryProps {
   searchQuery: string;
   searchMediaItems: boolean;
   searchMediuxUsers: boolean;
   searchSavedSets: boolean;
 }
 
-export const runSearch = async (props: SearchResultQueryProps): Promise<APIResponse<SearchQueryResultsResponse>> => {
+export const HandleSearch = async (props: HandleSearch_QueryProps): Promise<APIResponse<HandleSearch_Response>> => {
   log("INFO", "API - Search", "Fetch Search Results", `Fetching search results for query: ${props.searchQuery}`);
   try {
-    const response = await apiClient.get<APIResponse<SearchQueryResultsResponse>>(`/search`, {
-      params: {
-        query: props.searchQuery,
-        search_media_items: props.searchMediaItems,
-        search_mediux_users: props.searchMediuxUsers,
-        search_saved_sets: props.searchSavedSets,
-      },
-    });
+    const params = {
+      query: props.searchQuery,
+      search_media_items: props.searchMediaItems,
+      search_mediux_users: props.searchMediuxUsers,
+      search_saved_sets: props.searchSavedSets,
+    };
+    const response = await apiClient.get<APIResponse<HandleSearch_Response>>(`/search`, { params });
     if (response.data.status === "error") {
       throw new Error(
         response.data.error?.message || `Unknown error fetching search results for query: ${props.searchQuery}`
@@ -58,6 +56,6 @@ export const runSearch = async (props: SearchResultQueryProps): Promise<APIRespo
       `Failed to fetch search results for query: ${props.searchQuery}: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<SearchQueryResultsResponse>(error);
+    return ReturnErrorMessage<HandleSearch_Response>(error);
   }
 };

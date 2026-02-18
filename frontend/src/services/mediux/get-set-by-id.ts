@@ -7,12 +7,17 @@ import { APIResponse } from "@/types/api/api-response";
 import { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 import { TYPE_DB_SET_TYPE_OPTIONS } from "@/types/ui-options";
 
-export const getSetByID = async (
+export interface GetSetByID_Response {
+  set: SetRef;
+  included_items: { [tmdb_id: string]: IncludedItem };
+}
+
+export const GetSetByID = async (
   itemLibraryTitle: string,
   tmdbID: string,
   setID: string,
   setType: TYPE_DB_SET_TYPE_OPTIONS
-): Promise<APIResponse<{ set: SetRef; included_items: { [tmdb_id: string]: IncludedItem } }>> => {
+): Promise<APIResponse<GetSetByID_Response>> => {
   log(
     "INFO",
     "API - MediUX",
@@ -20,16 +25,14 @@ export const getSetByID = async (
     `Fetching set by ID: ${setID} for setType: ${setType}, itemLibraryTitle: ${itemLibraryTitle}, tmdbID: ${tmdbID}`
   );
   try {
-    const response = await apiClient.get<
-      APIResponse<{ set: SetRef; included_items: { [tmdb_id: string]: IncludedItem } }>
-    >(`/mediux/set`, {
-      params: {
-        set_id: setID,
-        set_type: setType,
-        item_library_title: itemLibraryTitle,
-        tmdb_id: tmdbID,
-      },
-    });
+    const params = {
+      set_id: setID,
+      set_type: setType,
+      item_library_title: itemLibraryTitle,
+      tmdb_id: tmdbID,
+    };
+
+    const response = await apiClient.get<APIResponse<GetSetByID_Response>>(`/mediux/set`, { params });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || `Unknown error fetching set by ID: ${setID}`);
     } else {
@@ -44,6 +47,6 @@ export const getSetByID = async (
       `Failed to fetch set by ID: ${setID}: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<{ set: SetRef; included_items: { [tmdb_id: string]: IncludedItem } }>(error);
+    return ReturnErrorMessage<GetSetByID_Response>(error);
   }
 };

@@ -1,26 +1,21 @@
 import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
 
 import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
-export const getAllDownloadQueueItems = async (): Promise<
-  APIResponse<{
-    in_progress_entries: DBSavedItem[];
-    error_entries: DBSavedItem[];
-    warning_entries: DBSavedItem[];
-  }>
-> => {
+export interface GetAllDownloadQueueItems_Response {
+  in_progress_entries: DBSavedItem[];
+  warning_entries: DBSavedItem[];
+  error_entries: DBSavedItem[];
+}
+
+export const GetAllDownloadQueueItems = async (): Promise<APIResponse<GetAllDownloadQueueItems_Response>> => {
   try {
     log("INFO", "API - Download Queue", "Fetch", "Fetching download queue entries");
-    const response = await apiClient.get<
-      APIResponse<{
-        in_progress_entries: DBSavedItem[];
-        error_entries: DBSavedItem[];
-        warning_entries: DBSavedItem[];
-      }>
-    >(`/download/queue/item`);
+    const response = await apiClient.get<APIResponse<GetAllDownloadQueueItems_Response>>(`/download/queue/item`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching download queue entries");
     } else {
@@ -33,6 +28,6 @@ export const getAllDownloadQueueItems = async (): Promise<
     return response.data;
   } catch (error) {
     log("ERROR", "API - Download Queue", "Fetch", "Error fetching download queue entries", { error });
-    throw error;
+    return ReturnErrorMessage<GetAllDownloadQueueItems_Response>(error);
   }
 };

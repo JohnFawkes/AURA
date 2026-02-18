@@ -6,14 +6,13 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { AppStatusResponse } from "@/types/config/response-status";
 
-export const getAppConfigStatus = async (reload: boolean): Promise<APIResponse<AppStatusResponse>> => {
+export interface ReloadAppConfig_Response {
+  status: AppStatusResponse;
+}
+
+export const ReloadAppConfig = async (): Promise<APIResponse<ReloadAppConfig_Response>> => {
   try {
-    let response;
-    if (!reload) {
-      response = await apiClient.get<APIResponse<AppStatusResponse>>(`/config`);
-    } else {
-      response = await apiClient.patch<APIResponse<AppStatusResponse>>(`/config`);
-    }
+    const response = await apiClient.patch<APIResponse<ReloadAppConfig_Response>>(`/config`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching onboarding status");
     }
@@ -22,10 +21,10 @@ export const getAppConfigStatus = async (reload: boolean): Promise<APIResponse<A
     log(
       "ERROR",
       "API - Config",
-      "Get App Config Status",
-      `Failed to fetch onboarding status: ${error instanceof Error ? error.message : "Unknown error"}`,
+      "Reload App Config",
+      `Failed to reload app config: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<AppStatusResponse>(error);
+    return ReturnErrorMessage<ReloadAppConfig_Response>(error);
   }
 };

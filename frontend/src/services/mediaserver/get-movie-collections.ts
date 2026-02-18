@@ -6,10 +6,14 @@ import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 
-export const getCollectionItems = async (): Promise<APIResponse<CollectionItem[]>> => {
+export interface GetCollectionItems_Response {
+  collections: CollectionItem[];
+}
+
+export const GetMovieCollections = async (): Promise<APIResponse<GetCollectionItems_Response>> => {
   log("INFO", "API - Media Server", "Fetch Collection Items", "Fetching all collection items");
   try {
-    const response = await apiClient.get<APIResponse<CollectionItem[]>>(`/mediaserver/collections`);
+    const response = await apiClient.get<APIResponse<GetCollectionItems_Response>>(`/mediaserver/collections`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching all collection items");
     } else {
@@ -24,6 +28,6 @@ export const getCollectionItems = async (): Promise<APIResponse<CollectionItem[]
       `Failed to fetch all collection items: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<CollectionItem[]>(error);
+    return ReturnErrorMessage<GetCollectionItems_Response>(error);
   }
 };

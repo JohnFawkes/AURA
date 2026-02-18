@@ -6,16 +6,17 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 
 import { APIResponse } from "@/types/api/api-response";
 
-export const stopIgnoringItemInDB = async (
+export interface IgnoreItem_Response {
+  ignored: boolean;
+  tmdb_id: string;
+  library_title: string;
+  mode?: string;
+}
+
+export const StopIgnoringItemInDB = async (
   tmdbID: string,
   libraryTitle: string
-): Promise<
-  APIResponse<{
-    ignored: boolean;
-    tmdb_id: string;
-    library_title: string;
-  }>
-> => {
+): Promise<APIResponse<IgnoreItem_Response>> => {
   log(
     "INFO",
     "API - DB",
@@ -23,17 +24,12 @@ export const stopIgnoringItemInDB = async (
     `Stopping ignoring item TMDB_ID: ${tmdbID} in library: ${libraryTitle}`
   );
   try {
-    const response = await apiClient.patch<
-      APIResponse<{
-        ignored: boolean;
-        tmdb_id: string;
-        library_title: string;
-      }>
-    >(`/db/ignore/stop`, null, {
-      params: {
-        tmdb_id: tmdbID,
-        library_title: libraryTitle,
-      },
+    const params = {
+      tmdb_id: tmdbID,
+      library_title: libraryTitle,
+    };
+    const response = await apiClient.patch<APIResponse<IgnoreItem_Response>>(`/db/ignore/stop`, null, {
+      params: params,
     });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error stopping ignoring item in DB");
@@ -57,26 +53,15 @@ export const stopIgnoringItemInDB = async (
       `Failed to stop ignoring item in DB: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<{
-      ignored: boolean;
-      tmdb_id: string;
-      library_title: string;
-    }>(error);
+    return ReturnErrorMessage<IgnoreItem_Response>(error);
   }
 };
 
-export const addIgnoreItemToDB = async (
+export const IgnoreItemInDB = async (
   tmdbID: string,
   libraryTitle: string,
   ignoreMode: string
-): Promise<
-  APIResponse<{
-    ignored: boolean;
-    tmdb_id: string;
-    library_title: string;
-    mode: string;
-  }>
-> => {
+): Promise<APIResponse<IgnoreItem_Response>> => {
   log(
     "INFO",
     "API - DB",
@@ -84,20 +69,12 @@ export const addIgnoreItemToDB = async (
     `Ignoring item TMDB_ID: ${tmdbID} in library: ${libraryTitle} with mode: ${ignoreMode}`
   );
   try {
-    const response = await apiClient.patch<
-      APIResponse<{
-        ignored: boolean;
-        tmdb_id: string;
-        library_title: string;
-        mode: string;
-      }>
-    >(`/db/ignore`, null, {
-      params: {
-        tmdb_id: tmdbID,
-        library_title: libraryTitle,
-        mode: ignoreMode,
-      },
-    });
+    const params = {
+      tmdb_id: tmdbID,
+      library_title: libraryTitle,
+      mode: ignoreMode,
+    };
+    const response = await apiClient.patch<APIResponse<IgnoreItem_Response>>(`/db/ignore`, null, { params: params });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error ignoring item in DB");
     } else {
@@ -120,11 +97,6 @@ export const addIgnoreItemToDB = async (
       `Failed to add item to DB: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<{
-      ignored: boolean;
-      tmdb_id: string;
-      library_title: string;
-      mode: string;
-    }>(error);
+    return ReturnErrorMessage<IgnoreItem_Response>(error);
   }
 };

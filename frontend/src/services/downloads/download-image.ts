@@ -7,11 +7,20 @@ import { APIResponse } from "@/types/api/api-response";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { ImageFile } from "@/types/media-and-posters/sets";
 
+export interface DownloadImageFileForMediaItem_Request {
+  media_item: MediaItem;
+  image_file: ImageFile;
+}
+
+export interface DownloadImageFileForMediaItem_Response {
+  message: string;
+}
+
 export const downloadImageFileForMediaItem = async (
   imageFile: ImageFile,
   mediaItem: MediaItem,
   fileName: string
-): Promise<APIResponse<string>> => {
+): Promise<APIResponse<DownloadImageFileForMediaItem_Response>> => {
   log(
     "INFO",
     "API - Media Server",
@@ -19,10 +28,14 @@ export const downloadImageFileForMediaItem = async (
     `Downloading file '${fileName}' and updating '${mediaItem.title}' (TMDB ID: ${mediaItem.tmdb_id})`
   );
   try {
-    const response = await apiClient.post<APIResponse<string>>(`/download/image/item`, {
+    const req: DownloadImageFileForMediaItem_Request = {
       image_file: imageFile,
       media_item: mediaItem,
-    });
+    };
+    const response = await apiClient.post<APIResponse<DownloadImageFileForMediaItem_Response>>(
+      `/download/image/item`,
+      req
+    );
     if (response.data.status === "error") {
       throw new Error(
         response.data.error?.message || "Unknown error downloading poster file and updating media server"
@@ -47,6 +60,6 @@ export const downloadImageFileForMediaItem = async (
       }: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<DownloadImageFileForMediaItem_Response>(error);
   }
 };

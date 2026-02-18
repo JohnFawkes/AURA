@@ -4,36 +4,44 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
-import { LoginResponseData } from "@/types/auth/auth";
 
-export const attemptLogin = async (password: string): Promise<APIResponse<LoginResponseData>> => {
+export interface Login_Request {
+  password: string;
+}
+
+export interface Login_Response {
+  token: string;
+}
+
+export const AttemptLogin = async (password: string): Promise<APIResponse<Login_Response>> => {
   try {
-    const response = await apiClient.post<APIResponse<LoginResponseData>>(`/login`, { password });
+    const req: Login_Request = { password };
+    const resp = await apiClient.post<APIResponse<Login_Response>>(`/login`, req);
     const token =
-      response.data?.data?.token ??
-      (typeof response.data === "object" &&
-      response.data !== null &&
-      "token" in response.data &&
-      typeof (response.data as Record<string, unknown>).token === "string"
-        ? (response.data as Record<string, unknown>).token
+      resp.data?.data?.token ??
+      (typeof resp.data === "object" &&
+      resp.data !== null &&
+      "token" in resp.data &&
+      typeof (resp.data as Record<string, unknown>).token === "string"
+        ? (resp.data as Record<string, unknown>).token
         : undefined);
     if (token && typeof window !== "undefined") {
       localStorage.setItem("aura-auth-token", String(token));
     }
-    if (response.data.status === "error") {
+    if (resp.data.status === "error") {
       localStorage.removeItem("aura-auth-token");
-      throw new Error(response.data.error?.message || "Unknown error during login");
+      throw new Error(resp.data.error?.message || "Unknown error during login");
     } else {
       log(
         "INFO",
         "Auth",
         "Login",
         "Login successful",
-        // Last 10 characters from response.data
-        response.data?.data?.token?.slice(-10)
+        // Last 10 characters from resp.data
+        resp.data?.data?.token?.slice(-10)
       );
     }
-    return response.data;
+    return resp.data;
   } catch (error) {
     log(
       "ERROR",
@@ -43,7 +51,7 @@ export const attemptLogin = async (password: string): Promise<APIResponse<LoginR
       error
     );
     localStorage.removeItem("aura-auth-token");
-    return ReturnErrorMessage<LoginResponseData>(error);
+    return ReturnErrorMessage<Login_Response>(error);
   }
 };
 

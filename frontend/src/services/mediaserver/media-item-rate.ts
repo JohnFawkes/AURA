@@ -6,7 +6,15 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 
-export const rateMediaItem = async (mediaItem: MediaItem, userRating: number): Promise<APIResponse<string>> => {
+export interface RateMediaItem_Response {
+  rating: number;
+  rated: boolean;
+}
+
+export const RateMediaItem = async (
+  mediaItem: MediaItem,
+  userRating: number
+): Promise<APIResponse<RateMediaItem_Response>> => {
   log(
     "INFO",
     "API - Media Server",
@@ -14,12 +22,11 @@ export const rateMediaItem = async (mediaItem: MediaItem, userRating: number): P
     `Rating media item '${mediaItem.title}' (TMDB ID: ${mediaItem.tmdb_id})`
   );
   try {
-    const response = await apiClient.patch<APIResponse<string>>(`/mediaserver/rate`, null, {
-      params: {
-        rating_key: mediaItem.rating_key,
-        rating: userRating,
-      },
-    });
+    const params = {
+      rating_key: mediaItem.rating_key,
+      rating: userRating,
+    };
+    const response = await apiClient.patch<APIResponse<RateMediaItem_Response>>(`/mediaserver/rate`, null, { params });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error refreshing media server item");
     } else {
@@ -42,6 +49,6 @@ export const rateMediaItem = async (mediaItem: MediaItem, userRating: number): P
       }: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<RateMediaItem_Response>(error);
   }
 };

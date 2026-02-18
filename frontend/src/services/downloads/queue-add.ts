@@ -6,7 +6,16 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
-export const addItemToDownloadQueue = async (dbItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
+export interface AddItemToDownloadQueue_Request {
+  item: DBSavedItem;
+}
+export interface AddItemToDownloadQueue_Response {
+  result: string;
+}
+
+export const AddItemToDownloadQueue = async (
+  dbItem: DBSavedItem
+): Promise<APIResponse<AddItemToDownloadQueue_Response>> => {
   log(
     "INFO",
     "API - Media Server",
@@ -17,7 +26,10 @@ export const addItemToDownloadQueue = async (dbItem: DBSavedItem): Promise<APIRe
     set.last_downloaded = new Date().toISOString();
   }
   try {
-    const response = await apiClient.post<APIResponse<DBSavedItem>>(`/download/queue/item`, dbItem);
+    const req: AddItemToDownloadQueue_Request = {
+      item: dbItem,
+    };
+    const response = await apiClient.post<APIResponse<AddItemToDownloadQueue_Response>>(`/download/queue/item`, req);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error while adding to download queue");
     } else {
@@ -40,6 +52,6 @@ export const addItemToDownloadQueue = async (dbItem: DBSavedItem): Promise<APIRe
       }: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<DBSavedItem>(error);
+    return ReturnErrorMessage<AddItemToDownloadQueue_Response>(error);
   }
 };

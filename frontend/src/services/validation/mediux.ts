@@ -5,17 +5,21 @@ import { toast } from "sonner";
 import { APIResponse } from "@/types/api/api-response";
 import { AppConfigMediux } from "@/types/config/config";
 
-interface ValidationResponse {
+interface ValidateMediuxInfo_Request {
+  mediux_info: AppConfigMediux;
+}
+interface ValidateMediuxInfo_Response {
   valid: boolean;
   message: string;
 }
 
-export const validateMediuxInfo = async (
+export const ValidateMediuxInfo = async (
   mediuxInfo: AppConfigMediux,
   showToast = true
-): Promise<ValidationResponse> => {
+): Promise<ValidateMediuxInfo_Response> => {
   try {
-    const response = await apiClient.post<APIResponse<ValidationResponse>>(`/validate/mediux`, mediuxInfo);
+    const req: ValidateMediuxInfo_Request = { mediux_info: mediuxInfo };
+    const response = await apiClient.post<APIResponse<ValidateMediuxInfo_Response>>(`/validate/mediux`, req);
 
     if (response.data.status === "error") {
       const msg = response.data.error?.message || "Couldn't connect to MediUX. Check the Token";
@@ -33,7 +37,7 @@ export const validateMediuxInfo = async (
     if (showToast) toast.success(data.message || `Successfully connected to MediUX`, { duration: 1000 });
     return data;
   } catch (error) {
-    const errorResponse = ReturnErrorMessage<ValidationResponse>(error);
+    const errorResponse = ReturnErrorMessage<ValidateMediuxInfo_Response>(error);
     const msg = errorResponse.error?.message || "Couldn't connect to MediUX. Check the Token";
     if (showToast) toast.error(msg);
     return { valid: false, message: msg };

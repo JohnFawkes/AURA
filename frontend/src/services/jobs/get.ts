@@ -13,11 +13,15 @@ export type JobInfo = {
   job_name: string;
 };
 
-export const getJobs = async (): Promise<APIResponse<JobInfo[]>> => {
+export interface GetAllJobs_Response {
+  jobs: JobInfo[];
+}
+
+export const GetAllJobs = async (): Promise<APIResponse<GetAllJobs_Response>> => {
   log("INFO", "API - Jobs", "Fetch", "Fetching scheduled jobs");
 
   try {
-    const response = await apiClient.get<APIResponse<JobInfo[]>>(`/jobs`);
+    const response = await apiClient.get<APIResponse<GetAllJobs_Response>>(`/jobs`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching jobs");
     }
@@ -31,6 +35,6 @@ export const getJobs = async (): Promise<APIResponse<JobInfo[]>> => {
       `Fetching jobs failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<JobInfo[]>(error);
+    return ReturnErrorMessage<GetAllJobs_Response>(error);
   }
 };

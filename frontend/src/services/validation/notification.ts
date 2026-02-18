@@ -7,9 +7,16 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { AppConfigNotificationProviders } from "@/types/config/config";
 
+export interface SendTestNotification_Request {
+  provider: AppConfigNotificationProviders;
+}
+export interface SendTestNotification_Response {
+  message: string;
+}
+
 export async function postSendTestNotification(
   nProvider: AppConfigNotificationProviders
-): Promise<APIResponse<string>> {
+): Promise<APIResponse<SendTestNotification_Response>> {
   log(
     "INFO",
     "API - Settings",
@@ -17,7 +24,8 @@ export async function postSendTestNotification(
     `Posting new ${nProvider.provider} info to check connection status`
   );
   try {
-    const response = await apiClient.post<APIResponse<string>>(`/validate/notifications`, nProvider);
+    const req: SendTestNotification_Request = { provider: nProvider };
+    const response = await apiClient.post<APIResponse<SendTestNotification_Response>>(`/validate/notifications`, req);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || `Unknown error posting ${nProvider.provider} new info`);
     } else {
@@ -38,11 +46,11 @@ export async function postSendTestNotification(
       `Failed to post ${nProvider.provider} new info: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<SendTestNotification_Response>(error);
   }
 }
 
-export const sendTestNotification = async (
+export const SendTestNotification = async (
   nProvider: AppConfigNotificationProviders,
   showToast = true
 ): Promise<{ ok: boolean; message: string }> => {

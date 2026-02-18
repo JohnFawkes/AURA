@@ -21,7 +21,18 @@ export interface AutodownloadSetResult {
   reason: string;
 }
 
-export const checkSavedDBItemForUpdates = async (saveItem: DBSavedItem): Promise<APIResponse<AutodownloadResult>> => {
+export interface AutoDownloadForceCheck_Request {
+  Item: DBSavedItem;
+  Complete: boolean;
+}
+
+export interface AutoDownloadForceCheck_Response {
+  result: AutodownloadResult;
+}
+
+export const AutoDownloadForceCheck = async (
+  saveItem: DBSavedItem
+): Promise<APIResponse<AutoDownloadForceCheck_Response>> => {
   let complete = true;
   const size = JSON.stringify(saveItem).length / 1024 / 1024;
   if (size > 5) {
@@ -41,10 +52,11 @@ export const checkSavedDBItemForUpdates = async (saveItem: DBSavedItem): Promise
     { saveItem, complete, size }
   );
   try {
-    const response = await apiClient.post<APIResponse<AutodownloadResult>>(`/db/force-check`, {
+    const req: AutoDownloadForceCheck_Request = {
       Item: saveItem,
       Complete: complete,
-    });
+    };
+    const response = await apiClient.post<APIResponse<AutoDownloadForceCheck_Response>>(`/db/force-check`, req);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error forcing recheck for auto-download");
     } else {
@@ -67,6 +79,6 @@ export const checkSavedDBItemForUpdates = async (saveItem: DBSavedItem): Promise
       }`,
       error
     );
-    return ReturnErrorMessage<AutodownloadResult>(error);
+    return ReturnErrorMessage<AutoDownloadForceCheck_Response>(error);
   }
 };

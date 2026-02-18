@@ -7,7 +7,16 @@ import { useLibrarySectionsStore } from "@/lib/stores/global-store-library-secti
 import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
-export const updateItemInDB = async (saveItem: DBSavedItem): Promise<APIResponse<DBSavedItem>> => {
+export interface UpdateItem_Request {
+  complete: boolean;
+  update_item: DBSavedItem;
+}
+
+export interface UpdateItem_Response {
+  result: string;
+}
+
+export const UpdateItemInDB = async (saveItem: DBSavedItem): Promise<APIResponse<UpdateItem_Response>> => {
   log(
     "INFO",
     "API - DB",
@@ -20,10 +29,11 @@ export const updateItemInDB = async (saveItem: DBSavedItem): Promise<APIResponse
   }
 
   try {
-    const response = await apiClient.patch<APIResponse<DBSavedItem>>(`/db`, {
+    const req: UpdateItem_Request = {
       update_item: saveItem,
       complete: true,
-    });
+    };
+    const response = await apiClient.patch<APIResponse<UpdateItem_Response>>(`/db`, req);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error patching item in DB");
     } else {
@@ -58,6 +68,6 @@ export const updateItemInDB = async (saveItem: DBSavedItem): Promise<APIResponse
       }`,
       error
     );
-    return ReturnErrorMessage<DBSavedItem>(error);
+    return ReturnErrorMessage<UpdateItem_Response>(error);
   }
 };

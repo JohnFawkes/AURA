@@ -6,6 +6,12 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
 
+export interface GetAllDBItems_Response {
+  items: DBSavedItem[];
+  total_items: number;
+  unique_users: string[];
+}
+
 export const getAllItemsFromDB = async (
   searchTMDBID: string,
   searchLibrary: string,
@@ -28,25 +34,22 @@ export const getAllItemsFromDB = async (
   }>
 > => {
   try {
-    const response = await apiClient.get<
-      APIResponse<{ items: DBSavedItem[]; total_items: number; unique_users: string[] }>
-    >(`/db`, {
-      params: {
-        item_tmdb_id: searchTMDBID,
-        item_library_title: searchLibrary,
-        item_year: searchYear,
-        item_title: searchTitle,
-        library_titles: libraryTitles.join(","),
-        image_types: filteredTypes.join(","),
-        autodownload: filterAutodownload,
-        multiset_only: multisetOnly,
-        usernames: filteredUsernames.join(","),
-        items_per_page: itemsPerPage,
-        page_number: pageNumber,
-        sort_option: sortOption,
-        sort_order: sortOrder,
-      },
-    });
+    const params = {
+      item_tmdb_id: searchTMDBID,
+      item_library_title: searchLibrary,
+      item_year: searchYear,
+      item_title: searchTitle,
+      library_titles: libraryTitles.join(","),
+      image_types: filteredTypes.join(","),
+      autodownload: filterAutodownload,
+      multiset_only: multisetOnly,
+      usernames: filteredUsernames.join(","),
+      items_per_page: itemsPerPage,
+      page_number: pageNumber,
+      sort_option: sortOption,
+      sort_order: sortOrder,
+    };
+    const response = await apiClient.get<APIResponse<GetAllDBItems_Response>>(`/db`, { params: params });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching all DB items");
     } else {
@@ -61,6 +64,6 @@ export const getAllItemsFromDB = async (
       `Failed to fetch all DB items: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<{ items: DBSavedItem[]; total_items: number; unique_users: string[] }>(error);
+    return ReturnErrorMessage<GetAllDBItems_Response>(error);
   }
 };

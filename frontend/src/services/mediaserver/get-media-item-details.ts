@@ -8,19 +8,19 @@ import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import { PosterSetsResponse } from "@/types/media-and-posters/sets";
 import { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
-interface getItemContentResponse {
+interface GetMediaItemDetails_Response {
   server_type: string;
   media_item: MediaItem;
   poster_sets: PosterSetsResponse;
   user_follow_hide: MediuxUserInfo[];
 }
 
-export const getMediaItemContent = async (
+export const GetMediaItemDetails = async (
   itemTitle: string,
   ratingKey: string,
   libraryTitle: string,
   returnType: "full" | "item" = "full"
-): Promise<APIResponse<getItemContentResponse>> => {
+): Promise<APIResponse<GetMediaItemDetails_Response>> => {
   log(
     "INFO",
     "API - Media Server",
@@ -29,11 +29,13 @@ export const getMediaItemContent = async (
   );
 
   try {
-    const response = await apiClient.get<APIResponse<getItemContentResponse>>(`/mediaserver/item`, {
-      params: {
-        rating_key: ratingKey,
-        return_type: returnType,
-      },
+    const params = {
+      rating_key: ratingKey,
+      return_type: returnType,
+    };
+
+    const response = await apiClient.get<APIResponse<GetMediaItemDetails_Response>>(`/mediaserver/item`, {
+      params,
       // Important: do not throw on non-2xx for this endpoint
       validateStatus: () => true,
     });
@@ -73,6 +75,6 @@ export const getMediaItemContent = async (
       }`,
       error
     );
-    return ReturnErrorMessage<getItemContentResponse>(error);
+    return ReturnErrorMessage<GetMediaItemDetails_Response>(error);
   }
 };

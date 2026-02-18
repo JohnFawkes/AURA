@@ -5,12 +5,15 @@ import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 
-export const clearLogFile = async (clearCurrent: boolean = false): Promise<APIResponse<void>> => {
+export interface ClearLogFiles_Response {
+  message: string;
+}
+
+export const ClearLogFiles = async (clearCurrent: boolean = false): Promise<APIResponse<ClearLogFiles_Response>> => {
   log("INFO", "API - Logs", "Clear Old Logs", `Clearing old logs, clearCurrent=${clearCurrent}`);
   try {
-    const response = await apiClient.delete<APIResponse<void>>(`/logs`, {
-      params: { option: clearCurrent ? "current" : "old" },
-    });
+    const params = { option: clearCurrent ? "current" : "old" };
+    const response = await apiClient.delete<APIResponse<ClearLogFiles_Response>>(`/logs`, { params });
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error clearing old logs");
     } else {
@@ -25,6 +28,6 @@ export const clearLogFile = async (clearCurrent: boolean = false): Promise<APIRe
       `Failed to clear old logs: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<void>(error);
+    return ReturnErrorMessage<ClearLogFiles_Response>(error);
   }
 };

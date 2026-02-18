@@ -5,9 +5,20 @@ import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 import { DBSavedItem } from "@/types/database/db-poster-set";
-import { SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
+import { MediaItem, SelectedTypes } from "@/types/media-and-posters/media-item-and-library";
 
-export const applyLabelsAndTagsToItem = async (dbItem: DBSavedItem): Promise<APIResponse<string>> => {
+export interface ApplyLabelsAndTagsToItem_Request {
+  media_item: MediaItem;
+  selected_types: SelectedTypes;
+}
+
+export interface ApplyLabelsAndTagsToItem_Response {
+  message: string;
+}
+
+export const ApplyLabelsAndTagsToItem = async (
+  dbItem: DBSavedItem
+): Promise<APIResponse<ApplyLabelsAndTagsToItem_Response>> => {
   log(
     "INFO",
     "API - Labels/Tags",
@@ -32,10 +43,11 @@ export const applyLabelsAndTagsToItem = async (dbItem: DBSavedItem): Promise<API
   }
 
   try {
-    const response = await apiClient.post<APIResponse<string>>(`/labels-tags`, {
+    const req: ApplyLabelsAndTagsToItem_Request = {
       media_item: dbItem.media_item,
       selected_types: selectedTypes,
-    });
+    };
+    const response = await apiClient.post<APIResponse<ApplyLabelsAndTagsToItem_Response>>(`/labels-tags`, req);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error while applying labels/tags");
     } else {
@@ -58,6 +70,6 @@ export const applyLabelsAndTagsToItem = async (dbItem: DBSavedItem): Promise<API
       }: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<ApplyLabelsAndTagsToItem_Response>(error);
   }
 };

@@ -7,10 +7,24 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { AppConfigSonarrRadarrApp } from "@/types/config/config";
 
-export async function postSonarrRadarrNewAPIKeyStatus(srApp: AppConfigSonarrRadarrApp): Promise<APIResponse<string>> {
+export interface ValidateSonarrRadarrInfo_Request {
+  sonarr_radarr_info: AppConfigSonarrRadarrApp;
+}
+export interface ValidateSonarrRadarrInfo_Response {
+  valid: boolean;
+  message: string;
+}
+
+export async function postSonarrRadarrNewAPIKeyStatus(
+  srApp: AppConfigSonarrRadarrApp
+): Promise<APIResponse<ValidateSonarrRadarrInfo_Response>> {
   log("INFO", "API - Settings", srApp.type, `Posting new ${srApp.type} info to check connection status`);
   try {
-    const response = await apiClient.post<APIResponse<string>>(`/validate/${srApp.type.toLowerCase()}`, srApp);
+    const req: ValidateSonarrRadarrInfo_Request = { sonarr_radarr_info: srApp };
+    const response = await apiClient.post<APIResponse<ValidateSonarrRadarrInfo_Response>>(
+      `/validate/${srApp.type.toLowerCase()}`,
+      req
+    );
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || `Unknown error posting ${srApp.type} new info`);
     } else {
@@ -25,11 +39,11 @@ export async function postSonarrRadarrNewAPIKeyStatus(srApp: AppConfigSonarrRada
       `Failed to post ${srApp.type} new info: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<ValidateSonarrRadarrInfo_Response>(error);
   }
 }
 
-export const checkSonarrRadarrNewAPIKeyStatusResult = async (
+export const ValidateSonarrRadarrInfo = async (
   srApp: AppConfigSonarrRadarrApp,
   showToast = true
 ): Promise<{ ok: boolean; message: string }> => {

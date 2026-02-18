@@ -4,7 +4,7 @@ import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 
-export interface DownloadQueueStatus {
+export interface GetDownloadQueueStatus_Response {
   time: string;
   status: string;
   message: string;
@@ -12,9 +12,9 @@ export interface DownloadQueueStatus {
   errors: string[];
 }
 
-export const getDownloadQueueStatus = async (): Promise<APIResponse<DownloadQueueStatus>> => {
+export const GetDownloadQueueStatus = async (): Promise<APIResponse<GetDownloadQueueStatus_Response>> => {
   try {
-    const response = await apiClient.get<APIResponse<DownloadQueueStatus>>(`/download/queue`);
+    const response = await apiClient.get<APIResponse<GetDownloadQueueStatus_Response>>(`/download/queue`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error fetching download queue status");
     }

@@ -5,10 +5,13 @@ import { log } from "@/lib/logger";
 
 import { APIResponse } from "@/types/api/api-response";
 
-export const postClearTempImagesFolder = async (): Promise<APIResponse<void>> => {
+export interface DeleteTempImages_Response {
+  message: string;
+}
+export const DeleteTempImages = async (): Promise<APIResponse<DeleteTempImages_Response>> => {
   log("INFO", "API - Settings", "Clear Temp Images", "Clearing temp images folder");
   try {
-    const response = await apiClient.post<APIResponse<void>>(`/temp-images/clear`);
+    const response = await apiClient.post<APIResponse<DeleteTempImages_Response>>(`/temp-images/clear`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error clearing temp images folder");
     } else {
@@ -23,6 +26,6 @@ export const postClearTempImagesFolder = async (): Promise<APIResponse<void>> =>
       `Failed to clear temp images folder: ${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<void>(error);
+    return ReturnErrorMessage<DeleteTempImages_Response>(error);
   }
 };

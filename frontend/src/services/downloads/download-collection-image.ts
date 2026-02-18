@@ -8,11 +8,20 @@ import { log } from "@/lib/logger";
 import { APIResponse } from "@/types/api/api-response";
 import { ImageFile } from "@/types/media-and-posters/sets";
 
-export const downloadImageFileForCollectionItem = async (
+export interface DownloadCollectionImage_Request {
+  collection_item: CollectionItem;
+  image_file: ImageFile;
+}
+
+export interface DownloadCollectionImage_Response {
+  result: string;
+}
+
+export const DownloadImageFileForCollectionItem = async (
   imageType: "poster" | "backdrop",
   collectionItem: CollectionItem,
   imageFile: ImageFile
-): Promise<APIResponse<string>> => {
+): Promise<APIResponse<DownloadCollectionImage_Response>> => {
   log(
     "INFO",
     "API - Media Server",
@@ -20,10 +29,14 @@ export const downloadImageFileForCollectionItem = async (
     `Downloading ${imageType} image and updating ${collectionItemInfo(collectionItem)}`
   );
   try {
-    const response = await apiClient.post<APIResponse<string>>(`/download/image/collection`, {
+    const req: DownloadCollectionImage_Request = {
       collection_item: collectionItem,
       image_file: imageFile,
-    });
+    };
+    const response = await apiClient.post<APIResponse<DownloadCollectionImage_Response>>(
+      `/download/image/collection`,
+      req
+    );
     if (response.data.status === "error") {
       throw new Error(
         response.data.error?.message || `Unknown error downloading ${imageType} image and updating media server`
@@ -47,6 +60,6 @@ export const downloadImageFileForCollectionItem = async (
 			${error instanceof Error ? error.message : "Unknown error"}`,
       error
     );
-    return ReturnErrorMessage<string>(error);
+    return ReturnErrorMessage<DownloadCollectionImage_Response>(error);
   }
 };
