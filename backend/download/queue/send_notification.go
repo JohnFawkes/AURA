@@ -166,13 +166,13 @@ func getImageURLFromPosterSet(posterSet models.DBPosterSetDetail, tmdbPoster, tm
 		return posterURL
 	}
 	if tmdbPosterURL != "" {
-		return tmdbPosterURL
+		return fmt.Sprintf("https://image.tmdb.org/t/p/original%s", tmdbPosterURL)
 	}
 	if backdropURL != "" {
 		return backdropURL
 	}
 	if tmdbBackdropURL != "" {
-		return tmdbBackdropURL
+		return fmt.Sprintf("https://image.tmdb.org/t/p/original%s", tmdbBackdropURL)
 	}
 	if seasonURL != "" {
 		return seasonURL
