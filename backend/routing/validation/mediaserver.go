@@ -81,6 +81,7 @@ func ValidateMediaServerInfo(w http.ResponseWriter, r *http.Request) {
 		}
 		response.MediaServer.UserID = adminUserID
 	}
+	response.MediaServer.ApiToken = config.MaskToken(response.MediaServer.ApiToken)
 
 	response.Valid = connectionOk
 	response.Message = fmt.Sprintf("Successfully connected to %s server '%s' (version %s)", mediaServerInfo.Type, serverName, serverVersion)
