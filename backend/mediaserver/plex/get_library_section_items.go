@@ -127,7 +127,8 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 			}
 		}
 		if item.TMDB_ID == "" {
-			continue // Skip items without TMDB ID
+			totalSize-- // Decrement total size as this item will be skipped
+			continue    // Skip items without TMDB ID
 		}
 
 		// Check if Media Item exists in DB
