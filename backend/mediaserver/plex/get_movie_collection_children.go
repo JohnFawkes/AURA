@@ -54,6 +54,17 @@ func (p *Plex) GetMovieCollectionChildrenItems(ctx context.Context, collection *
 			continue
 		}
 
+		isInSelectedLibraryTitles := false
+		for _, library := range config.Current.MediaServer.Libraries {
+			if library.Title == item.LibrarySectionTitle {
+				isInSelectedLibraryTitles = true
+				break
+			}
+		}
+		if !isInSelectedLibraryTitles {
+			continue
+		}
+
 		itemInfo, Err := extractMediaItemFromResponse(ctx, item)
 		if Err.Message != "" {
 			continue
