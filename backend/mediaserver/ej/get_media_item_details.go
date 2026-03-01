@@ -132,7 +132,11 @@ func (e *EJ) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) (f
 		item.Series.SeasonCount = ejResp.ChildCount
 		item.Series.EpisodeCount = 0
 		for _, season := range item.Series.Seasons {
-			item.Series.EpisodeCount += len(season.Episodes)
+			for _, episode := range season.Episodes {
+				if episode.File.Path != "" {
+					item.Series.EpisodeCount++
+				}
+			}
 		}
 
 	}
@@ -207,6 +211,9 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *models.MediaItem) (Err l
 		if Err.Message != "" {
 			return *logAction.Error
 		}
+		if len(season.Episodes) == 0 {
+			continue
+		}
 		seasons = append(seasons, season)
 	}
 
@@ -262,6 +269,10 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 				Size:     episode.Size,
 				Duration: episode.RunTimeTicks / 10000,
 			},
+		}
+
+		if episode.File.Path == "" {
+			continue
 		}
 
 		// For Emby/Jellyfin, the file path is not directly available in the response.

@@ -103,9 +103,7 @@ func getAllLibrarySectionsAndItemsImpl(ctx context.Context) (success bool) {
 			if expectedTotal > 0 && start >= expectedTotal {
 				break
 			}
-			if len(items) < pageSize {
-				break
-			}
+
 		}
 
 	}
