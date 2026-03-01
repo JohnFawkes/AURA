@@ -247,6 +247,16 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Label:   "Send Test Notification",
 		Section: "VALIDATION",
 	},
+
+	// SWAGGER DOCS
+	"GET:/swagger/doc.json": {
+		Label:   "Get Swagger Documentation",
+		Section: "SWAGGER",
+	},
+	"GET:/swagger/index.html": {
+		Label:   "Get Swagger UI",
+		Section: "SWAGGER",
+	},
 }
 
 type GetLogContents_Response struct {
@@ -315,13 +325,14 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 	pageNumber := 1
 	ippStr := r.URL.Query().Get("items_per_page")
 	if ippStr != "" {
-		if val, err := strconv.Atoi(ippStr); err == nil {
+		if val, err := strconv.Atoi(ippStr); err == nil && val > 0 {
 			itemsPerPage = val
 		}
 	}
+
 	pnStr := r.URL.Query().Get("page_number")
 	if pnStr != "" {
-		if val, err := strconv.Atoi(pnStr); err == nil {
+		if val, err := strconv.Atoi(pnStr); err == nil && val > 0 {
 			pageNumber = val
 		}
 	}
@@ -490,17 +501,25 @@ func GetLogContents(w http.ResponseWriter, r *http.Request) {
 
 	// Apply Pagination
 	startIndex := (pageNumber - 1) * itemsPerPage
-	endIndex := startIndex + itemsPerPage
-	if startIndex > len(logEntries) {
+	if startIndex >= totalNumberOfLogEntries {
 		logEntries = []*logging.LogData{}
-	} else if endIndex > len(logEntries) {
-		logEntries = logEntries[startIndex:]
 	} else {
+		endIndex := startIndex + itemsPerPage
+		if endIndex > totalNumberOfLogEntries {
+			endIndex = totalNumberOfLogEntries
+		}
 		logEntries = logEntries[startIndex:endIndex]
 	}
 
+	pageStart := 0
+	pageEnd := 0
+	if len(logEntries) > 0 {
+		pageStart = startIndex + 1
+		pageEnd = startIndex + len(logEntries)
+	}
+
 	logging.LOGGER.Debug().Timestamp().Msgf("Retrieved %d-%d of %d log entries after filtering and pagination",
-		startIndex+1, startIndex+len(logEntries), totalNumberOfLogEntries)
+		pageStart, pageEnd, totalNumberOfLogEntries)
 	logAction.AppendResult("log_entries_total", totalNumberOfLogEntries)
 	logAction.AppendResult("log_entries_returned", len(logEntries))
 	logAction.AppendResult("log_entries_filtered", totalNumberOfLogEntries-len(logEntries))
