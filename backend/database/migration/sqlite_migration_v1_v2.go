@@ -120,7 +120,7 @@ func v1_2_ConvertOldData(ctx context.Context, conn *sql.DB) logging.LogErrorInfo
 	defer logAction.Complete()
 
 	// Cache: Add all media server sections and items
-	success := mediaserver.GetAllLibrarySectionsAndItems(ctx, false)
+	success := mediaserver.GetAllLibrarySectionsAndItems(ctx, true)
 	if !success {
 		logAction.SetError("Failed to fetch all library sections and items from media server", "", nil)
 		return *logAction.Error
