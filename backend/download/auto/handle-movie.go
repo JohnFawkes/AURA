@@ -10,6 +10,7 @@ import (
 	"aura/utils"
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -18,10 +19,26 @@ func handleMovie(ctx context.Context, dbItem models.DBSavedItem) (result AutoDow
 	result = AutoDownloadResult{}
 	result.Item = utils.MediaItemInfo(dbItem.MediaItem)
 
+	defer func() {
+		if r := recover(); r != nil {
+			logging.LOGGER.Error().
+				Timestamp().
+				Str("item", utils.MediaItemInfo(dbItem.MediaItem)).
+				Interface("recover", r).
+				Str("stack", string(debug.Stack())).
+				Msg("Panic in handleMovie for AutoDownload Check")
+			result = AutoDownloadResult{
+				Item:           utils.MediaItemInfo(dbItem.MediaItem),
+				OverallResult:  "error",
+				OverallMessage: fmt.Sprintf("Panic occurred: %v", r),
+			}
+		}
+	}()
+
 	// Get the base Movie Media Item from the cache
 	_, actionGetFromCache := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting %s Item from cache", utils.MediaItemInfo(dbItem.MediaItem)), logging.LevelTrace)
 	mediaItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(dbItem.MediaItem.LibraryTitle, dbItem.MediaItem.TMDB_ID)
-	if !found {
+	if !found || mediaItem == nil {
 		result.OverallResult = "error"
 		result.OverallMessage = "Media Item not found in cache"
 		actionGetFromCache.SetError("Media Item not found in cache", "Try refreshing the cache if this issue persists", nil)

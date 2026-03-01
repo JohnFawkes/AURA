@@ -5,6 +5,7 @@ import (
 	autodownload "aura/download/auto"
 	"aura/logging"
 	"context"
+	"runtime/debug"
 )
 
 func StartAutoDownloadJob() error {
@@ -37,7 +38,11 @@ func StartAutoDownloadJob() error {
 	autodownloadJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled AutoDownload Job")
+				logging.LOGGER.Error().
+					Timestamp().
+					Interface("recover", r).
+					Str("stack", string(debug.Stack())).
+					Msg("Panic in scheduled AutoDownload Job")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
