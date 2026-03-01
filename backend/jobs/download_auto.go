@@ -42,7 +42,7 @@ func StartAutoDownloadJob() error {
 					Timestamp().
 					Interface("recover", r).
 					Str("stack", string(debug.Stack())).
-					Msg("Panic in scheduled AutoDownload Job")
+					Msg("PANIC: in scheduled AutoDownload Job")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")

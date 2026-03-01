@@ -25,7 +25,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				Str("item", utils.MediaItemInfo(dbItem.MediaItem)).
 				Interface("recover", r).
 				Str("stack", string(debug.Stack())).
-				Msg("Panic in handleShow for AutoDownload Check")
+				Msg("PANIC: in handleShow for AutoDownload Check")
 			result = AutoDownloadResult{
 				Item:           utils.MediaItemInfo(dbItem.MediaItem),
 				OverallResult:  "error",

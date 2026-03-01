@@ -25,7 +25,7 @@ func StartCheckForRatingKeyChangesJob() error {
 	checkForRatingKeyChangesJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled CheckForRatingKeyChangesJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled CheckForRatingKeyChangesJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
@@ -71,7 +71,7 @@ func RunCheckForRatingKeyChangesJobNow() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in CheckForRatingKeyChangesJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in CheckForRatingKeyChangesJob")
 			}
 		}()
 		logging.LOGGER.Info().Timestamp().Msg("Manually triggering Check for Rating Key Changes Job")

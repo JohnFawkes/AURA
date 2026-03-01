@@ -25,7 +25,7 @@ func StartRefreshMediuxUsersJob() error {
 	refreshMediuxUsersJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled RefreshMediuxUsersJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled RefreshMediuxUsersJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
@@ -72,7 +72,7 @@ func RunRefreshMediuxUsersJobNow() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in RefreshMediuxUsersJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in RefreshMediuxUsersJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Manual Job Run")

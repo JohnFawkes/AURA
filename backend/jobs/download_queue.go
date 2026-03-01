@@ -25,7 +25,7 @@ func StartDownloadQueueJob() error {
 	downloadQueueJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled Download Queue Job")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled Download Queue Job")
 			}
 		}()
 		downloadqueue.ProcessQueueItems()

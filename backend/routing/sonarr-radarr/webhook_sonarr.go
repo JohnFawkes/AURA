@@ -192,7 +192,7 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 		// Handle Panic to prevent crashing the app since this is running in the background
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Msgf("Panic recovered in SonarrWebhookHandler background processing: %v", r)
+				logging.LOGGER.Error().Timestamp().Msgf("PANIC: in SonarrWebhookHandler background processing: %v", r)
 			}
 		}()
 

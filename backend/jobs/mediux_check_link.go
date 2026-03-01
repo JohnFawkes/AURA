@@ -25,7 +25,7 @@ func StartCheckMediuxSiteLinkJob() error {
 	checkMediuxSiteLinkJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled CheckMediuxSiteLinkJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled CheckMediuxSiteLinkJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
@@ -62,7 +62,7 @@ func RunCheckMediuxSiteLinkJobNow() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in CheckMediuxSiteLinkJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in CheckMediuxSiteLinkJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Manual Job Run")

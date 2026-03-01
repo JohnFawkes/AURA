@@ -26,7 +26,7 @@ func handleMovie(ctx context.Context, dbItem models.DBSavedItem) (result AutoDow
 				Str("item", utils.MediaItemInfo(dbItem.MediaItem)).
 				Interface("recover", r).
 				Str("stack", string(debug.Stack())).
-				Msg("Panic in handleMovie for AutoDownload Check")
+				Msg("PANIC: in handleMovie for AutoDownload Check")
 			result = AutoDownloadResult{
 				Item:           utils.MediaItemInfo(dbItem.MediaItem),
 				OverallResult:  "error",

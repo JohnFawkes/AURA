@@ -25,7 +25,7 @@ func StartHandleTempIgnoredItemsJob() error {
 	handleTempIgnoredItemsJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("Panic in scheduled HandleTempIgnoredItemsJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled HandleTempIgnoredItemsJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
