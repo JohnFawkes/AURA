@@ -32,7 +32,7 @@ type ImageFileWithReason struct {
 
 func CheckAllItems(ctx context.Context) (Err logging.LogErrorInfo) {
 	ctx, getAllItemAction := logging.AddSubActionToContext(ctx, " Getting all saved sets for AutoDownload Check", logging.LevelInfo)
-	out, Err := database.GetAllSavedSets(ctx, models.DBFilter{})
+	out, Err := database.GetAllSavedSets(ctx, models.DBFilter{ItemsPerPage: -1})
 	if Err.Message != "" {
 		getAllItemAction.Complete()
 		return *getAllItemAction.Error
