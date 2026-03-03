@@ -48,9 +48,12 @@ func (s *SQliteDB) GetAllSavedSets(ctx context.Context, filter models.DBFilter) 
 		sortDir = "DESC"
 	}
 
-	// Pagination
 	pageItems := filter.ItemsPerPage
-	if pageItems <= 0 {
+	if pageItems < 0 {
+		// -1 means "all items" (no limit in SQLite)
+		pageItems = -1
+	}
+	if pageItems == 0 {
 		pageItems = 25
 	}
 	if pageItems > 250 {
