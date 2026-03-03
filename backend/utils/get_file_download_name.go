@@ -22,7 +22,18 @@ func GetFileDownloadName(itemTitle string, imageFile models.ImageFile) string {
 			return "Season Poster"
 		}
 	case "titlecard":
-		return fmt.Sprintf("S%sE%s Titlecard", FormatIntAsTwoDigitString(*imageFile.SeasonNumber), FormatIntAsTwoDigitString(*imageFile.EpisodeNumber))
+		if imageFile.SeasonNumber != nil && imageFile.EpisodeNumber != nil {
+			return fmt.Sprintf("S%sE%s Titlecard", FormatIntAsTwoDigitString(*imageFile.SeasonNumber), FormatIntAsTwoDigitString(*imageFile.EpisodeNumber))
+		} else if imageFile.SeasonNumber != nil {
+			return fmt.Sprintf("S%s Titlecard", FormatIntAsTwoDigitString(*imageFile.SeasonNumber))
+		} else if imageFile.EpisodeNumber != nil {
+			return fmt.Sprintf("E%s Titlecard", FormatIntAsTwoDigitString(*imageFile.EpisodeNumber))
+		} else {
+			if imageFile.Title != "" {
+				return fmt.Sprintf("%s Titlecard", imageFile.Title)
+			}
+			return "Titlecard"
+		}
 	default:
 		return fmt.Sprintf("%s - Image", itemTitle)
 	}
