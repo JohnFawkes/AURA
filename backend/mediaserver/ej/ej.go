@@ -110,6 +110,7 @@ type EmbyJellyLibraryItemsResponse struct {
 		DateCreated    time.Time `json:"DateCreated"`
 		PremiereDate   time.Time `json:"PremiereDate"`
 		IsFolder       bool      `json:"IsFolder"`
+		Path           string    `json:"Path"`
 		ProviderIds    struct {
 			Tvdb            string `json:"Tvdb"`
 			Imdb            string `json:"Imdb"`
@@ -369,4 +370,17 @@ type EmbyJellyItemContentResponse struct {
 type EmbyJellyItemContentChildResponse struct {
 	Items            []EmbyJellyItemContentResponse `json:"Items"`
 	TotalRecordCount int                            `json:"TotalRecordCount"`
+}
+
+type EmbyJellyVirtualFoldersResponse struct {
+	Name      string   `json:"Name"`
+	Locations []string `json:"Locations"`
+	PathInfos []struct {
+		Path string `json:"Path"`
+	} `json:"PathInfos"`
+	LibraryOptions struct {
+		PathInfos []struct {
+			Path string `json:"Path"`
+		} `json:"PathInfos"`
+	} `json:"LibraryOptions"`
 }

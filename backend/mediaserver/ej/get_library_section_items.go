@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 )
 
 func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibrarySection, sectionStartIndex string, limit string) (items []models.MediaItem, totalSize int, Err logging.LogErrorInfo) {
@@ -80,7 +81,18 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 			if boxSetErr.Message != "" {
 				return nil, 0, boxSetErr
 			}
-			items = append(items, boxSetItems...)
+			// Only include unique items from the BoxSet split (some servers may return duplicate items in the BoxSet response vs the main section items response)
+			existingRatingKeys := make(map[string]bool)
+			for _, existingItem := range items {
+				existingRatingKeys[existingItem.RatingKey] = true
+			}
+			uniqueBoxSetItems := []models.MediaItem{}
+			for _, boxSetItem := range boxSetItems {
+				if _, exists := existingRatingKeys[boxSetItem.RatingKey]; !exists {
+					uniqueBoxSetItems = append(uniqueBoxSetItems, boxSetItem)
+				}
+			}
+			items = append(items, uniqueBoxSetItems...)
 			continue
 		}
 
@@ -116,6 +128,7 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 			}
 		}
 		if item.TMDB_ID == "" {
+			logging.LOGGER.Warn().Timestamp().Str("item_title", item.Title).Str("library_section", section.Title).Msg("Skipping item in library section because it does not have a TMDB ID")
 			totalSize-- // Decrement total size as this item will be skipped
 			continue    // Skip items without TMDB ID
 		}
@@ -165,7 +178,7 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 	query.Add("SortBy", "Name")
 	query.Add("SortOrder", "Ascending")
 	query.Add("IncludeItemTypes", "Movie,Series")
-	query.Add("Fields", "DateLastContentAdded,PremiereDate,DateCreated,ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
+	query.Add("Fields", "Path,DateLastContentAdded,PremiereDate,DateCreated,ProviderIds,BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate")
 	query.Add("ParentId", parentID)
 	u.RawQuery = query.Encode()
 	URL := u.String()
@@ -190,8 +203,38 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 		return items, Err
 	}
 
+	validLibraryPaths := []string{}
+	for _, lib := range config.Current.MediaServer.Libraries {
+		if lib.Path != "" {
+			validLibraryPaths = append(validLibraryPaths, lib.Path)
+		}
+	}
+	logging.LOGGER.Info().Timestamp().Str("boxset_collection", collectionName).Strs("valid_library_paths", validLibraryPaths).Msg("Valid library paths to check against for items in BoxSet collection")
+
 	for _, item := range ejResp.Items {
 		var itemInfo models.MediaItem
+
+		// Get the item path
+		itemPath := item.Path
+		if itemPath == "" {
+			logAction.AppendWarning("message", fmt.Sprintf("Item '%s' in BoxSet Collection '%s' does not have a path, skipping", item.Name, collectionName))
+			continue
+		}
+		// Check to see if the path starts with one of the known library paths, if not, skip the item
+		validPath := false
+		for _, lib := range config.Current.MediaServer.Libraries {
+			if lib.Path != "" && strings.HasPrefix(itemPath, lib.Path) {
+				validPath = true
+				break
+			}
+		}
+		if !validPath {
+			logging.LOGGER.Warn().Timestamp().Str("item_title", item.Name).
+				Str("item_path", itemPath).
+				Str("boxset_collection", collectionName).
+				Msg("Skipping item in BoxSet collection because its path does not start with any of the known library paths")
+			continue
+		}
 
 		itemInfo.RatingKey = item.ID
 		itemInfo.Type = map[string]string{
@@ -204,10 +247,49 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 		itemInfo.LibraryTitle = sectionTitle
 		if item.ProviderIds.Tmdb != "" {
 			itemInfo.Guids = append(itemInfo.Guids, models.MediaItemGuid{Provider: "tmdb", ID: item.ProviderIds.Tmdb})
+			itemInfo.Guids = append(itemInfo.Guids, models.MediaItemGuid{Provider: "tvdb", ID: item.ProviderIds.Tvdb})
 			itemInfo.TMDB_ID = item.ProviderIds.Tmdb
 		}
 		itemInfo.AddedAt = item.DateCreated.UnixMilli()
 		itemInfo.ReleasedAt = item.PremiereDate.UnixMilli()
+
+		// If no TMDB ID found, get the value from MediUX using the GUID[tvdb]
+		if itemInfo.TMDB_ID == "" {
+			for _, guid := range itemInfo.Guids {
+				if guid.Provider == "tvdb" {
+					tmdbID, found, Err := mediux.SearchTMDBIDByTVDBID(ctx, guid.ID, itemInfo.Type)
+					if Err.Message != "" {
+						logAction.AppendWarning("search_tmdb_id_error", "Failed to search TMDB ID from MediUX")
+					}
+					if found {
+						itemInfo.TMDB_ID = tmdbID
+						break
+					}
+				}
+			}
+		}
+		if itemInfo.TMDB_ID == "" {
+			logging.LOGGER.Warn().Timestamp().Str("item_title", itemInfo.Title).Str("library_section", sectionTitle).Msg("Skipping item in BoxSet collection because it does not have a TMDB ID")
+			continue // Skip items without TMDB ID
+		}
+
+		// Check if Media Item exists in DB
+		ignored, ignoredMode, sets, logErr := database.CheckIfMediaItemExists(ctx, itemInfo.TMDB_ID, itemInfo.LibraryTitle)
+		if logErr.Message != "" {
+			logAction.AppendWarning("message", "Failed to check if media item exists in database")
+			logAction.AppendWarning("error", logErr)
+		}
+		if !ignored {
+			itemInfo.DBSavedSets = sets
+		} else {
+			itemInfo.IgnoredInDB = true
+			itemInfo.IgnoredMode = ignoredMode
+		}
+
+		// Check if Media Item exists in MediUX with a set
+		if cache.MediuxItems.CheckItemExists(itemInfo.Type, itemInfo.TMDB_ID) {
+			itemInfo.HasMediuxSets = true
+		}
 
 		items = append(items, itemInfo)
 	}
