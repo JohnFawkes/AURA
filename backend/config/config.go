@@ -10,7 +10,7 @@ var (
 	MediaServerValid bool   = true
 	MediaServerName  string = ""
 	MediuxValid      bool   = true
-	Version          string = ""
+	AppVersion       string = ""
 	AppFullyLoaded   bool   = false
 )
 

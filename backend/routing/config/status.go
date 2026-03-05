@@ -17,6 +17,7 @@ type AppConfigStatus struct {
 	MediaServerName string        `json:"media_server_name,omitempty"` // Friendly name of the media server
 	MediuxSiteLink  string        `json:"mediux_site_link,omitempty"`  // Current Mediux site link
 	AppFullyLoaded  bool          `json:"app_fully_loaded"`            // Whether the app is fully loaded and ready to use
+	AppVersion      string        `json:"app_version"`                 // Current version of the app
 }
 
 type configStatusResponse struct {
@@ -48,6 +49,7 @@ func GetAppConfigStatus(w http.ResponseWriter, r *http.Request) {
 		MediaServerName: config.MediaServerName,
 		MediuxSiteLink:  mediux.MediuxSiteLink,
 		AppFullyLoaded:  config.AppFullyLoaded,
+		AppVersion:      config.AppVersion,
 	}
 	httpx.SendResponse(w, ld, response)
 }

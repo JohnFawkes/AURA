@@ -31,7 +31,7 @@ func runBootstrap() (success bool) {
 
 	// Print App Info
 	utils.PrintAppStartUpDetails(APP_VERSION, AUTHOR, LICENSE, APP_PORT, APP_NAME)
-	config.Version = APP_VERSION
+	config.AppVersion = APP_VERSION
 
 	// Set Umask for file permissions (if needed)
 	utils.SetUMask(ctx)

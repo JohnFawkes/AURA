@@ -8,8 +8,8 @@ import (
 )
 
 type healthCheckResponse struct {
-	Status  string `json:"status"`
-	Version string `json:"version"`
+	Status     string `json:"status"`
+	AppVersion string `json:"app_version"`
 }
 
 // HealthCheck godoc
@@ -26,6 +26,6 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	var response healthCheckResponse
 	response.Status = "ok"
-	response.Version = config.Version
+	response.AppVersion = config.AppVersion
 	httpx.SendResponse(w, ld, response)
 }
