@@ -370,7 +370,17 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
       try {
         const start = Date.now();
-        const { ok, message } = await SendTestNotification(provider, showToast);
+        const { ok, message } = await SendTestNotification(
+          provider,
+          "test_notification",
+          value.templates.test_notification || {
+            enabled: false,
+            title: "Test Notification",
+            message: "This is a test notification from aura.",
+            include_image: false,
+          },
+          showToast
+        );
         const elapsed = Date.now() - start;
         const minDelay = 400;
 
@@ -396,6 +406,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
         }));
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [providers]
   );
 
@@ -904,11 +915,43 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                   <AccordionContent className="space-y-3 pt-1">
                     <div className="flex items-center justify-between">
                       <Label>Enabled</Label>
-                      <Switch
-                        disabled={!editing}
-                        checked={!!tpl.enabled}
-                        onCheckedChange={(v) => updateTemplate(key, { enabled: v })}
-                      />
+
+                      <div>
+                        {/* Test Button */}
+                        {/* {value.enabled &&
+                          tpl.enabled &&
+                          providers.filter((p) => p.enabled).length > 0 &&
+                          unknownVars.length === 0 && (
+                            <Button
+                              className="mr-2"
+                              variant="outline"
+                              size="sm"
+                              disabled={
+                                !value.enabled ||
+                                !tpl.enabled ||
+                                providers.filter((p) => p.enabled).length === 0 ||
+                                unknownVars.length > 0
+                              }
+                              onClick={() => {
+                                console.log("Testing notification with template:", {
+                                  ...tpl,
+                                  title: tpl.title || "Test Title",
+                                  message: tpl.message || "Test Message",
+                                });
+                                for (const p of providers.filter((p) => p.enabled)) {
+                                  SendTestNotification(p, key, tpl, true);
+                                }
+                              }}
+                            >
+                              <TestTube className="h-4 w-4" />
+                            </Button>
+                          )} */}
+                        <Switch
+                          disabled={!editing}
+                          checked={!!tpl.enabled}
+                          onCheckedChange={(v) => updateTemplate(key, { enabled: v })}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-1">
