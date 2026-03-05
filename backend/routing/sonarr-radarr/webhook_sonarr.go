@@ -254,6 +254,17 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 			seasonNumber := sonarrEpisode.SeasonNumber
 			episodeNumber := sonarrEpisode.EpisodeNumber
 
+			// Check if the Media Item in the DB Item has this season already downloaded - if it doesn't, then we download the season poster if it's selected, otherwise we skip downloading the season poster since its not new
+			seasonInDBItem := false
+			if dbItem.MediaItem.Series != nil {
+				for _, season := range dbItem.MediaItem.Series.Seasons {
+					if season.SeasonNumber == seasonNumber {
+						seasonInDBItem = true
+						break
+					}
+				}
+			}
+
 			if dbSet.SelectedTypes.SeasonPoster && seasonNumber != 0 && payload.IsUpgrade == false {
 				var seasonPosterImage *models.ImageFile
 				for _, image := range mediuxSet.Images {
@@ -263,7 +274,7 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 					}
 				}
 
-				if seasonPosterImage != nil {
+				if seasonPosterImage != nil && !seasonInDBItem {
 					imagesToDownload = append(imagesToDownload, *seasonPosterImage)
 				} else {
 					logging.LOGGER.Info().Timestamp().Msgf("No season poster found in set ID %s for season %d, skipping season poster download for this episode", dbSet.ID, seasonNumber)
@@ -279,7 +290,7 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 					}
 				}
 
-				if specialSeasonPosterImage != nil {
+				if specialSeasonPosterImage != nil && !seasonInDBItem {
 					imagesToDownload = append(imagesToDownload, *specialSeasonPosterImage)
 				} else {
 					logging.LOGGER.Info().Timestamp().Msgf("No special season poster found in set ID %s, skipping special season poster download for this episode", dbSet.ID)
