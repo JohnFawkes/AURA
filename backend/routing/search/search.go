@@ -93,8 +93,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 	response.CollectionItemsLastFullUpdate = cache.CollectionsStore.LastFullUpdate
 
 	if searchMediaItems {
-		maxPerSection := 5
-		maxTotal := 10
+		maxPerSection := 25
 		allSections := cache.LibraryStore.GetAllSectionsSortedByTitle()
 		for _, section := range allSections {
 			count := 0
@@ -120,20 +119,16 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 				if allWordsMatch {
 					response.MediaItems = append(response.MediaItems, item)
 					count++
-					if count >= maxPerSection || len(response.MediaItems) >= maxTotal {
+					if count >= maxPerSection {
 						break
 					}
 				}
-			}
-			if len(response.MediaItems) >= maxTotal {
-				break
 			}
 		}
 	}
 
 	if searchCollectionItems {
-		maxPerSection := 5
-		maxTotal := 10
+		maxTotal := 50
 		allCollections := cache.CollectionsStore.GetAllCollections()
 		for _, collection := range allCollections {
 			count := 0
@@ -152,7 +147,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			if allWordsMatch {
 				response.CollectionItems = append(response.CollectionItems, collection)
 				count++
-				if count >= maxPerSection || len(response.CollectionItems) >= maxTotal {
+				if len(response.CollectionItems) >= maxTotal {
 					break
 				}
 			}
@@ -168,11 +163,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			response.MediuxUsernames, Err = mediux.SearchUsersByUsername(ctx, cleanedQuery)
 			if Err.Message != "" {
 				ld.Status = logging.StatusWarn
-				httpx.SendResponse(w, ld, map[string]any{
-					"search_query":     searchQuery,
-					"media_items":      response.MediaItems,
-					"mediux_usernames": response.MediuxUsernames,
-					"error":            Err})
+				httpx.SendResponse(w, ld, response)
 				return
 			}
 		}
@@ -185,6 +176,7 @@ func HandleSearch(w http.ResponseWriter, r *http.Request) {
 			ItemTitle:        cleanedQuery,
 			ItemLibraryTitle: libraryFilter,
 			ItemYear:         yearFilterInt,
+			ItemsPerPage:     25,
 		})
 		if Err.Message != "" {
 			ld.Status = logging.StatusWarn
