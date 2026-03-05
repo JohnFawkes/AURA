@@ -986,6 +986,8 @@ const UserSetPage = () => {
                                     imageType="mediux"
                                     aspect="poster"
                                     className="w-full mb-2"
+                                    includedItems={setIncludedItems || {}}
+                                    matchedToItem={true}
                                   />
                                 )}
 
@@ -996,6 +998,8 @@ const UserSetPage = () => {
                                     imageType="mediux"
                                     aspect="backdrop"
                                     className="w-full"
+                                    includedItems={setIncludedItems || {}}
+                                    matchedToItem={true}
                                   />
                                 )}
                               </div>
