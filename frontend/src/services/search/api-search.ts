@@ -20,6 +20,7 @@ interface HandleSearch_Response {
 interface HandleSearch_QueryProps {
   searchQuery: string;
   searchMediaItems: boolean;
+  searchCollectionItems: boolean;
   searchMediuxUsers: boolean;
   searchSavedSets: boolean;
 }
@@ -30,6 +31,7 @@ export const HandleSearch = async (props: HandleSearch_QueryProps): Promise<APIR
     const params = {
       query: props.searchQuery,
       search_media_items: props.searchMediaItems,
+      search_collection_items: props.searchCollectionItems,
       search_mediux_users: props.searchMediuxUsers,
       search_saved_sets: props.searchSavedSets,
     };
