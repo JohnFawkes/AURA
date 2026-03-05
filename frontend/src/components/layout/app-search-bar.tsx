@@ -38,8 +38,8 @@ export interface DynamicSearchProps {
 }
 
 // Types for filter keys
-type SearchTypeFilter = "mediaItem" | "mediuxUser" | "savedSets";
-const filterOrder: SearchTypeFilter[] = ["mediaItem", "mediuxUser", "savedSets"];
+type SearchTypeFilter = "mediaItem" | "collectionItem" | "mediuxUser" | "savedSets";
+const filterOrder: SearchTypeFilter[] = ["mediaItem", "collectionItem", "mediuxUser", "savedSets"];
 
 // Animation variants for results
 const wrapperVariants = {
@@ -91,6 +91,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
   // Filter States
   const [filters, setFilters] = useState<{ [key: string]: boolean }>({
     mediaItem: true,
+    collectionItem: true,
     mediuxUser: true,
     savedSets: false,
   });
@@ -201,6 +202,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
         const searchResp = await HandleSearch({
           searchQuery: searchInput,
           searchMediaItems: filters.mediaItem,
+          searchCollectionItems: filters.collectionItem,
           searchMediuxUsers: filters.mediuxUser,
           searchSavedSets: filters.savedSets,
         });
@@ -230,7 +232,7 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [filters.mediaItem, filters.mediuxUser, filters.savedSets, searchInput, setSearchQuery]);
+  }, [filters.mediaItem, filters.collectionItem, filters.mediuxUser, filters.savedSets, searchInput, setSearchQuery]);
 
   // Keyboard Navigation Handler
   // Handles keyboard events for navigating and selecting search results
@@ -386,11 +388,13 @@ export function DynamicSearch({ placeholder = "Search", className }: DynamicSear
                         >
                           {filterType === "mediaItem"
                             ? "Media Items"
-                            : filterType === "mediuxUser"
-                              ? "MediUX Users"
-                              : filterType === "savedSets"
-                                ? "Saved Sets"
-                                : filterType}
+                            : filterType === "collectionItem"
+                              ? "Collection Items"
+                              : filterType === "mediuxUser"
+                                ? "MediUX Users"
+                                : filterType === "savedSets"
+                                  ? "Saved Sets"
+                                  : filterType}
                         </Badge>
                       ))}
                     </div>
