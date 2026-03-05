@@ -142,7 +142,7 @@ const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.r
 
 // derive progress counts from tasks (uses totalPlanned so total doesn't grow as tasks are added)
 const getOverallCounts = (state: DownloadProgress) => {
-  const allTasks = Object.values(state.items).flatMap((i) => i.tasks);
+  const allTasks = Object.values(state.items).flatMap((i) => i.tasks || []);
 
   // Notes shouldn't affect progress totals
   const relevant = allTasks.filter((t) => t.payload.kind !== "note");
@@ -940,7 +940,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                         </div>
                         {(() => {
                           const img = isDuplicate.options.find((o) => o.type === isDuplicate.selectedType)?.image;
-                          return img && <AssetImage className="mt-2" image={img} imageType="mediux" />;
+                          return (
+                            img && <AssetImage className="mt-2" image={img} imageType="mediux" matchedToItem={false} />
+                          );
                         })()}
                       </PopoverContent>
                     </Popover>

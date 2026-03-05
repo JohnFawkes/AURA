@@ -84,6 +84,8 @@ export function CarouselDisplay({
                             imageType="mediux"
                             aspect="poster"
                             className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                            includedItems={includedItems}
+                            matchedToItem={isAvailable}
                           />
                         ))}
                       {shouldShow("backdrop") &&
@@ -94,6 +96,8 @@ export function CarouselDisplay({
                             imageType="mediux"
                             aspect="backdrop"
                             className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                            includedItems={includedItems}
+                            matchedToItem={isAvailable}
                           />
                         ))}
                     </div>
@@ -184,6 +188,8 @@ export function CarouselDisplay({
                           className={`w-full ${
                             !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound ? "opacity-35" : ""
                           }`}
+                          includedItems={includedItems}
+                          matchedToItem={hasSeason(includedItems, tmdbId, seasonNum)}
                         />
                       )}
 
@@ -195,6 +201,8 @@ export function CarouselDisplay({
                           className={`w-full ${
                             !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound ? "opacity-35" : ""
                           }`}
+                          includedItems={includedItems}
+                          matchedToItem={hasSeason(includedItems, tmdbId, seasonNum)}
                         />
                       )}
 
@@ -206,6 +214,8 @@ export function CarouselDisplay({
                           className={`w-full ${
                             !hasSeason(includedItems, tmdbId, seasonNum) && dimNotFound ? "opacity-35" : ""
                           }`}
+                          includedItems={includedItems}
+                          matchedToItem={hasSeason(includedItems, tmdbId, seasonNum)}
                         />
                       )}
                     </div>
@@ -285,6 +295,13 @@ export function CarouselDisplay({
                                 imageType="mediux"
                                 aspect="titlecard"
                                 className={`w-full ${!hasEpisode(includedItems, card.item_tmdb_id as string, card.season_number || 0, card.episode_number) && dimNotFound ? "opacity-35" : ""}`}
+                                includedItems={includedItems}
+                                matchedToItem={hasEpisode(
+                                  includedItems,
+                                  card.item_tmdb_id as string,
+                                  card.season_number || 0,
+                                  card.episode_number
+                                )}
                               />
                             </div>
                           </CarouselItem>

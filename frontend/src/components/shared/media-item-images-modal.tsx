@@ -17,13 +17,14 @@ interface ViewCurrentImagesModalProps {
 }
 
 export function ViewCurrentImagesModal({ mediaItem, isOpen, onClose }: ViewCurrentImagesModalProps) {
-  if (!mediaItem || !mediaItem.series) return null;
+  if (!mediaItem || !mediaItem.series || !mediaItem.series.seasons) return null;
 
-  const seasonRatingKeys = mediaItem.series.seasons.flatMap((season) => season.rating_key);
-  const episodeRatingKeysBySeason = mediaItem.series.seasons.reduce<Record<string, string[]>>((acc, season) => {
-    acc[season.rating_key] = season.episodes.map((ep) => ep.rating_key);
-    return acc;
-  }, {});
+  const seasonRatingKeys = mediaItem.series.seasons?.flatMap((season) => season.rating_key) ?? [];
+  const episodeRatingKeysBySeason =
+    mediaItem.series.seasons?.reduce<Record<string, string[]>>((acc, season) => {
+      acc[season.rating_key] = season.episodes?.map((ep) => ep.rating_key) ?? [];
+      return acc;
+    }, {}) ?? {};
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

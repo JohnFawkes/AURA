@@ -166,6 +166,8 @@ export const ShowFullSetsDisplay: React.FC<{
                                     imageType="mediux"
                                     aspect="poster"
                                     className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                                    includedItems={includedItems}
+                                    matchedToItem={isAvailable}
                                   />
                                 )}
 
@@ -175,6 +177,8 @@ export const ShowFullSetsDisplay: React.FC<{
                                     imageType="mediux"
                                     aspect="backdrop"
                                     className={`w-full ${!isAvailable && dimNotFound ? "opacity-35" : ""}`}
+                                    includedItems={includedItems}
+                                    matchedToItem={isAvailable}
                                   />
                                 )}
                               </div>
@@ -246,6 +250,12 @@ export const ShowFullSetsDisplay: React.FC<{
                                           ? "opacity-35"
                                           : ""
                                       }`}
+                                      includedItems={includedItems}
+                                      matchedToItem={hasSeason(
+                                        includedItems,
+                                        poster.item_tmdb_id as string,
+                                        poster.season_number || 0
+                                      )}
                                     />
                                   </div>
                                 </CarouselItem>
@@ -381,6 +391,13 @@ export const ShowFullSetsDisplay: React.FC<{
                                                     ? "opacity-35"
                                                     : ""
                                                 }`}
+                                                includedItems={includedItems}
+                                                matchedToItem={hasEpisode(
+                                                  includedItems,
+                                                  card.item_tmdb_id as string,
+                                                  card.season_number || 0,
+                                                  card.episode_number
+                                                )}
                                               />
                                             </div>
                                           </CarouselItem>
