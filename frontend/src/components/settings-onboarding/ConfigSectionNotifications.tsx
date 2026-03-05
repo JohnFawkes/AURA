@@ -670,7 +670,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                             The base URL of your Gotify server. Domains may omit port. IPv4 addresses must include a
                             port
                           </p>
-                          <p>Exmaples:</p>
+                          <p>Examples:</p>
                           <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
                             <li>https://gotify.domain.com</li>
                             <li>http://192.168.1.10:8070</li>
