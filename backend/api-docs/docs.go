@@ -4027,6 +4027,10 @@ const docTemplate = `{
                     "description": "TMDB ID of the parent item",
                     "type": "string"
                 },
+                "language": {
+                    "description": "Language Name",
+                    "type": "string"
+                },
                 "modified": {
                     "description": "Last modified date",
                     "type": "string"
@@ -4461,10 +4465,10 @@ const docTemplate = `{
         "routes_base.healthCheckResponse": {
             "type": "object",
             "properties": {
-                "status": {
+                "app_version": {
                     "type": "string"
                 },
-                "version": {
+                "status": {
                     "type": "string"
                 }
             }
@@ -4475,6 +4479,10 @@ const docTemplate = `{
                 "app_fully_loaded": {
                     "description": "Whether the app is fully loaded and ready to use",
                     "type": "boolean"
+                },
+                "app_version": {
+                    "description": "Current version of the app",
+                    "type": "string"
                 },
                 "config_loaded": {
                     "description": "Whether a config file is loaded",
