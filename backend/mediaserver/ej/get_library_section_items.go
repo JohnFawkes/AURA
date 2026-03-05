@@ -128,7 +128,7 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 			}
 		}
 		if item.TMDB_ID == "" {
-			logging.LOGGER.Warn().Timestamp().Str("item_title", item.Title).Str("library_section", section.Title).Msg("Skipping item in library section because it does not have a TMDB ID")
+			logging.LOGGER.Warn().Timestamp().Str("item_title", item.Title).Str("library_section", section.Title).Msgf("Skipping item in '%s' as no TMDB ID could be found", section.Title)
 			totalSize-- // Decrement total size as this item will be skipped
 			continue    // Skip items without TMDB ID
 		}
