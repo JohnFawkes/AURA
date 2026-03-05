@@ -1,7 +1,12 @@
 "use client";
 
 import type { CollectionItem } from "@/app/collections/page";
+import { formatExactDateTime } from "@/helper/format-date-last-updates";
+import { formatDownloadSize } from "@/helper/format-download-size";
+import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
 import { decode } from "blurhash";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
 
 import { useMemo, useState } from "react";
 
@@ -15,7 +20,7 @@ import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import type { ImageFile } from "@/types/media-and-posters/sets";
+import type { ImageFile, IncludedItem } from "@/types/media-and-posters/sets";
 
 interface AssetImageProps {
   image: ImageFile | MediaItem | CollectionItem | string;
@@ -24,6 +29,8 @@ interface AssetImageProps {
   className?: string;
   imageClassName?: string;
   priority?: boolean;
+  matchedToItem?: boolean;
+  includedItems?: { [key: string]: IncludedItem };
 }
 
 /**
@@ -78,11 +85,15 @@ export function AssetImage({
   className,
   imageClassName,
   priority = false,
+  matchedToItem = false,
+  includedItems,
 }: AssetImageProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const showDateModified = useUserPreferencesStore((state) => state.showDateModified);
+
+  const [showInfo, setShowInfo] = useState(false);
 
   // Decode blurhash string to data URL client-side
   const blurDataURL = useMemo(() => {
@@ -103,6 +114,53 @@ export function AssetImage({
   } else {
     imageSrc = "";
   }
+
+  const handleDoubleClick = () => {
+    if (imageType === "mediux") {
+      setShowInfo((prev) => !prev);
+    }
+  };
+
+  const handleDownloadClick = async () => {
+    if (imageType !== "mediux") return;
+    if (!isMediuxImage(image)) return;
+    if (!includedItems || includedItems[image.item_tmdb_id] === undefined) return;
+
+    const downloadName =
+      image.type === "poster"
+        ? includedItems[image.item_tmdb_id].media_item.title + " Poster"
+        : image.type === "backdrop"
+          ? includedItems[image.item_tmdb_id].media_item.title + " Backdrop"
+          : image.type === "season_poster" && image.season_number !== undefined
+            ? includedItems[image.item_tmdb_id].media_item.title + ` Season ${image.season_number} Poster`
+            : image.type === "special_season_poster"
+              ? includedItems[image.item_tmdb_id].media_item.title + " Special Season Poster"
+              : image.type === "titlecard" && image.title
+                ? includedItems[image.item_tmdb_id].media_item.title +
+                  ` S${image.season_number}E${image.episode_number} Titlecard`
+                : `Image_${image.id}`;
+
+    toast.loading(`Downloading ${downloadName}...`, { id: "download", duration: 4000 });
+    try {
+      const resp = await downloadImageFileForMediaItem(
+        image,
+        includedItems[image.item_tmdb_id].media_item,
+        downloadName
+      );
+      if (resp.status === "error") {
+        throw new Error(resp.error?.message || "Unknown error");
+      }
+      toast.success(`Downloaded ${downloadName} successfully!`, { id: "download", duration: 4000 });
+    } catch (error) {
+      toast.error(`Failed to download ${downloadName}: ${error instanceof Error ? error.message : "Unknown error"}`, {
+        id: "download",
+        duration: 4000,
+      });
+    }
+  };
+
+  const isMediuxImage = (img: AssetImageProps["image"]): img is ImageFile =>
+    typeof img === "object" && img !== null && "type" in img;
 
   const imageContent = (
     <>
@@ -165,13 +223,69 @@ export function AssetImage({
           "relative overflow-hidden rounded-md border border-primary-dynamic/40 hover:border-primary-dynamic transition-all duration-300 group",
           getAspectRatioClass(aspect)
         )}
+        onDoubleClick={
+          matchedToItem &&
+          imageType === "mediux" &&
+          includedItems &&
+          isMediuxImage(image) &&
+          includedItems[image.item_tmdb_id] &&
+          !image.type.startsWith("collection")
+            ? handleDoubleClick
+            : undefined
+        }
       >
         {imageContent}
+
+        {imageType === "mediux" &&
+          showInfo &&
+          isMediuxImage(image) &&
+          includedItems &&
+          includedItems[image.item_tmdb_id] && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/65 text-[10px] leading-snug text-white">
+              <div className="w-full max-w-[90%] max-h-[85%] overflow-y-auto scrollbar-hide rounded-md border border-white/15 bg-black/60 p-2 backdrop-blur-sm">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-widest text-white/70">Image Info</span>
+                  <Download
+                    className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5"
+                    onClick={() => {
+                      handleDownloadClick();
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-0">
+                  <div className="text-white">
+                    {image.type === "poster"
+                      ? includedItems[image.item_tmdb_id].media_item.title + " Poster"
+                      : image.type === "backdrop"
+                        ? includedItems[image.item_tmdb_id].media_item.title + " Backdrop"
+                        : ""}
+                  </div>
+
+                  {image.type === "season_poster" && image.season_number !== undefined && (
+                    <div className="text-white">Season {image.season_number} Poster</div>
+                  )}
+                  {image.type === "special_season_poster" && <div className="text-white">Special Season Poster</div>}
+                  {image.type === "titlecard" && image.title ? (
+                    <div className="text-white">
+                      Season {image.season_number} Episode {image.episode_number}: {image.title} Titlecard
+                    </div>
+                  ) : null}
+
+                  <div className="mt-2 text-white/70">Last modified</div>
+                  <div className="text-white">{image.modified ? formatExactDateTime(image.modified) : "Unknown"}</div>
+
+                  <div className="mt-2 text-white/70">File size</div>
+                  <div className="text-white">{image.file_size ? formatDownloadSize(image.file_size) : "Unknown"}</div>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
       {imageType === "mediux" && showDateModified && (
         <div className="mt-1 text-xs text-white/80 text-center w-full">
           {typeof image === "object" && "modified" in image && image.modified
-            ? new Date(image.modified).toLocaleString()
+            ? formatExactDateTime(image.modified)
             : ""}
         </div>
       )}
