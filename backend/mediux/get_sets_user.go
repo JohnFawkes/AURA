@@ -6,6 +6,7 @@ import (
 	"aura/utils/httpx"
 	"context"
 	_ "embed"
+	"time"
 )
 
 //go:embed gen_user_sets.graphql
@@ -222,6 +223,32 @@ func GetAllUserSets(ctx context.Context, username string) (creatorSets models.Cr
 		for _, collectionSet := range mediuxBoxset.CollectionSets {
 			setIDs["collection"] = append(setIDs["collection"], collectionSet.ID)
 		}
+
+		if mediuxBoxset.DateUpdated.IsZero() {
+			// Go through the boxset sets and get the most recent date updated to use for the boxset
+			var mostRecentDateUpdated time.Time
+			for _, showSet := range mediuxBoxset.ShowSets {
+				if showSet.DateUpdated.After(mostRecentDateUpdated) {
+					mostRecentDateUpdated = showSet.DateUpdated
+				}
+			}
+			for _, movieSet := range mediuxBoxset.MovieSets {
+				if movieSet.DateUpdated.After(mostRecentDateUpdated) {
+					mostRecentDateUpdated = movieSet.DateUpdated
+				}
+			}
+			for _, collectionSet := range mediuxBoxset.CollectionSets {
+				if collectionSet.DateUpdated.After(mostRecentDateUpdated) {
+					mostRecentDateUpdated = collectionSet.DateUpdated
+				}
+			}
+			if mostRecentDateUpdated.IsZero() {
+				logging.LOGGER.Warn().Timestamp().Str("boxset_id", mediuxBoxset.ID).Msg("All sets in boxset have zero value for DateUpdated, skipping boxset")
+				continue
+			}
+			mediuxBoxset.DateUpdated = mostRecentDateUpdated
+		}
+
 		boxsetRef := models.BoxsetRef{
 			BaseSetInfo: models.BaseSetInfo{
 				ID:               mediuxBoxset.ID,
