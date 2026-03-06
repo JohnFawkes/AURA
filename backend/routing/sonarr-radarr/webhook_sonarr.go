@@ -204,26 +204,74 @@ func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgradePayload, dbItem models.DBSavedItem) {
-	// Since Sonarr to MediaServer takes some time, we need to give the Media Server some time to process the download
-	timeToSleep := 10 * time.Second
-	_, sleepAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Sleeping for %v to give time for media server to update", timeToSleep), logging.LevelTrace)
-	time.Sleep(timeToSleep)
+	// Initial wait to give media server time to ingest new files.
+	initialSleep := 10 * time.Second
+	_, sleepAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Sleeping for %v to give time for media server to update", initialSleep), logging.LevelTrace)
+	time.Sleep(initialSleep)
 	sleepAction.Complete()
 
 	// Get the base Show Media Item from the cache
 	_, actionGetFromCache := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting %s Item from cache", utils.MediaItemInfo(dbItem.MediaItem)), logging.LevelTrace)
 	mediaItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(dbItem.MediaItem.LibraryTitle, dbItem.MediaItem.TMDB_ID)
-	if !found {
+	if !found || mediaItem == nil {
 		actionGetFromCache.SetError("Media Item not found in cache", "Try refreshing the cache if this issue persists", nil)
+		actionGetFromCache.Complete()
+		return
 	}
 	actionGetFromCache.Complete()
 
-	// Get the latest Show Media Item from the media server
-	found, Err := mediaserver.GetMediaItemDetails(ctx, mediaItem)
-	if Err.Message != "" {
-		return
-	} else if !found {
-		logging.LOGGER.Error().Timestamp().Msgf("Media item not found on media server: %s", utils.MediaItemInfo(*mediaItem))
+	_, actionGetFromMediaServer := logging.AddSubActionToContext(
+		ctx,
+		fmt.Sprintf("Getting %s Item details from MediaServer", utils.MediaItemInfo(dbItem.MediaItem)),
+		logging.LevelTrace,
+	)
+
+	retrySleep := 10 * time.Second
+	maxRetries := 6
+	var Err logging.LogErrorInfo
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		found, Err = mediaserver.GetMediaItemDetails(ctx, mediaItem)
+		if Err.Message == "" && found {
+			actionGetFromMediaServer.AppendResult("attempt", attempt)
+			actionGetFromMediaServer.Complete()
+			break
+		}
+
+		if Err.Message != "" {
+			actionGetFromMediaServer.AppendWarning(
+				fmt.Sprintf("attempt_%d_error", attempt),
+				Err.Message,
+			)
+		} else {
+			actionGetFromMediaServer.AppendWarning(
+				fmt.Sprintf("attempt_%d_not_found", attempt),
+				"Media item not found yet",
+			)
+		}
+
+		// No more retries left
+		if attempt == maxRetries {
+			actionGetFromMediaServer.SetError(
+				"Media item not found after retries",
+				"The media server did not return the item within retry window",
+				map[string]any{
+					"max_retries": maxRetries,
+					"retry_sleep": retrySleep.String(),
+					"item":        utils.MediaItemInfo(*mediaItem),
+				},
+			)
+			actionGetFromMediaServer.Complete()
+			return
+		}
+
+		_, retrySleepAction := logging.AddSubActionToContext(
+			ctx,
+			fmt.Sprintf("Media item not ready; sleeping %v before retry %d/%d", retrySleep, attempt, maxRetries),
+			logging.LevelTrace,
+		)
+		time.Sleep(retrySleep)
+		retrySleepAction.Complete()
 	}
 
 	for _, dbSet := range dbItem.PosterSets {
