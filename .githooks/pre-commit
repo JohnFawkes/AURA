@@ -1,0 +1,51 @@
+#!/usr/bin/env sh
+set -e
+
+echo "[hook] pre-commit running"
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+echo "$STAGED_FILES"
+
+has_frontend_changes() {
+  echo "$STAGED_FILES" | grep -q '^frontend/'
+}
+
+has_backend_changes() {
+  echo "$STAGED_FILES" | grep -q '^backend/'
+}
+
+# Only run swagger generation when swagger-relevant backend files changed
+needs_swagger_regen() {
+  echo "$STAGED_FILES" | grep -Eq '^backend/(main\.go|startup\.go|routing/|models/|api-docs/|mediaserver/|config/)'
+}
+
+if has_frontend_changes; then
+  echo "[hook] frontend changes detected"
+
+  echo "[hook] frontend lint"
+  npm --prefix frontend run lint -- --max-warnings=0
+
+  echo "[hook] frontend typecheck"
+  npm --prefix frontend run typecheck
+
+  echo "[hook] frontend format"
+  npm --prefix frontend run format
+
+  # re-stage formatter changes
+  git add frontend
+else
+  echo "[hook] no frontend changes"
+fi
+
+if has_backend_changes; then
+  echo "[hook] backend changes detected"
+
+  if needs_swagger_regen; then
+    echo "[hook] swagger-relevant backend changes detected; regenerating docs"
+    (cd backend && sh generate_go_docs.sh)
+    git add backend/api-docs
+  else
+    echo "[hook] backend changed, but no swagger-relevant files; skipping doc generation"
+  fi
+else
+  echo "[hook] no backend changes"
+fi
