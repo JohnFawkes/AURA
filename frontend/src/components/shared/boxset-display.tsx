@@ -2,7 +2,7 @@ import type { BoxsetsWithSetInfo } from "@/app/user/[username]/page";
 import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { GetMediaItemDetails } from "@/services/mediaserver/get-media-item-details";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import DownloadModal from "@/components/shared/download-modal";
 import { MediaCarousel } from "@/components/shared/media-carousel";
@@ -37,13 +37,39 @@ export const RenderShowAndCollectionDisplay = ({
   const [mediaItem, setMediaItem] = useState<MediaItem | undefined>(initialMediaItem);
   const [localIncludedItems, setLocalIncludedItems] = useState(includedItems);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isInView, setIsInView] = useState(false);
+  const hasFetchedRef = useRef(false);
+
   // Keep localIncludedItems in sync with prop
   useEffect(() => {
     setLocalIncludedItems(includedItems);
   }, [includedItems]);
 
   useEffect(() => {
-    // Only fetch if it's a show and missing series info
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      {
+        root: null,
+        // start fetch a bit before it appears
+        rootMargin: "200px 0px",
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isInView) return;
+    if (hasFetchedRef.current) return;
+
     if (
       mediaItem &&
       mediaItem.type === "show" &&
@@ -52,37 +78,38 @@ export const RenderShowAndCollectionDisplay = ({
       localIncludedItems &&
       localIncludedItems[initialMediaKey]
     ) {
+      hasFetchedRef.current = true;
       let cancelled = false;
+
       GetMediaItemDetails(mediaItem.title, mediaItem.rating_key, mediaItem.library_title, "item")
         .then((details) => {
           if (!cancelled && details.data?.media_item?.series) {
-            // Update local mediaItem
-            setMediaItem((prev) => (prev ? { ...prev, series: details.data?.media_item?.series } : prev));
-            // Update localIncludedItems
+            setMediaItem((prev) => (prev ? { ...prev, series: details?.data?.media_item?.series } : prev));
             setLocalIncludedItems((prev) => {
               if (!prev) return prev;
               return {
                 ...prev,
-                [initialMediaKey!]: {
-                  ...prev[initialMediaKey!],
+                [initialMediaKey]: {
+                  ...prev[initialMediaKey],
                   media_item: {
-                    ...prev[initialMediaKey!].media_item,
-                    series: details?.data?.media_item?.series,
+                    ...prev[initialMediaKey].media_item,
+                    series: details.data?.media_item?.series,
                   },
                 },
               };
             });
           }
         })
-        .catch((error) => {
-          console.error("Error fetching media item details:", error);
+        .catch(() => {
+          // allow retry if needed
+          hasFetchedRef.current = false;
         });
+
       return () => {
         cancelled = true;
       };
     }
-    // Only run when mediaItem, initialMediaKey, or localIncludedItems change
-  }, [mediaItem, initialMediaKey, localIncludedItems]);
+  }, [isInView, mediaItem, initialMediaKey, localIncludedItems]);
 
   // If set or includedItems change, reset mediaItem
   useEffect(() => {
@@ -90,12 +117,14 @@ export const RenderShowAndCollectionDisplay = ({
   }, [set, includedItems, initialMediaItem]);
 
   return (
-    <MediaCarousel
-      set={set}
-      includedItems={localIncludedItems}
-      mediaItem={mediaItem || ({} as MediaItem)}
-      dimNotFound={false}
-    />
+    <div ref={containerRef}>
+      <MediaCarousel
+        set={set}
+        includedItems={localIncludedItems}
+        mediaItem={mediaItem || ({} as MediaItem)}
+        dimNotFound={true}
+      />
+    </div>
   );
 };
 
@@ -107,6 +136,7 @@ export const RenderBoxsetDisplay = ({
   includedItems?: { [tmdb_id: string]: IncludedItem };
 }) => {
   const [localIncludedItems, setLocalIncludedItems] = useState(includedItems);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Keep localIncludedItems in sync with prop
   useEffect(() => {
@@ -114,16 +144,25 @@ export const RenderBoxsetDisplay = ({
   }, [includedItems]);
 
   useEffect(() => {
-    if (!localIncludedItems) return;
+    if (!isOpen || !localIncludedItems) return;
 
-    // Find all show items that need updating
+    // Collect only tmdb IDs that belong to this accordion's boxset
+    const boxsetItemIds = new Set<string>();
+    for (const posterSet of set.sets || []) {
+      for (const itemId of posterSet.item_ids || []) {
+        boxsetItemIds.add(itemId);
+      }
+    }
+
+    // Only fetch show items in THIS accordion that are missing series
     const itemsToUpdate = Object.entries(localIncludedItems).filter(
-      ([, item]) =>
+      ([itemId, item]) =>
+        boxsetItemIds.has(itemId) &&
         item.media_item &&
         item.media_item.type === "show" &&
         item.media_item.title &&
         item.media_item.rating_key &&
-        !item.media_item.series // Only if missing series info
+        !item.media_item.series
     );
 
     if (itemsToUpdate.length === 0) return;
@@ -139,10 +178,7 @@ export const RenderBoxsetDisplay = ({
             item.media_item.library_title,
             "item"
           );
-          return {
-            key,
-            series: details.data?.media_item?.series,
-          };
+          return { key, series: details.data?.media_item?.series };
         } catch {
           return { key, series: undefined };
         }
@@ -170,10 +206,16 @@ export const RenderBoxsetDisplay = ({
     return () => {
       cancelled = true;
     };
-  }, [localIncludedItems]);
+  }, [isOpen, localIncludedItems, set.sets]);
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion
+      type="single"
+      collapsible
+      className="w-full"
+      value={isOpen ? set.id : ""}
+      onValueChange={(value) => setIsOpen(value === set.id)}
+    >
       <AccordionItem value={set.id}>
         <AccordionTrigger className="flex items-center justify-between">
           <div className="text-primary-dynamic hover:text-primary cursor-pointer text-lg font-semibold">
