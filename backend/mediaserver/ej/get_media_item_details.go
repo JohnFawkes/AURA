@@ -200,6 +200,7 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *models.MediaItem) (Err l
 	}
 
 	var seasons []models.MediaItemSeason
+	var latestEpisodeAddedAt int64
 	for _, season := range ejResp.Items {
 		season := models.MediaItemSeason{
 			RatingKey:    season.ID,
@@ -214,8 +215,14 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *models.MediaItem) (Err l
 		if len(season.Episodes) == 0 {
 			continue
 		}
+		for _, ep := range season.Episodes {
+			if ep.AddedAt > latestEpisodeAddedAt {
+				latestEpisodeAddedAt = ep.AddedAt
+			}
+		}
 		seasons = append(seasons, season)
 	}
+	itemInfo.LatestEpisodeAddedAt = latestEpisodeAddedAt
 
 	itemInfo.Series = &models.MediaItemSeries{Seasons: seasons}
 
@@ -240,7 +247,7 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 	u.Path = path.Join(u.Path, "Shows", showRatingKey, "Episodes")
 	query := u.Query()
 	query.Set("SeasonId", season.RatingKey)
-	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks")
+	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks,DateCreated")
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
@@ -264,6 +271,7 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 			Title:         episode.Name,
 			SeasonNumber:  episode.ParentIndexNumber,
 			EpisodeNumber: episode.IndexNumber,
+			AddedAt:       episode.DateCreated.Unix(),
 			File: models.MediaItemFile{
 				Path:     episode.Path,
 				Size:     episode.Size,

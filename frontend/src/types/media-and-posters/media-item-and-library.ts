@@ -28,6 +28,7 @@ export interface MediaItem {
   updated_at: number;
   added_at: number;
   released_at: number;
+  latest_episode_added_at: number;
 
   guids: Guid[];
 
@@ -64,6 +65,7 @@ export interface MediaItemEpisode {
   title: string;
   season_number: number;
   episode_number: number;
+  added_at: number;
   file: MediaItemFile;
 }
 

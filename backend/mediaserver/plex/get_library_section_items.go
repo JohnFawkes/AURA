@@ -28,7 +28,7 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 
 	// If limit is empty, set a default limit
 	if limit == "" {
-		limit = "500"
+		limit = "1000"
 	}
 
 	// Construct the URL for the Plex library sections API request
@@ -163,5 +163,84 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 		items = append(items, item)
 	}
 
+	// For show sections, bulk-fetch all episodes to compute LatestEpisodeAddedAt per show.
+	if section.Type == "show" {
+		latestEpAdded, fetchErr := fetchLatestEpisodeAddedAtByShow(ctx, section.ID)
+		if fetchErr.Message != "" {
+			logAction.AppendWarning("latest_episode_added_at", "Failed to bulk-fetch latest episode addedAt for shows")
+		} else {
+			for i := range items {
+				items[i].LatestEpisodeAddedAt = latestEpAdded[items[i].RatingKey]
+			}
+		}
+	}
+
 	return items, totalSize, logging.LogErrorInfo{}
+}
+
+// fetchLatestEpisodeAddedAtByShow fetches all episodes for a library section in one bulk
+// request and returns a map of show RatingKey -> latest episode addedAt timestamp.
+func fetchLatestEpisodeAddedAtByShow(ctx context.Context, sectionID string) (map[string]int64, logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf(
+		"Plex: Bulk-fetching episode addedAt for section %s", sectionID,
+	), logging.LevelDebug)
+	defer logAction.Complete()
+
+	logging.DevMsgf("Bulk-fetching latest episode addedAt for shows in section %s", sectionID)
+
+	u, err := url.Parse(config.Current.MediaServer.URL)
+	if err != nil {
+		logAction.SetError("Failed to parse base URL", "Ensure the URL is valid", map[string]any{"error": err.Error()})
+		return nil, *logAction.Error
+	}
+	u.Path = path.Join(u.Path, "library", "sections", sectionID, "all")
+
+	// First pass: get total episode count (size=0 returns totalSize without data)
+	query := u.Query()
+	query.Set("type", "4") // 4 = episode
+	query.Set("X-Plex-Container-Start", "0")
+	query.Set("X-Plex-Container-Size", "0")
+	u.RawQuery = query.Encode()
+
+	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, u.String(), "GET", nil)
+	if Err.Message != "" {
+		return nil, *logAction.Error
+	}
+	resp.Body.Close()
+
+	var countResp PlexLibraryItemsWrapper
+	Err = httpx.DecodeResponseToJSON(ctx, respBody, &countResp, "Plex Episode Count Response")
+	if Err.Message != "" {
+		return nil, *logAction.Error
+	}
+	totalEpisodes := countResp.MediaContainer.TotalSize
+	if totalEpisodes == 0 {
+		return map[string]int64{}, logging.LogErrorInfo{}
+	}
+
+	// Second pass: fetch all episodes in one shot
+	query.Set("X-Plex-Container-Size", fmt.Sprintf("%d", totalEpisodes))
+	u.RawQuery = query.Encode()
+
+	resp, respBody, Err = makeRequest(ctx, config.Current.MediaServer, u.String(), "GET", nil)
+	if Err.Message != "" {
+		return nil, *logAction.Error
+	}
+	resp.Body.Close()
+
+	var episodesResp PlexLibraryItemsWrapper
+	Err = httpx.DecodeResponseToJSON(ctx, respBody, &episodesResp, "Plex All Episodes Response")
+	if Err.Message != "" {
+		return nil, *logAction.Error
+	}
+
+	latest := make(map[string]int64)
+	for _, ep := range episodesResp.MediaContainer.Metadata {
+		showKey := ep.GrandParentRatingKey
+		if ep.AddedAt > latest[showKey] {
+			latest[showKey] = ep.AddedAt
+		}
+	}
+
+	return latest, logging.LogErrorInfo{}
 }

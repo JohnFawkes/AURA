@@ -222,6 +222,7 @@ func fetchSeasonsAndEpisodesForShow(ctx context.Context, itemInfo *models.MediaI
 
 	// Group Episodes by Season Number
 	seasonsMap := make(map[int]*models.MediaItemSeason)
+	var latestEpisodeAddedAt int64
 	for _, episode := range plexResp.MediaContainer.Metadata {
 		seasonNumber := episode.ParentIndex
 		ep := models.MediaItemEpisode{
@@ -229,11 +230,16 @@ func fetchSeasonsAndEpisodesForShow(ctx context.Context, itemInfo *models.MediaI
 			Title:         episode.Title,
 			SeasonNumber:  seasonNumber,
 			EpisodeNumber: episode.Index,
+			AddedAt:       episode.AddedAt,
 			File: models.MediaItemFile{
 				Path:     episode.Media[0].Part[0].File,
 				Size:     episode.Media[0].Part[0].Size,
 				Duration: episode.Media[0].Part[0].Duration,
 			},
+		}
+
+		if episode.AddedAt > latestEpisodeAddedAt {
+			latestEpisodeAddedAt = episode.AddedAt
 		}
 
 		if _, exists := seasonsMap[seasonNumber]; !exists {
@@ -246,6 +252,7 @@ func fetchSeasonsAndEpisodesForShow(ctx context.Context, itemInfo *models.MediaI
 		}
 		seasonsMap[seasonNumber].Episodes = append(seasonsMap[seasonNumber].Episodes, ep)
 	}
+	itemInfo.LatestEpisodeAddedAt = latestEpisodeAddedAt
 
 	// Convert map to slice and sort by Season Number
 	var seasons []models.MediaItemSeason

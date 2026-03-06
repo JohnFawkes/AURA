@@ -107,6 +107,13 @@ function FilterHomeContent({
               ]
             : []),
           {
+            value: "newEpisodeAdded",
+            label: "New Episode Added",
+            ascIcon: <ClockArrowUp />,
+            descIcon: <ClockArrowDown />,
+            type: "date",
+          },
+          {
             value: "dateReleased",
             label: "Date Released",
             ascIcon: <ClockArrowUp />,
@@ -124,11 +131,12 @@ function FilterHomeContent({
         sortOption={sortOption}
         sortOrder={sortOrder}
         setSortOption={(value) => {
-          setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
+          setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased" | "newEpisodeAdded");
           if (value === "title") setSortOrder("asc");
           else if (value === "dateUpdated") setSortOrder("desc");
           else if (value === "dateAdded") setSortOrder("desc");
           else if (value === "dateReleased") setSortOrder("desc");
+          else if (value === "newEpisodeAdded") setSortOrder("desc");
         }}
         setSortOrder={setSortOrder}
       />

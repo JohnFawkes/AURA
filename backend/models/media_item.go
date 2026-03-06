@@ -16,10 +16,11 @@ type MediaItem struct {
 	IgnoredMode string       `json:"ignored_mode"`  // Mode of ignoring (e.g., "always", "temp")
 
 	// Used in Home Page - sorting and filtering
-	HasMediuxSets bool  `json:"has_mediux_sets"` // Whether the item has MediUX sets
-	UpdatedAt     int64 `json:"updated_at"`      // Last updated timestamp
-	AddedAt       int64 `json:"added_at"`        // Added timestamp
-	ReleasedAt    int64 `json:"released_at"`     // Release date timestamp
+	HasMediuxSets        bool  `json:"has_mediux_sets"` // Whether the item has MediUX sets
+	UpdatedAt            int64 `json:"updated_at"`      // Last updated timestamp
+	AddedAt              int64 `json:"added_at"`        // Added timestamp
+	ReleasedAt           int64 `json:"released_at"`     // Release date timestamp
+	LatestEpisodeAddedAt int64 `json:"latest_episode_added_at"`
 
 	// Used in MediaItem Details Page - For ratings
 	Guids []MediaItemGuid `json:"guids"` // List of GUIDs from different providers
@@ -58,6 +59,7 @@ type MediaItemEpisode struct {
 	Title         string        `json:"title"`
 	SeasonNumber  int           `json:"season_number"`
 	EpisodeNumber int           `json:"episode_number"`
+	AddedAt       int64         `json:"added_at"`
 	File          MediaItemFile `json:"file"`
 }
 

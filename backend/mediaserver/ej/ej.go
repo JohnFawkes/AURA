@@ -99,19 +99,20 @@ type EmbyJellyUserIDResponse []struct {
 
 type EmbyJellyLibraryItemsResponse struct {
 	Items []struct {
-		Name           string    `json:"Name"`
-		ServerID       string    `json:"ServerId"`
-		ID             string    `json:"Id"`
-		CanDelete      bool      `json:"CanDelete"`
-		CanDownload    bool      `json:"CanDownload"`
-		SupportsSync   bool      `json:"SupportsSync"`
-		RunTimeTicks   int64     `json:"RunTimeTicks"`
-		ProductionYear int       `json:"ProductionYear"`
-		DateCreated    time.Time `json:"DateCreated"`
-		PremiereDate   time.Time `json:"PremiereDate"`
-		IsFolder       bool      `json:"IsFolder"`
-		Path           string    `json:"Path"`
-		ProviderIds    struct {
+		Name                 string    `json:"Name"`
+		ServerID             string    `json:"ServerId"`
+		ID                   string    `json:"Id"`
+		CanDelete            bool      `json:"CanDelete"`
+		CanDownload          bool      `json:"CanDownload"`
+		SupportsSync         bool      `json:"SupportsSync"`
+		RunTimeTicks         int64     `json:"RunTimeTicks"`
+		ProductionYear       int       `json:"ProductionYear"`
+		DateCreated          time.Time `json:"DateCreated"`
+		PremiereDate         time.Time `json:"PremiereDate"`
+		DateLastContentAdded time.Time `json:"DateLastContentAdded"`
+		IsFolder             bool      `json:"IsFolder"`
+		Path                 string    `json:"Path"`
+		ProviderIds          struct {
 			Tvdb            string `json:"Tvdb"`
 			Imdb            string `json:"Imdb"`
 			Tmdb            string `json:"Tmdb"`

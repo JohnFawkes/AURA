@@ -111,6 +111,9 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 		}
 		item.AddedAt = ejItem.DateCreated.UnixMilli()
 		item.ReleasedAt = ejItem.PremiereDate.UnixMilli()
+		if item.Type == "show" && !ejItem.DateLastContentAdded.IsZero() {
+			item.LatestEpisodeAddedAt = ejItem.DateLastContentAdded.Unix()
+		}
 
 		// If no TMDB ID found, get the value from MediUX using the GUID[tvdb]
 		if item.TMDB_ID == "" {

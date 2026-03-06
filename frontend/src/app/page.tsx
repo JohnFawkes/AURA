@@ -80,13 +80,14 @@ export default function Home() {
   );
   const totalPages = Math.ceil(filteredAndSortedMediaItems.length / itemsPerPage);
 
-  // Set sortOption to "dateAdded" if its not title or dateUpdated or dateAdded or dateReleased
+  // Set sortOption to "dateAdded" if its not title or dateUpdated or dateAdded or dateReleased or newEpisodeAdded
   useEffect(() => {
     if (
       sortOption !== "title" &&
       sortOption !== "dateUpdated" &&
       sortOption !== "dateAdded" &&
-      sortOption !== "dateReleased"
+      sortOption !== "dateReleased" &&
+      sortOption !== "newEpisodeAdded"
     ) {
       setSortOption("dateAdded");
       setSortOrder("desc");
@@ -249,6 +250,15 @@ export default function Home() {
           items.sort((a, b) => (a.released_at ?? 0) - (b.released_at ?? 0));
         } else if (sortOrder === "desc") {
           items.sort((a, b) => (b.released_at ?? 0) - (a.released_at ?? 0));
+        }
+      } else if (sortOption === "newEpisodeAdded") {
+        // Sort shows by the most recently added episode; movies fall back to their own added_at.
+        const getLatestEpisodeAdded = (item: (typeof items)[number]) =>
+          item.latest_episode_added_at ?? item.added_at ?? 0;
+        if (sortOrder === "asc") {
+          items.sort((a, b) => getLatestEpisodeAdded(a) - getLatestEpisodeAdded(b));
+        } else {
+          items.sort((a, b) => getLatestEpisodeAdded(b) - getLatestEpisodeAdded(a));
         }
       }
 
