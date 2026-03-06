@@ -8,7 +8,7 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAllUserSets } from "@/services/mediux/get-user-sets";
 import { ArrowDownAZ, ArrowDownZA, ClockArrowDown, ClockArrowUp, User } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -125,6 +125,8 @@ export interface BoxsetsWithSetInfo extends BoxsetRef {
   sets?: SetRef[];
 }
 
+type ActiveTabKey = "showSets" | "movieSets" | "collectionSets" | "boxSets";
+
 const UserSetPage = () => {
   // Get the username from the URL
   const { username } = useParams();
@@ -139,8 +141,7 @@ const UserSetPage = () => {
   const prevSearchQuery = useRef(searchQuery);
 
   // Pagination and Active Tab state
-  const [activeTab, setActiveTab] = useState("boxSets");
-  const [totalPages, setTotalPages] = useState(0);
+  const [activeTab, setActiveTab] = useState<ActiveTabKey>("boxSets");
 
   // Library sections & progress
   const [librarySections, setLibrarySections] = useState<{ title: string; type: string }[]>([]);
@@ -179,11 +180,12 @@ const UserSetPage = () => {
     log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
   }, [getSectionSummaries, hasHydrated]);
 
-  // Set sortOption to "dateLastUpdate" if it's not title or dateLastUpdate
-  if (sortOption !== "title" && sortOption !== "dateLastUpdate") {
-    setSortOption("dateLastUpdate");
-    setSortOrder("desc");
-  }
+  useEffect(() => {
+    if (sortOption !== "title" && sortOption !== "dateLastUpdate") {
+      setSortOption("dateLastUpdate");
+      setSortOrder("desc");
+    }
+  }, [sortOption, setSortOption, setSortOrder]);
 
   // Get all of the sets for the user
   useEffect(() => {
@@ -553,38 +555,67 @@ const UserSetPage = () => {
     boxsets,
   ]);
 
-  useEffect(() => {
-    setTotalPages(
-      Math.ceil(
-        (activeTab === "showSets"
-          ? showSets.length
-          : activeTab === "movieSets"
-            ? movieSets.length
-            : activeTab === "collectionSets"
-              ? collectionSets.length
-              : boxsets.length) / itemsPerPage
-      )
-    );
-    log("INFO", "User Page", "Fetch User Sets", "User Page - Total Pages", totalPages);
-    setCurrentPage(1); // Reset to first page when tab changes
-  }, [
-    activeTab,
-    boxsets.length,
-    collectionSets.length,
-    itemsPerPage,
-    movieSets.length,
-    showSets.length,
-    totalPages,
-    setCurrentPage,
-  ]);
+  const toDateValue = useCallback((value?: string) => {
+    if (!value) return 0;
+    const t = Date.parse(value);
+    return Number.isNaN(t) ? 0 : t;
+  }, []);
 
-  const paginatedShowSets = filteredShowSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const paginatedMovieSets = filteredMovieSets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const paginatedCollectionSets = filteredCollectionSets.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const sortSets = useCallback(
+    <
+      T extends {
+        title: string;
+        date_updated?: string;
+        date_created?: string;
+        images?: { modified?: string }[];
+      },
+    >(
+      items: T[]
+    ) => {
+      const sorted = [...items];
+      sorted.sort((a, b) => {
+        if (sortOption === "title") {
+          return sortOrder === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
+        }
+
+        const aDate = toDateValue(a.date_updated || a.date_created || a.images?.[0]?.modified);
+        const bDate = toDateValue(b.date_updated || b.date_created || b.images?.[0]?.modified);
+        return sortOrder === "asc" ? aDate - bDate : bDate - aDate;
+      });
+      return sorted;
+    },
+    [sortOption, sortOrder, toDateValue]
   );
-  const paginatedBoxSets = filteredBoxsets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const isActiveTabKey = (val: string): val is ActiveTabKey =>
+    val === "showSets" || val === "movieSets" || val === "collectionSets" || val === "boxSets";
+
+  const activeItems = useMemo(() => {
+    switch (activeTab) {
+      case "showSets":
+        return sortSets(filteredShowSets);
+      case "movieSets":
+        return sortSets(filteredMovieSets);
+      case "collectionSets":
+        return sortSets(filteredCollectionSets);
+      case "boxSets":
+      default:
+        return sortSets(filteredBoxsets);
+    }
+  }, [activeTab, filteredShowSets, filteredMovieSets, filteredCollectionSets, filteredBoxsets, sortSets]);
+
+  const paginatedActiveItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return activeItems.slice(start, start + itemsPerPage);
+  }, [activeItems, currentPage, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(activeItems.length / itemsPerPage));
+  }, [activeItems.length, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, setCurrentPage]);
 
   return (
     <div className="flex flex-col">
@@ -868,6 +899,7 @@ const UserSetPage = () => {
                     defaultValue="boxSets"
                     value={activeTab}
                     onValueChange={(val) => {
+                      if (!isActiveTabKey(val)) return;
                       setActiveTab(val);
                       setCurrentPage(1);
                     }}
@@ -909,10 +941,10 @@ const UserSetPage = () => {
                     </TabsList>
 
                     <div className="mt-4">
-                      {paginatedShowSets.length > 0 && (
+                      {activeTab === "showSets" && (
                         <TabsContent value="showSets">
                           <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {paginatedShowSets.map((showSet) => (
+                            {(paginatedActiveItems as SetRef[]).map((showSet) => (
                               <div key={`${showSet.id}-showset`} className="pb-6">
                                 <RenderShowAndCollectionDisplay includedItems={setIncludedItems || {}} set={showSet} />
                               </div>
@@ -921,18 +953,14 @@ const UserSetPage = () => {
                         </TabsContent>
                       )}
 
-                      {paginatedMovieSets.length > 0 && (
+                      {activeTab === "movieSets" && (
                         <TabsContent value="movieSets">
                           <ResponsiveGrid size="regular">
-                            {filteredMovieSets.map((set) => (
+                            {(paginatedActiveItems as SetRef[]).map((set) => (
                               <div
                                 key={set.id}
                                 className="relative flex flex-col items-center p-2 border rounded-md"
-                                style={{
-                                  background: "oklch(0.16 0.0202 282.55)",
-                                  opacity: "0.95",
-                                  padding: "0.5rem",
-                                }}
+                                style={{ background: "oklch(0.16 0.0202 282.55)", opacity: "0.95", padding: "0.5rem" }}
                               >
                                 <div className="relative w-full mb-1">
                                   {/* Download Button - absolute top right */}
@@ -1008,10 +1036,10 @@ const UserSetPage = () => {
                         </TabsContent>
                       )}
 
-                      {paginatedCollectionSets.length > 0 && (
+                      {activeTab === "collectionSets" && (
                         <TabsContent value="collectionSets">
                           <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {paginatedCollectionSets.map((collectionSet) => (
+                            {(paginatedActiveItems as SetRef[]).map((collectionSet) => (
                               <div key={`${collectionSet.id}-collectionset`} className="pb-6">
                                 <RenderShowAndCollectionDisplay
                                   includedItems={setIncludedItems || {}}
@@ -1023,10 +1051,10 @@ const UserSetPage = () => {
                         </TabsContent>
                       )}
 
-                      {paginatedBoxSets.length > 0 && (
+                      {activeTab === "boxSets" && (
                         <TabsContent value="boxSets">
                           <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {paginatedBoxSets.slice(1).map((boxset) => (
+                            {(paginatedActiveItems as BoxsetsWithSetInfo[]).map((boxset) => (
                               <div key={`${boxset.id}-boxset`} className="pb-6">
                                 <RenderBoxsetDisplay includedItems={setIncludedItems || {}} set={boxset} />
                               </div>
