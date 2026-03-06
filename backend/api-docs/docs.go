@@ -4141,6 +4141,9 @@ const docTemplate = `{
                     "description": "Mode of ignoring (e.g., \"always\", \"temp\")",
                     "type": "string"
                 },
+                "latest_episode_added_at": {
+                    "type": "integer"
+                },
                 "library_title": {
                     "description": "Title of the library/section the item belongs to",
                     "type": "string"
@@ -4198,6 +4201,9 @@ const docTemplate = `{
         "models.MediaItemEpisode": {
             "type": "object",
             "properties": {
+                "added_at": {
+                    "type": "integer"
+                },
                 "episode_number": {
                     "type": "integer"
                 },
