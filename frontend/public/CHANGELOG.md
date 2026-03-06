@@ -1,3 +1,18 @@
+## [0.9.81] - 2026-03-06
+
+### Added
+
+- Added sorting and tracking of episode last added date for better user experience when sorting by recently added episodes on the Home Page.
+
+### Fixed
+
+- Fixed issue where sorting was not working on the User Page.
+- Fixed issue where Sonarr webhook would not find Media Item in Media Server after 10 second wait, increased retries and added more logging for better debugging of this process.
+- Fixed issue where Boxsets would query Media Server for each item in the set, causing performance issues for large sets. Now it will query for the by set when accordion is opened and cache the results for future use.
+- Fixed issue where Showsets would query Media Server for each item in the sets, causing performance issues for large sets. Now it will query for the by set when scrolled into view and cache the results for future use.
+
+---
+
 ## [0.9.80] - 2026-02-16
 
 ### Breaking
@@ -175,13 +190,13 @@
 ### Added
 
 - Standardized naming convention for image files. This is to help future proof users who want to migrate from Plex to Emby/Jellyfin. The new naming conventions are as follows:
-    - Posters: Movie/poster.jpg or Show/poster.jpg
-    - Backdrops: Movie/backdrop.jpg or Show/backdrop.jpg
-    - Season Posters: Show/seasonXX-poster.jpg
-    - Special Season Posters: Show/season-specials-poster.jpg
-    - Titlecards: Show/Season #/episode.jpg
+  - Posters: Movie/poster.jpg or Show/poster.jpg
+  - Backdrops: Movie/backdrop.jpg or Show/backdrop.jpg
+  - Season Posters: Show/seasonXX-poster.jpg
+  - Special Season Posters: Show/season-specials-poster.jpg
+  - Titlecards: Show/Season #/episode.jpg
 
-    Please note that if you were using SeasonNamingConvention before, this is no longer supported. SeasonNamingConvention was using to determine the Season number but is no longer needed for the new format since all images are saved in root folder. Episode naming conventions remain unchanged. Episode naming for those using "static" will now use the currrent episode numbering format (e.g. S01E01.jpg or S1E1.jpg).
+  Please note that if you were using SeasonNamingConvention before, this is no longer supported. SeasonNamingConvention was using to determine the Season number but is no longer needed for the new format since all images are saved in root folder. Episode naming conventions remain unchanged. Episode naming for those using "static" will now use the currrent episode numbering format (e.g. S01E01.jpg or S1E1.jpg).
 
 ### Fixed
 
