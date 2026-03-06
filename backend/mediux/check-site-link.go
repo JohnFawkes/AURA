@@ -32,6 +32,7 @@ func CheckSiteLinkAvailability() {
 			defer resp.Body.Close()
 		}
 		if err != nil || resp.StatusCode != http.StatusOK {
+			logging.LOGGER.Error().Timestamp().Err(err).Msg("Both main and backup Mediux site links are unavailable")
 			return
 		} else {
 			MediuxSiteLink = backupURL

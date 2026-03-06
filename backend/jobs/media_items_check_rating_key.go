@@ -41,6 +41,7 @@ func StartCheckForRatingKeyChangesJob() error {
 				Str("next_run", c.Entry(checkForRatingKeyChangesJobID).Next.String()).
 				Msg("Check for Rating Key Changes Job Completed")
 		}
+		ld.Log()
 	})
 	if err != nil {
 		return err

@@ -32,6 +32,7 @@ func StartCheckMediuxSiteLinkJob() error {
 		action := ld.AddAction("Check Mediux Site Link Availability", logging.LevelInfo)
 		ctx = logging.WithCurrentAction(ctx, action)
 		mediux.CheckSiteLinkAvailability()
+		ld.Log()
 	})
 	if err != nil {
 		return err

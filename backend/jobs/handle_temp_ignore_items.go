@@ -41,6 +41,7 @@ func StartHandleTempIgnoredItemsJob() error {
 				Str("next_run", c.Entry(handleTempIgnoredItemsJobID).Next.String()).
 				Msg("Handle Temp Ignored Items Job Completed")
 		}
+		ld.Log()
 	})
 	if err != nil {
 		return err

@@ -29,6 +29,12 @@ func CheckForRatingKeyChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 			logging.LOGGER.Trace().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).
 				Msgf("Updating MediaItem RatingKey from %s to %s", dbItem.RatingKey, cachedItem.RatingKey)
 			database.UpdateMediaItem(ctx, *cachedItem)
+			logAction.AppendResult("updated_items", map[string]any{
+				"tmdb_id":        dbItem.TMDB_ID,
+				"library_title":  dbItem.LibraryTitle,
+				"old_rating_key": dbItem.RatingKey,
+				"new_rating_key": cachedItem.RatingKey,
+			})
 		}
 	}
 

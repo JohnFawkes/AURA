@@ -32,6 +32,7 @@ func StartRefreshMediaItemsAndCollectionsJob() error {
 		action := ld.AddAction("Refresh Media Items and Collections", logging.LevelInfo)
 		ctx = logging.WithCurrentAction(ctx, action)
 		mediaserver.GetAllLibrarySectionsAndItems(ctx, true)
+		ld.Log()
 	})
 	if err != nil {
 		return err

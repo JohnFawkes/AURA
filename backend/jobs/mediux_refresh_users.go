@@ -41,7 +41,7 @@ func StartRefreshMediuxUsersJob() error {
 				Str("next_run", c.Entry(refreshMediuxUsersJobID).Next.String()).
 				Msg("Refresh Mediux Users Job Completed")
 		}
-
+		ld.Log()
 	})
 	if err != nil {
 		return err
