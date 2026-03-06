@@ -1,3 +1,11 @@
+## [0.9.82] - 2026-03-07
+
+### Fixed
+
+- Fixed issue where logging was not occurring for scheduled jobs. This was due to a missing call to log the logger after the job function was executed. This has been fixed by adding a call to `ld.Log()` at the end of each job function.
+
+---
+
 ## [0.9.81] - 2026-03-06
 
 ### Added

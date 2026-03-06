@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier -l --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
-    "format:check": "prettier -l \"**/*.{ts,tsx,md,json,js,jsx}\""
+    "format:check": "prettier -l \"**/*.{ts,tsx,md,json,js,jsx}\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
