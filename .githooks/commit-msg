@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+set -e
+
+MSG_FILE="$1"
+MSG="$(head -n1 "$MSG_FILE")"
+
+# Conventional Commits:
+# type(scope)!: subject
+# type: subject
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?(!)?: .+'
+
+if echo "$MSG" | grep -Eq "$PATTERN"; then
+  exit 0
+fi
+
+echo "Invalid commit message:"
+echo "  $MSG"
+echo ""
+echo "Expected Conventional Commit, e.g.:"
+echo "  feat(frontend): add user sorting"
+echo "  fix: handle nil cache item"
+echo ""
+
+# Optional mode: warn only (set CONVENTIONAL_COMMITS_STRICT=0)
+if [ "${CONVENTIONAL_COMMITS_STRICT:-1}" = "0" ]; then
+  echo "[hook] warning only; allowing commit"
+  exit 0
+fi
+
+exit 1
