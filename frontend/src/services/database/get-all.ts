@@ -5,6 +5,7 @@ import { log } from "@/lib/logger";
 
 import type { APIResponse } from "@/types/api/api-response";
 import type { DBSavedItem } from "@/types/database/db-poster-set";
+import { TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS } from "@/types/ui-options";
 
 export interface GetAllDBItems_Response {
   items: DBSavedItem[];
@@ -19,7 +20,7 @@ export const getAllItemsFromDB = async (
   searchTitle: string,
   libraryTitles: string[],
   filteredTypes: string[],
-  filterAutodownload: "all" | "on" | "off",
+  filterAutodownload: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
   multisetOnly: boolean,
   filteredUsernames: string[],
   itemsPerPage: number,
