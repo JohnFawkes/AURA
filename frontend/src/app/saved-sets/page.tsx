@@ -663,7 +663,7 @@ const SavedSetsPage: React.FC = () => {
               onClick={() => {
                 setSearchQuery("");
                 setFilteredLibraries([]);
-                if (setFilterAutoDownload) setFilterAutoDownload("all");
+                if (setFilterAutoDownload) setFilterAutoDownload("");
                 setFilteredUsers([]);
                 setFilteredTypes([]);
                 setCurrentPage(1);
