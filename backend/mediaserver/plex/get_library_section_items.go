@@ -42,7 +42,6 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 	query.Set("X-Plex-Container-Start", sectionStartIndex)
 	query.Set("X-Plex-Container-Size", limit)
 	query.Set("includeGuids", "1")
-	query.Set("includeCollections", "1")
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
