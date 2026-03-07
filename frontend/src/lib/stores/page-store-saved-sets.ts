@@ -4,21 +4,26 @@ import { persist } from "zustand/middleware";
 import { PageStore } from "@/lib/stores/stores";
 
 import type { PaginationStore, SortStore } from "@/types/store-interfaces";
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS, TYPE_VIEW_TYPE_OPTIONS } from "@/types/ui-options";
+import type {
+  TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
+  TYPE_ITEMS_PER_PAGE_OPTIONS,
+  TYPE_SAVED_SET_VIEW_TYPE_OPTIONS,
+  TYPE_SORT_ORDER_OPTIONS,
+} from "@/types/ui-options";
 
 interface SavedSets_PageStore
   extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
   // View Store
-  viewOption: TYPE_VIEW_TYPE_OPTIONS;
-  setViewOption: (option: TYPE_VIEW_TYPE_OPTIONS) => void;
+  viewOption: TYPE_SAVED_SET_VIEW_TYPE_OPTIONS;
+  setViewOption: (option: TYPE_SAVED_SET_VIEW_TYPE_OPTIONS) => void;
 
   // Library Filter
   filteredLibraries: string[];
   setFilteredLibraries: (libraries: string[]) => void;
 
   // AutoDownload Filter
-  filterAutoDownload: "all" | "on" | "off";
-  setFilterAutoDownload: (val: "all" | "on" | "off") => void;
+  filterAutoDownload: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS;
+  setFilterAutoDownload: (val: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS) => void;
 
   // User Filter
   filteredUsers: string[];
@@ -59,7 +64,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
       filteredLibraries: [],
       setFilteredLibraries: (libraries) => set({ filteredLibraries: libraries }),
 
-      filterAutoDownload: "all",
+      filterAutoDownload: "",
       setFilterAutoDownload: (value) => set({ filterAutoDownload: value }),
 
       filteredUsers: [],
@@ -83,7 +88,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
           itemsPerPage: 20,
           viewOption: "card",
           filteredLibraries: [],
-          filterAutoDownload: "all",
+          filterAutoDownload: "",
           filteredUsers: [],
           filteredTypes: [],
           filterMultiSetOnly: false,

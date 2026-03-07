@@ -3,12 +3,11 @@ import { persist } from "zustand/middleware";
 
 import { GlobalStore } from "@/lib/stores/stores";
 
-import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
-import { DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_IMAGE_TYPE_OPTIONS, type TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 interface UserPreferencesStore {
-  downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
-  setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => void;
+  downloadDefaults: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[];
+  setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[]) => void;
 
   showOnlyDownloadDefaults: boolean;
   setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => void;
@@ -24,8 +23,8 @@ interface UserPreferencesStore {
 export const useUserPreferencesStore = create<UserPreferencesStore>()(
   persist(
     (set) => ({
-      downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
-      setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => set({ downloadDefaults }),
+      downloadDefaults: DOWNLOAD_IMAGE_TYPE_OPTIONS.map((option) => option.value),
+      setDownloadDefaults: (downloadDefaults: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[]) => set({ downloadDefaults }),
 
       showOnlyDownloadDefaults: false,
       setShowOnlyDownloadDefaults: (showOnlyDownloadDefaults: boolean) => set({ showOnlyDownloadDefaults }),
@@ -38,7 +37,7 @@ export const useUserPreferencesStore = create<UserPreferencesStore>()(
 
       clear: () =>
         set({
-          downloadDefaults: DOWNLOAD_DEFAULT_TYPE_OPTIONS,
+          downloadDefaults: DOWNLOAD_IMAGE_TYPE_OPTIONS.map((option) => option.value),
           showOnlyDownloadDefaults: false,
           showDateModified: false,
         }),

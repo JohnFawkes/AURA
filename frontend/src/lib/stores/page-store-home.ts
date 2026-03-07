@@ -10,7 +10,7 @@ import type {
   TYPE_ITEMS_PER_PAGE_OPTIONS,
   TYPE_SORT_ORDER_OPTIONS,
 } from "@/types/ui-options";
-import type { TYPE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
+import type { TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type Direction = "next" | "previous";
 
@@ -21,8 +21,8 @@ interface Home_PageStore
   setFilteredAndSortedMediaItems: (items: MediaItem[]) => void;
   filteredLibraries: string[];
   setFilteredLibraries: (libraries: string[]) => void;
-  filterInDB: TYPE_FILTER_IN_DB_OPTIONS;
-  setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
+  filterInDB: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS;
+  setFilterInDB: (filter: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS) => void;
   filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
   setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
 
@@ -61,10 +61,10 @@ export const useHomePageStore = create<Home_PageStore>()(
       filteredLibraries: [],
       setFilteredLibraries: (libraries) => set({ filteredLibraries: libraries }),
 
-      filterInDB: "all",
+      filterInDB: "",
       setFilterInDB: (filter) => set({ filterInDB: filter }),
 
-      filterIgnored: "none",
+      filterIgnored: "",
       setFilterIgnored: (ignored) => set({ filterIgnored: ignored }),
 
       /**
@@ -103,8 +103,8 @@ export const useHomePageStore = create<Home_PageStore>()(
           itemsPerPage: 20,
           filteredAndSortedMediaItems: [],
           filteredLibraries: [],
-          filterInDB: "all",
-          filterIgnored: "none",
+          filterInDB: "",
+          filterIgnored: "",
           previousMediaItem: null,
           nextMediaItem: null,
           hasHydrated: false,
