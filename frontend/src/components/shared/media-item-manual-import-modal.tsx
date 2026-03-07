@@ -27,6 +27,7 @@ import { cn } from "@/lib/cn";
 import type { PosterSet } from "@/types/database/db-poster-set";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import type { ImageFile } from "@/types/media-and-posters/sets";
+import { TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export type MediaItemManualImportModalProps = {
   mediaItem: MediaItem;
@@ -374,7 +375,12 @@ export function yamlToPosterSet(
   }
 
   // Helper to create PosterFile
-  const makePosterFile = (src: string, fileType: string, seasonNumber?: number, episodeNumber?: number): ImageFile => {
+  const makePosterFile = (
+    src: string,
+    fileType: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS,
+    seasonNumber?: number,
+    episodeNumber?: number
+  ): ImageFile => {
     const assetId = extractAssetId(src);
     return {
       id: "---" + assetId,

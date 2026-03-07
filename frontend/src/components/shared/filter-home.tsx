@@ -28,18 +28,18 @@ import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 import type { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
 import type {
   TYPE_FILTER_IGNORED_OPTIONS,
-  TYPE_FILTER_IN_DB_OPTIONS,
+  TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS,
   TYPE_ITEMS_PER_PAGE_OPTIONS,
 } from "@/types/ui-options";
-import { FILTER_IGNORED_OPTIONS, FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
+import { FILTER_IGNORED_OPTIONS, HOME_PAGE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type HomeFilterProps = {
   // Filtering
   librarySections: LibrarySection[];
   filteredLibraries: string[];
   setFilteredLibraries: (libs: string[]) => void;
-  filterInDB: TYPE_FILTER_IN_DB_OPTIONS;
-  setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
+  filterInDB: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS;
+  setFilterInDB: (filter: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS) => void;
   filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
   setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
 
@@ -235,31 +235,34 @@ function FilterHomeContent({
             value={filterInDB}
             onValueChange={(value) => {
               if (value) {
-                setFilterInDB(value as TYPE_FILTER_IN_DB_OPTIONS);
+                setFilterInDB(value as TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS);
               }
             }}
           >
-            {FILTER_IN_DB_OPTIONS.map((option) => (
+            {HOME_PAGE_FILTER_IN_DB_OPTIONS.map((option) => (
               <Badge
-                key={option}
+                key={option.value}
                 className={cn(
                   "cursor-pointer text-sm active:scale-95 hover:brightness-120",
-                  filterInDB === option && option === "all" && "bg-primary text-primary-foreground",
-                  filterInDB === option && option === "inDB" && "bg-green-500 text-primary-foreground",
-                  filterInDB === option && option === "notInDB" && "bg-red-500 text-primary-foreground"
+                  filterInDB === option.value && option.value === "inDB" && "bg-green-500 text-primary-foreground",
+                  filterInDB === option.value && option.value === "notInDB" && "bg-red-500 text-primary-foreground"
                 )}
-                variant={filterInDB === option ? "default" : "outline"}
+                variant={filterInDB === option.value ? "default" : "outline"}
                 onClick={() => {
-                  if (filterInDB === option) {
-                    setFilterInDB("all");
+                  if (filterInDB === option.value) {
+                    setFilterInDB("");
                   } else {
-                    setFilterInDB(option as TYPE_FILTER_IN_DB_OPTIONS);
-                    setFilterIgnored("none");
+                    setFilterInDB(option.value as TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS);
+                    if (option.value === "inDB") {
+                      if (filterIgnored === "ignored" || filterIgnored === "always" || filterIgnored === "temp") {
+                        setFilterIgnored("");
+                      }
+                    }
                   }
                   setCurrentPage(1);
                 }}
               >
-                {option === "all" ? "All Items" : option === "inDB" ? "In Database" : "Not In Database"}
+                {option.label}
               </Badge>
             ))}
           </ToggleGroup>
@@ -281,25 +284,34 @@ function FilterHomeContent({
           >
             {FILTER_IGNORED_OPTIONS.map((option) => (
               <Badge
-                key={option}
+                key={option.value}
                 className={cn(
                   "cursor-pointer text-sm active:scale-95 hover:brightness-120",
-                  filterIgnored === option && option === "none" && "bg-primary text-primary-foreground",
-                  filterIgnored === option && option === "always" && "bg-red-500 text-primary-foreground",
-                  filterIgnored === option && option === "temp" && "bg-yellow-500 text-primary-foreground"
+                  filterIgnored === option.value && option.value === "always" && "bg-red-500 text-primary-foreground",
+                  filterIgnored === option.value && option.value === "temp" && "bg-yellow-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "ignored" &&
+                    "bg-orange-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "not_ignored" &&
+                    "bg-green-500 text-primary-foreground"
                 )}
-                variant={filterIgnored === option ? "default" : "outline"}
+                variant={filterIgnored === option.value ? "default" : "outline"}
                 onClick={() => {
-                  if (filterIgnored === option) {
-                    setFilterIgnored("none");
+                  if (filterIgnored === option.value) {
+                    setFilterIgnored("");
                   } else {
-                    setFilterIgnored(option as TYPE_FILTER_IGNORED_OPTIONS);
-                    setFilterInDB("all");
+                    setFilterIgnored(option.value as TYPE_FILTER_IGNORED_OPTIONS);
+                    if (option.value === "ignored" || option.value === "always" || option.value === "temp") {
+                      if (filterInDB === "inDB") {
+                        setFilterInDB("");
+                      }
+                    }
                   }
                   setCurrentPage(1);
                 }}
               >
-                {option === "none" ? "None" : option === "always" ? "Always Ignored" : "Temporarily Ignored"}
+                {option.label}
               </Badge>
             ))}
           </ToggleGroup>
@@ -335,7 +347,7 @@ export function FilterHome({
   const numberOfActiveFilters = useMemo(() => {
     let count = 0;
     if (filteredLibraries.length > 0) count++;
-    if (filterInDB !== "all") count++;
+    if (filterInDB !== "") count++;
     return count;
   }, [filteredLibraries, filterInDB]);
 

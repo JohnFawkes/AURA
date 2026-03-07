@@ -169,8 +169,8 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
       setSearchQuery("");
       setCurrentPage(1);
       setFilteredLibraries([]);
-      setFilterInDB("all");
-      setFilterIgnored("none");
+      setFilterInDB("");
+      setFilterIgnored("");
     }
     router.push("/");
   };

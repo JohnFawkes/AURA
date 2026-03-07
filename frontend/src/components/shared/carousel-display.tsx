@@ -9,7 +9,7 @@ import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
-import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
+import type { TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export function CarouselDisplay({
   sets,
@@ -23,7 +23,7 @@ export function CarouselDisplay({
   const downloadDefaultTypes = useUserPreferencesStore((state) => state.downloadDefaults);
   const showOnlyDownloadDefaults = useUserPreferencesStore((state) => state.showOnlyDownloadDefaults);
 
-  function shouldShow(type: TYPE_DOWNLOAD_DEFAULT_OPTIONS) {
+  function shouldShow(type: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS) {
     return !showOnlyDownloadDefaults || downloadDefaultTypes.includes(type);
   }
 

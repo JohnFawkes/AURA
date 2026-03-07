@@ -33,7 +33,11 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import {
+  FILTER_AUTO_DOWNLOAD_OPTIONS,
+  TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
+  type TYPE_ITEMS_PER_PAGE_OPTIONS,
+} from "@/types/ui-options";
 
 type SavedSetsFilterProps = {
   getSectionSummaries: () => { title?: string; type?: string }[];
@@ -45,8 +49,8 @@ type SavedSetsFilterProps = {
   filteredTypes: string[];
   setFilteredTypes: (types: string[]) => void;
 
-  filterAutoDownload: "all" | "on" | "off";
-  setFilterAutoDownload: (val: "all" | "on" | "off") => void;
+  filterAutoDownload: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS;
+  setFilterAutoDownload: (val: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS) => void;
 
   filterUserOptions: string[];
   filteredUsers: string[];
@@ -110,7 +114,8 @@ function SavedSetsFilterContent({
 
   const [userFilterSearch, setUserFilterSearch] = useState<string>("");
   const [pendingFilterLibraries, setPendingFilterLibraries] = useState<string[]>(filteredLibraries);
-  const [pendingFilterAutoDownload, setPendingFilterAutoDownload] = useState<"all" | "on" | "off">(filterAutoDownload);
+  const [pendingFilterAutoDownload, setPendingFilterAutoDownload] =
+    useState<TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS>(filterAutoDownload);
   const [pendingFilterTypes, setPendingFilterTypes] = useState<string[]>(filteredTypes);
   const [pendingFilterMultiSetOnly, setPendingFilterMultiSetOnly] = useState<boolean>(filterMultiSetOnly);
   const [pendingFilteredUsers, setPendingFilteredUsers] = useState<string[]>(filteredUsers);
@@ -121,8 +126,8 @@ function SavedSetsFilterContent({
     setPendingFilterLibraries([]);
     setFilteredTypes([]);
     setPendingFilterTypes([]);
-    setFilterAutoDownload("all");
-    setPendingFilterAutoDownload("all");
+    setFilterAutoDownload("");
+    setPendingFilterAutoDownload("");
     setFilteredUsers([]);
     setPendingFilteredUsers([]);
     setFilterMultiSetOnly(false);
@@ -307,38 +312,32 @@ function SavedSetsFilterContent({
           type="single"
           className="flex flex-wrap gap-2 ml-2"
           value={pendingFilterAutoDownload}
-          onValueChange={(val) => setPendingFilterAutoDownload(val as "all" | "on" | "off")}
+          onValueChange={(val) => setPendingFilterAutoDownload(val as TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS)}
         >
-          <Badge
-            variant={pendingFilterAutoDownload === "all" ? "default" : "outline"}
-            className={cn(
-              "cursor-pointer text-sm active:scale-95 hover:brightness-120",
-              pendingFilterAutoDownload === "all" ? "bg-primary text-primary-foreground" : ""
-            )}
-            onClick={() => setPendingFilterAutoDownload("all")}
-          >
-            Any
-          </Badge>
-          <Badge
-            variant={pendingFilterAutoDownload === "on" ? "default" : "outline"}
-            className={cn(
-              "cursor-pointer text-sm active:scale-95 hover:brightness-120",
-              pendingFilterAutoDownload === "on" ? "bg-green-500 text-primary-foreground" : ""
-            )}
-            onClick={() => setPendingFilterAutoDownload("on")}
-          >
-            AutoDownload On
-          </Badge>
-          <Badge
-            variant={pendingFilterAutoDownload === "off" ? "default" : "outline"}
-            className={cn(
-              "cursor-pointer text-sm active:scale-95 hover:brightness-120",
-              pendingFilterAutoDownload === "off" ? "bg-red-500 text-primary-foreground" : ""
-            )}
-            onClick={() => setPendingFilterAutoDownload("off")}
-          >
-            AutoDownload Off
-          </Badge>
+          {FILTER_AUTO_DOWNLOAD_OPTIONS.map((option) => (
+            <Badge
+              key={option.value}
+              className={cn(
+                "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                pendingFilterAutoDownload === option.value &&
+                  option.value === "on" &&
+                  "bg-green-500 text-primary-foreground",
+                pendingFilterAutoDownload === option.value &&
+                  option.value === "off" &&
+                  "bg-red-500 text-primary-foreground"
+              )}
+              variant={pendingFilterAutoDownload === option.value ? "default" : "outline"}
+              onClick={() => {
+                if (pendingFilterAutoDownload === option.value) {
+                  setPendingFilterAutoDownload("");
+                } else {
+                  setPendingFilterAutoDownload(option.value);
+                }
+              }}
+            >
+              {option.label}
+            </Badge>
+          ))}
         </ToggleGroup>
         <Separator className="my-4 w-full" />
         {/* MultiSet Only */}
@@ -509,7 +508,7 @@ export function FilterSavedSets({
   const numberOfActiveFilters = useMemo(() => {
     let count = 0;
     if (filteredLibraries.length > 0) count++;
-    if (filterAutoDownload && filterAutoDownload !== "all") count++;
+    if (filterAutoDownload) count++;
     if (filteredUsers.length > 0) count++;
     if (filteredTypes.length > 0) count++;
     if (filterMultiSetOnly) count++;

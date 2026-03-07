@@ -26,8 +26,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
-import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_IMAGE_TYPE_OPTIONS, TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 type MediaItemFilterProps = {
   numberOfActiveFilters?: number;
@@ -78,39 +77,39 @@ function MediaItemFilterContent({
           type="multiple"
           className="flex flex-wrap gap-2 ml-2 mt-2"
           value={downloadDefaultsTypes}
-          onValueChange={(value: TYPE_DOWNLOAD_DEFAULT_OPTIONS[]) => {
+          onValueChange={(value: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[]) => {
             // Ensure at least one type is always selected
             if (value.length === 0) return;
             setDownloadDefaultsTypes(value);
           }}
         >
-          {DOWNLOAD_DEFAULT_TYPE_OPTIONS.map((type) => (
+          {DOWNLOAD_IMAGE_TYPE_OPTIONS.map((opt) => (
             <Badge
-              key={type}
+              key={opt.value}
               className={cn(
                 "cursor-pointer text-sm px-3 py-1 font-normal transition active:scale-95",
-                downloadDefaultsTypes.includes(type)
+                downloadDefaultsTypes.includes(opt.value)
                   ? "bg-primary text-primary-foreground hover:brightness-120"
                   : "bg-muted text-muted-foreground border hover:text-accent-foreground"
               )}
-              variant={downloadDefaultsTypes.includes(type) ? "default" : "outline"}
+              variant={downloadDefaultsTypes.includes(opt.value) ? "default" : "outline"}
               onClick={() => {
-                if (downloadDefaultsTypes.includes(type)) {
+                if (downloadDefaultsTypes.includes(opt.value)) {
                   // Only allow removal if more than one type is selected
                   if (downloadDefaultsTypes.length > 1) {
-                    setDownloadDefaultsTypes(downloadDefaultsTypes.filter((t) => t !== type));
+                    setDownloadDefaultsTypes(downloadDefaultsTypes.filter((t) => t !== opt.value));
                   }
                 } else {
-                  setDownloadDefaultsTypes([...downloadDefaultsTypes, type]);
+                  setDownloadDefaultsTypes([...downloadDefaultsTypes, opt.value]);
                 }
               }}
               style={
-                downloadDefaultsTypes.includes(type) && downloadDefaultsTypes.length === 1
+                downloadDefaultsTypes.includes(opt.value) && downloadDefaultsTypes.length === 1
                   ? { opacity: 0.5, pointerEvents: "none" }
                   : undefined
               }
             >
-              {DOWNLOAD_DEFAULT_LABELS[type]}
+              {opt.label}s
             </Badge>
           ))}
         </ToggleGroup>

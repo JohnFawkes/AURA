@@ -20,10 +20,10 @@ import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import type { ImageFile, IncludedItem } from "@/types/media-and-posters/sets";
+import type { CollectionItemImageFile, ImageFile, IncludedItem } from "@/types/media-and-posters/sets";
 
 interface AssetImageProps {
-  image: ImageFile | MediaItem | CollectionItem | string;
+  image: ImageFile | MediaItem | CollectionItem | string | CollectionItemImageFile;
   imageType: "item" | "collection" | "mediux" | "url";
   aspect?: AspectRatio;
   className?: string;

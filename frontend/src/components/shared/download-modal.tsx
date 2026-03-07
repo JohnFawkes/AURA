@@ -64,8 +64,7 @@ import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 import type { DBPosterSetDetail, DBSavedItem, PosterSet } from "@/types/database/db-poster-set";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import type { BaseSetInfo, ImageFile } from "@/types/media-and-posters/sets";
-import type { TYPE_DOWNLOAD_DEFAULT_OPTIONS } from "@/types/ui-options";
-import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_IMAGE_TYPE_OPTIONS, TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export interface FormItemDisplay {
   MediaItem: MediaItem;
@@ -75,7 +74,7 @@ export interface FormItemDisplay {
 type SourceType = "show" | "movie" | "collection";
 
 interface AssetTypeFormValues {
-  types: TYPE_DOWNLOAD_DEFAULT_OPTIONS[];
+  types: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[];
   autodownload?: boolean;
   addToDBOnly?: boolean;
   source?: SourceType;
@@ -179,7 +178,7 @@ const formSchema = z
     selectedOptionsByItem: z.record(
       z.string(),
       z.object({
-        types: z.array(z.enum(DOWNLOAD_DEFAULT_TYPE_OPTIONS)),
+        types: z.array(z.enum(DOWNLOAD_IMAGE_TYPE_OPTIONS.map((opt) => opt.value as TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS))),
         autodownload: z.boolean().optional(),
         source: z.enum(["movie", "collection"]).optional(),
         addToDBOnly: z.boolean().optional(),
@@ -265,6 +264,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
   const [selectedSizes, setSelectedSizes] = useState({
     fileCount: 0,
     downloadSize: 0,
+    poster: 0,
+    backdrop: 0,
+    season_poster: 0,
+    special_season_poster: 0,
+    titlecard: 0,
   });
 
   // State - Duplicate Media Items
@@ -316,7 +320,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
   };
 
   // Compute Asset Types based on what the form item has
-  const computeAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_DEFAULT_OPTIONS[] => {
+  const computeAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[] => {
     if (!item.Set) return [];
 
     const setHasPoster = item.Set.images.some((img) => img.type === "poster");
@@ -326,7 +330,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       (img) => img.type === "special_season_poster" && img.season_number === 0
     );
     const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
-    const types: (TYPE_DOWNLOAD_DEFAULT_OPTIONS | null)[] = [
+    const types: (TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS | null)[] = [
       setHasPoster ? "poster" : null,
       setHasBackdrop ? "backdrop" : null,
       setHasSeasonPosters ? "season_poster" : null,
@@ -334,7 +338,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       setHasTitleCards ? "titlecard" : null,
     ];
 
-    return types.filter((type): type is TYPE_DOWNLOAD_DEFAULT_OPTIONS => type !== null);
+    return types.filter((type): type is TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS => type !== null);
   };
 
   // Define Form
@@ -382,7 +386,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
   useEffect(() => {
     // If all the form items are set to "Add to Database Only", change button text
-    if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types.length === 0)) {
+    if (Object.values(watchSelectedOptions).every((option) => option.addToDBOnly || option.types?.length === 0)) {
       setButtonTexts((prev) => ({
         ...prev,
         download: "Add to Database",
@@ -440,6 +444,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     const calculateSizes = () => {
       let totalFiles = 0;
       let totalSize = 0;
+      let numOfPosters = 0;
+      let numOfBackdrops = 0;
+      let numOfSeasonPosters = 0;
+      let numOfSpecialSeasonPosters = 0;
+      let numOfTitleCards = 0;
 
       // Iterate through each selected item
       Object.entries(watchSelectedOptions).forEach(([ratingKey, selection]) => {
@@ -456,6 +465,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               if (posterImage && posterImage.file_size) {
                 totalSize += posterImage.file_size;
                 totalFiles += 1;
+                numOfPosters += 1;
               }
               break;
             }
@@ -464,6 +474,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               if (backdropImage && backdropImage.file_size) {
                 totalSize += backdropImage.file_size;
                 totalFiles += 1;
+                numOfBackdrops += 1;
               }
               break;
             }
@@ -478,10 +489,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                     if (seasonExists) {
                       totalSize += sp.file_size;
                       totalFiles += 1;
+                      numOfSeasonPosters += 1;
                     }
                   } else {
                     totalSize += sp.file_size;
                     totalFiles += 1;
+                    numOfSeasonPosters += 1;
                   }
                 }
               });
@@ -497,10 +510,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                     if (specialSeasonExists) {
                       totalSize += sp.file_size;
                       totalFiles += 1;
+                      numOfSpecialSeasonPosters += 1;
                     }
                   } else {
                     totalSize += sp.file_size;
                     totalFiles += 1;
+                    numOfSpecialSeasonPosters += 1;
                   }
                 }
               });
@@ -518,10 +533,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                     if (episodeExists) {
                       totalSize += tc.file_size;
                       totalFiles += 1;
+                      numOfTitleCards += 1;
                     }
                   } else {
                     totalSize += tc.file_size;
                     totalFiles += 1;
+                    numOfTitleCards += 1;
                   }
                 }
               });
@@ -533,6 +550,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       setSelectedSizes({
         fileCount: totalFiles,
         downloadSize: totalSize,
+        poster: numOfPosters,
+        backdrop: numOfBackdrops,
+        season_poster: numOfSeasonPosters,
+        special_season_poster: numOfSpecialSeasonPosters,
+        titlecard: numOfTitleCards,
       });
     };
 
@@ -619,7 +641,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     return undefined;
   };
 
-  const getAssetStatus = (itemKey: string, assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS): TaskStatus | undefined => {
+  const getAssetStatus = (itemKey: string, assetType: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS): TaskStatus | undefined => {
     const tasks = progress.items[itemKey]?.tasks ?? [];
     const relevant = tasks.filter((t) => t.payload.kind === "download" && t.payload.imageFile.type === assetType);
     if (relevant.length === 0) return undefined;
@@ -732,7 +754,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       { selectedOptionsByItem: Record<string, AssetTypeFormValues> },
       `selectedOptionsByItem.${string}`
     >,
-    assetType: TYPE_DOWNLOAD_DEFAULT_OPTIONS,
+    assetType: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS,
     item: FormItemDisplay
   ) => {
     const types = field.value?.types || [];
@@ -756,6 +778,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       (set) => set.id !== item.Set.id && set.selected_types?.[assetType]
     );
     const isDownloadedInAnotherSet = Boolean(downloadedSetForType);
+
+    const numberOfAssetType = selectedSizes[assetType];
 
     return (
       <FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
@@ -797,7 +821,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           />
         </FormControl>
         <FormLabel className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}>
-          {DOWNLOAD_DEFAULT_LABELS[assetType]}
+          {numberOfAssetType > 1 ? `${numberOfAssetType} ` : ""}
+          {DOWNLOAD_IMAGE_TYPE_OPTIONS.find((opt) => opt.value === assetType)?.label}
+          {numberOfAssetType > 1 && `s`}
         </FormLabel>
         {isDownloaded ? (
           <Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
@@ -817,7 +843,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             <div className="flex items-center">
               <CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
               <span className="text-xs">
-                {DOWNLOAD_DEFAULT_LABELS[assetType]} {DOWNLOAD_DEFAULT_LABELS[assetType].endsWith("s") ? "have" : "has"}{" "}
+                {DOWNLOAD_IMAGE_TYPE_OPTIONS.find((opt) => opt.value === assetType)?.label}{" "}
+                {DOWNLOAD_IMAGE_TYPE_OPTIONS.find((opt) => opt.value === assetType)?.label?.endsWith("s")
+                  ? "have"
+                  : "has"}{" "}
                 already been downloaded in set {downloadedSetForType?.id} by user {downloadedSetForType?.user_created}.
               </span>
             </div>
@@ -973,9 +1002,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                   <FormControl>
                     <Checkbox
                       checked={
-                        isDisabled || field.value?.types.length === 0 ? false : field.value?.addToDBOnly || false
+                        isDisabled || field.value?.types?.length === 0 ? false : field.value?.addToDBOnly || false
                       }
-                      disabled={isDisabled || field.value?.types.length === 0}
+                      disabled={isDisabled || field.value?.types?.length === 0}
                       onCheckedChange={(checked) => {
                         field.onChange({
                           ...(field.value ?? {}),
@@ -1172,7 +1201,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         log("INFO", "Download Modal", "Debug Info", "Selected Types for Item:", selectedOptions);
 
         // If no types are selected and not set to "Add to DB Only", skip this item
-        if (selectedOptions.types.length === 0 && !selectedOptions.addToDBOnly) {
+        if (selectedOptions.types?.length === 0 && !selectedOptions.addToDBOnly) {
           log("INFO", "Download Modal", "Debug Info", `Skipping ${item.MediaItem.title} - Nothing to do here.`);
           continue;
         }
@@ -1255,11 +1284,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           if (ok && onDownloadComplete) {
             onDownloadComplete(
               upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
-                poster: selectedOptions.types.includes("poster"),
-                backdrop: selectedOptions.types.includes("backdrop"),
-                season_poster: selectedOptions.types.includes("season_poster"),
-                special_season_poster: selectedOptions.types.includes("special_season_poster"),
-                titlecard: selectedOptions.types.includes("titlecard"),
+                poster: selectedOptions.types?.includes("poster"),
+                backdrop: selectedOptions.types?.includes("backdrop"),
+                season_poster: selectedOptions.types?.includes("season_poster"),
+                special_season_poster: selectedOptions.types?.includes("special_season_poster"),
+                titlecard: selectedOptions.types?.includes("titlecard"),
               })
             );
           }
@@ -1885,7 +1914,15 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                         variant="secondary"
                         onClick={() => {
                           form.reset();
-                          setSelectedSizes({ fileCount: 0, downloadSize: 0 });
+                          setSelectedSizes({
+                            fileCount: 0,
+                            downloadSize: 0,
+                            poster: 0,
+                            backdrop: 0,
+                            season_poster: 0,
+                            special_season_poster: 0,
+                            titlecard: 0,
+                          });
                           resetProgress();
                           setDuplicates({});
                         }}

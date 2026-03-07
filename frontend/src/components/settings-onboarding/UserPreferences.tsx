@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import { DOWNLOAD_DEFAULT_LABELS, DOWNLOAD_DEFAULT_TYPE_OPTIONS } from "@/types/ui-options";
+import { DOWNLOAD_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export function UserPreferencesCard() {
   // Download Defaults from User Preferences Store
@@ -91,33 +91,33 @@ export function UserPreferencesCard() {
           </PopoverHelp>
         </div>
         <div className="flex flex-wrap gap-2">
-          {DOWNLOAD_DEFAULT_TYPE_OPTIONS.map((type) => (
+          {DOWNLOAD_IMAGE_TYPE_OPTIONS.map((opt) => (
             <Badge
-              key={type}
+              key={opt.value}
               className={cn(
                 "cursor-pointer text-sm px-3 py-1 font-normal transition",
-                downloadDefaultTypes.includes(type)
+                downloadDefaultTypes.includes(opt.value)
                   ? "bg-primary text-primary-foreground active:scale-95 hover:brightness-120"
                   : "bg-muted text-muted-foreground border hover:text-accent-foreground"
               )}
-              variant={downloadDefaultTypes.includes(type) ? "default" : "outline"}
+              variant={downloadDefaultTypes.includes(opt.value) ? "default" : "outline"}
               onClick={() => {
-                if (downloadDefaultTypes.includes(type)) {
+                if (downloadDefaultTypes.includes(opt.value)) {
                   // Only allow removal if more than one type is selected
                   if (downloadDefaultTypes.length > 1) {
-                    setDownloadDefaultTypes(downloadDefaultTypes.filter((t) => t !== type));
+                    setDownloadDefaultTypes(downloadDefaultTypes.filter((t) => t !== opt.value));
                   }
                 } else {
-                  setDownloadDefaultTypes([...downloadDefaultTypes, type]);
+                  setDownloadDefaultTypes([...downloadDefaultTypes, opt.value]);
                 }
               }}
               style={
-                downloadDefaultTypes.includes(type) && downloadDefaultTypes.length === 1
+                downloadDefaultTypes.includes(opt.value) && downloadDefaultTypes.length === 1
                   ? { opacity: 0.5, pointerEvents: "none" }
                   : undefined
               }
             >
-              {DOWNLOAD_DEFAULT_LABELS[type]}
+              {opt.label}s
             </Badge>
           ))}
         </div>
