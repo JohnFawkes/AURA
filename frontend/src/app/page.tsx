@@ -312,9 +312,14 @@ export default function Home() {
     return <ErrorMessage error={error} />;
   }
 
-  const hasUpdatedAt = paginatedItems.some((item) => item.updated_at !== undefined && item.updated_at !== null);
+  const hasUpdatedAt = paginatedItems.some(
+    (item) => item.updated_at !== undefined && item.updated_at !== null && item.updated_at > 0
+  );
   const hasEpisodeAddedAt = paginatedItems.some(
-    (item) => item.latest_episode_added_at !== undefined && item.latest_episode_added_at !== null
+    (item) =>
+      item.latest_episode_added_at !== undefined &&
+      item.latest_episode_added_at !== null &&
+      item.latest_episode_added_at > 0
   );
 
   return (
