@@ -45,6 +45,7 @@ type HomeFilterProps = {
 
   // Sorting
   hasUpdatedAt: boolean;
+  hasEpisodeAddedAt: boolean;
   sortOption: string;
   setSortOption: (option: string) => void;
   sortOrder: "asc" | "desc";
@@ -66,6 +67,7 @@ function FilterHomeContent({
   setFilterIgnored,
 
   hasUpdatedAt,
+  hasEpisodeAddedAt,
   sortOption,
   setSortOption,
   sortOrder,
@@ -106,13 +108,17 @@ function FilterHomeContent({
                 },
               ]
             : []),
-          {
-            value: "newEpisodeAdded",
-            label: "New Episode Added",
-            ascIcon: <ClockArrowUp />,
-            descIcon: <ClockArrowDown />,
-            type: "date",
-          },
+          ...(hasEpisodeAddedAt
+            ? [
+                {
+                  value: "newEpisodeAdded",
+                  label: "New Episode Added",
+                  ascIcon: <ClockArrowUp />,
+                  descIcon: <ClockArrowDown />,
+                  type: "date" as const,
+                },
+              ]
+            : []),
           {
             value: "dateReleased",
             label: "Date Released",
@@ -331,6 +337,7 @@ export function FilterHome({
   setFilterIgnored,
 
   hasUpdatedAt,
+  hasEpisodeAddedAt,
   sortOption,
   setSortOption,
   sortOrder,
@@ -377,6 +384,7 @@ export function FilterHome({
           filterIgnored={filterIgnored}
           setFilterIgnored={setFilterIgnored}
           hasUpdatedAt={hasUpdatedAt}
+          hasEpisodeAddedAt={hasEpisodeAddedAt}
           sortOption={sortOption}
           setSortOption={setSortOption}
           sortOrder={sortOrder}

@@ -313,6 +313,9 @@ export default function Home() {
   }
 
   const hasUpdatedAt = paginatedItems.some((item) => item.updated_at !== undefined && item.updated_at !== null);
+  const hasEpisodeAddedAt = paginatedItems.some(
+    (item) => item.latest_episode_added_at !== undefined && item.latest_episode_added_at !== null
+  );
 
   return (
     <div className="flex items-center justify-center">
@@ -380,6 +383,7 @@ export default function Home() {
               filterIgnored={filterIgnored}
               setFilterIgnored={setFilterIgnored}
               hasUpdatedAt={hasUpdatedAt}
+              hasEpisodeAddedAt={hasEpisodeAddedAt}
               sortOption={sortOption}
               setSortOption={setSortOption}
               sortOrder={sortOrder}
