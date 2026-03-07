@@ -149,7 +149,7 @@ const UserSetPage = () => {
     title: string;
     type: "show" | "movie";
   } | null>(null);
-  const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB">("all");
+  const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB" | "otherSetInDB">("all");
 
   // State to track the selected sorting option
   const { sortOption, setSortOption, sortOrder, setSortOrder } = useUserPageStore();
@@ -497,46 +497,103 @@ const UserSetPage = () => {
       return;
     }
 
+    // Filter in DB
+    // - If the Media Item has DB Saved Sets and at least one of those sets is the same Set ID
     const filterInDB = (sets: SetRef[]) =>
       sets.filter((set) =>
-        set.item_ids.every((tmdbId) => {
-          const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
-          return mediaItem && typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length > 0;
+        set.item_ids.some((tmdbId) => {
+          const mediaItem = setIncludedItems && setIncludedItems[tmdbId].media_item;
+          return (
+            mediaItem &&
+            typeof mediaItem !== "boolean" &&
+            mediaItem.rating_key &&
+            mediaItem.db_saved_sets.length > 0 &&
+            mediaItem.db_saved_sets.some((savedSet) => savedSet.id === set.id)
+          );
         })
       );
 
+    // Filter not in DB
+    // - If the Media Item does not have any DB Saved Sets
     const filterNotInDB = (sets: SetRef[]) =>
       sets.filter((set) =>
         set.item_ids.some((tmdbId) => {
-          const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
-          return !mediaItem || (typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length === 0);
+          const mediaItem = setIncludedItems?.[tmdbId]?.media_item;
+          return (
+            !mediaItem ||
+            (typeof mediaItem !== "boolean" && mediaItem.rating_key && mediaItem.db_saved_sets.length === 0)
+          );
+        })
+      );
+    // Filter other set in DB
+    // - If the Media Item has DB Saved Sets but at least one of those sets is a different Set ID
+    const filterOtherSetInDB = (sets: SetRef[]) =>
+      sets.filter((set) =>
+        set.item_ids.some((tmdbId) => {
+          const mediaItem = setIncludedItems && setIncludedItems[tmdbId].media_item;
+          return (
+            mediaItem &&
+            typeof mediaItem !== "boolean" &&
+            mediaItem.rating_key &&
+            mediaItem.db_saved_sets.length > 0 &&
+            mediaItem.db_saved_sets.every((savedSet) => savedSet.id !== set.id && savedSet.user_created !== username)
+          );
         })
       );
 
     if (filterOutInDB === "inDB") {
-      setFilteredShowSets((prev) => filterInDB(prev));
-      setFilteredMovieSets((prev) => filterInDB(prev));
-      setFilteredCollectionSets((prev) => filterInDB(prev));
-      setFilteredBoxsets((prevBoxsets) =>
-        prevBoxsets.filter((boxset) =>
+      setFilteredShowSets(filterInDB(showSets));
+      setFilteredMovieSets(filterInDB(movieSets));
+      setFilteredCollectionSets(filterInDB(collectionSets));
+      setFilteredBoxsets(
+        boxsets.filter((boxset) =>
           boxset.sets?.every((set) =>
-            set.item_ids.every((tmdbId) => {
-              const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
-              return mediaItem && typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length > 0;
+            set.item_ids.some((tmdbId) => {
+              const mediaItem = setIncludedItems && setIncludedItems[tmdbId].media_item;
+              return (
+                mediaItem &&
+                typeof mediaItem !== "boolean" &&
+                mediaItem.rating_key &&
+                mediaItem.db_saved_sets.some((savedSet) => savedSet.id === set.id)
+              );
             })
           )
         )
       );
     } else if (filterOutInDB === "notInDB") {
-      setFilteredShowSets((prev) => filterNotInDB(prev));
-      setFilteredMovieSets((prev) => filterNotInDB(prev));
-      setFilteredCollectionSets((prev) => filterNotInDB(prev));
-      setFilteredBoxsets((prevBoxsets) =>
-        prevBoxsets.filter((boxset) =>
+      setFilteredShowSets(filterNotInDB(showSets));
+      setFilteredMovieSets(filterNotInDB(movieSets));
+      setFilteredCollectionSets(filterNotInDB(collectionSets));
+      setFilteredBoxsets(
+        boxsets.filter((boxset) =>
           boxset.sets?.some((set) =>
             set.item_ids.some((tmdbId) => {
-              const mediaItem = searchWithLookupMap(tmdbId, tmdbLookupMap);
-              return !mediaItem || (typeof mediaItem !== "boolean" && mediaItem.db_saved_sets.length === 0);
+              const mediaItem = setIncludedItems && setIncludedItems[tmdbId].media_item;
+              return (
+                !mediaItem ||
+                (typeof mediaItem !== "boolean" && mediaItem.rating_key && mediaItem.db_saved_sets.length === 0)
+              );
+            })
+          )
+        )
+      );
+    } else if (filterOutInDB === "otherSetInDB") {
+      setFilteredShowSets(filterOtherSetInDB(showSets));
+      setFilteredMovieSets(filterOtherSetInDB(movieSets));
+      setFilteredCollectionSets(filterOtherSetInDB(collectionSets));
+      setFilteredBoxsets(
+        boxsets.filter((boxset) =>
+          boxset.sets?.some((set) =>
+            set.item_ids.some((tmdbId) => {
+              const mediaItem = setIncludedItems && setIncludedItems[tmdbId].media_item;
+              return (
+                mediaItem &&
+                typeof mediaItem !== "boolean" &&
+                mediaItem.rating_key &&
+                mediaItem.db_saved_sets.every(
+                  (savedSet) => savedSet.id !== set.id && savedSet.user_created !== username
+                )
+              );
             })
           )
         )
@@ -544,7 +601,6 @@ const UserSetPage = () => {
     }
   }, [
     filterOutInDB,
-    tmdbLookupMap,
     setFilteredShowSets,
     setFilteredMovieSets,
     setFilteredCollectionSets,
@@ -553,6 +609,8 @@ const UserSetPage = () => {
     movieSets,
     collectionSets,
     boxsets,
+    setIncludedItems,
+    username,
   ]);
 
   const toDateValue = useCallback((value?: string) => {
@@ -589,6 +647,21 @@ const UserSetPage = () => {
 
   const isActiveTabKey = (val: string): val is ActiveTabKey =>
     val === "showSets" || val === "movieSets" || val === "collectionSets" || val === "boxSets";
+
+  const isActiveTabEmpty =
+    (activeTab === "showSets" && filteredShowSets.length === 0) ||
+    (activeTab === "movieSets" && filteredMovieSets.length === 0) ||
+    (activeTab === "collectionSets" && filteredCollectionSets.length === 0) ||
+    (activeTab === "boxSets" && filteredBoxsets.length === 0);
+
+  const activeTabLabel =
+    activeTab === "showSets"
+      ? "Show Sets"
+      : activeTab === "movieSets"
+        ? "Movie Sets"
+        : activeTab === "collectionSets"
+          ? "Collection Sets"
+          : "Box Sets";
 
   const activeItems = useMemo(() => {
     switch (activeTab) {
@@ -744,6 +817,7 @@ const UserSetPage = () => {
                           setFilterOutInDB("all");
                         }
                         setSearchQuery("");
+                        setActiveTab("boxSets");
                       }}
                       className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
                         !!selectedLibrarySection && selectedLibrarySection.title !== section.title
@@ -769,10 +843,7 @@ const UserSetPage = () => {
             )}
 
             {selectedLibrarySection &&
-              (showSets.length === 0 &&
-              movieSets.length === 0 &&
-              collectionSets.length === 0 &&
-              boxsets.length === 0 ? (
+              (isActiveTabEmpty ? (
                 <>
                   {/* If the filterOutInDB is selected, show an option to unselect it */}
                   <div className="flex justify-center">
@@ -790,11 +861,20 @@ const UserSetPage = () => {
                             ? "bg-green-600 text-white"
                             : filterOutInDB === "notInDB"
                               ? "bg-red-600 text-white"
-                              : ""
+                              : filterOutInDB === "otherSetInDB"
+                                ? "bg-yellow-600 text-white"
+                                : ""
                         }`}
                         variant={filterOutInDB !== "all" ? "default" : "outline"}
                         onClick={() => {
-                          const next = filterOutInDB === "all" ? "inDB" : filterOutInDB === "inDB" ? "notInDB" : "all";
+                          const next =
+                            filterOutInDB === "all"
+                              ? "inDB"
+                              : filterOutInDB === "inDB"
+                                ? "notInDB"
+                                : filterOutInDB === "notInDB"
+                                  ? "otherSetInDB"
+                                  : "all";
                           setFilterOutInDB(next);
                           setCurrentPage(1);
                         }}
@@ -803,19 +883,23 @@ const UserSetPage = () => {
                           ? "All Items"
                           : filterOutInDB === "inDB"
                             ? "Items In DB"
-                            : "Items Not in DB"}
+                            : filterOutInDB === "notInDB"
+                              ? "Items Not in DB"
+                              : "Other Sets In DB"}
                       </Badge>
                     </div>
                   </div>
                   <div className="flex justify-center mt-8">
                     <ErrorMessage
                       error={ReturnErrorMessage<string>(
-                        `No Sets found in ${selectedLibrarySection.title} library${
+                        `No ${activeTabLabel} found in ${selectedLibrarySection.title} library${
                           filterOutInDB === "inDB"
                             ? " that exist in your database"
                             : filterOutInDB === "notInDB"
                               ? " that are missing from your database"
-                              : ""
+                              : filterOutInDB === "otherSetInDB"
+                                ? " that are in other sets in your database"
+                                : ""
                         }${searchQuery ? ` for search query "${searchQuery}"` : ""}`
                       )}
                     />
@@ -837,11 +921,20 @@ const UserSetPage = () => {
                           ? "bg-green-600 text-white"
                           : filterOutInDB === "notInDB"
                             ? "bg-red-600 text-white"
-                            : ""
+                            : filterOutInDB === "otherSetInDB"
+                              ? "bg-yellow-600 text-white"
+                              : ""
                       }`}
                       variant={filterOutInDB !== "all" ? "default" : "outline"}
                       onClick={() => {
-                        const next = filterOutInDB === "all" ? "inDB" : filterOutInDB === "inDB" ? "notInDB" : "all";
+                        const next =
+                          filterOutInDB === "all"
+                            ? "inDB"
+                            : filterOutInDB === "inDB"
+                              ? "notInDB"
+                              : filterOutInDB === "notInDB"
+                                ? "otherSetInDB"
+                                : "all";
                         setFilterOutInDB(next);
                         setCurrentPage(1);
                       }}
@@ -850,7 +943,9 @@ const UserSetPage = () => {
                         ? "All Items"
                         : filterOutInDB === "inDB"
                           ? "Items In DB"
-                          : "Items Not in DB"}
+                          : filterOutInDB === "notInDB"
+                            ? "Items Not in DB"
+                            : "Other Sets In DB"}
                     </Badge>
                   </div>
 
