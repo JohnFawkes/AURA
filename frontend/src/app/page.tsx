@@ -279,6 +279,10 @@ export default function Home() {
         items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "always");
       } else if (filterIgnored === "temp") {
         items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "temp");
+      } else if (filterIgnored === "ignored") {
+        items = items.filter((item) => item.ignored_in_db);
+      } else if (filterIgnored === "not_ignored") {
+        items = items.filter((item) => !item.ignored_in_db);
       }
 
       // Filter out items by search
