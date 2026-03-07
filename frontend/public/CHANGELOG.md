@@ -3,6 +3,8 @@
 ### Fixed
 
 - Fixed issue where logging was not occurring for scheduled jobs. This was due to a missing call to log the logger after the job function was executed. This has been fixed by adding a call to `ld.Log()` at the end of each job function.
+- Fixed issue where User Page "In DB" filter would not work correctly.
+- Fixed issue where some downloads were not reaching 100% in the Download Modal due to a mismatch in the way progress was being calculated.
 
 ---
 
