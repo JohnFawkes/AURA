@@ -29,9 +29,7 @@ if has_frontend_changes; then
 
   echo "[hook] frontend format"
   npm --prefix frontend run format
-
-  # re-stage formatter changes
-  git add frontend
+ 
 else
   echo "[hook] no frontend changes"
 fi
