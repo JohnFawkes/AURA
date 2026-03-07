@@ -1,3 +1,15 @@
+## [0.9.83] - 2026-03-07
+
+### Added
+
+- Added number of images in each download type to the download modal for better context when downloading images.
+
+### Fixed
+
+- Standardized the way filters use types for safety.
+
+---
+
 ## [0.9.82] - 2026-03-07
 
 ### Fixed
