@@ -1,5 +1,9 @@
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import type { TYPE_DB_SET_TYPE_OPTIONS, TYPE_SET_TYPE_OPTIONS } from "@/types/ui-options";
+import type {
+  TYPE_DB_SET_TYPE_OPTIONS,
+  TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS,
+  TYPE_SET_TYPE_OPTIONS,
+} from "@/types/ui-options";
 
 export interface BaseMediuxItemInfo {
   tmdb_id: string;
@@ -30,7 +34,7 @@ export interface BaseSetInfo {
 
 export interface ImageFile {
   id: string;
-  type: string;
+  type: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS;
   modified: string;
   file_size: number;
   src: string;
@@ -46,6 +50,14 @@ export interface SetRef extends Omit<BaseSetInfo, "type"> {
   type: TYPE_DB_SET_TYPE_OPTIONS;
   images: ImageFile[];
   item_ids: string[];
+}
+
+export interface CollectionItemSetRef extends Omit<BaseSetInfo, "images"> {
+  images: CollectionItemImageFile[];
+}
+
+export interface CollectionItemImageFile extends Omit<ImageFile, "type"> {
+  type: "collection_poster" | "collection_backdrop";
 }
 
 export interface BoxsetRef extends Omit<BaseSetInfo, "type"> {
