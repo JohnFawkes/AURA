@@ -1118,7 +1118,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             total += item.Set.images?.filter((sp) => sp.type === "season_poster" && sp.season_number === 0).length ?? 0;
             break;
           case "titlecard":
-            total += item.Set.images?.filter((tc) => tc.type === "titlecard").length ?? 0;
+            total +=
+              item.Set.images?.filter(
+                (tc) => tc.type === "titlecard" && tc.season_number != null && tc.episode_number != null
+              ).length ?? 0;
             break;
         }
       }
@@ -1442,7 +1445,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             case "titlecard": {
               if (item.Set.images.some((tc) => tc.type === "titlecard")) {
                 const titlecards = item.Set.images
-                  .filter((tc) => tc.type === "titlecard" && tc.season_number && tc.episode_number)
+                  .filter((tc) => tc.type === "titlecard" && tc.season_number != null && tc.episode_number != null)
                   .sort((a, b) => {
                     if (a.season_number! < b.season_number!) return -1;
                     if (a.season_number! > b.season_number!) return 1;
