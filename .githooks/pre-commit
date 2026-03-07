@@ -5,8 +5,10 @@ echo "[hook] pre-commit running"
 STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
 echo "$STAGED_FILES"
 
-has_frontend_changes() {
-  echo "$STAGED_FILES" | grep -q '^frontend/'
+has_non_release_frontend_changes() {
+  echo "$STAGED_FILES" \
+    | grep '^frontend/' \
+    | grep -Eqv '(^|/)(CHANGELOG\.md|VERSION\.txt|version\.txt|version\.json)$'
 }
 
 has_backend_changes() {
@@ -18,9 +20,7 @@ needs_swagger_regen() {
   echo "$STAGED_FILES" | grep -Eq '^backend/(main\.go|startup\.go|routing/|models/|api-docs/|mediaserver/|config/)'
 }
 
-if has_frontend_changes; then
-  echo "[hook] frontend changes detected"
-
+if has_non_release_frontend_changes; then
   echo "[hook] frontend lint"
   npm --prefix frontend run lint -- --max-warnings=0
 
@@ -29,9 +29,8 @@ if has_frontend_changes; then
 
   echo "[hook] frontend format"
   npm --prefix frontend run format
- 
 else
-  echo "[hook] no frontend changes"
+  echo "[hook] only changelog/version frontend files changed; skipping frontend lint/typecheck/format"
 fi
 
 if has_backend_changes; then
