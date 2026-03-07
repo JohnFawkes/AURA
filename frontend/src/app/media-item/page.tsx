@@ -39,6 +39,7 @@ import { useMediaPageStore } from "@/lib/stores/page-store-media";
 import type { APIResponse } from "@/types/api/api-response";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import { TYPE_MEDIA_ITEM_TYPE_OPTIONS } from "@/types/ui-options";
 
 const MediaItemPage = () => {
   const router = useRouter();
@@ -89,7 +90,7 @@ const MediaItemPage = () => {
     filterByLanguage,
     setFilterByLanguage,
   } = useMediaPageStore();
-  const sortType = partialMediaItem?.type as "movie" | "show";
+  const sortType = partialMediaItem?.type as TYPE_MEDIA_ITEM_TYPE_OPTIONS;
   const sortOption = sortStates[sortType]?.sortOption ?? "date";
   const sortOrder = sortStates[sortType]?.sortOrder ?? "desc";
 
