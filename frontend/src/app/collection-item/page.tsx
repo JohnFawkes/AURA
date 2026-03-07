@@ -40,7 +40,7 @@ import { useCollectionItemPageStore } from "@/lib/stores/page-store-collection-i
 import { useCollectionsPageStore } from "@/lib/stores/page-store-collections";
 
 import type { APIResponse } from "@/types/api/api-response";
-import type { SetRef } from "@/types/media-and-posters/sets";
+import type { CollectionItemSetRef } from "@/types/media-and-posters/sets";
 import type { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 export default function CollectionItemPage() {
@@ -52,8 +52,8 @@ export default function CollectionItemPage() {
 
   // Main Collection Item State
   const [collectionItem, setCollectionItem] = useState<CollectionItem | null>(null);
-  const [collectionItemSets, setCollectionItemSets] = useState<SetRef[]>([]);
-  const [filteredCollectionItemSets, setFilteredCollectionItemSets] = useState<SetRef[]>([]);
+  const [collectionItemSets, setCollectionItemSets] = useState<CollectionItemSetRef[]>([]);
+  const [filteredCollectionItemSets, setFilteredCollectionItemSets] = useState<CollectionItemSetRef[]>([]);
 
   // User Follows/Hides States
   const [userFollows, setUserFollows] = useState<MediuxUserInfo[]>([]);
