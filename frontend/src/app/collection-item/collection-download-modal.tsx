@@ -70,8 +70,8 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
   // User Preferences
   const { downloadDefaults } = useUserPreferencesStore();
 
-  const posterImage = set.images.find((img) => img.type === "collection-poster") || null;
-  const backdropImage = set.images.find((img) => img.type === "collection-backdrop") || null;
+  const posterImage = set.images.find((img) => img.type === "collection_poster") || null;
+  const backdropImage = set.images.find((img) => img.type === "collection_backdrop") || null;
 
   const form = useForm({
     resolver: zodResolver(downloadSchema),
@@ -236,11 +236,11 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
       progressIncrementRef.current = 95 / (totalItemsToDownload * 2); // Multiply by 2 for start and end progress
 
       if (data.poster && posterImage) {
-        await downloadImageFileAndApply("poster", item, posterImage);
+        await downloadImageFileAndApply(posterImage.type, item, posterImage);
       }
 
       if (data.backdrop && backdropImage) {
-        await downloadImageFileAndApply("backdrop", item, backdropImage);
+        await downloadImageFileAndApply(backdropImage.type, item, backdropImage);
       }
 
       updateProgressValue(100);

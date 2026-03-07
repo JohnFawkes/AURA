@@ -27,7 +27,7 @@ func (ej *EJ) ApplyCollectionImage(ctx context.Context, collectionItem *models.C
 		return Err
 	}
 
-	if imageFile.Type != "collection-backdrop" {
+	if imageFile.Type != "collection_backdrop" {
 		// Apply the Image to the Collection
 		Err = uploadCollectionImage(ctx, collectionItem, imageFile, imageData)
 		if Err.Message != "" {

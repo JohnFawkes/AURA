@@ -106,7 +106,7 @@ func GetCollectionImagesByTMDBID(ctx context.Context, tmdbID string) (collection
 		}
 		img := models.ImageFile{
 			ID:       poster.ID,
-			Type:     "collection-poster",
+			Type:     "collection_poster",
 			Modified: poster.ModifiedOn,
 			FileSize: utils.ParseFileSize(poster.Filesize),
 			Src:      poster.Src,
@@ -139,7 +139,7 @@ func GetCollectionImagesByTMDBID(ctx context.Context, tmdbID string) (collection
 		}
 		img := models.ImageFile{
 			ID:       backdrop.ID,
-			Type:     "collection-backdrop",
+			Type:     "collection_backdrop",
 			Modified: backdrop.ModifiedOn,
 			FileSize: utils.ParseFileSize(backdrop.Filesize),
 			Src:      backdrop.Src,

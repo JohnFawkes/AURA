@@ -512,9 +512,9 @@ export default function CollectionItemPage() {
                     </Lead>
 
                     {/* Poster */}
-                    {set.images.find((image) => image.type === "collection-poster") && (
+                    {set.images.find((image) => image.type === "collection_poster") && (
                       <AssetImage
-                        image={set.images.find((image) => image.type === "collection-poster")!}
+                        image={set.images.find((image) => image.type === "collection_poster")!}
                         imageType="mediux"
                         aspect="poster"
                         className="w-full mb-2"
@@ -522,9 +522,9 @@ export default function CollectionItemPage() {
                     )}
 
                     {/* Backdrop */}
-                    {set.images.find((image) => image.type === "collection-backdrop") && (
+                    {set.images.find((image) => image.type === "collection_backdrop") && (
                       <AssetImage
-                        image={set.images.find((image) => image.type === "collection-backdrop")!}
+                        image={set.images.find((image) => image.type === "collection_backdrop")!}
                         imageType="mediux"
                         aspect="backdrop"
                         className="w-full"

@@ -6,11 +6,12 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { log } from "@/lib/logger";
 
 import type { APIResponse } from "@/types/api/api-response";
-import type { ImageFile } from "@/types/media-and-posters/sets";
+import type { CollectionItemImageFile } from "@/types/media-and-posters/sets";
+import { TYPE_DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS } from "@/types/ui-options";
 
 export interface DownloadCollectionImage_Request {
   collection_item: CollectionItem;
-  image_file: ImageFile;
+  image_file: CollectionItemImageFile;
 }
 
 export interface DownloadCollectionImage_Response {
@@ -18,9 +19,9 @@ export interface DownloadCollectionImage_Response {
 }
 
 export const DownloadImageFileForCollectionItem = async (
-  imageType: "poster" | "backdrop",
+  imageType: TYPE_DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS,
   collectionItem: CollectionItem,
-  imageFile: ImageFile
+  imageFile: CollectionItemImageFile
 ): Promise<APIResponse<DownloadCollectionImage_Response>> => {
   log(
     "INFO",

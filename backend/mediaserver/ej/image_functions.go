@@ -226,7 +226,7 @@ func uploadCollectionImage(ctx context.Context, collectionItem *models.Collectio
 	Err = logging.LogErrorInfo{}
 
 	var posterType string
-	if imageFile.Type == "collection-backdrop" {
+	if imageFile.Type == "collection_backdrop" {
 		posterType = "Backdrop"
 	} else {
 		posterType = "Primary"

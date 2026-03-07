@@ -30,7 +30,7 @@ func (p *Plex) ApplyCollectionImage(ctx context.Context, collectionItem *models.
 	// POST Method is used when not using a local image
 	// POST Method requires the posterType to be plural (posters or arts)
 	var imageType string
-	if imageFile.Type == "collection-backdrop" {
+	if imageFile.Type == "collection_backdrop" {
 		imageType = "arts"
 	} else {
 		imageType = "posters"

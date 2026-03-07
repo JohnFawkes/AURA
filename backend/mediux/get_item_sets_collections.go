@@ -166,8 +166,8 @@ func GetMovieItemCollectionSets(ctx context.Context, tmdbID string, itemLibraryT
 		if slices.Contains(itemIDs, tmdbID) {
 			// imgs := agg.images
 			// // If there is a collection level poster or backdrop, add those in as well
-			// imgs = append(imgs, *convertMediuxImageAssetToImageFile(&movieCollectionSetsResponse.Data.Base.Collection.Posters[0], "collection-poster"))
-			// imgs = append(imgs, *convertMediuxImageAssetToImageFile(&movieCollectionSetsResponse.Data.Base.Collection.Backdrops[0], "collection-backdrop"))
+			// imgs = append(imgs, *convertMediuxImageAssetToImageFile(&movieCollectionSetsResponse.Data.Base.Collection.Posters[0], "collection_poster"))
+			// imgs = append(imgs, *convertMediuxImageAssetToImageFile(&movieCollectionSetsResponse.Data.Base.Collection.Backdrops[0], "collection_backdrop"))
 			// agg.images = imgs
 			sets = append(sets, models.SetRef{
 				PosterSet: models.PosterSet{

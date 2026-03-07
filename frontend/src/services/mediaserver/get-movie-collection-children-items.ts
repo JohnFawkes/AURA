@@ -5,12 +5,12 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { log } from "@/lib/logger";
 
 import type { APIResponse } from "@/types/api/api-response";
-import type { SetRef } from "@/types/media-and-posters/sets";
+import type { CollectionItemSetRef } from "@/types/media-and-posters/sets";
 import type { MediuxUserInfo } from "@/types/mediux/mediux-user-follow-hide";
 
 interface GetAllCollectionChildrenItems_Response {
   collection_item: CollectionItem;
-  sets: SetRef[];
+  sets: CollectionItemSetRef[];
   user_follow_hide: MediuxUserInfo[];
 }
 
