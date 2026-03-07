@@ -821,9 +821,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           />
         </FormControl>
         <FormLabel className={cn("text-md font-normal cursor-pointer", isLoading ? "animate-pulse text-primary" : "")}>
-          {numberOfAssetType > 1 ? `${numberOfAssetType} ` : ""}
           {DOWNLOAD_IMAGE_TYPE_OPTIONS.find((opt) => opt.value === assetType)?.label}
           {numberOfAssetType > 1 && `s`}
+          {numberOfAssetType > 1 && <span className="text-xs text-muted-foreground">({numberOfAssetType})</span>}
         </FormLabel>
         {isDownloaded ? (
           <Check className="h-4 w-4 text-green-500 mt-1" strokeWidth={3} />
