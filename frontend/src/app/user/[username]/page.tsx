@@ -37,6 +37,11 @@ import { useUserPageStore } from "@/lib/stores/page-store-user";
 import type { APIResponse } from "@/types/api/api-response";
 import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
 import type { BoxsetRef, CreatorSetsResponse, IncludedItem, SetRef } from "@/types/media-and-posters/sets";
+import {
+  TYPE_LIBRARY_TYPE_OPTIONS,
+  TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS,
+  USER_PAGE_FILTER_IN_DB_OPTIONS,
+} from "@/types/ui-options";
 
 function processSets(
   sets: SetRef[],
@@ -85,7 +90,7 @@ function processSets(
 function getBoxsetSetsForLibrary(
   boxset: BoxsetRef,
   userResponse: CreatorSetsResponse,
-  libraryType: "show" | "movie",
+  libraryType: TYPE_LIBRARY_TYPE_OPTIONS,
   validSetIds: Set<string>
 ): SetRef[] {
   const sets: SetRef[] = [];
@@ -147,9 +152,9 @@ const UserSetPage = () => {
   const [librarySections, setLibrarySections] = useState<{ title: string; type: string }[]>([]);
   const [selectedLibrarySection, setSelectedLibrarySection] = useState<{
     title: string;
-    type: "show" | "movie";
+    type: TYPE_LIBRARY_TYPE_OPTIONS;
   } | null>(null);
-  const [filterOutInDB, setFilterOutInDB] = useState<"all" | "inDB" | "notInDB" | "otherSetInDB">("all");
+  const [filterOutInDB, setFilterOutInDB] = useState<TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS>("");
 
   // State to track the selected sorting option
   const { sortOption, setSortOption, sortOrder, setSortOrder } = useUserPageStore();
@@ -369,8 +374,8 @@ const UserSetPage = () => {
       return;
     }
 
-    // Always reset filtered sets to all sets if search is blank or filterOutInDB is "all"
-    if (searchQuery.trim() === "" && filterOutInDB === "all") {
+    // Always reset filtered sets to all sets if search is blank or filterOutInDB is ""
+    if (searchQuery.trim() === "" && filterOutInDB === "") {
       setFilteredShowSets(showSets);
       setFilteredMovieSets(movieSets);
       setFilteredCollectionSets(collectionSets);
@@ -488,7 +493,7 @@ const UserSetPage = () => {
   ]);
 
   useEffect(() => {
-    if (filterOutInDB === "all") {
+    if (filterOutInDB === "") {
       // Show all items, do not filter further
       setFilteredShowSets(showSets);
       setFilteredMovieSets(movieSets);
@@ -690,6 +695,15 @@ const UserSetPage = () => {
     setCurrentPage(1);
   }, [activeTab, setCurrentPage]);
 
+  const getNextInDbFilter = (current: TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS): TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS => {
+    const cycle: TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS[] = [
+      "",
+      ...USER_PAGE_FILTER_IN_DB_OPTIONS.map((opt) => opt.value),
+    ];
+    const currentIndex = cycle.indexOf(current);
+    return cycle[(currentIndex + 1) % cycle.length];
+  };
+
   return (
     <div className="flex flex-col">
       {/* Show loading message */}
@@ -795,7 +809,9 @@ const UserSetPage = () => {
                     const found = librarySections.find(
                       (section) => section.title === val && (section.type === "show" || section.type === "movie")
                     );
-                    setSelectedLibrarySection(found ? { ...found, type: found.type as "show" | "movie" } : null);
+                    setSelectedLibrarySection(
+                      found ? { title: found.title, type: found.type as TYPE_LIBRARY_TYPE_OPTIONS } : null
+                    );
                   }}
                 >
                   {librarySections.map((section) => (
@@ -805,16 +821,16 @@ const UserSetPage = () => {
                       onClick={() => {
                         const safeSection =
                           section.type === "show" || section.type === "movie"
-                            ? { ...section, type: section.type as "show" | "movie" }
+                            ? { ...section, type: section.type as TYPE_LIBRARY_TYPE_OPTIONS }
                             : null;
                         if (selectedLibrarySection?.title === section.title) {
                           setSelectedLibrarySection(null);
                           setCurrentPage(1);
-                          setFilterOutInDB("all");
+                          setFilterOutInDB("");
                         } else {
                           setSelectedLibrarySection(safeSection);
                           setCurrentPage(1);
-                          setFilterOutInDB("all");
+                          setFilterOutInDB("");
                         }
                         setSearchQuery("");
                         setActiveTab("boxSets");
@@ -865,27 +881,16 @@ const UserSetPage = () => {
                                 ? "bg-yellow-600 text-white"
                                 : ""
                         }`}
-                        variant={filterOutInDB !== "all" ? "default" : "outline"}
+                        variant={filterOutInDB !== "" ? "default" : "outline"}
                         onClick={() => {
-                          const next =
-                            filterOutInDB === "all"
-                              ? "inDB"
-                              : filterOutInDB === "inDB"
-                                ? "notInDB"
-                                : filterOutInDB === "notInDB"
-                                  ? "otherSetInDB"
-                                  : "all";
-                          setFilterOutInDB(next);
+                          setFilterOutInDB(getNextInDbFilter(filterOutInDB));
                           setCurrentPage(1);
                         }}
                       >
-                        {filterOutInDB === "all"
+                        {filterOutInDB === ""
                           ? "All Items"
-                          : filterOutInDB === "inDB"
-                            ? "Items In DB"
-                            : filterOutInDB === "notInDB"
-                              ? "Items Not in DB"
-                              : "Other Sets In DB"}
+                          : USER_PAGE_FILTER_IN_DB_OPTIONS.find((option) => option.value === filterOutInDB)?.label ||
+                            "Filter"}
                       </Badge>
                     </div>
                   </div>
@@ -925,27 +930,16 @@ const UserSetPage = () => {
                               ? "bg-yellow-600 text-white"
                               : ""
                       }`}
-                      variant={filterOutInDB !== "all" ? "default" : "outline"}
+                      variant={filterOutInDB !== "" ? "default" : "outline"}
                       onClick={() => {
-                        const next =
-                          filterOutInDB === "all"
-                            ? "inDB"
-                            : filterOutInDB === "inDB"
-                              ? "notInDB"
-                              : filterOutInDB === "notInDB"
-                                ? "otherSetInDB"
-                                : "all";
-                        setFilterOutInDB(next);
+                        setFilterOutInDB(getNextInDbFilter(filterOutInDB));
                         setCurrentPage(1);
                       }}
                     >
-                      {filterOutInDB === "all"
+                      {filterOutInDB === ""
                         ? "All Items"
-                        : filterOutInDB === "inDB"
-                          ? "Items In DB"
-                          : filterOutInDB === "notInDB"
-                            ? "Items Not in DB"
-                            : "Other Sets In DB"}
+                        : USER_PAGE_FILTER_IN_DB_OPTIONS.find((option) => option.value === filterOutInDB)?.label ||
+                          "Filter"}
                     </Badge>
                   </div>
 
