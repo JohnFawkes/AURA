@@ -3,6 +3,7 @@ package autodownload
 import (
 	"aura/database"
 	"aura/logging"
+	"aura/mediaserver"
 	"aura/models"
 	"aura/utils"
 	"context"
@@ -38,6 +39,8 @@ func CheckAllItems(ctx context.Context) (Err logging.LogErrorInfo) {
 		return *getAllItemAction.Error
 	}
 	getAllItemAction.Complete()
+
+	mediaserver.GetAllLibrarySectionsAndItems(ctx, true)
 
 	errorCount := 0
 	warningCount := 0
