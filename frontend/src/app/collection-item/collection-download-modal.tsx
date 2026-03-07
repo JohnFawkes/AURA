@@ -36,11 +36,15 @@ import { cn } from "@/lib/cn";
 import { log } from "@/lib/logger";
 import { useUserPreferencesStore } from "@/lib/stores/global-user-preferences";
 
-import type { ImageFile, SetRef } from "@/types/media-and-posters/sets";
+import type { CollectionItemImageFile, CollectionItemSetRef } from "@/types/media-and-posters/sets";
+import {
+  DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS,
+  TYPE_DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS,
+} from "@/types/ui-options";
 
 export interface CollectionsDownloadModalProps {
   item: CollectionItem;
-  set: SetRef;
+  set: CollectionItemSetRef;
 }
 
 const downloadSchema = z.object({
@@ -153,17 +157,19 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
   };
 
   const downloadImageFileAndApply = async (
-    imageType: "poster" | "backdrop",
+    imageType: TYPE_DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS,
     collectionItem: CollectionItem,
-    imageFile: ImageFile
+    imageFile: CollectionItemImageFile
   ) => {
     let isDone = false;
-    let interval: NodeJS.Timeout | undefined; // Declare interval here
+    let interval: NodeJS.Timeout | undefined;
+    const imageLabel =
+      DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS.find((opt) => opt.value === imageType)?.label || imageType;
 
     try {
       setProgress((prev) => ({
         ...prev,
-        [`${imageType}_progress`]: `Downloading ${imageType}...`,
+        [`${imageType}_progress`]: `Downloading ${imageLabel}...`,
       }));
 
       const targetProgress = progressRef.current + progressIncrementRef.current;
@@ -179,7 +185,7 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
 
       const response = await DownloadImageFileForCollectionItem(imageType, collectionItem, imageFile);
       if (response.status === "error") {
-        throw new Error(response.error?.message || `Unknown error downloading ${imageType}`);
+        throw new Error(response.error?.message || `Unknown error downloading ${imageLabel}`);
       }
 
       // Mark as done and set progress to target
@@ -189,18 +195,18 @@ const CollectionsDownloadModal: React.FC<CollectionsDownloadModalProps> = ({ ite
 
       setProgress((prev) => ({
         ...prev,
-        [`${imageType}_progress`]: `Downloaded ${imageType.charAt(0).toUpperCase() + imageType.slice(1)}`,
+        [`${imageType}_progress`]: `Downloaded ${imageLabel}`,
       }));
     } catch {
       isDone = true;
       if (interval) clearInterval(interval);
       setProgress((prev) => ({
         ...prev,
-        [`${imageType}_progress`]: `Failed to download ${imageType}`,
+        [`${imageType}_progress`]: `Failed to download ${imageLabel}`,
       }));
       setErrors((prev) => ({
         ...prev,
-        [`${imageType}_error`]: `Failed to download ${imageType}.`,
+        [`${imageType}_error`]: `Failed to download ${imageLabel}.`,
       }));
     } finally {
       updateProgressValue(progressRef.current + progressIncrementRef.current);
