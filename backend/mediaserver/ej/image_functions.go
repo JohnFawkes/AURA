@@ -188,11 +188,9 @@ func uploadImage(ctx context.Context, item *models.MediaItem, itemRatingKey stri
 	defer logAction.Complete()
 	Err = logging.LogErrorInfo{}
 
-	var posterType string
+	posterType := "Primary"
 	if imageFile.Type == "backdrop" {
 		posterType = "Backdrop"
-	} else {
-		posterType = "Primary"
 	}
 
 	// Construct the URL for the EJ server API request
@@ -210,7 +208,8 @@ func uploadImage(ctx context.Context, item *models.MediaItem, itemRatingKey stri
 	// Make the HTTP Request to EJ
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "POST", []byte(base64ImageData))
 	if Err.Message != "" {
-		return *logAction.Error
+		logAction.SetErrorFromInfo(Err)
+		return Err
 	}
 	defer resp.Body.Close()
 
