@@ -30,7 +30,7 @@ func applyImageToMediaItem(ctx context.Context, item *models.MediaItem, imageFil
 		// Apply the Image to the Media Item
 		Err = uploadImage(ctx, item, itemRatingKey, imageFile, imageData)
 		if Err.Message != "" {
-			return *logAction.Error
+			return Err
 		}
 	} else {
 		// For Backdrops, we need to set the index of the new upload to 0
