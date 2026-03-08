@@ -144,6 +144,10 @@ func (a *LogAction) SetError(message, help string, detail map[string]any) {
 	a.Complete()
 }
 
+func (a *LogAction) SetErrorFromInfo(err LogErrorInfo) {
+	a.SetError(err.Message, err.Help, err.Detail)
+}
+
 // --- Utility Functions ---
 
 // AppendResult appends or merges a value to the Result map for a given key.
