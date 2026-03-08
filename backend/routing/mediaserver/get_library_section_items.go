@@ -45,6 +45,10 @@ func GetLibrarySectionItems(w http.ResponseWriter, r *http.Request) {
 	sectionTitle := r.URL.Query().Get("section_title")
 	sectionType := r.URL.Query().Get("section_type")
 	sectionStartIndex := r.URL.Query().Get("section_start_index")
+	sectionLimit := r.URL.Query().Get("limit")
+	if sectionLimit == "" {
+		sectionLimit = "500"
+	}
 
 	// Validate the section ID, title, type, and start index
 	if sectionID == "" || sectionTitle == "" || sectionType == "" || sectionStartIndex == "" {
@@ -68,7 +72,7 @@ func GetLibrarySectionItems(w http.ResponseWriter, r *http.Request) {
 			Type:  sectionType,
 		},
 	}
-	mediaItems, totalSize, Err := mediaserver.GetLibrarySectionItems(ctx, response.LibrarySection, sectionStartIndex, "")
+	mediaItems, totalSize, Err := mediaserver.GetLibrarySectionItems(ctx, response.LibrarySection, sectionStartIndex, sectionLimit)
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return
