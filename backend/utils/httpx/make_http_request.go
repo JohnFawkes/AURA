@@ -13,6 +13,19 @@ import (
 	"time"
 )
 
+var sharedTransport = &http.Transport{
+	TLSClientConfig:     &tls.Config{InsecureSkipVerify: false},
+	ForceAttemptHTTP2:   true,
+	MaxIdleConns:        100,
+	MaxIdleConnsPerHost: 20,
+	IdleConnTimeout:     90 * time.Second,
+}
+
+var sharedClient = &http.Client{
+	Transport: sharedTransport,
+	// no Timeout here; use request context timeout instead
+}
+
 // MakeHTTPRequest function to handle HTTP requests
 func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string]string, timeout int, body []byte, siteName string) (*http.Response, []byte, logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, fmt.Sprintf("Making %s request to %s", method, siteName), logging.LevelTrace)
@@ -73,22 +86,11 @@ func MakeHTTPRequest(ctx context.Context, url, method string, headers map[string
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	// Create a new HTTP client with both HTTP/1.1 and HTTP/2 support
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: false,
-			},
-			ForceAttemptHTTP2: true, // Try HTTP/2 but fallback to HTTP/1.1 if needed
-		},
-		Timeout: timeoutInterval,
-	}
-
 	// Add common headers
 	req.Header.Set("Connection", "keep-alive")
 
 	// Send the HTTP request
-	resp, err := client.Do(req)
+	resp, err := sharedClient.Do(req)
 	if err != nil {
 		logAction.SetError(fmt.Sprintf("Failed to send %s request to %s", method, siteName),
 			"Check error and try again",
