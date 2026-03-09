@@ -1,3 +1,15 @@
+## [0.9.85] - 2026-03-09
+
+### Added
+
+- Added auto-refresh to the App Loading page every 3 seconds to check if the backend API is ready, improving user experience during startup.
+
+### Fixed
+
+- Fixed issue where App Loading page was not working properly when the backend was still booting up.
+
+---
+
 ## [0.9.84] - 2026-03-09
 
 ### Added
