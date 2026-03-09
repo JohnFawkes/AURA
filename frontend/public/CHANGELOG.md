@@ -1,3 +1,21 @@
+## [0.9.84] - 2026-03-09
+
+### Added
+
+- Added new optional limit parameter to the API route for fetching media server items to allow limiting the number of items returned for better performance on large libraries.
+- New shared http client for faster requests to external services.
+
+### Fixed
+
+- Fixed issue where Autodownload was not respecting the "Autodownload Off" for Saved Sets.
+- Fixed issue where Autodownload would not properly display reason for redownload for episode changes.
+- Readded Fetch Episode Last Updated Date logic as an optional part of the startup and home page fetching. This was because it slows down significantly when fetching large libraries, but it is needed for the recently added sorting by recently added episodes on the Home Page. This is now an optional part of the startup and home page fetching that can be enabled with the `EnableSortByEpisodeAddedDate` config option under the MediaServer section.
+- Fixed Panic error for Jellyfin/Emby users when Media Item is not found.
+- Fixed issue where size of episode for Jellyfin/Emby media servers was not being set. Since this is now fixed, it may cause autodownload to redownload episodes for these media servers since the size will now be different than what is currently in the database.
+- Removed redundant code for refreshing metadata for Plex, increasing performance when applying images to Plex media items.
+
+---
+
 ## [0.9.83] - 2026-03-07
 
 ### Added
