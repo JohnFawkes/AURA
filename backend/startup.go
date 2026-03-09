@@ -22,6 +22,7 @@ import (
 func runBootstrap() (success bool) {
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Bootstrap")
 	defer ld.Log()
+	config.AppLoadingStep = "Bootstrapping Application"
 
 	logAction := ld.AddAction("Application Startup", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, logAction)
@@ -34,9 +35,11 @@ func runBootstrap() (success bool) {
 	config.AppVersion = APP_VERSION
 
 	// Set Umask for file permissions (if needed)
+	config.AppLoadingStep = "Setting UMask for File Permissions"
 	utils.SetUMask(ctx)
 
 	// Load the config file
+	config.AppLoadingStep = "Loading Configuration"
 	config.LoadYAML(ctx)
 	logAction.Complete()
 
@@ -45,6 +48,7 @@ func runBootstrap() (success bool) {
 
 	// If the config is loaded, validate it
 	if config.Loaded {
+		config.AppLoadingStep = "Validating Configuration"
 		config.Current.Validate(ctx)
 	}
 
@@ -58,6 +62,7 @@ func runBootstrap() (success bool) {
 func runPreFlight() (success bool) {
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Preflight")
 	defer ld.Log()
+	config.AppLoadingStep = "Performing Pre-Flight Checks"
 
 	action := ld.AddAction("Checking Services", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, action)
@@ -67,6 +72,7 @@ func runPreFlight() (success bool) {
 	config.AppFullyLoaded = false
 
 	// Validate Media Server Connection
+	config.AppLoadingStep = "Validating Media Server Connection"
 	connectionOk, serverName, serverVersion, msErr := mediaserver.TestConnection(ctx, &config.Current.MediaServer)
 	if msErr.Message != "" || !connectionOk || serverVersion == "" || serverName == "" {
 		config.MediaServerValid = false
@@ -74,6 +80,7 @@ func runPreFlight() (success bool) {
 	}
 	if config.Current.MediaServer.Type == "Jellyfin" || config.Current.MediaServer.Type == "Emby" {
 		// Get Admin User for Emby/Jellyfin
+		config.AppLoadingStep = "Retrieving Media Server Admin User"
 		ejUserID, initErr := mediaserver.GetAdminUser(ctx, &config.Current.MediaServer)
 		if initErr.Message != "" {
 			config.MediaServerValid = false
@@ -92,6 +99,7 @@ func runPreFlight() (success bool) {
 	config.MediaServerValid = true
 
 	// Validate MediUX Token
+	config.AppLoadingStep = "Validating MediUX Token"
 	mediuxTokenValid, mediuxErr := mediux.ValidateToken(ctx, config.Current.Mediux.ApiToken)
 	if mediuxErr.Message != "" || !mediuxTokenValid {
 		config.MediuxValid = false
@@ -110,18 +118,22 @@ func runWarmup() (success bool) {
 
 	action := ld.AddAction("Initializing Application", logging.LevelInfo)
 	ctx = logging.WithCurrentAction(ctx, action)
+	config.AppLoadingStep = "Warming Up Application"
 
 	success = false
 
 	// Cache: Add all MediUX users
+	config.AppLoadingStep = "Preloading MediUX Users into Cache"
 	mediux.PreloadMediuxUsers(ctx)
 	logging.LOGGER.Info().Timestamp().Int("mediux_users", len(cache.MediuxUsers.GetMediuxUsers())).Msg("Preloaded MediUX users into cache")
 
 	// Cache: Get a list of all items in MediUX that has a set
+	config.AppLoadingStep = "Preloading MediUX Items with Sets into Cache"
 	mediux.PreLoadMediuxItemsWithSets(ctx)
 	logging.LOGGER.Info().Timestamp().Int("mediux_items_with_sets", len(cache.MediuxItems.GetMediuxItems())).Msg("Preloaded MediUX items with sets into cache")
 
 	// Database: Initialize
+	config.AppLoadingStep = "Initializing Database"
 	newDB, dbInitErr := database.Init(ctx)
 	if dbInitErr.Message != "" {
 		return false
@@ -130,17 +142,20 @@ func runWarmup() (success bool) {
 
 	// Database-Migration: If not a new DB, run migrations
 	if !newDB {
+		config.AppLoadingStep = "Running Database Migrations"
 		migrationsCompleted, _ := migration.RunMigrations()
 		logging.LOGGER.Info().Timestamp().Msgf("%d database migrations performed", migrationsCompleted)
 	}
 
 	// Cache: Add all media server sections and items
+	config.AppLoadingStep = "Preloading Media Server Data into Cache"
 	_ = mediaserver.GetAllLibrarySectionsAndItems(ctx, false)
 	logging.LOGGER.Info().Timestamp().Int("sections", cache.LibraryStore.GetSectionsCount()).Int("items", cache.LibraryStore.GetItemsCount()).Msg("Preloaded Media Server sections and items into cache")
 	logging.LOGGER.Info().Timestamp().Int("collection_items", len(cache.CollectionsStore.GetAllCollections())).
 		Msg("Preloaded Media Server data into cache")
 
 	// Database: Vacuum
+	config.AppLoadingStep = "Optimizing Database"
 	vacuumErr := database.Vacuum(ctx)
 	if vacuumErr.Message != "" {
 		logging.LOGGER.Error().Timestamp().Msgf("Database VACUUM failed: %s", vacuumErr.Message)
@@ -151,6 +166,7 @@ func runWarmup() (success bool) {
 	ld.Log()
 
 	// Cronjob: Auto Download Processing
+	config.AppLoadingStep = "Starting Background Jobs"
 	jobs.StartAutoDownloadJob()
 
 	// Cronjob: Download Queue Processing
@@ -180,7 +196,6 @@ func runWarmup() (success bool) {
 	}
 
 	// Cronjob: Check MediUX Site Link Availability
-	mediux.CheckSiteLinkAvailability()
 	err = jobs.StartCheckMediuxSiteLinkJob()
 	if err != nil {
 		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Check MediUX Site Link Availability cron job")
@@ -200,6 +215,10 @@ func runWarmup() (success bool) {
 
 	// Cron: Start Jobs Scheduler
 	jobs.StartJobs()
+
+	// Check MediUX Site Link Availability immediately on startup
+	config.AppLoadingStep = "Checking MediUX Site Link Availability"
+	mediux.CheckSiteLinkAvailability()
 
 	// Initialize MediUX WebSocket Listener
 	//go mediux.StartWebSocketClient()

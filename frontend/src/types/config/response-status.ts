@@ -8,4 +8,6 @@ export interface AppStatusResponse {
   media_server_name?: string;
   mediux_site_link?: string;
   app_fully_loaded: boolean;
+  app_version: string;
+  app_loading_step: string;
 }

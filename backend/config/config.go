@@ -12,6 +12,7 @@ var (
 	MediuxValid      bool   = true
 	AppVersion       string = ""
 	AppFullyLoaded   bool   = false
+	AppLoadingStep   string = ""
 )
 
 type Config struct {

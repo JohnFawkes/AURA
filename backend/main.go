@@ -32,52 +32,60 @@ func init() {
 }
 
 func main() {
+	// Serve immediately with onboarding/public routes first.
+	config.AppFullyLoaded = false
+	config.AppVersion = APP_VERSION
+	config.AppLoadingStep = "Initializing Application"
+	activeHandler.Store(routing.NewRouter())
 
-	// Run Bootstrap
-	bootStrapSuccess := runBootstrap()
+	// Start API now (non-blocking for init pipeline).
+	go startAPI()
 
-	// Setup the OnboardingComplete callback to swap routers
-	routing.OnboardingComplete = func() {
-		preflightSuccess := runPreFlight()
-		if !preflightSuccess {
-			logging.LOGGER.Error().Timestamp().Msg("Preflight failed during OnboardingComplete, not swapping routers")
-			return
-		}
-		warmupSuccess := runWarmup()
-		if !warmupSuccess {
-			logging.LOGGER.Fatal().Timestamp().Msg("Warmup failed during OnboardingComplete. Exiting application.")
-			return
-		}
-		config.AppFullyLoaded = true
-		// Swap to the full router
-		activeHandler.Store(routing.NewRouter())
-		logging.LOGGER.Info().Timestamp().Msg("Onboarding complete. Main routes active.")
-	}
+	// Run startup pipeline in background.
+	go func() {
+		bootStrapSuccess := runBootstrap()
 
-	// If the config is already loaded and valid, finish preflight
-	if bootStrapSuccess {
-		preflightSuccess := runPreFlight()
-		if !preflightSuccess {
-			// Preflight failed, force onboarding
-			config.Valid = false
-			activeHandler.Store(routing.NewRouter())
-		} else {
+		// Keep callback for onboarding finalization path.
+		routing.OnboardingComplete = func() {
+			preflightSuccess := runPreFlight()
+			if !preflightSuccess {
+				logging.LOGGER.Error().Timestamp().Msg("Preflight failed during OnboardingComplete, not swapping routers")
+				return
+			}
 			warmupSuccess := runWarmup()
 			if !warmupSuccess {
-				// Kill Application
+				logging.LOGGER.Fatal().Timestamp().Msg("Warmup failed during OnboardingComplete. Exiting application.")
+				return
+			}
+			config.AppFullyLoaded = true
+			activeHandler.Store(routing.NewRouter())
+			logging.LOGGER.Info().Timestamp().Msg("Onboarding complete. Main routes active.")
+		}
+
+		if bootStrapSuccess {
+			preflightSuccess := runPreFlight()
+			if !preflightSuccess {
+				config.Valid = false
+				activeHandler.Store(routing.NewRouter()) // stays onboarding
+				return
+			}
+
+			warmupSuccess := runWarmup()
+			if !warmupSuccess {
 				logging.LOGGER.Fatal().Timestamp().Msg("Warmup failed. Exiting application.")
 				os.Exit(1)
 			}
-			config.AppFullyLoaded = true
-			// Swap to the full router
-			activeHandler.Store(routing.NewRouter())
-		}
-	} else {
-		// Load Onboarding Router
-		config.AppFullyLoaded = true
-		activeHandler.Store(routing.NewRouter())
-	}
 
-	// Start the API
-	startAPI()
+			config.AppFullyLoaded = true
+			config.AppLoadingStep = "App Fully Loaded"
+			activeHandler.Store(routing.NewRouter()) // swap to full routes
+			return
+		}
+
+		// Config not loaded/valid: onboarding mode remains active.
+		activeHandler.Store(routing.NewRouter())
+	}()
+
+	// Keep process alive while startAPI runs.
+	select {}
 }

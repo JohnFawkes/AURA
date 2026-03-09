@@ -4490,6 +4490,10 @@ const docTemplate = `{
                     "description": "Whether the app is fully loaded and ready to use",
                     "type": "boolean"
                 },
+                "app_loading_step": {
+                    "description": "Current loading step of the app",
+                    "type": "string"
+                },
                 "app_version": {
                     "description": "Current version of the app",
                     "type": "string"

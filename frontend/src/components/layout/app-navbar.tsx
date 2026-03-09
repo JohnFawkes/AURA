@@ -14,9 +14,8 @@ import {
   MenuIcon,
   Sparkles,
 } from "lucide-react";
-import { toast } from "sonner";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -58,6 +57,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const isLogsPage = pathName === "/logs" || pathName === "/logs/";
   const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
   const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
+  const isAppLoadingPage = pathName === "/app-loading" || pathName === "/app-loading/";
 
   // Auth State
   const [isAuthed, setIsAuthed] = useState(false);
@@ -82,50 +82,60 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const status = useOnboardingStore((state) => state.status);
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
+  // Prevent repeated redirects while loading
+  const hasRedirectedToLoadingRef = useRef(false);
+
   // Check if the screen is mobile
   const [isWideScreen, setIsWideScreen] = useState(false);
 
   // App Version Hook
   const { latestVersion, isNewerVersion } = useAppVersion(version);
 
-  // Onboarding Status Check on mount and path change
+  // Fetch onboarding/status once on mount
   useEffect(() => {
-    const checkOnboarding = async () => {
-      await fetchStatus();
-    };
-    checkOnboarding();
-  }, [pathName, fetchStatus]);
+    void fetchStatus();
+  }, [fetchStatus]);
 
   // App Not Fully Loaded Redirect Logic
   useEffect(() => {
-    if (!hasHydrated) return;
-    if (status) {
-      if (status.app_fully_loaded === false) {
-        toast.error("The app is still loading. Please wait a moment and try again.", {
-          duration: 5000,
-        });
+    if (!hasHydrated || !status) return;
+
+    if (status.app_fully_loaded === false) {
+      if (!isAppLoadingPage) {
+        hasRedirectedToLoadingRef.current = true;
         router.replace("/app-loading");
       }
+      return;
     }
-  }, [status, router, hasHydrated]);
+
+    // Reset redirect lock once app is ready
+    hasRedirectedToLoadingRef.current = false;
+  }, [hasHydrated, status, isAppLoadingPage, router]);
 
   // Onboarding Redirect Logic
   useEffect(() => {
-    if (!hasHydrated) return;
-    if (status) {
-      // If needs setup and not on onboarding page, redirect to onboarding
-      if (status.needs_setup) {
-        if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
-          router.replace("/onboarding");
-        }
-      } else if (!status.needs_setup) {
-        // If does not need setup and on onboarding page, redirect to home
-        if (isOnboardingPage) {
-          router.replace("/");
-        }
+    if (!hasHydrated || !status) return;
+
+    // Skip onboarding redirects while app is still loading
+    if (status.app_fully_loaded === false) {
+      if (!isAppLoadingPage && !hasRedirectedToLoadingRef.current) {
+        router.replace("/app-loading");
+      }
+      return;
+    }
+
+    // If needs setup and not on onboarding page, redirect to onboarding
+    if (status.needs_setup) {
+      if (!isOnboardingPage && !isLogsPage && !isChangeLogPage) {
+        router.replace("/onboarding");
+      }
+    } else {
+      // If does not need setup and on onboarding page, redirect to home
+      if (isOnboardingPage) {
+        router.replace("/");
       }
     }
-  }, [status, pathName, router, hasHydrated, isOnboardingPage, isLogsPage, isChangeLogPage]);
+  }, [status, pathName, router, hasHydrated, isOnboardingPage, isLogsPage, isChangeLogPage, isAppLoadingPage]);
 
   // Change isWideScreen on window resize
   useEffect(() => {
