@@ -25,6 +25,33 @@ const boolBadge = (val: boolean | undefined, invert = false) => {
   );
 };
 
+const STEP_BADGE_STYLES: Record<string, string> = {
+  "Initializing Application": "bg-amber-500 text-white",
+  "Bootstrapping Application": "bg-sky-500 text-white",
+  "Setting UMask for File Permissions": "bg-cyan-500 text-white",
+  "Loading Configuration": "bg-blue-500 text-white",
+  "Validating Configuration": "bg-violet-500 text-white",
+  "Performing Pre-Flight Checks": "bg-purple-500 text-white",
+  "Validating Media Server Connection": "bg-fuchsia-500 text-white",
+  "Retrieving Media Server Admin User": "bg-pink-500 text-white",
+  "Validating MediUX Token": "bg-rose-500 text-white",
+  "Warming Up Application": "bg-indigo-500 text-white",
+  "Preloading MediUX Users into Cache": "bg-teal-500 text-white",
+  "Preloading MediUX Items with Sets into Cache": "bg-emerald-500 text-white",
+  "Initializing Database": "bg-lime-500 text-black",
+  "Running Database Migrations": "bg-yellow-500 text-black",
+  "Preloading Media Server Data into Cache": "bg-orange-500 text-white",
+  "Optimizing Database": "bg-red-500 text-white",
+  "Starting Background Jobs": "bg-slate-600 text-white",
+  "Checking MediUX Site Link Availability": "bg-zinc-600 text-white",
+  "App Fully Loaded": "bg-green-600 text-white",
+};
+
+const getStepBadgeClass = (step?: string) => {
+  if (!step) return "bg-gray-500 text-white";
+  return STEP_BADGE_STYLES[step] ?? "bg-gray-500 text-white";
+};
+
 const POLL_INTERVAL_SECONDS = 3;
 const POLL_INTERVAL_MS = POLL_INTERVAL_SECONDS * 1000;
 
@@ -169,22 +196,7 @@ const AppStatusPage: React.FC = () => {
                 <tr>
                   <td className="py-3 px-4 font-medium text-muted-foreground">Current Step</td>
                   <td className="py-3 px-4 text-right">
-                    <Badge
-                      className={cn(
-                        "ml-2",
-                        status?.app_loading_step === "Initializing Application"
-                          ? "bg-yellow-500 text-white"
-                          : status?.app_loading_step === "Bootstrapping Application"
-                            ? "bg-blue-500 text-white"
-                            : status?.app_loading_step === "Performing Pre-Flight Checks"
-                              ? "bg-purple-500 text-white"
-                              : status?.app_loading_step === "Warming Up Application"
-                                ? "bg-indigo-500 text-white"
-                                : status?.app_loading_step === "App Fully Loaded"
-                                  ? "bg-green-500 text-white"
-                                  : "bg-gray-500 text-white"
-                      )}
-                    >
+                    <Badge className={cn("ml-2", getStepBadgeClass(status?.app_loading_step))}>
                       {status?.app_loading_step || "N/A"}
                     </Badge>
                   </td>
