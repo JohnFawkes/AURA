@@ -43,15 +43,6 @@ func AddRoutes(r *chi.Mux) {
 		logging.LOGGER.Info().Timestamp().Msg("Configuration loaded and valid, adding full routes")
 	}
 
-	// Initialize Token Auth
-	secret, Err := routes_auth.GetTokenAuthSecret()
-	if Err.Message != "" {
-		logging.LOGGER.Error().Timestamp().Msg("Failed to get JWT Token Auth Secret: " + Err.Message)
-	} else {
-		routes_auth.SetTokenAuth(jwtauth.New("HS256", []byte(secret), nil))
-		logging.LOGGER.Info().Timestamp().Msg("JWT Token Auth initialized successfully")
-	}
-
 	// Swagger Docs Route
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 

@@ -1,11 +1,14 @@
 package routing
 
 import (
+	"aura/logging"
+	routes_auth "aura/routing/auth"
 	routes_base "aura/routing/base"
 	"aura/routing/middleware"
 	"sync"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 // OnboardingComplete can be set by main to perform:
@@ -24,6 +27,15 @@ func NewRouter() *chi.Mux {
 
 	// Configure the router with middlewares
 	middleware.Configure(r)
+
+	// Initialize Token Auth
+	secret, Err := routes_auth.GetTokenAuthSecret()
+	if Err.Message != "" {
+		logging.LOGGER.Error().Timestamp().Msg("Failed to get JWT Token Auth Secret: " + Err.Message)
+	} else {
+		routes_auth.SetTokenAuth(jwtauth.New("HS256", []byte(secret), nil))
+		logging.LOGGER.Info().Timestamp().Msg("JWT Token Auth initialized successfully")
+	}
 
 	// Add the routes to the router
 	AddRoutes(r)
