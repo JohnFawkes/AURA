@@ -247,7 +247,7 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 	u.Path = path.Join(u.Path, "Shows", showRatingKey, "Episodes")
 	query := u.Query()
 	query.Set("SeasonId", season.RatingKey)
-	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks,DateCreated")
+	query.Set("Fields", "ID,Name,IndexNumber,ParentIndexNumber,Path,Size,RunTimeTicks,DateCreated,MediaSources")
 	u.RawQuery = query.Encode()
 	URL := u.String()
 
@@ -274,7 +274,7 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 			AddedAt:       episode.DateCreated.Unix(),
 			File: models.MediaItemFile{
 				Path:     episode.Path,
-				Size:     episode.Size,
+				Size:     episode.MediaSources[0].Size,
 				Duration: episode.RunTimeTicks / 10000,
 			},
 		}
