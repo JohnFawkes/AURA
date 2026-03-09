@@ -32,6 +32,7 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return found, *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -75,6 +76,7 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 	// Make the HTTP Request to EJ for section path
 	resp, respBody, Err = makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return found, *logAction.Error
 	}
 	defer resp.Body.Close()

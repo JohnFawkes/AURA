@@ -140,6 +140,7 @@ func updateImageIndex(ctx context.Context, item *models.MediaItem, image EmbyJel
 	// Make the HTTP Request to EJ
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "POST", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()
