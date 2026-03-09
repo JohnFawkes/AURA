@@ -27,6 +27,7 @@ export interface AppConfigMediaServer {
   api_token: string; // Authentication token for accessing the media server
   libraries: AppConfigMediaServerLibrary[]; // List of media server libraries to manage
   user_id?: string; // User ID for accessing the media server (optional for Emby/Jellyfin)
+  enable_sort_by_episode_added_date?: boolean; // Whether to enable sorting shows by latest episode added date (Plex only)
 }
 export interface AppConfigMediaServerLibrary {
   title: string; // Name of the library

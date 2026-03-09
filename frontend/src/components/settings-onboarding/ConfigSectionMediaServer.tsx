@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/cn";
 
@@ -653,6 +654,37 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
         </div>
         {errors.libraries && <p className="text-xs text-red-500">{errors.libraries}</p>}
       </div>
+
+      {/* Enable Sort by Episode Added Date */}
+      {value.type === "Plex" && (
+        <div
+          className={cn(
+            "flex items-center justify-between border rounded-md p-3 transition",
+            "border-muted",
+            dirtyFields.enable_sort_by_episode_added_date && "border-amber-500"
+          )}
+        >
+          <Label>Enable "Sort by Episode Added Date"</Label>
+          <div className="flex items-center gap-2">
+            <Switch
+              disabled={!editing}
+              checked={value.enable_sort_by_episode_added_date}
+              onCheckedChange={(c) => onChange("enable_sort_by_episode_added_date", c)}
+            />
+            {editing && (
+              <PopoverHelp ariaLabel="help-sort-new-episode">
+                <p className="mb-2">
+                  When enabled, the <b>New Episode Added</b> sort option will be available on the Home page.
+                </p>
+                <p className="text-muted-foreground">
+                  This option requires an extra request to your media server to fetch the latest episode dates for all
+                  shows. Disabling it can significantly speed up initial page loading for large libraries.
+                </p>
+              </PopoverHelp>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

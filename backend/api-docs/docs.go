@@ -3255,6 +3255,10 @@ const docTemplate = `{
                     "description": "Authentication token for accessing the media server.",
                     "type": "string"
                 },
+                "enable_sort_by_episode_added_date": {
+                    "description": "Whether to check episodes for added date when getting Media Items. This is only for Plex servers.",
+                    "type": "boolean"
+                },
                 "libraries": {
                     "description": "List of media server libraries to manage.",
                     "type": "array",

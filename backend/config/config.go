@@ -43,11 +43,12 @@ type Config_Logging struct {
 }
 
 type Config_MediaServer struct {
-	Type      string                  `json:"type" yaml:"Type"`                               // Type of media server (e.g., plex, emby, jellyfin).
-	URL       string                  `json:"url" yaml:"URL"`                                 // Base URL of the media server. This is either the IP:Port or the domain name (e.g., plex.domain.com).
-	ApiToken  string                  `json:"api_token" yaml:"ApiToken"`                      // Authentication token for accessing the media server.
-	Libraries []models.LibrarySection `json:"libraries,omitempty" yaml:"Libraries,omitempty"` // List of media server libraries to manage.
-	UserID    string                  `json:"user_id,omitempty" yaml:"UserID,omitempty"`      // User ID for accessing the media server. This is used for Emby and Jellyfin servers.
+	Type                         string                  `json:"type" yaml:"Type"`                                                      // Type of media server (e.g., plex, emby, jellyfin).
+	URL                          string                  `json:"url" yaml:"URL"`                                                        // Base URL of the media server. This is either the IP:Port or the domain name (e.g., plex.domain.com).
+	ApiToken                     string                  `json:"api_token" yaml:"ApiToken"`                                             // Authentication token for accessing the media server.
+	Libraries                    []models.LibrarySection `json:"libraries,omitempty" yaml:"Libraries,omitempty"`                        // List of media server libraries to manage.
+	UserID                       string                  `json:"user_id,omitempty" yaml:"UserID,omitempty"`                             // User ID for accessing the media server. This is used for Emby and Jellyfin servers.
+	EnableSortByEpisodeAddedDate bool                    `json:"enable_sort_by_episode_added_date" yaml:"EnableSortByEpisodeAddedDate"` // Whether to check episodes for added date when getting Media Items. This is only for Plex servers.
 }
 
 type Config_Mediux struct {

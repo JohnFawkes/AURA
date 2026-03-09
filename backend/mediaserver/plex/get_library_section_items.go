@@ -163,16 +163,16 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 	}
 
 	// For show sections, bulk-fetch all episodes to compute LatestEpisodeAddedAt per show.
-	// if section.Type == "show" {
-	// 	latestEpAdded, fetchErr := fetchLatestEpisodeAddedAtByShow(ctx, section.ID)
-	// 	if fetchErr.Message != "" {
-	// 		logAction.AppendWarning("latest_episode_added_at", "Failed to bulk-fetch latest episode addedAt for shows")
-	// 	} else {
-	// 		for i := range items {
-	// 			items[i].LatestEpisodeAddedAt = latestEpAdded[items[i].RatingKey]
-	// 		}
-	// 	}
-	// }
+	if section.Type == "show" && config.Current.MediaServer.EnableSortByEpisodeAddedDate {
+		latestEpAdded, fetchErr := fetchLatestEpisodeAddedAtByShow(ctx, section.ID)
+		if fetchErr.Message != "" {
+			logAction.AppendWarning("latest_episode_added_at", "Failed to bulk-fetch latest episode addedAt for shows")
+		} else {
+			for i := range items {
+				items[i].LatestEpisodeAddedAt = latestEpAdded[items[i].RatingKey]
+			}
+		}
+	}
 
 	return items, totalSize, logging.LogErrorInfo{}
 }
