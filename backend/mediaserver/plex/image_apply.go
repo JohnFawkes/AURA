@@ -32,7 +32,7 @@ func applyImageToMediaItemViaMediuxURL(ctx context.Context, item *models.MediaIt
 	}
 
 	// Refresh the Plex Item
-	RefreshItemMetadata(ctx, item, itemRatingKey, false)
+	//RefreshItemMetadata(ctx, item, itemRatingKey, false)
 
 	// Set the Poster using the MediUX URL
 	Err = applyImageToMediaItem(ctx, item, itemRatingKey, imageURL, imageFile.Type)
