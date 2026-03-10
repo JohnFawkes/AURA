@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 )
 
@@ -217,6 +218,13 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 	for _, item := range ejResp.Items {
 		var itemInfo models.MediaItem
 
+		// If the item type is "show", skip it since we only want movies in the BoxSet collections
+		showTypes := []string{"show", "series", "season", "episode"}
+		if slices.ContainsFunc(showTypes, func(str string) bool { return strings.EqualFold(str, item.Type) }) {
+			logAction.AppendWarning("message", fmt.Sprintf("Skipping item '%s' in BoxSet Collection '%s' because it is of type '%s'", item.Name, collectionName, item.Type))
+			continue
+		}
+
 		// Get the item path
 		itemPath := item.Path
 		if itemPath == "" {
@@ -240,10 +248,7 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 		}
 
 		itemInfo.RatingKey = item.ID
-		itemInfo.Type = map[string]string{
-			"Movie":  "movie",
-			"Series": "show",
-		}[item.Type]
+		itemInfo.Type = map[string]string{"Movie": "movie"}[item.Type]
 
 		itemInfo.Title = item.Name
 		itemInfo.Year = item.ProductionYear
