@@ -101,7 +101,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   useEffect(() => {
     if (!hasHydrated || !status) return;
 
-    if (status.app_fully_loaded === false) {
+    if (status.app_fully_loaded === false && status.needs_setup === false) {
       if (!isAppLoadingPage) {
         hasRedirectedToLoadingRef.current = true;
         router.replace("/app-loading");
@@ -118,7 +118,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
     if (!hasHydrated || !status) return;
 
     // Skip onboarding redirects while app is still loading
-    if (status.app_fully_loaded === false) {
+    if (status.app_fully_loaded === false && status.needs_setup === false) {
       if (!isAppLoadingPage && !hasRedirectedToLoadingRef.current) {
         router.replace("/app-loading");
       }
