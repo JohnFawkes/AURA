@@ -7,6 +7,7 @@ import type { MediaItem } from "@/types/media-and-posters/media-item-and-library
 import type { PaginationStore, SortStore } from "@/types/store-interfaces";
 import type {
   TYPE_FILTER_IGNORED_OPTIONS,
+  TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS,
   TYPE_ITEMS_PER_PAGE_OPTIONS,
   TYPE_SORT_ORDER_OPTIONS,
 } from "@/types/ui-options";
@@ -25,6 +26,8 @@ interface Home_PageStore
   setFilterInDB: (filter: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS) => void;
   filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
   setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
+  hasSetsAvailableFilter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS;
+  setHasSetsAvailableFilter: (filter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS) => void;
 
   getAdjacentMediaItem: (currentRatingKey: string, direction: Direction) => MediaItem | null;
 
@@ -67,6 +70,9 @@ export const useHomePageStore = create<Home_PageStore>()(
       filterIgnored: "",
       setFilterIgnored: (ignored) => set({ filterIgnored: ignored }),
 
+      hasSetsAvailableFilter: "",
+      setHasSetsAvailableFilter: (filter) => set({ hasSetsAvailableFilter: filter }),
+
       /**
        * Retrieves adjacent media item (wrap-around) from the Home page store's
        * filteredAndSortedMediaItems array.
@@ -105,6 +111,7 @@ export const useHomePageStore = create<Home_PageStore>()(
           filteredLibraries: [],
           filterInDB: "",
           filterIgnored: "",
+          hasSetsAvailableFilter: "",
           previousMediaItem: null,
           nextMediaItem: null,
           hasHydrated: false,
@@ -122,6 +129,7 @@ export const useHomePageStore = create<Home_PageStore>()(
         filteredLibraries: state.filteredLibraries,
         filterInDB: state.filterInDB,
         filterIgnored: state.filterIgnored,
+        hasSetsAvailableFilter: state.hasSetsAvailableFilter,
         previousMediaItem: state.previousMediaItem,
         nextMediaItem: state.nextMediaItem,
       }),

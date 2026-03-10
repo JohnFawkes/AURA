@@ -38,6 +38,16 @@ export const HOME_PAGE_FILTER_IN_DB_OPTIONS: {
   { value: "inDB", label: "In Database" },
 ];
 
+// Has Sets Available Filter Options (Home Page)
+export type TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS = "" | "hasSetsAvailable" | "noSetsAvailable";
+export const HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS: {
+  value: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS;
+  label: string;
+}[] = [
+  { value: "hasSetsAvailable", label: "Has Sets Available" },
+  { value: "noSetsAvailable", label: "No Sets Available" },
+];
+
 // In Database Filter Options (User Page) - includes "otherSetInDB" to filter items that are in the database but only in other sets, not the current set
 export type TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS = TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS | "otherSetInDB";
 export const USER_PAGE_FILTER_IN_DB_OPTIONS: {

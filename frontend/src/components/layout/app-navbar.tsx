@@ -69,7 +69,8 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const { setSearchQuery } = useSearchQueryStore(); // Global store for search query
 
   // Home Page Store
-  const { setCurrentPage, setFilteredLibraries, setFilterInDB, setFilterIgnored } = useHomePageStore();
+  const { setCurrentPage, setFilteredLibraries, setFilterInDB, setFilterIgnored, setHasSetsAvailableFilter } =
+    useHomePageStore();
   const nextMediaItem = useHomePageStore((state) => state.nextMediaItem);
   const previousMediaItem = useHomePageStore((state) => state.previousMediaItem);
 
@@ -181,6 +182,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
       setFilteredLibraries([]);
       setFilterInDB("");
       setFilterIgnored("");
+      setHasSetsAvailableFilter("");
     }
     router.push("/");
   };

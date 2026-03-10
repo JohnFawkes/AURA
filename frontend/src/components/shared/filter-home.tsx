@@ -28,6 +28,7 @@ import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 import type { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
 import type {
   TYPE_FILTER_IGNORED_OPTIONS,
+  TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS,
   TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS,
   TYPE_ITEMS_PER_PAGE_OPTIONS,
 } from "@/types/ui-options";
@@ -42,6 +43,8 @@ type HomeFilterProps = {
   setFilterInDB: (filter: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS) => void;
   filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
   setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
+  hasSetsAvailableFilter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS;
+  setHasSetsAvailableFilter: (filter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS) => void;
 
   // Sorting
   hasUpdatedAt: boolean;
@@ -65,6 +68,8 @@ function FilterHomeContent({
   setFilterInDB,
   filterIgnored,
   setFilterIgnored,
+  hasSetsAvailableFilter,
+  setHasSetsAvailableFilter,
 
   hasUpdatedAt,
   hasEpisodeAddedAt,
@@ -321,6 +326,50 @@ function FilterHomeContent({
               </Badge>
             ))}
           </ToggleGroup>
+
+          <Separator className="my-4 w-full" />
+
+          {/* Has Sets Available Filter */}
+          <Label className="text-md font-semibold mb-1">Has Sets Available Filter</Label>
+          <ToggleGroup
+            type="single"
+            className="flex flex-wrap gap-2 ml-2"
+            value={hasSetsAvailableFilter}
+            onValueChange={(value) => {
+              if (value) {
+                setHasSetsAvailableFilter(value as TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS);
+              }
+            }}
+          >
+            {[
+              { value: "hasSetsAvailable", label: "Has Sets Available" },
+              { value: "noSetsAvailable", label: "No Sets Available" },
+            ].map((option) => (
+              <Badge
+                key={option.value}
+                className={cn(
+                  "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                  hasSetsAvailableFilter === option.value &&
+                    option.value === "hasSetsAvailable" &&
+                    "bg-green-500 text-primary-foreground",
+                  hasSetsAvailableFilter === option.value &&
+                    option.value === "noSetsAvailable" &&
+                    "bg-red-500 text-primary-foreground"
+                )}
+                variant={hasSetsAvailableFilter === option.value ? "default" : "outline"}
+                onClick={() => {
+                  if (hasSetsAvailableFilter === option.value) {
+                    setHasSetsAvailableFilter("");
+                  } else {
+                    setHasSetsAvailableFilter(option.value as TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS);
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </ToggleGroup>
         </div>
       </div>
     </div>
@@ -335,6 +384,8 @@ export function FilterHome({
   setFilterInDB,
   filterIgnored,
   setFilterIgnored,
+  hasSetsAvailableFilter,
+  setHasSetsAvailableFilter,
 
   hasUpdatedAt,
   hasEpisodeAddedAt,
@@ -355,8 +406,10 @@ export function FilterHome({
     let count = 0;
     if (filteredLibraries.length > 0) count++;
     if (filterInDB !== "") count++;
+    if (filterIgnored !== "") count++;
+    if (hasSetsAvailableFilter !== "") count++;
     return count;
-  }, [filteredLibraries, filterInDB]);
+  }, [filteredLibraries.length, filterInDB, filterIgnored, hasSetsAvailableFilter]);
 
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -383,6 +436,8 @@ export function FilterHome({
           setFilterInDB={setFilterInDB}
           filterIgnored={filterIgnored}
           setFilterIgnored={setFilterIgnored}
+          hasSetsAvailableFilter={hasSetsAvailableFilter}
+          setHasSetsAvailableFilter={setHasSetsAvailableFilter}
           hasUpdatedAt={hasUpdatedAt}
           hasEpisodeAddedAt={hasEpisodeAddedAt}
           sortOption={sortOption}

@@ -56,6 +56,8 @@ export default function Home() {
     setFilterInDB,
     filterIgnored,
     setFilterIgnored,
+    hasSetsAvailableFilter,
+    setHasSetsAvailableFilter,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -285,6 +287,13 @@ export default function Home() {
         items = items.filter((item) => !item.ignored_in_db);
       }
 
+      // Filter by sets availability
+      if (hasSetsAvailableFilter === "hasSetsAvailable") {
+        items = items.filter((item) => item.has_mediux_sets);
+      } else if (hasSetsAvailableFilter === "noSetsAvailable") {
+        items = items.filter((item) => !item.has_mediux_sets);
+      }
+
       // Filter out items by search
       const filteredItems = searchItems(items, searchQuery, {
         getTitle: (item) => item.title,
@@ -292,6 +301,8 @@ export default function Home() {
         getLibraryTitle: (item) => item.library_title,
         getID: (item) => item.tmdb_id || item.rating_key,
       });
+
+      console.warn("Filtered Items:", filteredItems);
 
       // Store the filtered items in local storage
       setFilteredAndSortedMediaItems(filteredItems);
@@ -306,6 +317,7 @@ export default function Home() {
     filterIgnored,
     sortOption,
     sortOrder,
+    hasSetsAvailableFilter,
   ]);
 
   if (error) {
@@ -387,6 +399,8 @@ export default function Home() {
               setFilterInDB={setFilterInDB}
               filterIgnored={filterIgnored}
               setFilterIgnored={setFilterIgnored}
+              hasSetsAvailableFilter={hasSetsAvailableFilter}
+              setHasSetsAvailableFilter={setHasSetsAvailableFilter}
               hasUpdatedAt={hasUpdatedAt}
               hasEpisodeAddedAt={hasEpisodeAddedAt}
               sortOption={sortOption}
