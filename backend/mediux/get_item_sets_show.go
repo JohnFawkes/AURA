@@ -73,6 +73,7 @@ func GetShowItemSets(ctx context.Context, tmdbID string, itemLibraryTitle string
 	mediuxShow := showSetsResponse.Data.Show
 
 	// If no show sets, return
+	logAction.AppendResult("sets_found", len(mediuxShow.Sets))
 	if len(mediuxShow.Sets) == 0 {
 		logAction.SetError("Show sets not found in the response", "Ensure the TMDB ID is correct and the show has sets in the MediUX database.",
 			map[string]any{
@@ -128,6 +129,6 @@ func GetShowItemSets(ctx context.Context, tmdbID string, itemLibraryTitle string
 		}
 		sets = append(sets, setRef)
 	}
-
+	logAction.AppendResult("sets_returned", len(sets))
 	return sets, includedItems, Err
 }

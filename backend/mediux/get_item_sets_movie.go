@@ -68,6 +68,7 @@ func GetMovieItemSets(ctx context.Context, tmdbID string, itemLibraryTitle strin
 	}
 
 	mediuxMovie := movieSetsResponse.Data.Movie
+	logAction.AppendResult("sets_found", len(mediuxMovie.Sets))
 
 	// If no movie sets, return
 	if len(mediuxMovie.Sets) == 0 {
@@ -122,6 +123,6 @@ func GetMovieItemSets(ctx context.Context, tmdbID string, itemLibraryTitle strin
 		}
 		sets = append(sets, setRef)
 	}
-
+	logAction.AppendResult("sets_returned", len(sets))
 	return sets, Err
 }

@@ -78,6 +78,7 @@ func GetMovieItemCollectionSets(ctx context.Context, tmdbID string, itemLibraryT
 		return sets, *logAction.Error
 	}
 
+	logAction.AppendResult("collections_found", len(movieCollectionSetsResponse.Data.Base.Collection.Movies))
 	// If no collection sets, return
 	if len(movieCollectionSetsResponse.Data.Base.Collection.Movies) == 0 {
 		return sets, Err
@@ -178,6 +179,6 @@ func GetMovieItemCollectionSets(ctx context.Context, tmdbID string, itemLibraryT
 			})
 		}
 	}
-
+	logAction.AppendResult("collections_returned", len(sets))
 	return sets, Err
 }
