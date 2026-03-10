@@ -1,3 +1,12 @@
+## [0.9.87] - 2026-03-10
+
+### Fixed
+
+- Fixed issue where backdrop and poster images were not being downloaded because of the batch processing changes. This was due to the download happening too quickly and the media server not having enough time to update the images before the next download was attempted. This has been fixed by splitting the batch processing into 3 steps: first it will download the posters, then the backdrops, and finally the season posters and titlecards. This allows the media server to update the images properly before the next download is attempted.
+- Fixed issue where Jellyfin/Emby Boxsets/Collections that contained shows were being duplicated on the Home Page. This was due to the way the media server was returning the items in the set. This has been fixed by removing any shows/seasons/episodes from the Boxset/Collection item.
+
+---
+
 ## [0.9.86] - 2026-03-09
 
 ### Added
