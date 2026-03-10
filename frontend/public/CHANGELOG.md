@@ -1,3 +1,12 @@
+## [0.9.86] - 2026-03-09
+
+### Added
+
+- New batch processing for downloads to improve performance when downloading large sets of images.
+- Added new Filter option for Home page that allows you to filter out Media Items that have no sets available for them. This is to help users who have large libraries and want to focus on items that have sets available.
+
+---
+
 ## [0.9.85] - 2026-03-09
 
 ### Added
