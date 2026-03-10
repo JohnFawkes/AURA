@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDownloadSize } from "@/helper/format-download-size";
+import { makePlural } from "@/helper/make_plural";
 import { upsertSavedSets } from "@/helper/media-item-update-saved-sets";
 import { AddNewItemToDB } from "@/services/database/add";
 import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
@@ -146,13 +147,21 @@ const getOverallCounts = (state: DownloadProgress) => {
   // Notes shouldn't affect progress totals
   const relevant = allTasks.filter((t) => t.payload.kind !== "note");
 
-  // Treat skipped as "done" so we always end at 100%
-  const done = relevant.filter(
-    (t) => t.status === "completed" || t.status === "failed" || t.status === "skipped"
-  ).length;
+  const skipped = relevant.filter((t) => t.status === "skipped").length;
+  const done = relevant.filter((t) => t.status === "completed" || t.status === "failed").length;
 
-  // Use the planned total when present; fallback for safety
-  const total = Math.max(1, state.totalPlanned || relevant.length || 1);
+  // Remove skipped tasks from the effective total so progress doesn't jump early.
+  const planned = state.totalPlanned || relevant.length || 0;
+  const total = Math.max(0, planned - skipped);
+
+  // If every relevant task is skipped, treat the run as fully resolved.
+  if (total === 0 && relevant.length > 0) {
+    return { done: 1, total: 1 };
+  }
+
+  if (total === 0) {
+    return { done: 0, total: 1 };
+  }
 
   return { done, total };
 };
@@ -173,7 +182,7 @@ const getErrorsByItem = (state: DownloadProgress) =>
     }))
     .filter((x) => x.errors.length > 0);
 
-const DOWNLOAD_BATCH_SIZE = 10;
+const DOWNLOAD_BATCH_SIZE = 5;
 
 const formSchema = z
   .object({
@@ -1534,21 +1543,66 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           }
         }
 
-        let completedForItem = 0;
         const totalForItem = downloadJobs.length;
-
         if (totalForItem > 0) {
           setCurrentText(`Downloading images for "${item.MediaItem.title}" (0/${totalForItem})`);
         }
 
-        const downloadResults = await runInBatches(downloadJobs, DOWNLOAD_BATCH_SIZE, async (job) => {
-          if (cancelRef.current) return false;
+        // Split poster and backdrop into separate batches, then process the rest
+        const posterJobs = downloadJobs.filter((j) => j.payload.imageFile.type === "poster");
+        const backdropJobs = downloadJobs.filter((j) => j.payload.imageFile.type === "backdrop");
+        const otherJobs = downloadJobs.filter(
+          (j) => j.payload.imageFile.type !== "poster" && j.payload.imageFile.type !== "backdrop"
+        );
 
-          const ok = await runDownloadTask(job.taskId, job.payload);
-          completedForItem += 1;
-          setCurrentText(`Downloading images for "${item.MediaItem.title}" (${completedForItem}/${totalForItem})`);
-          return ok;
-        });
+        let downloadResults: boolean[] = [];
+        let posterDone = 0;
+        let backdropDone = 0;
+        let otherDone = 0;
+
+        if (posterJobs.length > 0) {
+          setCurrentText(
+            `Downloading ${makePlural(posterJobs, "poster")} for "${item.MediaItem.title}" (0/${posterJobs.length})`
+          );
+          const posterResults = await runInBatches(posterJobs, DOWNLOAD_BATCH_SIZE, async (job) => {
+            if (cancelRef.current) return false;
+            const ok = await runDownloadTask(job.taskId, job.payload);
+            posterDone += 1;
+            setCurrentText(
+              `Downloading ${makePlural(posterJobs, "poster")} for "${item.MediaItem.title}" (${posterDone}/${posterJobs.length})`
+            );
+            return ok;
+          });
+          downloadResults = downloadResults.concat(posterResults);
+        }
+
+        if (backdropJobs.length > 0) {
+          setCurrentText(
+            `Downloading ${makePlural(backdropJobs, "backdrop")} for "${item.MediaItem.title}" (0/${backdropJobs.length})`
+          );
+          const backdropResults = await runInBatches(backdropJobs, DOWNLOAD_BATCH_SIZE, async (job) => {
+            if (cancelRef.current) return false;
+            const ok = await runDownloadTask(job.taskId, job.payload);
+            backdropDone += 1;
+            setCurrentText(
+              `Downloading ${makePlural(backdropJobs, "backdrop")} for "${item.MediaItem.title}" (${backdropDone}/${backdropJobs.length})`
+            );
+            return ok;
+          });
+          downloadResults = downloadResults.concat(backdropResults);
+        }
+
+        if (otherJobs.length > 0) {
+          setCurrentText(`Downloading images for "${item.MediaItem.title}" (0/${otherJobs.length})`);
+          const otherResults = await runInBatches(otherJobs, DOWNLOAD_BATCH_SIZE, async (job) => {
+            if (cancelRef.current) return false;
+            const ok = await runDownloadTask(job.taskId, job.payload);
+            otherDone += 1;
+            setCurrentText(`Downloading images for "${item.MediaItem.title}" (${otherDone}/${otherJobs.length})`);
+            return ok;
+          });
+          downloadResults = downloadResults.concat(otherResults);
+        }
 
         const downloadedAtLeastOneForItem = downloadResults.some(Boolean);
 
