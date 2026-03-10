@@ -173,6 +173,8 @@ const getErrorsByItem = (state: DownloadProgress) =>
     }))
     .filter((x) => x.errors.length > 0);
 
+const DOWNLOAD_BATCH_SIZE = 10;
+
 const formSchema = z
   .object({
     selectedOptionsByItem: z.record(
@@ -661,7 +663,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       attempts: (t.attempts ?? 0) + 1,
       error: undefined,
     }));
-    setCurrentText(`Downloading ${payload.fileName} for "${payload.itemTitle}"`);
 
     try {
       const response = await downloadImageFileForMediaItem(payload.imageFile, payload.mediaItem, payload.fileName);
@@ -747,6 +748,27 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     }
 
     setButtonTexts((prev) => ({ ...prev, download: "Download Again" }));
+  };
+
+  const runInBatches = async <T,>(
+    jobs: T[],
+    batchSize: number,
+    worker: (job: T) => Promise<boolean>
+  ): Promise<boolean[]> => {
+    const results: boolean[] = [];
+
+    for (let i = 0; i < jobs.length; i += batchSize) {
+      if (cancelRef.current) break;
+
+      const batch = jobs.slice(i, i + batchSize);
+      const settled = await Promise.allSettled(batch.map((job) => worker(job)));
+
+      for (const entry of settled) {
+        results.push(entry.status === "fulfilled" ? entry.value : false);
+      }
+    }
+
+    return results;
   };
 
   const renderFormItemAssetType = (
@@ -1166,6 +1188,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     if (isMounted) return;
     cancelRef.current = false;
 
+    const startTime = Date.now();
+
     try {
       setIsMounted(true);
       setButtonTexts({
@@ -1333,49 +1357,85 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           continue;
         }
 
-        // Track whether THIS item had at least one successful download
-        let downloadedAtLeastOneForItem = false;
+        type DownloadJob = {
+          taskId: string;
+          payload: DownloadTaskPayload;
+        };
+
+        const downloadJobs: DownloadJob[] = [];
 
         for (const type of selectedTypes) {
           if (cancelRef.current) return; // Exit if cancelled
           switch (type) {
             case "poster": {
               const posterImg = item.Set.images.find((img) => img.type === "poster");
-              if (posterImg) {
-                const taskId = newId();
-                const payload: DownloadTaskPayload = {
-                  kind: "download",
-                  itemKey: item.MediaItem.rating_key,
-                  itemTitle: item.MediaItem.title,
-                  imageFile: posterImg,
-                  fileName: "Poster",
-                  mediaItem: latestMediaItem,
-                };
+              if (!posterImg) break;
 
-                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-                  id: taskId,
-                  status: "pending",
-                  label: payload.fileName,
-                  attempts: 0,
-                  payload,
-                });
+              const taskId = newId();
+              const payload: DownloadTaskPayload = {
+                kind: "download",
+                itemKey: item.MediaItem.rating_key,
+                itemTitle: item.MediaItem.title,
+                imageFile: posterImg,
+                fileName: "Poster",
+                mediaItem: latestMediaItem,
+              };
 
-                const okPoster = await runDownloadTask(taskId, payload);
-                downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okPoster;
-              }
+              addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                id: taskId,
+                status: "pending",
+                label: payload.fileName,
+                attempts: 0,
+                payload,
+              });
+              downloadJobs.push({ taskId, payload });
               break;
             }
 
             case "backdrop": {
               const backdropImg = item.Set.images.find((img) => img.type === "backdrop");
-              if (backdropImg) {
+              if (!backdropImg) break;
+
+              const taskId = newId();
+              const payload: DownloadTaskPayload = {
+                kind: "download",
+                itemKey: item.MediaItem.rating_key,
+                itemTitle: item.MediaItem.title,
+                imageFile: backdropImg,
+                fileName: "Backdrop",
+                mediaItem: latestMediaItem,
+              };
+
+              addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                id: taskId,
+                status: "pending",
+                label: payload.fileName,
+                attempts: 0,
+                payload,
+              });
+              downloadJobs.push({ taskId, payload });
+              break;
+            }
+
+            case "season_poster": {
+              const seasonPosters = item.Set.images
+                .filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
+                .sort((a, b) => {
+                  if (a.season_number! < b.season_number!) return -1;
+                  if (a.season_number! > b.season_number!) return 1;
+                  return 0;
+                });
+
+              for (const sp of seasonPosters) {
+                const seasonNumber = sp.season_number!;
+                const exists = latestMediaItem.series?.seasons.some((season) => season.season_number === seasonNumber);
                 const taskId = newId();
                 const payload: DownloadTaskPayload = {
                   kind: "download",
                   itemKey: item.MediaItem.rating_key,
                   itemTitle: item.MediaItem.title,
-                  imageFile: backdropImg,
-                  fileName: "Backdrop",
+                  imageFile: sp,
+                  fileName: `Season ${seasonNumber} Poster`,
                   mediaItem: latestMediaItem,
                 };
 
@@ -1387,144 +1447,110 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                   payload,
                 });
 
-                const okBackdrop = await runDownloadTask(taskId, payload);
-                downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okBackdrop;
-              }
-              break;
-            }
-
-            case "season_poster": {
-              if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number !== 0)) {
-                const seasonPosters = item.Set.images
-                  .filter((sp) => sp.type === "season_poster" && sp.season_number !== 0)
-                  .sort((a, b) => {
-                    if (a.season_number! < b.season_number!) return -1;
-                    if (a.season_number! > b.season_number!) return 1;
-                    return 0;
-                  });
-
-                for (const sp of seasonPosters) {
-                  const seasonNumber = sp.season_number!;
-                  const exists = latestMediaItem.series?.seasons.some(
-                    (season) => season.season_number === seasonNumber
-                  );
-                  const taskId = newId();
-                  const payload: DownloadTaskPayload = {
-                    kind: "download",
-                    itemKey: item.MediaItem.rating_key,
-                    itemTitle: item.MediaItem.title,
-                    imageFile: sp,
-                    fileName: `Season ${seasonNumber} Poster`,
-                    mediaItem: latestMediaItem,
-                  };
-
-                  addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-                    id: taskId,
-                    status: "pending",
-                    label: payload.fileName,
-                    attempts: 0,
-                    payload,
-                  });
-
-                  if (!exists) {
-                    updateTask(taskId, (t) => ({
-                      ...t,
-                      status: "skipped",
-                    }));
-                    continue;
-                  }
-
-                  const okSeasonPoster = await runDownloadTask(taskId, payload);
-                  downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSeasonPoster;
+                if (!exists) {
+                  updateTask(taskId, (t) => ({ ...t, status: "skipped" }));
+                  continue;
                 }
+
+                downloadJobs.push({ taskId, payload });
               }
               break;
             }
+
             case "special_season_poster": {
-              if (item.Set.images.some((sp) => sp.type === "season_poster" && sp.season_number === 0)) {
-                const specialSeasonPosters = item.Set.images.filter(
-                  (sp) => sp.type === "season_poster" && sp.season_number === 0
-                );
+              const specialSeasonPosters = item.Set.images.filter(
+                (sp) => sp.type === "season_poster" && sp.season_number === 0
+              );
 
-                for (const sp of specialSeasonPosters) {
-                  const taskId = newId();
-                  const payload: DownloadTaskPayload = {
-                    kind: "download",
-                    itemKey: item.MediaItem.rating_key,
-                    itemTitle: item.MediaItem.title,
-                    imageFile: sp,
-                    fileName: `Specials Season Poster`,
-                    mediaItem: latestMediaItem,
-                  };
+              for (const sp of specialSeasonPosters) {
+                const taskId = newId();
+                const payload: DownloadTaskPayload = {
+                  kind: "download",
+                  itemKey: item.MediaItem.rating_key,
+                  itemTitle: item.MediaItem.title,
+                  imageFile: sp,
+                  fileName: "Specials Season Poster",
+                  mediaItem: latestMediaItem,
+                };
 
-                  addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-                    id: taskId,
-                    status: "pending",
-                    label: payload.fileName,
-                    attempts: 0,
-                    payload,
-                  });
-
-                  const okSpecialSeasonPoster = await runDownloadTask(taskId, payload);
-                  downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okSpecialSeasonPoster;
-                }
+                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                  id: taskId,
+                  status: "pending",
+                  label: payload.fileName,
+                  attempts: 0,
+                  payload,
+                });
+                downloadJobs.push({ taskId, payload });
               }
               break;
             }
+
             case "titlecard": {
-              if (item.Set.images.some((tc) => tc.type === "titlecard")) {
-                const titlecards = item.Set.images
-                  .filter((tc) => tc.type === "titlecard" && tc.season_number != null && tc.episode_number != null)
-                  .sort((a, b) => {
-                    if (a.season_number! < b.season_number!) return -1;
-                    if (a.season_number! > b.season_number!) return 1;
-                    if (a.episode_number! < b.episode_number!) return -1;
-                    if (a.episode_number! > b.episode_number!) return 1;
-                    return 0;
-                  });
+              const titlecards = item.Set.images
+                .filter((tc) => tc.type === "titlecard" && tc.season_number != null && tc.episode_number != null)
+                .sort((a, b) => {
+                  if (a.season_number! < b.season_number!) return -1;
+                  if (a.season_number! > b.season_number!) return 1;
+                  if (a.episode_number! < b.episode_number!) return -1;
+                  if (a.episode_number! > b.episode_number!) return 1;
+                  return 0;
+                });
 
-                for (const tc of titlecards) {
-                  const seasonNumber = tc.season_number!;
-                  const episodeNumber = tc.episode_number!;
-                  const exists = latestMediaItem.series?.seasons.some(
-                    (season) =>
-                      season.season_number === seasonNumber &&
-                      season.episodes.some((ep) => ep.episode_number === episodeNumber)
-                  );
-                  const taskId = newId();
-                  const payload: DownloadTaskPayload = {
-                    kind: "download",
-                    itemKey: item.MediaItem.rating_key,
-                    itemTitle: item.MediaItem.title,
-                    imageFile: tc,
-                    fileName: `S${seasonNumber}E${episodeNumber} Titlecard`,
-                    mediaItem: latestMediaItem,
-                  };
+              for (const tc of titlecards) {
+                const seasonNumber = tc.season_number!;
+                const episodeNumber = tc.episode_number!;
+                const exists = latestMediaItem.series?.seasons.some(
+                  (season) =>
+                    season.season_number === seasonNumber &&
+                    season.episodes.some((ep) => ep.episode_number === episodeNumber)
+                );
+                const taskId = newId();
+                const payload: DownloadTaskPayload = {
+                  kind: "download",
+                  itemKey: item.MediaItem.rating_key,
+                  itemTitle: item.MediaItem.title,
+                  imageFile: tc,
+                  fileName: `S${seasonNumber}E${episodeNumber} Titlecard`,
+                  mediaItem: latestMediaItem,
+                };
 
-                  addTask(item.MediaItem.rating_key, item.MediaItem.title, {
-                    id: taskId,
-                    status: "pending",
-                    label: payload.fileName,
-                    attempts: 0,
-                    payload,
-                  });
+                addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+                  id: taskId,
+                  status: "pending",
+                  label: payload.fileName,
+                  attempts: 0,
+                  payload,
+                });
 
-                  if (!exists) {
-                    updateTask(taskId, (t) => ({
-                      ...t,
-                      status: "skipped",
-                    }));
-                    continue;
-                  }
-
-                  const okTitlecard = await runDownloadTask(taskId, payload);
-                  downloadedAtLeastOneForItem = downloadedAtLeastOneForItem || okTitlecard;
+                if (!exists) {
+                  updateTask(taskId, (t) => ({ ...t, status: "skipped" }));
+                  continue;
                 }
+
+                downloadJobs.push({ taskId, payload });
               }
               break;
             }
           }
         }
+
+        let completedForItem = 0;
+        const totalForItem = downloadJobs.length;
+
+        if (totalForItem > 0) {
+          setCurrentText(`Downloading images for "${item.MediaItem.title}" (0/${totalForItem})`);
+        }
+
+        const downloadResults = await runInBatches(downloadJobs, DOWNLOAD_BATCH_SIZE, async (job) => {
+          if (cancelRef.current) return false;
+
+          const ok = await runDownloadTask(job.taskId, job.payload);
+          completedForItem += 1;
+          setCurrentText(`Downloading images for "${item.MediaItem.title}" (${completedForItem}/${totalForItem})`);
+          return ok;
+        });
+
+        const downloadedAtLeastOneForItem = downloadResults.some(Boolean);
 
         // Only add to DB if at least one download succeeded
         if (!downloadedAtLeastOneForItem) {
@@ -1587,6 +1613,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         download: "Download Again",
       });
       setIsMounted(false);
+
+      const timeTaken = (Date.now() - startTime) / 1000;
+      log("INFO", "Download Modal", "Debug Info", `All tasks completed in ${timeTaken.toFixed(2)} seconds.`);
     } catch (error) {
       const taskId = newId();
       addTask("general", "General", {

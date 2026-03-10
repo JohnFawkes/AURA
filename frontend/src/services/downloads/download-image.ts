@@ -21,12 +21,6 @@ export const downloadImageFileForMediaItem = async (
   mediaItem: MediaItem,
   fileName: string
 ): Promise<APIResponse<DownloadImageFileForMediaItem_Response>> => {
-  log(
-    "INFO",
-    "API - Media Server",
-    "Download and Update",
-    `Downloading file '${fileName}' and updating '${mediaItem.title}' (TMDB ID: ${mediaItem.tmdb_id})`
-  );
   try {
     const req: DownloadImageFileForMediaItem_Request = {
       image_file: imageFile,
@@ -39,14 +33,6 @@ export const downloadImageFileForMediaItem = async (
     if (response.data.status === "error") {
       throw new Error(
         response.data.error?.message || "Unknown error downloading poster file and updating media server"
-      );
-    } else {
-      log(
-        "INFO",
-        "API - Media Server",
-        "Download and Update",
-        `Downloaded file '${fileName}' and updated '${mediaItem.title}' (TMDB ID: ${mediaItem.tmdb_id})`,
-        response.data
       );
     }
     return response.data;
