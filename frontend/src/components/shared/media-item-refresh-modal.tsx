@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { RefreshMediaItemMetadata } from "@/services/mediaserver/media-item-refresh";
 
 import { useEffect, useMemo, useState } from "react";
@@ -320,7 +321,7 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
                         {s === 0 ? "Special Season" : `Season ${s}`}
                       </span>
                       <span className={cn("ml-2 text-xs tabular-nums", isSelected ? "" : "text-muted-foreground")}>
-                        ({epCount} ep{epCount === 1 ? "" : "s"})
+                        ({epCount} {makePlural(epCount, "ep")})
                       </span>
                     </span>
                   </Badge>
@@ -332,10 +333,9 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
 
         {isShow && (
           <div className="mt-1 text-xs text-muted-foreground">
-            Selected: {selectedSeasonNumbers.length}/{seasons.length} season
-            {seasons.length === 1 ? "" : "s"}
+            Selected: {selectedSeasonNumbers.length}/{seasons.length} {makePlural(seasons.length, "season")}
             {" • "}
-            {selectedEpisodeCount} episode{selectedEpisodeCount === 1 ? "" : "s"}
+            {selectedEpisodeCount} {makePlural(selectedEpisodeCount, "episode")}
           </div>
         )}
 
@@ -389,7 +389,7 @@ export const RefreshMetadataModal = ({ mediaItem, isOpen, onClose }: MediaItemDe
             {!isShow && "Refresh"}
             {isShow &&
               selectedSeasonNumbers.length > 0 &&
-              `Refresh Show & ${selectedSeasonNumbers.length} Season${selectedSeasonNumbers.length === 1 ? "" : "s"}`}
+              `Refresh Show & ${selectedSeasonNumbers.length} ${makePlural(selectedSeasonNumbers, "season")}`}
           </Button>
         </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetMediaItemDetails } from "@/services/mediaserver/get-media-item-details";
 import {
@@ -765,20 +766,20 @@ const MediaItemPage = () => {
                 {filteredPosterSets && filteredPosterSets.length !== posterSets.length ? (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <span>
-                      Showing {filteredPosterSets.length} of {posterSets.length} Poster Set
-                      {posterSets.length > 1 ? "s" : ""}
+                      Showing {filteredPosterSets.length} of {posterSets.length}{" "}
+                      {makePlural(posterSets.length, "Poster Set")}
                     </span>
                     <PopoverHelp ariaLabel="help-filters">
                       <p className="mb-2">
-                        Some of your sets are being hidden by{" "}
-                        {`${numberOfActiveFilters ? `${numberOfActiveFilters} active filter${numberOfActiveFilters > 1 ? "s" : ""}` : "no filters"}`}
+                        {filteredPosterSets.length === 0 ? "All" : filteredPosterSets.length} of your{" "}
+                        {makePlural(posterSets.length, "Poster Set")} are being hidden by{" "}
+                        {`${numberOfActiveFilters ? `${numberOfActiveFilters} active ${makePlural(numberOfActiveFilters, "filter")}` : "no filters"}`}
                         .
                       </p>
                       <ul className="list-disc list-inside mb-2">
                         {hiddenCount > 0 && (
                           <li>
-                            You have {hiddenCount} hidden user
-                            {hiddenCount > 1 ? "s" : ""}.{" "}
+                            You have {hiddenCount} {makePlural(hiddenCount, "hidden user")}.
                           </li>
                         )}
                         {mediaItem?.type === "show" &&
@@ -791,8 +792,8 @@ const MediaItemPage = () => {
                         )}
                         {hiddenByLanguageCount > 0 && (
                           <li>
-                            You have {hiddenByLanguageCount} hidden set
-                            {hiddenByLanguageCount > 1 ? "s" : ""} due to language filters.
+                            You have {hiddenByLanguageCount} {makePlural(hiddenByLanguageCount, "hidden set")} due to
+                            language filters.
                           </li>
                         )}
                       </ul>
@@ -809,8 +810,7 @@ const MediaItemPage = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {posterSets.length} Poster Set
-                    {posterSets.length > 1 ? "s" : ""}
+                    {posterSets.length} {makePlural(posterSets.length, "Poster Set")}
                   </p>
                 )}
               </div>
@@ -818,7 +818,11 @@ const MediaItemPage = () => {
               {filteredPosterSets && filteredPosterSets.length === 0 && posterSets.length > 0 && (
                 <div className="flex flex-col items-center">
                   <ErrorMessage
-                    error={ReturnErrorMessage<string>("All sets are hidden. Check your filters or hidden users.")}
+                    error={ReturnErrorMessage<string>(`
+                      ${filteredPosterSets.length === 0 ? "All" : filteredPosterSets.length} 
+                      of your ${makePlural(posterSets.length, "Poster Set")} are being hidden 
+                      by ${`${numberOfActiveFilters ? `${numberOfActiveFilters} active ${makePlural(numberOfActiveFilters, "filter")}` : "no filters"}`}.
+                      `)}
                   />
                   {!showHiddenUsers && (
                     <Button className="mt-4" variant="secondary" onClick={handleShowHiddenUsers}>
@@ -830,6 +834,21 @@ const MediaItemPage = () => {
                       Show Non-Titlecard Sets
                     </Button>
                   )}
+                  {showOnlyDownloadDefaults ||
+                  (filterByLanguage && filterByLanguage.length > 0) ||
+                  (filterByLanguage && filterByLanguage.some((lang) => lang !== "")) ? (
+                    <Button
+                      className="mt-4"
+                      variant="secondary"
+                      onClick={() => {
+                        setFilterByLanguage([]);
+                        setShowOnlyTitlecardSets(false);
+                        setShowHiddenUsers(false);
+                      }}
+                    >
+                      Clear All Filters
+                    </Button>
+                  ) : null}
                 </div>
               )}
 

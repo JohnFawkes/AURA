@@ -302,8 +302,6 @@ export default function Home() {
         getID: (item) => item.tmdb_id || item.rating_key,
       });
 
-      console.warn("Filtered Items:", filteredItems);
-
       // Store the filtered items in local storage
       setFilteredAndSortedMediaItems(filteredItems);
     };

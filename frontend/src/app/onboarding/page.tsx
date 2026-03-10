@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { finalizeOnboarding } from "@/services/config/onboarding-finalize";
 import { UpdateAppConfig } from "@/services/config/update";
 import yaml from "js-yaml";
@@ -415,7 +416,7 @@ const OnboardingPage = () => {
       <div className="w-full rounded-md border border-destructive/30 bg-destructive/5 p-3 mt-2">
         <div className="flex items-center justify-between gap-4">
           <P className="m-0 text-sm font-medium text-destructive">
-            {total} validation error{total > 1 ? "s" : ""}
+            {total} {makePlural(total, "validation error")}
           </P>
           <Button
             type="button"
@@ -451,7 +452,7 @@ const OnboardingPage = () => {
                       {section.replace(/([A-Z])/g, " $1")}
                     </p>
                     <span className="rounded bg-destructive/20 px-2 py-0.5 text-sm text-destructive">
-                      {count} error{count > 1 ? "s" : ""}
+                      {count} {makePlural(count, "error")}
                     </span>
                   </div>
                   <ul className="mt-1 space-y-0.5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { downloadImageFileForMediaItem } from "@/services/downloads/download-image";
 import yaml from "js-yaml";
 import { User } from "lucide-react";
@@ -256,22 +257,22 @@ export function ManualImportModal({ mediaItem, isOpen, onClose }: MediaItemManua
           <div className="flex flex-wrap gap-2 mt-2">
             {numberOfPostersInSet !== null && (
               <Badge>
-                Poster{numberOfPostersInSet !== 1 ? "s" : ""}: {numberOfPostersInSet}
+                {makePlural(numberOfPostersInSet, "Poster")}: {numberOfPostersInSet}
               </Badge>
             )}
             {numberOfBackdropsInSet !== null && (
               <Badge>
-                Backdrop{numberOfBackdropsInSet !== 1 ? "s" : ""}: {numberOfBackdropsInSet}
+                {makePlural(numberOfBackdropsInSet, "Backdrop")}: {numberOfBackdropsInSet}
               </Badge>
             )}
             {numberOfSeasonPostersInSet !== null && (
               <Badge>
-                Season Poster{numberOfSeasonPostersInSet !== 1 ? "s" : ""}: {numberOfSeasonPostersInSet}
+                {makePlural(numberOfSeasonPostersInSet, "Season Poster")}: {numberOfSeasonPostersInSet}
               </Badge>
             )}
             {numberOfTitlecardsInSet !== null && (
               <Badge>
-                Titlecard{numberOfTitlecardsInSet !== 1 ? "s" : ""}: {numberOfTitlecardsInSet}
+                {makePlural(numberOfTitlecardsInSet, "Titlecard")}: {numberOfTitlecardsInSet}
               </Badge>
             )}
           </div>

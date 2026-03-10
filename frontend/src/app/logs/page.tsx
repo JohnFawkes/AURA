@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { ClearLogFiles } from "@/services/logs/clear";
 import type { GetLogContents_Response } from "@/services/logs/get";
@@ -153,17 +154,13 @@ export default function LogsPage() {
                   [
                     `No Log Entries found`,
                     levelsFilter.length > 0
-                      ? `with level${levelsFilter.length > 1 ? "s" : ""} ${levelsFilter
-                          .map((lvl) => `"${lvl}"`)
-                          .join(", ")}`
+                      ? `with ${makePlural(levelsFilter, "level")} ${levelsFilter.map((lvl) => `"${lvl}"`).join(", ")}`
                       : null,
                     statusFilter.length > 0
-                      ? `with status${statusFilter.length > 1 ? "es" : ""} ${statusFilter
-                          .map((st) => `"${st}"`)
-                          .join(", ")}`
+                      ? `with ${makePlural(statusFilter, "status")} ${statusFilter.map((st) => `"${st}"`).join(", ")}`
                       : null,
                     actionsFilter.length > 0
-                      ? `with action${actionsFilter.length > 1 ? "s" : ""} ${actionsFilter
+                      ? `with ${makePlural(actionsFilter, "action")} ${actionsFilter
                           .map((act) => {
                             const label = possibleActionsPaths[act]?.label;
                             return `"${label || act}"`;

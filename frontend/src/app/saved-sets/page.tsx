@@ -1,5 +1,6 @@
 "use client";
 
+import { makePlural } from "@/helper/make_plural";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import type { AutodownloadResult } from "@/services/database/autodownload-force-check";
 import { AutoDownloadForceCheck } from "@/services/database/autodownload-force-check";
@@ -528,7 +529,7 @@ const SavedSetsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold mb-2 ml-1">Recheck Status:</h3>
             <span className="text-xs text-muted-foreground">
-              {Object.keys(recheckStatus).length} item{Object.keys(recheckStatus).length === 1 ? "" : "s"}
+              {Object.keys(recheckStatus).length} {makePlural(Object.keys(recheckStatus).length, "item")}
             </span>
             <Badge className="mb-4 bg-blue-100 text-blue-800 px-2 py-1" onClick={() => setRecheckStatus({})}>
               Clear All
@@ -641,12 +642,12 @@ const SavedSetsPage: React.FC = () => {
                     ? "that are not set to Auto Download"
                     : null,
                 filteredTypes.length > 0
-                  ? `with type${filteredTypes.length > 1 ? "s" : ""} ${filteredTypes
+                  ? `with ${makePlural(filteredTypes.length, "type")} ${filteredTypes
                       .map((t) => `"${typeOptions.find((opt) => opt.value === t)?.label || t}"`)
                       .join(", ")}`
                   : null,
                 filteredUsers.length > 0
-                  ? `for user${filteredUsers.length > 1 ? "s" : ""} ${filteredUsers
+                  ? `for ${makePlural(filteredUsers.length, "user")} ${filteredUsers
                       .map((u) => (u === "|||no-user|||" ? '"No User"' : `"${u}"`))
                       .join(", ")}`
                   : null,

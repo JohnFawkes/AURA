@@ -1,3 +1,4 @@
+import { makePlural } from "@/helper/make_plural";
 import { AlertTriangle } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -48,8 +49,8 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
     const backdropCount = set.images?.filter((img) => img.type === "backdrop").length || 0;
 
     const parts: string[] = [];
-    if (posterCount > 0) parts.push(`${posterCount} Poster${posterCount > 1 ? "s" : ""}`);
-    if (backdropCount > 0) parts.push(`${backdropCount} Backdrop${backdropCount > 1 ? "s" : ""}`);
+    if (posterCount > 0) parts.push(`${posterCount} ${makePlural(posterCount, "Poster")}`);
+    if (backdropCount > 0) parts.push(`${backdropCount} ${makePlural(backdropCount, "Backdrop")}`);
     primary = parts.join(" • ");
 
     const itemIDs = Array.from(
@@ -84,7 +85,7 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
       } else if (missingTmdbIDs === totalTmdbIDs) {
         secondary = `No items in Library`;
       } else {
-        secondary = `${missingTmdbIDs} of ${totalTmdbIDs} movie${totalTmdbIDs > 1 ? "s" : ""} missing from library`;
+        secondary = `${missingTmdbIDs} of ${totalTmdbIDs} ${makePlural(totalTmdbIDs, "movie")} missing from library`;
       }
     }
 
@@ -117,13 +118,14 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
     const titleCardCount = set.images?.filter((img) => img.type === "titlecard").length || 0;
 
     const line1Parts: string[] = [];
-    if (posterCount > 0) line1Parts.push(`${posterCount} Poster${posterCount > 1 ? "s" : ""}`);
-    if (backdropCount > 0) line1Parts.push(`${backdropCount} Backdrop${backdropCount > 1 ? "s" : ""}`);
+    if (posterCount > 0) line1Parts.push(`${posterCount} ${makePlural(posterCount, "Poster")}`);
+    if (backdropCount > 0) line1Parts.push(`${backdropCount} ${makePlural(backdropCount, "Backdrop")}`);
     const line2Parts: string[] = [];
-    if (seasonPosterCount > 0) line2Parts.push(`${seasonPosterCount} Season Poster${seasonPosterCount > 1 ? "s" : ""}`);
+    if (seasonPosterCount > 0)
+      line2Parts.push(`${seasonPosterCount} ${makePlural(seasonPosterCount, "Season Poster")}`);
     if (specialSeasonPosterCount > 0)
-      line2Parts.push(`${specialSeasonPosterCount} Special Season Poster${specialSeasonPosterCount > 1 ? "s" : ""}`);
-    if (titleCardCount > 0) line2Parts.push(`${titleCardCount} Titlecard${titleCardCount > 1 ? "s" : ""}`);
+      line2Parts.push(`${specialSeasonPosterCount} ${makePlural(specialSeasonPosterCount, "Special Season Poster")}`);
+    if (titleCardCount > 0) line2Parts.push(`${titleCardCount} ${makePlural(titleCardCount, "Titlecard")}`);
 
     const missingFromSet: string[] = [];
     const missingFromServer: string[] = [];
@@ -228,10 +230,10 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
 
         if (missingCount === totalEpisodes && totalEpisodes > 0) {
           if (season.season_number === 0) {
-            missingFromSet.push(`Special Season Titlecards (${totalEpisodes} episode${totalEpisodes > 1 ? "s" : ""})`);
+            missingFromSet.push(`Special Season Titlecards (${totalEpisodes} ${makePlural(totalEpisodes, "episode")})`);
           } else {
             missingFromSet.push(
-              `Season ${String(season.season_number).padStart(2, "0")} Titlecards (${totalEpisodes} episode${totalEpisodes > 1 ? "s" : ""})`
+              `Season ${String(season.season_number).padStart(2, "0")} Titlecards (${totalEpisodes} ${makePlural(totalEpisodes, "episode")})`
             );
           }
           for (let i = 0; i < samples.length - 1; i++) {
@@ -270,10 +272,10 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
       if (info.missing === info.total) {
         summarizedSeasons.add(Number(seasonNum));
         if (seasonNum === "0") {
-          missingFromServer.push(`Special Season (${info.total} Episode${info.total > 1 ? "s" : ""})`);
+          missingFromServer.push(`Special Season (${info.total} ${makePlural(info.total, "Episode")})`);
         } else {
           missingFromServer.push(
-            `Season ${String(seasonNum).padStart(2, "0")} (${info.total} Episode${info.total > 1 ? "s" : ""})`
+            `Season ${String(seasonNum).padStart(2, "0")} (${info.total} ${makePlural(info.total, "Episode")})`
           );
         }
         // Remove individual episode samples for this season
@@ -372,20 +374,19 @@ export function SetFileCounts({ mediaItem, set, includedItems }: SetFileCountsPr
             <div className="flex items-center mb-2">
               {showResult.missingFromSet.length > 0 && showResult.missingFromServer.length > 0 ? (
                 <Lead className="text-sm ml-1 text-yellow-500">
-                  {showResult.missingFromSet.length} item
-                  {showResult.missingFromSet.length > 1 ? "s" : ""} missing from set •{" "}
-                  {showResult.missingFromServer.length} item
-                  {showResult.missingFromServer.length > 1 ? "s" : ""} missing from server
+                  {showResult.missingFromSet.length} {makePlural(showResult.missingFromSet.length, "item")} missing from
+                  set • {showResult.missingFromServer.length} {makePlural(showResult.missingFromServer.length, "item")}{" "}
+                  missing from server
                 </Lead>
               ) : showResult.missingFromSet.length > 0 ? (
                 <Lead className="text-sm ml-1 text-yellow-500">
-                  {showResult.missingFromSet.length} item
-                  {showResult.missingFromSet.length > 1 ? "s" : ""} missing from set
+                  {showResult.missingFromSet.length} {makePlural(showResult.missingFromSet.length, "item")} missing from
+                  set
                 </Lead>
               ) : (
                 <Lead className="text-sm ml-1 text-yellow-500">
-                  {showResult.missingFromServer.length} item
-                  {showResult.missingFromServer.length > 1 ? "s" : ""} missing from server
+                  {showResult.missingFromServer.length} {makePlural(showResult.missingFromServer.length, "item")}{" "}
+                  missing from server
                 </Lead>
               )}
 

@@ -3,6 +3,7 @@
 import CollectionsDownloadModal from "@/app/collection-item/collection-download-modal";
 import type { CollectionItem } from "@/app/collections/page";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
+import { makePlural } from "@/helper/make_plural";
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAllCollectionChildrenItems } from "@/services/mediaserver/get-movie-collection-children-items";
 import {
@@ -418,20 +419,19 @@ export default function CollectionItemPage() {
                 {filteredCollectionItemSets && filteredCollectionItemSets.length !== collectionItemSets.length ? (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <span>
-                      Showing {filteredCollectionItemSets.length} of {collectionItemSets.length} Collection Set
-                      {collectionItemSets.length > 1 ? "s" : ""}
+                      Showing {filteredCollectionItemSets.length} of {collectionItemSets.length}{" "}
+                      {makePlural(collectionItemSets.length, "Collection Set")}
                     </span>
                     <PopoverHelp ariaLabel="help-filters">
                       <p className="mb-2">
-                        Some of your sets are being hidden by{" "}
-                        {`${numberOfActiveFilters ? `${numberOfActiveFilters} active filter${numberOfActiveFilters > 1 ? "s" : ""}` : "no filters"}`}
+                        Some of your {makePlural(collectionItemSets.length, "Collection Set")} are being hidden by{" "}
+                        {`${numberOfActiveFilters ? `${numberOfActiveFilters} active ${makePlural(numberOfActiveFilters, "filter")}` : "no filters"}`}
                         .
                       </p>
                       <ul className="list-disc list-inside mb-2">
                         {hiddenCount > 0 && (
                           <li>
-                            You have {hiddenCount} hidden user
-                            {hiddenCount > 1 ? "s" : ""}.{" "}
+                            You have {hiddenCount} {makePlural(hiddenCount, "hidden user")}.
                           </li>
                         )}
                       </ul>
@@ -440,8 +440,7 @@ export default function CollectionItemPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {collectionItemSets.length} Collection Set
-                    {collectionItemSets.length > 1 ? "s" : ""}
+                    {collectionItemSets.length} {makePlural(collectionItemSets.length, "Collection Set")}
                   </p>
                 )}
               </div>

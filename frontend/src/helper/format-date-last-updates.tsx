@@ -1,3 +1,5 @@
+import { makePlural } from "@/helper/make_plural";
+
 export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedString: string) => {
   try {
     if (!lastUpdateString && !dateCreatedString) {
@@ -17,25 +19,23 @@ export const formatLastUpdatedDate = (lastUpdateString: string, dateCreatedStrin
     const diffMonths = Math.floor(diffDays / 30);
     const diffYears = Math.floor(diffDays / 365);
 
-    const pluralize = (value: number, unit: string) => `${value} ${unit}${value !== 1 ? "s" : ""}`;
-
     if (diffYears >= 1) {
-      return `Over ${pluralize(diffYears, "year")} ago`;
+      return `Over ${diffYears} ${makePlural(diffYears, "year")} ago`;
     } else if (diffMonths >= 1) {
-      return `${pluralize(diffMonths, "month")} ago`;
+      return `${diffMonths} ${makePlural(diffMonths, "month")} ago`;
     } else if (diffWeeks >= 1) {
-      return `${pluralize(diffWeeks, "week")} ago`;
+      return `${diffWeeks} ${makePlural(diffWeeks, "week")} ago`;
     } else if (diffDays >= 1) {
-      return `${pluralize(diffDays, "day")} ago`;
+      return `${diffDays} ${makePlural(diffDays, "day")} ago`;
     } else {
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       const diffMinutes = Math.floor(diffMs / (1000 * 60));
       if (diffHours >= 1) {
-        return `${pluralize(diffHours, "hour")} ago`;
+        return `${diffHours} ${makePlural(diffHours, "hour")} ago`;
       } else if (diffMinutes < 5) {
         return "Just a moment ago";
       } else {
-        return `${pluralize(diffMinutes, "minute")} ago`;
+        return `${diffMinutes} ${makePlural(diffMinutes, "minute")} ago`;
       }
     }
   } catch {
