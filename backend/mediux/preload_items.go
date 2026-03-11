@@ -26,6 +26,9 @@ func PreLoadMediuxItemsWithSets(ctx context.Context) {
 		return
 	}
 
+	currentCount := cache.MediuxItems.GetCountMediuxItems()
+	logAction.AppendResult("current_count", currentCount)
+
 	var mediuxResp models.MediuxContentIdsResponse
 
 	// Decode the response
@@ -35,7 +38,12 @@ func PreLoadMediuxItemsWithSets(ctx context.Context) {
 	}
 
 	itemCount := len(mediuxResp.Data.ContentIds)
-	logAction.AppendResult("items_with_sets_count", itemCount)
+	logAction.AppendResult("new_count", itemCount)
 
 	cache.MediuxItems.StoreMediuxItems(mediuxResp.Data.ContentIds)
+	logEvent := logging.LOGGER.Info().Timestamp()
+	if currentCount > 0 {
+		logEvent = logEvent.Int("current_count", currentCount)
+	}
+	logEvent.Int("new_count", itemCount).Msg("Loaded MediUX items with sets into cache")
 }

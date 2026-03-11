@@ -125,12 +125,10 @@ func runWarmup() (success bool) {
 	// Cache: Add all MediUX users
 	config.AppLoadingStep = "Preloading MediUX Users into Cache"
 	mediux.PreloadMediuxUsers(ctx)
-	logging.LOGGER.Info().Timestamp().Int("mediux_users", len(cache.MediuxUsers.GetMediuxUsers())).Msg("Preloaded MediUX users into cache")
 
 	// Cache: Get a list of all items in MediUX that has a set
 	config.AppLoadingStep = "Preloading MediUX Items with Sets into Cache"
 	mediux.PreLoadMediuxItemsWithSets(ctx)
-	logging.LOGGER.Info().Timestamp().Int("mediux_items_with_sets", len(cache.MediuxItems.GetMediuxItems())).Msg("Preloaded MediUX items with sets into cache")
 
 	// Database: Initialize
 	config.AppLoadingStep = "Initializing Database"
@@ -150,9 +148,9 @@ func runWarmup() (success bool) {
 	// Cache: Add all media server sections and items
 	config.AppLoadingStep = "Preloading Media Server Data into Cache"
 	_ = mediaserver.GetAllLibrarySectionsAndItems(ctx, false)
-	logging.LOGGER.Info().Timestamp().Int("sections", cache.LibraryStore.GetSectionsCount()).Int("items", cache.LibraryStore.GetItemsCount()).Msg("Preloaded Media Server sections and items into cache")
+	logging.LOGGER.Info().Timestamp().Int("sections", cache.LibraryStore.GetSectionsCount()).Int("items", cache.LibraryStore.GetItemsCount()).Msg("Loaded Media Server sections and items into cache")
 	logging.LOGGER.Info().Timestamp().Int("collection_items", len(cache.CollectionsStore.GetAllCollections())).
-		Msg("Preloaded Media Server data into cache")
+		Msg("Loaded Media Server collections into cache")
 
 	// Database: Vacuum
 	config.AppLoadingStep = "Optimizing Database"

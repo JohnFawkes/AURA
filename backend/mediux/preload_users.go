@@ -14,5 +14,5 @@ func PreloadMediuxUsers(ctx context.Context) {
 		return
 	}
 
-	logAction.AppendResult("Number of MediUX Users Preloaded", len(users))
+	logAction.AppendResult("users_count", len(users))
 }

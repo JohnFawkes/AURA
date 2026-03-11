@@ -89,6 +89,7 @@ func GetAllUsers(ctx context.Context) (users []models.MediuxUserInfo, Err loggin
 
 	// Load the list of users into the cache for faster access later
 	cache.MediuxUsers.StoreMediuxUsers(users)
+	logging.LOGGER.Info().Timestamp().Int("mediux_users", len(users)).Msg("Loaded MediUX users into cache")
 
 	return users, Err
 }
