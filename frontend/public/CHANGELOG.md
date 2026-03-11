@@ -1,3 +1,12 @@
+## [0.9.88] - 2026-03-11
+
+### Fixed
+
+- Fixed issue where episode size changes were not being detected properly for Plex media servers.
+- Fixed issue where titlecards for Special Seasons had blank season numbers, causing issues with autodownload and viewing titlecards on the media item page.
+
+---
+
 ## [0.9.87] - 2026-03-10
 
 ### Fixed
