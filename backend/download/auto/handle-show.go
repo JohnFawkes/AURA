@@ -130,7 +130,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				dbEpisode, episodeFound := dbEpisodes[episode.EpisodeNumber]
 				if !episodeFound {
 					changes.AddedEpisodes = append(changes.AddedEpisodes, EpisodeRef{
-						SeasonNumber:  season.SeasonNumber,
+						SeasonNumber:  episode.SeasonNumber,
 						EpisodeNumber: episode.EpisodeNumber,
 					})
 					changes.EpisodesAdded = true
@@ -143,7 +143,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				if ratingKeyChanged || pathChanged || sizeChanged || durationChanged {
 					episodeChange := EpisodeChangeDetails{
 						EpisodeRef: EpisodeRef{
-							SeasonNumber:  season.SeasonNumber,
+							SeasonNumber:  episode.SeasonNumber,
 							EpisodeNumber: episode.EpisodeNumber,
 						},
 					}

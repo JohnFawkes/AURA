@@ -164,9 +164,7 @@ func convertMediuxImageAssetToImageFile(a *ImageAsset, imageType string) *models
 	if a.Episode != nil {
 		imageFile.Title = a.Episode.EpisodeTitle
 		imageFile.EpisodeNumber = &a.Episode.EpisodeNumber
-		if a.Episode.Season.SeasonNumber != 0 {
-			imageFile.SeasonNumber = &a.Episode.Season.SeasonNumber
-		}
+		imageFile.SeasonNumber = &a.Episode.Season.SeasonNumber
 	}
 
 	// Handle Language
