@@ -47,6 +47,17 @@ func (c *MediuxItemCache) GetMediuxItems() []models.MediuxContentID {
 	return itemList
 }
 
+func (c *MediuxItemCache) GetCountMediuxItems() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	count := 0
+	for _, items := range c.items {
+		count += len(items)
+	}
+	return count
+}
+
 func (c *MediuxItemCache) CheckItemExists(itemType string, tmdbID string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
