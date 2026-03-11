@@ -138,7 +138,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				}
 				ratingKeyChanged := episode.RatingKey != dbEpisode.RatingKey
 				pathChanged := episode.File.Path != dbEpisode.File.Path
-				sizeChanged := episode.File.Size != dbEpisode.File.Size
+				sizeChanged := sizeReallyChanged(episode.File.Size, dbEpisode.File.Size)
 				durationChanged := episode.File.Duration != dbEpisode.File.Duration
 				if ratingKeyChanged || pathChanged || sizeChanged || durationChanged {
 					episodeChange := EpisodeChangeDetails{

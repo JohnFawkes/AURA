@@ -83,7 +83,7 @@ func handleMovie(ctx context.Context, dbItem models.DBSavedItem) (result AutoDow
 		if mediaItem.Movie.File.Path != dbItem.MediaItem.Movie.File.Path {
 			itemChanges["path"] = true
 		}
-		if mediaItem.Movie.File.Size != dbItem.MediaItem.Movie.File.Size {
+		if sizeReallyChanged(mediaItem.Movie.File.Size, dbItem.MediaItem.Movie.File.Size) {
 			itemChanges["size"] = true
 		}
 	}
