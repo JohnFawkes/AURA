@@ -1,3 +1,11 @@
+## [0.9.89] - 2026-03-12
+
+### Fixed
+
+- Reduced database file size by improving automatic SQLite vacuuming.
+
+---
+
 ## [0.9.88] - 2026-03-11
 
 ### Fixed
