@@ -240,3 +240,40 @@ func (s *SQliteDB) DeleteAllPosterSetsForMediaItem(ctx context.Context, tmdbID, 
 
 	return Err
 }
+
+func (s *SQliteDB) DeleteMediaItemAndIgnoredStatus(ctx context.Context, tmdbID, libraryTitle string) logging.LogErrorInfo {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Deleting MediaItem and Ignored status", logging.LevelInfo)
+	defer logAction.Complete()
+
+	tx, err := s.conn.BeginTx(ctx, nil)
+	if err != nil {
+		logAction.SetError("Failed to start transaction", "", map[string]any{"error": err.Error()})
+		return *logAction.Error
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Delete from IgnoredItems
+	_, err = tx.ExecContext(ctx, `
+        DELETE FROM IgnoredItems WHERE tmdb_id = ? AND library_title = ?
+    `, tmdbID, libraryTitle)
+	if err != nil {
+		logAction.SetError("Failed to delete from IgnoredItems", "", map[string]any{"error": err.Error()})
+		return *logAction.Error
+	}
+
+	// Delete from MediaItems (cascades to related tables)
+	_, err = tx.ExecContext(ctx, `
+        DELETE FROM MediaItems WHERE tmdb_id = ? AND library_title = ?
+    `, tmdbID, libraryTitle)
+	if err != nil {
+		logAction.SetError("Failed to delete from MediaItems", "", map[string]any{"error": err.Error()})
+		return *logAction.Error
+	}
+
+	if err := tx.Commit(); err != nil {
+		logAction.SetError("Failed to commit transaction", "", map[string]any{"error": err.Error()})
+		return *logAction.Error
+	}
+
+	return logging.LogErrorInfo{}
+}

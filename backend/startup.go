@@ -199,10 +199,10 @@ func runWarmup() (success bool) {
 		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Check MediUX Site Link Availability cron job")
 	}
 
-	// Cronjob: Start Check for Rating Key Changes Job
-	err = jobs.StartCheckForRatingKeyChangesJob()
+	// Cronjob: Start Check for Media Item Changes Job
+	err = jobs.StartCheckForMediaItemChangesJob()
 	if err != nil {
-		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Check for Rating Key Changes cron job")
+		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Check for Media Item Changes cron job")
 	}
 
 	// Cronjob: Start Handle Temp Ignored Items Job

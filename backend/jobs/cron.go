@@ -20,7 +20,7 @@ var (
 	refreshMediaItemsAndCollectionsJobID cron.EntryID = 0
 	refreshMediuxUsersJobID              cron.EntryID = 0
 	checkMediuxSiteLinkJobID             cron.EntryID = 0
-	checkForRatingKeyChangesJobID        cron.EntryID = 0
+	checkForMediaItemChangesJobID        cron.EntryID = 0
 	handleTempIgnoredItemsJobID          cron.EntryID = 0
 
 	// Configurable
@@ -92,8 +92,8 @@ func GetListOfJobs() []JobInfo {
 				jobInfo.JobName = "Refresh Mediux Users Job"
 			case checkMediuxSiteLinkJobID:
 				jobInfo.JobName = "Check Mediux Site Link Availability Job"
-			case checkForRatingKeyChangesJobID:
-				jobInfo.JobName = "Check for Rating Key Changes Job"
+			case checkForMediaItemChangesJobID:
+				jobInfo.JobName = "Check for Media Item Changes Job"
 			case handleTempIgnoredItemsJobID:
 				jobInfo.JobName = "Handle Temp Ignored Items Job"
 			default:
@@ -121,8 +121,8 @@ func TriggerJob(jobName string, jobID string) error {
 		entryID = refreshMediuxUsersJobID
 	case "Check Mediux Site Link Availability Job":
 		entryID = checkMediuxSiteLinkJobID
-	case "Check for Rating Key Changes Job":
-		entryID = checkForRatingKeyChangesJobID
+	case "Check for Media Item Changes Job":
+		entryID = checkForMediaItemChangesJobID
 	case "Handle Temp Ignored Items Job":
 		entryID = handleTempIgnoredItemsJobID
 	default:

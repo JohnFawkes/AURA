@@ -61,8 +61,14 @@ type DB interface {
 	// Get All Media Items
 	GetAllMediaItems(ctx context.Context) (items []models.MediaItem, logErr logging.LogErrorInfo)
 
+	// Get All Media Items with info on whether they have saved sets or are ignored
+	GetAllMediaItemsWithFlags(ctx context.Context) (items []MediaItemWithFlags, logErr logging.LogErrorInfo)
+
 	// Update Media Item
 	UpdateMediaItem(ctx context.Context, updatedItem models.MediaItem) (Err logging.LogErrorInfo)
+
+	// Delete Media Item and Ignored Item entries for a given TMDB ID and Library Title
+	DeleteMediaItemAndIgnoredStatus(ctx context.Context, TMDB_ID, libraryTitle string) (Err logging.LogErrorInfo)
 
 	// Get All Saved Sets
 	GetAllSavedSets(ctx context.Context, dbFilter models.DBFilter) (out PagedSavedItems, logErr logging.LogErrorInfo)
@@ -219,11 +225,25 @@ func GetAllMediaItems(ctx context.Context) (items []models.MediaItem, logErr log
 	return Client.GetAllMediaItems(ctx)
 }
 
+func GetAllMediaItemsWithFlags(ctx context.Context) (items []MediaItemWithFlags, logErr logging.LogErrorInfo) {
+	if Client == nil {
+		return []MediaItemWithFlags{}, logging.Error_DBClientNotInitialized()
+	}
+	return Client.GetAllMediaItemsWithFlags(ctx)
+}
+
 func UpdateMediaItem(ctx context.Context, updatedItem models.MediaItem) (Err logging.LogErrorInfo) {
 	if Client == nil {
 		return logging.Error_DBClientNotInitialized()
 	}
 	return Client.UpdateMediaItem(ctx, updatedItem)
+}
+
+func DeleteMediaItemAndIgnoredStatus(ctx context.Context, TMDB_ID, libraryTitle string) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.DeleteMediaItemAndIgnoredStatus(ctx, TMDB_ID, libraryTitle)
 }
 
 func GetAllSavedSets(ctx context.Context, dbFilter models.DBFilter) (out PagedSavedItems, logErr logging.LogErrorInfo) {

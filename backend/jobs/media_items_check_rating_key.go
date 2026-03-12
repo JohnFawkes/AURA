@@ -6,7 +6,7 @@ import (
 	"context"
 )
 
-func StartCheckForRatingKeyChangesJob() error {
+func StartCheckForMediaItemChangesJob() error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -15,47 +15,47 @@ func StartCheckForRatingKeyChangesJob() error {
 		return nil
 	}
 
-	if checkForRatingKeyChangesJobID != 0 {
-		c.Remove(checkForRatingKeyChangesJobID)
-		checkForRatingKeyChangesJobID = 0
+	if checkForMediaItemChangesJobID != 0 {
+		c.Remove(checkForMediaItemChangesJobID)
+		checkForMediaItemChangesJobID = 0
 	}
 
 	var err error
 	spec := "0 */6 * * *"
-	checkForRatingKeyChangesJobID, err = c.AddFunc(spec, func() {
+	checkForMediaItemChangesJobID, err = c.AddFunc(spec, func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled CheckForRatingKeyChangesJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in scheduled CheckForMediaItemChangesJob")
 			}
 		}()
 		ctx, ld := logging.CreateLoggingContext(context.Background(), "Cron Job")
-		action := ld.AddAction("Check for Rating Key Changes", logging.LevelInfo)
+		action := ld.AddAction("Check for Media Item Changes", logging.LevelInfo)
 		ctx = logging.WithCurrentAction(ctx, action)
-		Err := mediaserver.CheckForRatingKeyChanges(ctx)
+		Err := mediaserver.CheckForMediaItemChanges(ctx)
 		if Err.Message != "" {
 			logging.LOGGER.Error().Timestamp().Str("error", Err.Message).
-				Str("next_run", c.Entry(checkForRatingKeyChangesJobID).Next.String()).
-				Msg("Error running Check for Rating Key Changes Job")
+				Str("next_run", c.Entry(checkForMediaItemChangesJobID).Next.String()).
+				Msg("Error running Check for Media Item Changes Job")
 		} else {
 			logging.LOGGER.Info().Timestamp().
-				Str("next_run", c.Entry(checkForRatingKeyChangesJobID).Next.String()).
-				Msg("Check for Rating Key Changes Job Completed")
+				Str("next_run", c.Entry(checkForMediaItemChangesJobID).Next.String()).
+				Msg("Check for Media Item Changes Job Completed")
 		}
 		ld.Log()
 	})
 	if err != nil {
 		return err
 	}
-	jobSpecs[checkForRatingKeyChangesJobID] = spec
+	jobSpecs[checkForMediaItemChangesJobID] = spec
 
 	logging.LOGGER.Info().Timestamp().
 		Str("cron", spec).
 		Str("interval", "every 6 hours").
-		Msg("Check for Rating Key Changes Job Started")
+		Msg("Check for Media Item Changes Job Started")
 	return nil
 }
 
-func RunCheckForRatingKeyChangesJobNow() {
+func RunCheckForMediaItemChangesJobNow() {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -64,19 +64,19 @@ func RunCheckForRatingKeyChangesJobNow() {
 		return
 	}
 
-	if checkForRatingKeyChangesJobID == 0 {
-		logging.LOGGER.Error().Timestamp().Msg("Check for Rating Key Changes Job is not scheduled")
+	if checkForMediaItemChangesJobID == 0 {
+		logging.LOGGER.Error().Timestamp().Msg("Check for Media Item Changes Job is not scheduled")
 		return
 	}
 
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in CheckForRatingKeyChangesJob")
+				logging.LOGGER.Error().Timestamp().Interface("recover", r).Msg("PANIC: in CheckForMediaItemChangesJob")
 			}
 		}()
-		logging.LOGGER.Info().Timestamp().Msg("Manually triggering Check for Rating Key Changes Job")
-		entry := c.Entry(checkForRatingKeyChangesJobID)
+		logging.LOGGER.Info().Timestamp().Msg("Manually triggering Check for Media Item Changes Job")
+		entry := c.Entry(checkForMediaItemChangesJobID)
 		entry.Job.Run()
 	}()
 }
