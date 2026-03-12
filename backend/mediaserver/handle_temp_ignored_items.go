@@ -36,16 +36,16 @@ func HandleTempIgnoredItems(ctx context.Context) (Err logging.LogErrorInfo) {
 			if len(movieSets) > 0 || len(collectionSets) > 0 {
 				numOfSets += len(movieSets) + len(collectionSets)
 				if len(movieSets) > 0 {
-					mainImage = movieSets[0].Images[0]
+					mainImage = getMainImage(movieSets[0].Images)
 				} else if len(collectionSets) > 0 {
-					mainImage = collectionSets[0].Images[0]
+					mainImage = getMainImage(collectionSets[0].Images)
 				}
 			}
 		case "show":
 			showSets, _, _ := mediux.GetShowItemSets(ctx, mediaItem.TMDB_ID, mediaItem.LibraryTitle)
 			if len(showSets) > 0 {
 				numOfSets += len(showSets)
-				mainImage = showSets[0].Images[0]
+				mainImage = getMainImage(showSets[0].Images)
 			}
 		}
 
@@ -141,4 +141,28 @@ func sendNotification(mediaItem models.MediaItem, setCount int, mainImage models
 			}
 		}
 	}
+}
+
+func getMainImage(images []models.ImageFile) models.ImageFile {
+	hasPosterImage := false
+	hasBackdropImage := false
+	var posterImage models.ImageFile
+	var backdropImage models.ImageFile
+	for _, image := range images {
+		switch image.Type {
+		case "poster":
+			hasPosterImage = true
+			posterImage = image
+		case "backdrop":
+			hasBackdropImage = true
+			backdropImage = image
+		}
+	}
+
+	if hasPosterImage {
+		return posterImage
+	} else if hasBackdropImage {
+		return backdropImage
+	}
+	return images[0]
 }
