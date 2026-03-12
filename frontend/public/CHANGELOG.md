@@ -3,6 +3,8 @@
 ### Fixed
 
 - Reduced database file size by improving automatic SQLite vacuuming.
+- Fixed issue where Library Titles with leading/trailing whitespace would not be filtered correctly on the Saved Sets page.
+- Fixed issue where Media Items that no longer exist on the Media Server and had no sets available for them would still show up in Rating Key Change Job (now named: Media Item Change Job).
 
 ---
 
