@@ -17,9 +17,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func StartWebSocketClient() {
+func StartMediuxWebSocketClient() {
 	for {
-		err := connectAndSubscribe("show_sets")
+		err := connectAndSubscribeMediux()
 		if err != nil {
 			logging.LOGGER.Error().Timestamp().Err(err).Msg("Mediux WebSocket connection error")
 		}
@@ -29,8 +29,7 @@ func StartWebSocketClient() {
 	}
 }
 
-func connectAndSubscribe(collectionType string) error {
-
+func connectAndSubscribeMediux() error {
 	// Build WebSocket URL with token
 	u, err := url.Parse(mediux.MediuxApiURL)
 	if err != nil {
@@ -55,6 +54,7 @@ func connectAndSubscribe(collectionType string) error {
 	}
 	defer c.Close()
 
+	collectionType := "show_sets"
 	subscribeMsg := map[string]any{
 		"type":       "subscribe",
 		"collection": collectionType,
