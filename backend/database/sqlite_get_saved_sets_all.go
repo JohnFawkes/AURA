@@ -320,7 +320,7 @@ func buildSavedItemsWhere(filter models.DBFilter) (whereSQL string, args []any) 
 		add("mi.tmdb_id = ?", strings.TrimSpace(filter.ItemTMDB_ID))
 	}
 	if strings.TrimSpace(filter.ItemLibraryTitle) != "" {
-		add("mi.library_title = ?", strings.TrimSpace(filter.ItemLibraryTitle))
+		add("mi.library_title = ?", filter.ItemLibraryTitle)
 	}
 	if filter.ItemYear > 0 {
 		add("mi.year = ?", filter.ItemYear)
