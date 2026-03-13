@@ -3266,6 +3266,14 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.LibrarySection"
                     }
                 },
+                "plex_event_listener": {
+                    "description": "Plex WebSocket event listener settings (Plex only).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_PlexEventListener"
+                        }
+                    ]
+                },
                 "type": {
                     "description": "Type of media server (e.g., plex, emby, jellyfin).",
                     "type": "string"
@@ -3479,6 +3487,15 @@ const docTemplate = `{
                             "$ref": "#/definitions/config.Config_NotificationTemplate"
                         }
                     ]
+                }
+            }
+        },
+        "config.Config_PlexEventListener": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "Whether to listen for Plex metadata refresh events and auto-scan in AURA.",
+                    "type": "boolean"
                 }
             }
         },

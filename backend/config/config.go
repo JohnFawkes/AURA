@@ -79,7 +79,7 @@ type Config_SaveImagesLocally struct {
 }
 
 type Config_TMDB struct {
-	ApiToken string `yaml:"api_token,omitempty" json:"-"` // API key for accessing TMDB services.
+	ApiToken string `json:"-" yaml:"ApiToken"` // API token for accessing TMDB (The Movie Database) services.
 }
 
 type Config_LabelsAndTags struct {

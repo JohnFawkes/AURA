@@ -197,6 +197,10 @@ definitions:
         items:
           $ref: '#/definitions/models.LibrarySection'
         type: array
+      plex_event_listener:
+        allOf:
+        - $ref: '#/definitions/config.Config_PlexEventListener'
+        description: Plex WebSocket event listener settings (Plex only).
       type:
         description: Type of media server (e.g., plex, emby, jellyfin).
         type: string
@@ -328,6 +332,13 @@ definitions:
         allOf:
         - $ref: '#/definitions/config.Config_NotificationTemplate'
         description: Custom notification templates for different events
+    type: object
+  config.Config_PlexEventListener:
+    properties:
+      enabled:
+        description: Whether to listen for Plex metadata refresh events and auto-scan
+          in AURA.
+        type: boolean
     type: object
   config.Config_SaveImagesLocally:
     properties:
