@@ -141,6 +141,7 @@ export function UserPreferencesCard() {
         </div>
       </Card>
 
+      {/* MediUX Images Preferences */}
       <Card className="p-5 mt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-between">
