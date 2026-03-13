@@ -263,6 +263,16 @@ func checkConfigDifferences_MediaServer(ctx context.Context, oldMediaServer conf
 				Msg("MediaServer.UserID changed")
 			changed = true
 		}
+
+		if oldMediaServer.EnablePlexEventListener != newMediaServer.EnablePlexEventListener {
+			logAction.AppendResult("MediaServer.EnablePlexEventListener changed", fmt.Sprintf("from '%v' to '%v'", oldMediaServer.EnablePlexEventListener, newMediaServer.EnablePlexEventListener))
+			logging.LOGGER.Info().
+				Timestamp().
+				Bool("old_enabled", oldMediaServer.EnablePlexEventListener).
+				Bool("new_enabled", newMediaServer.EnablePlexEventListener).
+				Msg("MediaServer.PlexEventListener.Enabled changed")
+			changed = true
+		}
 	}
 	newValid = config.ValidateMediaServer(ctx, newMediaServer)
 	// If the Media Server config doesn't pass validation, return early

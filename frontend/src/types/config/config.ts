@@ -28,7 +28,9 @@ export interface AppConfigMediaServer {
   libraries: AppConfigMediaServerLibrary[]; // List of media server libraries to manage
   user_id?: string; // User ID for accessing the media server (optional for Emby/Jellyfin)
   enable_sort_by_episode_added_date?: boolean; // Whether to enable sorting shows by latest episode added date (Plex only)
+  enable_plex_event_listener?: boolean; // Whether to enable the Plex event listener for reapplying images on refresh (Plex only)
 }
+
 export interface AppConfigMediaServerLibrary {
   title: string; // Name of the library
   id: string; // Unique identifier for the library section

@@ -2,7 +2,8 @@
 
 ### Added
 
-- Added option to change "Items Per Page" on all pages. Shoutout to Geralt for the fix!
+- Added option to reapply images to Plex Items when they are refreshed in Plex. Plex exclusive feature. Shoutout to Geralt for the suggestion and most of the implementation!
+- Added option to change "Items Per Page" on all pages. Shoutout to Geralt for the implementation!
 
 ### Fixed
 

@@ -3255,6 +3255,10 @@ const docTemplate = `{
                     "description": "Authentication token for accessing the media server.",
                     "type": "string"
                 },
+                "enable_plex_event_listener": {
+                    "description": "Whether to enable the Plex event listener for reapplying images on refresh. Plex exclusive feature.",
+                    "type": "boolean"
+                },
                 "enable_sort_by_episode_added_date": {
                     "description": "Whether to check episodes for added date when getting Media Items. This is only for Plex servers.",
                     "type": "boolean"
@@ -3265,14 +3269,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.LibrarySection"
                     }
-                },
-                "plex_event_listener": {
-                    "description": "Plex WebSocket event listener settings (Plex only).",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_PlexEventListener"
-                        }
-                    ]
                 },
                 "type": {
                     "description": "Type of media server (e.g., plex, emby, jellyfin).",
@@ -3487,15 +3483,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/config.Config_NotificationTemplate"
                         }
                     ]
-                }
-            }
-        },
-        "config.Config_PlexEventListener": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "description": "Whether to listen for Plex metadata refresh events and auto-scan in AURA.",
-                    "type": "boolean"
                 }
             }
         },

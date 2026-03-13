@@ -9,6 +9,7 @@ import (
 	"aura/utils"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -17,40 +18,40 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	mediuxReconnectDelay = 5 * time.Second
+)
+
 func StartMediuxWebSocketClient() {
-	for {
-		err := connectAndSubscribeMediux()
-		if err != nil {
-			logging.LOGGER.Error().Timestamp().Err(err).Msg("Mediux WebSocket connection error")
+	go func() {
+		for {
+			err := connectAndSubscribeMediux()
+			if err != nil {
+				logging.LOGGER.Error().Timestamp().Err(err).Msg("Mediux WebSocket connection error")
+			}
+			logging.LOGGER.Warn().Timestamp().Msgf("Reconnecting to WebSocket in %s...", mediuxReconnectDelay)
+			// Wait before reconnecting
+			time.Sleep(mediuxReconnectDelay)
 		}
-		logging.LOGGER.Warn().Timestamp().Msg("Reconnecting to WebSocket in 5 seconds...")
-		// Wait before reconnecting
-		time.Sleep(5 * time.Second)
-	}
+	}()
 }
 
 func connectAndSubscribeMediux() error {
 	// Build WebSocket URL with token
-	u, err := url.Parse(mediux.MediuxApiURL)
+	URL, err := buildMediuxWebSocketURL()
 	if err != nil {
 		return err
 	}
-	u.Scheme = "wss"
-	u.Path = "/websocket"
-	q := u.Query()
-	q.Set("access_token", config.Current.Mediux.ApiToken)
-	u.RawQuery = q.Encode()
-	URL := u.String()
 	maskedToken := config.MaskToken(config.Current.Mediux.ApiToken)
-	maskedURL := u.String()
-	maskedURL = strings.ReplaceAll(maskedURL, config.Current.Mediux.ApiToken, maskedToken)
+	maskedURL := strings.ReplaceAll(URL, config.Current.Mediux.ApiToken, maskedToken)
 
-	logging.LOGGER.Info().Timestamp().Str("url", maskedURL).Msg("Connecting to Mediux WebSocket")
+	logging.LOGGER.Info().Timestamp().Str("url", maskedURL).
+		Msg("Mediux Event Listener: Connecting to Mediux WebSocket")
 
 	// Connect to WebSocket
 	c, _, err := websocket.DefaultDialer.Dial(URL, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to Mediux WebSocket at %s: %w", maskedURL, err)
 	}
 	defer c.Close()
 
@@ -155,6 +156,19 @@ func connectAndSubscribeMediux() error {
 		}
 
 	}
+}
+
+func buildMediuxWebSocketURL() (string, error) {
+	u, err := url.Parse(mediux.MediuxApiURL)
+	if err != nil {
+		return "", err
+	}
+	u.Scheme = "wss"
+	u.Path = "/websocket"
+	q := u.Query()
+	q.Set("access_token", config.Current.Mediux.ApiToken)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 type MediuxWebSocketResponseMessage struct {

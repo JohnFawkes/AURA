@@ -5,6 +5,7 @@ import (
 	"aura/config"
 	"aura/database"
 	"aura/database/migration"
+	autodownload "aura/download/auto"
 	downloadqueue "aura/download/queue"
 	"aura/jobs"
 	"aura/logging"
@@ -219,7 +220,10 @@ func runWarmup() (success bool) {
 	mediux.CheckSiteLinkAvailability()
 
 	// Initialize MediUX WebSocket Listener
-	//go mediux.StartWebSocketClient()
+	//go autodownload.StartMediuxWebSocketClient()
+
+	// Initialize Media Server WebSocket Listener (if supported)
+	go autodownload.StartPlexWebSocketClient()
 
 	success = true
 	return success

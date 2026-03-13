@@ -50,6 +50,7 @@ type Config_MediaServer struct {
 	Libraries                    []models.LibrarySection `json:"libraries,omitempty" yaml:"Libraries,omitempty"`                        // List of media server libraries to manage.
 	UserID                       string                  `json:"user_id,omitempty" yaml:"UserID,omitempty"`                             // User ID for accessing the media server. This is used for Emby and Jellyfin servers.
 	EnableSortByEpisodeAddedDate bool                    `json:"enable_sort_by_episode_added_date" yaml:"EnableSortByEpisodeAddedDate"` // Whether to check episodes for added date when getting Media Items. This is only for Plex servers.
+	EnablePlexEventListener      bool                    `json:"enable_plex_event_listener" yaml:"EnablePlexEventListener"`             // Whether to enable the Plex event listener for reapplying images on refresh. Plex exclusive feature.
 }
 
 type Config_Mediux struct {

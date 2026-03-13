@@ -685,6 +685,39 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
           </div>
         </div>
       )}
+
+      {/* Plex Websocket Listener */}
+      {value.type === "Plex" && (
+        <div
+          className={cn(
+            "flex items-center justify-between border rounded-md p-3 transition",
+            "border-muted",
+            dirtyFields.enable_plex_event_listener && "border-amber-500"
+          )}
+        >
+          <Label>Enable Plex Websocket Listener</Label>
+          <div className="flex items-center gap-2">
+            <Switch
+              disabled={!editing}
+              checked={value.enable_plex_event_listener}
+              onCheckedChange={(c) => onChange("enable_plex_event_listener", c)}
+            />
+            {editing && (
+              <PopoverHelp ariaLabel="help-plex-websocket-listener">
+                <p className="mb-2">
+                  When enabled, Aura will listen for Plex library refresh events and automatically reapply saved images
+                  to refreshed items.
+                </p>
+                <p className="text-muted-foreground">
+                  This feature is exclusive to Plex and requires an extra websocket connection from Aura to your Plex
+                  server. It can be safely disabled if you don't want this functionality or if you experience any
+                  issues.
+                </p>
+              </PopoverHelp>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
