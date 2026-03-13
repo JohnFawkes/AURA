@@ -137,14 +137,13 @@ func sizeReallyChanged(newSize int64, oldSize int64) bool {
 	return false
 }
 
-func durationReallyChanged(newDuration int64, oldDuration int64) bool {
-	const durationThresholdSeconds int64 = 10
-	durationDifference := newDuration - oldDuration
-	if durationDifference < 0 {
-		durationDifference = -durationDifference
+func durationReallyChanged(newDuration, oldDuration int64) bool {
+	const threshold int64 = 10
+
+	diff := newDuration - oldDuration
+	if diff < 0 {
+		diff = -diff
 	}
-	if newDuration < durationThresholdSeconds || oldDuration < durationThresholdSeconds || durationDifference > durationThresholdSeconds {
-		return true
-	}
-	return false
+
+	return diff > threshold
 }
