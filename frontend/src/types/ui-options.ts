@@ -3,8 +3,7 @@ export type TYPE_SORT_ORDER_OPTIONS = "asc" | "desc";
 export const SORT_ORDER_OPTIONS: TYPE_SORT_ORDER_OPTIONS[] = ["asc", "desc"];
 
 // Items Per Page
-export type TYPE_ITEMS_PER_PAGE_OPTIONS = 10 | 20 | 30 | 50 | 100;
-export const ITEMS_PER_PAGE_OPTIONS: TYPE_ITEMS_PER_PAGE_OPTIONS[] = [10, 20, 30, 50, 100];
+export const ITEMS_PER_PAGE_OPTIONS: number[] = [10, 20, 30, 50, 100];
 
 // Saved Sets View Types
 export type TYPE_SAVED_SET_VIEW_TYPE_OPTIONS = "card" | "table";

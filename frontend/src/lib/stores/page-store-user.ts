@@ -4,10 +4,9 @@ import { persist } from "zustand/middleware";
 import { PageStore } from "@/lib/stores/stores";
 
 import type { PaginationStore, SortStore } from "@/types/store-interfaces";
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS, TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
+import type { TYPE_SORT_ORDER_OPTIONS } from "@/types/ui-options";
 
-interface User_PageStore
-  extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+interface User_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, number> {
   // Hydration and Clear
   hasHydrated: boolean;
   hydrate: () => void;

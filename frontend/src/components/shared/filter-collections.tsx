@@ -25,8 +25,6 @@ import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
-
 type CollectionsFilterProps = {
   // Filtering
   librarySections: string[];
@@ -41,8 +39,8 @@ type CollectionsFilterProps = {
 
   // Items Per Page
   setCurrentPage: (page: number) => void;
-  itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
-  setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+  itemsPerPage: number;
+  setItemsPerPage: (num: number) => void;
 };
 
 function FilterCollectionsContent({

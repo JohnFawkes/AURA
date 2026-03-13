@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 
-import { ResponsiveGrid } from "@/components/shared/responsive-grid";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { cn } from "@/lib/cn";
 
 // Single skeleton card
 export const HomeMediaItemCardSkeleton: React.FC = () => (
@@ -38,11 +39,16 @@ export const HomeMediaItemCardSkeleton: React.FC = () => (
 
 // Grid of skeleton cards, centered and responsive
 export const HomeMediaItemCardSkeletonGrid: React.FC = () => {
+  const cols = "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
   return (
-    <ResponsiveGrid size="regular" className="mx-auto max-w-screen-xl">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <HomeMediaItemCardSkeleton key={index} />
-      ))}
-    </ResponsiveGrid>
+    <div className="flex justify-center">
+      <div className={cn("grid gap-4", cols)}>
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-1.5">
+            <HomeMediaItemCardSkeleton />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };

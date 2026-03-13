@@ -6,13 +6,11 @@ import { PageStore } from "@/lib/stores/stores";
 import type { PaginationStore, SortStore } from "@/types/store-interfaces";
 import type {
   TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
-  TYPE_ITEMS_PER_PAGE_OPTIONS,
   TYPE_SAVED_SET_VIEW_TYPE_OPTIONS,
   TYPE_SORT_ORDER_OPTIONS,
 } from "@/types/ui-options";
 
-interface SavedSets_PageStore
-  extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+interface SavedSets_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, number> {
   // View Store
   viewOption: TYPE_SAVED_SET_VIEW_TYPE_OPTIONS;
   setViewOption: (option: TYPE_SAVED_SET_VIEW_TYPE_OPTIONS) => void;

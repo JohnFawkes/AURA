@@ -8,15 +8,13 @@ import type { PaginationStore, SortStore } from "@/types/store-interfaces";
 import type {
   TYPE_FILTER_IGNORED_OPTIONS,
   TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS,
-  TYPE_ITEMS_PER_PAGE_OPTIONS,
   TYPE_SORT_ORDER_OPTIONS,
 } from "@/types/ui-options";
 import type { TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type Direction = "next" | "previous";
 
-interface Home_PageStore
-  extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+interface Home_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>, PaginationStore<number, number> {
   // Filters
   filteredAndSortedMediaItems: MediaItem[];
   setFilteredAndSortedMediaItems: (items: MediaItem[]) => void;

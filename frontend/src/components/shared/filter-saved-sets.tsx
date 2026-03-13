@@ -33,11 +33,7 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import {
-  FILTER_AUTO_DOWNLOAD_OPTIONS,
-  TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
-  type TYPE_ITEMS_PER_PAGE_OPTIONS,
-} from "@/types/ui-options";
+import { FILTER_AUTO_DOWNLOAD_OPTIONS, TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS } from "@/types/ui-options";
 
 type SavedSetsFilterProps = {
   getSectionSummaries: () => { title?: string; type?: string }[];
@@ -72,8 +68,8 @@ type SavedSetsFilterProps = {
 
   // Items Per Page
   setCurrentPage: (page: number) => void;
-  itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
-  setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+  itemsPerPage: number;
+  setItemsPerPage: (num: number) => void;
 
   setModalOpen?: (open: boolean) => void;
 };

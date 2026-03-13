@@ -9,15 +9,13 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
-
 interface CustomPaginationProps {
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
   scrollToTop?: boolean;
   filterItemsLength?: number; // Optional prop to filter items length
-  itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
+  itemsPerPage: number;
 }
 
 export function CustomPagination({

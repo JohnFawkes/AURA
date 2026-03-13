@@ -4,9 +4,8 @@ import { persist } from "zustand/middleware";
 import { PageStore } from "@/lib/stores/stores";
 
 import type { PaginationStore } from "@/types/store-interfaces";
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
 
-interface Logs_PageStore extends PaginationStore<number, TYPE_ITEMS_PER_PAGE_OPTIONS> {
+interface Logs_PageStore extends PaginationStore<number, number> {
   // Filters
   levelsFilter: string[];
   setLevelsFilter: (levels: string[]) => void;

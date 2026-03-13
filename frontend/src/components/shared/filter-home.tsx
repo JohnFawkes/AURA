@@ -30,7 +30,6 @@ import type {
   TYPE_FILTER_IGNORED_OPTIONS,
   TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS,
   TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS,
-  TYPE_ITEMS_PER_PAGE_OPTIONS,
 } from "@/types/ui-options";
 import { FILTER_IGNORED_OPTIONS, HOME_PAGE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
@@ -56,8 +55,8 @@ type HomeFilterProps = {
 
   // Items Per Page
   setCurrentPage: (page: number) => void;
-  itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
-  setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+  itemsPerPage: number;
+  setItemsPerPage: (num: number) => void;
 };
 
 function FilterHomeContent({

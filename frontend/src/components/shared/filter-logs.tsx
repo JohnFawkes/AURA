@@ -20,8 +20,6 @@ import { Separator } from "@/components/ui/separator";
 
 import { cn } from "@/lib/cn";
 
-import type { TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
-
 const levelsOptions = [
   { label: "TRACE", value: "trace" },
   { label: "DEBUG", value: "debug" },
@@ -48,8 +46,8 @@ type LogsFilterProps = {
   setActionsFilter: (actions: string[]) => void;
 
   setCurrentPage: (page: number) => void;
-  itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
-  setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+  itemsPerPage: number;
+  setItemsPerPage: (num: number) => void;
 
   setModalOpen?: (open: boolean) => void;
 };
