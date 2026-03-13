@@ -71,11 +71,22 @@ COPY --from=frontend-builder /frontend/.next/standalone /app/
 COPY --from=frontend-builder /frontend/.next/static /app/.next/static
 COPY --from=frontend-builder /frontend/public /app/public
 
+# Normalize runtime-readable permissions for static assets. Local git checkouts can
+# carry restrictive modes (for example from a 077 umask), and COPY preserves them.
+RUN find /app/public -type d -exec chmod 755 {} + \
+	&& find /app/public -type f -exec chmod 644 {} + \
+	&& find /app/.next/static -type d -exec chmod 755 {} + \
+	&& find /app/.next/static -type f -exec chmod 644 {} +
+
 # Get the version from build arguments/environment variables
 ARG APP_VERSION=dev
 
 # Set environment variables
 ENV NODE_ENV=production
+ENV HOME=/tmp
+ENV XDG_CACHE_HOME=/tmp/.cache
+ENV GOCACHE=/tmp/.cache/go-build
+ENV GOMODCACHE=/tmp/.cache/go-mod
 
 # Expose the ports for both the backend and frontend
 EXPOSE 3000
