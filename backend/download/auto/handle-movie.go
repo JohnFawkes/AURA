@@ -77,7 +77,7 @@ func handleMovie(ctx context.Context, dbItem models.DBSavedItem) (result AutoDow
 	}
 	// Check to see if the file details have changed
 	if mediaItem.Movie != nil && dbItem.MediaItem.Movie != nil {
-		if mediaItem.Movie.File.Duration != dbItem.MediaItem.Movie.File.Duration {
+		if durationReallyChanged(mediaItem.Movie.File.Duration, dbItem.MediaItem.Movie.File.Duration) {
 			itemChanges["duration"] = true
 		}
 		if mediaItem.Movie.File.Path != dbItem.MediaItem.Movie.File.Path {

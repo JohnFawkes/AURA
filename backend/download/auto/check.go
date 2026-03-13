@@ -117,14 +117,33 @@ func episodeExists(mediaItem models.MediaItem, seasonNumber int, episodeNumber i
 }
 
 // Only mark size as changed if the size differs by at least 256KB to avoid minor Media Server metadata/container drift.
-// If either old/new episode file is less than 1MB, mark any size difference as changed.
+// If Old and New sizes are both under 256KB, consider that no change
+// If one of the sizes is under 256KB and the other is over, consider that a change regardless of the difference, since that could indicate a change from a stub/small file to a real file or vice versa.
+// If both sizes are over 256KB, then check if the difference is over 256KB to consider it a change.
 func sizeReallyChanged(newSize int64, oldSize int64) bool {
 	const sizeThresholdBytes int64 = 256 * 1024 // 256 KB threshold
 	sizeDifference := newSize - oldSize
 	if sizeDifference < 0 {
 		sizeDifference = -sizeDifference
 	}
-	if newSize < sizeThresholdBytes || oldSize < sizeThresholdBytes || sizeDifference > sizeThresholdBytes {
+
+	if newSize < sizeThresholdBytes && oldSize < sizeThresholdBytes {
+		return false
+	} else if (newSize < sizeThresholdBytes && oldSize >= sizeThresholdBytes) || (newSize >= sizeThresholdBytes && oldSize < sizeThresholdBytes) {
+		return true
+	} else if sizeDifference > sizeThresholdBytes {
+		return true
+	}
+	return false
+}
+
+func durationReallyChanged(newDuration int64, oldDuration int64) bool {
+	const durationThresholdSeconds int64 = 10
+	durationDifference := newDuration - oldDuration
+	if durationDifference < 0 {
+		durationDifference = -durationDifference
+	}
+	if newDuration < durationThresholdSeconds || oldDuration < durationThresholdSeconds || durationDifference > durationThresholdSeconds {
 		return true
 	}
 	return false
