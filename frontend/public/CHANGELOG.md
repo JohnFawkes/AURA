@@ -1,5 +1,9 @@
 ## [0.9.89] - 2026-03-12
 
+### Added
+
+- Added option to change "Items Per Page" on all pages. Shoutout to Geralt for the fix!
+
 ### Fixed
 
 - Reduced database file size by improving automatic SQLite vacuuming.
