@@ -56,6 +56,7 @@ local/*
 backend/generate_go_docs.sh
 frontend/run_frontend
 backend/.air.toml
+backend/tmp
 .secrets
 docker_local_build.sh
 docker_local_beta_build.sh
