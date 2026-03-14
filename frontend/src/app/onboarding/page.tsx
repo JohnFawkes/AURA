@@ -2,6 +2,7 @@
 
 import { makePlural } from "@/helper/make_plural";
 import { finalizeOnboarding } from "@/services/config/onboarding-finalize";
+import { GetNotificationTemplateVariables } from "@/services/config/template-variables";
 import { UpdateAppConfig } from "@/services/config/update";
 import yaml from "js-yaml";
 import { toast } from "sonner";
@@ -25,7 +26,7 @@ import { H2, P } from "@/components/ui/typography";
 
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
-import type { AppConfig } from "@/types/config/config";
+import type { AppConfig, NotificationTemplateVariablesCatalog } from "@/types/config/config";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
 interface StepDef {
@@ -45,8 +46,28 @@ const OnboardingPage = () => {
 
   const [applyLoading, setApplyLoading] = useState(false);
   const [configState, setConfigState] = useState<AppConfig>(() => status?.current_setup || defaultAppConfig());
+  const [notificationTemplateVariables, setNotificationTemplateVariables] =
+    useState<NotificationTemplateVariablesCatalog | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, Record<string, string>>>({});
   const [errorSummaryOpen, setErrorSummaryOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchTemplateVariables = async () => {
+      const response = await GetNotificationTemplateVariables();
+      if (!mounted) return;
+      if (response.status === "success" && response.data?.variables) {
+        setNotificationTemplateVariables(response.data.variables);
+      }
+    };
+
+    fetchTemplateVariables();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Keep configState in sync with backend status if it changes
   useEffect(() => {
@@ -302,6 +323,7 @@ const OnboardingPage = () => {
             onChange={(f, v) => updateSectionField("notifications", f, v)}
             errorsUpdate={(errs) => updateSectionErrors("notifications", errs as Record<string, string>)}
             configAlreadyLoaded={status?.config_loaded || false}
+            templateVariablesCatalog={notificationTemplateVariables}
           />
         ),
       },
@@ -332,6 +354,7 @@ const OnboardingPage = () => {
       configState.mediux,
       configState.notifications,
       configState.sonarr_radarr,
+      notificationTemplateVariables,
       reviewYaml,
       status?.config_loaded,
       updateImagesField,

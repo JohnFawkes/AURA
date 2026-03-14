@@ -120,12 +120,11 @@ export interface AppConfigNotificationWebhook {
 export interface AppConfigNotificationTemplate {
   app_startup: AppConfigNotificationCustomNotification;
   test_notification: AppConfigNotificationCustomNotification;
-  // autodownload: AppConfigNotificationCustomNotification;
-  // download_queue_success: AppConfigNotificationCustomNotification;
-  // download_queue_warning: AppConfigNotificationCustomNotification;
-  // download_queue_error: AppConfigNotificationCustomNotification;
-  // sonarr_download_upgrade: AppConfigNotificationCustomNotification;
-  // sonarr_download_new: AppConfigNotificationCustomNotification;
+  autodownload: AppConfigNotificationCustomNotification;
+}
+
+export interface NotificationTemplateVariablesCatalog {
+  template_variables: Record<string, string[]>;
 }
 
 export interface AppConfigNotificationCustomNotification {

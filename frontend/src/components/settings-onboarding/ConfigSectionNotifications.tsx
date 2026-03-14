@@ -29,6 +29,7 @@ import type {
   AppConfigNotificationTemplate,
   AppConfigNotificationWebhook,
   AppConfigNotifications,
+  NotificationTemplateVariablesCatalog,
 } from "@/types/config/config";
 
 interface ConfigSectionNotificationsProps {
@@ -57,6 +58,7 @@ interface ConfigSectionNotificationsProps {
   onChange: <K extends keyof AppConfigNotifications>(field: K, value: AppConfigNotifications[K]) => void;
   errorsUpdate?: (errors: Record<string, string>) => void;
   configAlreadyLoaded: boolean;
+  templateVariablesCatalog?: NotificationTemplateVariablesCatalog | null;
 }
 
 const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify", "Webhook"] as const;
@@ -64,29 +66,18 @@ const PROVIDER_TYPES = ["Discord", "Pushover", "Gotify", "Webhook"] as const;
 const TEMPLATE_TITLES: Partial<Record<keyof AppConfigNotificationTemplate, string>> = {
   app_startup: "App Startup",
   test_notification: "Test Notification",
-  // autodownload: "Auto Download",
-  // download_queue_success: "Download Queue Success",
+  autodownload: "Auto Download",
+
   // download_queue_warning: "Download Queue Warning",
   // download_queue_error: "Download Queue Error",
   // sonarr_download_upgrade: "Sonarr Download Upgrade",
   // sonarr_download_new: "Sonarr Download New",
 };
 
-const NOTIFICATION_VARIABLES: Partial<Record<keyof AppConfigNotificationTemplate, string[]>> = {
-  app_startup: [
-    "{{AppName}}",
-    "{{AppVersion}}",
-    "{{AppPort}}",
-    "{{MediaServerName}}",
-    "{{MediaServerType}}",
-    "{{Timestamp}}",
-  ],
-  test_notification: ["{{Timestamp}}", "{{MediaServerName}}", "{{MediaServerType}}"],
-};
-
 const TEMPLATE_SUPPORTS_IMAGE: Partial<Record<keyof AppConfigNotificationTemplate, boolean>> = {
   app_startup: false,
   test_notification: false,
+  autodownload: true,
 };
 
 const TEMPLATE_VAR_REGEX = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
@@ -98,6 +89,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
   onChange,
   errorsUpdate,
   configAlreadyLoaded,
+  templateVariablesCatalog,
 }) => {
   const prevErrorsRef = useRef<string>("");
   const hasRunInitialValidation = useRef(false);
@@ -121,11 +113,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
   const [remoteTokenErrors, setRemoteTokenErrors] = useState<Record<number, string | null>>({});
 
   const templateKeys = useMemo(() => Object.keys(TEMPLATE_TITLES) as Array<keyof AppConfigNotificationTemplate>, []);
+  const templateVariables = useMemo(() => templateVariablesCatalog, [templateVariablesCatalog]);
 
   const getUsedVars = (text: string) => {
     const set = new Set<string>();
     for (const m of text.matchAll(TEMPLATE_VAR_REGEX)) {
-      if (m[0]) set.add(m[0]); // keep with braces for direct compare with NOTIFICATION_VARIABLES
+      if (m[0]) set.add(m[0]);
     }
     return [...set];
   };
@@ -893,9 +886,11 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                 include_image: false,
               };
 
-              const allowedVars = NOTIFICATION_VARIABLES[key] || [];
+              const allowedVars = templateVariables?.template_variables?.[String(key)] || [];
               const usedVars = [...getUsedVars(tpl.title || ""), ...getUsedVars(tpl.message || "")];
-              const unknownVars = [...new Set(usedVars.filter((v) => !allowedVars.includes(v)))];
+              const unknownVars = templateVariables
+                ? [...new Set(usedVars.filter((v) => !allowedVars.includes(v)))]
+                : [];
               const supportsImage = TEMPLATE_SUPPORTS_IMAGE[key] ?? true;
               const insertTarget = insertTargetByTemplate[key] || "message";
 
@@ -918,7 +913,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
                       <div>
                         {/* Test Button */}
-                        {/* {value.enabled &&
+                        {value.enabled &&
                           tpl.enabled &&
                           providers.filter((p) => p.enabled).length > 0 &&
                           unknownVars.length === 0 && (
@@ -945,7 +940,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                             >
                               <TestTube className="h-4 w-4" />
                             </Button>
-                          )} */}
+                          )}
                         <Switch
                           disabled={!editing}
                           checked={!!tpl.enabled}

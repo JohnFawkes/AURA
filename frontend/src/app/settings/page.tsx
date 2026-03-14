@@ -2,6 +2,7 @@
 
 import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAppConfigStatus } from "@/services/config/status";
+import { GetNotificationTemplateVariables } from "@/services/config/template-variables";
 import { UpdateAppConfig } from "@/services/config/update";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ import type {
   AppConfigNotificationGotify,
   AppConfigNotificationPushover,
   AppConfigNotificationWebhook,
+  NotificationTemplateVariablesCatalog,
 } from "@/types/config/config";
 import { defaultAppConfig } from "@/types/config/config-default-app";
 
@@ -96,6 +98,8 @@ const SettingsPage: React.FC = () => {
 
   const [initialConfig, setInitialConfig] = useState<AppConfig>(() => defaultAppConfig());
   const [newConfig, setNewConfig] = useState<AppConfig>(() => defaultAppConfig());
+  const [notificationTemplateVariables, setNotificationTemplateVariables] =
+    useState<NotificationTemplateVariablesCatalog | null>(null);
   const [dirty, setDirty] = useState<DirtyState>({});
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -134,11 +138,16 @@ const SettingsPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await GetAppConfigStatus(reload);
+      const templateVariableResponse = await GetNotificationTemplateVariables();
       if (response.status === "error") {
         setError(response);
         setInitialConfig(defaultAppConfig());
         setNewConfig(defaultAppConfig());
         return;
+      }
+
+      if (templateVariableResponse.status === "success" && templateVariableResponse.data?.variables) {
+        setNotificationTemplateVariables(templateVariableResponse.data.variables);
       }
 
       const cfg = response.data?.status.current_setup ?? defaultAppConfig();
@@ -677,6 +686,7 @@ const SettingsPage: React.FC = () => {
                   onChange={(field, val) => updateConfigField("notifications", field, val)}
                   errorsUpdate={(errs) => updateSectionErrors("notifications", errs as Record<string, string>)}
                   configAlreadyLoaded={true}
+                  templateVariablesCatalog={notificationTemplateVariables}
                 />
               </div>
             </TabsContent>

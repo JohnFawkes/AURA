@@ -56,6 +56,13 @@ export const defaultAppConfig = (): AppConfig =>
           message: "This is a test notification.",
           include_image: false,
         },
+        autodownload: {
+          enabled: true,
+          title: "Auto Download | {{ReasonTitle}}",
+          message:
+            "{{MediaItemTitle}}{{NewLine}}{{ImageName}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}Reason:{{NewLine}}{{Reason}}",
+          include_image: true,
+        },
       },
     },
     sonarr_radarr: {
