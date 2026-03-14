@@ -858,24 +858,14 @@ type notificationTemplateDiff struct {
 
 func diffNotificationTemplates(oldT, newT config.Config_NotificationTemplate) []notificationTemplateDiff {
 	oldMap := map[string]config.Config_CustomNotification{
-		"app_startup":             oldT.AppStartup,
-		"autodownload":            oldT.Autodownload,
-		"download_queue_success":  oldT.DownloadQueueSuccess,
-		"download_queue_warning":  oldT.DownloadQueueWarning,
-		"download_queue_error":    oldT.DownloadQueueError,
-		"sonarr_download_upgrade": oldT.SonarrDownloadUpgrade,
-		"sonarr_download_new":     oldT.SonarrDownloadNew,
-		"test_notification":       oldT.TestNotification,
+		"app_startup":       oldT.AppStartup,
+		"test_notification": oldT.TestNotification,
+		"autodownload":      oldT.Autodownload,
 	}
 	newMap := map[string]config.Config_CustomNotification{
-		"app_startup":             newT.AppStartup,
-		"autodownload":            newT.Autodownload,
-		"download_queue_success":  newT.DownloadQueueSuccess,
-		"download_queue_warning":  newT.DownloadQueueWarning,
-		"download_queue_error":    newT.DownloadQueueError,
-		"sonarr_download_upgrade": newT.SonarrDownloadUpgrade,
-		"sonarr_download_new":     newT.SonarrDownloadNew,
-		"test_notification":       newT.TestNotification,
+		"app_startup":       newT.AppStartup,
+		"test_notification": newT.TestNotification,
+		"autodownload":      newT.Autodownload,
 	}
 
 	diffs := make([]notificationTemplateDiff, 0)
