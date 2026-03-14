@@ -329,7 +329,8 @@ func buildSavedItemsWhere(filter models.DBFilter) (whereSQL string, args []any) 
 		add("mi.title LIKE ?", "%"+strings.TrimSpace(filter.ItemTitle)+"%")
 	}
 	if len(filter.LibraryTitles) > 0 {
-		inSQL, inArgs := makeInClause(filter.LibraryTitles)
+		// Preserve exact library title values (including intentional leading spaces).
+		inSQL, inArgs := makeInClauseNoTrim(filter.LibraryTitles)
 		add("mi.library_title IN ("+inSQL+")", inArgs...)
 	}
 
@@ -407,6 +408,23 @@ func makeInClause(values []string) (placeholders string, args []any) {
 	}
 	if len(ph) == 0 {
 		// Caller should avoid using this if empty; keep safe fallback.
+		return "NULL", []any{}
+	}
+	return strings.Join(ph, ","), args
+}
+
+func makeInClauseNoTrim(values []string) (placeholders string, args []any) {
+	args = make([]any, 0, len(values))
+	ph := make([]string, 0, len(values))
+	for _, v := range values {
+		// Keep exact value; skip only truly empty entries.
+		if v == "" {
+			continue
+		}
+		ph = append(ph, "?")
+		args = append(args, v)
+	}
+	if len(ph) == 0 {
 		return "NULL", []any{}
 	}
 	return strings.Join(ph, ","), args
