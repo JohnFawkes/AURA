@@ -466,7 +466,7 @@ const SettingsPage: React.FC = () => {
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       {loading ? (
         <Loader message="Loading configuration..." />
       ) : error ? (

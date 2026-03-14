@@ -895,7 +895,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
               const insertTarget = insertTargetByTemplate[key] || "message";
 
               return (
-                <AccordionItem key={String(key)} value={String(key)} className="rounded-md border px-3">
+                <AccordionItem key={String(key)} value={String(key)} className="rounded-md border px-3 mb-1">
                   <AccordionTrigger>
                     <div className="flex items-center gap-2 text-left">
                       <span>{TEMPLATE_TITLES[key] || key}</span>
