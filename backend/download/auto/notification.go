@@ -3,26 +3,31 @@ package autodownload
 import (
 	"aura/config"
 	"aura/logging"
+	"aura/models"
 	"aura/notification"
 	"aura/utils"
 	"context"
 	"fmt"
 )
 
-func sendFileDownloadNotification(itemInfo string, setID string, imageWithReason ImageFileWithReason) {
+func sendFileDownloadNotification(mediaItem models.MediaItem, set models.DBPosterSetDetail, imageWithReason ImageFileWithReason) {
 	if !config.Current.Notifications.Enabled {
 		return
 	} else if len(config.Current.Notifications.Providers) == 0 {
 		return
 	}
 
-	title := fmt.Sprintf("Auto Download | %s", imageWithReason.ReasonTitle)
-	message := fmt.Sprintf("%s\n%s\nSet ID: %s\n\nReason:\n%s", itemInfo, utils.GetFileDownloadName(itemInfo, imageWithReason.ImageFile), setID, imageWithReason.Reason)
-	imageURL := fmt.Sprintf("%s/%s?v=%s&key=jpg",
-		"https://images.mediux.io/assets",
-		imageWithReason.ID,
-		imageWithReason.Modified.Format("20060102150405"),
-	)
+	vars := utils.TemplateVars_Autodownload(mediaItem, set, imageWithReason.ImageFile, imageWithReason.ReasonTitle, imageWithReason.Reason)
+	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.Autodownload.Title, vars)
+	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.Autodownload.Message, vars)
+	imageURL := ""
+	if config.Current.Notifications.NotificationTemplate.Autodownload.IncludeImage {
+		imageURL = fmt.Sprintf("%s/%s?v=%s&key=jpg",
+			"https://images.mediux.io/assets",
+			imageWithReason.ID,
+			imageWithReason.Modified.Format("20060102150405"),
+		)
+	}
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send File Download Message")
 	logAction := ld.AddAction("Sending File Download Notification", logging.LevelInfo)

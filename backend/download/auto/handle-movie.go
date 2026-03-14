@@ -224,7 +224,7 @@ func handleMovie(ctx context.Context, dbItem models.DBSavedItem) (result AutoDow
 				// Send a notification to all configured notification services
 				// We do this asynchronously and don't wait for the result
 				go func(image ImageFileWithReason) {
-					sendFileDownloadNotification(utils.MediaItemInfo(*mediaItem), dbSet.ID, image)
+					sendFileDownloadNotification(*mediaItem, dbSet, image)
 				}(image)
 			}
 		}

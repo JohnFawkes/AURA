@@ -492,7 +492,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				// Send a notification to all configured notification services
 				// We do this asynchronously and don't wait for the result
 				go func(image ImageFileWithReason) {
-					sendFileDownloadNotification(mediaItem.Title, dbSet.ID, image)
+					sendFileDownloadNotification(*mediaItem, dbSet, image)
 				}(image)
 			}
 		}
