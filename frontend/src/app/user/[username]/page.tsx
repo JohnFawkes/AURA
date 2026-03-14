@@ -180,7 +180,8 @@ const UserSetPage = () => {
   useEffect(() => {
     if (!hasHydrated) return;
     const sections = getSectionSummaries();
-    setLibrarySections(sections);
+    const nonMixedSections = sections.filter((s) => s.type !== "mixed");
+    setLibrarySections(nonMixedSections);
     setSelectedLibrarySection(null);
     log("INFO", "User Page", "Library Sections", "Fetched library sections from cache", sections);
   }, [getSectionSummaries, hasHydrated]);

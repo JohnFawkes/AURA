@@ -59,7 +59,7 @@ func getAllLibrarySectionsAndItemsImpl(ctx context.Context) (success bool) {
 		}
 
 		// Update the collections cache for this section
-		if section.Type == "movie" && !ejRanCollections {
+		if (section.Type == "movie" || section.Type == "mixed") && !ejRanCollections {
 			GetMovieCollections(ctx, section)
 			if config.Current.MediaServer.Type == "Emby" || config.Current.MediaServer.Type == "Jellyfin" {
 				ejRanCollections = true

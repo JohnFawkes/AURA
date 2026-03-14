@@ -45,7 +45,10 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 	}
 
 	for _, item := range ejResp.Items {
-		if item.CollectionType != "movies" && item.CollectionType != "tvshows" {
+		if item.CollectionType == "" {
+			item.CollectionType = "mixed"
+		}
+		if item.CollectionType != "movies" && item.CollectionType != "tvshows" && item.CollectionType != "mixed" {
 			continue
 		}
 		if item.Name == library.Title {
@@ -53,6 +56,7 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 			library.Type = map[string]string{
 				"movies":  "movie",
 				"tvshows": "show",
+				"mixed":   "mixed",
 			}[item.CollectionType]
 			found = true
 			break

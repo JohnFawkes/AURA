@@ -93,5 +93,5 @@ export const DOWNLOAD_COLLECTION_IMAGE_TYPE_OPTIONS: {
   { value: "collection_backdrop", label: "Collection Backdrop" },
 ];
 
-export type TYPE_LIBRARY_TYPE_OPTIONS = "movie" | "show";
+export type TYPE_LIBRARY_TYPE_OPTIONS = "movie" | "show" | "mixed";
 export type TYPE_MEDIA_ITEM_TYPE_OPTIONS = "movie" | "show";
