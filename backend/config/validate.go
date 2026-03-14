@@ -248,6 +248,7 @@ func ValidateNotifications(ctx context.Context, Notifications *Config_Notificati
 	defer logAction.Complete()
 
 	isValid := true
+	defaults := DefaultNotificationTemplates()
 
 	// If the notifications are not enabled, skip validation
 	if !Notifications.Enabled || len(Notifications.Providers) == 0 {
@@ -265,46 +266,56 @@ func ValidateNotifications(ctx context.Context, Notifications *Config_Notificati
 
 	// If notifications are enabled, valiate the templates
 	if Notifications.NotificationTemplate.AppStartup == (Config_CustomNotification{}) {
-		Notifications.NotificationTemplate.AppStartup = Config_CustomNotification{
-			Enabled: true,
-			Title:   "{{AppName}} | Start Up",
-			Message: "{{AppName}}:v{{AppVersion}} ({{MediaServerName}}) backend server API has started and is listening on port {{AppPort}}\n{{Timestamp}}",
-		}
+		Notifications.NotificationTemplate.AppStartup = defaults.AppStartup
 		logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.AppStartup not set, defaulting to built-in template")
 		logAction.AppendWarning("message", "Notifications.NotificationTemplate.AppStartup not set, defaulting to built-in template")
 	} else {
-		validAppStartupVariables := []string{"{{AppName}}", "{{AppVersion}}", "{{AppPort}}", "{{MediaServerName}}", "{{MediaServerType}}", "{{Timestamp}}"}
+		validAppStartupVariables := AllowedTemplateVariables(TemplateTypeAppStartup)
 		if !validateTemplateVariables(Notifications.NotificationTemplate.AppStartup.Title, validAppStartupVariables) {
 			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.AppStartup.Title contains invalid variables, please check the config documentation for valid variables")
 			logAction.AppendWarning("message", "Notifications.NotificationTemplate.AppStartup.Title contains invalid variables, please check the config documentation for valid variables")
-			Notifications.NotificationTemplate.AppStartup.Title = "{{AppName}} | Start Up"
+			Notifications.NotificationTemplate.AppStartup.Title = defaults.AppStartup.Title
 		}
 		if !validateTemplateVariables(Notifications.NotificationTemplate.AppStartup.Message, validAppStartupVariables) {
 			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.AppStartup.Message contains invalid variables, please check the config documentation for valid variables")
 			logAction.AppendWarning("message", "Notifications.NotificationTemplate.AppStartup.Message contains invalid variables, please check the config documentation for valid variables")
-			Notifications.NotificationTemplate.AppStartup.Message = "{{AppName}}:v{{AppVersion}} ({{MediaServerName}}) backend server API has started and is listening on port {{AppPort}}\n{{Timestamp}}"
+			Notifications.NotificationTemplate.AppStartup.Message = defaults.AppStartup.Message
 		}
 	}
 
 	if Notifications.NotificationTemplate.TestNotification == (Config_CustomNotification{}) {
-		Notifications.NotificationTemplate.TestNotification = Config_CustomNotification{
-			Enabled: true,
-			Title:   "Test Notification",
-			Message: "This is a test notification from aura. If you received this, your notification settings are correctly configured!",
-		}
+		Notifications.NotificationTemplate.TestNotification = defaults.TestNotification
 		logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.TestNotification not set, defaulting to built-in template")
 		logAction.AppendWarning("message", "Notifications.NotificationTemplate.TestNotification not set, defaulting to built-in template")
 	} else {
-		validTestNotificationVariables := []string{"{{MediaServerName}}", "{{MediaServerType}}", "{{Timestamp}}"}
+		validTestNotificationVariables := AllowedTemplateVariables(TemplateTypeTestNotification)
 		if !validateTemplateVariables(Notifications.NotificationTemplate.TestNotification.Title, validTestNotificationVariables) {
 			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.TestNotification.Title contains invalid variables, please check the config documentation for valid variables")
 			logAction.AppendWarning("message", "Notifications.NotificationTemplate.TestNotification.Title contains invalid variables, please check the config documentation for valid variables")
-			Notifications.NotificationTemplate.TestNotification.Title = "Test Notification"
+			Notifications.NotificationTemplate.TestNotification.Title = defaults.TestNotification.Title
 		}
 		if !validateTemplateVariables(Notifications.NotificationTemplate.TestNotification.Message, validTestNotificationVariables) {
 			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.TestNotification.Message contains invalid variables, please check the config documentation for valid variables")
 			logAction.AppendWarning("message", "Notifications.NotificationTemplate.TestNotification.Message contains invalid variables, please check the config documentation for valid variables")
-			Notifications.NotificationTemplate.TestNotification.Message = "This is a test notification from aura. If you received this, your notification settings are correctly configured!"
+			Notifications.NotificationTemplate.TestNotification.Message = defaults.TestNotification.Message
+		}
+	}
+
+	if Notifications.NotificationTemplate.Autodownload == (Config_CustomNotification{}) {
+		Notifications.NotificationTemplate.Autodownload = defaults.Autodownload
+		logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.Autodownload not set, defaulting to built-in template")
+		logAction.AppendWarning("message", "Notifications.NotificationTemplate.Autodownload not set, defaulting to built-in template")
+	} else {
+		validAutodownloadVariables := AllowedTemplateVariables(TemplateTypeAutodownload)
+		if !validateTemplateVariables(Notifications.NotificationTemplate.Autodownload.Title, validAutodownloadVariables) {
+			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.Autodownload.Title contains invalid variables, please check the config documentation for valid variables")
+			logAction.AppendWarning("message", "Notifications.NotificationTemplate.Autodownload.Title contains invalid variables, please check the config documentation for valid variables")
+			Notifications.NotificationTemplate.Autodownload.Title = defaults.Autodownload.Title
+		}
+		if !validateTemplateVariables(Notifications.NotificationTemplate.Autodownload.Message, validAutodownloadVariables) {
+			logging.LOGGER.Warn().Timestamp().Msg("Notifications.NotificationTemplate.Autodownload.Message contains invalid variables, please check the config documentation for valid variables")
+			logAction.AppendWarning("message", "Notifications.NotificationTemplate.Autodownload.Message contains invalid variables, please check the config documentation for valid variables")
+			Notifications.NotificationTemplate.Autodownload.Message = defaults.Autodownload.Message
 		}
 	}
 
