@@ -3,16 +3,25 @@ package config
 import "aura/models"
 
 var (
-	Current          Config
-	ConfigPath       string = ""
+	// Config State Variables
+	Current    Config
+	ConfigPath string = ""
+
+	// Flags to track config loading and validation status
 	Loaded           bool   = false
 	Valid            bool   = false
 	MediaServerValid bool   = true
 	MediaServerName  string = ""
 	MediuxValid      bool   = true
-	AppVersion       string = ""
 	AppFullyLoaded   bool   = false
 	AppLoadingStep   string = ""
+
+	// App Details
+	AppName    string = ""
+	AppAuthor  string = ""
+	AppLicense string = ""
+	AppPort    int    = 0
+	AppVersion string = ""
 )
 
 type Config struct {
@@ -130,14 +139,19 @@ type Config_Notification_Webhook struct {
 }
 
 type Config_NotificationTemplate struct {
-	AppStartup            Config_CustomNotification `json:"app_startup" yaml:"AppStartup,omitempty"`                        // Custom notification settings for application startup.
-	Autodownload          Config_CustomNotification `json:"autodownload" yaml:"AutoDownload,omitempty"`                     // Custom notification settings for auto-download events.
-	DownloadQueueSuccess  Config_CustomNotification `json:"download_queue_success" yaml:"DownloadQueueSuccess,omitempty"`   // Custom notification settings for successful download queue events.
-	DownloadQueueWarning  Config_CustomNotification `json:"download_queue_warning" yaml:"DownloadQueueWarning,omitempty"`   // Custom notification settings for download queue events with warnings.
-	DownloadQueueError    Config_CustomNotification `json:"download_queue_error" yaml:"DownloadQueueError,omitempty"`       // Custom notification settings for download queue events with errors.
-	SonarrDownloadUpgrade Config_CustomNotification `json:"sonarr_download_upgrade" yaml:"SonarrDownloadUpgrade,omitempty"` // Custom notification settings for Sonarr download upgrades.
-	SonarrDownloadNew     Config_CustomNotification `json:"sonarr_download_new" yaml:"SonarrDownloadNew,omitempty"`         // Custom notification settings for new Sonarr downloads.
-	TestNotification      Config_CustomNotification `json:"test_notification" yaml:"TestNotification,omitempty"`            // Custom notification settings for test notifications.
+	// Any additional custom notification templates should be added here. You will also need to update the following files to ensure the new template is fully integrated:
+	// - backend/config/defaults.go
+	// - backend/config/template_variables.go
+	// - backend/config/validate.go
+	// - backend/routing/config/update.go
+	// - backend/routing/validation/notification.go
+	// - backend/utils/variable_filler.go
+	// - frontend/src/components/settings-onboarding/ConfigSectionNotifications.tsx
+	// - frontend/src/types/config/config-default-app.ts
+
+	AppStartup       Config_CustomNotification `json:"app_startup" yaml:"AppStartup,omitempty"`             // Custom notification settings for application startup.
+	TestNotification Config_CustomNotification `json:"test_notification" yaml:"TestNotification,omitempty"` // Custom notification settings for test notifications.
+	Autodownload     Config_CustomNotification `json:"autodownload" yaml:"AutoDownload,omitempty"`          // Custom notification settings for auto-download events.
 }
 
 type Config_CustomNotification struct {

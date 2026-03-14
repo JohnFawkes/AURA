@@ -186,6 +186,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/config/template-variables": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all available notification template variables grouped by category and by template type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get Notification Template Variables",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_config.templateVariablesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/db": {
             "get": {
                 "security": [
@@ -3316,46 +3359,6 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "download_queue_error": {
-                    "description": "Custom notification settings for download queue events with errors.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_CustomNotification"
-                        }
-                    ]
-                },
-                "download_queue_success": {
-                    "description": "Custom notification settings for successful download queue events.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_CustomNotification"
-                        }
-                    ]
-                },
-                "download_queue_warning": {
-                    "description": "Custom notification settings for download queue events with warnings.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_CustomNotification"
-                        }
-                    ]
-                },
-                "sonarr_download_new": {
-                    "description": "Custom notification settings for new Sonarr downloads.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_CustomNotification"
-                        }
-                    ]
-                },
-                "sonarr_download_upgrade": {
-                    "description": "Custom notification settings for Sonarr download upgrades.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_CustomNotification"
-                        }
-                    ]
-                },
                 "test_notification": {
                     "description": "Custom notification settings for test notifications.",
                     "allOf": [
@@ -3542,6 +3545,20 @@ const docTemplate = `{
         },
         "config.Config_TMDB": {
             "type": "object"
+        },
+        "config.NotificationTemplateVariableCatalog": {
+            "type": "object",
+            "properties": {
+                "template_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         },
         "downloadqueue.Status": {
             "type": "string",
@@ -4548,6 +4565,14 @@ const docTemplate = `{
                 }
             }
         },
+        "routes_config.templateVariablesResponse": {
+            "type": "object",
+            "properties": {
+                "variables": {
+                    "$ref": "#/definitions/config.NotificationTemplateVariableCatalog"
+                }
+            }
+        },
         "routes_config.updateConfigRequest": {
             "type": "object",
             "properties": {
@@ -5110,6 +5135,12 @@ const docTemplate = `{
             "properties": {
                 "provider": {
                     "$ref": "#/definitions/config.Config_Notification_Provider"
+                },
+                "template": {
+                    "$ref": "#/definitions/config.Config_CustomNotification"
+                },
+                "template_type": {
+                    "type": "string"
                 }
             }
         },

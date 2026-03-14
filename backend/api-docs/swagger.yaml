@@ -293,26 +293,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/config.Config_CustomNotification'
         description: Custom notification settings for auto-download events.
-      download_queue_error:
-        allOf:
-        - $ref: '#/definitions/config.Config_CustomNotification'
-        description: Custom notification settings for download queue events with errors.
-      download_queue_success:
-        allOf:
-        - $ref: '#/definitions/config.Config_CustomNotification'
-        description: Custom notification settings for successful download queue events.
-      download_queue_warning:
-        allOf:
-        - $ref: '#/definitions/config.Config_CustomNotification'
-        description: Custom notification settings for download queue events with warnings.
-      sonarr_download_new:
-        allOf:
-        - $ref: '#/definitions/config.Config_CustomNotification'
-        description: Custom notification settings for new Sonarr downloads.
-      sonarr_download_upgrade:
-        allOf:
-        - $ref: '#/definitions/config.Config_CustomNotification'
-        description: Custom notification settings for Sonarr download upgrades.
       test_notification:
         allOf:
         - $ref: '#/definitions/config.Config_CustomNotification'
@@ -376,6 +356,15 @@ definitions:
         type: string
     type: object
   config.Config_TMDB:
+    type: object
+  config.NotificationTemplateVariableCatalog:
+    properties:
+      template_variables:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   downloadqueue.Status:
     enum:
@@ -1071,6 +1060,11 @@ definitions:
       status:
         $ref: '#/definitions/routes_config.AppConfigStatus'
     type: object
+  routes_config.templateVariablesResponse:
+    properties:
+      variables:
+        $ref: '#/definitions/config.NotificationTemplateVariableCatalog'
+    type: object
   routes_config.updateConfigRequest:
     properties:
       config:
@@ -1433,6 +1427,10 @@ definitions:
     properties:
       provider:
         $ref: '#/definitions/config.Config_Notification_Provider'
+      template:
+        $ref: '#/definitions/config.Config_CustomNotification'
+      template_type:
+        type: string
     type: object
   routes_validation.SendTestNotification_Response:
     properties:
@@ -1581,6 +1579,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Config
+      tags:
+      - Config
+  /api/config/template-variables:
+    get:
+      description: Get all available notification template variables grouped by category
+        and by template type.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_config.templateVariablesResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Notification Template Variables
       tags:
       - Config
   /api/db:
