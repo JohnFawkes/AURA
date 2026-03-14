@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"aura/config"
 	"aura/logging"
 )
 
@@ -13,4 +14,9 @@ func PrintAppStartUpDetails(APP_VERSION, AUTHOR, LICENSE string, APP_PORT int, A
 		Str("license", LICENSE).
 		Int("port", APP_PORT).
 		Msgf("Started %s", APP_NAME)
+	config.AppVersion = APP_VERSION
+	config.AppAuthor = AUTHOR
+	config.AppLicense = LICENSE
+	config.AppPort = APP_PORT
+	config.AppName = APP_NAME
 }
