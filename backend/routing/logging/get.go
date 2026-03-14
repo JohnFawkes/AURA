@@ -53,6 +53,10 @@ var possible_actions_paths = map[string]structActionLabelSection{
 		Label:   "Get Config",
 		Section: "CONFIG",
 	},
+	"GET:/api/config/template-variables": {
+		Label:   "Get Notification Template Variables",
+		Section: "CONFIG",
+	},
 	"POST:/api/config": {
 		Label:   "Update Config",
 		Section: "CONFIG",
