@@ -1,3 +1,15 @@
+## [0.9.90] - 2026-03-13
+
+### Added
+
+- Added support for Mixed library type for Jellyfin/Emby media servers.
+
+### Fixed
+
+- Fixed issue where Library Titles with leading/trailing whitespace would not be filtered correctly on the Saved Sets page.
+
+---
+
 ## [0.9.89] - 2026-03-12
 
 ### Added
@@ -8,7 +20,6 @@
 ### Fixed
 
 - Reduced database file size by improving automatic SQLite vacuuming.
-- Fixed issue where Library Titles with leading/trailing whitespace would not be filtered correctly on the Saved Sets page.
 - Fixed issue where Media Items that no longer exist on the Media Server and had no sets available for them would still show up in Rating Key Change Job (now named: Media Item Change Job).
 - Fixed issue where Duration/Size changes were not being detected properly for Autodownload checks. This causes images to be redownloaded when there are minor system-level changes that occur to the media files (e.g. metadata changes, container changes, etc.) that do not actually indicate a real change to the media item that would require new images. This is fixed by adding a threshold for size and duration changes to be considered a real change that requires new images.
 
