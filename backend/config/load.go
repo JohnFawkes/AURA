@@ -87,45 +87,7 @@ func createBaseConfig(ctx context.Context) (success bool) {
 	defer logAction.Complete()
 
 	// Set default values for the config
-	base := Config{
-		Auth: Config_Auth{
-			Enabled: false,
-		},
-		Logging: Config_Logging{
-			Level: "INFO",
-		},
-		Mediux: Config_Mediux{
-			DownloadQuality: "optimized",
-		},
-		AutoDownload: Config_AutoDownload{
-			Enabled: false,
-			Cron:    "0 0 * * *",
-		},
-		Images: Config_Images{
-			CacheImages: Config_CacheImages{
-				Enabled: false,
-			},
-			SaveImagesLocally: Config_SaveImagesLocally{
-				Enabled: false,
-			},
-		},
-		Notifications: Config_Notifications{
-			Enabled:   false,
-			Providers: []Config_Notification_Provider{},
-			NotificationTemplate: Config_NotificationTemplate{
-				AppStartup: Config_CustomNotification{
-					Enabled: true,
-					Title:   "{{AppName}} | Start Up",
-					Message: "{{AppName}}:v{{AppVersion}} ({{MediaServerName}}) backend server API has started and is listening on port {{AppPort}}\n{{Timestamp}}",
-				},
-				TestNotification: Config_CustomNotification{
-					Enabled: true,
-					Title:   "Test Notification",
-					Message: "This is a test notification from aura. If you received this, your notification settings are correctly configured!",
-				},
-			},
-		},
-	}
+	base := DefaultConfig()
 
 	Err := base.Save(ctx)
 	if Err.Message != "" {
