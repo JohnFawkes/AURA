@@ -11,7 +11,9 @@ import (
 )
 
 type SendTestNotification_Request struct {
-	Provider config.Config_Notification_Provider `json:"provider"`
+	Provider     config.Config_Notification_Provider `json:"provider"`
+	TemplateType string                              `json:"template_type"`
+	Template     config.Config_CustomNotification    `json:"template"`
 }
 
 type SendTestNotification_Response struct {
@@ -59,14 +61,51 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := utils.TemplateVars_TestNotification()
-	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.TestNotification.Title, vars)
-	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.TestNotification.Message, vars)
-	imageURL := ""
+	var vars map[string]string
+	var title, message, imageURL string
+	switch req.TemplateType {
+	case config.TemplateTypeAppStartup:
+		vars = utils.TemplateVars_AppStartup(config.AppName, config.AppVersion, config.AppPort)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
 
-	// If the Template is disabled, don't send a message
-	if !config.Current.Notifications.NotificationTemplate.TestNotification.Enabled {
-		httpx.SendResponse(w, ld, "ok")
+	case config.TemplateTypeTestNotification:
+		vars = utils.TemplateVars_TestNotification()
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
+	case config.TemplateTypeAutodownload:
+		vars = utils.MergeTemplateVars(
+			utils.BaseTemplateVars(),
+			map[string]string{
+				"MediaItemTitle":        "Game of Thrones",
+				"MediaItemYear":         "2011",
+				"MediaItemTMDBID":       "1399",
+				"MediaItemLibraryTitle": "Series",
+				"MediaItemRatingKey":    "1234",
+				"MediaItemType":         "show",
+				"SetID":                 "7917",
+				"SetTitle":              "Game of Thrones (2011) Set",
+				"SetType":               "show",
+				"SetCreator":            "willtong93",
+				"ImageName":             "S01E01 Titlecard",
+				"ImageType":             "titlecard",
+				"ReasonTitle":           "Episode Changed",
+				"Reason":                "Season 01 Episode 01 changed since last download\nChange detected in episode info:\nPath changed:\n-old: /path/to/old/file.mkv\n-new: /path/to/new/file.mkv",
+			},
+		)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+	default:
+		logAction.SetError("Unsupported template type", fmt.Sprintf("The template type '%s' is not supported", req.TemplateType), nil)
+		httpx.SendResponse(w, ld, response)
+		return
+	}
+
+	if !req.Template.Enabled {
+		response.Message = fmt.Sprintf("Test notification template '%s' is not enabled, skipping sending test notification", req.TemplateType)
+		httpx.SendResponse(w, ld, response)
 		return
 	}
 
