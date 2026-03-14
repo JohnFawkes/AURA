@@ -11,7 +11,7 @@ export interface DeleteTempImages_Response {
 export const DeleteTempImages = async (): Promise<APIResponse<DeleteTempImages_Response>> => {
   log("INFO", "API - Settings", "Clear Temp Images", "Clearing temp images folder");
   try {
-    const response = await apiClient.post<APIResponse<DeleteTempImages_Response>>(`/temp-images/clear`);
+    const response = await apiClient.delete<APIResponse<DeleteTempImages_Response>>(`/images/temp`);
     if (response.data.status === "error") {
       throw new Error(response.data.error?.message || "Unknown error clearing temp images folder");
     } else {
