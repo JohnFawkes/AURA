@@ -302,9 +302,39 @@ func reApplySavedImages(item PlexRefreshedItem) {
 				continue
 			}
 			for _, image := range posterSet.Images {
+				switch image.Type {
+				case "poster":
+					if !posterSet.SelectedTypes.Poster {
+						continue
+					}
+				case "backdrop":
+					if !posterSet.SelectedTypes.Backdrop {
+						continue
+					}
+				case "season_poster":
+					if !posterSet.SelectedTypes.SeasonPoster && !posterSet.SelectedTypes.SpecialSeasonPoster {
+						continue
+					}
+					// If the season number is 0, and we dont have special season poster selected, then skip
+					if image.SeasonNumber != nil && *image.SeasonNumber == 0 && !posterSet.SelectedTypes.SpecialSeasonPoster {
+						continue
+					}
+					// If the season number is greater than 0, and we dont have regular season poster selected, then skip
+					if image.SeasonNumber != nil && *image.SeasonNumber > 0 && !posterSet.SelectedTypes.SeasonPoster {
+						continue
+					}
+				case "titlecard":
+					if !posterSet.SelectedTypes.Titlecard {
+						continue
+					}
+				default:
+					continue
+				}
+
 				if !shouldReApplyImage(item, image) {
 					continue
 				}
+
 				matchedImages = append(matchedImages, image)
 				applyErr := mediaserver.DownloadApplyImageToMediaItem(logCtx, &item.MediaItem, image)
 				if applyErr.Message != "" {
