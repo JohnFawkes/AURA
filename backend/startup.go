@@ -11,12 +11,10 @@ import (
 	"aura/logging"
 	"aura/mediaserver"
 	"aura/mediux"
-	"aura/notification"
 	"aura/utils"
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -230,15 +228,6 @@ func runWarmup() (success bool) {
 }
 
 func startAPI() {
-	// Send App Start Notification
-	// Send notification (only if not dev & notifications enabled)
-	if !strings.Contains(APP_VERSION, "dev") &&
-		config.Current.Notifications.Enabled {
-		notification.SendAppStartNotification(APP_PORT, APP_NAME, APP_VERSION)
-	} else {
-		logging.LOGGER.Warn().Timestamp().Bool("notifications_enabled", config.Current.Notifications.Enabled).Bool("dev_version", strings.Contains(APP_VERSION, "dev")).Msg("App start notification not sent")
-	}
-
 	// Start HTTP Server
 	logging.LOGGER.Info().Timestamp().Int("port", APP_PORT).
 		Bool("full_routes", config.Loaded && config.Valid).

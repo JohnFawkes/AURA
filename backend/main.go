@@ -9,6 +9,7 @@ package main
 import (
 	"aura/config"
 	"aura/logging"
+	"aura/notification"
 	"aura/routing"
 	"os"
 	"strings"
@@ -78,6 +79,14 @@ func main() {
 
 			config.AppFullyLoaded = true
 			config.AppLoadingStep = "App Fully Loaded"
+			// Send App Start Notification
+			// Send notification (only if not dev & notifications enabled)
+			if !strings.Contains(APP_VERSION, "dev") &&
+				config.Current.Notifications.Enabled {
+				notification.SendAppStartNotification(APP_PORT, APP_NAME, APP_VERSION)
+			} else {
+				logging.LOGGER.Warn().Timestamp().Bool("notifications_enabled", config.Current.Notifications.Enabled).Bool("dev_version", strings.Contains(APP_VERSION, "dev")).Msg("App start notification not sent")
+			}
 			activeHandler.Store(routing.NewRouter()) // swap to full routes
 			return
 		}
