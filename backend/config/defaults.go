@@ -5,7 +5,7 @@ func DefaultNotificationTemplates() Config_NotificationTemplate {
 		AppStartup: Config_CustomNotification{
 			Enabled: true,
 			Title:   "{{AppName}} | Start Up",
-			Message: "{{AppName}}:v{{AppVersion}} ({{MediaServerName}}) backend server API has started and is listening on port {{AppPort}}\n{{Timestamp}}",
+			Message: "{{AppName}} backend server API has started{{NewLine}}Version: v{{AppVersion}}{{NewLine}}Server Name: {{MediaServerName}}{{NewLine}}Port: {{AppPort}}{{NewLine}}{{Timestamp}}",
 		},
 		TestNotification: Config_CustomNotification{
 			Enabled: true,
@@ -15,19 +15,19 @@ func DefaultNotificationTemplates() Config_NotificationTemplate {
 		Autodownload: Config_CustomNotification{
 			Enabled:      true,
 			Title:        "Auto Download | {{ReasonTitle}}",
-			Message:      "{{MediaItemTitle}}{{NewLine}}{{ImageName}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}Reason:{{NewLine}}{{Reason}}",
+			Message:      "{{MediaItemTitle}} ({{MediaItemLibrary}}){{NewLine}}{{ImageName}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}Reason:{{NewLine}}{{Reason}}",
 			IncludeImage: true,
 		},
 		DownloadQueue: Config_CustomNotification{
 			Enabled:      true,
 			Title:        "Download Queue | {{ReasonTitle}}",
-			Message:      "{{MediaItemTitle}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}{{Reason}}",
+			Message:      "{{MediaItemTitle}} ({{MediaItemLibrary}}){{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}{{Reason}}",
 			IncludeImage: true,
 		},
 		NewSetsAvailableForIgnoredItems: Config_CustomNotification{
 			Enabled:      true,
 			Title:        "New Sets Available for Ignored Item",
-			Message:      "A new set has been detected for the previously ignored item {{MediaItemTitle}}. It is now part of {{SetCount}} set(s) in MediUX, and will no longer be ignored in {{AppName}}.",
+			Message:      "A new set has been detected for the previously ignored item {{MediaItemTitle}} ({{MediaItemLibrary}}). It is now part of {{SetCount}} set(s) in MediUX, and will no longer be ignored in {{AppName}}.",
 			IncludeImage: true,
 		},
 		CheckForMediaItemChangesJob: Config_CustomNotification{
