@@ -1,4 +1,16 @@
-## [0.9.91] - 2026-03-13
+## [0.9.92] - 2026-03-15
+
+### Added
+
+- Added option to remove "Overlay" label from Plex media items only when a poster image is downloaded. This allows Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and can only be used if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
+
+### Fixed
+
+- Fixed issue where Plex labels were not being applied for each selected image type during downloads.
+
+---
+
+## [0.9.91] - 2026-03-14
 
 ### Added
 
