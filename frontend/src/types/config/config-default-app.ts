@@ -39,6 +39,7 @@ export const defaultAppConfig = (): AppConfig =>
     },
     labels_and_tags: {
       applications: [],
+      remove_overlay_label_only_on_poster_download: false,
     },
     notifications: {
       enabled: false,

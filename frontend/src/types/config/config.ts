@@ -69,6 +69,7 @@ export interface AppConfigTMDB {
 
 export interface AppConfigLabelsAndTags {
   applications: AppConfigLabelsAndTagsApplication[];
+  remove_overlay_label_only_on_poster_download: boolean; // Whether to remove the "Overlay" label from media items after downloading a poster image. This is to allow Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and should be set to true if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
 }
 
 export interface AppConfigLabelsAndTagsApplication {

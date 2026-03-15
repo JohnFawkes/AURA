@@ -3249,6 +3249,10 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/config.Config_LabelsAndTagsProvider"
                     }
+                },
+                "remove_overlay_label_only_on_poster_download": {
+                    "description": "Whether to remove the \"Overlay\" label from media items after downloading a poster image. This is to allow Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and should be set to true if you have \"Overlay\" in your \"Remove\" list for the Plex application under \"LabelsAndTags\".",
+                    "type": "boolean"
                 }
             }
         },

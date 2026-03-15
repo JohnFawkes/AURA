@@ -90,7 +90,18 @@ func (p *Plex) AddLabelToMediaItem(ctx context.Context, item models.MediaItem, s
 		// Make a comma-separated string of labels to remove
 		labelsToRemove := ""
 		if len(app.Remove) > 0 {
-			labelsToRemove = strings.Join(app.Remove, ",")
+			if config.Current.LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload && !selectedTypes.Poster {
+				// If the "RemoveOverlayLabelOnlyOnPosterDownload" setting is enabled and the selected types do not include Poster, filter out "Overlay" from the removal list
+				filteredLabels := []string{}
+				for _, label := range app.Remove {
+					if label != "Overlay" {
+						filteredLabels = append(filteredLabels, label)
+					}
+				}
+				labelsToRemove = strings.Join(filteredLabels, ",")
+			} else {
+				labelsToRemove = strings.Join(app.Remove, ",")
+			}
 		}
 
 		// %5B = [

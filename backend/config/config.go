@@ -93,7 +93,8 @@ type Config_TMDB struct {
 }
 
 type Config_LabelsAndTags struct {
-	Applications []Config_LabelsAndTagsProvider `json:"applications,omitempty" yaml:"Applications,omitempty"`
+	Applications                           []Config_LabelsAndTagsProvider `json:"applications,omitempty" yaml:"Applications,omitempty"`
+	RemoveOverlayLabelOnlyOnPosterDownload bool                           `json:"remove_overlay_label_only_on_poster_download,omitempty" yaml:"RemoveOverlayLabelOnlyOnPosterDownload,omitempty"` // Whether to remove the "Overlay" label from media items after downloading a poster image. This is to allow Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and should be set to true if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
 }
 
 type Config_LabelsAndTagsProvider struct {

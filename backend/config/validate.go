@@ -45,10 +45,13 @@ func (config *Config) Validate(ctx context.Context) {
 	// Sub-action: Database Config
 	isDatabaseValid := ValidateDatabase(ctx, &config.Database)
 
+	// Sub-action: LabelsAndTags Config
+	isLabelsAndTagsValid := ValidateLabelsAndTags(ctx, &config.LabelsAndTags)
+
 	// If any validation failed, set status to error
 	if !isAuthValid || !isLoggingValid || !isMediaServerValid ||
 		!isMediuxValid || !isAutoDownloadValid ||
-		!isImagesValid || !isNotificationsValid || !isSonarrRadarrValid || !isDatabaseValid {
+		!isImagesValid || !isNotificationsValid || !isSonarrRadarrValid || !isDatabaseValid || !isLabelsAndTagsValid {
 		logAction.SetError("Config validation failed", "One or more config sections are invalid", nil)
 		Valid = false
 	} else {
@@ -552,6 +555,33 @@ func ValidateDatabase(ctx context.Context, Database *Config_Database) bool {
 	case "sqlite3":
 		if Database.Path == "" {
 			Database.Path = "AURA.db"
+		}
+	}
+
+	return isValid
+}
+
+func ValidateLabelsAndTags(ctx context.Context, LabelsAndTags *Config_LabelsAndTags) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating LabelsAndTags Config", logging.LevelTrace)
+	defer logAction.Complete()
+
+	isValid := true
+
+	if len(LabelsAndTags.Applications) == 0 {
+		return isValid
+	}
+
+	// If RemoveOverlayLabelOnlyOnPosterDownload is true, then we need to check if "Overlay" is in the remove list for the Plex application
+	if LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload {
+		for _, app := range LabelsAndTags.Applications {
+			if app.Application == "Plex" {
+				if !stringSliceContains(app.Remove, "Overlay") {
+					logging.LOGGER.Warn().Timestamp().Msg("LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload is true, but 'Overlay' is not in the remove list for the Plex application. This setting will have no effect unless 'Overlay' is added to the remove list for the Plex application.")
+					logAction.AppendWarning("message", "LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload is true, but 'Overlay' is not in the remove list for the Plex application. This setting will have no effect unless 'Overlay' is added to the remove list for the Plex application.")
+					LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload = false
+					break
+				}
+			}
 		}
 	}
 

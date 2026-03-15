@@ -34,6 +34,7 @@ interface ConfigSectionLabelsAndTagsProps {
         >
       >
     >;
+    remove_overlay_label_only_on_poster_download?: boolean;
   };
   onChange: <K extends keyof AppConfigLabelsAndTags>(field: K, value: AppConfigLabelsAndTags[K]) => void;
   errorsUpdate?: (errors: Record<string, string>) => void;
@@ -409,6 +410,36 @@ export const ConfigSectionLabelsAndTags: React.FC<ConfigSectionLabelsAndTagsProp
                   )}
                 </div>
               </div>
+
+              {/* If the application is Plex and you have "Overlay" in your Remove list, show a toggle to remove the "Overlay" label only on poster download, which allows Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature. */}
+              {app.application === "Plex" && removeLabels.includes("Overlay") && (
+                <div className="space-y-2">
+                  <Label className="mb-2">Remove "Overlay" label only on poster download</Label>
+                  <div className="flex w-full items-center gap-2">
+                    <Switch
+                      disabled={!editing}
+                      checked={value.remove_overlay_label_only_on_poster_download || false}
+                      onCheckedChange={(v) => onChange("remove_overlay_label_only_on_poster_download", v)}
+                    />
+                    {editing && (
+                      <div className="ml-auto flex items-center">
+                        <PopoverHelp ariaLabel="help-remove-overlay-only-on-poster-download">
+                          <div className="space-y-2">
+                            <p>
+                              When enabled, Aura will only remove the "Overlay" label from media items if it downloaded
+                              a poster image. This allows Kometa to reprocess the image and apply the overlays.
+                            </p>
+                            <p className="text-red-500 font-medium">
+                              Important: This is a Plex exclusive feature and should be set to true if you have
+                              "Overlay" in your "Remove" list for the Plex application under "Labels &amp; Tags".
+                            </p>
+                          </div>
+                        </PopoverHelp>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {appError && <p className="text-xs text-red-500">{appError}</p>}
             </div>
