@@ -122,6 +122,7 @@ func (p *Plex) AddLabelToMediaItem(ctx context.Context, item models.MediaItem, s
 		labelsToAdd := ""
 		additionParams := ""
 		if len(app.Add) > 0 || (app.AddLabelTagForSelectedTypes && (selectedTypes.Poster || selectedTypes.Backdrop || selectedTypes.SeasonPoster || selectedTypes.SpecialSeasonPoster || selectedTypes.Titlecard)) {
+			nextLabelIndex := len(app.Add)
 			for index, label := range app.Add {
 				if index > 0 {
 					additionParams += "&"
@@ -138,35 +139,55 @@ func (p *Plex) AddLabelToMediaItem(ctx context.Context, item models.MediaItem, s
 						labelsToAdd += ","
 					}
 					labelsToAdd += "aura-poster"
-					additionParams += "&" + fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape("aura-poster"))
+					if additionParams != "" {
+						additionParams += "&"
+					}
+					additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", nextLabelIndex, url.QueryEscape("aura-poster"))
+					nextLabelIndex++
 				}
 				if selectedTypes.Backdrop {
 					if labelsToAdd != "" {
 						labelsToAdd += ","
 					}
 					labelsToAdd += "aura-backdrop"
-					additionParams += "&" + fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape("aura-backdrop"))
+					if additionParams != "" {
+						additionParams += "&"
+					}
+					additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", nextLabelIndex, url.QueryEscape("aura-backdrop"))
+					nextLabelIndex++
 				}
 				if selectedTypes.SeasonPoster {
 					if labelsToAdd != "" {
 						labelsToAdd += ","
 					}
 					labelsToAdd += "aura-season-poster"
-					additionParams += "&" + fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape("aura-season-poster"))
+					if additionParams != "" {
+						additionParams += "&"
+					}
+					additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", nextLabelIndex, url.QueryEscape("aura-season-poster"))
+					nextLabelIndex++
 				}
 				if selectedTypes.SpecialSeasonPoster {
 					if labelsToAdd != "" {
 						labelsToAdd += ","
 					}
 					labelsToAdd += "aura-special-season-poster"
-					additionParams += "&" + fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape("aura-special-season-poster"))
+					if additionParams != "" {
+						additionParams += "&"
+					}
+					additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", nextLabelIndex, url.QueryEscape("aura-special-season-poster"))
+					nextLabelIndex++
 				}
 				if selectedTypes.Titlecard {
 					if labelsToAdd != "" {
 						labelsToAdd += ","
 					}
 					labelsToAdd += "aura-titlecard"
-					additionParams += "&" + fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", len(app.Add), url.QueryEscape("aura-titlecard"))
+					if additionParams != "" {
+						additionParams += "&"
+					}
+					additionParams += fmt.Sprintf("label%%5B%d%%5D.tag.tag=%s", nextLabelIndex, url.QueryEscape("aura-titlecard"))
+					nextLabelIndex++
 				}
 			}
 		}
