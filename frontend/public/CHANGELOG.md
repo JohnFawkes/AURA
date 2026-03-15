@@ -1,3 +1,20 @@
+## [0.9.91] - 2026-03-13
+
+### Added
+
+- Added option to test notification templates in the Settings/Notifications section. This will send a test notification with the current template to the configured notification providers to allow you to see how the notification will look.
+- Added option to customize the "Auto-Download" Notification title and message.
+- Added option to customize the "Download Queue" Notification title and message.
+- Added option to customize the "New Sets Available for Ignored Items" Notification title and message.
+- Added option to customize the "Check For Media Item Changes Job" Notification title and message.
+- Added option to customize the "Sonarr" Notification title and message.
+
+### Fixed
+
+- Fixed issue where Clear Temp Images button was pointing to an old route that was removed in the backend rewrite, now it points to the correct route for clearing temp images.
+
+---
+
 ## [0.9.90] - 2026-03-13
 
 ### Added

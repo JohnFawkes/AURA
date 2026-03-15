@@ -121,6 +121,10 @@ export interface AppConfigNotificationTemplate {
   app_startup: AppConfigNotificationCustomNotification;
   test_notification: AppConfigNotificationCustomNotification;
   autodownload: AppConfigNotificationCustomNotification;
+  download_queue: AppConfigNotificationCustomNotification;
+  new_sets_available_for_ignored_items: AppConfigNotificationCustomNotification;
+  check_for_media_item_changes_job: AppConfigNotificationCustomNotification;
+  sonarr_notification: AppConfigNotificationCustomNotification;
 }
 
 export interface NotificationTemplateVariablesCatalog {

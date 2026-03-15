@@ -10,31 +10,43 @@ import (
 	"fmt"
 )
 
-func sendFileDownloadNotification(itemInfo string, setID string, image models.ImageFile, isUpgrade bool, result string) {
+func sendFileDownloadNotification(mediaItem models.MediaItem, set models.DBPosterSetDetail, image models.ImageFile, isUpgrade bool, result string) {
+	// If notifications are disabled, skip
 	if !config.Current.Notifications.Enabled {
-		return
-	} else if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("Notifications are disabled, skipping app start notification")
 		return
 	}
 
-	title := "Sonarr - Upgrade"
-	if !isUpgrade {
-		title = "Sonarr - New Download"
+	// If notification providers are not configured, skip
+	if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("No notification providers configured, skipping app start notification")
+		return
 	}
-	message := fmt.Sprintf(
-		"%s\n%s\nSet ID: %s",
-		itemInfo,
-		utils.GetFileDownloadName(itemInfo, image),
-		setID,
-	)
-	if result != "Success" {
-		message = fmt.Sprintf("%s\n\n%s", message, result)
+
+	// If Sonarr/Radarr notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.SonarrNotification.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Sonarr/Radarr notification is disabled, skipping app start notification")
+		return
 	}
-	imageURL := fmt.Sprintf("%s/%s?v=%s&key=jpg",
-		"https://images.mediux.io/assets",
-		image.ID,
-		image.Modified.Format("20060102150405"),
-	)
+
+	reasonTitle := "New Download"
+	reason := "A new episode was downloaded via Sonarr for this media item."
+	if isUpgrade {
+		reasonTitle = "Upgrade"
+		reason = "An existing episode was upgraded via Sonarr for this media item."
+	}
+
+	vars := utils.TemplateVars_SonarrNotification(mediaItem, set, image, reasonTitle, reason, result)
+	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.SonarrNotification.Title, vars)
+	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.SonarrNotification.Message, vars)
+	imageURL := ""
+	if config.Current.Notifications.NotificationTemplate.SonarrNotification.IncludeImage {
+		imageURL = fmt.Sprintf("%s/%s?v=%s&key=jpg",
+			"https://images.mediux.io/assets",
+			image.ID,
+			image.Modified.Format("20060102150405"),
+		)
+	}
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send File Download Message")
 	logAction := ld.AddAction("Sending File Download Notification", logging.LevelInfo)

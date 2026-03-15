@@ -3,6 +3,7 @@ package routes_validation
 import (
 	"aura/config"
 	"aura/logging"
+	"aura/models"
 	"aura/notification"
 	"aura/utils"
 	"aura/utils/httpx"
@@ -61,6 +62,26 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sampleMediaItem := models.MediaItem{
+		Title:        "Game of Thrones",
+		Year:         2011,
+		TMDB_ID:      "1399",
+		LibraryTitle: "Series",
+		RatingKey:    "1234",
+		Type:         "show",
+	}
+
+	sampleSet := models.DBPosterSetDetail{
+		PosterSet: models.PosterSet{
+			BaseSetInfo: models.BaseSetInfo{
+				ID:          "7917",
+				Title:       "Game of Thrones (2011) Set",
+				Type:        "show",
+				UserCreated: "willtong93",
+			},
+		},
+	}
+
 	var vars map[string]string
 	var title, message, imageURL string
 	switch req.TemplateType {
@@ -79,16 +100,16 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		vars = utils.MergeTemplateVars(
 			utils.BaseTemplateVars(),
 			map[string]string{
-				"MediaItemTitle":        "Game of Thrones",
-				"MediaItemYear":         "2011",
-				"MediaItemTMDBID":       "1399",
-				"MediaItemLibraryTitle": "Series",
-				"MediaItemRatingKey":    "1234",
-				"MediaItemType":         "show",
-				"SetID":                 "7917",
-				"SetTitle":              "Game of Thrones (2011) Set",
-				"SetType":               "show",
-				"SetCreator":            "willtong93",
+				"MediaItemTitle":        sampleMediaItem.Title,
+				"MediaItemYear":         fmt.Sprintf("%d", sampleMediaItem.Year),
+				"MediaItemTMDBID":       sampleMediaItem.TMDB_ID,
+				"MediaItemLibraryTitle": sampleMediaItem.LibraryTitle,
+				"MediaItemRatingKey":    sampleMediaItem.RatingKey,
+				"MediaItemType":         sampleMediaItem.Type,
+				"SetID":                 sampleSet.ID,
+				"SetTitle":              sampleSet.Title,
+				"SetType":               sampleSet.Type,
+				"SetCreator":            sampleSet.UserCreated,
 				"ImageName":             "S01E01 Titlecard",
 				"ImageType":             "titlecard",
 				"ReasonTitle":           "Episode Changed",
@@ -97,6 +118,86 @@ func SendTestNotification(w http.ResponseWriter, r *http.Request) {
 		)
 		title = utils.RenderTemplate(req.Template.Title, vars)
 		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
+	case config.TemplateTypeDownloadQueue:
+		vars = utils.MergeTemplateVars(
+			utils.BaseTemplateVars(),
+			map[string]string{
+				"MediaItemTitle":        sampleMediaItem.Title,
+				"MediaItemYear":         fmt.Sprintf("%d", sampleMediaItem.Year),
+				"MediaItemTMDBID":       sampleMediaItem.TMDB_ID,
+				"MediaItemLibraryTitle": sampleMediaItem.LibraryTitle,
+				"MediaItemRatingKey":    sampleMediaItem.RatingKey,
+				"MediaItemType":         sampleMediaItem.Type,
+				"SetID":                 sampleSet.ID,
+				"SetTitle":              sampleSet.Title,
+				"SetType":               sampleSet.Type,
+				"SetCreator":            sampleSet.UserCreated,
+				"ReasonTitle":           "Success",
+				"Reason":                "Download completed successfully with no issues detected.",
+			},
+		)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
+	case config.TemplateTypeNewSetsAvailableForIgnoredItems:
+		vars = utils.MergeTemplateVars(
+			utils.BaseTemplateVars(),
+			map[string]string{
+				"MediaItemTitle":        sampleMediaItem.Title,
+				"MediaItemYear":         fmt.Sprintf("%d", sampleMediaItem.Year),
+				"MediaItemTMDBID":       sampleMediaItem.TMDB_ID,
+				"MediaItemLibraryTitle": sampleMediaItem.LibraryTitle,
+				"MediaItemRatingKey":    sampleMediaItem.RatingKey,
+				"MediaItemType":         sampleMediaItem.Type,
+				"SetCount":              "3",
+			},
+		)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
+	case config.TemplateTypeCheckForMediaItemChangesJob:
+		vars = utils.MergeTemplateVars(
+			utils.BaseTemplateVars(),
+			map[string]string{
+				"MediaItemTitle":        sampleMediaItem.Title,
+				"MediaItemYear":         fmt.Sprintf("%d", sampleMediaItem.Year),
+				"MediaItemTMDBID":       sampleMediaItem.TMDB_ID,
+				"MediaItemLibraryTitle": sampleMediaItem.LibraryTitle,
+				"MediaItemRatingKey":    sampleMediaItem.RatingKey,
+				"MediaItemType":         sampleMediaItem.Type,
+				"Reason":                "This item was not in any Saved Sets and does not have a status of Ignored.",
+				"Action":                "This item will be removed from the database since it is not in the media server cache and does not have any Saved Sets or Ignored status",
+				"MoreInfo":              "This may indicate that the media item was removed from the media server or there is an issue with the media server cache. Please verify if this media item still exists in the media server. If it does exist and you want to keep it in the database, please add it to a Saved Set or set it to be ignored temporarily.",
+			},
+		)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
+	case config.TemplateTypeSonarrNotification:
+		vars = utils.MergeTemplateVars(
+			utils.BaseTemplateVars(),
+			map[string]string{
+				"MediaItemTitle":        sampleMediaItem.Title,
+				"MediaItemYear":         fmt.Sprintf("%d", sampleMediaItem.Year),
+				"MediaItemTMDBID":       sampleMediaItem.TMDB_ID,
+				"MediaItemLibraryTitle": sampleMediaItem.LibraryTitle,
+				"MediaItemRatingKey":    sampleMediaItem.RatingKey,
+				"MediaItemType":         sampleMediaItem.Type,
+				"SetID":                 sampleSet.ID,
+				"SetTitle":              sampleSet.Title,
+				"SetType":               sampleSet.Type,
+				"SetCreator":            sampleSet.UserCreated,
+				"ImageName":             "S01E01 Titlecard",
+				"ImageType":             "titlecard",
+				"ReasonTitle":           "New Download",
+				"Reason":                "A new episode was downloaded via Sonarr for this media item.",
+				"Result":                "Success",
+			},
+		)
+		title = utils.RenderTemplate(req.Template.Title, vars)
+		message = utils.RenderTemplate(req.Template.Message, vars)
+		imageURL = ""
 	default:
 		logAction.SetError("Unsupported template type", fmt.Sprintf("The template type '%s' is not supported", req.TemplateType), nil)
 		httpx.SendResponse(w, ld, response)

@@ -1,9 +1,13 @@
 package config
 
 const (
-	TemplateTypeAppStartup       = "app_startup"
-	TemplateTypeTestNotification = "test_notification"
-	TemplateTypeAutodownload     = "autodownload"
+	TemplateTypeAppStartup                      = "app_startup"
+	TemplateTypeTestNotification                = "test_notification"
+	TemplateTypeAutodownload                    = "autodownload"
+	TemplateTypeDownloadQueue                   = "download_queue"
+	TemplateTypeNewSetsAvailableForIgnoredItems = "new_sets_available_for_ignored_items"
+	TemplateTypeCheckForMediaItemChangesJob     = "check_for_media_item_changes_job"
+	TemplateTypeSonarrNotification              = "sonarr_notification"
 )
 
 var BaseTemplateVariables = []string{
@@ -63,6 +67,42 @@ func AllowedTemplateVariables(templateType string) []string {
 			ImageVariables,
 			DownloadReasonVariables,
 		)
+	case TemplateTypeDownloadQueue:
+		return mergeTemplateVariableGroups(
+			BaseTemplateVariables,
+			MediaItemVariables,
+			SetItemVariables,
+			DownloadReasonVariables,
+		)
+	case TemplateTypeNewSetsAvailableForIgnoredItems:
+		return mergeTemplateVariableGroups(
+			BaseTemplateVariables,
+			MediaItemVariables,
+			[]string{
+				"{{SetCount}}",
+			},
+		)
+	case TemplateTypeCheckForMediaItemChangesJob:
+		return mergeTemplateVariableGroups(
+			BaseTemplateVariables,
+			MediaItemVariables,
+			[]string{
+				"{{Reason}}",
+				"{{Action}}",
+				"{{MoreInfo}}",
+			},
+		)
+	case TemplateTypeSonarrNotification:
+		return mergeTemplateVariableGroups(
+			BaseTemplateVariables,
+			MediaItemVariables,
+			SetItemVariables,
+			ImageVariables,
+			DownloadReasonVariables,
+			[]string{
+				"{{Result}}",
+			},
+		)
 	default:
 		return []string{}
 	}
@@ -71,9 +111,13 @@ func AllowedTemplateVariables(templateType string) []string {
 func GetNotificationTemplateVariableCatalog() NotificationTemplateVariableCatalog {
 	return NotificationTemplateVariableCatalog{
 		TemplateVariables: map[string][]string{
-			TemplateTypeAppStartup:       AllowedTemplateVariables(TemplateTypeAppStartup),
-			TemplateTypeTestNotification: AllowedTemplateVariables(TemplateTypeTestNotification),
-			TemplateTypeAutodownload:     AllowedTemplateVariables(TemplateTypeAutodownload),
+			TemplateTypeAppStartup:                      AllowedTemplateVariables(TemplateTypeAppStartup),
+			TemplateTypeTestNotification:                AllowedTemplateVariables(TemplateTypeTestNotification),
+			TemplateTypeAutodownload:                    AllowedTemplateVariables(TemplateTypeAutodownload),
+			TemplateTypeDownloadQueue:                   AllowedTemplateVariables(TemplateTypeDownloadQueue),
+			TemplateTypeNewSetsAvailableForIgnoredItems: AllowedTemplateVariables(TemplateTypeNewSetsAvailableForIgnoredItems),
+			TemplateTypeCheckForMediaItemChangesJob:     AllowedTemplateVariables(TemplateTypeCheckForMediaItemChangesJob),
+			TemplateTypeSonarrNotification:              AllowedTemplateVariables(TemplateTypeSonarrNotification),
 		},
 	}
 }

@@ -11,9 +11,21 @@ import (
 )
 
 func sendFileDownloadNotification(mediaItem models.MediaItem, set models.DBPosterSetDetail, imageWithReason ImageFileWithReason) {
+	// If notifications are disabled, skip
 	if !config.Current.Notifications.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Notifications are disabled, skipping app start notification")
 		return
-	} else if len(config.Current.Notifications.Providers) == 0 {
+	}
+
+	// If notification providers are not configured, skip
+	if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("No notification providers configured, skipping app start notification")
+		return
+	}
+
+	// If autodownload notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.Autodownload.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Autodownload notification is disabled, skipping app start notification")
 		return
 	}
 

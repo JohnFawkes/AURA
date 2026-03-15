@@ -6,20 +6,34 @@ import (
 	"aura/mediux"
 	"aura/models"
 	"aura/notification"
+	"aura/utils"
 	"context"
 	"fmt"
-	"strings"
 	"time"
 )
 
 func SendNotification(
 	fileIssues FileIssues,
-	itemTitle string,
+	mediaItem models.MediaItem,
 	posterSet models.DBPosterSetDetail,
 	tmdbPoster string,
 	tmdbBackdrop string,
 ) {
-	if len(config.Current.Notifications.Providers) == 0 || !config.Current.Notifications.Enabled {
+	// If notifications are disabled, skip
+	if !config.Current.Notifications.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Notifications are disabled, skipping app start notification")
+		return
+	}
+
+	// If notification providers are not configured, skip
+	if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("No notification providers configured, skipping app start notification")
+		return
+	}
+
+	// If download queue notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.DownloadQueue.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Download queue notification is disabled, skipping app start notification")
 		return
 	}
 
@@ -35,30 +49,34 @@ func SendNotification(
 	if posterSet.ID == "" {
 		posterSet.ID = "Unknown Set ID"
 	}
-
-	imageURL := getImageURLFromPosterSet(posterSet, tmdbPoster, tmdbBackdrop)
-
-	notificationTitle := ""
-	messageBody := ""
-
-	switch result {
-	case LAST_STATUS_SUCCESS:
-		notificationTitle = "Download Queue - Success"
-		messageBody = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.ID)
-	case LAST_STATUS_WARNING:
-		notificationTitle = "Download Queue - Warning"
-		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nWarnings:\n", itemTitle, posterSet.ID, strings.Join(fileIssues.Warnings, "\n"))
-	case LAST_STATUS_ERROR:
-		notificationTitle = "Download Queue - Error"
-		messageBody = fmt.Sprintf("%s (Set: %s)%s\n\nErrors:\n", itemTitle, posterSet.ID, strings.Join(fileIssues.Errors, "\n"))
-		if len(fileIssues.Warnings) > 0 {
-			messageBody += fmt.Sprintf("\n\nWarnings:\n%s", strings.Join(fileIssues.Warnings, "\n"))
-		}
+	if mediaItem.Title == "" {
+		mediaItem.Title = "Unknown Title"
 	}
+	if mediaItem.LibraryTitle == "" {
+		mediaItem.LibraryTitle = "Unknown Library"
+	}
+	if mediaItem.TMDB_ID == "" {
+		mediaItem.TMDB_ID = "Unknown TMDB ID"
+	}
+	if mediaItem.RatingKey == "" {
+		mediaItem.RatingKey = "Unknown RatingKey"
+	}
+	if mediaItem.Type == "" {
+		mediaItem.Type = "Unknown Type"
+	}
+
+	vars := utils.TemplateVars_DownloadQueue(mediaItem, posterSet, fileIssues.Errors, fileIssues.Warnings)
+	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.DownloadQueue.Title, vars)
+	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.DownloadQueue.Message, vars)
+	imageURL := ""
+	if config.Current.Notifications.NotificationTemplate.DownloadQueue.IncludeImage {
+		imageURL = getImageURLFromPosterSet(posterSet, tmdbPoster, tmdbBackdrop)
+	}
+
 	// Update the Global LatestInfo
 	LatestInfo.Time = time.Now()
 	LatestInfo.Status = result
-	LatestInfo.Message = fmt.Sprintf("%s (Set: %s)", itemTitle, posterSet.ID)
+	LatestInfo.Message = fmt.Sprintf("%s (Set: %s)", mediaItem.Title, posterSet.ID)
 	LatestInfo.Errors = fileIssues.Errors
 	LatestInfo.Warnings = fileIssues.Warnings
 
@@ -68,7 +86,7 @@ func SendNotification(
 	defer ld.Log()
 	defer logAction.Complete()
 
-	// Send notification using all configured providers
+	// Send a notification to all configured providers
 	for _, provider := range config.Current.Notifications.Providers {
 		if provider.Enabled {
 			switch provider.Provider {
@@ -76,33 +94,33 @@ func SendNotification(
 				notification.SendDiscordMessage(
 					ctx,
 					provider.Discord,
-					messageBody,
+					message,
 					imageURL,
-					notificationTitle,
+					title,
 				)
 			case "Pushover":
 				notification.SendPushoverMessage(
 					ctx,
 					provider.Pushover,
-					messageBody,
+					message,
 					imageURL,
-					notificationTitle,
+					title,
 				)
 			case "Gotify":
 				notification.SendGotifyMessage(
 					ctx,
 					provider.Gotify,
-					messageBody,
+					message,
 					imageURL,
-					notificationTitle,
+					title,
 				)
 			case "Webhook":
 				notification.SendWebhookMessage(
 					ctx,
 					provider.Webhook,
-					messageBody,
+					message,
 					imageURL,
-					notificationTitle,
+					title,
 				)
 			}
 		}

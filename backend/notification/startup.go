@@ -26,6 +26,12 @@ func SendAppStartNotification(app_port int, app_name string, app_version string)
 		return
 	}
 
+	// If app startup notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.AppStartup.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("App startup notification is disabled, skipping app start notification")
+		return
+	}
+
 	vars := utils.TemplateVars_AppStartup(app_name, app_version, app_port)
 	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.AppStartup.Title, vars)
 	startMessage := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.AppStartup.Message, vars)

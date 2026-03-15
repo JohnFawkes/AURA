@@ -64,36 +64,53 @@ func HandleTempIgnoredItems(ctx context.Context) (Err logging.LogErrorInfo) {
 }
 
 func sendNotification(mediaItem models.MediaItem, setCount int, mainImage models.ImageFile) {
-	if len(config.Current.Notifications.Providers) == 0 || !config.Current.Notifications.Enabled {
+	// If notifications are disabled, skip
+	if !config.Current.Notifications.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Notifications are disabled, skipping app start notification")
 		return
 	}
 
-	title := "New Set Detected for Ignored Item"
-	message := fmt.Sprintf("A new set has been detected for the previously ignored item %s. It is now part of %d set(s) in MediUX, and will no longer be ignored in Aura.", utils.MediaItemInfo(mediaItem), setCount)
+	// If notification providers are not configured, skip
+	if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("No notification providers configured, skipping app start notification")
+		return
+	}
+
+	// If new sets available for ignored items notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.NewSetsAvailableForIgnoredItems.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("New sets available for ignored items notification is disabled, skipping notification")
+		return
+	}
+
+	vars := utils.TemplateVars_NewSetsAvailableForIgnoredItems(mediaItem, setCount)
+	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.NewSetsAvailableForIgnoredItems.Title, vars)
+	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.NewSetsAvailableForIgnoredItems.Message, vars)
 	imageURL := ""
-	mediuxInfo, Err := mediux.GetBaseItemInfoByTMDB_ID(mediaItem.TMDB_ID, mediaItem.Type)
-	if Err.Message != "" {
-		imageURL = fmt.Sprintf("%s/%s?v=%s&key=jpg",
-			"https://images.mediux.io/assets",
-			mainImage.ID,
-			mainImage.Modified.Format("20060102150405"),
-		)
-	} else {
-		if mediuxInfo.TMDB_PosterPath == "" && mediuxInfo.TMDB_BackdropPath == "" {
+	if config.Current.Notifications.NotificationTemplate.NewSetsAvailableForIgnoredItems.IncludeImage {
+		mediuxInfo, Err := mediux.GetBaseItemInfoByTMDB_ID(mediaItem.TMDB_ID, mediaItem.Type)
+		if Err.Message != "" {
 			imageURL = fmt.Sprintf("%s/%s?v=%s&key=jpg",
 				"https://images.mediux.io/assets",
 				mainImage.ID,
 				mainImage.Modified.Format("20060102150405"),
 			)
-		} else if mediuxInfo.TMDB_PosterPath != "" {
-			imageURL = mediuxInfo.TMDB_PosterPath
-		} else if mediuxInfo.TMDB_BackdropPath != "" {
-			imageURL = mediuxInfo.TMDB_BackdropPath
-		}
-		if imageURL != "" {
-			imageURL = fmt.Sprintf("https://image.tmdb.org/t/p/original%s", imageURL)
-		}
+		} else {
+			if mediuxInfo.TMDB_PosterPath == "" && mediuxInfo.TMDB_BackdropPath == "" {
+				imageURL = fmt.Sprintf("%s/%s?v=%s&key=jpg",
+					"https://images.mediux.io/assets",
+					mainImage.ID,
+					mainImage.Modified.Format("20060102150405"),
+				)
+			} else if mediuxInfo.TMDB_PosterPath != "" {
+				imageURL = mediuxInfo.TMDB_PosterPath
+			} else if mediuxInfo.TMDB_BackdropPath != "" {
+				imageURL = mediuxInfo.TMDB_BackdropPath
+			}
+			if imageURL != "" {
+				imageURL = fmt.Sprintf("https://image.tmdb.org/t/p/original%s", imageURL)
+			}
 
+		}
 	}
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send Temp Ignored Item Update")

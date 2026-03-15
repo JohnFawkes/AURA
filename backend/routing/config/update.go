@@ -858,14 +858,22 @@ type notificationTemplateDiff struct {
 
 func diffNotificationTemplates(oldT, newT config.Config_NotificationTemplate) []notificationTemplateDiff {
 	oldMap := map[string]config.Config_CustomNotification{
-		"app_startup":       oldT.AppStartup,
-		"test_notification": oldT.TestNotification,
-		"autodownload":      oldT.Autodownload,
+		"app_startup":                          oldT.AppStartup,
+		"test_notification":                    oldT.TestNotification,
+		"autodownload":                         oldT.Autodownload,
+		"download_queue":                       oldT.DownloadQueue,
+		"new_sets_available_for_ignored_items": oldT.NewSetsAvailableForIgnoredItems,
+		"check_for_media_item_changes_job":     oldT.CheckForMediaItemChangesJob,
+		"sonarr_notification":                  oldT.SonarrNotification,
 	}
 	newMap := map[string]config.Config_CustomNotification{
-		"app_startup":       newT.AppStartup,
-		"test_notification": newT.TestNotification,
-		"autodownload":      newT.Autodownload,
+		"app_startup":                          newT.AppStartup,
+		"test_notification":                    newT.TestNotification,
+		"autodownload":                         newT.Autodownload,
+		"download_queue":                       newT.DownloadQueue,
+		"new_sets_available_for_ignored_items": newT.NewSetsAvailableForIgnoredItems,
+		"check_for_media_item_changes_job":     newT.CheckForMediaItemChangesJob,
+		"sonarr_notification":                  newT.SonarrNotification,
 	}
 
 	diffs := make([]notificationTemplateDiff, 0)

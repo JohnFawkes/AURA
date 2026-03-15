@@ -3359,6 +3359,38 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "check_for_media_item_changes_job": {
+                    "description": "Custom notification settings for the media item changes job.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_CustomNotification"
+                        }
+                    ]
+                },
+                "download_queue": {
+                    "description": "Custom notification settings for download queue events.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_CustomNotification"
+                        }
+                    ]
+                },
+                "new_sets_available_for_ignored_items": {
+                    "description": "Custom notification settings for when new sets become available for ignored items.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_CustomNotification"
+                        }
+                    ]
+                },
+                "sonarr_notification": {
+                    "description": "Custom notification settings for Sonarr events.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_CustomNotification"
+                        }
+                    ]
+                },
                 "test_notification": {
                     "description": "Custom notification settings for test notifications.",
                     "allOf": [

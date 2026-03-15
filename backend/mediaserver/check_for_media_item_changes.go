@@ -7,8 +7,8 @@ import (
 	"aura/logging"
 	"aura/models"
 	"aura/notification"
+	"aura/utils"
 	"context"
-	"fmt"
 )
 
 func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
@@ -37,24 +37,32 @@ func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 				Title:        dbItem.Title,
 				Year:         dbItem.Year,
 			}
-			message := ""
+			reason := ""
+			action := ""
+			moreInfo := ""
 			if !dbItem.HasSavedSet && !dbItem.IsIgnored {
 				// If the item is not found in the cache AND it doesn't have Saved Sets AND it is not Temp Ignored, this is an item we can remove from the DB
 				logging.LOGGER.Warn().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).Msg("MediaItem not found in cache and has no Saved Sets or Temp Ignore - removing from database")
-				message = fmt.Sprintf("The media item '%s' (TMDB ID: %s) in library '%s' could not be found in the cache and has no Saved Sets and is not set to be ignored temporarily. This may indicate that the Media Item was removed or there is an issue with the media server. This item will be removed from the database, but please double check if this item exists. If it does exist and/or is something you want to keep, please add it back to the Saved Sets/Temp Ignore as appropriate.", dbItem.Title, dbItem.TMDB_ID, dbItem.LibraryTitle)
+				reason = "This item was not in any Saved Sets and does not have a status of Ignored."
+				action = "This item will be removed from the database since it is not in the media server cache and does not have any Saved Sets or Ignored status"
+				moreInfo = "This may indicate that the media item was removed from the media server or there is an issue with the media server cache. Please verify if this media item still exists in the media server. If it does exist and you want to keep it in the database, please add it to a Saved Set or set it to be ignored temporarily."
 				database.DeleteMediaItemAndIgnoredStatus(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle)
 			} else if dbItem.HasSavedSet {
 				// If the item is not found in the cache AND it has Saved Sets
 				logging.LOGGER.Warn().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).Msg("MediaItem not found in cache but has Saved Sets")
-				message = fmt.Sprintf("The media item '%s' (TMDB ID: %s) in library '%s' could not be found in the cache but has Saved Sets. This may indicate that the Media Item was removed or there is an issue with the media server. This item will be kept in the database for now due to the existing Saved Sets, but please double check if this item exists. If it doesn't remove it from the Saved Sets.", dbItem.Title, dbItem.TMDB_ID, dbItem.LibraryTitle)
+				reason = "This item was not in the cache but has Saved Sets."
+				action = "This item will be kept in the database for now due to the existing Saved Sets"
+				moreInfo = "This may indicate that the Media Item was removed or there is an issue with the media server. Please double check if this item exists. If it doesn't remove it from the Saved Sets."
 			} else if dbItem.IsIgnored {
 				// If the item is not found in the cache AND it is Temp Ignored, we can just remove it from the DB
 				logging.LOGGER.Warn().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).Msg("MediaItem not found in cache but is Temp Ignored - removing from database")
-				message = fmt.Sprintf("The media item '%s' (TMDB ID: %s) in library '%s' could not be found in the cache but is set to be ignored temporarily. This may indicate that the Media Item was removed or there is an issue with the media server. This item will be removed from the database since it is set to be ignored temporarily, but please double check if this item exists. If it does exist and you want to keep it as ignored temporarily, please ignore it again.", dbItem.Title, dbItem.TMDB_ID, dbItem.LibraryTitle)
+				reason = "This item was not in the cache but is set to be ignored temporarily."
+				action = "This item will be removed from the database since it is set to be ignored temporarily"
+				moreInfo = "This may indicate that the Media Item was removed or there is an issue with the media server. Please double check if this item exists. If it does exist and you want to keep it as ignored temporarily, please ignore it again."
 				database.DeleteMediaItemAndIgnoredStatus(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle)
 			}
 
-			sendNotFoundNotification(mediaItem, message)
+			sendNotFoundNotification(mediaItem, reason, action, moreInfo)
 			continue
 		} else if dbItem.RatingKey != cachedItem.RatingKey {
 			logging.LOGGER.Trace().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).
@@ -72,19 +80,35 @@ func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 	return logging.LogErrorInfo{}
 }
 
-func sendNotFoundNotification(mediaItem models.MediaItem, message string) {
-	if len(config.Current.Notifications.Providers) == 0 || !config.Current.Notifications.Enabled {
+func sendNotFoundNotification(mediaItem models.MediaItem, reason string, action string, moreInfo string) {
+	// If notifications are disabled, skip
+	if !config.Current.Notifications.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Notifications are disabled, skipping app start notification")
 		return
 	}
 
-	title := fmt.Sprintf("Media Item Not Found: %s", mediaItem.Title)
+	// If notification providers are not configured, skip
+	if len(config.Current.Notifications.Providers) == 0 {
+		logging.LOGGER.Debug().Timestamp().Msg("No notification providers configured, skipping app start notification")
+		return
+	}
+
+	// If check for media item changes job notification is disabled, skip
+	if !config.Current.Notifications.NotificationTemplate.CheckForMediaItemChangesJob.Enabled {
+		logging.LOGGER.Debug().Timestamp().Msg("Check for media item changes job notification is disabled, skipping notification")
+		return
+	}
+
+	vars := utils.TemplateVars_CheckForMediaItemChangesJob(mediaItem, reason, action, moreInfo)
+	title := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.CheckForMediaItemChangesJob.Title, vars)
+	message := utils.RenderTemplate(config.Current.Notifications.NotificationTemplate.CheckForMediaItemChangesJob.Message, vars)
 	imageURL := ""
 
 	ctx, ld := logging.CreateLoggingContext(context.Background(), "Notification - Send Not Found Alert")
-	action := ld.AddAction("Sending Not Found Notification", logging.LevelInfo)
-	ctx = logging.WithCurrentAction(ctx, action)
+	logAction := ld.AddAction("Sending Not Found Notification", logging.LevelInfo)
+	ctx = logging.WithCurrentAction(ctx, logAction)
 	defer ld.Log()
-	defer action.Complete()
+	defer logAction.Complete()
 
 	// Send a notification to all configured providers
 	for _, provider := range config.Current.Notifications.Providers {

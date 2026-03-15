@@ -148,10 +148,15 @@ type Config_NotificationTemplate struct {
 	// - backend/utils/variable_filler.go
 	// - frontend/src/components/settings-onboarding/ConfigSectionNotifications.tsx
 	// - frontend/src/types/config/config-default-app.ts
+	// - frontend/src/types/config/config.ts
 
-	AppStartup       Config_CustomNotification `json:"app_startup" yaml:"AppStartup,omitempty"`             // Custom notification settings for application startup.
-	TestNotification Config_CustomNotification `json:"test_notification" yaml:"TestNotification,omitempty"` // Custom notification settings for test notifications.
-	Autodownload     Config_CustomNotification `json:"autodownload" yaml:"AutoDownload,omitempty"`          // Custom notification settings for auto-download events.
+	AppStartup                      Config_CustomNotification `json:"app_startup" yaml:"AppStartup,omitempty"`                                               // Custom notification settings for application startup.
+	TestNotification                Config_CustomNotification `json:"test_notification" yaml:"TestNotification,omitempty"`                                   // Custom notification settings for test notifications.
+	Autodownload                    Config_CustomNotification `json:"autodownload" yaml:"AutoDownload,omitempty"`                                            // Custom notification settings for auto-download events.
+	DownloadQueue                   Config_CustomNotification `json:"download_queue" yaml:"DownloadQueue,omitempty"`                                         // Custom notification settings for download queue events.
+	NewSetsAvailableForIgnoredItems Config_CustomNotification `json:"new_sets_available_for_ignored_items" yaml:"NewSetsAvailableForIgnoredItems,omitempty"` // Custom notification settings for when new sets become available for ignored items.
+	CheckForMediaItemChangesJob     Config_CustomNotification `json:"check_for_media_item_changes_job" yaml:"CheckForMediaItemChangesJob,omitempty"`         // Custom notification settings for the media item changes job.
+	SonarrNotification              Config_CustomNotification `json:"sonarr_notification" yaml:"SonarrNotification,omitempty"`                               // Custom notification settings for Sonarr events.
 }
 
 type Config_CustomNotification struct {

@@ -67,17 +67,20 @@ const TEMPLATE_TITLES: Partial<Record<keyof AppConfigNotificationTemplate, strin
   app_startup: "App Startup",
   test_notification: "Test Notification",
   autodownload: "Auto Download",
-
-  // download_queue_warning: "Download Queue Warning",
-  // download_queue_error: "Download Queue Error",
-  // sonarr_download_upgrade: "Sonarr Download Upgrade",
-  // sonarr_download_new: "Sonarr Download New",
+  download_queue: "Download Queue",
+  new_sets_available_for_ignored_items: "New Sets Available for Ignored Item",
+  check_for_media_item_changes_job: "Check For Media Item Changes Job",
+  sonarr_notification: "Sonarr Notification",
 };
 
 const TEMPLATE_SUPPORTS_IMAGE: Partial<Record<keyof AppConfigNotificationTemplate, boolean>> = {
   app_startup: false,
   test_notification: false,
   autodownload: true,
+  download_queue: true,
+  new_sets_available_for_ignored_items: true,
+  check_for_media_item_changes_job: false,
+  sonarr_notification: true,
 };
 
 const TEMPLATE_VAR_REGEX = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
@@ -982,12 +985,13 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
                     {editing && allowedVars.length > 0 && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Label className="text-xs text-muted-foreground">Insert Variable into</Label>
                           <Button
                             type="button"
                             variant={insertTarget === "title" ? "default" : "outline"}
                             size="sm"
+                            className="flex-1 sm:flex-none"
                             disabled={!editing || !tpl.enabled}
                             onClick={() =>
                               setInsertTargetByTemplate((prev) => ({
@@ -1002,6 +1006,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                             type="button"
                             variant={insertTarget === "message" ? "default" : "outline"}
                             size="sm"
+                            className="flex-1 sm:flex-none"
                             disabled={!editing || !tpl.enabled}
                             onClick={() =>
                               setInsertTargetByTemplate((prev) => ({
@@ -1014,7 +1019,7 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                           </Button>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        <div className="hidden sm:flex sm:flex-wrap gap-2">
                           {allowedVars.map((v) => (
                             <Badge
                               key={v}
@@ -1031,6 +1036,30 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
                               {v}
                             </Badge>
                           ))}
+                        </div>
+
+                        <div className="sm:hidden space-y-1">
+                          <p className="text-[11px] text-muted-foreground">Swipe to browse variables</p>
+                          <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none]">
+                            <div className="flex snap-x snap-mandatory gap-2 pb-1">
+                              {allowedVars.map((v) => (
+                                <Badge
+                                  key={`mobile-${v}`}
+                                  variant="outline"
+                                  className={cn(
+                                    "cursor-pointer snap-start shrink-0 whitespace-nowrap",
+                                    (!editing || !tpl.enabled) && "cursor-not-allowed opacity-50"
+                                  )}
+                                  onClick={() => {
+                                    if (!editing || !tpl.enabled) return;
+                                    insertTemplateVariable(key, v, insertTarget);
+                                  }}
+                                >
+                                  {v}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

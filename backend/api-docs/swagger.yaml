@@ -293,6 +293,23 @@ definitions:
         allOf:
         - $ref: '#/definitions/config.Config_CustomNotification'
         description: Custom notification settings for auto-download events.
+      check_for_media_item_changes_job:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for the media item changes job.
+      download_queue:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for download queue events.
+      new_sets_available_for_ignored_items:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for when new sets become available
+          for ignored items.
+      sonarr_notification:
+        allOf:
+        - $ref: '#/definitions/config.Config_CustomNotification'
+        description: Custom notification settings for Sonarr events.
       test_notification:
         allOf:
         - $ref: '#/definitions/config.Config_CustomNotification'

@@ -382,7 +382,7 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 			}
 
 			go func(image models.ImageFile, result string) {
-				sendFileDownloadNotification(mediaItem.Title, dbSet.ID, image, payload.IsUpgrade, result)
+				sendFileDownloadNotification(*mediaItem, dbSet, image, payload.IsUpgrade, result)
 			}(image, result)
 		}
 

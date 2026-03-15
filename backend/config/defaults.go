@@ -18,6 +18,30 @@ func DefaultNotificationTemplates() Config_NotificationTemplate {
 			Message:      "{{MediaItemTitle}}{{NewLine}}{{ImageName}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}Reason:{{NewLine}}{{Reason}}",
 			IncludeImage: true,
 		},
+		DownloadQueue: Config_CustomNotification{
+			Enabled:      true,
+			Title:        "Download Queue | {{ReasonTitle}}",
+			Message:      "{{MediaItemTitle}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}{{NewLine}}{{Reason}}",
+			IncludeImage: true,
+		},
+		NewSetsAvailableForIgnoredItems: Config_CustomNotification{
+			Enabled:      true,
+			Title:        "New Sets Available for Ignored Item",
+			Message:      "A new set has been detected for the previously ignored item {{MediaItemTitle}}. It is now part of {{SetCount}} set(s) in MediUX, and will no longer be ignored in {{AppName}}.",
+			IncludeImage: true,
+		},
+		CheckForMediaItemChangesJob: Config_CustomNotification{
+			Enabled:      true,
+			Title:        "Check For Media Item Changes Job",
+			Message:      "The media item '{{MediaItemTitle}}' (TMDB ID: {{MediaItemTMDBID}}) in library '{{MediaItemLibraryTitle}}' could not be found in the media server cache.{{NewLine}}Reason:{{NewLine}}{{Reason}}{{NewLine}}{{NewLine}}{{Action}}{{NewLine}}{{MoreInfo}}",
+			IncludeImage: false,
+		},
+		SonarrNotification: Config_CustomNotification{
+			Enabled:      true,
+			Title:        "Sonarr | {{ReasonTitle}}",
+			Message:      "{{MediaItemTitle}}{{NewLine}}{{ImageName}}{{NewLine}}Set ID: {{SetID}}{{NewLine}}Reason:{{NewLine}}{{Reason}}{{NewLine}}{{Result}}",
+			IncludeImage: true,
+		},
 	}
 }
 

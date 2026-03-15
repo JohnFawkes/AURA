@@ -76,13 +76,13 @@ func ProcessQueueItems() {
 		filePath := path.Join(FolderPath, file.Name())
 
 		finalizeAndNotify := func(
-			itemTitle string,
-			posterSet models.DBPosterSetDetail,
+			mediaItem models.MediaItem,
+			set models.DBPosterSetDetail,
 			tmdbPoster string,
 			tmdbBackdrop string,
 		) {
 			issues := FileIssues{Errors: fileErrors, Warnings: fileWarnings}
-			SendNotification(issues, itemTitle, posterSet, tmdbPoster, tmdbBackdrop)
+			SendNotification(issues, mediaItem, set, tmdbPoster, tmdbBackdrop)
 
 			if err := finalizeQueueFile(filePath, file.Name(), len(fileErrors) > 0, len(fileWarnings) > 0); err != nil {
 				subAction.AppendWarning(fmt.Sprintf("file_%s", file.Name()), "Failed to move or delete processed file")
@@ -94,26 +94,26 @@ func ProcessQueueItems() {
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			fileErrors = append(fileErrors, fmt.Sprintf("read file failed: %v", err))
-			finalizeAndNotify("Unknown Title", models.DBPosterSetDetail{}, "", "")
+			finalizeAndNotify(models.MediaItem{}, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
 		var queueItem models.DBSavedItem
 		if err := json.Unmarshal(data, &queueItem); err != nil {
 			fileErrors = append(fileErrors, fmt.Sprintf("parse json failed: %v", err))
-			finalizeAndNotify("Unknown Title", models.DBPosterSetDetail{}, "", "")
+			finalizeAndNotify(models.MediaItem{}, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
 		if queueItem.MediaItem.RatingKey == "" || queueItem.MediaItem.Title == "" || queueItem.MediaItem.LibraryTitle == "" || queueItem.MediaItem.TMDB_ID == "" {
 			fileErrors = append(fileErrors, "media item missing required fields: ratingKey/title/libraryTitle/tmdbId")
-			finalizeAndNotify(queueItem.MediaItem.Title, models.DBPosterSetDetail{}, "", "")
+			finalizeAndNotify(queueItem.MediaItem, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
 		if len(queueItem.PosterSets) == 0 {
 			fileWarnings = append(fileWarnings, "no poster sets found")
-			finalizeAndNotify(queueItem.MediaItem.Title, models.DBPosterSetDetail{}, "", "")
+			finalizeAndNotify(queueItem.MediaItem, models.DBPosterSetDetail{}, "", "")
 			continue
 		}
 
@@ -127,7 +127,7 @@ func ProcessQueueItems() {
 			fileErrors = append(fileErrors, fmt.Sprintf("media server lookup failed for '%s' in '%s': %s", queueItem.MediaItem.Title, queueItem.MediaItem.LibraryTitle, mediaErr.Message))
 			// Stop retry flood: mark file as error_ immediately
 			finalizeAndNotify(
-				queueItem.MediaItem.Title,
+				queueItem.MediaItem,
 				models.DBPosterSetDetail{},
 				mediuxItemInfo.TMDB_PosterPath,
 				mediuxItemInfo.TMDB_BackdropPath,
@@ -144,7 +144,7 @@ func ProcessQueueItems() {
 				fileErrors = append(fileErrors, setErrors...)
 				SendNotification(
 					FileIssues{Errors: setErrors, Warnings: setWarnings},
-					queueItem.MediaItem.Title,
+					queueItem.MediaItem,
 					posterSet,
 					mediuxItemInfo.TMDB_PosterPath,
 					mediuxItemInfo.TMDB_BackdropPath,
@@ -161,7 +161,7 @@ func ProcessQueueItems() {
 				fileWarnings = append(fileWarnings, setWarnings...)
 				SendNotification(
 					FileIssues{Errors: setErrors, Warnings: setWarnings},
-					queueItem.MediaItem.Title,
+					queueItem.MediaItem,
 					posterSet,
 					mediuxItemInfo.TMDB_PosterPath,
 					mediuxItemInfo.TMDB_BackdropPath,
@@ -249,7 +249,7 @@ func ProcessQueueItems() {
 			// Per-set notification (success/warning/error)
 			SendNotification(
 				FileIssues{Errors: setErrors, Warnings: setWarnings},
-				queueItem.MediaItem.Title,
+				queueItem.MediaItem,
 				posterSet,
 				mediuxItemInfo.TMDB_PosterPath,
 				mediuxItemInfo.TMDB_BackdropPath,
@@ -263,7 +263,7 @@ func ProcessQueueItems() {
 		if Err.Message != "" {
 			fileErrors = append(fileErrors, fmt.Sprintf("db upsert failed: %s", Err.Message))
 			finalizeAndNotify(
-				queueItem.MediaItem.Title,
+				queueItem.MediaItem,
 				models.DBPosterSetDetail{},
 				mediuxItemInfo.TMDB_PosterPath,
 				mediuxItemInfo.TMDB_BackdropPath,
