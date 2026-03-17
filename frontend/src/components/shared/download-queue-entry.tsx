@@ -27,18 +27,19 @@ const DownloadQueueEntry: React.FC<{
   entry: DBSavedItem;
   fetchQueueEntries?: () => Promise<void>;
 }> = ({ entry, fetchQueueEntries }) => {
+  const posterSets = Array.isArray(entry.poster_sets) ? entry.poster_sets : [];
   const baseSetInfo: BaseSetInfo = {
-    id: entry.poster_sets[0]?.id || "",
-    title: entry.poster_sets[0]?.title || "",
-    type: entry.poster_sets[0]?.type || "movie",
-    user_created: entry.poster_sets[0]?.user_created || "",
-    date_created: entry.poster_sets[0]?.date_created || "",
-    date_updated: entry.poster_sets[0]?.date_updated || "",
-    popularity: entry.poster_sets[0]?.popularity || 0,
-    popularity_global: entry.poster_sets[0]?.popularity_global || 0,
+    id: posterSets[0]?.id || "",
+    title: posterSets[0]?.title || "",
+    type: posterSets[0]?.type || "movie",
+    user_created: posterSets[0]?.user_created || "",
+    date_created: posterSets[0]?.date_created || "",
+    date_updated: posterSets[0]?.date_updated || "",
+    popularity: posterSets[0]?.popularity || 0,
+    popularity_global: posterSets[0]?.popularity_global || 0,
   };
 
-  const formItems: FormItemDisplay[] = entry.poster_sets.map((set) => ({
+  const formItems: FormItemDisplay[] = posterSets.map((set) => ({
     MediaItem: entry.media_item,
     Set: set,
   }));
@@ -120,7 +121,7 @@ const DownloadQueueEntry: React.FC<{
 
         <Separator className="my-4" />
 
-        {entry.poster_sets.some(
+        {posterSets.some(
           (set) =>
             set.selected_types.poster ||
             set.selected_types.backdrop ||
