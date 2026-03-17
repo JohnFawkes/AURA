@@ -20,6 +20,8 @@ export function JumpToTop() {
     pathName === "/saved-sets/" ||
     pathName === "/download-queue" ||
     pathName === "/download-queue/" ||
+    pathName === "/settings" ||
+    pathName === "/settings/" ||
     pathName.startsWith("/collections") ||
     pathName.startsWith("/collections/");
   const rightClass = isRefreshPage ? "right-15 sm:right-25" : "right-3";
@@ -55,7 +57,7 @@ export function JumpToTop() {
       size="sm"
       className={cn(
         `fixed z-100 ${rightClass} cursor-pointer
-				bottom-10 sm:bottom-15
+				bottom-5 sm:bottom-15
 				rounded-full shadow-lg
 				transition-all duration-300
 				border-1 border-primary
@@ -67,7 +69,7 @@ export function JumpToTop() {
       onClick={scrollToTop}
       aria-label="jump to top"
     >
-      <ArrowUp className="h-3 w-3 mr-1" />
+      <ArrowUp className="h-3 w-3" />
       <span className="text-xs hidden sm:inline">Jump to Top</span>
     </Button>
   );
