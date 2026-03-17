@@ -2,4 +2,9 @@ node_modules
 .next
 build
 dist
-public
+
+public/*
+!public/
+!public/CHANGELOG.md
+
+coverage

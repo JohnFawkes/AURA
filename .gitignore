@@ -53,10 +53,9 @@ next-env.d.ts
 
 # Local files 
 local/*
-backend/run_backend
 frontend/run_frontend
 backend/.air.toml
-*.graphql
+backend/tmp
 .secrets
 docker_local_build.sh
 docker_local_beta_build.sh
@@ -65,4 +64,4 @@ docker-compose.beta.yml
 legacy-frontend
 docker_local_build.sh.old
 
-.buildx-cache/**
+.buildx-cache*/**

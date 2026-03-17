@@ -1,15 +1,16 @@
 "use client";
 
-import { deleteFromQueue } from "@/services/download-queue/delete-item";
+import { RemoveItemFromQueue } from "@/services/downloads/queue-remove";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import React, { useState } from "react";
+import React from "react";
 
 import Link from "next/link";
 
 import { AssetImage } from "@/components/shared/asset-image";
 import { ConfirmDestructiveDialogActionButton } from "@/components/shared/dialog-destructive-action";
+import type { FormItemDisplay } from "@/components/shared/download-modal";
 import DownloadModal from "@/components/shared/download-modal";
 import { renderTypeBadges } from "@/components/shared/saved-sets-shared";
 import { Badge } from "@/components/ui/badge";
@@ -19,118 +20,125 @@ import { H4 } from "@/components/ui/typography";
 
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
-import { DBMediaItemWithPosterSets } from "@/types/database/db-poster-set";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+import type { BaseSetInfo } from "@/types/media-and-posters/sets";
 
 const DownloadQueueEntry: React.FC<{
-	entry: DBMediaItemWithPosterSets;
-	fetchQueueEntries?: () => Promise<void>;
+  entry: DBSavedItem;
+  fetchQueueEntries?: () => Promise<void>;
 }> = ({ entry, fetchQueueEntries }) => {
-	// Initialize edit state from the savedSet.PosterSets array.
-	const [editSets] = useState(() =>
-		entry.PosterSets.map((set) => ({
-			id: set.PosterSetID,
-			previousDateUpdated: set.PosterSet.DateUpdated,
-			set: set.PosterSet || "Unknown",
-			selectedTypes: set.SelectedTypes,
-			autoDownload: set.AutoDownload,
-			toDelete: false,
-		}))
-	);
+  const posterSets = Array.isArray(entry.poster_sets) ? entry.poster_sets : [];
+  const baseSetInfo: BaseSetInfo = {
+    id: posterSets[0]?.id || "",
+    title: posterSets[0]?.title || "",
+    type: posterSets[0]?.type || "movie",
+    user_created: posterSets[0]?.user_created || "",
+    date_created: posterSets[0]?.date_created || "",
+    date_updated: posterSets[0]?.date_updated || "",
+    popularity: posterSets[0]?.popularity || 0,
+    popularity_global: posterSets[0]?.popularity_global || 0,
+  };
 
-	// Access global stores
-	const { setMediaItem } = useMediaStore();
+  const formItems: FormItemDisplay[] = posterSets.map((set) => ({
+    MediaItem: entry.media_item,
+    Set: set,
+  }));
 
-	const onDeleteConfirm = async () => {
-		try {
-			const response = await deleteFromQueue(entry);
-			if (response.status === "error") {
-				toast.error(
-					`Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
-				);
-			} else {
-				toast.success(response.data || "Successfully deleted from queue.");
-			}
-		} catch (error) {
-			toast.error(
-				`Error deleting from queue: ${error instanceof Error ? error.message : "Unknown error occurred trying to delete."}`
-			);
-		}
-		if (fetchQueueEntries) {
-			await fetchQueueEntries();
-		}
-	};
+  // Access global stores
+  const { setMediaItem } = useMediaStore();
 
-	return (
-		<Card className="relative w-full max-w-md mx-auto">
-			<CardHeader>
-				{/* Top Left: Delete File */}
-				<div className="absolute top-2 left-2">
-					<ConfirmDestructiveDialogActionButton
-						variant="outline"
-						className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
-						confirmText="Delete File"
-						title="Delete Downloaded File?"
-						description="Are you sure you want to delete the downloaded file for this media item? This action cannot be undone."
-						onConfirm={onDeleteConfirm}
-					>
-						<Trash2 className="w-5 h-5" />
-					</ConfirmDestructiveDialogActionButton>
-				</div>
-				{/* Top Right: Dropdown Menu */}
-				<div className="absolute top-2 right-2 justify-end">
-					<DownloadModal
-						setID={editSets[0].id}
-						setTitle={editSets[0].set.Title}
-						setType={editSets[0].set.Type}
-						setAuthor={editSets[0].set.User.Name}
-						posterSets={[editSets[0].set]}
-						autoDownloadDefault={editSets[0].autoDownload}
-					/>
-				</div>
-			</CardHeader>
+  const onDeleteConfirm = async () => {
+    try {
+      const response = await RemoveItemFromQueue(entry);
+      if (response.status === "error") {
+        toast.error(
+          `Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
+        );
+      } else {
+        toast.success(response.data?.result || "Successfully deleted from queue.");
+      }
+    } catch (error) {
+      toast.error(
+        `Error deleting from queue: ${error instanceof Error ? error.message : "Unknown error occurred trying to delete."}`
+      );
+    }
+    if (fetchQueueEntries) {
+      await fetchQueueEntries();
+    }
+  };
 
-			{/* Middle: Image */}
-			<div className="flex justify-center">
-				<AssetImage image={entry.MediaItem} className="w-[80%] h-auto transition-transform hover:scale-105" />
-			</div>
+  return (
+    <Card className="relative w-full max-w-md mx-auto">
+      <CardHeader>
+        {/* Top Left: Delete File */}
+        <div className="absolute top-2 left-2">
+          <ConfirmDestructiveDialogActionButton
+            variant="outline"
+            className="text-destructive border-1 shadow-none hover:text-red-500 cursor-pointer"
+            confirmText="Delete File"
+            title="Delete Downloaded File?"
+            description="Are you sure you want to delete the downloaded file for this media item? This action cannot be undone."
+            onConfirm={onDeleteConfirm}
+          >
+            <Trash2 className="w-5 h-5" />
+          </ConfirmDestructiveDialogActionButton>
+        </div>
+        {/* Top Right: Dropdown Menu */}
+        <div className="absolute top-2 right-2 justify-end">
+          <DownloadModal baseSetInfo={baseSetInfo} formItems={formItems} />
+        </div>
+      </CardHeader>
 
-			{/* Content */}
-			<CardContent className="p-0 ml-2 mr-2">
-				{/* Title */}
-				<H4>
-					<Link
-						//href={formatMediaItemUrl(entry.MediaItem)}
-						href={"/media-item/"}
-						className="text-primary hover:underline"
-						onClick={() => {
-							setMediaItem(entry.MediaItem);
-						}}
-					>
-						{entry.MediaItem.Title}
-					</Link>
-				</H4>
+      {/* Middle: Image */}
+      <div className="flex justify-center">
+        <AssetImage
+          image={entry.media_item}
+          imageType="item"
+          className="w-[80%] h-auto transition-transform hover:scale-105"
+        />
+      </div>
 
-				{/* Year and Library */}
-				<span className="text-xs sm:text-sm text-muted-foreground inline-block">
-					{entry.MediaItem.Year} · {entry.MediaItem.LibraryTitle}
-				</span>
+      {/* Content */}
+      <CardContent className="p-0 ml-2 mr-2">
+        {/* Title */}
+        <H4>
+          <Link
+            //href={formatMediaItemUrl(entry.MediaItem)}
+            href={"/media-item/"}
+            className="text-primary hover:underline"
+            onClick={() => {
+              setMediaItem(entry.media_item);
+            }}
+          >
+            {entry.media_item.title}
+          </Link>
+        </H4>
 
-				<Separator className="my-4" />
+        {/* Year and Library */}
+        <span className="text-xs sm:text-sm text-muted-foreground inline-block">
+          {entry.media_item.year} · {entry.media_item.library_title}
+        </span>
 
-				{entry.PosterSets.some(
-					(set) => Array.isArray(set.SelectedTypes) && set.SelectedTypes.some((type) => type.trim() !== "")
-				) ? (
-					<div className="flex flex-wrap gap-2">{renderTypeBadges(entry)}</div>
-				) : (
-					<div className="flex flex-wrap gap-2">
-						<Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
-							No Selected Types
-						</Badge>
-					</div>
-				)}
-			</CardContent>
-		</Card>
-	);
+        <Separator className="my-4" />
+
+        {posterSets.some(
+          (set) =>
+            set.selected_types.poster ||
+            set.selected_types.backdrop ||
+            set.selected_types.season_poster ||
+            set.selected_types.titlecard
+        ) ? (
+          <div className="flex flex-wrap gap-2">{renderTypeBadges(entry)}</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Badge key={"no-types"} variant="outline" className="text-sm bg-red-500">
+              No Selected Types
+            </Badge>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 export default DownloadQueueEntry;

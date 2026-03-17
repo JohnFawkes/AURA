@@ -1,0 +1,53 @@
+query getMovieSetBySetID($set_id: ID!) {
+  movie_sets_by_id(id: $set_id) {
+    id
+    set_title
+    user_created {
+      username
+    }
+    date_created
+    date_updated
+    popularity
+    popularity_global
+    movie_id {
+      id
+      date_updated
+      status
+      title
+      tagline
+      release_date
+      tvdb_id
+      imdb_id
+      trakt_id
+      slug
+      poster_path
+      backdrop_path
+    }
+    movie_poster {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      language {
+        display_name
+      }
+      movie {
+        id
+      }
+    }
+    movie_backdrop {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      language {
+        display_name
+      }
+      movie {
+        id
+      }
+    }
+  }
+}

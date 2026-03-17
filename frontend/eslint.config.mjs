@@ -1,35 +1,79 @@
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import reactPlugin from "eslint-plugin-react";
+// eslint.config.js
+import js from "@eslint/js";
+import prettier from "eslint-config-prettier";
+import importPlugin from "eslint-plugin-import";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
+import tseslint from "typescript-eslint";
 
 export default [
-	{
-		ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "tailwind.config.js"],
-	},
-	{
-		files: ["**/*.{ts,tsx,js,jsx}"],
-		languageOptions: {
-			parser: tsParser,
-			parserOptions: {
-				ecmaVersion: 2020,
-				sourceType: "module",
-				ecmaFeatures: { jsx: true },
-				project: "./tsconfig.json",
-			},
-		},
-		plugins: {
-			"@typescript-eslint": tseslint,
-			"react-hooks": reactHooks,
-			react: reactPlugin,
-		},
-		rules: {
-			"react/no-unescaped-entities": "off",
-			"no-console": "warn",
-			"@typescript-eslint/no-unused-vars": "warn",
-			"@typescript-eslint/no-unused-expressions": "warn",
-			"react-hooks/exhaustive-deps": "warn",
-			"react-hooks/rules-of-hooks": "error",
-		},
-	},
+  /* =========================
+     Global ignores
+     ========================= */
+  {
+    ignores: ["node_modules/**", ".next/**", "dist/**", "coverage/**", "*.config.*"],
+  },
+
+  /* =========================
+     Base JS rules
+     ========================= */
+  js.configs.recommended,
+
+  /* =========================
+     TypeScript (NON type-aware, fast)
+     ========================= */
+  ...tseslint.configs.recommended,
+
+  /* =========================
+     TypeScript + React (type-aware, scoped)
+     ========================= */
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.eslint.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    plugins: {
+      react,
+      "react-hooks": reactHooks,
+      "jsx-a11y": jsxA11y,
+      import: importPlugin,
+    },
+    settings: {
+      react: { version: "detect" },
+      "import/resolver": {
+        typescript: {
+          project: "./tsconfig.eslint.json",
+        },
+      },
+    },
+    rules: {
+      /* React */
+      "react/react-in-jsx-scope": "off",
+      "react/jsx-uses-react": "off",
+      "react/jsx-key": "error",
+      "react/no-unknown-property": "error",
+      "react/jsx-filename-extension": ["warn", { extensions: [".tsx"] }],
+
+      /* Hooks */
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+
+      /* Accessibility (lightweight) */
+      "jsx-a11y/alt-text": "warn",
+      "jsx-a11y/anchor-is-valid": "warn",
+
+      /* TypeScript */
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
+
+  /* =========================
+     Prettier (ALWAYS LAST)
+     ========================= */
+  prettier,
 ];

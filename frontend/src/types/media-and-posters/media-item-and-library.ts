@@ -1,70 +1,90 @@
-export interface LibrarySection {
-	ID: string;
-	Type: string; // "movie" or "show"
-	Title: string;
-	TotalSize: number;
-	MediaItems: MediaItem[];
+export interface LibrarySectionBase {
+  id: string;
+  type: string; // "movie" or "show"
+  title: string;
+  path?: string;
+}
+
+export interface LibrarySection extends LibrarySectionBase {
+  total_size: number;
+  media_items: MediaItem[];
 }
 
 export interface MediaItem {
-	TMDB_ID: string;
-	LibraryTitle: string;
-	RatingKey: string;
-	Type: "show" | "movie";
-	Title: string;
-	Year: number;
-	ExistInDatabase: boolean;
-	DBSavedSets?: PosterSetSummary[];
-	Thumb?: string;
-	ContentRating?: string;
-	Summary?: string;
-	UpdatedAt?: number;
-	AddedAt?: number;
-	ReleasedAt?: number;
-	Guids: Guid[];
-	Movie?: MediaItemMovie;
-	Series?: MediaItemSeries;
+  tmdb_id: string;
+  library_title: string;
+  rating_key: string;
+  type: "show" | "movie";
+  title: string;
+  year: number;
+  movie?: MediaItemMovie;
+  series?: MediaItemSeries;
+
+  db_saved_sets: DBSavedSet[];
+  ignored_in_db: boolean;
+  ignored_mode: string;
+
+  has_mediux_sets: boolean;
+  updated_at: number;
+  added_at: number;
+  released_at: number;
+  latest_episode_added_at: number;
+
+  guids: Guid[];
+
+  content_rating: string;
+  summary: string;
 }
 
 export interface Guid {
-	Provider?: string;
-	ID?: string;
-	Rating?: string;
+  provider?: string;
+  id?: string;
+  rating?: string;
 }
 
 export interface MediaItemMovie {
-	File: MediaItemFile;
+  file: MediaItemFile;
 }
 
 export interface MediaItemSeries {
-	Seasons: MediaItemSeason[];
-	SeasonCount: number;
-	EpisodeCount: number;
+  seasons: MediaItemSeason[];
+  season_count: number;
+  episode_count: number;
+  location: string;
 }
 
 export interface MediaItemSeason {
-	RatingKey: string;
-	SeasonNumber: number;
-	Title: string;
-	Episodes: MediaItemEpisode[];
+  rating_key: string;
+  season_number: number;
+  title: string;
+  episodes: MediaItemEpisode[];
 }
 
 export interface MediaItemEpisode {
-	RatingKey: string;
-	Title: string;
-	SeasonNumber: number;
-	EpisodeNumber: number;
-	File: File;
+  rating_key: string;
+  title: string;
+  season_number: number;
+  episode_number: number;
+  added_at: number;
+  file: MediaItemFile;
 }
 
 export interface MediaItemFile {
-	Path: string;
-	Size: number;
-	Duration: number;
+  path: string;
+  size: number;
+  duration: number;
 }
 
-export interface PosterSetSummary {
-	PosterSetID: string;
-	PosterSetUser: string;
-	SelectedTypes: string[];
+export interface DBSavedSet {
+  id: string;
+  user_created: string;
+  selected_types: SelectedTypes;
+}
+
+export interface SelectedTypes {
+  poster: boolean;
+  backdrop: boolean;
+  season_poster: boolean;
+  special_season_poster: boolean;
+  titlecard: boolean;
 }

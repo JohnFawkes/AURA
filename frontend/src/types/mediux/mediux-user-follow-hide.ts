@@ -1,8 +1,8 @@
 export interface MediuxUserInfo {
-	ID: string;
-	Username: string;
-	Avatar: string;
-	Follow?: boolean;
-	Hide?: boolean;
-	TotalSets?: number;
+  id: string;
+  username: string;
+  avatar: string;
+  follow?: boolean;
+  hide?: boolean;
+  total_sets?: number;
 }

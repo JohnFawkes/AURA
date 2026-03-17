@@ -1,0 +1,84 @@
+import apiClient from "@/services/api-client";
+import { ReturnErrorMessage } from "@/services/api-error-return";
+
+import { log } from "@/lib/logger";
+
+import type { APIResponse } from "@/types/api/api-response";
+import type { DBSavedItem } from "@/types/database/db-poster-set";
+
+export interface AutodownloadResult {
+  item: string;
+  sets: AutodownloadSetResult[];
+  overall_result: "error" | "warn" | "success" | "skipped";
+  overall_message: string;
+}
+
+export interface AutodownloadSetResult {
+  id: string;
+  title: string;
+  user_created: string;
+  result: "success" | "skipped" | "error";
+  reason: string;
+}
+
+export interface AutoDownloadForceCheck_Request {
+  Item: DBSavedItem;
+  Complete: boolean;
+}
+
+export interface AutoDownloadForceCheck_Response {
+  result: AutodownloadResult;
+}
+
+export const AutoDownloadForceCheck = async (
+  saveItem: DBSavedItem
+): Promise<APIResponse<AutoDownloadForceCheck_Response>> => {
+  let complete = true;
+  const size = JSON.stringify(saveItem).length / 1024 / 1024;
+  if (size > 5) {
+    complete = false;
+    saveItem.poster_sets.forEach((posterSet) => {
+      posterSet.images = [];
+    });
+  }
+  for (const set of saveItem.poster_sets) {
+    set.last_downloaded = new Date().toISOString();
+  }
+  log(
+    "INFO",
+    "API - DB",
+    "Recheck",
+    `Forcing recheck for auto-download for ${saveItem.media_item.title} (${saveItem.media_item.tmdb_id} | ${saveItem.media_item.library_title})`,
+    { saveItem, complete, size }
+  );
+  try {
+    const req: AutoDownloadForceCheck_Request = {
+      Item: saveItem,
+      Complete: complete,
+    };
+    const response = await apiClient.post<APIResponse<AutoDownloadForceCheck_Response>>(`/db/force-check`, req);
+    if (response.data.status === "error") {
+      throw new Error(response.data.error?.message || "Unknown error forcing recheck for auto-download");
+    } else {
+      log(
+        "INFO",
+        "API - DB",
+        "Recheck",
+        `Forcing recheck for auto-download for ${saveItem.media_item.title} (${saveItem.media_item.tmdb_id} | ${saveItem.media_item.library_title}) succeeded`,
+        response.data
+      );
+    }
+    return response.data;
+  } catch (error) {
+    log(
+      "ERROR",
+      "API - DB",
+      "Recheck",
+      `Failed to force recheck for auto-download for ${saveItem.media_item.title} (${saveItem.media_item.tmdb_id} | ${saveItem.media_item.library_title}): ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+      error
+    );
+    return ReturnErrorMessage<AutoDownloadForceCheck_Response>(error);
+  }
+};

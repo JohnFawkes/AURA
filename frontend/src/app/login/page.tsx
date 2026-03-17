@@ -1,6 +1,6 @@
 "use client";
 
-import { postLogin } from "@/services/auth/api-auth";
+import { AttemptLogin } from "@/services/auth/login";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -16,104 +16,100 @@ import { Label } from "@/components/ui/label";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
 
 export default function LoginPage() {
-	useEffect(() => {
-		document.title = "aura | Login";
-	}, []);
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-	const router = useRouter();
-	const [password, setPassword] = useState("");
-	const [showPw, setShowPw] = useState(false);
-	const [loading, setLoading] = useState(false);
-	const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Get Onboarding Status
+  const status = useOnboardingStore((state) => state.status);
+  const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
-	// Get Onboarding Status
-	const status = useOnboardingStore((state) => state.status);
-	const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
+  useEffect(() => {
+    const token = localStorage.getItem("aura-auth-token");
+    if (token && token.length > 0 && token !== "null" && token !== "undefined") {
+      router.replace("/");
+    } else if (hasHydrated && status && status.current_setup.auth.enabled === false) {
+      // If onboarding is complete and auth is disabled, redirect to /
+      router.replace("/");
+    }
+  }, [hasHydrated, router, status]);
 
-	useEffect(() => {
-		const token = localStorage.getItem("aura-auth-token");
-		if (token && token.length > 0 && token !== "null" && token !== "undefined") {
-			router.replace("/");
-		} else if (hasHydrated && status && status.currentSetup.Auth.Enabled === false) {
-			// If onboarding is complete and auth is disabled, redirect to /
-			router.replace("/");
-		}
-	}, [hasHydrated, router, status]);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    if (!password) {
+      setErrorMsg("Password required.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const resp = await AttemptLogin(password);
+      const token = (resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
+      if (!token) {
+        throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
+      }
+      router.replace("/");
+    } catch (err: unknown) {
+      setErrorMsg((err as { message?: string })?.message || "Login failed. Check password.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		setErrorMsg(null);
-		if (!password) {
-			setErrorMsg("Password required.");
-			return;
-		}
-		try {
-			setLoading(true);
-			const resp = await postLogin(password);
-			const token = (resp as { data?: { token?: string } })?.data?.token || (resp as { token?: string })?.token;
-			if (!token) {
-				throw new Error(typeof resp?.data === "string" ? resp.data : "Invalid Password");
-			}
-			router.replace("/");
-		} catch (err: unknown) {
-			setErrorMsg((err as { message?: string })?.message || "Login failed. Check password.");
-		} finally {
-			setLoading(false);
-		}
-	}
-
-	return (
-		<div className="min-h-screen flex items-center justify-center px-8 pb-20 sm:px-20">
-			<Card className="w-full max-w-md shadow-md">
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2 text-2xl">
-						<Lock className="h-6 w-6" /> Sign In
-					</CardTitle>
-					<CardDescription>Enter your password to access aura.</CardDescription>
-				</CardHeader>
-				<form onSubmit={handleSubmit}>
-					<CardContent className="space-y-4">
-						{errorMsg && (
-							<Alert variant="destructive">
-								<AlertTitle>Error</AlertTitle>
-								<AlertDescription>{errorMsg}</AlertDescription>
-							</Alert>
-						)}
-						<div className="mb-4">
-							<Label className="mb-2 font-medium" htmlFor="password">
-								Password
-							</Label>
-							<div className="relative">
-								<Input
-									id="password"
-									type={showPw ? "text" : "password"}
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									autoComplete="current-password"
-									placeholder="••••••••"
-									disabled={loading}
-									className="pr-10" // add padding so text doesn't run under the icon
-								/>
-								<Button
-									variant="ghost"
-									onClick={() => setShowPw(!showPw)}
-									aria-label={showPw ? "Hide password" : "Show password"}
-									className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-									disabled={loading}
-								>
-									{showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-								</Button>
-							</div>
-						</div>
-					</CardContent>
-					<CardFooter className="flex flex-col gap-3">
-						<Button type="submit" className="w-full" disabled={loading}>
-							{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-							{loading ? "Signing In..." : "Sign In"}
-						</Button>
-					</CardFooter>
-				</form>
-			</Card>
-		</div>
-	);
+  return (
+    <div className="min-h-screen flex items-center justify-center px-8 pb-20 sm:px-20">
+      <Card className="w-full max-w-md shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Lock className="h-6 w-6" /> Sign In
+          </CardTitle>
+          <CardDescription>Enter your password to access aura.</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {errorMsg && (
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{errorMsg}</AlertDescription>
+              </Alert>
+            )}
+            <div className="mb-4">
+              <Label className="mb-2 font-medium" htmlFor="password">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="pr-10" // add padding so text doesn't run under the icon
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowPw(!showPw)}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={loading}
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-3">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Signing In..." : "Sign In"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
 }

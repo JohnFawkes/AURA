@@ -1,0 +1,93 @@
+query getShowItemSetsByTMDBID($tmdb_id: ID!) {
+  shows_by_id(id: $tmdb_id) {
+    id
+    date_updated
+    status
+    title
+    tagline
+    first_air_date
+    tvdb_id
+    imdb_id
+    trakt_id
+    slug
+    poster_path
+    backdrop_path
+    show_sets(
+      filter: {
+        _or: [
+          { show_poster: { id: { _nnull: true } } }
+          { show_backdrop: { id: { _nnull: true } } }
+          { season_posters: { id: { _nnull: true } } }
+          { titlecards: { id: { _nnull: true } } }
+        ]
+      }
+    ) {
+      id
+      set_title
+      user_created {
+        username
+      }
+      date_created
+      date_updated
+      popularity
+      popularity_global
+      show_poster {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        language {
+          display_name
+        }
+      }
+      show_backdrop {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        language {
+          display_name
+        }
+      }
+      season_posters(filter: { season: { season_number: { _nnull: true } } }) {
+        season {
+          season_number
+        }
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        language {
+          display_name
+        }
+      }
+      titlecards(
+        filter: {
+          episode: {
+            episode_number: { _nnull: true }
+            season_id: { season_number: { _nnull: true } }
+          }
+        }
+      ) {
+        id
+        modified_on
+        filesize
+        src
+        blurhash
+        language {
+          display_name
+        }
+        episode {
+          episode_title
+          episode_number
+          season_id {
+            season_number
+          }
+        }
+      }
+    }
+  }
+}

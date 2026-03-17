@@ -9,12 +9,12 @@ import { SortControl } from "@/components/shared/select-sort";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -25,297 +25,429 @@ import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
 import { extractInfoFromSearchQuery } from "@/hooks/search-query";
 
-import { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
-import { FILTER_IN_DB_OPTIONS, TYPE_FILTER_IN_DB_OPTIONS, TYPE_ITEMS_PER_PAGE_OPTIONS } from "@/types/ui-options";
+import type { LibrarySection } from "@/types/media-and-posters/media-item-and-library";
+import type {
+  TYPE_FILTER_IGNORED_OPTIONS,
+  TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS,
+  TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS,
+} from "@/types/ui-options";
+import { FILTER_IGNORED_OPTIONS, HOME_PAGE_FILTER_IN_DB_OPTIONS } from "@/types/ui-options";
 
 type HomeFilterProps = {
-	// Filtering
-	librarySections: LibrarySection[];
-	filteredLibraries: string[];
-	setFilteredLibraries: (libs: string[]) => void;
-	filterInDB: string;
-	setFilterInDB: (filter: TYPE_FILTER_IN_DB_OPTIONS) => void;
+  // Filtering
+  librarySections: LibrarySection[];
+  filteredLibraries: string[];
+  setFilteredLibraries: (libs: string[]) => void;
+  filterInDB: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS;
+  setFilterInDB: (filter: TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS) => void;
+  filterIgnored: TYPE_FILTER_IGNORED_OPTIONS;
+  setFilterIgnored: (ignored: TYPE_FILTER_IGNORED_OPTIONS) => void;
+  hasSetsAvailableFilter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS;
+  setHasSetsAvailableFilter: (filter: TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS) => void;
 
-	// Sorting
-	hasUpdatedAt: boolean;
-	sortOption: string;
-	setSortOption: (option: string) => void;
-	sortOrder: "asc" | "desc";
-	setSortOrder: (order: "asc" | "desc") => void;
+  // Sorting
+  hasUpdatedAt: boolean;
+  hasEpisodeAddedAt: boolean;
+  sortOption: string;
+  setSortOption: (option: string) => void;
+  sortOrder: "asc" | "desc";
+  setSortOrder: (order: "asc" | "desc") => void;
 
-	// Items Per Page
-	setCurrentPage: (page: number) => void;
-	itemsPerPage: TYPE_ITEMS_PER_PAGE_OPTIONS;
-	setItemsPerPage: (num: TYPE_ITEMS_PER_PAGE_OPTIONS) => void;
+  // Items Per Page
+  setCurrentPage: (page: number) => void;
+  itemsPerPage: number;
+  setItemsPerPage: (num: number) => void;
 };
 
 function FilterHomeContent({
-	librarySections,
-	filteredLibraries,
-	setFilteredLibraries,
-	filterInDB,
-	setFilterInDB,
+  librarySections,
+  filteredLibraries,
+  setFilteredLibraries,
+  filterInDB,
+  setFilterInDB,
+  filterIgnored,
+  setFilterIgnored,
+  hasSetsAvailableFilter,
+  setHasSetsAvailableFilter,
 
-	hasUpdatedAt,
-	sortOption,
-	setSortOption,
-	sortOrder,
-	setSortOrder,
+  hasUpdatedAt,
+  hasEpisodeAddedAt,
+  sortOption,
+  setSortOption,
+  sortOrder,
+  setSortOrder,
 
-	setCurrentPage,
-	itemsPerPage,
-	setItemsPerPage,
+  setCurrentPage,
+  itemsPerPage,
+  setItemsPerPage,
 }: HomeFilterProps) {
-	const { searchQuery, setSearchQuery } = useSearchQueryStore();
-	const { searchTMDBID, searchLibrary, searchYear, searchTitle } = extractInfoFromSearchQuery(searchQuery);
+  const { searchQuery, setSearchQuery } = useSearchQueryStore();
+  const { searchTMDBID, searchLibrary, searchYear, searchTitle } = extractInfoFromSearchQuery(searchQuery);
 
-	return (
-		<div className="flex-grow space-y-4 overflow-y-auto px-4">
-			{/* Sort Header */}
-			<div className="flex items-center justify-center mb-0 mt-0">
-				<Label className="text-lg font-semibold">Sort</Label>
-			</div>
-			<Separator className="my-2 w-full" />
-			{/* Sort Control */}
-			<SortControl
-				options={[
-					{
-						value: "dateAdded",
-						label: "Date Added",
-						ascIcon: <ClockArrowUp />,
-						descIcon: <ClockArrowDown />,
-						type: "date",
-					},
-					...(hasUpdatedAt
-						? [
-								{
-									value: "dateUpdated",
-									label: "Date Updated",
-									ascIcon: <ClockArrowUp />,
-									descIcon: <ClockArrowDown />,
-									type: "date" as const,
-								},
-							]
-						: []),
-					{
-						value: "dateReleased",
-						label: "Date Released",
-						ascIcon: <ClockArrowUp />,
-						descIcon: <ClockArrowDown />,
-						type: "date",
-					},
-					{
-						value: "title",
-						label: "Title",
-						ascIcon: <ArrowDownAZ />,
-						descIcon: <ArrowDownZA />,
-						type: "string",
-					},
-				]}
-				sortOption={sortOption}
-				sortOrder={sortOrder}
-				setSortOption={(value) => {
-					setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased");
-					if (value === "title") setSortOrder("asc");
-					else if (value === "dateUpdated") setSortOrder("desc");
-					else if (value === "dateAdded") setSortOrder("desc");
-					else if (value === "dateReleased") setSortOrder("desc");
-				}}
-				setSortOrder={setSortOrder}
-			/>
-			{/* Items Per Page Selection */}
-			<div className="flex items-center mb-4">
-				<SelectItemsPerPage
-					setCurrentPage={setCurrentPage}
-					itemsPerPage={itemsPerPage}
-					setItemsPerPage={setItemsPerPage}
-				/>
-			</div>
+  return (
+    <div className="flex-grow space-y-4 overflow-y-auto px-4">
+      {/* Sort Header */}
+      <div className="flex items-center justify-center mb-0 mt-0">
+        <Label className="text-lg font-semibold">Sort</Label>
+      </div>
+      <Separator className="my-2 w-full" />
+      {/* Sort Control */}
+      <SortControl
+        options={[
+          {
+            value: "dateAdded",
+            label: "Date Added",
+            ascIcon: <ClockArrowUp />,
+            descIcon: <ClockArrowDown />,
+            type: "date",
+          },
+          ...(hasUpdatedAt
+            ? [
+                {
+                  value: "dateUpdated",
+                  label: "Date Updated",
+                  ascIcon: <ClockArrowUp />,
+                  descIcon: <ClockArrowDown />,
+                  type: "date" as const,
+                },
+              ]
+            : []),
+          ...(hasEpisodeAddedAt
+            ? [
+                {
+                  value: "newEpisodeAdded",
+                  label: "New Episode Added",
+                  ascIcon: <ClockArrowUp />,
+                  descIcon: <ClockArrowDown />,
+                  type: "date" as const,
+                },
+              ]
+            : []),
+          {
+            value: "dateReleased",
+            label: "Date Released",
+            ascIcon: <ClockArrowUp />,
+            descIcon: <ClockArrowDown />,
+            type: "date",
+          },
+          {
+            value: "title",
+            label: "Title",
+            ascIcon: <ArrowDownAZ />,
+            descIcon: <ArrowDownZA />,
+            type: "string",
+          },
+        ]}
+        sortOption={sortOption}
+        sortOrder={sortOrder}
+        setSortOption={(value) => {
+          setSortOption(value as "title" | "dateUpdated" | "dateAdded" | "dateReleased" | "newEpisodeAdded");
+          if (value === "title") setSortOrder("asc");
+          else if (value === "dateUpdated") setSortOrder("desc");
+          else if (value === "dateAdded") setSortOrder("desc");
+          else if (value === "dateReleased") setSortOrder("desc");
+          else if (value === "newEpisodeAdded") setSortOrder("desc");
+        }}
+        setSortOrder={setSortOrder}
+      />
+      {/* Items Per Page Selection */}
+      <div className="flex items-center mb-4">
+        <SelectItemsPerPage
+          setCurrentPage={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+        />
+      </div>
 
-			<Separator className="my-2 w-full" />
-			<Separator className="my-1 w-full" />
+      <Separator className="my-2 w-full" />
+      <Separator className="my-1 w-full" />
 
-			{/* Filters Header */}
-			<div className="flex items-center justify-center mb-0">
-				<Label className="text-lg font-semibold">Filters</Label>
-			</div>
-			<Separator className="my-2 w-full" />
+      {/* Filters Header */}
+      <div className="flex items-center justify-center mb-0">
+        <Label className="text-lg font-semibold">Filters</Label>
+      </div>
+      <Separator className="my-2 w-full" />
 
-			{/* Search Info */}
-			{(searchTitle || searchYear || searchTMDBID || searchLibrary) && (
-				<div className="p-2 bg-secondary rounded-md">
-					<Label className="text-md font-semibold mb-1 block">Current Search</Label>
-					<div className="flex flex-col gap-1">
-						{searchTitle && (
-							<div className="text-sm">
-								<span className="font-semibold">Search:</span> {searchTitle}
-							</div>
-						)}
-						{typeof searchYear === "number" && searchYear > 0 && (
-							<div className="text-sm">
-								<span className="font-semibold">Year:</span> {searchYear}
-							</div>
-						)}
-						{searchTMDBID && (
-							<div className="text-sm">
-								<span className="font-semibold">ID:</span> {searchTMDBID}
-							</div>
-						)}
-						{searchLibrary && (
-							<div className="text-sm">
-								<span className="font-semibold">Library:</span> {searchLibrary}
-							</div>
-						)}
-					</div>
-					<Button
-						variant={"destructive"}
-						className="mt-2"
-						onClick={() => {
-							setSearchQuery("");
-						}}
-					>
-						Clear Search
-					</Button>
-				</div>
-			)}
-			{/* Library Sections Filter */}
-			<div className="flex flex-col">
-				<>
-					<Label className="text-md font-semibold mb-1">Library Sections</Label>
-					<ToggleGroup
-						type="multiple"
-						className="flex flex-wrap gap-2 ml-2"
-						value={filteredLibraries}
-						onValueChange={setFilteredLibraries}
-					>
-						{librarySections.map((section) => (
-							<Badge
-								key={section.Title}
-								className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
-								variant={filteredLibraries.includes(section.Title) ? "default" : "outline"}
-								onClick={() => {
-									if (filteredLibraries.includes(section.Title)) {
-										setFilteredLibraries(filteredLibraries.filter((lib) => lib !== section.Title));
-									} else {
-										setFilteredLibraries([...filteredLibraries, section.Title]);
-									}
-								}}
-							>
-								{section.Title}
-							</Badge>
-						))}
-					</ToggleGroup>
-					<Separator className="my-4 w-full" />
-				</>
-				{/* In-Database Filter */}
-				<div className="flex flex-col">
-					<Label className="text-md font-semibold mb-1">In-Database Filter</Label>
-					<ToggleGroup
-						type="single"
-						className="flex flex-wrap gap-2 ml-2"
-						value={filterInDB}
-						onValueChange={(value) => {
-							if (value) {
-								setFilterInDB(value as TYPE_FILTER_IN_DB_OPTIONS);
-							}
-						}}
-					>
-						{FILTER_IN_DB_OPTIONS.map((option) => (
-							<Badge
-								key={option}
-								className={cn(
-									"cursor-pointer text-sm active:scale-95 hover:brightness-120",
-									filterInDB === option && option === "all" && "bg-primary text-primary-foreground",
-									filterInDB === option &&
-										option === "inDB" &&
-										"bg-green-500 text-primary-foreground",
-									filterInDB === option &&
-										option === "notInDB" &&
-										"bg-red-500 text-primary-foreground"
-								)}
-								variant={filterInDB === option ? "default" : "outline"}
-								onClick={() => {
-									if (filterInDB === option) {
-										setFilterInDB("all");
-									} else {
-										setFilterInDB(option as TYPE_FILTER_IN_DB_OPTIONS);
-									}
-								}}
-							>
-								{option === "all" ? "All Items" : option === "inDB" ? "In Database" : "Not In Database"}
-							</Badge>
-						))}
-					</ToggleGroup>
-				</div>
-			</div>
-		</div>
-	);
+      {/* Search Info */}
+      {(searchTitle || searchYear || searchTMDBID || searchLibrary) && (
+        <div className="p-2 bg-secondary rounded-md">
+          <Label className="text-md font-semibold mb-1 block">Current Search</Label>
+          <div className="flex flex-col gap-1">
+            {searchTitle && (
+              <div className="text-sm">
+                <span className="font-semibold">Search:</span> {searchTitle}
+              </div>
+            )}
+            {typeof searchYear === "number" && searchYear > 0 && (
+              <div className="text-sm">
+                <span className="font-semibold">Year:</span> {searchYear}
+              </div>
+            )}
+            {searchTMDBID && (
+              <div className="text-sm">
+                <span className="font-semibold">ID:</span> {searchTMDBID}
+              </div>
+            )}
+            {searchLibrary && (
+              <div className="text-sm">
+                <span className="font-semibold">Library:</span> {searchLibrary}
+              </div>
+            )}
+          </div>
+          <Button
+            variant={"destructive"}
+            className="mt-2"
+            onClick={() => {
+              setSearchQuery("");
+            }}
+          >
+            Clear Search
+          </Button>
+        </div>
+      )}
+      {/* Library Sections Filter */}
+      <div className="flex flex-col">
+        <>
+          <Label className="text-md font-semibold mb-1">Library Sections</Label>
+          <ToggleGroup
+            type="multiple"
+            className="flex flex-wrap gap-2 ml-2"
+            value={filteredLibraries}
+            onValueChange={setFilteredLibraries}
+          >
+            {librarySections.map((section) => (
+              <Badge
+                key={section.title}
+                className="cursor-pointer text-sm active:scale-95 hover:brightness-120"
+                variant={filteredLibraries.includes(section.title) ? "default" : "outline"}
+                onClick={() => {
+                  if (filteredLibraries.includes(section.title)) {
+                    setFilteredLibraries(filteredLibraries.filter((lib) => lib !== section.title));
+                  } else {
+                    setFilteredLibraries([...filteredLibraries, section.title]);
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                {section.title}
+              </Badge>
+            ))}
+          </ToggleGroup>
+          <Separator className="my-4 w-full" />
+        </>
+
+        {/* In-Database Filter */}
+        <div className="flex flex-col">
+          <Label className="text-md font-semibold mb-1">In-Database Filter</Label>
+          <ToggleGroup
+            type="single"
+            className="flex flex-wrap gap-2 ml-2"
+            value={filterInDB}
+            onValueChange={(value) => {
+              if (value) {
+                setFilterInDB(value as TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS);
+              }
+            }}
+          >
+            {HOME_PAGE_FILTER_IN_DB_OPTIONS.map((option) => (
+              <Badge
+                key={option.value}
+                className={cn(
+                  "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                  filterInDB === option.value && option.value === "inDB" && "bg-green-500 text-primary-foreground",
+                  filterInDB === option.value && option.value === "notInDB" && "bg-red-500 text-primary-foreground"
+                )}
+                variant={filterInDB === option.value ? "default" : "outline"}
+                onClick={() => {
+                  if (filterInDB === option.value) {
+                    setFilterInDB("");
+                  } else {
+                    setFilterInDB(option.value as TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS);
+                    if (option.value === "inDB") {
+                      if (filterIgnored === "ignored" || filterIgnored === "always" || filterIgnored === "temp") {
+                        setFilterIgnored("");
+                      }
+                    }
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </ToggleGroup>
+          <Separator className="my-4 w-full" />
+        </div>
+
+        {/* Ignored Filter */}
+        <div className="flex flex-col">
+          <Label className="text-md font-semibold mb-1">Ignored Filter</Label>
+          <ToggleGroup
+            type="single"
+            className="flex flex-wrap gap-2 ml-2"
+            value={filterIgnored}
+            onValueChange={(value) => {
+              if (value) {
+                setFilterIgnored(value as TYPE_FILTER_IGNORED_OPTIONS);
+              }
+            }}
+          >
+            {FILTER_IGNORED_OPTIONS.map((option) => (
+              <Badge
+                key={option.value}
+                className={cn(
+                  "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                  filterIgnored === option.value && option.value === "always" && "bg-red-500 text-primary-foreground",
+                  filterIgnored === option.value && option.value === "temp" && "bg-yellow-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "ignored" &&
+                    "bg-orange-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "not_ignored" &&
+                    "bg-green-500 text-primary-foreground"
+                )}
+                variant={filterIgnored === option.value ? "default" : "outline"}
+                onClick={() => {
+                  if (filterIgnored === option.value) {
+                    setFilterIgnored("");
+                  } else {
+                    setFilterIgnored(option.value as TYPE_FILTER_IGNORED_OPTIONS);
+                    if (option.value === "ignored" || option.value === "always" || option.value === "temp") {
+                      if (filterInDB === "inDB") {
+                        setFilterInDB("");
+                      }
+                    }
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </ToggleGroup>
+
+          <Separator className="my-4 w-full" />
+
+          {/* Has Sets Available Filter */}
+          <Label className="text-md font-semibold mb-1">Has Sets Available Filter</Label>
+          <ToggleGroup
+            type="single"
+            className="flex flex-wrap gap-2 ml-2"
+            value={hasSetsAvailableFilter}
+            onValueChange={(value) => {
+              if (value) {
+                setHasSetsAvailableFilter(value as TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS);
+              }
+            }}
+          >
+            {[
+              { value: "hasSetsAvailable", label: "Has Sets Available" },
+              { value: "noSetsAvailable", label: "No Sets Available" },
+            ].map((option) => (
+              <Badge
+                key={option.value}
+                className={cn(
+                  "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                  hasSetsAvailableFilter === option.value &&
+                    option.value === "hasSetsAvailable" &&
+                    "bg-green-500 text-primary-foreground",
+                  hasSetsAvailableFilter === option.value &&
+                    option.value === "noSetsAvailable" &&
+                    "bg-red-500 text-primary-foreground"
+                )}
+                variant={hasSetsAvailableFilter === option.value ? "default" : "outline"}
+                onClick={() => {
+                  if (hasSetsAvailableFilter === option.value) {
+                    setHasSetsAvailableFilter("");
+                  } else {
+                    setHasSetsAvailableFilter(option.value as TYPE_HOME_PAGE_FILTER_HAS_SETS_AVAILABLE_OPTIONS);
+                  }
+                  setCurrentPage(1);
+                }}
+              >
+                {option.label}
+              </Badge>
+            ))}
+          </ToggleGroup>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function FilterHome({
-	librarySections,
-	filteredLibraries,
-	setFilteredLibraries,
-	filterInDB,
-	setFilterInDB,
+  librarySections,
+  filteredLibraries,
+  setFilteredLibraries,
+  filterInDB,
+  setFilterInDB,
+  filterIgnored,
+  setFilterIgnored,
+  hasSetsAvailableFilter,
+  setHasSetsAvailableFilter,
 
-	hasUpdatedAt,
-	sortOption,
-	setSortOption,
-	sortOrder,
-	setSortOrder,
+  hasUpdatedAt,
+  hasEpisodeAddedAt,
+  sortOption,
+  setSortOption,
+  sortOrder,
+  setSortOrder,
 
-	setCurrentPage,
-	itemsPerPage,
-	setItemsPerPage,
+  setCurrentPage,
+  itemsPerPage,
+  setItemsPerPage,
 }: HomeFilterProps) {
-	// State - Open/Close Modal
-	const [modalOpen, setModalOpen] = useState(false);
+  // State - Open/Close Modal
+  const [modalOpen, setModalOpen] = useState(false);
 
-	// Calculate number of active filters
-	const numberOfActiveFilters = useMemo(() => {
-		let count = 0;
-		if (filteredLibraries.length > 0) count++;
-		if (filterInDB !== "all") count++;
-		return count;
-	}, [filteredLibraries, filterInDB]);
+  // Calculate number of active filters
+  const numberOfActiveFilters = useMemo(() => {
+    let count = 0;
+    if (filteredLibraries.length > 0) count++;
+    if (filterInDB !== "") count++;
+    if (filterIgnored !== "") count++;
+    if (hasSetsAvailableFilter !== "") count++;
+    return count;
+  }, [filteredLibraries.length, filterInDB, filterIgnored, hasSetsAvailableFilter]);
 
-	return (
-		<Dialog open={modalOpen} onOpenChange={setModalOpen}>
-			<DialogTrigger asChild>
-				<Button
-					variant="outline"
-					className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}
-				>
-					<SortDescIcon className="h-5 w-5" />
-					Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
-					<Filter className="h-5 w-5" />
-				</Button>
-			</DialogTrigger>
-			<DialogContent
-				className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
-			>
-				<DialogHeader>
-					<DialogTitle>Sort & Filter</DialogTitle>
-					<DialogDescription>Use the options below to sort and filter your media items.</DialogDescription>
-				</DialogHeader>
-				<Separator className="my-1 w-full" />
-				<FilterHomeContent
-					librarySections={librarySections}
-					filteredLibraries={filteredLibraries}
-					setFilteredLibraries={setFilteredLibraries}
-					filterInDB={filterInDB}
-					setFilterInDB={setFilterInDB}
-					hasUpdatedAt={hasUpdatedAt}
-					sortOption={sortOption}
-					setSortOption={setSortOption}
-					sortOrder={sortOrder}
-					setSortOrder={setSortOrder}
-					setCurrentPage={setCurrentPage}
-					itemsPerPage={itemsPerPage}
-					setItemsPerPage={setItemsPerPage}
-				/>
-			</DialogContent>
-		</Dialog>
-	);
+  return (
+    <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className={cn(numberOfActiveFilters > 0 && "ring-1 ring-primary ring-offset-1")}>
+          <SortDescIcon className="h-5 w-5" />
+          Sort & Filter {numberOfActiveFilters > 0 && `(${numberOfActiveFilters})`}
+          <Filter className="h-5 w-5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent
+        className={cn("z-50", "max-h-[80vh] overflow-y-auto", "sm:max-w-[700px]", "border border-primary")}
+      >
+        <DialogHeader>
+          <DialogTitle>Sort & Filter</DialogTitle>
+          <DialogDescription>Use the options below to sort and filter your media items.</DialogDescription>
+        </DialogHeader>
+        <Separator className="my-1 w-full" />
+        <FilterHomeContent
+          librarySections={librarySections}
+          filteredLibraries={filteredLibraries}
+          setFilteredLibraries={setFilteredLibraries}
+          filterInDB={filterInDB}
+          setFilterInDB={setFilterInDB}
+          filterIgnored={filterIgnored}
+          setFilterIgnored={setFilterIgnored}
+          hasSetsAvailableFilter={hasSetsAvailableFilter}
+          setHasSetsAvailableFilter={setHasSetsAvailableFilter}
+          hasUpdatedAt={hasUpdatedAt}
+          hasEpisodeAddedAt={hasEpisodeAddedAt}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
+          setCurrentPage={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          setItemsPerPage={setItemsPerPage}
+        />
+      </DialogContent>
+    </Dialog>
+  );
 }

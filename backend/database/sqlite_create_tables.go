@@ -1,0 +1,357 @@
+package database
+
+import (
+	"aura/logging"
+	"context"
+	"database/sql"
+)
+
+func (s *SQliteDB) CreateTables(ctx context.Context) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating Database Tables", logging.LevelInfo)
+	defer logAction.Complete()
+
+	Err = logging.LogErrorInfo{}
+
+	steps := []func(context.Context, *sql.DB) logging.LogErrorInfo{
+		v2_CreateMediaItemsTable,
+		v2_CreateMoviesTable,
+		v2_CreateSeriesTable,
+		v2_CreateSeasonsTable,
+		v2_CreateEpisodesTable,
+		v2_CreatePosterSetsTables,
+		v2_CreateImageFilesTable,
+		v2_CreateSavedItemsTable,
+		v2_CreateIgnoredItemsTable,
+		v2_AddIndexesToNewTables,
+	}
+
+	for _, step := range steps {
+		errInfo := step(ctx, s.conn)
+		if errInfo.Message != "" {
+			return *logAction.Error
+		}
+	}
+
+	return Err
+}
+
+func v2_CreateMediaItemsTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating MediaItems Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE MediaItems (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	tmdb_id TEXT NOT NULL,
+	library_title TEXT NOT NULL,
+	rating_key TEXT NOT NULL,
+	type TEXT NOT NULL CHECK (type IN ('movie','show')),
+	title TEXT NOT NULL,
+	year INTEGER NOT NULL,
+	UNIQUE (tmdb_id, library_title)
+);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create MediaItems table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateMoviesTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating Movies Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE Movies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    media_item_id INTEGER NOT NULL UNIQUE,
+    path TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    duration INTEGER NOT NULL,
+    FOREIGN KEY (media_item_id) REFERENCES MediaItems(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create Movies table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateSeriesTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating Series Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE Series (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    media_item_id INTEGER NOT NULL UNIQUE,
+    season_count INTEGER,
+    episode_count INTEGER,
+    location TEXT,
+    FOREIGN KEY (media_item_id) REFERENCES MediaItems(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create Series table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateSeasonsTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating Seasons Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE Seasons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    series_id INTEGER NOT NULL,
+	rating_key TEXT NOT NULL,
+    season_number INTEGER NOT NULL,
+    episode_count INTEGER,
+    FOREIGN KEY (series_id) REFERENCES Series(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (series_id, season_number)
+);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create Seasons table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateEpisodesTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating Episodes Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE Episodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id INTEGER NOT NULL,
+	rating_key TEXT NOT NULL,
+    episode_number INTEGER NOT NULL,
+    title TEXT,
+    path TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    duration INTEGER NOT NULL,
+    FOREIGN KEY (season_id) REFERENCES Seasons(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (season_id, episode_number)
+);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create Episodes table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreatePosterSetsTables(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating PosterSets Tables", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE PosterSets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    set_id TEXT NOT NULL UNIQUE,
+	type TEXT NOT NULL CHECK (type IN ('show','movie','collection')),
+    title TEXT NOT NULL,
+    user TEXT NOT NULL,
+    date_created DATETIME,
+    date_updated DATETIME
+);
+`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create PosterSets table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateImageFilesTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating ImageFiles Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE ImageFiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poster_set_id INTEGER NOT NULL,
+
+    -- Which item inside the set this image belongs to (required for collection sets)
+    item_tmdb_id TEXT NOT NULL,
+
+    image_id TEXT NOT NULL,
+    image_type TEXT NOT NULL CHECK (image_type IN ('poster','backdrop','season_poster','titlecard')),
+    image_last_updated DATETIME NOT NULL,
+    image_season_number INTEGER,
+    image_episode_number INTEGER,
+
+    FOREIGN KEY (poster_set_id) REFERENCES PosterSets(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    -- Same image_id can exist multiple times in a set if it belongs to different items (e.g., collections)
+    UNIQUE (poster_set_id, image_id, item_tmdb_id)
+);
+`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create ImageFiles table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateSavedItemsTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating SavedItems Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE SavedItems (
+    tmdb_id TEXT NOT NULL,
+    library_title TEXT NOT NULL,
+    poster_set_id INTEGER NOT NULL,
+
+    -- Per MediaItem/Set toggles
+    poster_selected INTEGER NOT NULL DEFAULT 0 CHECK (poster_selected IN (0,1)),
+    backdrop_selected INTEGER NOT NULL DEFAULT 0 CHECK (backdrop_selected IN (0,1)),
+    season_poster_selected INTEGER NOT NULL DEFAULT 0 CHECK (season_poster_selected IN (0,1)),
+    special_season_poster_selected INTEGER NOT NULL DEFAULT 0 CHECK (special_season_poster_selected IN (0,1)),
+    titlecard_selected INTEGER NOT NULL DEFAULT 0 CHECK (titlecard_selected IN (0,1)),
+
+    autodownload INTEGER NOT NULL DEFAULT 0 CHECK (autodownload IN (0,1)),
+    last_downloaded DATETIME NOT NULL,
+
+    PRIMARY KEY (tmdb_id, library_title, poster_set_id),
+
+    FOREIGN KEY (poster_set_id) REFERENCES PosterSets(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    FOREIGN KEY (tmdb_id, library_title) REFERENCES MediaItems(tmdb_id, library_title)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) WITHOUT ROWID;
+`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create SavedItems table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_CreateIgnoredItemsTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating IgnoredItems Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE IgnoredItems (
+    tmdb_id TEXT NOT NULL,
+    library_title TEXT NOT NULL,
+
+    -- 'always' = persist until user un-ignores
+    -- 'temp'   = cleared by nightly job when sets exist (per your rule)
+    mode TEXT NOT NULL CHECK (mode IN ('always','temp')),
+
+    PRIMARY KEY (tmdb_id, library_title)
+) WITHOUT ROWID;
+`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create IgnoredItems table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v2_AddIndexesToNewTables(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Adding Indexes to New Tables", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE INDEX idx_seasons_series_id ON Seasons(series_id);
+CREATE INDEX idx_episodes_season_id ON Episodes(season_id);
+
+CREATE INDEX idx_imagefiles_poster_set_id ON ImageFiles(poster_set_id);
+CREATE INDEX idx_imagefiles_set_type ON ImageFiles(poster_set_id, image_type);
+CREATE INDEX idx_imagefiles_item_tmdb_id ON ImageFiles(item_tmdb_id);
+CREATE INDEX idx_imagefiles_item_tmdb_type ON ImageFiles(item_tmdb_id, image_type);
+
+CREATE INDEX idx_saveditems_poster_set_id ON SavedItems(poster_set_id);
+CREATE INDEX idx_saveditems_item ON SavedItems(tmdb_id, library_title);
+
+CREATE INDEX idx_ignoreditems_mode ON IgnoredItems(mode);
+    `
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to add indexes to new tables", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}

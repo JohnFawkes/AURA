@@ -1,3 +1,193 @@
+## [0.9.93] - 2026-03-17
+
+### Added
+
+- New floating "Edit" and "Save" buttons for the Settings Page to replace the previous Edit button that was hard to notice.
+- Changed input for Notification message to Textarea to allow for better formatting of messages.
+- Added support for HTML in Pushover notifications to allow for better formatting of messages.
+
+### Fixed
+
+- Fixed issue where Jellyfin/Emby Mixed library type would not show up on list of options during onboarding/settings.
+- Fixed issue where enabling "Remove Overlay Label" for Plex would not be detected properly during saving.
+- Fixed issue on Download Queue page where error would showup if no Sets were available.
+- Fixed issue where Current Images for Shows were not showing up in order.
+- Fixed issue where default notification template had a bad variable.
+
+### UI Tweaks
+
+- Fixed issue where "Jump to Top" button was spread out too far.
+- Fixed alignment of "Refresh" button.
+
+---
+
+## [0.9.92] - 2026-03-15
+
+### Added
+
+- Added option to remove "Overlay" label from Plex media items only when a poster image is downloaded. This allows Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and can only be used if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
+
+### Fixed
+
+- Fixed issue where Plex labels were not being applied for each selected image type during downloads.
+
+---
+
+## [0.9.91] - 2026-03-14
+
+### Added
+
+- Added option to test notification templates in the Settings/Notifications section. This will send a test notification with the current template to the configured notification providers to allow you to see how the notification will look.
+- Added option to customize the "Auto-Download" Notification title and message.
+- Added option to customize the "Download Queue" Notification title and message.
+- Added option to customize the "New Sets Available for Ignored Items" Notification title and message.
+- Added option to customize the "Check For Media Item Changes Job" Notification title and message.
+- Added option to customize the "Sonarr" Notification title and message.
+
+### Fixed
+
+- Fixed issue where Clear Temp Images button was pointing to an old route that was removed in the backend rewrite, now it points to the correct route for clearing temp images.
+
+---
+
+## [0.9.90] - 2026-03-13
+
+### Added
+
+- Added support for Mixed library type for Jellyfin/Emby media servers.
+
+### Fixed
+
+- Fixed issue where Library Titles with leading/trailing whitespace would not be filtered correctly on the Saved Sets page.
+
+---
+
+## [0.9.89] - 2026-03-12
+
+### Added
+
+- Added option to reapply images to Plex Items when they are refreshed in Plex. Plex exclusive feature. Shoutout to Geralt for the suggestion and most of the implementation!
+- Added option to change "Items Per Page" on all pages. Shoutout to Geralt for the implementation!
+
+### Fixed
+
+- Reduced database file size by improving automatic SQLite vacuuming.
+- Fixed issue where Media Items that no longer exist on the Media Server and had no sets available for them would still show up in Rating Key Change Job (now named: Media Item Change Job).
+- Fixed issue where Duration/Size changes were not being detected properly for Autodownload checks. This causes images to be redownloaded when there are minor system-level changes that occur to the media files (e.g. metadata changes, container changes, etc.) that do not actually indicate a real change to the media item that would require new images. This is fixed by adding a threshold for size and duration changes to be considered a real change that requires new images.
+
+---
+
+## [0.9.88] - 2026-03-11
+
+### Fixed
+
+- Fixed issue where episode size changes were not being detected properly for Plex media servers.
+- Fixed issue where titlecards for Special Seasons had blank season numbers, causing issues with autodownload and viewing titlecards on the media item page.
+
+---
+
+## [0.9.87] - 2026-03-10
+
+### Fixed
+
+- Fixed issue where backdrop and poster images were not being downloaded because of the batch processing changes. This was due to the download happening too quickly and the media server not having enough time to update the images before the next download was attempted. This has been fixed by splitting the batch processing into 3 steps: first it will download the posters, then the backdrops, and finally the season posters and titlecards. This allows the media server to update the images properly before the next download is attempted.
+- Fixed issue where Jellyfin/Emby Boxsets/Collections that contained shows were being duplicated on the Home Page. This was due to the way the media server was returning the items in the set. This has been fixed by removing any shows/seasons/episodes from the Boxset/Collection item.
+
+---
+
+## [0.9.86] - 2026-03-09
+
+### Added
+
+- New batch processing for downloads to improve performance when downloading large sets of images.
+- Added new Filter option for Home page that allows you to filter out Media Items that have no sets available for them. This is to help users who have large libraries and want to focus on items that have sets available.
+
+---
+
+## [0.9.85] - 2026-03-09
+
+### Added
+
+- Added auto-refresh to the App Loading page every 3 seconds to check if the backend API is ready, improving user experience during startup.
+
+### Fixed
+
+- Fixed issue where App Loading page was not working properly when the backend was still booting up.
+
+---
+
+## [0.9.84] - 2026-03-09
+
+### Added
+
+- Added new optional limit parameter to the API route for fetching media server items to allow limiting the number of items returned for better performance on large libraries.
+- New shared http client for faster requests to external services.
+
+### Fixed
+
+- Fixed issue where Autodownload was not respecting the "Autodownload Off" for Saved Sets.
+- Fixed issue where Autodownload would not properly display reason for redownload for episode changes.
+- Readded Fetch Episode Last Updated Date logic as an optional part of the startup and home page fetching. This was because it slows down significantly when fetching large libraries, but it is needed for the recently added sorting by recently added episodes on the Home Page. This is now an optional part of the startup and home page fetching that can be enabled with the `EnableSortByEpisodeAddedDate` config option under the MediaServer section.
+- Fixed Panic error for Jellyfin/Emby users when Media Item is not found.
+- Fixed issue where size of episode for Jellyfin/Emby media servers was not being set. Since this is now fixed, it may cause autodownload to redownload episodes for these media servers since the size will now be different than what is currently in the database.
+- Removed redundant code for refreshing metadata for Plex, increasing performance when applying images to Plex media items.
+
+---
+
+## [0.9.83] - 2026-03-07
+
+### Added
+
+- Added number of images in each download type to the download modal for better context when downloading images.
+
+### Fixed
+
+- Standardized the way filters use types for safety.
+
+---
+
+## [0.9.82] - 2026-03-07
+
+### Fixed
+
+- Fixed issue where logging was not occurring for scheduled jobs. This was due to a missing call to log the logger after the job function was executed. This has been fixed by adding a call to `ld.Log()` at the end of each job function.
+- Fixed issue where User Page "In DB" filter would not work correctly.
+- Fixed issue where some downloads were not reaching 100% in the Download Modal due to a mismatch in the way progress was being calculated.
+
+---
+
+## [0.9.81] - 2026-03-06
+
+### Added
+
+- Added sorting and tracking of episode last added date for better user experience when sorting by recently added episodes on the Home Page.
+
+### Fixed
+
+- Fixed issue where sorting was not working on the User Page.
+- Fixed issue where Sonarr webhook would not find Media Item in Media Server after 10 second wait, increased retries and added more logging for better debugging of this process.
+- Fixed issue where Boxsets would query Media Server for each item in the set, causing performance issues for large sets. Now it will query for the by set when accordion is opened and cache the results for future use.
+- Fixed issue where Showsets would query Media Server for each item in the sets, causing performance issues for large sets. Now it will query for the by set when scrolled into view and cache the results for future use.
+
+---
+
+## [0.9.80] - 2026-02-16
+
+### Breaking
+
+- This is a massive rewrite of the backend to organize the codebase better and prepare for future features. Because of this, there are likely to be some bugs that slipped through testing. Please report any issues that you find to the Github issue page.
+- There is a new config structure that is used internally. Please make a backup of your DB file and your config.yaml file just in case.
+
+### Added
+
+- New database schema. This is a breaking change, but all existing data should be migrated automatically. The new schema is more organized and will allow for better performance and future features.
+- New App Loading page so that you can see the current status of the backend API.
+- New ignore feature will allow you to mark an item as ignored until a set is available for it. This option is only available for items with no sets.
+- New User Preference option to allow viewing of the MediUX image date last modified.
+- New Custom Notifications feature to allow users to create their own custom notifications for different events in the app.
+
+---
+
 ## [0.9.77] - 2026-01-15
 
 ### Fixed
@@ -158,13 +348,13 @@
 ### Added
 
 - Standardized naming convention for image files. This is to help future proof users who want to migrate from Plex to Emby/Jellyfin. The new naming conventions are as follows:
-    - Posters: Movie/poster.jpg or Show/poster.jpg
-    - Backdrops: Movie/backdrop.jpg or Show/backdrop.jpg
-    - Season Posters: Show/seasonXX-poster.jpg
-    - Special Season Posters: Show/season-specials-poster.jpg
-    - Titlecards: Show/Season #/episode.jpg
+  - Posters: Movie/poster.jpg or Show/poster.jpg
+  - Backdrops: Movie/backdrop.jpg or Show/backdrop.jpg
+  - Season Posters: Show/seasonXX-poster.jpg
+  - Special Season Posters: Show/season-specials-poster.jpg
+  - Titlecards: Show/Season #/episode.jpg
 
-    Please note that if you were using SeasonNamingConvention before, this is no longer supported. SeasonNamingConvention was using to determine the Season number but is no longer needed for the new format since all images are saved in root folder. Episode naming conventions remain unchanged. Episode naming for those using "static" will now use the currrent episode numbering format (e.g. S01E01.jpg or S1E1.jpg).
+  Please note that if you were using SeasonNamingConvention before, this is no longer supported. SeasonNamingConvention was using to determine the Season number but is no longer needed for the new format since all images are saved in root folder. Episode naming conventions remain unchanged. Episode naming for those using "static" will now use the currrent episode numbering format (e.g. S01E01.jpg or S1E1.jpg).
 
 ### Fixed
 

@@ -1,0 +1,46 @@
+query getCollectionSetsByTMDBID($tmdb_id: ID!) {
+  collections_by_id(id: $tmdb_id) {
+    id
+    collection_name
+    posters(
+      filter: { id: { _nnull: true }, collection_set: { id: { _nnull: true } } }
+    ) {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      collection_set {
+        id
+        set_title
+        user_created {
+          username
+        }
+        date_created
+        date_updated
+        popularity
+        popularity_global
+      }
+    }
+    backdrops(
+      filter: { id: { _nnull: true }, collection_set: { id: { _nnull: true } } }
+    ) {
+      id
+      modified_on
+      filesize
+      src
+      blurhash
+      collection_set {
+        id
+        set_title
+        user_created {
+          username
+        }
+        date_created
+        date_updated
+        popularity
+        popularity_global
+      }
+    }
+  }
+}

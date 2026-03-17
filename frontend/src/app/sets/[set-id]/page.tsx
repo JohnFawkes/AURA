@@ -5,17 +5,16 @@ import { ShowFullSetsDisplay } from "@/components/shared/show-full-set";
 import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 
 const SetPage = () => {
-	const { setType, setTitle, setAuthor, setID, posterSets } = usePosterSetsStore();
+  const { setBaseInfo, posterSets, includedItems } = usePosterSetsStore();
 
-	return (
-		<ShowFullSetsDisplay
-			setType={setType}
-			setTitle={setTitle}
-			setAuthor={setAuthor}
-			setID={setID}
-			posterSets={posterSets}
-		/>
-	);
+  return (
+    <ShowFullSetsDisplay
+      baseSetInfo={setBaseInfo}
+      posterSets={posterSets || []}
+      includedItems={includedItems}
+      dimNotFound={true}
+    />
+  );
 };
 
 export default SetPage;

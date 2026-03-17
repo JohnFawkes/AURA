@@ -1,0 +1,6 @@
+query findShowTMDBIDByTVDBID($tvdb_id: String!) {
+	shows(filter: { tvdb_id: { _eq: $tvdb_id } }) {
+		id
+		tvdb_id
+	}
+}

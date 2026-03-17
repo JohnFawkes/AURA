@@ -1,7 +1,6 @@
+import { setRefsToFormItems } from "@/helper/download-modal/set-to-form-item";
 import { formatLastUpdatedDate } from "@/helper/format-date-last-updates";
-import { Database, User, ZoomInIcon } from "lucide-react";
-
-import React from "react";
+import { CircleAlert, Database, User, ZoomInIcon } from "lucide-react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +9,7 @@ import { CarouselDisplay } from "@/components/shared/carousel-display";
 import DownloadModal from "@/components/shared/download-modal";
 import { SetFileCounts } from "@/components/shared/set-file-counts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent } from "@/components/ui/carousel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Lead } from "@/components/ui/typography";
@@ -19,201 +19,167 @@ import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { usePosterSetsStore } from "@/lib/stores/global-store-poster-sets";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { MediaItem } from "@/types/media-and-posters/media-item-and-library";
-import { PosterSet } from "@/types/media-and-posters/poster-sets";
+import type { MediaItem } from "@/types/media-and-posters/media-item-and-library";
+import type { IncludedItem, SetRef } from "@/types/media-and-posters/sets";
 
 type MediaCarouselProps = {
-	set: PosterSet;
-	mediaItem: MediaItem;
-	onMediaItemChange?: (item: MediaItem) => void;
+  set: SetRef;
+  includedItems?: { [tmdb_id: string]: IncludedItem };
+  mediaItem: MediaItem;
+  onMediaItemChange?: (item: MediaItem) => void;
+  dimNotFound?: boolean;
 };
 
-export function MediaCarousel({ set, mediaItem, onMediaItemChange }: MediaCarouselProps) {
-	const router = useRouter();
+export function MediaCarousel({ set, includedItems, mediaItem, onMediaItemChange, dimNotFound }: MediaCarouselProps) {
+  const router = useRouter();
 
-	const { setPosterSets, setSetAuthor, setSetID, setSetTitle, setSetType } = usePosterSetsStore();
-	const { setMediaItem } = useMediaStore();
-	const goToSetPage = () => {
-		setPosterSets([set]);
-		setSetType(set.Type);
-		setSetTitle(set.Title);
-		setSetAuthor(set.User.Name);
-		setSetID(set.ID);
-		setMediaItem(mediaItem);
-		router.push(`/sets/${set.ID}`);
-	};
+  const { setPosterSets, setIncludedItems, setSetBaseInfo } = usePosterSetsStore();
+  const { setMediaItem } = useMediaStore();
+  const goToSetPage = () => {
+    setPosterSets([set]);
+    setIncludedItems(includedItems || {});
+    setSetBaseInfo({
+      id: set.id,
+      title: set.title,
+      type: set.type,
+      user_created: set.user_created,
+      date_created: set.date_created,
+      date_updated: set.date_updated,
+      popularity: set.popularity,
+      popularity_global: set.popularity_global,
+    });
+    setMediaItem(mediaItem);
+    router.push(`/sets/${set.id}`);
+  };
 
-	const { setSearchQuery } = useSearchQueryStore();
+  const { setSearchQuery } = useSearchQueryStore();
 
-	return (
-		<Carousel
-			opts={{
-				align: "start",
-				dragFree: true,
-				slidesToScroll: "auto",
-			}}
-			className="w-full"
-		>
-			<div className="flex flex-col">
-				<div className="flex flex-row items-center justify-between mb-1">
-					<Link
-						href={`/sets/${set.ID}`}
-						className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1 w-3/4"
-						onClick={(e) => {
-							e.stopPropagation();
-							goToSetPage();
-						}}
-					>
-						{set.Title}
-					</Link>
-					<div className={cn("ml-auto flex space-x-2", set.Title.length > 29 && "mb-5 xs:mb-0")}>
-						{mediaItem &&
-							mediaItem.DBSavedSets &&
-							mediaItem.DBSavedSets.map((s) => s.PosterSetID).includes(set.ID) && (
-								<Popover>
-									<PopoverTrigger asChild>
-										<Database className="h-5 w-5 sm:h-7 sm:w-7 text-green-500 hover:text-green-600 cursor-pointer active:scale-95" />
-									</PopoverTrigger>
-									<PopoverContent
-										side="top"
-										sideOffset={5}
-										className="bg-secondary border border-2 border-primary p-2"
-									>
-										<div className={cn("text-center", "text-sm", "font-medium", "rounded-md")}>
-											<Database
-												className="inline-block mr-2 text-green-500 hover:text-green-600 cursor-pointer active:scale-95"
-												size={16}
-												onClick={(e) => {
-													e.stopPropagation();
-													setSearchQuery(
-														`${mediaItem.Title} Y:${mediaItem.Year}: ID:${mediaItem.TMDB_ID}: L:${mediaItem.LibraryTitle}:`
-													);
-													router.push("/saved-sets");
-												}}
-											/>
-											{(() => {
-												const typeMap = {
-													poster: "Poster",
-													backdrop: "Backdrop",
-													seasonPoster: "Season Poster",
-													specialSeasonPoster: "Special Season Poster",
-													titlecard: "Titlecard",
-												};
-												const selectedTypesRaw = mediaItem.DBSavedSets.find(
-													(s) => s.PosterSetID === set.ID
-												)?.SelectedTypes;
-												if (!selectedTypesRaw) return null;
+  return (
+    <Carousel
+      opts={{
+        align: "start",
+        dragFree: true,
+        slidesToScroll: "auto",
+      }}
+      className="w-full"
+    >
+      <div className="flex flex-col">
+        <div className="flex flex-row items-center justify-between mb-1">
+          <Link
+            href={`/sets/${set.id}`}
+            className="text-primary-dynamic hover:text-primary cursor-pointer text-md font-semibold ml-1 w-3/4"
+            onClick={(e) => {
+              e.stopPropagation();
+              goToSetPage();
+            }}
+          >
+            {set.title}
+          </Link>
+          <div className={cn("ml-auto flex space-x-2", set.title && set.title.length > 29 && "mb-5 xs:mb-0")}>
+            {mediaItem && mediaItem.db_saved_sets && mediaItem.db_saved_sets.length > 0 && (
+              <Popover modal={true}>
+                <PopoverTrigger>
+                  <Database
+                    className={cn(
+                      "h-5 w-5 sm:h-7 sm:w-7  ml-2 cursor-pointer",
+                      mediaItem.db_saved_sets.some((dbSet) => dbSet.id === set.id)
+                        ? "text-green-500"
+                        : "text-yellow-500"
+                    )}
+                  />
+                </PopoverTrigger>
+                <PopoverContent
+                  className={cn(
+                    "max-w-[400px] rounded-lg shadow-lg border-2 p-2 flex flex-col items-center justify-center",
+                    mediaItem.db_saved_sets.some((dbSet) => dbSet.id === set.id)
+                      ? "border-green-800"
+                      : "border-yellow-800"
+                  )}
+                >
+                  <div className="flex items-center mb-2">
+                    <CircleAlert className="h-5 w-5 text-yellow-500 mr-2" />
+                    <span className="text-sm text-muted-foreground">
+                      This media item already exists in your database
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    You have previously saved it in the following sets
+                  </div>
+                  <ul className="space-y-2">
+                    {mediaItem.db_saved_sets.map((dbSet) => (
+                      <li key={dbSet.id} className="flex items-center rounded-md px-2 py-1 shadow-sm">
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "flex items-center transition-colors rounded-md px-2 py-1 cursor-pointer text-sm",
+                            dbSet.id.toString() === set.id.toString()
+                              ? "text-green-600  hover:bg-green-100  hover:text-green-600"
+                              : "text-yellow-600 hover:bg-yellow-100 hover:text-yellow-700"
+                          )}
+                          aria-label={`View saved set ${dbSet.id} ${dbSet.user_created ? `by ${dbSet.user_created}` : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSearchQuery(
+                              `${mediaItem.title} Y:${mediaItem.year}: ID:${mediaItem.tmdb_id}: L:${mediaItem.library_title}:`
+                            );
+                            router.push("/saved-sets");
+                          }}
+                        >
+                          Set ID: {dbSet.id}
+                          {dbSet.user_created ? ` by ${dbSet.user_created}` : ""}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </PopoverContent>
+              </Popover>
+            )}
+            <Link
+              href={`/sets/${set.id}`}
+              className="btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToSetPage();
+              }}
+            >
+              <ZoomInIcon className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
+            </Link>
+            <DownloadModal
+              baseSetInfo={set}
+              formItems={setRefsToFormItems([set], includedItems || {})}
+              onDownloadComplete={onMediaItemChange}
+            />
+          </div>
+        </div>
+        <div className="text-md text-muted-foreground mb-1 flex items-center">
+          <div className="ml-1 flex items-center gap-1">
+            <Avatar className="rounded-lg mr-1 w-4 h-4">
+              <AvatarImage src={`/api/images/mediux/avatar?username=${set.user_created}`} className="w-4 h-4" />
+              <AvatarFallback className="">
+                <User className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
+            <Link
+              href={`/user/${set.user_created}`}
+              className="text-sm hover:text-primary cursor-pointer underline truncate"
+              style={{ wordBreak: "break-word" }}
+            >
+              {set.user_created}
+            </Link>
+          </div>
+        </div>
+        <Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
+          Last Update: {formatLastUpdatedDate(set.date_updated, set.date_created)}
+        </Lead>
 
-												let selectedTypes: string[] = [];
-												if (Array.isArray(selectedTypesRaw)) {
-													if (
-														selectedTypesRaw.length === 1 &&
-														typeof selectedTypesRaw[0] === "string" &&
-														selectedTypesRaw[0].includes(",")
-													) {
-														selectedTypes = (selectedTypesRaw[0] as string)
-															.split(",")
-															.map((t) => t.trim())
-															.filter(Boolean);
-													} else {
-														selectedTypes = selectedTypesRaw;
-													}
-												} else if (typeof selectedTypesRaw === "string") {
-													selectedTypes = (selectedTypesRaw[0] as string)
-														.split(",")
-														.map((t) => t.trim())
-														.filter(Boolean);
-												}
+        {mediaItem && mediaItem.rating_key && mediaItem.title && (
+          <SetFileCounts mediaItem={mediaItem} set={set} includedItems={includedItems || {}} />
+        )}
+      </div>
 
-												const mapped = selectedTypes.map((type, idx) => (
-													<span key={type + idx} className="text-green-500">
-														{typeMap[type as keyof typeof typeMap] || type}
-													</span>
-												));
-
-												let formatted: React.ReactNode = null;
-												if (mapped.length === 1) {
-													formatted = mapped[0];
-												} else if (mapped.length === 2) {
-													formatted = (
-														<>
-															{mapped[0]} and {mapped[1]}
-														</>
-													);
-												} else if (mapped.length > 2) {
-													formatted = (
-														<>
-															{mapped.slice(0, -1).map((el, i) => (
-																<React.Fragment key={i}>
-																	{el}
-																	{", "}
-																</React.Fragment>
-															))}
-															and {mapped[mapped.length - 1]}
-														</>
-													);
-												}
-												return (
-													<>
-														This exact set is already in your database with {formatted}{" "}
-														selected.
-													</>
-												);
-											})()}
-										</div>
-									</PopoverContent>
-								</Popover>
-							)}
-						<Link
-							href={`/sets/${set.ID}`}
-							className="btn"
-							onClick={(e) => {
-								e.stopPropagation();
-								goToSetPage();
-							}}
-						>
-							<ZoomInIcon className="h-5 w-5 sm:h-7 sm:w-7 cursor-pointer active:scale-95 hover:text-primary" />
-						</Link>
-						<DownloadModal
-							setType={set.Type}
-							setTitle={set.Title}
-							setID={set.ID}
-							setAuthor={set.User.Name}
-							posterSets={[set]}
-							onMediaItemChange={onMediaItemChange}
-						/>
-					</div>
-				</div>
-				<div className="text-md text-muted-foreground mb-1 flex items-center">
-					<div className="ml-1 flex items-center gap-1">
-						<Avatar className="rounded-lg mr-1 w-4 h-4">
-							<AvatarImage
-								src={`/api/mediux/avatar-image?username=${set.User.Name}`}
-								className="w-4 h-4"
-							/>
-							<AvatarFallback className="">
-								<User className="w-4 h-4" />
-							</AvatarFallback>
-						</Avatar>
-						<Link
-							href={`/user/${set.User.Name}`}
-							className="text-sm hover:text-primary cursor-pointer underline truncate"
-							style={{ wordBreak: "break-word" }}
-						>
-							{set.User.Name}
-						</Link>
-					</div>
-				</div>
-				<Lead className="text-sm text-muted-foreground flex items-center mb-1 ml-1">
-					Last Update: {formatLastUpdatedDate(set.DateUpdated, set.DateCreated)}
-				</Lead>
-
-				<SetFileCounts mediaItem={mediaItem} set={set} />
-			</div>
-
-			<CarouselContent>
-				<CarouselDisplay sets={[set] as PosterSet[]} />
-			</CarouselContent>
-		</Carousel>
-	);
+      <CarouselContent>
+        <CarouselDisplay sets={[set] as SetRef[]} includedItems={includedItems || {}} dimNotFound={dimNotFound} />
+      </CarouselContent>
+    </Carousel>
+  );
 }

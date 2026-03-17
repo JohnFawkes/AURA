@@ -1,218 +1,100 @@
+// @title Aura API
+// @version 1.0
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 package main
 
 import (
-	"aura/internal/api"
-	"aura/internal/logging"
-	"aura/internal/routes"
-	"context"
-	"fmt"
-	"net/http"
+	"aura/config"
+	"aura/logging"
+	"aura/notification"
+	"aura/routing"
 	"os"
-	"strconv"
 	"strings"
 	"sync/atomic"
-	"syscall"
-	"time"
-
-	"github.com/robfig/cron/v3"
 )
 
 var (
+	APP_NAME    = "aura"
 	APP_VERSION = "dev"
-	Author      = "xmoosex"
-	License     = "MIT"
+	AUTHOR      = "xmoosex"
+	LICENSE     = "MIT"
 	APP_PORT    = 8888
 )
 
-// activeHandler dynamically switches from onboarding router to main app router.
 var activeHandler atomic.Value
 
-// cron instance started only after app is fully configured
-var cronInstance *cron.Cron
+func init() {
+	if strings.HasSuffix(APP_VERSION, "dev") {
+		logging.SetDevMode(true)
+	}
+}
 
 func main() {
+	// Serve immediately with onboarding/public routes first.
+	config.AppFullyLoaded = false
+	config.AppVersion = APP_VERSION
+	config.AppLoadingStep = "Initializing Application"
+	activeHandler.Store(routing.NewRouter())
 
-	// Print application details
-	PrintDetails()
+	// Start API now (non-blocking for init pipeline).
+	go startAPI()
 
-	// Set umask if specified
-	SetUMask()
+	// Run startup pipeline in background.
+	go func() {
+		bootStrapSuccess := runBootstrap()
 
-	// Load the config
-	api.Config_LoadYamlConfig(context.Background())
+		// Keep callback for onboarding finalization path.
+		routing.OnboardingComplete = func() {
+			preflightSuccess := runPreFlight()
+			if !preflightSuccess {
+				logging.LOGGER.Error().Timestamp().Msg("Preflight failed during OnboardingComplete, not swapping routers")
+				return
+			}
+			warmupSuccess := runWarmup()
+			if !warmupSuccess {
+				logging.LOGGER.Fatal().Timestamp().Msg("Warmup failed during OnboardingComplete. Exiting application.")
+				return
+			}
+			config.AppFullyLoaded = true
+			activeHandler.Store(routing.NewRouter())
+			logging.LOGGER.Info().Timestamp().Msg("Onboarding complete. Main routes active.")
+		}
 
-	// Print the config details (sanitized)
-	api.Global_Config.PrintDetails()
+		if bootStrapSuccess {
+			preflightSuccess := runPreFlight()
+			if !preflightSuccess {
+				config.Valid = false
+				activeHandler.Store(routing.NewRouter()) // stays onboarding
+				return
+			}
 
-	// If config loaded, validate it
-	if api.Global_Config_Loaded {
-		api.Global_Config.ValidateConfig()
-	}
+			warmupSuccess := runWarmup()
+			if !warmupSuccess {
+				logging.LOGGER.Fatal().Timestamp().Msg("Warmup failed. Exiting application.")
+				os.Exit(1)
+			}
 
-	// Set the OnboardingComplete callback to swap routers
-	routes.OnboardingComplete = func() {
-		valid := finishPreflight()
-		if !valid {
+			config.AppFullyLoaded = true
+			config.AppLoadingStep = "App Fully Loaded"
+			// Send App Start Notification
+			// Send notification (only if not dev & notifications enabled)
+			if !strings.Contains(APP_VERSION, "dev") &&
+				config.Current.Notifications.Enabled {
+				notification.SendAppStartNotification(APP_PORT, APP_NAME, APP_VERSION)
+			} else {
+				logging.LOGGER.Warn().Timestamp().Bool("notifications_enabled", config.Current.Notifications.Enabled).Bool("dev_version", strings.Contains(APP_VERSION, "dev")).Msg("App start notification not sent")
+			}
+			activeHandler.Store(routing.NewRouter()) // swap to full routes
 			return
 		}
-		startRuntimeServices()
-		// Swap to the main router
-		activeHandler.Store(routes.NewRouter())
-		logging.LOGGER.Info().Timestamp().Msg("Onboarding complete. Main routes active.")
-	}
 
-	// Build initial router (either onboarding-only or full)
-	initialRouter := routes.NewRouter()
-	activeHandler.Store(initialRouter)
-
-	// If the config is already loaded and valid, finish preflight
-	if api.Global_Config_Loaded && api.Global_Config_Valid {
-		valid := finishPreflight()
-		if !valid {
-			// Preflight failed, force onboarding
-			api.Global_Config_Valid = false
-			activeHandler.Store(routes.NewRouter())
-		} else {
-			startRuntimeServices()
-			// Ensure the active handler is set to the main router
-			activeHandler.Store(routes.NewRouter())
-		}
-	}
-
-	logging.LOGGER.Info().Timestamp().Int("port", APP_PORT).Bool("full_routes", api.Global_Config_Loaded && api.Global_Config_Valid).Msg("Starting HTTP Server")
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", APP_PORT), http.HandlerFunc(dispatch)); err != nil {
-		logging.LOGGER.Fatal().Err(err).Msg("Failed to start server")
-	}
-}
-
-// Finish Preflight
-// Validate MediaServer Connection (Get User ID for Emby/Jellyfin)
-// Validate MediUX Token
-func finishPreflight() bool {
-	ctx, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Finish Preflight")
-	defer ld.Log()
-
-	action := ld.AddAction("Preflight Checks", logging.LevelInfo)
-	ctx = logging.WithCurrentAction(ctx, action)
-	defer action.Complete()
-
-	// Validate Media Server Connection
-	_, logErr := api.CallInitializeMediaServerConnection(ctx, api.Global_Config.MediaServer)
-	if logErr.Message != "" {
-		api.Global_Config_MediaServerValid = false
-	}
-
-	// Validate MediUX Token
-	logErr = api.Mediux_ValidateToken(ctx, api.Global_Config.Mediux.Token)
-	if logErr.Message != "" {
-		api.Global_Config_MediuxValid = false
-	}
-
-	// Check if both Media Server and MediUX configs are valid
-	if !api.Global_Config_MediuxValid || !api.Global_Config_MediaServerValid {
-		return false
-	}
-
-	return true
-}
-
-// Start runtime services like:
-// - Preload Sections and Items
-// - Initialize Database
-// - Start Cron Jobs
-// - Send Startup Notification
-func startRuntimeServices() {
-
-	// Initialize the database
-	if ok := api.DB_Init(); !ok {
-		logging.LOGGER.Error().Timestamp().Msg("Database initialization failed, terminating application.")
-		// Kill Application
-		os.Exit(1)
-	}
-
-	// Preload all sections and items
-	api.GetAllSectionsAndItems()
-
-	// Preload all MediUX Users in cache
-	api.Mediux_PreloadAllUsersInCache()
-
-	// Cron Schedule: AutoDownload (if enabled)
-	cronInstance = cron.New()
-	if api.Global_Config_Loaded && api.Global_Config_Valid && api.Global_Config.AutoDownload.Enabled {
-		_, err := cronInstance.AddFunc(api.Global_Config.AutoDownload.Cron, func() {
-			if api.Global_Config.AutoDownload.Enabled {
-				api.AutoDownload_CheckForUpdatesToPosters()
-			}
-		})
-		if err != nil {
-			logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule AutoDownload cron job")
-		} else {
-			logging.LOGGER.Info().Timestamp().Msg(fmt.Sprintf("AutoDownload set for: %s", api.Global_Config.AutoDownload.Cron))
-		}
-	} else {
-		logging.LOGGER.Warn().Timestamp().Msg("AutoDownload is disabled")
-	}
-
-	// Send notification (only if not dev & notifications enabled)
-	if !strings.Contains(APP_VERSION, "dev") &&
-		api.Global_Config.Notifications.Enabled {
-		api.SendAppStartNotification()
-	}
-
-	// Cron Schedule: Download Queue Processing (every 1 minute)
-	_, err := cronInstance.AddFunc("* * * * *", func() {
-		api.ProcessDownloadQueue()
-	})
-	if err != nil {
-		logging.LOGGER.Error().Timestamp().Err(err).Msg("Failed to schedule Download Queue Processing cron job")
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Time = time.Now()
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Status = api.DOWNLOAD_QUEUE_LAST_STATUS_ERROR
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Message = "Failed to schedule Download Queue Processing"
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Errors = []string{err.Error()}
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Warnings = []string{}
-	} else {
-		logging.LOGGER.Info().Timestamp().Msg("Download Queue Processing scheduled every 1 minute")
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Time = time.Now()
-		api.DOWNLOAD_QUEUE_LATEST_INFO.Status = api.DOWNLOAD_QUEUE_LAST_STATUS_IDLE
-	}
-
-	cronInstance.Start()
-
-	// Start MediUX WebSocket Client
-	//go api.Mediux_StartWebSocketClient()
-}
-
-func PrintDetails() {
-	// Print application details
-	logging.LOGGER.Info().
-		Timestamp().
-		Str("version", APP_VERSION).
-		Str("author", Author).
-		Str("license", License).
-		Int("port", APP_PORT).
-		Msg("Starting Aura")
-}
-
-func SetUMask() {
-	_, ld := logging.CreateLoggingContext(context.Background(), "Setting Up - Set UMASK")
-	logAction := ld.AddAction("Setting UMASK", logging.LevelInfo)
-	defer func() {
-		if logAction.Result != nil {
-			ld.Log()
-		}
+		// Config not loaded/valid: onboarding mode remains active.
+		activeHandler.Store(routing.NewRouter())
 	}()
-	defer logAction.Complete()
 
-	if umaskStr := os.Getenv("UMASK"); umaskStr != "" {
-		if umask, err := strconv.ParseInt(umaskStr, 8, 0); err == nil {
-			syscall.Umask(int(umask))
-			logAction.AppendResult("umask_set", umaskStr)
-		}
-	}
-}
-
-// dispatch forwards to the currently active router.
-func dispatch(w http.ResponseWriter, r *http.Request) {
-	h := activeHandler.Load().(http.Handler)
-	h.ServeHTTP(w, r)
+	// Keep process alive while startAPI runs.
+	select {}
 }

@@ -1,0 +1,60 @@
+query getMovieCollectionSetBySetID(
+	$collection_set_id: ID!
+	$collection_set_id_str: GraphQLStringOrFloat
+) {
+	collection_sets_by_id(id: $collection_set_id) {
+		id
+		set_title
+		user_created {
+			username
+		}
+		date_created
+		date_updated
+		popularity
+		popularity_global
+		collection_id {
+			movies {
+				id
+				date_updated
+				status
+				title
+				tagline
+				release_date
+				tvdb_id
+				imdb_id
+				trakt_id
+				slug
+				poster_path
+				backdrop_path
+				posters(
+					filter: {
+						collection_set: { id: { _eq: $collection_set_id_str } }
+					}
+				) {
+					id
+					modified_on
+					filesize
+					src
+					blurhash
+					language {
+						display_name
+					}
+				}
+				backdrops(
+					filter: {
+						collection_set: { id: { _eq: $collection_set_id_str } }
+					}
+				) {
+					id
+					modified_on
+					filesize
+					src
+					blurhash
+					language {
+						display_name
+					}
+				}
+			}
+		}
+	}
+}
