@@ -42,7 +42,10 @@ func (e *EJ) GetLibrarySections(ctx context.Context, msConfig config.Config_Medi
 	}
 
 	for _, item := range ejResp.Items {
-		if item.CollectionType != "movies" && item.CollectionType != "tvshows" {
+		if item.CollectionType == "" {
+			item.CollectionType = "mixed"
+		}
+		if item.CollectionType != "movies" && item.CollectionType != "tvshows" && item.CollectionType != "mixed" {
 			continue
 		}
 		section := models.LibrarySection{}
@@ -51,6 +54,7 @@ func (e *EJ) GetLibrarySections(ctx context.Context, msConfig config.Config_Medi
 		section.Type = map[string]string{
 			"movies":  "movie",
 			"tvshows": "show",
+			"mixed":   "mixed",
 		}[item.CollectionType]
 		sections = append(sections, section)
 	}
