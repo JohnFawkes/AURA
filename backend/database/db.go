@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-const LATEST_DB_VERSION = 2
+const LATEST_DB_VERSION = 3
 
 var Client DB
 
@@ -93,6 +93,9 @@ type DB interface {
 
 	// Get Temp Ignored Items
 	GetTempIgnoredItems(ctx context.Context) (items []models.MediaItem, Err logging.LogErrorInfo)
+
+	// Update Media Item on_server flag
+	UpdateMediaItemOnServer(ctx context.Context, tmdbID string, libraryTitle string, onServer bool) (logErr logging.LogErrorInfo)
 }
 
 func NewDatabaseClient() (DB, logging.LogErrorInfo) {
@@ -300,4 +303,11 @@ func GetTempIgnoredItems(ctx context.Context) (items []models.MediaItem, Err log
 		return []models.MediaItem{}, logging.Error_DBClientNotInitialized()
 	}
 	return Client.GetTempIgnoredItems(ctx)
+}
+
+func UpdateMediaItemOnServer(ctx context.Context, tmdbID string, libraryTitle string, onServer bool) (logErr logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.UpdateMediaItemOnServer(ctx, tmdbID, libraryTitle, onServer)
 }

@@ -24,18 +24,19 @@ type PosterSet struct {
 }
 
 type DBFilter struct {
-	ItemTMDB_ID      string   `json:"item_tmdb_id"`
-	ItemLibraryTitle string   `json:"item_library_title"`
-	ItemYear         int      `json:"item_year"`
-	ItemTitle        string   `json:"item_title"`
-	SetID            string   `json:"set_id"`
-	LibraryTitles    []string `json:"library_titles"`
-	ImageTypes       []string `json:"image_types"`
-	Autodownload     string   `json:"autodownload"`
-	MultiSetOnly     bool     `json:"multiset_only"`
-	Usernames        []string `json:"usernames"`
-	ItemsPerPage     int      `json:"items_per_page"`
-	PageNumber       int      `json:"page_number"`
-	SortOption       string   `json:"sort_option"`
-	SortOrder        string   `json:"sort_order"`
+	ItemTMDB_ID       string   `json:"item_tmdb_id"`
+	ItemLibraryTitle  string   `json:"item_library_title"`
+	ItemYear          int      `json:"item_year"`
+	ItemTitle         string   `json:"item_title"`
+	SetID             string   `json:"set_id"`
+	LibraryTitles     []string `json:"library_titles"`
+	ImageTypes        []string `json:"image_types"`
+	Autodownload      string   `json:"autodownload"`
+	MultiSetOnly      bool     `json:"multiset_only"`
+	Usernames         []string `json:"usernames"`
+	MediaItemOnServer string   `json:"media_item_on_server"`
+	ItemsPerPage      int      `json:"items_per_page"`
+	PageNumber        int      `json:"page_number"`
+	SortOption        string   `json:"sort_option"`
+	SortOrder         string   `json:"sort_order"`
 }

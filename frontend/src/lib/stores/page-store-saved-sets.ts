@@ -6,6 +6,7 @@ import { PageStore } from "@/lib/stores/stores";
 import type { PaginationStore, SortStore } from "@/types/store-interfaces";
 import type {
   TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
+  TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS,
   TYPE_SAVED_SET_VIEW_TYPE_OPTIONS,
   TYPE_SORT_ORDER_OPTIONS,
 } from "@/types/ui-options";
@@ -34,6 +35,10 @@ interface SavedSets_PageStore extends SortStore<string, TYPE_SORT_ORDER_OPTIONS>
   // MultiSet Filter
   filterMultiSetOnly: boolean;
   setFilterMultiSetOnly: (value: boolean) => void;
+
+  // Media Item on Server Filter
+  filterMediaItemOnServer: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS;
+  setFilterMediaItemOnServer: (value: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS) => void;
 
   // Hydration and Clear
   hasHydrated: boolean;
@@ -74,6 +79,9 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
       filterMultiSetOnly: false,
       setFilterMultiSetOnly: (value) => set({ filterMultiSetOnly: value }),
 
+      filterMediaItemOnServer: "",
+      setFilterMediaItemOnServer: (value) => set({ filterMediaItemOnServer: value }),
+
       // Hydration and Clear
       hasHydrated: false,
       hydrate: () => set({ hasHydrated: true }),
@@ -90,6 +98,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
           filteredUsers: [],
           filteredTypes: [],
           filterMultiSetOnly: false,
+          filterMediaItemOnServer: "",
           hasHydrated: false,
         }),
     }),
@@ -107,6 +116,7 @@ export const useSavedSetsPageStore = create<SavedSets_PageStore>()(
         filteredUsers: state.filteredUsers,
         filteredTypes: state.filteredTypes,
         filterMultiSetOnly: state.filterMultiSetOnly,
+        filterMediaItemOnServer: state.filterMediaItemOnServer,
       }),
       onRehydrateStorage: () => (state) => {
         state?.hydrate();

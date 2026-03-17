@@ -160,6 +160,12 @@ func (e *EJ) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) (f
 		item.HasMediuxSets = true
 	}
 
+	// Update the Media Item on Server in the DB
+	updateErr := database.UpdateMediaItemOnServer(ctx, item.TMDB_ID, item.LibraryTitle, true)
+	if updateErr.Message != "" {
+		logAction.AppendWarning("update_on_server_error", updateErr.Message)
+	}
+
 	// Update item in cache
 	cache.LibraryStore.UpdateMediaItem(item.LibraryTitle, item)
 	return found, logging.LogErrorInfo{}

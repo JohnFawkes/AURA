@@ -77,6 +77,7 @@ WITH base AS (
     mi.type,
     mi.title,
     mi.year,
+	mi.on_server,
     (SELECT COUNT(*)
      FROM SavedItems si
      WHERE si.tmdb_id = mi.tmdb_id AND si.library_title = mi.library_title
@@ -104,6 +105,7 @@ WITH base AS (
     mi.type,
     mi.title,
     mi.year,
+	mi.on_server,
 
     mv.path     AS movie_path,
     mv.size     AS movie_size,
@@ -387,6 +389,15 @@ EXISTS (
 
 	if filter.MultiSetOnly {
 		add("mi.set_count > 1")
+	}
+
+	if filter.MediaItemOnServer != "" {
+		switch strings.ToLower(filter.MediaItemOnServer) {
+		case "true", "1", "yes", "on":
+			add("mi.on_server = 1")
+		case "false", "0", "no", "off":
+			add("mi.on_server = 0")
+		}
 	}
 
 	if len(clauses) == 0 {

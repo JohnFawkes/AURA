@@ -62,6 +62,12 @@ func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 				database.DeleteMediaItemAndIgnoredStatus(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle)
 			}
 
+			// Update the Media Item on Server in the DB
+			updateErr := database.UpdateMediaItemOnServer(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle, false)
+			if updateErr.Message != "" {
+				logAction.AppendWarning("update_on_server_error", updateErr.Message)
+			}
+
 			sendNotFoundNotification(mediaItem, reason, action, moreInfo)
 			continue
 		} else if dbItem.RatingKey != cachedItem.RatingKey {

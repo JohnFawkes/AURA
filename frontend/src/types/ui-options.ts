@@ -27,6 +27,15 @@ export const FILTER_AUTO_DOWNLOAD_OPTIONS: {
   { value: "off", label: "Auto-Download Off" },
 ];
 
+export type TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS = "" | "true" | "false";
+export const FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS: {
+  value: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS;
+  label: string;
+}[] = [
+  { value: "true", label: "On Server" },
+  { value: "false", label: "Not on Server" },
+];
+
 // In Database Filter Options (Home Page)
 export type TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS = "" | "notInDB" | "inDB";
 export const HOME_PAGE_FILTER_IN_DB_OPTIONS: {

@@ -5,7 +5,7 @@ import { log } from "@/lib/logger";
 
 import type { APIResponse } from "@/types/api/api-response";
 import type { DBSavedItem } from "@/types/database/db-poster-set";
-import { TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS } from "@/types/ui-options";
+import { TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS, TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS } from "@/types/ui-options";
 
 export interface GetAllDBItems_Response {
   items: DBSavedItem[];
@@ -23,6 +23,7 @@ export const getAllItemsFromDB = async (
   filterAutodownload: TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
   multisetOnly: boolean,
   filteredUsernames: string[],
+  filterMediaItemOnServer: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS,
   itemsPerPage: number,
   pageNumber: number,
   sortOption: string,
@@ -49,6 +50,7 @@ export const getAllItemsFromDB = async (
       page_number: pageNumber,
       sort_option: sortOption,
       sort_order: sortOrder,
+      media_item_on_server: filterMediaItemOnServer,
     };
     const response = await apiClient.get<APIResponse<GetAllDBItems_Response>>(`/db`, { params: params });
     if (response.data.status === "error") {

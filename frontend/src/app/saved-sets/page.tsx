@@ -91,6 +91,8 @@ const SavedSetsPage: React.FC = () => {
     setFilteredTypes,
     filterMultiSetOnly,
     setFilterMultiSetOnly,
+    filterMediaItemOnServer,
+    setFilterMediaItemOnServer,
   } = useSavedSetsPageStore();
 
   // Get the library options from Global Library Store
@@ -144,6 +146,7 @@ const SavedSetsPage: React.FC = () => {
         filterAutoDownload,
         filterMultiSetOnly,
         filteredUsers,
+        filterMediaItemOnServer,
         itemsPerPage,
         currentPage,
         sortOption,
@@ -190,6 +193,7 @@ const SavedSetsPage: React.FC = () => {
     filterAutoDownload,
     filterMultiSetOnly,
     filteredUsers,
+    filterMediaItemOnServer,
     itemsPerPage,
     currentPage,
     sortOption,
@@ -486,6 +490,8 @@ const SavedSetsPage: React.FC = () => {
             setCurrentPage={setCurrentPage}
             itemsPerPage={itemsPerPage}
             setItemsPerPage={setItemsPerPage}
+            filterMediaItemOnServer={filterMediaItemOnServer}
+            setFilterMediaItemOnServer={setFilterMediaItemOnServer}
           />
         </div>
 

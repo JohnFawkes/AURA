@@ -145,6 +145,12 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 			item.IgnoredMode = ignoredMode
 		}
 
+		// Update the Media Item on Server in the DB
+		updateErr := database.UpdateMediaItemOnServer(ctx, item.TMDB_ID, item.LibraryTitle, true)
+		if updateErr.Message != "" {
+			logAction.AppendWarning("update_on_server_error", updateErr.Message)
+		}
+
 		// Check if Media Item exists in MediUX with a set
 		if cache.MediuxItems.CheckItemExists(item.Type, item.TMDB_ID) {
 			item.HasMediuxSets = true

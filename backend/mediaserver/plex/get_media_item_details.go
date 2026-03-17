@@ -100,6 +100,12 @@ func (p *Plex) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) 
 	// Update the item in the cache
 	cache.LibraryStore.UpdateMediaItem(item.LibraryTitle, item)
 
+	// Update the Media Item on Server in the DB
+	updateErr := database.UpdateMediaItemOnServer(ctx, item.TMDB_ID, item.LibraryTitle, true)
+	if updateErr.Message != "" {
+		logAction.AppendWarning("update_on_server_error", updateErr.Message)
+	}
+
 	// Mark as found
 	found = true
 	return found, logging.LogErrorInfo{}

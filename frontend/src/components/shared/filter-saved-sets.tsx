@@ -33,7 +33,12 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/cn";
 import { useSearchQueryStore } from "@/lib/stores/global-store-search-query";
 
-import { FILTER_AUTO_DOWNLOAD_OPTIONS, TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS } from "@/types/ui-options";
+import {
+  FILTER_AUTO_DOWNLOAD_OPTIONS,
+  FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS,
+  TYPE_FILTER_AUTO_DOWNLOAD_OPTIONS,
+  TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS,
+} from "@/types/ui-options";
 
 type SavedSetsFilterProps = {
   getSectionSummaries: () => { title?: string; type?: string }[];
@@ -54,6 +59,9 @@ type SavedSetsFilterProps = {
 
   filterMultiSetOnly: boolean;
   setFilterMultiSetOnly: (val: boolean) => void;
+
+  filterMediaItemOnServer: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS;
+  setFilterMediaItemOnServer: (val: TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS) => void;
 
   searchTMDBID?: string;
   searchLibrary?: string;
@@ -89,6 +97,8 @@ function SavedSetsFilterContent({
   setFilteredUsers,
   filterMultiSetOnly,
   setFilterMultiSetOnly,
+  filterMediaItemOnServer,
+  setFilterMediaItemOnServer,
 
   searchTMDBID,
   searchLibrary,
@@ -115,6 +125,8 @@ function SavedSetsFilterContent({
   const [pendingFilterTypes, setPendingFilterTypes] = useState<string[]>(filteredTypes);
   const [pendingFilterMultiSetOnly, setPendingFilterMultiSetOnly] = useState<boolean>(filterMultiSetOnly);
   const [pendingFilteredUsers, setPendingFilteredUsers] = useState<string[]>(filteredUsers);
+  const [pendingFilterMediaItemOnServer, setPendingFilterMediaItemOnServer] =
+    useState<TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS>(filterMediaItemOnServer);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -128,6 +140,8 @@ function SavedSetsFilterContent({
     setPendingFilteredUsers([]);
     setFilterMultiSetOnly(false);
     setPendingFilterMultiSetOnly(false);
+    setFilterMediaItemOnServer("");
+    setPendingFilterMediaItemOnServer("");
     setCurrentPage(1);
     setUserFilterSearch("");
     if (setModalOpen) setModalOpen(false);
@@ -140,6 +154,7 @@ function SavedSetsFilterContent({
     setFilterAutoDownload(pendingFilterAutoDownload);
     setFilterMultiSetOnly(pendingFilterMultiSetOnly);
     setFilteredUsers(pendingFilteredUsers);
+    setFilterMediaItemOnServer(pendingFilterMediaItemOnServer);
     if (setModalOpen) setModalOpen(false);
   };
 
@@ -276,6 +291,7 @@ function SavedSetsFilterContent({
             <Separator className="my-4 w-full" />
           </>
         )}
+
         {/* Selected Types */}
         <Label className="text-md font-semibold mb-2 block">Selected Types</Label>
         <ToggleGroup
@@ -302,6 +318,7 @@ function SavedSetsFilterContent({
           ))}
         </ToggleGroup>
         <Separator className="my-4 w-full" />
+
         {/* AutoDownload Only */}
         <Label className="text-md font-semibold mb-1 block">AutoDownload</Label>
         <ToggleGroup
@@ -336,6 +353,7 @@ function SavedSetsFilterContent({
           ))}
         </ToggleGroup>
         <Separator className="my-4 w-full" />
+
         {/* MultiSet Only */}
         <Label className="text-md font-semibold mb-1 block">Multi Set Only</Label>
         <Badge
@@ -351,6 +369,42 @@ function SavedSetsFilterContent({
           {pendingFilterMultiSetOnly ? "Multi Set Only" : "All Items"}
         </Badge>
         <Separator className="my-4 w-full" />
+
+        {/* MediaItem on Server */}
+        <Label className="text-md font-semibold mb-1 block">Media Item on Server</Label>
+        <ToggleGroup
+          type="single"
+          className="flex flex-wrap gap-2 ml-2"
+          value={pendingFilterMediaItemOnServer}
+          onValueChange={(val) => setPendingFilterMediaItemOnServer(val as TYPE_FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS)}
+        >
+          {FILTER_MEDIA_ITEM_ON_SERVER_OPTIONS.map((option) => (
+            <Badge
+              key={option.value}
+              className={cn(
+                "cursor-pointer text-sm active:scale-95 hover:brightness-120",
+                pendingFilterMediaItemOnServer === option.value &&
+                  option.value === "true" &&
+                  "bg-green-500 text-primary-foreground",
+                pendingFilterMediaItemOnServer === option.value &&
+                  option.value === "false" &&
+                  "bg-red-500 text-primary-foreground"
+              )}
+              variant={pendingFilterMediaItemOnServer === option.value ? "default" : "outline"}
+              onClick={() => {
+                if (pendingFilterMediaItemOnServer === option.value) {
+                  setPendingFilterMediaItemOnServer("");
+                } else {
+                  setPendingFilterMediaItemOnServer(option.value);
+                }
+              }}
+            >
+              {option.label}
+            </Badge>
+          ))}
+        </ToggleGroup>
+        <Separator className="my-4 w-full" />
+
         {/* Users */}
         <Label className="text-md font-semibold mb-2 block">Users</Label>
         <Input
@@ -482,6 +536,8 @@ export function FilterSavedSets({
   setFilteredUsers,
   filterMultiSetOnly,
   setFilterMultiSetOnly,
+  filterMediaItemOnServer,
+  setFilterMediaItemOnServer,
 
   searchTMDBID,
   searchLibrary,
@@ -512,6 +568,7 @@ export function FilterSavedSets({
     if (searchYear) count++;
     if (searchLibrary) count++;
     if (searchTMDBID) count++;
+    if (filterMediaItemOnServer) count++;
     return count;
   }, [
     filteredLibraries.length,
@@ -523,6 +580,7 @@ export function FilterSavedSets({
     searchYear,
     searchLibrary,
     searchTMDBID,
+    filterMediaItemOnServer,
   ]);
 
   return (
@@ -569,6 +627,8 @@ export function FilterSavedSets({
           itemsPerPage={itemsPerPage}
           setItemsPerPage={setItemsPerPage}
           setModalOpen={setModalOpen}
+          filterMediaItemOnServer={filterMediaItemOnServer}
+          setFilterMediaItemOnServer={setFilterMediaItemOnServer}
         />
       </DialogContent>
     </Dialog>

@@ -113,6 +113,13 @@ func GetAllItems(w http.ResponseWriter, r *http.Request) {
 	}
 	dbFilter.Usernames = filteredUsernames
 
+	// Query Param - Media Item On Server (Filter)
+	dbFilter.MediaItemOnServer = r.URL.Query().Get("media_item_on_server")
+	if dbFilter.MediaItemOnServer != "" && dbFilter.MediaItemOnServer != "true" && dbFilter.MediaItemOnServer != "false" {
+		getQueryParamsAction.AppendWarning("message", "Invalid media_item_on_server value, defaulting to empty (no filter)")
+		dbFilter.MediaItemOnServer = ""
+	}
+
 	// Query Param - Pagination & Sorting
 	// Items Per Page (Default: 20, -1 for no pagination)
 	// Page Number (Default: 1)
