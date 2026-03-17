@@ -4,6 +4,7 @@ import { ReturnErrorMessage } from "@/services/api-error-return";
 import { GetAppConfigStatus } from "@/services/config/status";
 import { GetNotificationTemplateVariables } from "@/services/config/template-variables";
 import { UpdateAppConfig } from "@/services/config/update";
+import { Edit, SaveIcon, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useEffect, useRef, useState } from "react";
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
+import { cn } from "@/lib/cn";
 import { ClearAllStores } from "@/lib/stores/clear-all-stores";
 
 import type { APIResponse } from "@/types/api/api-response";
@@ -495,38 +497,6 @@ const SettingsPage: React.FC = () => {
                 {activeTab === "user-preferences" ? "Manage your user preferences" : "Manage your application settings"}
               </p>
             </div>
-            {activeTab !== "user-preferences" && (
-              <div className="flex gap-2">
-                {!editing && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setEditing(true)}
-                    className="cursor-pointer active:scale-95 hover:brightness-120 hover:text-primary border border-yellow-500"
-                  >
-                    Edit
-                  </Button>
-                )}
-                {editing && (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={handleCancel}
-                      disabled={saving}
-                      className="cursor-pointer hover:text-primary"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSaveAll}
-                      disabled={!anyDirty || saving || hasValidationErrors}
-                      className="cursor-pointer hover:text-primary"
-                    >
-                      {saving ? "Saving..." : "Save All"}
-                    </Button>
-                  </>
-                )}
-              </div>
-            )}
           </div>
 
           <Tabs defaultValue="app-settings" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -708,12 +678,6 @@ const SettingsPage: React.FC = () => {
                 className={`mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex items-center gap-3 ${anyDirty && "border-amber-500"}`}
               >
                 <span className="text-sm">{anyDirty ? "Unsaved changes" : "No changes yet"}</span>
-                <Button size="sm" variant="outline" onClick={handleCancel} disabled={saving}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveAll} disabled={!anyDirty || saving || hasValidationErrors}>
-                  {saving ? "Saving..." : "Save All"}
-                </Button>
               </div>
             </div>
           )}
@@ -759,6 +723,56 @@ const SettingsPage: React.FC = () => {
           Clear App Cache
         </ConfirmDestructiveDialogActionButton>
       </div>
+
+      {activeTab !== "user-preferences" && (
+        <div className="fixed z-100 right-3 bottom-5 sm:bottom-15 flex flex-col items-end gap-2">
+          {editing && anyDirty && (
+            <Button
+              variant="default"
+              size="sm"
+              className={cn(
+                `mb-1 rounded-full shadow-lg transition-all duration-300 border-1 border-green-500 bg-green-500/50
+          hover:text-black hover:!bg-green-500 cursor-pointer`
+              )}
+              onClick={handleSaveAll}
+              disabled={!anyDirty || saving || hasValidationErrors}
+              aria-label="save"
+            >
+              <SaveIcon className="h-3 w-3" />
+              <span className="text-xs hidden sm:inline">{saving ? "Saving..." : "Save"}</span>
+            </Button>
+          )}
+          {!editing ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                `rounded-full shadow-lg transition-all duration-300 border-1 border-primary bg-primary/50 
+          hover:text-black hover:!bg-primary cursor-pointer`
+              )}
+              onClick={() => setEditing(true)}
+              aria-label="edit"
+            >
+              <Edit className="h-3 w-3" />
+              <span className="text-xs hidden sm:inline">Edit</span>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                `rounded-full shadow-lg transition-all duration-300 border-1 border-destructive bg-destructive/50
+          hover:text-white hover:!bg-destructive cursor-pointer`
+              )}
+              onClick={handleCancel}
+              aria-label="cancel"
+            >
+              <X className="h-3 w-3" />
+              <span className="text-xs hidden sm:inline">Cancel</span>
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
