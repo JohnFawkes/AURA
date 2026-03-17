@@ -1,3 +1,26 @@
+## [0.9.93] - 2026-03-17
+
+### Added
+
+- New floating "Edit" and "Save" buttons for the Settings Page to replace the previous Edit button that was hard to notice.
+- Changed input for Notification message to Textarea to allow for better formatting of messages.
+- Added support for HTML in Pushover notifications to allow for better formatting of messages.
+
+### Fixed
+
+- Fixed issue where Jellyfin/Emby Mixed library type would not show up on list of options during onboarding/settings.
+- Fixed issue where enabling "Remove Overlay Label" for Plex would not be detected properly during saving.
+- Fixed issue on Download Queue page where error would showup if no Sets were available.
+- Fixed issue where Current Images for Shows were not showing up in order.
+- Fixed issue where default notification template had a bad variable.
+
+### UI Tweaks
+
+- Fixed issue where "Jump to Top" button was spread out too far.
+- Fixed alignment of "Refresh" button.
+
+---
+
 ## [0.9.92] - 2026-03-15
 
 ### Added
