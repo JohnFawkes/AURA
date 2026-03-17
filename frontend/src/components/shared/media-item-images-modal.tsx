@@ -72,9 +72,7 @@ export function ViewCurrentImagesModal({ mediaItem, isOpen, onClose }: ViewCurre
                   {mediaItem?.series &&
                     episodeRatingKeysBySeason.map(({ seasonRatingKey, seasonTitle, episodeRatingKeys }) => (
                       <div key={seasonRatingKey} className="mb-8">
-                        <Lead className="text-white mb-3 text-lg font-bold text-center">
-                          {seasonTitle}
-                        </Lead>
+                        <Lead className="text-white mb-3 text-lg font-bold text-center">{seasonTitle}</Lead>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           {episodeRatingKeys.map((epRatingKey) => (
                             <AssetImage
