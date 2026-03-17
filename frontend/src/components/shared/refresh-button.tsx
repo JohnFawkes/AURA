@@ -17,7 +17,7 @@ export function RefreshButton({ onClick, text = "Refresh", className }: RefreshB
       size="sm"
       className={cn(
         `fixed z-100 right-3 cursor-pointer
-				bottom-10 sm:bottom-15
+				bottom-5 sm:bottom-15
 				rounded-full shadow-lg
 				transition-all duration-300
 				border-1 border-primary
@@ -29,7 +29,7 @@ export function RefreshButton({ onClick, text = "Refresh", className }: RefreshB
       onClick={onClick}
       aria-label="refresh"
     >
-      <RefreshIcon className="h-3 w-3 mr-1" />
+      <RefreshIcon className="h-3 w-3" />
       <span className="text-xs hidden sm:inline">{text}</span>
     </Button>
   );
