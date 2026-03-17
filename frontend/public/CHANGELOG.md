@@ -1,3 +1,11 @@
+## [0.9.94] - 2026-03-18
+
+### Added
+
+- Added new "On Server" filter option on the Saved Sets page to allow filtering of sets based on whether the media item exists on the media server. This required a new database field to track whether the media item exists on the media server, which is updated during the fetching of media items from the media server and during the check for media item changes job.
+
+---
+
 ## [0.9.93] - 2026-03-17
 
 ### Added
