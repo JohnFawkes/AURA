@@ -19,12 +19,16 @@ interface ViewCurrentImagesModalProps {
 export function ViewCurrentImagesModal({ mediaItem, isOpen, onClose }: ViewCurrentImagesModalProps) {
   if (!mediaItem || !mediaItem.series || !mediaItem.series.seasons) return null;
 
-  const seasonRatingKeys = mediaItem.series.seasons?.flatMap((season) => season.rating_key) ?? [];
-  const episodeRatingKeysBySeason =
-    mediaItem.series.seasons?.reduce<Record<string, string[]>>((acc, season) => {
-      acc[season.rating_key] = season.episodes?.map((ep) => ep.rating_key) ?? [];
-      return acc;
-    }, {}) ?? {};
+  const sortedSeasons = [...mediaItem.series.seasons].sort((a, b) => a.season_number - b.season_number);
+
+  const seasonRatingKeys = sortedSeasons.map((season) => season.rating_key);
+  const episodeRatingKeysBySeason = sortedSeasons.map((season) => ({
+    seasonRatingKey: season.rating_key,
+    seasonTitle: season.title,
+    episodeRatingKeys: [...(season.episodes ?? [])]
+      .sort((a, b) => a.episode_number - b.episode_number)
+      .map((episode) => episode.rating_key),
+  }));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,10 +70,10 @@ export function ViewCurrentImagesModal({ mediaItem, isOpen, onClose }: ViewCurre
                 <AccordionTrigger className="text-lg font-semibold text-white">Episodes</AccordionTrigger>
                 <AccordionContent>
                   {mediaItem?.series &&
-                    Object.entries(episodeRatingKeysBySeason).map(([seasonRatingKey, episodeRatingKeys]) => (
+                    episodeRatingKeysBySeason.map(({ seasonRatingKey, seasonTitle, episodeRatingKeys }) => (
                       <div key={seasonRatingKey} className="mb-8">
                         <Lead className="text-white mb-3 text-lg font-bold text-center">
-                          {mediaItem.series?.seasons.find((season) => season.rating_key === seasonRatingKey)?.title}
+                          {seasonTitle}
                         </Lead>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           {episodeRatingKeys.map((epRatingKey) => (
