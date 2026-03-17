@@ -31,6 +31,7 @@ func (p *Plex) GetLibrarySectionDetails(ctx context.Context, library *models.Lib
 	// Make the HTTP Request to Plex
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return found, *logAction.Error
 	}
 	defer resp.Body.Close()

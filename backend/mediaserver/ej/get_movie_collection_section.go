@@ -29,6 +29,7 @@ func GetMovieCollectionSection(ctx context.Context) (section models.LibrarySecti
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return section, *logAction.Error
 	}
 	defer resp.Body.Close()

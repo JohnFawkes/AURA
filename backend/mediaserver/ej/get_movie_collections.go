@@ -39,6 +39,7 @@ func (e *EJ) GetMovieCollections(ctx context.Context, library models.LibrarySect
 	// Make the HTTP Request to Emby/Jellyfin
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return collections, *logAction.Error
 	}
 	defer resp.Body.Close()

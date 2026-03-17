@@ -42,6 +42,7 @@ func (e *EJ) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) (f
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return found, *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -188,7 +189,8 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *models.MediaItem) (Err l
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
-		return *logAction.Error
+		logAction.SetErrorFromInfo(Err)
+		return Err
 	}
 	defer resp.Body.Close()
 
@@ -196,7 +198,7 @@ func fetchSeasonsForShow(ctx context.Context, itemInfo *models.MediaItem) (Err l
 	var ejResp EmbyJellyItemContentChildResponse
 	Err = httpx.DecodeResponseToJSON(ctx, respBody, &ejResp, fmt.Sprintf("%s Show Seasons Response", config.Current.MediaServer.Type))
 	if Err.Message != "" {
-		return *logAction.Error
+		return Err
 	}
 
 	var seasons []models.MediaItemSeason
@@ -254,6 +256,7 @@ func fetchEpisodesForSeason(ctx context.Context, showRatingKey string, season mo
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return season, *logAction.Error
 	}
 	defer resp.Body.Close()

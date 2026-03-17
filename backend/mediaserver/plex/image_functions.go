@@ -40,6 +40,7 @@ func getAllImages(ctx context.Context, item *models.MediaItem, itemRatingKey str
 	// Make the HTTP Request to Plex
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return images, *logAction.Error
 	}
 	defer resp.Body.Close()

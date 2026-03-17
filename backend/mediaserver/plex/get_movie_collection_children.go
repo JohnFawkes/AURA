@@ -37,6 +37,7 @@ func (p *Plex) GetMovieCollectionChildrenItems(ctx context.Context, collection *
 	// Make the HTTP Request to Plex
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()

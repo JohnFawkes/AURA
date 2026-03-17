@@ -48,6 +48,7 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 	// Make the HTTP Request to Plex
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return items, totalSize, *logAction.Error
 	}
 	defer resp.Body.Close()

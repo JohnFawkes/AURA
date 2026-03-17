@@ -42,6 +42,7 @@ func getCurrentImages(ctx context.Context, item *models.MediaItem, itr string) (
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return images, *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -79,6 +80,7 @@ func getCurrentCollectionImages(ctx context.Context, collectionItem *models.Coll
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return images, *logAction.Error
 	}
 	defer resp.Body.Close()

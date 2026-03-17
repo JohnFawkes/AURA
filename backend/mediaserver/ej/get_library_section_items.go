@@ -53,6 +53,7 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return items, totalSize, *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -190,6 +191,7 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return items, *logAction.Error
 	}
 	defer resp.Body.Close()

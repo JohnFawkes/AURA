@@ -39,6 +39,7 @@ func (e *EJ) GetMovieCollectionChildrenItems(ctx context.Context, collection *mo
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()
