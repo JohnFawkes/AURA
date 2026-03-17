@@ -33,7 +33,7 @@ func DefaultNotificationTemplates() Config_NotificationTemplate {
 		CheckForMediaItemChangesJob: Config_CustomNotification{
 			Enabled:      true,
 			Title:        "Check For Media Item Changes Job",
-			Message:      "The media item '{{MediaItemTitle}}' (TMDB ID: {{MediaItemTMDBID}}) in library '{{MediaItemLibraryTitleTitle}}' could not be found in the media server cache.{{NewLine}}Reason:{{NewLine}}{{Reason}}{{NewLine}}{{NewLine}}{{Action}}{{NewLine}}{{MoreInfo}}",
+			Message:      "The media item '{{MediaItemTitle}}' (TMDB ID: {{MediaItemTMDBID}}) in library '{{MediaItemLibraryTitle}}' could not be found in the media server cache.{{NewLine}}Reason:{{NewLine}}{{Reason}}{{NewLine}}{{NewLine}}{{Action}}{{NewLine}}{{MoreInfo}}",
 			IncludeImage: false,
 		},
 		SonarrNotification: Config_CustomNotification{
