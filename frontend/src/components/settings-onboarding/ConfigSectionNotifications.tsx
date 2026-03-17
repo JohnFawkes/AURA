@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/cn";
 
@@ -964,11 +965,12 @@ export const ConfigSectionNotifications: React.FC<ConfigSectionNotificationsProp
 
                     <div className="space-y-1">
                       <Label>Message</Label>
-                      <Input
+                      <Textarea
                         disabled={!editing || !tpl.enabled}
                         value={tpl.message || ""}
                         onChange={(e) => updateTemplate(key, { message: e.target.value })}
                         placeholder="Notification message"
+                        className="w-full min-h-[80px] rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-vertical"
                       />
                     </div>
 
