@@ -449,6 +449,17 @@ func checkConfigDifferences_LabelsAndTags(ctx context.Context, oldLAT config.Con
 	newValid = true
 	if !reflect.DeepEqual(oldLAT, newLAT) {
 
+		// Compare RemoveOverlayLabelOnlyOnPosterDownload
+		if oldLAT.RemoveOverlayLabelOnlyOnPosterDownload != newLAT.RemoveOverlayLabelOnlyOnPosterDownload {
+			logAction.AppendResult("LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload changed", fmt.Sprintf("from '%v' to '%v'", oldLAT.RemoveOverlayLabelOnlyOnPosterDownload, newLAT.RemoveOverlayLabelOnlyOnPosterDownload))
+			logging.LOGGER.Info().
+				Timestamp().
+				Bool("old_value", oldLAT.RemoveOverlayLabelOnlyOnPosterDownload).
+				Bool("new_value", newLAT.RemoveOverlayLabelOnlyOnPosterDownload).
+				Msg("LabelsAndTags.RemoveOverlayLabelOnlyOnPosterDownload changed")
+			changed = true
+		}
+
 		// Applications diff
 		oldMap := applicationMapLabelsAndTags(oldLAT.Applications)
 		newMap := applicationMapLabelsAndTags(newLAT.Applications)
