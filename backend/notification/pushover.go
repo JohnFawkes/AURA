@@ -32,6 +32,7 @@ func SendPushoverMessage(ctx context.Context, provider *config.Config_Notificati
 		}
 		defer resp.Body.Close()
 		msg.AddAttachment(resp.Body)
+		msg.HTML = true
 	}
 
 	// Send the notification
