@@ -57,6 +57,7 @@ type PlexLibraryItemsMetadata struct {
 	Studio                string            `json:"studio"`
 	Type                  string            `json:"type"` // "movie", "show", "season", "episode"
 	Title                 string            `json:"title"`
+	OriginalTitle         string            `json:"originalTitle"`
 	Guid                  string            `json:"guid"`
 	ContentRating         string            `json:"contentRating"` // "PG-13", "R", etc
 	ContentRatingAge      int               `json:"contentRatingAge"`

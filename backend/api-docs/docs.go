@@ -4639,6 +4639,10 @@ const docTemplate = `{
         "routes_db.addItemRequest": {
             "type": "object",
             "properties": {
+                "add_to_db_only": {
+                    "description": "If true, the item will be added to the database but not have any labels or tags applied. This is for users who want to manage labels and tags manually.",
+                    "type": "boolean"
+                },
                 "complete": {
                     "type": "boolean"
                 },

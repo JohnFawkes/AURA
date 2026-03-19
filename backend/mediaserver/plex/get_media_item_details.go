@@ -134,6 +134,14 @@ func extractMediaItemFromResponse(ctx context.Context, metadata PlexLibraryItems
 		item.ReleasedAt = 0
 	}
 
+	if item.Title == "" {
+		if metadata.OriginalTitle != "" {
+			item.Title = metadata.OriginalTitle
+		} else {
+			item.Title = "<Unknown Title>"
+		}
+	}
+
 	// Depending on the Type, populate Movie or Series info
 	switch item.Type {
 	case "movie":

@@ -74,6 +74,14 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 		item.ContentRating = metadata.ContentRating
 		item.Summary = metadata.Summary
 
+		if item.Title == "" {
+			if metadata.OriginalTitle != "" {
+				item.Title = metadata.OriginalTitle
+			} else {
+				item.Title = "<Unknown Title>"
+			}
+		}
+
 		if t, err := time.Parse("2006-01-02", metadata.OriginallyAvailableAt); err == nil {
 			item.ReleasedAt = t.Unix()
 		} else {
