@@ -14,9 +14,10 @@ import (
 )
 
 type addItemRequest struct {
-	Complete  bool                     `json:"complete"`
-	MediaItem models.MediaItem         `json:"media_item"`
-	PosterSet models.DBPosterSetDetail `json:"poster_set"`
+	Complete    bool                     `json:"complete"`
+	MediaItem   models.MediaItem         `json:"media_item"`
+	PosterSet   models.DBPosterSetDetail `json:"poster_set"`
+	AddToDBOnly bool                     `json:"add_to_db_only"` // If true, the item will be added to the database but not have any labels or tags applied. This is for users who want to manage labels and tags manually.
 }
 
 type addItemResponse struct {
@@ -143,6 +144,12 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 		saveItem.MediaItem.DBSavedSets = dbSets
 		cache.LibraryStore.UpdateMediaItem(saveItem.MediaItem.LibraryTitle, &saveItem.MediaItem)
 	}()
+	response.SavedItem = saveItem
+
+	if req.AddToDBOnly {
+		httpx.SendResponse(w, ld, response)
+		return
+	}
 
 	// Handle any labels and tags asynchronously
 	go func() {
@@ -155,6 +162,5 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 		sonarr_radarr.HandleTags(ctx, saveItem.MediaItem, fullSet.SelectedTypes)
 	}()
 
-	response.SavedItem = saveItem
 	httpx.SendResponse(w, ld, response)
 }

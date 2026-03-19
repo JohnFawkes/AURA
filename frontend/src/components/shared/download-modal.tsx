@@ -98,6 +98,7 @@ type AddToDBTaskPayload = {
   itemTitle: string;
   mediaItem: MediaItem;
   posterSet: DBPosterSetDetail;
+  addToDBOnly: boolean;
 };
 
 type AddToQueueTaskPayload = {
@@ -699,7 +700,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     setCurrentText(`Adding "${payload.itemTitle}" to DB`);
 
     try {
-      const resp = await AddNewItemToDB(payload.mediaItem, payload.posterSet);
+      const resp = await AddNewItemToDB(payload.mediaItem, payload.posterSet, payload.addToDBOnly);
       if (resp.status === "error") {
         throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
       }
@@ -1303,6 +1304,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               itemTitle: item.MediaItem.title,
               mediaItem: createdSavedItem.dbItem.media_item,
               posterSet: createdSavedItem.dbItem.poster_sets[0],
+              addToDBOnly: selectedOptions.addToDBOnly,
             },
           });
 
@@ -1312,6 +1314,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             itemTitle: item.MediaItem.title,
             mediaItem: createdSavedItem.dbItem.media_item,
             posterSet: createdSavedItem.dbItem.poster_sets[0],
+            addToDBOnly: selectedOptions.addToDBOnly,
           });
 
           if (ok && onDownloadComplete) {
@@ -1620,6 +1623,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               itemTitle: item.MediaItem.title,
               mediaItem: createdSavedItem.dbItem.media_item,
               posterSet: createdSavedItem.dbItem.poster_sets[0],
+              addToDBOnly: selectedOptions.addToDBOnly || false,
             },
           });
           continue;
@@ -1637,6 +1641,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             itemTitle: item.MediaItem.title,
             mediaItem: createdSavedItem.dbItem.media_item,
             posterSet: createdSavedItem.dbItem.poster_sets[0],
+            addToDBOnly: selectedOptions.addToDBOnly || false,
           },
         });
 
@@ -1646,6 +1651,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
           itemTitle: item.MediaItem.title,
           mediaItem: createdSavedItem.dbItem.media_item,
           posterSet: createdSavedItem.dbItem.poster_sets[0],
+          addToDBOnly: selectedOptions.addToDBOnly || false,
         });
 
         if (ok && onDownloadComplete) {
