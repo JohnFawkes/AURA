@@ -15,7 +15,7 @@ type SR_ItemInfoBase struct {
 	Genres           []string    `json:"genres,omitempty"`
 	Images           []SR_Image  `json:"images,omitempty"`
 	ImdbID           string      `json:"imdbId,omitempty"`
-	Monitored        bool        `json:"monitored,omitempty"`
+	Monitored        bool        `json:"monitored"`
 	OriginalLanguage SR_Language `json:"originalLanguage"`
 	Overview         string      `json:"overview,omitempty"`
 	Path             string      `json:"path,omitempty"`
@@ -39,7 +39,6 @@ type SR_SonarrItem struct {
 	EpisodesChanged   string                  `json:"episodesChanged,omitempty"`
 	FirstAired        string                  `json:"firstAired,omitempty"`
 	LastAired         string                  `json:"lastAired,omitempty"`
-	Monitored         bool                    `json:"monitored,omitempty"`
 	MonitorNewItems   string                  `json:"monitorNewItems,omitempty"`
 	Network           string                  `json:"network,omitempty"`
 	NextAiring        string                  `json:"nextAiring,omitempty"`
