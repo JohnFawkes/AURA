@@ -93,14 +93,18 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
           <Badge variant="default" className="text-xs">
             {isMediaItem(item) ? item.year : `${item.child_count} items`}
           </Badge>
-          <Badge variant="default" className="text-xs">
-            {item.library_title}
-          </Badge>
+          {item.library_title && (
+            <Badge variant="default" className="text-xs">
+              {item.library_title}
+            </Badge>
+          )}
         </div>
         {/* Title */}
-        <span className="text-center text-md text-foreground font-semibold mt-2 mb-2">
-          {item.title.length > 55 ? `${item.title.slice(0, 55)}...` : item.title}
-        </span>
+        {item.title && (
+          <span className="text-center text-md text-foreground font-semibold mt-2 mb-2">
+            {item.title.length > 55 ? `${item.title.slice(0, 55)}...` : item.title}
+          </span>
+        )}
       </CardContent>
     </Card>
   );
