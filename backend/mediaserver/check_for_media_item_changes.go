@@ -28,7 +28,6 @@ func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 	// If a DB MediaItem is not found in the Cache AND it has Saved Sets, this is an item we want to keep in the DB but we should send a notification about it so the user can investigate
 	// If a DB MediaItem is not found in the Cache AND it is Temp Ignored, this is an item we can remove from the DB
 	for _, dbItem := range dbMediaItems {
-		logging.LOGGER.Trace().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).Str("title", dbItem.Title).Msg("Checking Media Item for changes")
 		cachedItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(dbItem.LibraryTitle, dbItem.TMDB_ID)
 		if !found {
 			mediaItem := models.MediaItem{
@@ -61,6 +60,7 @@ func CheckForMediaItemChanges(ctx context.Context) (Err logging.LogErrorInfo) {
 				moreInfo = "This may indicate that the Media Item was removed or there is an issue with the media server. Please double check if this item exists. If it does exist and you want to keep it as ignored temporarily, please ignore it again."
 				database.DeleteMediaItemAndIgnoredStatus(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle)
 			}
+			logging.LOGGER.Trace().Timestamp().Str("tmdb_id", dbItem.TMDB_ID).Str("library_title", dbItem.LibraryTitle).Str("title", dbItem.Title).Msg("Checking Media Item for changes")
 
 			// Update the Media Item on Server in the DB
 			updateErr := database.UpdateMediaItemOnServer(ctx, dbItem.TMDB_ID, dbItem.LibraryTitle, false)
