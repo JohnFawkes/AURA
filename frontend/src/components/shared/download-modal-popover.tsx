@@ -1,16 +1,14 @@
 import { PopoverHelp } from "@/components/shared/popover-help";
 
 export interface DownloadModalPopoverProps {
-  type: "autodownload" | "future-updated-only" | "add-to-db-only" | "add-to-queue-only";
+  type: "autodownload" | "add-to-db-only" | "add-to-queue-only";
 }
 
 const downloadModalPopoverHelpText = {
   autodownload:
-    "Auto Download will check periodically for new updates to this set. This is helpful if you want to download and apply titlecard updates from future updates to this set.",
-  "future-updated-only":
-    "Future Updates Only will not download anything right now. This is helpful if you have already downloaded the set and just want future updates to be applied.",
+    "Auto Download will check periodically for new updates to this set. This is helpful if you want updates to this set to be downloaded automatically without having to manually check for updates. Auto Download runs based on the cron schedule you have set up in your settings. If you have not set up a cron schedule, Auto Download will not work.",
   "add-to-db-only":
-    "Add to Database Only will not download anything. It will only add the set to your database. This is helpful for movies that you have already processed and just want to add the set to your database.",
+    "Add to Database Only will not download anything right now. It will only add the set to your database. This is helpful for sets/images that you have already processed and just want to add the set to your database.",
   "add-to-queue-only":
     "Add to Queue will add the set to the download queue. This is helpful if you want to quickly add sets without waiting for downloads to finish. Downloads in the queue will be processed the same way as normal downloads. Download queue runs every 1 minute.",
 };
