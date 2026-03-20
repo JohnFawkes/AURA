@@ -709,6 +709,7 @@ const SavedSetsPage: React.FC = () => {
                       }
                     }}
                     aria-label="Select All Saved Sets"
+                    className="cursor-pointer border-1 border-primary"
                   />
                 )}
               </TableHead>

@@ -40,6 +40,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TableCell, TableRow } from "@/components/ui/table";
 
+import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
 import type { APIResponse } from "@/types/api/api-response";
@@ -116,7 +117,17 @@ const SavedSetsTableRow: React.FC<{
 
   return (
     <>
-      <TableRow key={savedSet.media_item.tmdb_id}>
+      <TableRow
+        className={cn(
+          "group hover:bg-muted/50 cursor-pointer relative",
+          bulkEditMode && "cursor-default",
+          isRefreshing && "cursor-wait",
+          bulkEditSelectedItems.has(
+            `${normalizedSavedSet.media_item.tmdb_id}|||${normalizedSavedSet.media_item.library_title}`
+          ) && "border-2 border-primary"
+        )}
+        key={savedSet.media_item.tmdb_id}
+      >
         <TableCell>
           {bulkEditMode && (
             <Checkbox
@@ -135,7 +146,7 @@ const SavedSetsTableRow: React.FC<{
                   return newSet;
                 });
               }}
-              className="mr-2"
+              className="cursor-pointer border-1 border-primary mr-2"
               aria-label={`Select ${savedSet.media_item.title} for bulk edit`}
             />
           )}

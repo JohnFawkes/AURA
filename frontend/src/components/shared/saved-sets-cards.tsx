@@ -33,6 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { H4 } from "@/components/ui/typography";
 
+import { cn } from "@/lib/cn";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 
 import type { APIResponse } from "@/types/api/api-response";
@@ -126,7 +127,14 @@ const SavedSetsCard: React.FC<{
   }, [posterSets]);
 
   return (
-    <Card className="relative w-full max-w-md mx-auto">
+    <Card
+      className={cn(
+        "relative w-full max-w-md mx-auto",
+        bulkEditSelectedItems.has(
+          `${normalizedSavedSet.media_item.tmdb_id}|||${normalizedSavedSet.media_item.library_title}`
+        ) && "border-2 border-primary"
+      )}
+    >
       <CardHeader>
         {isRefreshing && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
@@ -181,6 +189,7 @@ const SavedSetsCard: React.FC<{
         {bulkEditMode && (
           <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
             <Checkbox
+              className="cursor-pointer border-1 border-primary"
               checked={bulkEditSelectedItems.has(
                 `${normalizedSavedSet.media_item.tmdb_id}|||${normalizedSavedSet.media_item.library_title}`
               )}
