@@ -819,7 +819,26 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     );
     const isDownloadedInAnotherSet = Boolean(downloadedSetForType);
 
-    const numberOfAssetType = selectedSizes[assetType];
+    const itemTmdbId = item.MediaItem.tmdb_id;
+    const itemImages = item.Set.images.filter((img) => {
+      if (typeof img.item_tmdb_id !== "string" || !img.item_tmdb_id.trim()) return true;
+      return typeof itemTmdbId === "string" && img.item_tmdb_id === itemTmdbId;
+    });
+
+    const numberOfAssetType = (() => {
+      switch (assetType) {
+        case "poster":
+          return itemImages.filter((img) => img.type === "poster").length;
+        case "backdrop":
+          return itemImages.filter((img) => img.type === "backdrop").length;
+        case "season_poster":
+          return itemImages.filter((img) => img.type === "season_poster" && img.season_number !== 0).length;
+        case "special_season_poster":
+          return itemImages.filter((img) => img.type === "season_poster" && img.season_number === 0).length;
+        case "titlecard":
+          return itemImages.filter((img) => img.type === "titlecard").length;
+      }
+    })();
 
     return (
       <FormItem key={`${field.name}-${assetType}`} className="flex flex-row items-start space-x-2">
