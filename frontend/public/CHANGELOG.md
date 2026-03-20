@@ -3,14 +3,14 @@
 ### Added
 
 - Added support for Auto Download for movies.
-- Added support for downloading future movies that are added to a collection.
+- [#131](https://github.com/mediux-team/AURA/issues/131) Added support for downloading future movies that are added to a collection.
 - Added fallback to "Original Title" for Plex items when Title is empty.
-- Added support for future image types per set. This allows you to select any image type to be automatically downloaded if they are ever added to a set.
+- [#130](https://github.com/mediux-team/AURA/issues/130) Added support for future image types per set. This allows you to select any image type to be automatically downloaded if they are ever added to a set.
 
 ### Fixed
 
-- Fixed issue where "Future Updates Only" was still applying Labels/Tags for items that were added to the database.
-- Fixed issue where if Title is blank, it would cause issues with displaying the media item in the UI.
+- [#136](https://github.com/mediux-team/AURA/issues/136) Fixed issue where "Future Updates Only" was still applying Labels/Tags for items that were added to the database.
+- [#135](https://github.com/mediux-team/AURA/issues/135) Fixed issue where if Title is blank, it would cause issues with displaying the media item in the UI.
 - Fixed issue where Sonarr/Radarr items would switch to monitored when they were updated from the Sonarr/Radarr Apply Tags feature.
 - Fixed issue where image count was showing up as multiple even though there was only one image in the set for that item.
 
@@ -55,7 +55,7 @@
 
 ### Added
 
-- Added option to remove "Overlay" label from Plex media items only when a poster image is downloaded. This allows Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and can only be used if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
+- [#133](https://github.com/mediux-team/AURA/issues/133) Added option to remove "Overlay" label from Plex media items only when a poster image is downloaded. This allows Kometa to reprocess the image and apply the overlays. This is a Plex exclusive feature and can only be used if you have "Overlay" in your "Remove" list for the Plex application under "LabelsAndTags".
 
 ### Fixed
 
