@@ -1,3 +1,25 @@
+## [0.9.95] - 2026-03-20
+
+### Added
+
+- Added support for Auto Download for movies.
+- Added support for downloading future movies that are added to a collection.
+- Added fallback to "Original Title" for Plex items when Title is empty.
+- Added support for future image types per set. This allows you to select any image type to be automatically downloaded if they are ever added to a set.
+
+### Fixed
+
+- Fixed issue where "Future Updates Only" was still applying Labels/Tags for items that were added to the database.
+- Fixed issue where if Title is blank, it would cause issues with displaying the media item in the UI.
+- Fixed issue where Sonarr/Radarr items would switch to monitored when they were updated from the Sonarr/Radarr Apply Tags feature.
+- Fixed issue where image count was showing up as multiple even though there was only one image in the set for that item.
+
+### UI Tweaks
+
+- Made the Saved Sets page bulk edit mode more visually distinct by adding a border to selected items and changing the cursor to default when hovering over non-selected items.
+
+---
+
 ## [0.9.94] - 2026-03-18
 
 ### Added
