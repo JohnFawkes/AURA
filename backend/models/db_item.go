@@ -12,10 +12,11 @@ type DBSavedItem struct {
 // PosterSetDetail groups poster set details per media item.
 type DBPosterSetDetail struct {
 	PosterSet
-	LastDownloaded time.Time     `json:"last_downloaded"`
-	SelectedTypes  SelectedTypes `json:"selected_types"`
-	AutoDownload   bool          `json:"auto_download"`
-	ToDelete       bool          `json:"to_delete"` // Flag to indicate if the poster set should be deleted (Not used in DB)
+	LastDownloaded            time.Time     `json:"last_downloaded"`
+	SelectedTypes             SelectedTypes `json:"selected_types"`
+	AutoDownload              bool          `json:"auto_download"`
+	AutoAddNewCollectionItems bool          `json:"auto_add_new_collection_items"`
+	ToDelete                  bool          `json:"to_delete"` // Flag to indicate if the poster set should be deleted (Not used in DB)
 }
 
 type PosterSet struct {

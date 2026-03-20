@@ -49,6 +49,7 @@ CREATE TABLE MediaItems (
 	type TEXT NOT NULL CHECK (type IN ('movie','show')),
 	title TEXT NOT NULL,
 	year INTEGER NOT NULL,
+	on_server INTEGER NOT NULL DEFAULT 0 CHECK (on_server IN (0,1)),
 	UNIQUE (tmdb_id, library_title)
 );
 	`
@@ -271,6 +272,7 @@ CREATE TABLE SavedItems (
     titlecard_selected INTEGER NOT NULL DEFAULT 0 CHECK (titlecard_selected IN (0,1)),
 
     autodownload INTEGER NOT NULL DEFAULT 0 CHECK (autodownload IN (0,1)),
+	auto_add_new_collection_items INTEGER NOT NULL DEFAULT 0 CHECK (auto_add_new_collection_items IN (0,1)),
     last_downloaded DATETIME NOT NULL,
 
     PRIMARY KEY (tmdb_id, library_title, poster_set_id),

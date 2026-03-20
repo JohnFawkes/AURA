@@ -299,6 +299,7 @@ export const savedSetsConfirmEdit = async ({
       last_downloaded: new Date().toISOString(),
       selected_types: editSet.selected_types,
       auto_download: editSet.auto_download,
+      auto_add_new_collection_items: editSet.auto_add_new_collection_items,
       to_delete: editSet.to_delete,
     })),
   };

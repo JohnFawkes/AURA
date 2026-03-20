@@ -256,13 +256,14 @@ func upsertMediaItem(ctx context.Context, tx *sql.Tx, mediaItem models.MediaItem
 	defer logAction.Complete()
 
 	q := `
-INSERT INTO MediaItems (tmdb_id, library_title, rating_key, type, title, year)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO MediaItems (tmdb_id, library_title, rating_key, type, title, year, on_server)
+VALUES (?, ?, ?, ?, ?, ?, 1)
 ON CONFLICT(tmdb_id, library_title) DO UPDATE SET
   rating_key = excluded.rating_key,
   type       = excluded.type,
   title      = excluded.title,
-  year       = excluded.year
+  year       = excluded.year,
+  on_server  = 1
 RETURNING id;
 `
 	err := tx.QueryRowContext(ctx, q,
@@ -497,9 +498,9 @@ func upsertSavedItemEntry(ctx context.Context, tx *sql.Tx, mediaItem models.Medi
 INSERT INTO SavedItems (
   tmdb_id, library_title, poster_set_id,
   poster_selected, backdrop_selected, season_poster_selected, special_season_poster_selected, titlecard_selected,
-  autodownload, last_downloaded
+	autodownload, auto_add_new_collection_items, last_downloaded
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(tmdb_id, library_title, poster_set_id) DO UPDATE SET
   poster_selected               = excluded.poster_selected,
   backdrop_selected             = excluded.backdrop_selected,
@@ -507,6 +508,7 @@ ON CONFLICT(tmdb_id, library_title, poster_set_id) DO UPDATE SET
   special_season_poster_selected= excluded.special_season_poster_selected,
   titlecard_selected            = excluded.titlecard_selected,
   autodownload                  = excluded.autodownload,
+	auto_add_new_collection_items = excluded.auto_add_new_collection_items,
   last_downloaded               = excluded.last_downloaded;
 `
 	_, err := tx.ExecContext(ctx, q,
@@ -519,6 +521,7 @@ ON CONFLICT(tmdb_id, library_title, poster_set_id) DO UPDATE SET
 		boolToInt(ps.SelectedTypes.SpecialSeasonPoster),
 		boolToInt(ps.SelectedTypes.Titlecard),
 		boolToInt(ps.AutoDownload),
+		boolToInt(ps.AutoAddNewCollectionItems),
 		ps.LastDownloaded,
 	)
 	if err != nil {

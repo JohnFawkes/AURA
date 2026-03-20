@@ -13,6 +13,7 @@ export interface AddNewItemToDB_Request {
   media_item: MediaItem;
   poster_set: DBPosterSetDetail;
   add_to_db_only: boolean;
+  auto_add_new_collection_items: boolean;
 }
 
 export interface AddNewItemToDB_Response {
@@ -22,7 +23,8 @@ export interface AddNewItemToDB_Response {
 export const AddNewItemToDB = async (
   mediaItem: MediaItem,
   posterSet: DBPosterSetDetail,
-  addToDBOnly = false
+  addToDBOnly = false,
+  auto_add_new_collection_items = false
 ): Promise<APIResponse<AddNewItemToDB_Response>> => {
   let complete = true;
   const media_data_size = JSON.stringify(mediaItem).length / 1024 / 1024;
@@ -46,6 +48,7 @@ export const AddNewItemToDB = async (
       media_data_size_mb: media_data_size,
       poster_set_data_size_mb: poster_set_data_size,
       add_to_db_only: addToDBOnly,
+      auto_add_new_collection_items: auto_add_new_collection_items,
     }
   );
   try {
@@ -54,6 +57,7 @@ export const AddNewItemToDB = async (
       poster_set: posterSet,
       complete: complete,
       add_to_db_only: addToDBOnly,
+      auto_add_new_collection_items: auto_add_new_collection_items,
     };
     const response = await apiClient.post<APIResponse<AddNewItemToDB_Response>>(`/db`, req);
     if (response.data.status === "error") {

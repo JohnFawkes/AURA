@@ -1115,6 +1115,8 @@ definitions:
           any labels or tags applied. This is for users who want to manage labels
           and tags manually.
         type: boolean
+      auto_add_new_collection_items:
+        type: boolean
       complete:
         type: boolean
       media_item:

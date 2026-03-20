@@ -289,6 +289,9 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
   // State - Add to Queue Only
   const [addToQueueOnly, setAddToQueueOnly] = useState(false);
 
+  // State - Add New Collection Items
+  const [autoAddNewCollectionItems, setAutoAddNewCollectionItems] = useState(false);
+
   // User Preferences
   const { downloadDefaults } = useUserPreferencesStore();
 
@@ -700,7 +703,12 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     setCurrentText(`Adding "${payload.itemTitle}" to DB`);
 
     try {
-      const resp = await AddNewItemToDB(payload.mediaItem, payload.posterSet, payload.addToDBOnly);
+      const resp = await AddNewItemToDB(
+        payload.mediaItem,
+        payload.posterSet,
+        payload.addToDBOnly,
+        autoAddNewCollectionItems
+      );
       if (resp.status === "error") {
         throw new Error(resp.error?.message || (typeof resp.error === "string" ? resp.error : "Unknown error"));
       }
@@ -1123,6 +1131,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               titlecard: options.types?.includes("titlecard") || false,
             },
             auto_download: options.autodownload || false,
+            auto_add_new_collection_items: autoAddNewCollectionItems,
             last_downloaded: "",
             to_delete: false,
           },
@@ -1220,6 +1229,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
       log("INFO", "Download Modal", "Debug Info", "Progress:", progress);
       log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
       log("INFO", "Download Modal", "Debug Info", "Add to Queue Only:", addToQueueOnly);
+      log("INFO", "Download Modal", "Debug Info", "Auto Add New Collection Items:", autoAddNewCollectionItems);
 
       // Sort formItems by MediaItemTitle for consistent order
       const sortedFormItems = formItems;
@@ -1756,6 +1766,30 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                     No image types selected for download. Please select at least one image type to download.
                   </div>
                 )}
+
+                {/* Auto Add New Collection Items 
+									Only show this button if the set is a collection and all of the items are movies that have Autodownload enabled and not set to Add to DB Only
+								*/}
+                {baseSetInfo.type === "collection" &&
+                  formItems.every(
+                    (item) =>
+                      item.MediaItem.type === "movie" &&
+                      watchSelectedOptions?.[item.MediaItem.rating_key]?.autodownload &&
+                      !watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly
+                  ) && (
+                    <FormItem className="flex items-center space-x-2 mb-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={autoAddNewCollectionItems}
+                          onCheckedChange={(checked) => setAutoAddNewCollectionItems(checked ? true : false)}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-md font-normal cursor-pointer">
+                        Auto Add New Collection Items
+                      </FormLabel>
+                      <DownloadModalPopover type="auto-add-new-collection-items" />
+                    </FormItem>
+                  )}
 
                 {/* Add to Queue 
 									Only show this button if at least one item has types selected for download and not set to Add to DB Only

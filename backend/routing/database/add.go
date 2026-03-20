@@ -18,6 +18,7 @@ type addItemRequest struct {
 	MediaItem   models.MediaItem         `json:"media_item"`
 	PosterSet   models.DBPosterSetDetail `json:"poster_set"`
 	AddToDBOnly bool                     `json:"add_to_db_only"` // If true, the item will be added to the database but not have any labels or tags applied. This is for users who want to manage labels and tags manually.
+	AutoAddNewCollectionItems bool       `json:"auto_add_new_collection_items"`
 }
 
 type addItemResponse struct {
@@ -77,6 +78,7 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 	// In the frontend, we omit MediaItem details (besides important fields)
 	// and ImageFiles in PosterSets to reduce payload size
 	fullSet := req.PosterSet
+	fullSet.AutoAddNewCollectionItems = req.AutoAddNewCollectionItems
 	if !req.Complete {
 		// Get the MediaItem details from the Media Server
 		found, Err := mediaserver.GetMediaItemDetails(ctx, &req.MediaItem)

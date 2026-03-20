@@ -15,6 +15,7 @@ export interface DBPosterSetDetail extends PosterSet {
   last_downloaded: string;
   selected_types: SelectedTypes;
   auto_download: boolean;
+  auto_add_new_collection_items: boolean;
   to_delete: boolean; // Flag to indicate if the poster set should be deleted (Not used in DB)
 }
 

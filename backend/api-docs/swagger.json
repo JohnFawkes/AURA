@@ -4638,6 +4638,9 @@
                     "description": "If true, the item will be added to the database but not have any labels or tags applied. This is for users who want to manage labels and tags manually.",
                     "type": "boolean"
                 },
+                "auto_add_new_collection_items": {
+                    "type": "boolean"
+                },
                 "complete": {
                     "type": "boolean"
                 },
