@@ -150,10 +150,18 @@ func handleMovie(ctx context.Context, mediaItem models.MediaItem, dbItem models.
 		// Sort the images by type
 		sortImagesSliceByType(mediuxSet.Images)
 
+		possibleImages := []models.ImageFile{}
+		for _, image := range mediuxSet.Images {
+			if image.ItemTMDB_ID != mediaItem.TMDB_ID {
+				continue
+			}
+			possibleImages = append(possibleImages, image)
+		}
+
 		imagesToRedownload := []ImageFileWithReason{}
 		_, actionImageChecks := logging.AddSubActionToContext(ctx, "Checking images in set", logging.LevelTrace)
 		// Now we loop through all the images in the latest set details and do our checks
-		for _, image := range mediuxSet.Images {
+		for _, image := range possibleImages {
 			imageName := utils.GetFileDownloadName(mediaItem.Title, image)
 			check := ImageCheckResult{
 				Type:    image.Type,
@@ -244,6 +252,9 @@ func handleMovie(ctx context.Context, mediaItem models.MediaItem, dbItem models.
 			}
 		}
 		imageRedownloadsAction.Complete()
+
+		// We remove the images that are for other items in the set and then update the set in the database with the new image info and download date so that it is up to date for the next check
+		mediuxSet.PosterSet.Images = possibleImages
 
 		// Reinsert the set into the DB item with the updated image info and download date so that it is up to date for the next check
 		Err = insertRedownloadedSetIntoDB(ctx, mediaItem, mediuxSet.PosterSet, dbItem, dbSet)
