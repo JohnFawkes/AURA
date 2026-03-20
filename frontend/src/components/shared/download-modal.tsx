@@ -342,7 +342,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     const setHasBackdrop = item.Set.images.some((img) => img.type === "backdrop");
     const setHasSeasonPosters = item.Set.images.some((img) => img.type === "season_poster" && img.season_number !== 0);
     const setHasSpecialSeasonPosters = item.Set.images.some(
-      (img) => img.type === "special_season_poster" && img.season_number === 0
+      (img) => img.type === "season_poster" && img.season_number === 0
     );
     const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
     const types: (TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS | null)[] = [
@@ -354,6 +354,16 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     ];
 
     return types.filter((type): type is TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS => type !== null);
+  };
+
+  const getPossibleFutureAssetTypes = (item: FormItemDisplay): TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[] => {
+    const supportedTypes: TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS[] =
+      item.Set.type === "show"
+        ? ["poster", "backdrop", "season_poster", "special_season_poster", "titlecard"]
+        : ["poster", "backdrop"];
+
+    const existingTypes = new Set(computeAssetTypes(item));
+    return supportedTypes.filter((type) => !existingTypes.has(type));
   };
 
   // Define Form
@@ -917,6 +927,8 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
 
   const renderFormItem = (item: FormItemDisplay) => {
     const isDuplicate = duplicates[item.MediaItem.rating_key];
+    const existingAssetTypes = computeAssetTypes(item);
+    const possibleFutureAssetTypes = getPossibleFutureAssetTypes(item);
     // Calculate disabled state
     const isDisabled = Boolean(isDuplicate && isDuplicate.selectedType && isDuplicate.selectedType !== item.Set.type);
 
@@ -1039,7 +1051,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
             </FormLabel>
 
             <div className="space-y-2">
-              {computeAssetTypes(item).map((assetType) => (
+              {existingAssetTypes.map((assetType) => (
                 <div key={assetType}>
                   {renderFormItemAssetType(
                     field as ControllerRenderProps<
@@ -1053,6 +1065,32 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                   )}
                 </div>
               ))}
+
+              {possibleFutureAssetTypes.length > 0 && (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
+                      Possible Future Types
+                    </FormLabel>
+                    <DownloadModalPopover type="possible-future-types" />
+                  </div>
+                  {possibleFutureAssetTypes.map((assetType) => (
+                    <div key={`future-${assetType}`}>
+                      {renderFormItemAssetType(
+                        field as ControllerRenderProps<
+                          {
+                            selectedOptionsByItem: Record<string, AssetTypeFormValues>;
+                          },
+                          `selectedOptionsByItem.${string}`
+                        >,
+                        assetType,
+                        item
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
               <FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
                 Download Options
               </FormLabel>
@@ -1555,6 +1593,49 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         }
 
         const totalForItem = downloadJobs.length;
+
+        // No matching images in this set for selected types (e.g. future types).
+        // Still persist selected types to the DB so they can be auto-downloaded later.
+        if (totalForItem === 0) {
+          const addId = newId();
+          addTask(item.MediaItem.rating_key, item.MediaItem.title, {
+            id: addId,
+            status: "pending",
+            label: `Add "${item.MediaItem.title}" to DB`,
+            attempts: 0,
+            payload: {
+              kind: "addToDB",
+              itemKey: item.MediaItem.rating_key,
+              itemTitle: item.MediaItem.title,
+              mediaItem: createdSavedItem.dbItem.media_item,
+              posterSet: createdSavedItem.dbItem.poster_sets[0],
+              addToDBOnly: selectedOptions.addToDBOnly || false,
+            },
+          });
+
+          const ok = await runAddToDBTask(addId, {
+            kind: "addToDB",
+            itemKey: item.MediaItem.rating_key,
+            itemTitle: item.MediaItem.title,
+            mediaItem: createdSavedItem.dbItem.media_item,
+            posterSet: createdSavedItem.dbItem.poster_sets[0],
+            addToDBOnly: selectedOptions.addToDBOnly || false,
+          });
+
+          if (ok && onDownloadComplete) {
+            onDownloadComplete(
+              upsertSavedSets(latestMediaItem, item.Set.id, item.Set.user_created, {
+                poster: selectedOptions.types.includes("poster"),
+                backdrop: selectedOptions.types.includes("backdrop"),
+                season_poster: selectedOptions.types.includes("season_poster"),
+                special_season_poster: selectedOptions.types.includes("special_season_poster"),
+                titlecard: selectedOptions.types.includes("titlecard"),
+              })
+            );
+          }
+          continue;
+        }
+
         if (totalForItem > 0) {
           setCurrentText(`Downloading images for "${item.MediaItem.title}" (0/${totalForItem})`);
         }

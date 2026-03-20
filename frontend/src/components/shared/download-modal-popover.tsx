@@ -1,7 +1,12 @@
 import { PopoverHelp } from "@/components/shared/popover-help";
 
 export interface DownloadModalPopoverProps {
-  type: "autodownload" | "add-to-db-only" | "add-to-queue-only" | "auto-add-new-collection-items";
+  type:
+    | "autodownload"
+    | "add-to-db-only"
+    | "add-to-queue-only"
+    | "auto-add-new-collection-items"
+    | "possible-future-types";
 }
 
 const downloadModalPopoverHelpText = {
@@ -13,6 +18,8 @@ const downloadModalPopoverHelpText = {
     "Add to Queue will add the set to the download queue. This is helpful if you want to quickly add sets without waiting for downloads to finish. Downloads in the queue will be processed the same way as normal downloads. Download queue runs every 1 minute.",
   "auto-add-new-collection-items":
     "Auto Add New Collection Items will check periodically for new items added to this collection and automatically download the images for them",
+  "possible-future-types":
+    "These image types are not currently available in this set. Selecting them saves the type in your database for this set, so future auto-download checks can download them when they are added.",
 };
 
 const DownloadModalPopover: React.FC<DownloadModalPopoverProps> = ({ type }) => {
