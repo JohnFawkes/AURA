@@ -1,8 +1,6 @@
 package autodownload
 
 import (
-	"aura/cache"
-	"aura/database"
 	"aura/logging"
 	"aura/mediaserver"
 	"aura/mediux"
@@ -11,12 +9,10 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
-	"sort"
 	"strings"
-	"time"
 )
 
-func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDownloadResult) {
+func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.DBSavedItem) (result AutoDownloadResult) {
 	result = AutoDownloadResult{}
 	result.Item = utils.MediaItemInfo(dbItem.MediaItem)
 
@@ -35,51 +31,6 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 			}
 		}
 	}()
-
-	// Get the base Show Media Item from the cache
-	_, actionGetFromCache := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting %s Item from cache", utils.MediaItemInfo(dbItem.MediaItem)), logging.LevelTrace)
-	mediaItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(dbItem.MediaItem.LibraryTitle, dbItem.MediaItem.TMDB_ID)
-	if !found || mediaItem == nil {
-		result.OverallResult = "error"
-		result.OverallMessage = "Media Item not found in cache"
-		actionGetFromCache.SetError("Media Item not found in cache", "Try refreshing the cache if this issue persists", nil)
-		return result
-	}
-	actionGetFromCache.Complete()
-
-	// Get the latest Show Media Item from the media server
-	found, Err := mediaserver.GetMediaItemDetails(ctx, mediaItem)
-	if Err.Message != "" {
-		result.OverallResult = "error"
-		result.OverallMessage = "Failed to get latest Media Item details from media server"
-		return result
-	}
-	if !found {
-		result.OverallResult = "error"
-		result.OverallMessage = "Media Item not found on media server"
-		return result
-	}
-
-	// If there are no Poster Sets in the database for this item, we will skip the check process as there is no existing data to compare against, and just return the result
-	if len(dbItem.PosterSets) == 0 {
-		result.OverallResult = "skipped"
-		result.OverallMessage = "No sets in this item, try deleting and re-adding if this is an error"
-		return result
-	}
-
-	// If none of the Poster Sets are set to be auto-downloaded, we will skip the check process as there is no need to check for updates if we are not going to download anything, and just return the result
-	autoDownloadSetExists := false
-	for _, s := range dbItem.PosterSets {
-		if s.AutoDownload {
-			autoDownloadSetExists = true
-			break
-		}
-	}
-	if !autoDownloadSetExists {
-		result.OverallResult = "skipped"
-		result.OverallMessage = "No sets in this item are set to auto-download, try updating the item if this is an error"
-		return result
-	}
 
 	// Indicators that something has changed with the media item
 	// If any of these are true, we will redownload the selected types for each set
@@ -176,16 +127,16 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 
 	actionCheckChanges.AppendResult("changes", changes)
 	actionCheckChanges.AppendResult("changes_summary", map[string]any{
-		"rating_key_changed":     changes.RatingKeyChanged,
-		"path_changed":           changes.PathChanged,
+		"changed_rating_key":     changes.RatingKeyChanged,
+		"changed_path":           changes.PathChanged,
 		"added_seasons_count":    len(changes.AddedSeasons),
 		"added_episodes_count":   len(changes.AddedEpisodes),
 		"changed_episodes_count": len(changes.ChangedEpisodes),
 	})
 	actionCheckChanges.Complete()
 	logging.Dev().Timestamp().
-		Bool("rating_key_changed", changes.RatingKeyChanged).
-		Bool("path_changed", changes.PathChanged).
+		Bool("changed_rating_key", changes.RatingKeyChanged).
+		Bool("changed_path", changes.PathChanged).
 		Int("added_seasons_count", len(changes.AddedSeasons)).
 		Int("added_episodes_count", len(changes.AddedEpisodes)).
 		Int("changed_episodes_count", len(changes.ChangedEpisodes)).
@@ -200,7 +151,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 		// If the set is not set to auto-download, then we skip it
 		if !dbSet.AutoDownload {
 			setResult.Result = "skipped"
-			setResult.Reason = "Set is not set to auto-download, skipped"
+			setResult.Reason = "Set is not set to auto-download, skipping check for this set"
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
@@ -208,7 +159,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 		// If no types are selected, then we skip
 		if !dbSet.SelectedTypes.Poster && !dbSet.SelectedTypes.Backdrop && !dbSet.SelectedTypes.SeasonPoster && !dbSet.SelectedTypes.SpecialSeasonPoster && !dbSet.SelectedTypes.Titlecard {
 			setResult.Result = "skipped"
-			setResult.Reason = "No types selected for this set"
+			setResult.Reason = "No image types selected for this set, skipping check for this set"
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
@@ -218,6 +169,14 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 		if Err.Message != "" {
 			setResult.Result = "error"
 			setResult.Reason = "Failed to get latest set details from MediUX"
+			result.Sets = append(result.Sets, setResult)
+			continue
+		}
+
+		// If the Set IDs don't match, we have a problem and we skip this set
+		if mediuxSet.ID != dbSet.ID {
+			setResult.Result = "error"
+			setResult.Reason = fmt.Sprintf("Set ID mismatch between database and MediUX for set '%s'", dbSet.ID)
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
@@ -260,62 +219,17 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 			changedEpisodeSet[episodeKey(ep.SeasonNumber, ep.EpisodeNumber)] = struct{}{}
 		}
 
+		// Create a map of the old images for easy lookup when checking if we need to redownload an image
 		oldImageByKey := make(map[string]models.ImageFile, len(dbSet.Images))
 		for _, oldImage := range dbSet.Images {
 			key := oldImage.Type + "|" + oldImage.ID
 			oldImageByKey[key] = oldImage
 		}
 
+		// Sort the images by type
+		sortImagesSliceByType(mediuxSet.Images)
+
 		_, actionImageChecks := logging.AddSubActionToContext(ctx, "Checking images in set", logging.LevelTrace)
-		sort.SliceStable(mediuxSet.Images, func(i, j int) bool {
-			a := mediuxSet.Images[i]
-			b := mediuxSet.Images[j]
-
-			typeRank := func(t string) int {
-				switch t {
-				case "poster":
-					return 0
-				case "backdrop":
-					return 1
-				case "season_poster":
-					return 2
-				case "titlecard":
-					return 3
-				default:
-					return 4
-				}
-			}
-
-			ar, br := typeRank(a.Type), typeRank(b.Type)
-			if ar != br {
-				return ar < br
-			}
-
-			seasonNum := func(img models.ImageFile) int {
-				if img.SeasonNumber == nil {
-					return -1
-				}
-				return *img.SeasonNumber
-			}
-
-			// For season posters/titlecards, sort by season number
-			if a.Type == "season_poster" || a.Type == "titlecard" {
-				as, bs := seasonNum(a), seasonNum(b)
-				if as != bs {
-					return as < bs
-				}
-			}
-
-			// Optional: keep titlecards ordered within season
-			if a.Type == "titlecard" && b.Type == "titlecard" &&
-				a.EpisodeNumber != nil && b.EpisodeNumber != nil &&
-				*a.EpisodeNumber != *b.EpisodeNumber {
-				return *a.EpisodeNumber < *b.EpisodeNumber
-			}
-
-			// Stable fallback
-			return a.ID < b.ID
-		})
 		// Now we loop through all the images in the latest set details and do our checks
 		for _, image := range mediuxSet.Images {
 			imageName := utils.GetFileDownloadName(mediaItem.Title, image)
@@ -461,7 +375,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 
 		if len(imagesToRedownload) == 0 {
 			setResult.Result = "skipped"
-			setResult.Reason = "No changes detected for any images in this set, skipping download"
+			setResult.Reason = "No changes detected that require redownloading images"
 			result.Sets = append(result.Sets, setResult)
 			continue
 		}
@@ -478,7 +392,7 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 			imageRedownloadResult["image_type"] = image.Type
 			imageRedownloadResult["redownload_reason"] = image.Reason
 			Err.Message = ""
-			Err := mediaserver.DownloadApplyImageToMediaItem(ctx, mediaItem, image.ImageFile)
+			Err := mediaserver.DownloadApplyImageToMediaItem(ctx, &mediaItem, image.ImageFile)
 			if Err.Message != "" {
 				imageRedownloadResult["redownload_result"] = "error"
 				imageRedownloadResult["redownload_error"] = Err.Message
@@ -486,172 +400,48 @@ func handleShow(ctx context.Context, dbItem models.DBSavedItem) (result AutoDown
 				setResult.Result = "error"
 				setResult.Reason = fmt.Sprintf("Failed to redownload image %s: %s", utils.GetFileDownloadName(mediaItem.Title, image.ImageFile), Err.Message)
 				result.Sets = append(result.Sets, setResult)
-				logging.LOGGER.Error().Timestamp().Str("item", utils.MediaItemInfo(*mediaItem)).Str("set_id", dbSet.ID).Str("image", utils.GetFileDownloadName(mediaItem.Title, image.ImageFile)).Str("error", Err.Message).Msg("Failed to redownload image for AutoDownload Check")
+				logging.LOGGER.Error().Timestamp().Str("item", utils.MediaItemInfo(mediaItem)).Str("set_id", dbSet.ID).Str("image", utils.GetFileDownloadName(mediaItem.Title, image.ImageFile)).Str("error", Err.Message).Msg("Failed to redownload image for AutoDownload Check")
 				continue
 			} else {
 				// Send a notification to all configured notification services
 				// We do this asynchronously and don't wait for the result
 				go func(image ImageFileWithReason) {
-					sendFileDownloadNotification(*mediaItem, dbSet, image)
+					sendFileDownloadNotification(mediaItem, dbSet, image)
 				}(image)
 			}
 		}
 		imageRedownloadsAction.Complete()
-		dbItem.MediaItem = *mediaItem
-		newSetInfo := models.DBPosterSetDetail{
-			PosterSet: models.PosterSet{
-				BaseSetInfo: models.BaseSetInfo{
-					ID:               dbSet.ID,
-					Type:             dbSet.Type,
-					Title:            dbSet.Title,
-					UserCreated:      dbSet.UserCreated,
-					DateCreated:      dbSet.DateCreated,
-					DateUpdated:      dbSet.DateUpdated,
-					Popularity:       dbSet.Popularity,
-					PopularityGlobal: dbSet.PopularityGlobal,
-				},
-				Images: mediuxSet.Images,
-			},
-			LastDownloaded: time.Now(),
-			SelectedTypes:  dbSet.SelectedTypes,
-			AutoDownload:   dbSet.AutoDownload,
-			ToDelete:       false,
-		}
-		found, dbItem.PosterSets = utils.UpdatePosterSetInDBItem(dbItem.PosterSets, newSetInfo)
-		if !found {
-			logging.LOGGER.Error().Timestamp().Str("item", utils.MediaItemInfo(*mediaItem)).Str("set_id", dbSet.ID).Msg("Failed to update set info in DB item after redownloading images for AutoDownload Check, set not found in DB item")
-		} else {
-			// Update the set info in the database for this item
-			Err = database.UpsertSavedItem(ctx, dbItem)
-			if Err.Message != "" {
-				setResult.Result = "error"
-				setResult.Reason = fmt.Sprintf("Error updating database for '%s' in set '%s' - %s", utils.MediaItemInfo(dbItem.MediaItem), dbSet.ID, Err.Message)
-				result.Sets = append(result.Sets, setResult)
-				logging.LOGGER.Error().Timestamp().Str("item", utils.MediaItemInfo(*mediaItem)).Str("set_id", dbSet.ID).Str("error", Err.Message).Msg("Failed to update DB item after redownloading images for AutoDownload Check")
-				continue
-			}
-		}
+
+		// Reinsert the set into the DB item with the updated image info and download date so that it is up to date for the next check
+		Err = insertRedownloadedSetIntoDB(ctx, mediaItem, mediuxSet.PosterSet, dbItem, dbSet)
 
 		setResult.Result = "success"
 		setResult.Reason = fmt.Sprintf("%d images need to be redownloaded", len(imagesToRedownload))
 		result.Sets = append(result.Sets, setResult)
 	}
 
-	if len(result.Sets) == 0 {
-		result.OverallResult = "skipped"
-		result.OverallMessage = "No sets in this item, try deleting and re-adding if this is an error"
-	} else {
-		errorCount := 0
-		warningCount := 0
-		successCount := 0
-		skippedCount := 0
-		for _, setResult := range result.Sets {
-			switch setResult.Result {
-			case "error":
-				errorCount++
-			case "warning":
-				warningCount++
-			case "success":
-				successCount++
-			case "skipped":
-				skippedCount++
-			}
-		}
-		if errorCount > 0 {
-			result.OverallResult = "error"
-			result.OverallMessage = fmt.Sprintf("%d sets had errors, %d sets were successful, %d sets were skipped", errorCount, successCount, skippedCount)
-		} else if warningCount > 0 {
-			result.OverallResult = "warning"
-			result.OverallMessage = fmt.Sprintf("%d sets had warnings, %d sets were successful, %d sets were skipped", warningCount, successCount, skippedCount)
-		} else if successCount > 0 {
-			result.OverallResult = "success"
-			result.OverallMessage = fmt.Sprintf("%d sets were successful, %d sets were skipped", successCount, skippedCount)
-		} else {
-			result.OverallResult = "skipped"
-			result.OverallMessage = "All sets were skipped, no changes detected that require redownloading images"
-		}
-	}
-
+	getOverallResults(&result)
 	return result
 }
 
-func checkImageDates(
-	image models.ImageFile,
-	dbSet *models.DBPosterSetDetail,
-	oldImageByKey map[string]models.ImageFile,
-	imagesToRedownload *[]ImageFileWithReason,
-	check *ImageCheckResult,
-) {
-	key := image.Type + "|" + image.ID
-	matchingOldImage, found := oldImageByKey[key]
-
-	if !found {
-		check.Outcome = "redownload"
-		check.Reason = fmt.Sprintf(
-			"New image added to set since last download\nImage Updated New: %s\nLast Downloaded: %s",
-			image.Modified.Format("2006-01-02 15:04:05"),
-			dbSet.LastDownloaded.Format("2006-01-02 15:04:05"),
-		)
-		check.Details = map[string]any{
-			"image_modified_new": image.Modified.Format("2006-01-02 15:04:05"),
-			"last_downloaded":    dbSet.LastDownloaded.Format("2006-01-02 15:04:05"),
-		}
-		*imagesToRedownload = append(*imagesToRedownload, ImageFileWithReason{
-			ImageFile:   image,
-			ReasonTitle: "New Image in Set",
-			Reason:      check.Reason,
-		})
-		return
-	}
-
-	check.Details = map[string]any{
-		"image_modified_new": image.Modified.Format("2006-01-02 15:04:05"),
-		"image_modified_old": matchingOldImage.Modified.Format("2006-01-02 15:04:05"),
-		"last_downloaded":    dbSet.LastDownloaded.Format("2006-01-02 15:04:05"),
-	}
-
-	if !image.Modified.Equal(matchingOldImage.Modified) && image.Modified.After(matchingOldImage.Modified) {
-		check.Outcome = "redownload"
-		check.Reason = fmt.Sprintf(
-			"Image modified date is newer than previous image\nImage Updated New: %s\nImage Updated Old: %s",
-			image.Modified.Format("2006-01-02 15:04:05"),
-			matchingOldImage.Modified.Format("2006-01-02 15:04:05"),
-		)
-		*imagesToRedownload = append(*imagesToRedownload, ImageFileWithReason{
-			ImageFile:   image,
-			ReasonTitle: "Image Updated",
-			Reason:      check.Reason,
-		})
-		return
-	} else if image.Modified.After(dbSet.LastDownloaded) {
-		check.Outcome = "redownload"
-		check.Reason = fmt.Sprintf(
-			"Image modified date is newer than last downloaded date\nImage Updated New: %s\nLast Downloaded: %s",
-			image.Modified.Format("2006-01-02 15:04:05"),
-			dbSet.LastDownloaded.Format("2006-01-02 15:04:05"),
-		)
-
-		*imagesToRedownload = append(*imagesToRedownload, ImageFileWithReason{
-			ImageFile:   image,
-			ReasonTitle: "Image Updated Since Last Download",
-			Reason:      check.Reason,
-		})
-		return
-	}
-
-	check.Outcome = "skipped"
-	check.Reason = "No changes detected"
-}
-
 func getShowInfoChangeReason(changes ShowChangeDetails) string {
-	reason := "Change detected in show info:"
+	lines := []string{"Change detected in show info:"}
+
 	if changes.RatingKeyChanged {
-		reason += fmt.Sprintf("\nRating Key changed from '%s' to '%s'", changes.OldRatingKey, changes.NewRatingKey)
+		lines = append(lines, fmt.Sprintf(
+			"Rating Key changed:\n- old: %s\n- new: %s",
+			changes.OldRatingKey, changes.NewRatingKey,
+		))
 	}
 	if changes.PathChanged {
-		reason += fmt.Sprintf("\nPath changed from '%s' to '%s'", changes.OldPath, changes.NewPath)
+		lines = append(lines, formatChangedPath(changes.OldPath, changes.NewPath))
 	}
-	return reason
+
+	if changes.SeasonsAdded {
+		lines = append(lines, fmt.Sprintf("Added Seasons: %v", changes.AddedSeasons))
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func getEpisodeInfoChangeReason(changes EpisodeChangeDetails) string {
