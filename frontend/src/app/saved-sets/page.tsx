@@ -673,6 +673,7 @@ const SavedSetsPage: React.FC = () => {
                 if (setFilterAutoDownload) setFilterAutoDownload("");
                 setFilteredUsers([]);
                 setFilteredTypes([]);
+                setFilterMediaItemOnServer("");
                 setCurrentPage(1);
                 if (filterMultiSetOnly) setFilterMultiSetOnly(false);
               }}
