@@ -666,6 +666,8 @@ definitions:
     type: object
   models.DBPosterSetDetail:
     properties:
+      auto_add_new_collection_items:
+        type: boolean
       auto_download:
         type: boolean
       date_created:

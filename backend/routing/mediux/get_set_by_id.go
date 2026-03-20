@@ -76,7 +76,7 @@ func GetSetByID(w http.ResponseWriter, r *http.Request) {
 		response.IncludedItems = includedItems
 
 	case "collection":
-		collectionSet, includedItems, Err := mediux.GetMovieCollectionSetByID(ctx, setID, tmdbID, itemLibraryTitle)
+		collectionSet, includedItems, Err := mediux.GetMovieCollectionSetByID(ctx, setID, tmdbID, itemLibraryTitle, true)
 		if Err.Message != "" {
 			httpx.SendResponse(w, ld, response)
 			return

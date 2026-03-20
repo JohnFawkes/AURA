@@ -36,7 +36,7 @@ type movieCollectionSetBySetID_Movie struct {
 	Backdrops []ImageAsset `json:"backdrops"`
 }
 
-func GetMovieCollectionSetByID(ctx context.Context, setID string, tmdbID string, itemLibraryTitle string) (set models.SetRef, includedItems map[string]models.IncludedItem, Err logging.LogErrorInfo) {
+func GetMovieCollectionSetByID(ctx context.Context, setID string, tmdbID string, itemLibraryTitle string, itemOnly bool) (set models.SetRef, includedItems map[string]models.IncludedItem, Err logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Get Movie Collection Set By Set ID", logging.LevelInfo)
 	defer logAction.Complete()
 
@@ -81,7 +81,7 @@ func GetMovieCollectionSetByID(ctx context.Context, setID string, tmdbID string,
 	var images []models.ImageFile
 
 	for _, movie := range mediuxMovies {
-		if movie.ID != tmdbID {
+		if itemOnly && movie.ID != tmdbID {
 			continue
 		}
 		// If the item is already included, skip

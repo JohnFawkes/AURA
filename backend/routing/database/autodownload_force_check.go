@@ -109,7 +109,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				posterSet.PosterSet = movieSet.PosterSet
 				fullSets = append(fullSets, posterSet)
 			case "collection":
-				collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, posterSet.ID, req.Item.MediaItem.TMDB_ID, req.Item.MediaItem.LibraryTitle)
+				collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, posterSet.ID, req.Item.MediaItem.TMDB_ID, req.Item.MediaItem.LibraryTitle, true)
 				if Err.Message != "" {
 					httpx.SendResponse(w, ld, response)
 					return

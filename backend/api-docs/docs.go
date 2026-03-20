@@ -3984,6 +3984,9 @@ const docTemplate = `{
         "models.DBPosterSetDetail": {
             "type": "object",
             "properties": {
+                "auto_add_new_collection_items": {
+                    "type": "boolean"
+                },
                 "auto_download": {
                     "type": "boolean"
                 },

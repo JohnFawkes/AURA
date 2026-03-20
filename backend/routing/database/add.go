@@ -110,7 +110,7 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 			}
 			fullSet.PosterSet = movieSet.PosterSet
 		case "collection":
-			collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, req.PosterSet.ID, req.MediaItem.TMDB_ID, req.MediaItem.LibraryTitle)
+			collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, req.PosterSet.ID, req.MediaItem.TMDB_ID, req.MediaItem.LibraryTitle, true)
 			if Err.Message != "" {
 				httpx.SendResponse(w, ld, response)
 				return
