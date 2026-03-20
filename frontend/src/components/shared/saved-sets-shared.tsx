@@ -371,7 +371,6 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
   onClose,
   editSets,
   setEditSets,
-  savedSet,
   allToDelete,
   updateError,
   confirmEdit,
@@ -542,31 +541,29 @@ export const SavedSetEditModal: React.FC<SavedSetEditModalProps> = ({
                 </Link>
               </DialogDescription>
               <div className="flex flex-wrap gap-2 mt-2">{renderEditTypeBadges(editSet, index)}</div>
-              {savedSet.media_item.type === "show" && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge
-                    className={`cursor-pointer transition duration-200 ${
-                      editSet.auto_download
-                        ? "bg-primary text-primary-foreground hover:bg-red-500"
-                        : "bg-secondary text-secondary-foreground"
-                    }`}
-                    onClick={() => {
-                      setEditSets((prev) =>
-                        prev.map((item, i) =>
-                          i === index
-                            ? {
-                                ...item,
-                                auto_download: !item.auto_download,
-                              }
-                            : item
-                        )
-                      );
-                    }}
-                  >
-                    {editSet.auto_download ? "Autodownload" : "No Autodownload"}
-                  </Badge>
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge
+                  className={`cursor-pointer transition duration-200 ${
+                    editSet.auto_download
+                      ? "bg-primary text-primary-foreground hover:bg-red-500"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                  onClick={() => {
+                    setEditSets((prev) =>
+                      prev.map((item, i) =>
+                        i === index
+                          ? {
+                              ...item,
+                              auto_download: !item.auto_download,
+                            }
+                          : item
+                      )
+                    );
+                  }}
+                >
+                  {editSet.auto_download ? "Autodownload" : "No Autodownload"}
+                </Badge>
+              </div>
               <div className="flex items-center justify-between">
                 <div>
                   {editSet.previousDateUpdated &&

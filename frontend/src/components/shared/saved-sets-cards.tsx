@@ -136,48 +136,46 @@ const SavedSetsCard: React.FC<{
         )}
 
         {/* Top Left: Auto Download Icon */}
-        {normalizedSavedSet.media_item.type === "show" && (
-          <div className="absolute top-2 left-2 flex items-center gap-2">
-            {posterSets.some((set) => set.auto_download) ? (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <RefreshCcw className="text-green-500 cursor-help" size={24} />
-                </PopoverTrigger>
-                <PopoverContent className="p-2 max-w-xs">
-                  <p className="text-sm">
-                    Auto Download is enabled for this item. It will be periodically checked for new updates based on
-                    your Auto Download settings.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <RefreshCwOff className="text-red-500 cursor-help" size={24} />
-                </PopoverTrigger>
-                <PopoverContent className="p-2 max-w-xs">
-                  <p className="text-sm">
-                    Auto Download is disabled for this item. Click the edit button to enable it on one or more poster
-                    sets.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            )}
-            {hasSelectedTypesOverlapOnAutoDownload(posterSets) && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <AlertTriangle className="text-yellow-500 cursor-help" size={24} />
-                </PopoverTrigger>
-                <PopoverContent className="p-2 max-w-xs">
-                  <p className="text-sm">
-                    Some poster sets have overlapping selected types with Auto Download enabled. This may cause
-                    unexpected behavior.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-        )}
+        <div className="absolute top-2 left-2 flex items-center gap-2">
+          {posterSets.some((set) => set.auto_download) ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <RefreshCcw className="text-green-500 cursor-help" size={24} />
+              </PopoverTrigger>
+              <PopoverContent className="p-2 max-w-xs">
+                <p className="text-sm">
+                  Auto Download is enabled for this item. It will be periodically checked for new updates based on your
+                  Auto Download settings.
+                </p>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <Popover>
+              <PopoverTrigger asChild>
+                <RefreshCwOff className="text-red-500 cursor-help" size={24} />
+              </PopoverTrigger>
+              <PopoverContent className="p-2 max-w-xs">
+                <p className="text-sm">
+                  Auto Download is disabled for this item. Click the edit button to enable it on one or more poster
+                  sets.
+                </p>
+              </PopoverContent>
+            </Popover>
+          )}
+          {hasSelectedTypesOverlapOnAutoDownload(posterSets) && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <AlertTriangle className="text-yellow-500 cursor-help" size={24} />
+              </PopoverTrigger>
+              <PopoverContent className="p-2 max-w-xs">
+                <p className="text-sm">
+                  Some poster sets have overlapping selected types with Auto Download enabled. This may cause unexpected
+                  behavior.
+                </p>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
 
         {/* Top Center: Bulk Edit Add Item Checkbox */}
         {bulkEditMode && (

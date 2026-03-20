@@ -253,7 +253,7 @@ const findDuplicateMediaItems = (items: FormItemDisplay[]): DuplicateMap => {
 const DownloadModal: React.FC<DownloadModalProps> = ({
   baseSetInfo,
   formItems,
-  autoDownloadDefault = true, // Default to false if not provided
+  autoDownloadDefault = true, // Default to true if not provided
   onDownloadComplete,
 }) => {
   const router = useRouter();
@@ -365,7 +365,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         (acc, item) => {
           acc[item.MediaItem.rating_key] = {
             types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-            autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
+            autodownload: autoDownloadDefault,
             addToDBOnly: false,
             source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
           };
@@ -388,7 +388,7 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         (acc, item) => {
           acc[item.MediaItem.rating_key] = {
             types: computeAssetTypes(item).filter((type) => downloadDefaults.includes(type)),
-            autodownload: item.Set.type === "show" ? autoDownloadDefault : false,
+            autodownload: autoDownloadDefault,
             addToDBOnly: false,
             source: item.Set.type === "movie" || item.Set.type === "collection" ? item.Set.type : undefined,
           };
@@ -1037,64 +1037,43 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
               <FormLabel className={`text-md font-normal` + (isDisabled ? " text-gray-500" : "")}>
                 Download Options
               </FormLabel>
-              {(item.Set.type === "movie" || item.Set.type === "collection") && (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <Checkbox
-                      checked={
-                        isDisabled || field.value?.types?.length === 0 ? false : field.value?.addToDBOnly || false
-                      }
-                      disabled={isDisabled || field.value?.types?.length === 0}
-                      onCheckedChange={(checked) => {
-                        field.onChange({
-                          ...(field.value ?? {}),
-                          addToDBOnly: checked,
-                        });
-                      }}
-                      className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-                    />
-                  </FormControl>
-                  <FormLabel className="text-md font-normal cursor-pointer">Add to Database Only</FormLabel>
+              <FormItem className="flex items-center space-x-2">
+                <FormControl>
+                  <Checkbox
+                    checked={isDisabled || field.value?.types?.length === 0 ? false : field.value?.addToDBOnly || false}
+                    disabled={isDisabled || field.value?.types?.length === 0}
+                    onCheckedChange={(checked) => {
+                      field.onChange({
+                        ...(field.value ?? {}),
+                        addToDBOnly: checked,
+                      });
+                    }}
+                    className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                  />
+                </FormControl>
+                <FormLabel className="text-md font-normal cursor-pointer">Add to Database Only</FormLabel>
 
-                  <DownloadModalPopover type="add-to-db-only" />
-                </FormItem>
-              )}
-              {item.Set.type === "show" && (
-                <>
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.addToDBOnly || false}
-                        onCheckedChange={(checked) => {
-                          field.onChange({
-                            ...(field.value ?? {}),
-                            addToDBOnly: checked,
-                          });
-                        }}
-                        className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-                      />
-                    </FormControl>
-                    <FormLabel className="text-md font-normal cursor-pointer">Future Updates Only</FormLabel>
-                    <DownloadModalPopover type="future-updated-only" />
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.autodownload || false}
-                        onCheckedChange={(checked) => {
-                          field.onChange({
-                            ...(field.value ?? {}),
-                            autodownload: checked,
-                          });
-                        }}
-                        className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
-                      />
-                    </FormControl>
-                    <FormLabel className="text-md font-normal cursor-pointer">Auto Download</FormLabel>
-                    <DownloadModalPopover type="autodownload" />
-                  </FormItem>
-                </>
-              )}
+                <DownloadModalPopover type="add-to-db-only" />
+              </FormItem>
+              <FormItem className="flex items-center space-x-2">
+                <FormControl>
+                  <Checkbox
+                    checked={
+                      isDisabled || field.value?.types?.length === 0 ? false : field.value?.autodownload || false
+                    }
+                    disabled={isDisabled || field.value?.types?.length === 0}
+                    onCheckedChange={(checked) => {
+                      field.onChange({
+                        ...(field.value ?? {}),
+                        autodownload: checked,
+                      });
+                    }}
+                    className="h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
+                  />
+                </FormControl>
+                <FormLabel className="text-md font-normal cursor-pointer">Auto Download</FormLabel>
+                <DownloadModalPopover type="autodownload" />
+              </FormItem>
             </div>
           </div>
         )}
