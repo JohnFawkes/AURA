@@ -239,9 +239,7 @@ const SavedSetsCard: React.FC<{
                   }}
                 >
                   <RefreshCcw className="ml-2" />
-                  {normalizedSavedSet.media_item.type === "movie"
-                    ? "Check Movie for Key Changes"
-                    : "Force Autodownload Recheck"}
+                  Force Autodownload Recheck
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem

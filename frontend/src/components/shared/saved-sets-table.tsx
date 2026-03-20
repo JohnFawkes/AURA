@@ -275,7 +275,7 @@ const SavedSetsTableRow: React.FC<{
                   }}
                 >
                   <RefreshCcw className="ml-2" />
-                  {savedSet.media_item.type === "movie" ? "Check Movie for Key Changes" : "Force Autodownload Recheck"}
+                  Force Autodownload Recheck
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
