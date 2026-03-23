@@ -82,6 +82,23 @@ export default function Home() {
   );
   const totalPages = Math.ceil(filteredAndSortedMediaItems.length / itemsPerPage);
 
+  const dedupeMediaItemsByTmdbId = useCallback((items: LibrarySection["media_items"]) => {
+    const seenTmdbIds = new Set<string>();
+    return items.filter((item) => {
+      if (item.tmdb_id === null || item.tmdb_id === undefined || item.tmdb_id === "") {
+        return true;
+      }
+
+      const tmdbId = String(item.tmdb_id);
+      if (seenTmdbIds.has(tmdbId)) {
+        return false;
+      }
+
+      seenTmdbIds.add(tmdbId);
+      return true;
+    });
+  }, []);
+
   // Set sortOption to "dateAdded" if its not title or dateUpdated or dateAdded or dateReleased or newEpisodeAdded
   useEffect(() => {
     if (
@@ -182,8 +199,10 @@ export default function Home() {
                 break;
               }
             }
-            section.media_items = allItems;
-            section.total_size = totalSize;
+            const deduplicatedItems = dedupeMediaItemsByTmdbId(allItems);
+
+            section.media_items = deduplicatedItems;
+            section.total_size = deduplicatedItems.length;
           })
         );
 
@@ -207,7 +226,7 @@ export default function Home() {
         isMounted.current = false;
       }
     },
-    [sections, setSections, timestamp]
+    [dedupeMediaItemsByTmdbId, sections, setSections, timestamp]
   );
 
   useEffect(() => {

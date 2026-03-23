@@ -11,6 +11,41 @@ import type { LibrarySection, MediaItem, SelectedTypes } from "@/types/media-and
 // Max Cache Duration: 1 Hour
 export const MAX_CACHE_DURATION = 60 * 60 * 1000;
 
+const dedupeMediaItemsByTmdbID = (mediaItems: LibrarySection["media_items"]): LibrarySection["media_items"] => {
+  const seenTmdbIDs = new Set<string>();
+
+  return mediaItems.filter((item) => {
+    if (item.tmdb_id === null || item.tmdb_id === undefined || item.tmdb_id === "") {
+      return true;
+    }
+
+    const tmdbID = String(item.tmdb_id);
+    if (seenTmdbIDs.has(tmdbID)) {
+      return false;
+    }
+
+    seenTmdbIDs.add(tmdbID);
+    return true;
+  });
+};
+
+const sanitizeSection = (section: LibrarySection): LibrarySection => {
+  const deduplicatedMediaItems = dedupeMediaItemsByTmdbID(section.media_items || []);
+
+  return {
+    ...section,
+    media_items: deduplicatedMediaItems,
+    total_size: deduplicatedMediaItems.length,
+  };
+};
+
+const sanitizeSectionsRecord = (sections: Record<string, LibrarySection>): Record<string, LibrarySection> => {
+  return Object.entries(sections).reduce<Record<string, LibrarySection>>((acc, [sectionTitle, section]) => {
+    acc[sectionTitle] = sanitizeSection(section);
+    return acc;
+  }, {});
+};
+
 interface LibrarySectionsStore {
   sections: Record<string, LibrarySection>;
   setSections: (sections: Record<string, LibrarySection>, timestamp?: number) => void;
@@ -54,7 +89,7 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
 
       setSections: (sections, timestamp) =>
         set({
-          sections,
+          sections: sanitizeSectionsRecord(sections),
           timestamp: timestamp ?? Date.now(),
         }),
 
@@ -62,7 +97,7 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
         set((state) => ({
           sections: {
             ...state.sections,
-            [sectionTitle]: record,
+            [sectionTitle]: sanitizeSection(record),
           },
         })),
 
@@ -291,6 +326,9 @@ export const useLibrarySectionsStore = create<LibrarySectionsStore>()(
         timestamp: state.timestamp,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state?.sections) {
+          state.setSections(state.sections, state.timestamp);
+        }
         state?.hydrate();
       },
     }
