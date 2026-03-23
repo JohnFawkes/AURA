@@ -1,3 +1,13 @@
+## [0.9.96] - 2026-03-22
+
+### Fixed
+
+- Fixed issue where duplicate Media Items were showing on the Home Page.
+- Fixed issue where Rate Media Item modal would not show the current user rating for the media item properly.
+- Fixed issue where "Clear All Filters" button on Saved Sets page would not clear the "On Server" filter.
+
+---
+
 ## [0.9.95] - 2026-03-20
 
 ### Added
