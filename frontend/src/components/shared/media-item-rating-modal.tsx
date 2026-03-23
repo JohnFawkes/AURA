@@ -91,7 +91,8 @@ export function MediaItemRatingModal({ mediaItem, isOpen, onClose }: MediaItemRa
       if (response.status === "error") {
         throw new Error(response.error?.message || "Unknown error rating media item");
       }
-      toast.success(`Rated '${mediaItem.title}' ${rating.toFixed(1)} / 5`);
+      const ratingDisplay = rating % 1 === 0 ? rating.toFixed(0) : rating.toFixed(1);
+      toast.success(`Rated '${mediaItem.title}' ${ratingDisplay} / 5`);
       onClose();
     } catch (error) {
       setError(ReturnErrorMessage<unknown>(error));
