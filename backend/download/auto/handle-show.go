@@ -57,31 +57,39 @@ func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.D
 			changes.NewPath = newPath
 		}
 
-		dbSeasons := make(map[int]models.MediaItemSeason)
+		type dbSeasonLookup struct {
+			season   models.MediaItemSeason
+			episodes map[int]models.MediaItemEpisode
+		}
+
+		dbSeasons := make(map[int]dbSeasonLookup)
 		if dbItem.MediaItem.Series != nil {
 			for _, s := range dbItem.MediaItem.Series.Seasons {
-				dbSeasons[s.SeasonNumber] = s
+				dbEpisodes := make(map[int]models.MediaItemEpisode, len(s.Episodes))
+				for _, e := range s.Episodes {
+					dbEpisodes[e.EpisodeNumber] = e
+				}
+				dbSeasons[s.SeasonNumber] = dbSeasonLookup{
+					season:   s,
+					episodes: dbEpisodes,
+				}
 			}
 		}
 
 		for _, season := range mediaItem.Series.Seasons {
-			dbSeason, seasonFound := dbSeasons[season.SeasonNumber]
+			seasonNumber := season.SeasonNumber
+			dbSeasonData, seasonFound := dbSeasons[season.SeasonNumber]
 			if !seasonFound {
 				changes.AddedSeasons = append(changes.AddedSeasons, season.SeasonNumber)
 				changes.SeasonsAdded = true
 				continue
 			}
 
-			dbEpisodes := make(map[int]models.MediaItemEpisode, len(dbSeason.Episodes))
-			for _, e := range dbSeason.Episodes {
-				dbEpisodes[e.EpisodeNumber] = e
-			}
-
 			for _, episode := range season.Episodes {
-				dbEpisode, episodeFound := dbEpisodes[episode.EpisodeNumber]
+				dbEpisode, episodeFound := dbSeasonData.episodes[episode.EpisodeNumber]
 				if !episodeFound {
 					changes.AddedEpisodes = append(changes.AddedEpisodes, EpisodeRef{
-						SeasonNumber:  episode.SeasonNumber,
+						SeasonNumber:  seasonNumber,
 						EpisodeNumber: episode.EpisodeNumber,
 					})
 					changes.EpisodesAdded = true
@@ -94,7 +102,7 @@ func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.D
 				if ratingKeyChanged || pathChanged || sizeChanged || durationChanged {
 					episodeChange := EpisodeChangeDetails{
 						EpisodeRef: EpisodeRef{
-							SeasonNumber:  episode.SeasonNumber,
+							SeasonNumber:  seasonNumber,
 							EpisodeNumber: episode.EpisodeNumber,
 						},
 					}
