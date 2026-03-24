@@ -175,6 +175,7 @@ func updateCollectionImageIndex(ctx context.Context, collectionItem *models.Coll
 	// Make the HTTP Request to EJ
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "POST", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()
@@ -249,6 +250,7 @@ func uploadCollectionImage(ctx context.Context, collectionItem *models.Collectio
 	// Make the HTTP Request to EJ
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "POST", []byte(base64ImageData))
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()

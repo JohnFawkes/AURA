@@ -65,7 +65,8 @@ func srGetItemInfoFromTMDBID(ctx context.Context, app config.Config_SonarrRadarr
 	// Make the request to Sonarr/Radarr
 	_, respBody, Err := makeRequest(ctx, app, URL, "GET", nil)
 	if Err.Message != "" {
-		return nil, Err
+		logAction.SetErrorFromInfo(Err)
+		return nil, *logAction.Error
 	}
 
 	// Decode the response body
@@ -134,7 +135,8 @@ func srGetItemInfoFromTMDBID(ctx context.Context, app config.Config_SonarrRadarr
 	// Make the request to Sonarr/Radarr
 	_, respBody, Err = makeRequest(ctx, app, URL, "GET", nil)
 	if Err.Message != "" {
-		return nil, Err
+		logAction.SetErrorFromInfo(Err)
+		return nil, *logAction.Error
 	}
 
 	// Parse the full item response body

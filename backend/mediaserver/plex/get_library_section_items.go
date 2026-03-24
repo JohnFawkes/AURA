@@ -218,6 +218,7 @@ func fetchLatestEpisodeAddedAtByShow(ctx context.Context, sectionID string) (map
 
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, u.String(), "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return nil, *logAction.Error
 	}
 	resp.Body.Close()
@@ -238,6 +239,7 @@ func fetchLatestEpisodeAddedAtByShow(ctx context.Context, sectionID string) (map
 
 	resp, respBody, Err = makeRequest(ctx, config.Current.MediaServer, u.String(), "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return nil, *logAction.Error
 	}
 	resp.Body.Close()

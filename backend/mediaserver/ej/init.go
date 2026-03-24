@@ -33,6 +33,7 @@ func (e *EJ) GetAdminUser(ctx context.Context, msConfig config.Config_MediaServe
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, msConfig, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return userID, *logAction.Error
 	}
 	defer resp.Body.Close()

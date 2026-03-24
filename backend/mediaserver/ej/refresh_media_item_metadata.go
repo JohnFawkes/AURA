@@ -40,6 +40,7 @@ func (e *EJ) RefreshMediaItemMetadata(ctx context.Context, item *models.MediaIte
 	// Make the HTTP Request to Emby/Jellyfin
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "POST", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()

@@ -36,6 +36,7 @@ func RefreshItemMetadata(ctx context.Context, item *models.MediaItem, refreshKey
 	// Make the HTTP Request to Plex
 	resp, _, Err := makeRequest(ctx, config.Current.MediaServer, URL, "PUT", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return *logAction.Error
 	}
 	defer resp.Body.Close()

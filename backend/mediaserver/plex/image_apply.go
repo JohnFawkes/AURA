@@ -95,7 +95,7 @@ func applyImageToMediaItem(ctx context.Context, item *models.MediaItem, itemRati
 	// Make the HTTP Request to Plex
 	resp, respBody, Err := makeRequest(ctx, config.Current.MediaServer, URL, requestMethod, nil)
 	if Err.Message != "" {
-		return *logAction.Error
+		return Err
 	}
 	defer resp.Body.Close()
 

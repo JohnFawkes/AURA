@@ -30,6 +30,7 @@ func (e *EJ) GetLibrarySections(ctx context.Context, msConfig config.Config_Medi
 	// Make the HTTP Request to EJ
 	resp, respBody, Err := makeRequest(ctx, msConfig, URL, "GET", nil)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return sections, *logAction.Error
 	}
 	defer resp.Body.Close()

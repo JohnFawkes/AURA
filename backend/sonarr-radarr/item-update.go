@@ -80,7 +80,8 @@ func UpdateItemInfo(ctx context.Context, app config.Config_SonarrRadarrApp, item
 	// Make the request to Sonarr/Radarr
 	_, _, Err = makeRequest(ctx, app, URL, "PUT", body)
 	if Err.Message != "" {
-		return Err
+		logAction.SetErrorFromInfo(Err)
+		return *logAction.Error
 	}
 
 	return logging.LogErrorInfo{}

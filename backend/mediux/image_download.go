@@ -134,7 +134,8 @@ func GetImage(ctx context.Context, assetID string, formatDate string, imageQuali
 	// Make the HTTP Request to MediUX
 	resp, respBody, Err := makeRequest(ctx, mediuxURL, "GET", nil, "", false)
 	if Err.Message != "" {
-		return imageData, imageType, Err
+		logAction.SetErrorFromInfo(Err)
+		return imageData, imageType, *logAction.Error
 	}
 	defer resp.Body.Close()
 
@@ -189,6 +190,7 @@ func GetAvatarImage(ctx context.Context, avatarID string) (imageData []byte, ima
 	// Make the HTTP Request to MediUX
 	resp, respBody, Err := makeRequest(ctx, URL, "GET", nil, "", false)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return imageData, imageType, *logAction.Error
 	}
 	defer resp.Body.Close()

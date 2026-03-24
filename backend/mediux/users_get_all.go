@@ -34,6 +34,7 @@ func GetAllUsers(ctx context.Context) (users []models.MediuxUserInfo, Err loggin
 	// Make the HTTP Request to MediUX
 	resp, respBody, Err := makeRequest(ctx, URL, "GET", nil, "", false)
 	if Err.Message != "" {
+		logAction.SetErrorFromInfo(Err)
 		return users, *logAction.Error
 	}
 	defer resp.Body.Close()

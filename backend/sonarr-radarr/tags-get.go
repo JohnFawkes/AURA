@@ -49,7 +49,8 @@ func srGetAllTags(ctx context.Context, app config.Config_SonarrRadarrApp) (tags 
 	// Make the request to Sonarr/Radarr
 	httpResp, respBody, Err := makeRequest(ctx, app, URL, "GET", nil)
 	if Err.Message != "" {
-		return nil, Err
+		logAction.SetErrorFromInfo(Err)
+		return nil, *logAction.Error
 	}
 	defer httpResp.Body.Close()
 
