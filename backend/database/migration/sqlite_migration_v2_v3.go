@@ -25,12 +25,20 @@ func migrate_2_to_3(ctx context.Context) (Err logging.LogErrorInfo) {
 		return getDBConnErr
 	}
 
-	// Add a new column "on_server" to the MediaItems table with a default value of 0 (false)
-	alterTableQuery := `ALTER TABLE MediaItems ADD COLUMN on_server INTEGER NOT NULL DEFAULT 0;`
-	_, err := conn.ExecContext(ctx, alterTableQuery)
-	if err != nil {
-		logAction.SetError("Failed to alter MediaItems table to add on_server column", "", map[string]any{"error": err.Error()})
-		return *logAction.Error
+	// Check if the "on_server" column already exists to avoid duplicate column error
+	onServerColumnExists, checkColumnErr := checkColumnExists(ctx, "MediaItems", "on_server")
+	if checkColumnErr.Message != "" {
+		return checkColumnErr
+	}
+
+	if !onServerColumnExists {
+		// Add a new column "on_server" to the MediaItems table with a default value of 0 (false)
+		alterTableQuery := `ALTER TABLE MediaItems ADD COLUMN on_server INTEGER NOT NULL DEFAULT 0;`
+		_, err := conn.ExecContext(ctx, alterTableQuery)
+		if err != nil {
+			logAction.SetError("Failed to alter MediaItems table to add on_server column", "", map[string]any{"error": err.Error()})
+			return *logAction.Error
+		}
 	}
 
 	logging.LOGGER.Info().Timestamp().Msg("Database migration v2.0 to v3.0 completed successfully")

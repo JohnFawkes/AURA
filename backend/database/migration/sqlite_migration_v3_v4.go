@@ -25,12 +25,20 @@ func migrate_3_to_4(ctx context.Context) (Err logging.LogErrorInfo) {
 		return getDBConnErr
 	}
 
-	// Add a new column "auto_add_new_collection_items" to the SavedItems table with a default value of 0 (false)
-	alterTableQuery := `ALTER TABLE SavedItems ADD COLUMN auto_add_new_collection_items INTEGER NOT NULL DEFAULT 0 CHECK (auto_add_new_collection_items IN (0,1));`
-	_, err := conn.ExecContext(ctx, alterTableQuery)
-	if err != nil {
-		logAction.SetError("Failed to alter SavedItems table to add auto_add_new_collection_items column", "", map[string]any{"error": err.Error()})
-		return *logAction.Error
+	// Check if the "auto_add_new_collection_items" column already exists to avoid duplicate column error
+	autoAddColumnExists, checkColumnErr := checkColumnExists(ctx, "SavedItems", "auto_add_new_collection_items")
+	if checkColumnErr.Message != "" {
+		return checkColumnErr
+	}
+
+	if !autoAddColumnExists {
+		// Add a new column "auto_add_new_collection_items" to the SavedItems table with a default value of 0 (false)
+		alterTableQuery := `ALTER TABLE SavedItems ADD COLUMN auto_add_new_collection_items INTEGER NOT NULL DEFAULT 0 CHECK (auto_add_new_collection_items IN (0,1));`
+		_, err := conn.ExecContext(ctx, alterTableQuery)
+		if err != nil {
+			logAction.SetError("Failed to alter SavedItems table to add auto_add_new_collection_items column", "", map[string]any{"error": err.Error()})
+			return *logAction.Error
+		}
 	}
 
 	logging.LOGGER.Info().Timestamp().Msg("Database migration v3.0 to v4.0 completed successfully")
