@@ -18,10 +18,12 @@ export const RemoveItemFromQueue = async (dbItem: DBSavedItem): Promise<APIRespo
     "INFO",
     "API - Media Server",
     "Delete from Queue",
-    `Deleting '${dbItem.media_item.title}' (TMDB ID: ${dbItem.media_item.tmdb_id}) from the download queue`
+    `Deleting '${dbItem.media_item?.title ?? "(unknown)"}' (TMDB ID: ${dbItem.media_item?.tmdb_id ?? "(unknown)"}) from the download queue`
   );
-  for (const set of dbItem.poster_sets) {
-    set.last_downloaded = new Date().toISOString();
+  if (Array.isArray(dbItem.poster_sets) && dbItem.poster_sets.length > 0) {
+    for (const set of dbItem.poster_sets) {
+      set.last_downloaded = new Date().toISOString();
+    }
   }
   try {
     const req: RemoveItemFromQueue_Request = {

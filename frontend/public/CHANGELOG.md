@@ -4,7 +4,8 @@
 
 - Fixed issue where Plex WebSocket client would not properly stop when changed from the Settings Page.
 - Fixed issue where migration v1 to v2 was taking too long.
-- Fixed PANIC error when bad request was returned by Plex.
+- Fixed panic error if Plex Server returned a non-200 response.
+- Fixed issue where user could not delete items from the download queue.
 
 ---
 

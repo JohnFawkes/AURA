@@ -48,8 +48,9 @@ const DownloadQueueEntry: React.FC<{
   const { setMediaItem } = useMediaStore();
 
   const onDeleteConfirm = async () => {
+    const safeEntry = { ...entry, poster_sets: Array.isArray(entry.poster_sets) ? entry.poster_sets : [] };
     try {
-      const response = await RemoveItemFromQueue(entry);
+      const response = await RemoveItemFromQueue(safeEntry);
       if (response.status === "error") {
         toast.error(
           `Error deleting from queue: ${response.error?.message || "Unknown error occurred trying to delete."}`
