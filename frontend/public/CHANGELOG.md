@@ -1,3 +1,12 @@
+## [0.9.97] - 2026-03-24
+
+### Fixed
+
+- Fixed issue where migration v1 to v2 was taking too long.
+- Fixed PANIC error when bad request was returned by Plex.
+
+---
+
 ## [0.9.96] - 2026-03-22
 
 ### Fixed
