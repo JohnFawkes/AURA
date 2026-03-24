@@ -221,18 +221,24 @@ func v1_2_ConvertOldData(ctx context.Context, conn *sql.DB) logging.LogErrorInfo
 			}
 			if mediaItemRow.ItemType.String == "movie" && mediaItemRow.MovieJSON.Valid {
 				var movie models.MediaItemMovie
-				mediaItemRow.MovieJSON.Scan(&movie)
+				err := json.Unmarshal([]byte(mediaItemRow.MovieJSON.String), &movie)
+				if err != nil {
+					addToWarningFile(2, logging.LogErrorInfo{
+						Message: "Failed to unmarshal Movie JSON from MediaItemsBackup1 during migration",
+						Detail: map[string]any{
+							"TMDB_ID":      itemTMDB_ID,
+							"LibraryTitle": itemLibraryTitle,
+							"error":        err.Error(),
+						},
+					})
+					continue
+				}
 				newItem.MediaItem.Movie = &movie
 				if movie.File.Path == "" {
 					failedToGetFromDB = true
 				}
 			} else if mediaItemRow.ItemType.String == "show" && mediaItemRow.SeriesJSON.Valid {
-				var series models.MediaItemSeries
-				mediaItemRow.SeriesJSON.Scan(&series)
-				newItem.MediaItem.Series = &series
-				if series.Location == "" {
-					failedToGetFromDB = true
-				}
+				failedToGetFromDB = true
 			}
 		}
 
@@ -252,23 +258,25 @@ func v1_2_ConvertOldData(ctx context.Context, conn *sql.DB) logging.LogErrorInfo
 				continue
 			}
 
-			// Get the full item info from the media server
-			foundInServer, getItemErr := mediaserver.GetMediaItemDetails(ctx, cachedItem)
-			if getItemErr.Message != "" {
-				addToWarningFile(2, getItemErr)
-				continue
+			if cachedItem.Type != "movie" {
+				// Get the full item info from the media server
+				foundInServer, getItemErr := mediaserver.GetMediaItemDetails(ctx, cachedItem)
+				if getItemErr.Message != "" {
+					addToWarningFile(2, getItemErr)
+					continue
+				}
+				if !foundInServer {
+					addToWarningFile(2, logging.LogErrorInfo{
+						Message: "MediaItem not found on media server during migration",
+						Detail: map[string]any{
+							"TMDB_ID":      itemTMDB_ID,
+							"LibraryTitle": itemLibraryTitle,
+						},
+					})
+					continue
+				}
+				newItem.MediaItem = *cachedItem
 			}
-			if !foundInServer {
-				addToWarningFile(2, logging.LogErrorInfo{
-					Message: "MediaItem not found on media server during migration",
-					Detail: map[string]any{
-						"TMDB_ID":      itemTMDB_ID,
-						"LibraryTitle": itemLibraryTitle,
-					},
-				})
-				continue
-			}
-			newItem.MediaItem = *cachedItem
 		}
 
 		// Now we can fetch the each PosterSet from PosterSetsBackup1 with the given TMDB_ID and LibraryTitle
@@ -350,6 +358,8 @@ func v1_2_ConvertOldData(ctx context.Context, conn *sql.DB) logging.LogErrorInfo
 					SelectedTypes:  v1_2_parseSelectedTypes(psRow.SelectedTypes.String),
 					AutoDownload:   psRow.AutoDownload.Bool,
 				})
+				logging.LOGGER.Trace().Timestamp().Str("PosterSetID", posterSet.ID).Int("num_images", len(posterSet.Images)).
+					Msg("Extracted PosterSet and images for migration")
 			}
 			psRows.Close()
 		}
