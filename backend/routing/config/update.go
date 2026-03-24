@@ -2,6 +2,7 @@ package routes_config
 
 import (
 	"aura/config"
+	autodownload "aura/download/auto"
 	"aura/jobs"
 	"aura/logging"
 	"aura/mediaserver"
@@ -133,6 +134,10 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 
 	if autoDownloadChanged {
 		jobs.StartAutoDownloadJob()
+	}
+
+	if mediaServerChanged {
+		autodownload.StartOrRestartPlexWebSocketClient()
 	}
 
 	response.Status = AppConfigStatus{

@@ -221,7 +221,7 @@ func runWarmup() (success bool) {
 	//go autodownload.StartMediuxWebSocketClient()
 
 	// Initialize Media Server WebSocket Listener (if supported)
-	go autodownload.StartPlexWebSocketClient()
+	autodownload.StartOrRestartPlexWebSocketClient()
 
 	success = true
 	return success

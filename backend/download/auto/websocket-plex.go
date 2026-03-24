@@ -46,22 +46,85 @@ type cachedPlexItem struct {
 	storedAt  time.Time
 }
 
-func StartPlexWebSocketClient() {
-	go func() {
+var (
+	plexWSControlMu sync.Mutex
+	plexWSStopChan  chan struct{}
+)
+
+// StartOrRestartPlexWebSocketClient stops any running Plex WebSocket goroutine and starts a new one.
+func StartOrRestartPlexWebSocketClient() {
+	plexWSControlMu.Lock()
+	defer plexWSControlMu.Unlock()
+
+	// Stop previous goroutine if running
+	if plexWSStopChan != nil {
+		close(plexWSStopChan)
+		plexWSStopChan = nil
+	}
+
+	stopChan := make(chan struct{})
+	plexWSStopChan = stopChan
+
+	go func(stop <-chan struct{}) {
 		for {
 			if config.Current.MediaServer.Type != "Plex" ||
 				!config.Current.MediaServer.EnablePlexEventListener {
-				time.Sleep(plexScanCoolDown)
+				select {
+				case <-stop:
+					return
+				case <-time.After(plexScanCoolDown):
+				}
 				continue
 			}
-			err := connectAndListenPlex()
+
+			err := connectAndListenPlexWithStop(stop)
 			if err != nil {
 				logging.LOGGER.Error().Timestamp().Err(err).Msg("Plex WebSocket connection error")
 			}
+
 			logging.LOGGER.Warn().Timestamp().Msgf("Reconnecting to Plex WebSocket in %s...", plexReconnectDelay)
-			time.Sleep(plexReconnectDelay)
+			select {
+			case <-stop:
+				return
+			case <-time.After(plexReconnectDelay):
+			}
 		}
-	}()
+	}(stopChan)
+}
+
+// connectAndListenPlexWithStop is like connectAndListenPlex but returns early if stop is closed.
+func connectAndListenPlexWithStop(stop <-chan struct{}) (err error) {
+	wsURL, wsURLForLog, err := buildPlexWebSocketURL()
+	if err != nil {
+		return err
+	}
+
+	logging.LOGGER.Info().Timestamp().Str("url", wsURLForLog).
+		Msg("Plex Event Listener: Connecting to Plex WebSocket")
+
+	// Connect to WebSocket
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to connect to Plex WebSocket at %s: %w", wsURLForLog, err)
+	}
+	defer conn.Close()
+
+	logging.LOGGER.Info().Timestamp().
+		Msg("Plex Event Listener: Connected — watching for metadata refresh events")
+
+	for {
+		select {
+		case <-stop:
+			return nil
+		default:
+			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			_, message, err := conn.ReadMessage()
+			if err != nil {
+				return fmt.Errorf("error reading from Plex WebSocket: %w", err)
+			}
+			handleMessage(message)
+		}
+	}
 }
 
 func connectAndListenPlex() (err error) {
