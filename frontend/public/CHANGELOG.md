@@ -1,3 +1,18 @@
+## [0.9.98] - 2026-03-28
+
+### Added
+
+- Added new MediUX endpoint to fetch items with sets for more accurate results.
+- Added set creator to Download Queue entries for better tracking of where sets are coming from.
+
+### Fixed
+
+- Fixed issue where multiple sets being sent to Download Queue at the same time would cause some sets to be missed.
+- Fixed issue where User page would not properly update when selecting different library sections that don't have any sets available for them.
+- Fixed issue where Show Sets that were empty would throw an error (different than handling of movie sets).
+
+---
+
 ## [0.9.97] - 2026-03-24
 
 ### Fixed
