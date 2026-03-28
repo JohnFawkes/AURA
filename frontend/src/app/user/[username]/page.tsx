@@ -162,7 +162,13 @@ const UserSetPage = () => {
   const { sections, getSectionSummaries, hasHydrated } = useLibrarySectionsStore();
 
   // User Response From Server
-  const [creatorSetsResponse, setCreatorSetsResponse] = useState<CreatorSetsResponse | null>(null);
+  const [creatorSetsResponse, setCreatorSetsResponse] = useState<CreatorSetsResponse>({
+    show_sets: [],
+    movie_sets: [],
+    collection_sets: [],
+    boxsets: [],
+    included_items: {},
+  } as CreatorSetsResponse);
 
   const [showSets, setShowSets] = useState<SetRef[]>([]);
   const [filteredShowSets, setFilteredShowSets] = useState<SetRef[]>([]);
@@ -210,7 +216,21 @@ const UserSetPage = () => {
         }
         setSelectedLibrarySection(null);
 
-        setCreatorSetsResponse(response.data?.sets || null);
+        // Always ensure all arrays are present and never undefined/null
+        const sets = (response.data?.sets as CreatorSetsResponse) ?? {
+          show_sets: [],
+          movie_sets: [],
+          collection_sets: [],
+          boxsets: [],
+          included_items: {},
+        };
+        setCreatorSetsResponse({
+          show_sets: Array.isArray(sets.show_sets) ? sets.show_sets : [],
+          movie_sets: Array.isArray(sets.movie_sets) ? sets.movie_sets : [],
+          collection_sets: Array.isArray(sets.collection_sets) ? sets.collection_sets : [],
+          boxsets: Array.isArray(sets.boxsets) ? sets.boxsets : [],
+          included_items: sets.included_items || {},
+        });
       } catch (error) {
         log("ERROR", "User Page", "Fetch User Sets", "Failed to fetch user sets:", error);
         setError(ReturnErrorMessage<unknown>(error));
@@ -654,21 +674,6 @@ const UserSetPage = () => {
   const isActiveTabKey = (val: string): val is ActiveTabKey =>
     val === "showSets" || val === "movieSets" || val === "collectionSets" || val === "boxSets";
 
-  const isActiveTabEmpty =
-    (activeTab === "showSets" && filteredShowSets.length === 0) ||
-    (activeTab === "movieSets" && filteredMovieSets.length === 0) ||
-    (activeTab === "collectionSets" && filteredCollectionSets.length === 0) ||
-    (activeTab === "boxSets" && filteredBoxsets.length === 0);
-
-  const activeTabLabel =
-    activeTab === "showSets"
-      ? "Show Sets"
-      : activeTab === "movieSets"
-        ? "Movie Sets"
-        : activeTab === "collectionSets"
-          ? "Collection Sets"
-          : "Box Sets";
-
   const activeItems = useMemo(() => {
     switch (activeTab) {
       case "showSets":
@@ -696,6 +701,44 @@ const UserSetPage = () => {
     setCurrentPage(1);
   }, [activeTab, setCurrentPage]);
 
+  // Auto-switch active tab if boxsets are empty in Series or Movie library
+  useEffect(() => {
+    if (selectedLibrarySection && activeTab === "boxSets" && filteredBoxsets.length === 0) {
+      if (selectedLibrarySection.type === "show") {
+        if (filteredShowSets.length > 0) {
+          setActiveTab("showSets");
+        }
+      } else if (selectedLibrarySection.type === "movie") {
+        if (filteredMovieSets.length > 0) {
+          setActiveTab("movieSets");
+        } else if (filteredCollectionSets.length > 0) {
+          setActiveTab("collectionSets");
+        }
+      }
+    }
+    // Prevent switching to a tab that doesn't match the library type
+    if (selectedLibrarySection) {
+      if (selectedLibrarySection.type === "show" && (activeTab === "movieSets" || activeTab === "collectionSets")) {
+        setActiveTab("showSets");
+      } else if (selectedLibrarySection.type === "movie" && activeTab === "showSets") {
+        if (filteredMovieSets.length > 0) {
+          setActiveTab("movieSets");
+        } else if (filteredCollectionSets.length > 0) {
+          setActiveTab("collectionSets");
+        } else if (filteredBoxsets.length > 0) {
+          setActiveTab("boxSets");
+        }
+      }
+    }
+  }, [
+    selectedLibrarySection,
+    activeTab,
+    filteredBoxsets.length,
+    filteredShowSets.length,
+    filteredMovieSets.length,
+    filteredCollectionSets.length,
+  ]);
+
   const getNextInDbFilter = (current: TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS): TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS => {
     const cycle: TYPE_USER_PAGE_FILTER_IN_DB_OPTIONS[] = [
       "",
@@ -707,6 +750,20 @@ const UserSetPage = () => {
 
   return (
     <div className="flex flex-col">
+      {/* Always show header */}
+      <div className="flex flex-col items-center mt-8 mb-4">
+        <h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight text-primary flex items-center justify-center gap-2">
+          <span className="text-white opacity-80">Sets by</span>
+          <span className="text-primary">{username}</span>
+          <Avatar className="rounded-lg w-7 h-7 ml-2 align-middle">
+            <AvatarImage src={`/api/images/mediux/avatar?username=${username}`} className="w-7 h-7" />
+            <AvatarFallback>
+              <User className="w-7 h-7" />
+            </AvatarFallback>
+          </Avatar>
+        </h1>
+      </div>
+
       {/* Show loading message */}
       {isLoading && (
         <div className="flex justify-center mt-4">
@@ -715,13 +772,13 @@ const UserSetPage = () => {
       )}
 
       {/* Show error message if there is an error */}
-      {error && (
+      {!isLoading && error && (
         <div className="flex justify-center">
           <ErrorMessage error={error} />
         </div>
       )}
 
-      {/* Show message when no sets are found */}
+      {/* Show message when no sets are found for user */}
       {!isLoading &&
         !error &&
         creatorSetsResponse &&
@@ -730,11 +787,11 @@ const UserSetPage = () => {
         creatorSetsResponse.collection_sets.length === 0 &&
         creatorSetsResponse.boxsets.length === 0 && (
           <div className="flex justify-center mt-4">
-            <P>No sets found for {username}</P>
+            <ErrorMessage error={ReturnErrorMessage<string>(`No sets found for ${username}`)} />
           </div>
         )}
 
-      {/* Main content when sets exist */}
+      {/* Show set counts and library options if sets exist */}
       {!isLoading &&
         !error &&
         creatorSetsResponse &&
@@ -743,65 +800,142 @@ const UserSetPage = () => {
           creatorSetsResponse.collection_sets.length > 0 ||
           creatorSetsResponse.boxsets.length > 0) && (
           <div className="min-h-screen px-4 sm:px-8 pb-20">
-            {/* User Sets Header */}
-            <div className="flex flex-col items-center mt-8 mb-6">
-              <h1 className="text-4xl font-extrabold text-center mb-2 tracking-tight text-primary flex items-center justify-center gap-2">
-                <span className="text-white opacity-80">Sets by</span>
-                <span className="text-primary">{username}</span>
-                <Avatar className="rounded-lg w-7 h-7 ml-2 align-middle">
-                  <AvatarImage src={`/api/images/mediux/avatar?username=${username}`} className="w-7 h-7" />
-                  <AvatarFallback>
-                    <User className="w-7 h-7" />
-                  </AvatarFallback>
-                </Avatar>
-              </h1>
-              {!selectedLibrarySection ||
-                (selectedLibrarySection.title == "" && (
-                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                    {showSets.length > 0 && (
-                      <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-                        <span className="font-semibold text-primary">Show Sets</span>
-                        <Badge variant="secondary" className="text-xs px-2 py-1">
-                          {showSets.length}
-                        </Badge>
-                      </div>
-                    )}
-                    {movieSets.length > 0 && (
-                      <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-                        <span className="font-semibold text-primary">Movie Sets</span>
-                        <Badge variant="secondary" className="text-xs px-2 py-1">
-                          {movieSets.length}
-                        </Badge>
-                      </div>
-                    )}
-                    {collectionSets.length > 0 && (
-                      <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-                        <span className="font-semibold text-primary">Collection Sets</span>
-                        <Badge variant="secondary" className="text-xs px-2 py-1">
-                          {collectionSets.length}
-                        </Badge>
-                      </div>
-                    )}
-                    {boxsets.length > 0 && (
-                      <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
-                        <span className="font-semibold text-primary">Box Sets</span>
-                        <Badge variant="secondary" className="text-xs px-2 py-1">
-                          {boxsets.length}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                ))}
+            {/* Set counts and library selection */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              {/* Show counts for current library if selected, else all */}
+              {selectedLibrarySection ? (
+                <>
+                  {(() => {
+                    // If all filtered counts are zero, show creatorSetsResponse counts (even if zero)
+                    const allFilteredZero =
+                      filteredShowSets.length === 0 &&
+                      filteredMovieSets.length === 0 &&
+                      filteredCollectionSets.length === 0 &&
+                      filteredBoxsets.length === 0;
+                    if (allFilteredZero) {
+                      if (selectedLibrarySection.type === "show") {
+                        return creatorSetsResponse.show_sets.length > 0 ? (
+                          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                            <span className="font-semibold text-primary">Show Sets</span>
+                            <Badge variant="secondary" className="text-xs px-2 py-1">
+                              {creatorSetsResponse.show_sets.length}
+                            </Badge>
+                          </div>
+                        ) : null;
+                      } else if (selectedLibrarySection.type === "movie") {
+                        return (
+                          <>
+                            {creatorSetsResponse.movie_sets.length > 0 && (
+                              <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                                <span className="font-semibold text-primary">Movie Sets</span>
+                                <Badge variant="secondary" className="text-xs px-2 py-1">
+                                  {creatorSetsResponse.movie_sets.length}
+                                </Badge>
+                              </div>
+                            )}
+                            {creatorSetsResponse.collection_sets.length > 0 && (
+                              <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                                <span className="font-semibold text-primary">Collection Sets</span>
+                                <Badge variant="secondary" className="text-xs px-2 py-1">
+                                  {creatorSetsResponse.collection_sets.length}
+                                </Badge>
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
+                      return creatorSetsResponse.boxsets.length > 0 ? (
+                        <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                          <span className="font-semibold text-primary">Box Sets</span>
+                          <Badge variant="secondary" className="text-xs px-2 py-1">
+                            {creatorSetsResponse.boxsets.length}
+                          </Badge>
+                        </div>
+                      ) : null;
+                    }
+                    // Otherwise, show only nonzero filtered counts
+                    return (
+                      <>
+                        {selectedLibrarySection.type === "show" && filteredShowSets.length > 0 && (
+                          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                            <span className="font-semibold text-primary">Show Sets</span>
+                            <Badge variant="secondary" className="text-xs px-2 py-1">
+                              {filteredShowSets.length}
+                            </Badge>
+                          </div>
+                        )}
+                        {selectedLibrarySection.type === "movie" && filteredMovieSets.length > 0 && (
+                          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                            <span className="font-semibold text-primary">Movie Sets</span>
+                            <Badge variant="secondary" className="text-xs px-2 py-1">
+                              {filteredMovieSets.length}
+                            </Badge>
+                          </div>
+                        )}
+                        {selectedLibrarySection.type === "movie" && filteredCollectionSets.length > 0 && (
+                          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                            <span className="font-semibold text-primary">Collection Sets</span>
+                            <Badge variant="secondary" className="text-xs px-2 py-1">
+                              {filteredCollectionSets.length}
+                            </Badge>
+                          </div>
+                        )}
+                        {filteredBoxsets.length > 0 && (
+                          <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                            <span className="font-semibold text-primary">Box Sets</span>
+                            <Badge variant="secondary" className="text-xs px-2 py-1">
+                              {filteredBoxsets.length}
+                            </Badge>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
+              ) : (
+                <>
+                  {creatorSetsResponse.show_sets.length > 0 && (
+                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                      <span className="font-semibold text-primary">Show Sets</span>
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        {creatorSetsResponse.show_sets.length}
+                      </Badge>
+                    </div>
+                  )}
+                  {creatorSetsResponse.movie_sets.length > 0 && (
+                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                      <span className="font-semibold text-primary">Movie Sets</span>
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        {creatorSetsResponse.movie_sets.length}
+                      </Badge>
+                    </div>
+                  )}
+                  {creatorSetsResponse.collection_sets.length > 0 && (
+                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                      <span className="font-semibold text-primary">Collection Sets</span>
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        {creatorSetsResponse.collection_sets.length}
+                      </Badge>
+                    </div>
+                  )}
+                  {creatorSetsResponse.boxsets.length > 0 && (
+                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-4 py-2 shadow-sm">
+                      <span className="font-semibold text-primary">Box Sets</span>
+                      <Badge variant="secondary" className="text-xs px-2 py-1">
+                        {creatorSetsResponse.boxsets.length}
+                      </Badge>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Library Section Selection */}
-            <div className="w-full max-w-3xl">
-              {/* Library Section */}
+            <div className="w-full max-w-3xl mt-6">
               <div className="flex flex-col sm:flex-row mb-4 mt-2">
                 <Label htmlFor="library-filter" className="text-lg font-semibold mb-2 sm:mb-0 sm:mr-4">
                   Libraries:
                 </Label>
-
                 <ToggleGroup
                   type="single"
                   className="flex flex-wrap sm:flex-nowrap gap-2"
@@ -824,6 +958,7 @@ const UserSetPage = () => {
                           section.type === "show" || section.type === "movie"
                             ? { ...section, type: section.type as TYPE_LIBRARY_TYPE_OPTIONS }
                             : null;
+                        setActiveTab("boxSets");
                         if (selectedLibrarySection?.title === section.title) {
                           setSelectedLibrarySection(null);
                           setCurrentPage(1);
@@ -834,7 +969,6 @@ const UserSetPage = () => {
                           setFilterOutInDB("");
                         }
                         setSearchQuery("");
-                        setActiveTab("boxSets");
                       }}
                       className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
                         !!selectedLibrarySection && selectedLibrarySection.title !== section.title
@@ -849,28 +983,72 @@ const UserSetPage = () => {
               </div>
             </div>
 
-            {/* No library selected message */}
-            {!selectedLibrarySection && (
-              <div className="flex justify-center mt-8">
-                <ErrorMessage
-                  isWarning={true}
-                  error={ReturnErrorMessage<string>("No library selected. Select one to get started.")}
-                />
-              </div>
-            )}
+            {/* Library-specific errors and content */}
+            {selectedLibrarySection ? (
+              <>
+                {/* If no sets for selected library, show error */}
+                {filteredShowSets.length === 0 &&
+                filteredMovieSets.length === 0 &&
+                filteredCollectionSets.length === 0 &&
+                filteredBoxsets.length === 0 ? (
+                  <>
+                    {/* If the filterOutInDB is selected, show an option to unselect it */}
+                    <div className="flex justify-center">
+                      {/* Filter Out In DB Selection */}
+                      <div className="w-full flex items-center mb-2">
+                        <Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
+                          Filter:
+                        </Label>
+                        {/* Filter Out In DB Toggle */}
 
-            {selectedLibrarySection &&
-              (isActiveTabEmpty ? (
-                <>
-                  {/* If the filterOutInDB is selected, show an option to unselect it */}
-                  <div className="flex justify-center">
+                        <Badge
+                          key="filter-out-in-db"
+                          className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
+                            filterOutInDB === "inDB"
+                              ? "bg-green-600 text-white"
+                              : filterOutInDB === "notInDB"
+                                ? "bg-red-600 text-white"
+                                : filterOutInDB === "otherSetInDB"
+                                  ? "bg-yellow-600 text-white"
+                                  : ""
+                          }`}
+                          variant={filterOutInDB !== "" ? "default" : "outline"}
+                          onClick={() => {
+                            setFilterOutInDB(getNextInDbFilter(filterOutInDB));
+                            setCurrentPage(1);
+                          }}
+                        >
+                          {filterOutInDB === ""
+                            ? "All Items"
+                            : USER_PAGE_FILTER_IN_DB_OPTIONS.find((option) => option.value === filterOutInDB)?.label ||
+                              "Filter"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex justify-center mt-8">
+                      <ErrorMessage
+                        error={ReturnErrorMessage<string>(
+                          `No sets found in ${selectedLibrarySection.title} library${
+                            filterOutInDB === "inDB"
+                              ? " that exist in your database"
+                              : filterOutInDB === "notInDB"
+                                ? " that are missing from your database"
+                                : filterOutInDB === "otherSetInDB"
+                                  ? " that are in other sets in your database"
+                                  : ""
+                          }${searchQuery ? ` for search query "${searchQuery}"` : ""}`
+                        )}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center mt-4 mb-4">
                     {/* Filter Out In DB Selection */}
                     <div className="w-full flex items-center mb-2">
                       <Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
                         Filter:
                       </Label>
                       {/* Filter Out In DB Toggle */}
-
                       <Badge
                         key="filter-out-in-db"
                         className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
@@ -894,286 +1072,251 @@ const UserSetPage = () => {
                             "Filter"}
                       </Badge>
                     </div>
-                  </div>
-                  <div className="flex justify-center mt-8">
-                    <ErrorMessage
-                      error={ReturnErrorMessage<string>(
-                        `No ${activeTabLabel} found in ${selectedLibrarySection.title} library${
-                          filterOutInDB === "inDB"
-                            ? " that exist in your database"
-                            : filterOutInDB === "notInDB"
-                              ? " that are missing from your database"
-                              : filterOutInDB === "otherSetInDB"
-                                ? " that are in other sets in your database"
-                                : ""
-                        }${searchQuery ? ` for search query "${searchQuery}"` : ""}`
-                      )}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center mt-4 mb-4">
-                  {/* Filter Out In DB Selection */}
-                  <div className="w-full flex items-center mb-2">
-                    <Label htmlFor="filter-out-in-db" className="text-lg font-semibold mr-2">
-                      Filter:
-                    </Label>
-                    {/* Filter Out In DB Toggle */}
 
-                    <Badge
-                      key="filter-out-in-db"
-                      className={`cursor-pointer text-sm active:scale-95 hover:brightness-120 ${
-                        filterOutInDB === "inDB"
-                          ? "bg-green-600 text-white"
-                          : filterOutInDB === "notInDB"
-                            ? "bg-red-600 text-white"
-                            : filterOutInDB === "otherSetInDB"
-                              ? "bg-yellow-600 text-white"
-                              : ""
-                      }`}
-                      variant={filterOutInDB !== "" ? "default" : "outline"}
-                      onClick={() => {
-                        setFilterOutInDB(getNextInDbFilter(filterOutInDB));
+                    {/* Items Per Page Selection */}
+                    <div className="w-full flex items-center mb-2">
+                      <SelectItemsPerPage
+                        setCurrentPage={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        setItemsPerPage={setItemsPerPage}
+                      />
+                    </div>
+
+                    {/* Sort Control */}
+                    <div className="w-full flex items-center mb-4">
+                      <SortControl
+                        options={[
+                          {
+                            value: "dateLastUpdate",
+                            label: "Date Updated",
+                            ascIcon: <ClockArrowUp />,
+                            descIcon: <ClockArrowDown />,
+                            type: "date" as const,
+                          },
+                          {
+                            value: "title",
+                            label: "Title",
+                            ascIcon: <ArrowDownAZ />,
+                            descIcon: <ArrowDownZA />,
+                            type: "string" as const,
+                          },
+                        ]}
+                        sortOption={sortOption}
+                        sortOrder={sortOrder}
+                        setSortOption={(value) => {
+                          setSortOption(value as "title" | "dateLastUpdate");
+                          if (value === "title") setSortOrder("asc");
+                          else if (value === "dateLastUpdate") setSortOrder("desc");
+                        }}
+                        setSortOrder={setSortOrder}
+                      />
+                    </div>
+
+                    <Tabs
+                      defaultValue="boxSets"
+                      value={activeTab}
+                      onValueChange={(val) => {
+                        if (!isActiveTabKey(val)) return;
+                        setActiveTab(val);
                         setCurrentPage(1);
                       }}
+                      className="mt-2 w-full"
                     >
-                      {filterOutInDB === ""
-                        ? "All Items"
-                        : USER_PAGE_FILTER_IN_DB_OPTIONS.find((option) => option.value === filterOutInDB)?.label ||
-                          "Filter"}
-                    </Badge>
-                  </div>
+                      <TabsList className="flex flex-wrap w-full rounded-none bg-transparent gap-2 justify-start px-2 mb-2 border-b">
+                        {showSets.length > 0 && (
+                          <TabsTrigger
+                            value="showSets"
+                            className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+                          >
+                            Show Sets ({showSets.length})
+                          </TabsTrigger>
+                        )}
+                        {movieSets.length > 0 && (
+                          <TabsTrigger
+                            value="movieSets"
+                            className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+                          >
+                            Movie Sets ({movieSets.length})
+                          </TabsTrigger>
+                        )}
+                        {collectionSets.length > 0 && (
+                          <TabsTrigger
+                            value="collectionSets"
+                            className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+                          >
+                            Collection Sets ({collectionSets.length})
+                          </TabsTrigger>
+                        )}
+                        {boxsets.length > 0 && (
+                          <TabsTrigger
+                            value="boxSets"
+                            className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
+                          >
+                            Box Sets ({boxsets.length})
+                          </TabsTrigger>
+                        )}
+                      </TabsList>
 
-                  {/* Items Per Page Selection */}
-                  <div className="w-full flex items-center mb-2">
-                    <SelectItemsPerPage
-                      setCurrentPage={setCurrentPage}
-                      itemsPerPage={itemsPerPage}
-                      setItemsPerPage={setItemsPerPage}
-                    />
-                  </div>
-
-                  {/* Sort Control */}
-                  <div className="w-full flex items-center mb-4">
-                    {/* Sort Control */}
-                    <SortControl
-                      options={[
-                        {
-                          value: "dateLastUpdate",
-                          label: "Date Updated",
-                          ascIcon: <ClockArrowUp />,
-                          descIcon: <ClockArrowDown />,
-                          type: "date" as const,
-                        },
-
-                        {
-                          value: "title",
-                          label: "Title",
-                          ascIcon: <ArrowDownAZ />,
-                          descIcon: <ArrowDownZA />,
-                          type: "string" as const,
-                        },
-                      ]}
-                      sortOption={sortOption}
-                      sortOrder={sortOrder}
-                      setSortOption={(value) => {
-                        setSortOption(value as "title" | "dateLastUpdate");
-                        if (value === "title") setSortOrder("asc");
-                        else if (value === "dateLastUpdate") setSortOrder("desc");
-                      }}
-                      setSortOrder={setSortOrder}
-                    />
-                  </div>
-
-                  <Tabs
-                    defaultValue="boxSets"
-                    value={activeTab}
-                    onValueChange={(val) => {
-                      if (!isActiveTabKey(val)) return;
-                      setActiveTab(val);
-                      setCurrentPage(1);
-                    }}
-                    className="mt-2 w-full"
-                  >
-                    <TabsList className="flex flex-wrap w-full rounded-none bg-transparent gap-2 justify-start px-2 mb-2 border-b">
-                      {showSets.length > 0 && (
-                        <TabsTrigger
-                          value="showSets"
-                          className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
-                        >
-                          Show Sets ({showSets.length})
-                        </TabsTrigger>
-                      )}
-                      {movieSets.length > 0 && (
-                        <TabsTrigger
-                          value="movieSets"
-                          className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
-                        >
-                          Movie Sets ({movieSets.length})
-                        </TabsTrigger>
-                      )}
-                      {collectionSets.length > 0 && (
-                        <TabsTrigger
-                          value="collectionSets"
-                          className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
-                        >
-                          Collection Sets ({collectionSets.length})
-                        </TabsTrigger>
-                      )}
-                      {boxsets.length > 0 && (
-                        <TabsTrigger
-                          value="boxSets"
-                          className="flex-1 cursor-pointer text-primary data-[state=active]:bg-primary data-[state=active]:text-background dark:data-[state=active]:bg-primary dark:data-[state=active]:text-background hover:brightness-120 active:scale-95"
-                        >
-                          Box Sets ({boxsets.length})
-                        </TabsTrigger>
-                      )}
-                    </TabsList>
-
-                    <div className="mt-4">
-                      {activeTab === "showSets" && (
-                        <TabsContent value="showSets">
-                          <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {(paginatedActiveItems as SetRef[]).map((showSet) => (
-                              <div key={`${showSet.id}-showset`} className="pb-6">
-                                <RenderShowAndCollectionDisplay includedItems={setIncludedItems || {}} set={showSet} />
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                      )}
-
-                      {activeTab === "movieSets" && (
-                        <TabsContent value="movieSets">
-                          <ResponsiveGrid size="regular">
-                            {(paginatedActiveItems as SetRef[]).map((set) => (
-                              <div
-                                key={set.id}
-                                className="relative flex flex-col items-center p-2 border rounded-md"
-                                style={{ background: "oklch(0.16 0.0202 282.55)", opacity: "0.95", padding: "0.5rem" }}
-                              >
-                                <div className="relative w-full mb-1">
-                                  {/* Download Button - absolute top right */}
-                                  <div className="absolute top-0 right-0 z-10">
-                                    <DownloadModal
-                                      baseSetInfo={set}
-                                      formItems={setRefsToFormItems([set], setIncludedItems || {})}
-                                    />
-                                  </div>
-                                  {/* Set Name */}
-                                  <P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
-                                    {set.title}
-                                  </P>
+                      <div className="mt-4">
+                        {activeTab === "showSets" && (
+                          <TabsContent value="showSets">
+                            <div className="divide-y divide-primary-dynamic/20 space-y-6">
+                              {(paginatedActiveItems as SetRef[]).map((showSet) => (
+                                <div key={`${showSet.id}-showset`} className="pb-6">
+                                  <RenderShowAndCollectionDisplay
+                                    includedItems={setIncludedItems || {}}
+                                    set={showSet}
+                                  />
                                 </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+                        )}
 
-                                {/* Set User Name */}
-                                <div className="flex items-center justify-start w-full mb-1">
-                                  <div className="flex items-center gap-1">
-                                    <Avatar className="rounded-lg mr-1 w-4 h-4">
-                                      <AvatarImage
-                                        src={`/api/images/mediux/avatar?username=${set.user_created}`}
-                                        className="w-4 h-4"
+                        {activeTab === "movieSets" && (
+                          <TabsContent value="movieSets">
+                            <ResponsiveGrid size="regular">
+                              {(paginatedActiveItems as SetRef[]).map((set) => (
+                                <div
+                                  key={set.id}
+                                  className="relative flex flex-col items-center p-2 border rounded-md"
+                                  style={{
+                                    background: "oklch(0.16 0.0202 282.55)",
+                                    opacity: "0.95",
+                                    padding: "0.5rem",
+                                  }}
+                                >
+                                  <div className="relative w-full mb-1">
+                                    {/* Download Button - absolute top right */}
+                                    <div className="absolute top-0 right-0 z-10">
+                                      <DownloadModal
+                                        baseSetInfo={set}
+                                        formItems={setRefsToFormItems([set], setIncludedItems || {})}
                                       />
-                                      <AvatarFallback className="">
-                                        <User className="w-4 h-4" />
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <Link
-                                      href={`/user/${set.user_created}`}
-                                      className="text-sm hover:text-primary cursor-pointer underline truncate"
-                                      style={{ wordBreak: "break-word" }}
-                                    >
-                                      {set.user_created}
-                                    </Link>
+                                    </div>
+                                    {/* Set Name */}
+                                    <P className="text-primary-dynamic text-sm font-semibold w-full mb-1 truncate pr-10">
+                                      {set.title}
+                                    </P>
                                   </div>
-                                </div>
 
-                                {/* Last Update */}
-                                <Lead className="text-sm text-muted-foreground w-full mb-2">
-                                  Last Update:{" "}
-                                  {formatLastUpdatedDate(
-                                    set.date_updated,
-                                    set.date_created || set.images[0]?.modified || ""
+                                  {/* Set User Name */}
+                                  <div className="flex items-center justify-start w-full mb-1">
+                                    <div className="flex items-center gap-1">
+                                      <Avatar className="rounded-lg mr-1 w-4 h-4">
+                                        <AvatarImage
+                                          src={`/api/images/mediux/avatar?username=${set.user_created}`}
+                                          className="w-4 h-4"
+                                        />
+                                        <AvatarFallback className="">
+                                          <User className="w-4 h-4" />
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <Link
+                                        href={`/user/${set.user_created}`}
+                                        className="text-sm hover:text-primary cursor-pointer underline truncate"
+                                        style={{ wordBreak: "break-word" }}
+                                      >
+                                        {set.user_created}
+                                      </Link>
+                                    </div>
+                                  </div>
+
+                                  {/* Last Update */}
+                                  <Lead className="text-sm text-muted-foreground w-full mb-2">
+                                    Last Update:{" "}
+                                    {formatLastUpdatedDate(
+                                      set.date_updated,
+                                      set.date_created || set.images[0]?.modified || ""
+                                    )}
+                                  </Lead>
+
+                                  {/* Poster */}
+                                  {set.images.find((image) => image.type === "poster") && (
+                                    <AssetImage
+                                      image={set.images.find((image) => image.type === "poster")!}
+                                      imageType="mediux"
+                                      aspect="poster"
+                                      className="w-full mb-2"
+                                      includedItems={setIncludedItems || {}}
+                                      matchedToItem={true}
+                                    />
                                   )}
-                                </Lead>
 
-                                {/* Poster */}
-                                {set.images.find((image) => image.type === "poster") && (
-                                  <AssetImage
-                                    image={set.images.find((image) => image.type === "poster")!}
-                                    imageType="mediux"
-                                    aspect="poster"
-                                    className="w-full mb-2"
+                                  {/* Backdrop */}
+                                  {set.images.find((image) => image.type === "backdrop") && (
+                                    <AssetImage
+                                      image={set.images.find((image) => image.type === "backdrop")!}
+                                      imageType="mediux"
+                                      aspect="backdrop"
+                                      className="w-full"
+                                      includedItems={setIncludedItems || {}}
+                                      matchedToItem={true}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </ResponsiveGrid>
+                          </TabsContent>
+                        )}
+
+                        {activeTab === "collectionSets" && (
+                          <TabsContent value="collectionSets">
+                            <div className="divide-y divide-primary-dynamic/20 space-y-6">
+                              {(paginatedActiveItems as SetRef[]).map((collectionSet) => (
+                                <div key={`${collectionSet.id}-collectionset`} className="pb-6">
+                                  <RenderShowAndCollectionDisplay
                                     includedItems={setIncludedItems || {}}
-                                    matchedToItem={true}
+                                    set={collectionSet}
                                   />
-                                )}
+                                </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+                        )}
 
-                                {/* Backdrop */}
-                                {set.images.find((image) => image.type === "backdrop") && (
-                                  <AssetImage
-                                    image={set.images.find((image) => image.type === "backdrop")!}
-                                    imageType="mediux"
-                                    aspect="backdrop"
-                                    className="w-full"
-                                    includedItems={setIncludedItems || {}}
-                                    matchedToItem={true}
-                                  />
-                                )}
-                              </div>
-                            ))}
-                          </ResponsiveGrid>
-                        </TabsContent>
-                      )}
+                        {activeTab === "boxSets" && (
+                          <TabsContent value="boxSets">
+                            <div className="divide-y divide-primary-dynamic/20 space-y-6">
+                              {(paginatedActiveItems as BoxsetsWithSetInfo[]).map((boxset) => (
+                                <div key={`${boxset.id}-boxset`} className="pb-6">
+                                  <RenderBoxsetDisplay includedItems={setIncludedItems || {}} set={boxset} />
+                                </div>
+                              ))}
+                            </div>
+                          </TabsContent>
+                        )}
+                      </div>
+                    </Tabs>
 
-                      {activeTab === "collectionSets" && (
-                        <TabsContent value="collectionSets">
-                          <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {(paginatedActiveItems as SetRef[]).map((collectionSet) => (
-                              <div key={`${collectionSet.id}-collectionset`} className="pb-6">
-                                <RenderShowAndCollectionDisplay
-                                  includedItems={setIncludedItems || {}}
-                                  set={collectionSet}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                      )}
-
-                      {activeTab === "boxSets" && (
-                        <TabsContent value="boxSets">
-                          <div className="divide-y divide-primary-dynamic/20 space-y-6">
-                            {(paginatedActiveItems as BoxsetsWithSetInfo[]).map((boxset) => (
-                              <div key={`${boxset.id}-boxset`} className="pb-6">
-                                <RenderBoxsetDisplay includedItems={setIncludedItems || {}} set={boxset} />
-                              </div>
-                            ))}
-                          </div>
-                        </TabsContent>
-                      )}
-                    </div>
-                  </Tabs>
-
-                  {/* Pagination */}
-                  <CustomPagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    setCurrentPage={setCurrentPage}
-                    scrollToTop={true}
-                    filterItemsLength={
-                      activeTab === "boxSets"
-                        ? filteredBoxsets.length
-                        : activeTab === "showSets"
-                          ? filteredShowSets.length
-                          : activeTab === "movieSets"
-                            ? filteredMovieSets.length
-                            : filteredCollectionSets.length
-                    }
-                    itemsPerPage={itemsPerPage}
-                  />
-                </div>
-              ))}
+                    {/* Pagination */}
+                    <CustomPagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      setCurrentPage={setCurrentPage}
+                      scrollToTop={true}
+                      filterItemsLength={
+                        activeTab === "boxSets"
+                          ? filteredBoxsets.length
+                          : activeTab === "showSets"
+                            ? filteredShowSets.length
+                            : activeTab === "movieSets"
+                              ? filteredMovieSets.length
+                              : filteredCollectionSets.length
+                      }
+                      itemsPerPage={itemsPerPage}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-center mt-8">
+                <ErrorMessage
+                  isWarning={true}
+                  error={ReturnErrorMessage<string>("No library selected. Select one to get started.")}
+                />
+              </div>
+            )}
           </div>
         )}
     </div>
