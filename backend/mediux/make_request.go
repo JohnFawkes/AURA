@@ -83,7 +83,7 @@ func AddMediuxAuthHeader(url string, token string, isImageRequest bool, headers 
 	if token == "" {
 		token = config.Current.Mediux.ApiToken
 	}
-	if strings.HasPrefix(url, MediuxApiURL) {
+	if strings.HasPrefix(url, MediuxApiURL) || strings.HasPrefix(url, "https://api.mediux.io/") {
 		headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
 	}
 	if isImageRequest {
