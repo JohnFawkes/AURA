@@ -76,23 +76,20 @@ func GetAllUserSets(ctx context.Context, username string) (creatorSets models.Cr
 		return creatorSets, Err
 	}
 
-	// If there is no show sets, movie sets, collection sets, or boxsets, return empty
-	if len(userSetsResponse.Data.ShowSets) == 0 &&
-		len(userSetsResponse.Data.MovieSets) == 0 &&
-		len(userSetsResponse.Data.CollectionSets) == 0 &&
-		len(userSetsResponse.Data.Boxsets) == 0 {
-		logAction.SetError("No user sets found", "The user does not have any sets available",
-			map[string]any{
-				"username": username,
-			})
-		return creatorSets, Err
-	}
 	logAction.AppendResult("Found user sets", map[string]int{
 		"show_sets":       len(userSetsResponse.Data.ShowSets),
 		"movie_sets":      len(userSetsResponse.Data.MovieSets),
 		"collection_sets": len(userSetsResponse.Data.CollectionSets),
 		"boxsets":         len(userSetsResponse.Data.Boxsets),
 	})
+
+	// If there is no show sets, movie sets, collection sets, or boxsets, return empty
+	if len(userSetsResponse.Data.ShowSets) == 0 &&
+		len(userSetsResponse.Data.MovieSets) == 0 &&
+		len(userSetsResponse.Data.CollectionSets) == 0 &&
+		len(userSetsResponse.Data.Boxsets) == 0 {
+		return creatorSets, Err
+	}
 
 	creatorSets.IncludedItems = map[string]models.IncludedItem{}
 
