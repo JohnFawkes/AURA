@@ -120,6 +120,13 @@ const DownloadQueueEntry: React.FC<{
           {entry.media_item.year} · {entry.media_item.library_title}
         </span>
 
+        {/* Set Author */}
+        {entry.poster_sets && entry.poster_sets.length > 0 && (
+          <span className="text-xs sm:text-sm text-muted-foreground inline-block">
+            {`Set by: ${entry.poster_sets[0].user_created}`}
+          </span>
+        )}
+
         <Separator className="my-4" />
 
         {posterSets.some(
