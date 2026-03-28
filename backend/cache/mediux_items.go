@@ -27,6 +27,11 @@ func (c *MediuxItemCache) StoreMediuxItems(items []models.MediuxContentID) {
 	defer c.mu.Unlock()
 
 	for _, value := range items {
+		if value.ID == "" || value.Type == "" {
+			continue
+		} else if value.Type != "movie" && value.Type != "show" {
+			continue
+		}
 		c.items[value.Type] = append(c.items[value.Type], &models.MediuxContentID{
 			ID:   value.ID,
 			Type: value.Type,

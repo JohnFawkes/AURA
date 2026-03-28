@@ -1,9 +1,7 @@
 package models
 
 type MediuxContentIdsResponse struct {
-	Data struct {
-		ContentIds []MediuxContentID `json:"content_ids"`
-	} `json:"data"`
+	Items []MediuxContentID `json:"items"`
 }
 
 type MediuxContentID struct {
