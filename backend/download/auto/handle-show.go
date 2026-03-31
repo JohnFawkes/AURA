@@ -275,7 +275,10 @@ func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.D
 			// Skip any season posters if the season they are for does not exist in the Media Item
 			if image.Type == "season_poster" {
 				if _, seasonExists := allSeasonsInMediaItem[*image.SeasonNumber]; !seasonExists {
+					check.Reason = fmt.Sprintf("Season %d does not exist in the Media Item, skipping", *image.SeasonNumber)
+					actionImageChecks.AppendResult(imageName, check)
 					continue
+
 				}
 			}
 
@@ -284,9 +287,13 @@ func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.D
 				sn := *image.SeasonNumber
 				en := *image.EpisodeNumber
 				if _, seasonExists := allSeasonsInMediaItem[sn]; !seasonExists {
+					check.Reason = fmt.Sprintf("Titlecard for Season %d Episode %d but Season %d does not exist in the Media Item, skipping", sn, en, sn)
+					actionImageChecks.AppendResult(imageName, check)
 					continue
 				}
 				if _, episodeExists := allEpisodesInMediaItem[episodeKey(sn, en)]; !episodeExists {
+					check.Reason = fmt.Sprintf("Titlecard for Season %d Episode %d but Episode %d does not exist in the Media Item, skipping", sn, en, en)
+					actionImageChecks.AppendResult(imageName, check)
 					continue
 				}
 			}
