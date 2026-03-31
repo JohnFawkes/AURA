@@ -7,6 +7,7 @@ import (
 	"aura/models"
 	"aura/utils/httpx"
 	"net/http"
+	"strings"
 )
 
 type getLibrarySectionOptionsRequest struct {
@@ -44,6 +45,10 @@ func GetLibrarySectionOptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msConfig := req.MediaServer
+
+	if strings.HasPrefix(msConfig.ApiToken, "***") {
+		msConfig.ApiToken = config.Current.MediaServer.ApiToken
+	}
 
 	// Get all available library sections from the Media Server
 	response.LibrarySections, Err = mediaserver.GetLibrarySections(ctx, &msConfig)
