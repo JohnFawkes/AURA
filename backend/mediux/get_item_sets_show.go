@@ -75,7 +75,7 @@ func GetShowItemSets(ctx context.Context, tmdbID string, itemLibraryTitle string
 	// If no show sets, return
 	logAction.AppendResult("sets_found", len(mediuxShow.Sets))
 	if len(mediuxShow.Sets) == 0 {
-		return sets, includedItems, *logAction.Error
+		return sets, includedItems, Err
 	}
 
 	// If the TMDB ID from MediUX does not match the requested TMDB ID, return error
