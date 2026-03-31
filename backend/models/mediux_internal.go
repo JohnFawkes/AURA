@@ -1,10 +1,10 @@
 package models
 
 type MediuxContentIdsResponse struct {
-	Items []MediuxContentID `json:"items"`
+	Movies []MediuxContentID `json:"movies"`
+	Shows  []MediuxContentID `json:"shows"`
 }
 
 type MediuxContentID struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID string `json:"id"`
 }

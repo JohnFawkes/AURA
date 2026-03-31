@@ -647,7 +647,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Ignore mode (e.g., 'always' for permanent ignore, 'temp' for temporary ignore)",
+                        "description": "Ignore mode (e.g., 'always' for permanent ignore, 'until-set-available' for temporary ignore until a set is available, 'until-new-set-available' for temporary ignore until a new set is available)",
                         "name": "mode",
                         "in": "query",
                         "required": true
@@ -4202,7 +4202,7 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "ignored_mode": {
-                    "description": "Mode of ignoring (e.g., \"always\", \"temp\")",
+                    "description": "Mode of ignoring (e.g., \"always\", \"until-set-available\", \"until-new-set-available\")",
                     "type": "string"
                 },
                 "latest_episode_added_at": {
@@ -4718,7 +4718,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "mode": {
-                    "description": "e.g., \"always\", \"temp\"",
+                    "description": "e.g., \"always\", \"until-set-available\", \"until-new-set-available\"",
                     "type": "string"
                 },
                 "tmdb_id": {
