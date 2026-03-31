@@ -22,19 +22,24 @@ func init() {
 	MediuxItems = NewMediuxItemCache()
 }
 
-func (c *MediuxItemCache) StoreMediuxItems(items []models.MediuxContentID) {
+func (c *MediuxItemCache) StoreMediuxItems(movies, shows []models.MediuxContentID) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	for _, value := range items {
-		if value.ID == "" || value.Type == "" {
-			continue
-		} else if value.Type != "movie" && value.Type != "show" {
+	for _, value := range movies {
+		if value.ID == "" {
 			continue
 		}
-		c.items[value.Type] = append(c.items[value.Type], &models.MediuxContentID{
-			ID:   value.ID,
-			Type: value.Type,
+		c.items["movie"] = append(c.items["movie"], &models.MediuxContentID{
+			ID: value.ID,
+		})
+	}
+	for _, value := range shows {
+		if value.ID == "" {
+			continue
+		}
+		c.items["show"] = append(c.items["show"], &models.MediuxContentID{
+			ID: value.ID,
 		})
 	}
 }
@@ -52,15 +57,13 @@ func (c *MediuxItemCache) GetMediuxItems() []models.MediuxContentID {
 	return itemList
 }
 
-func (c *MediuxItemCache) GetCountMediuxItems() int {
+func (c *MediuxItemCache) GetCountMediuxItems() (movieCount int, showsCount int) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	count := 0
-	for _, items := range c.items {
-		count += len(items)
-	}
-	return count
+	movieCount = len(c.items["movie"])
+	showsCount = len(c.items["show"])
+	return
 }
 
 func (c *MediuxItemCache) CheckItemExists(itemType string, tmdbID string) bool {
@@ -86,8 +89,7 @@ func (c *MediuxItemCache) AddItem(itemType string, tmdbID string) {
 		}
 	}
 	c.items[itemType] = append(c.items[itemType], &models.MediuxContentID{
-		ID:   tmdbID,
-		Type: itemType,
+		ID: tmdbID,
 	})
 }
 
