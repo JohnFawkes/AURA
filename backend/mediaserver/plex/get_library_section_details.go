@@ -51,7 +51,9 @@ func (p *Plex) GetLibrarySectionDetails(ctx context.Context, library *models.Lib
 		if plexSection.Title == library.Title {
 			library.Type = plexSection.Type
 			library.ID = plexSection.Key
-			library.Path = plexSection.Location[0].Path
+			for _, location := range plexSection.Location {
+				library.Paths = append(library.Paths, location.Path)
+			}
 			found = true
 			break
 		}

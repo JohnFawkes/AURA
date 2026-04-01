@@ -5,7 +5,7 @@ import { GetLibrarySectionOptions } from "@/services/mediaserver/get-library-sec
 import type { PlexServersResponse } from "@/services/mediaserver/plex";
 import { CheckAuthStatusWithPlex, GetPlexPinAndID } from "@/services/mediaserver/plex";
 import { ValidateMediaServerInfo } from "@/services/validation/mediaserver";
-import { Plus, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -101,7 +101,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
   const [libraryFetchLoading, setLibraryFetchLoading] = useState(false);
 
   const typeNormalized = value.type.trim();
-  const newLibRef = useRef<HTMLInputElement | null>(null);
   const hasRunInitialValidation = useRef(false);
 
   const errors = React.useMemo<Partial<Record<keyof AppConfigMediaServer, string>>>(() => {
@@ -216,14 +215,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
       hasRunInitialValidation.current = true;
     }
   }, [configAlreadyLoaded, runRemoteValidation]);
-
-  // Helpers
-  const addLibraryByName = (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    if (libraries.some((l) => l.title.trim().toLowerCase() === trimmed.toLowerCase())) return;
-    onChange("libraries", [...libraries, { title: trimmed, id: "", type: "" }]);
-  };
 
   const removeLibraryByIndex = (index: number) => {
     onChange(
@@ -622,35 +613,6 @@ export const ConfigSectionMediaServer: React.FC<ConfigSectionMediaServerProps> =
               {lib.title}
             </Badge>
           ))}
-
-          {editing && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!newLibRef.current) return;
-                addLibraryByName(newLibRef.current.value);
-                newLibRef.current.value = "";
-              }}
-              className="flex items-center gap-1"
-            >
-              <Input
-                ref={newLibRef}
-                placeholder="Add library..."
-                className="h-7 w-40 text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    const target = e.currentTarget;
-                    addLibraryByName(target.value);
-                    target.value = "";
-                  }
-                }}
-              />
-              <Button type="submit" variant="outline" size="icon" className="h-7 w-7" title="Add library">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </form>
-          )}
         </div>
         {errors.libraries && <p className="text-xs text-red-500">{errors.libraries}</p>}
       </div>

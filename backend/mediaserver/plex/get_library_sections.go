@@ -50,7 +50,9 @@ func (p *Plex) GetLibrarySections(ctx context.Context, msConfig config.Config_Me
 		library.Title = plexSection.Title
 		library.Type = plexSection.Type
 		library.ID = plexSection.Key
-		library.Path = plexSection.Location[0].Path
+		for _, location := range plexSection.Location {
+			library.Paths = append(library.Paths, location.Path)
+		}
 		sections = append(sections, library)
 	}
 

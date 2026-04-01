@@ -35,7 +35,7 @@ func GetLibrarySections(w http.ResponseWriter, r *http.Request) {
 			ID:    libSection.ID,
 			Title: libSection.Title,
 			Type:  libSection.Type,
-			Path:  libSection.Path,
+			Paths: libSection.Paths,
 		}
 		librarySection := models.LibrarySection{
 			LibrarySectionBase: base,

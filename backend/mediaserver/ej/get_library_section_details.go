@@ -96,19 +96,19 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 		if folder.Name == library.Title {
 			// Prefer top-level Locations (present in Jellyfin/Emby virtual folders response)
 			if len(folder.Locations) > 0 {
-				library.Path = folder.Locations[0]
+				library.Paths = folder.Locations
 			} else if len(folder.PathInfos) > 0 {
 				// Backward/alternate payload support
-				library.Path = folder.PathInfos[0].Path
+				library.Paths = []string{folder.PathInfos[0].Path}
 			}
 			break
 		}
 	}
-	if library.Path != "" {
+	if len(library.Paths) > 0 {
 		// Update the library section in the config with the path info
 		for i, lib := range config.Current.MediaServer.Libraries {
 			if lib.Title == library.Title {
-				config.Current.MediaServer.Libraries[i].Path = library.Path
+				config.Current.MediaServer.Libraries[i].Paths = library.Paths
 				break
 			}
 		}

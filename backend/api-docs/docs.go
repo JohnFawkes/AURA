@@ -4151,9 +4151,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.MediaItem"
                     }
                 },
-                "path": {
-                    "description": "Path of the library section on the media server.",
-                    "type": "string"
+                "paths": {
+                    "description": "Paths of the library section on the media server.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "title": {
                     "description": "Title of the library section.",

@@ -217,8 +217,8 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 
 	validLibraryPaths := []string{}
 	for _, lib := range config.Current.MediaServer.Libraries {
-		if lib.Path != "" {
-			validLibraryPaths = append(validLibraryPaths, lib.Path)
+		if len(lib.Paths) > 0 {
+			validLibraryPaths = append(validLibraryPaths, lib.Paths...)
 		}
 	}
 	logging.LOGGER.Info().Timestamp().Str("boxset_collection", collectionName).Strs("valid_library_paths", validLibraryPaths).Msg("Valid library paths to check against for items in BoxSet collection")
@@ -242,8 +242,13 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 		// Check to see if the path starts with one of the known library paths, if not, skip the item
 		validPath := false
 		for _, lib := range config.Current.MediaServer.Libraries {
-			if lib.Path != "" && strings.HasPrefix(itemPath, lib.Path) {
-				validPath = true
+			for _, libPath := range lib.Paths {
+				if libPath != "" && strings.HasPrefix(itemPath, libPath) {
+					validPath = true
+					break
+				}
+			}
+			if validPath {
 				break
 			}
 		}

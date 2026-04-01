@@ -43,7 +43,7 @@ func (c *MediaServerLibraryCache) UpdateSection(section *models.LibrarySection) 
 		// Update metadata
 		existing.Type = section.Type
 		existing.ID = section.ID
-		existing.Path = section.Path
+		existing.Paths = section.Paths
 
 		// Create a map of existing items for O(1) lookup
 		existingItems := make(map[string]*models.MediaItem)

@@ -781,9 +781,11 @@ definitions:
         items:
           $ref: '#/definitions/models.MediaItem'
         type: array
-      path:
-        description: Path of the library section on the media server.
-        type: string
+      paths:
+        description: Paths of the library section on the media server.
+        items:
+          type: string
+        type: array
       title:
         description: Title of the library section.
         type: string

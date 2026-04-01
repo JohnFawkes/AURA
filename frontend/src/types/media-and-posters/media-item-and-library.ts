@@ -2,7 +2,7 @@ export interface LibrarySectionBase {
   id: string;
   type: string; // "movie" or "show"
   title: string;
-  path?: string;
+  paths?: string[];
 }
 
 export interface LibrarySection extends LibrarySectionBase {

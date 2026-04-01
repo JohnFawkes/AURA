@@ -211,10 +211,39 @@ func saveImageLocally(ctx context.Context, p *Plex, item *models.MediaItem, imag
 		libraryRoot := ""
 		libSection, exists := cache.LibraryStore.GetSectionByTitle(item.LibraryTitle)
 		newPathAction.AppendResult("library_title", item.LibraryTitle)
-		if exists && libSection.Path != "" {
+		if exists && len(libSection.Paths) > 0 {
 			newPathAction.AppendResult("library_found_in_cache", true)
 			// Library exists in cache (e.g. /data/media/movies or /data/media/shows)
-			libraryRoot = libSection.Path
+			if len(libSection.Paths) > 1 {
+				newPathAction.AppendResult("multiple_library_paths_found", true)
+				// If there are multiple library paths, we need to determine which one is correct based on the item path
+				itemPath := ""
+				if item.Movie != nil {
+					itemPath = item.Movie.File.Path
+				} else if item.Series != nil {
+					itemPath = item.Series.Location
+				}
+				newPathAction.AppendResult("item_path_for_library_determination", itemPath)
+
+				for _, libPath := range libSection.Paths {
+					if strings.HasPrefix(itemPath, libPath) {
+						libraryRoot = libPath
+						newPathAction.AppendResult("matched_library_path", libPath)
+						break
+					}
+				}
+				if libraryRoot == "" {
+					newPathAction.SetError("Failed to match library path for media item",
+						"Multiple library paths found but none matched the media item's file path",
+						map[string]any{
+							"item_path":     itemPath,
+							"library_paths": libSection.Paths,
+						})
+					return isCustomLocalPath, *newPathAction.Error
+				}
+			} else {
+				libraryRoot = libSection.Paths[0]
+			}
 			newPathAction.AppendResult("library_root", libraryRoot)
 
 			// Get last part of library root (e.g. "movies" or "shows")
