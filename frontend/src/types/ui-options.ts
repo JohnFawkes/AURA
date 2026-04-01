@@ -64,14 +64,21 @@ export const USER_PAGE_FILTER_IN_DB_OPTIONS: {
 }[] = [...HOME_PAGE_FILTER_IN_DB_OPTIONS, { value: "otherSetInDB", label: "In Database (Other Sets)" }];
 
 // Ignored Filter Options
-export type TYPE_FILTER_IGNORED_OPTIONS = "" | "ignored" | "always" | "temp" | "not_ignored";
+export type TYPE_FILTER_IGNORED_OPTIONS =
+  | ""
+  | "ignored"
+  | "always"
+  | "until-set-available"
+  | "until-new-set-available"
+  | "not_ignored";
 export const FILTER_IGNORED_OPTIONS: {
   value: TYPE_FILTER_IGNORED_OPTIONS;
   label: string;
 }[] = [
   { value: "ignored", label: "Ignored" },
   { value: "always", label: "Always Ignored" },
-  { value: "temp", label: "Temporarily Ignored" },
+  { value: "until-set-available", label: "Until Set Available" },
+  { value: "until-new-set-available", label: "Until New Set Available" },
   { value: "not_ignored", label: "Not Ignored" },
 ];
 

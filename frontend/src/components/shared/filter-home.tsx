@@ -264,7 +264,12 @@ function FilterHomeContent({
                   } else {
                     setFilterInDB(option.value as TYPE_HOME_PAGE_FILTER_IN_DB_OPTIONS);
                     if (option.value === "inDB") {
-                      if (filterIgnored === "ignored" || filterIgnored === "always" || filterIgnored === "temp") {
+                      if (
+                        filterIgnored === "ignored" ||
+                        filterIgnored === "always" ||
+                        filterIgnored === "until-set-available" ||
+                        filterIgnored === "until-new-set-available"
+                      ) {
                         setFilterIgnored("");
                       }
                     }
@@ -298,7 +303,12 @@ function FilterHomeContent({
                 className={cn(
                   "cursor-pointer text-sm active:scale-95 hover:brightness-120",
                   filterIgnored === option.value && option.value === "always" && "bg-red-500 text-primary-foreground",
-                  filterIgnored === option.value && option.value === "temp" && "bg-yellow-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "until-set-available" &&
+                    "bg-orange-500 text-primary-foreground",
+                  filterIgnored === option.value &&
+                    option.value === "until-new-set-available" &&
+                    "bg-yellow-500 text-primary-foreground",
                   filterIgnored === option.value &&
                     option.value === "ignored" &&
                     "bg-orange-500 text-primary-foreground",
@@ -312,7 +322,12 @@ function FilterHomeContent({
                     setFilterIgnored("");
                   } else {
                     setFilterIgnored(option.value as TYPE_FILTER_IGNORED_OPTIONS);
-                    if (option.value === "ignored" || option.value === "always" || option.value === "temp") {
+                    if (
+                      option.value === "ignored" ||
+                      option.value === "always" ||
+                      option.value === "until-set-available" ||
+                      option.value === "until-new-set-available"
+                    ) {
                       if (filterInDB === "inDB") {
                         setFilterInDB("");
                       }

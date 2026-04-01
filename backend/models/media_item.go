@@ -13,7 +13,8 @@ type MediaItem struct {
 	// Used in MediaItem Details Page - For poster sets
 	DBSavedSets []DBSavedSet `json:"db_saved_sets"` // Poster sets saved in the database for this item
 	IgnoredInDB bool         `json:"ignored_in_db"` // Whether the item is marked as ignored
-	IgnoredMode string       `json:"ignored_mode"`  // Mode of ignoring (e.g., "always", "temp")
+	IgnoredMode string       `json:"ignored_mode"`  // Mode of ignoring (e.g., "always", "until-set-available", "until-new-set-available")
+	IgnoredSets []string     `json:"ignored_sets"`  // List of set IDs that were present when the item was ignored (used for "until-new-set-available" mode)
 
 	// Used in Home Page - sorting and filtering
 	HasMediuxSets        bool  `json:"has_mediux_sets"` // Whether the item has MediUX sets

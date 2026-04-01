@@ -298,8 +298,10 @@ export default function Home() {
       // Filter out items that are ignored
       if (filterIgnored === "always") {
         items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "always");
-      } else if (filterIgnored === "temp") {
-        items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "temp");
+      } else if (filterIgnored === "until-set-available") {
+        items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "until-set-available");
+      } else if (filterIgnored === "until-new-set-available") {
+        items = items.filter((item) => item.ignored_in_db && item.ignored_mode === "until-new-set-available");
       } else if (filterIgnored === "ignored") {
         items = items.filter((item) => item.ignored_in_db);
       } else if (filterIgnored === "not_ignored") {

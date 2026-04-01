@@ -309,8 +309,12 @@ CREATE TABLE IgnoredItems (
     library_title TEXT NOT NULL,
 
     -- 'always' = persist until user un-ignores
-    -- 'temp'   = cleared by nightly job when sets exist (per your rule)
-    mode TEXT NOT NULL CHECK (mode IN ('always','temp')),
+    -- 'until-set-available'   = cleared by cron job when a set becomes available
+	-- 'until-new-set-available' = never cleared by cron job, but user notified when a new set becomes available and given the option to clear the ignore manually
+    mode TEXT NOT NULL CHECK (mode IN ('always','until-set-available','until-new-set-available')),
+	
+	-- Sets that currently available for this item (array stored as JSON string)
+	current_sets TEXT NOT NULL DEFAULT '[]',
 
     PRIMARY KEY (tmdb_id, library_title)
 ) WITHOUT ROWID;

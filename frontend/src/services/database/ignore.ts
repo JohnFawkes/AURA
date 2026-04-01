@@ -60,19 +60,21 @@ export const StopIgnoringItemInDB = async (
 export const IgnoreItemInDB = async (
   tmdbID: string,
   libraryTitle: string,
-  ignoreMode: string
+  ignoreMode: string,
+  currentSetsAvailable: string[]
 ): Promise<APIResponse<IgnoreItem_Response>> => {
   log(
     "INFO",
     "API - DB",
     "Ignore Item",
-    `Ignoring item TMDB_ID: ${tmdbID} in library: ${libraryTitle} with mode: ${ignoreMode}`
+    `Ignoring item TMDB_ID: ${tmdbID} in library: ${libraryTitle} with mode: ${ignoreMode} and current sets available: ${currentSetsAvailable.join(", ")}`
   );
   try {
     const params = {
       tmdb_id: tmdbID,
       library_title: libraryTitle,
       mode: ignoreMode,
+      current_sets: currentSetsAvailable.join(",") || "",
     };
     const response = await apiClient.patch<APIResponse<IgnoreItem_Response>>(`/db/ignore`, null, { params: params });
     if (response.data.status === "error") {

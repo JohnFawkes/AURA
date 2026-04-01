@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-const LATEST_DB_VERSION = 4
+const LATEST_DB_VERSION = 5
 
 var Client DB
 
@@ -86,7 +86,7 @@ type DB interface {
 	DeleteAllPosterSetsForMediaItem(ctx context.Context, tmdbID, libraryTitle string) (Err logging.LogErrorInfo)
 
 	// Ignore Media Item
-	IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode string) (Err logging.LogErrorInfo)
+	IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode, currentSets string) (Err logging.LogErrorInfo)
 
 	// Stop Ignoring Media Item
 	StopIgnoringMediaItem(ctx context.Context, TMDB_ID, libraryTitle string) (Err logging.LogErrorInfo)
@@ -284,11 +284,11 @@ func DeleteAllPosterSetsForMediaItem(ctx context.Context, tmdbID, libraryTitle s
 	return Client.DeleteAllPosterSetsForMediaItem(ctx, tmdbID, libraryTitle)
 }
 
-func IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode string) (Err logging.LogErrorInfo) {
+func IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode, currentSets string) (Err logging.LogErrorInfo) {
 	if Client == nil {
 		return logging.Error_DBClientNotInitialized()
 	}
-	return Client.IgnoreMediaItem(ctx, tmdbID, libraryTitle, mode)
+	return Client.IgnoreMediaItem(ctx, tmdbID, libraryTitle, mode, currentSets)
 }
 
 func StopIgnoringMediaItem(ctx context.Context, TMDB_ID, libraryTitle string) (Err logging.LogErrorInfo) {

@@ -16,9 +16,9 @@ func (s *SQliteDB) GetTempIgnoredItems(ctx context.Context) (items []models.Medi
 
 	// Query the database for temp ignored items
 	rows, err := s.conn.QueryContext(ctx, `
-        SELECT tmdb_id, library_title
+        SELECT tmdb_id, library_title, mode, current_sets
         FROM IgnoredItems
-        WHERE mode = 'temp';
+        WHERE mode = 'until-set-available' OR mode = 'until-new-set-available';
     `)
 	if err != nil {
 		return nil, logging.LogErrorInfo{
@@ -30,8 +30,10 @@ func (s *SQliteDB) GetTempIgnoredItems(ctx context.Context) (items []models.Medi
 
 	var tmdbID string
 	var libraryTitle string
+	var mode string
+	var currentSets string
 	for rows.Next() {
-		if err := rows.Scan(&tmdbID, &libraryTitle); err != nil {
+		if err := rows.Scan(&tmdbID, &libraryTitle, &mode, &currentSets); err != nil {
 			return nil, logging.LogErrorInfo{
 				Message: "Failed to scan temp ignored item",
 				Detail:  map[string]any{"error": err.Error()},
@@ -47,13 +49,15 @@ func (s *SQliteDB) GetTempIgnoredItems(ctx context.Context) (items []models.Medi
 				Msg("Temp ignored item not found in cache")
 			continue
 		}
+		cachedItem.IgnoredMode = mode
+		cachedItem.IgnoredSets = strings.Split(currentSets, ",")
 		items = append(items, *cachedItem)
 	}
 
 	return items, Err
 }
 
-func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode string) (Err logging.LogErrorInfo) {
+func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mode, currentSets string) (Err logging.LogErrorInfo) {
 	Err = logging.LogErrorInfo{}
 
 	if s == nil || s.conn == nil {
@@ -71,10 +75,15 @@ func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mo
 		}
 	}
 
-	if mode != "always" && mode != "temp" {
+	if mode != "always" && mode != "until-set-available" && mode != "until-new-set-available" {
 		return logging.LogErrorInfo{
 			Message: "Invalid ignore mode",
-			Detail:  map[string]any{"mode": mode},
+			Detail:  map[string]any{"mode": mode, "valid_modes": []string{"always", "until-set-available", "until-new-set-available"}},
+		}
+	} else if mode == "until-new-set-available" && currentSets == "" {
+		return logging.LogErrorInfo{
+			Message: "current_sets is required for 'until-new-set-available' mode",
+			Detail:  map[string]any{"mode": mode, "current_sets": currentSets},
 		}
 	}
 
@@ -92,15 +101,16 @@ func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mo
 	}
 
 	_, err := s.conn.ExecContext(ctx, `
-        INSERT INTO IgnoredItems (tmdb_id, library_title, mode)
-        VALUES (?, ?, ?)
+        INSERT INTO IgnoredItems (tmdb_id, library_title, mode, current_sets)
+        VALUES (?, ?, ?, ?)
         ON CONFLICT(tmdb_id, library_title) DO UPDATE SET
-            mode = excluded.mode;
-    `, tmdbID, libraryTitle, mode)
+            mode = excluded.mode,
+            current_sets = excluded.current_sets;
+    `, tmdbID, libraryTitle, mode, currentSets)
 	if err != nil {
 		return logging.LogErrorInfo{
 			Message: "Failed to ignore media item",
-			Detail:  map[string]any{"error": err.Error(), "tmdb_id": tmdbID, "library_title": libraryTitle, "mode": mode},
+			Detail:  map[string]any{"error": err.Error(), "tmdb_id": tmdbID, "library_title": libraryTitle, "mode": mode, "current_sets": currentSets},
 		}
 	}
 
@@ -110,6 +120,7 @@ func (s *SQliteDB) IgnoreMediaItem(ctx context.Context, tmdbID, libraryTitle, mo
 		Str("tmdb_id", tmdbID).
 		Str("library_title", libraryTitle).
 		Str("mode", mode).
+		Str("current_sets", currentSets).
 		Msg("Ignored media item")
 
 	return Err

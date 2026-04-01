@@ -657,6 +657,7 @@ const MediaItemPage = () => {
             existsInDB={existsInDB}
             ignoredInDB={ignoredInDB}
             ignoredMode={ignoredMode}
+            currentSetsAvailable={posterSets?.map((set) => set.id) || []}
           />
 
           {/* Loading and Error States */}

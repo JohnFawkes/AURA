@@ -69,11 +69,15 @@ const HomeMediaItemCard: React.FC<HomeMediaItemCardProps> = ({ item }) => {
         <div
           className={cn(
             "absolute top-1 right-1 z-10 rounded-full p-1 border",
-            item.ignored_mode === "always" ? "border-red-800" : "border-yellow-800"
+            item.ignored_mode === "always" && "border-red-800",
+            item.ignored_mode === "until-set-available" && "border-orange-800",
+            item.ignored_mode === "until-new-set-available" && "border-yellow-800"
           )}
         >
           {item.ignored_mode === "always" ? (
             <EyeOffIcon className="text-red-500" size={20} />
+          ) : item.ignored_mode === "until-set-available" ? (
+            <EyeClosedIcon className="text-orange-500" size={20} />
           ) : (
             <EyeClosedIcon className="text-yellow-500" size={20} />
           )}

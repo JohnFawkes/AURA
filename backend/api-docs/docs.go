@@ -4205,6 +4205,13 @@ const docTemplate = `{
                     "description": "Mode of ignoring (e.g., \"always\", \"until-set-available\", \"until-new-set-available\")",
                     "type": "string"
                 },
+                "ignored_sets": {
+                    "description": "List of set IDs that were present when the item was ignored (used for \"until-new-set-available\" mode)",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "latest_episode_added_at": {
                     "type": "integer"
                 },
@@ -4711,6 +4718,10 @@ const docTemplate = `{
         "routes_db.ignoreItemResponse": {
             "type": "object",
             "properties": {
+                "current_sets": {
+                    "description": "comma-separated list of current sets for the item, used for temporary ignore modes",
+                    "type": "string"
+                },
                 "ignored": {
                     "type": "boolean"
                 },

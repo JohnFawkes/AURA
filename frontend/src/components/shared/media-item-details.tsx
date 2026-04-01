@@ -54,6 +54,7 @@ type MediaItemDetailsProps = {
   existsInDB: boolean;
   ignoredInDB?: boolean;
   ignoredMode?: string;
+  currentSetsAvailable?: string[];
 };
 
 export function MediaItemDetails({
@@ -65,6 +66,7 @@ export function MediaItemDetails({
   existsInDB,
   ignoredInDB,
   ignoredMode,
+  currentSetsAvailable = [],
 }: MediaItemDetailsProps) {
   const [isInDBLocal, setIsInDBLocal] = useState(existsInDB);
   const [isIgnoredLocal, setIsIgnoredLocal] = useState(ignoredInDB);
@@ -122,9 +124,9 @@ export function MediaItemDetails({
   };
 
   const handleAddToIgnoredClick = async (ignoreMode: string) => {
-    const addToDBResp = await IgnoreItemInDB(tmdbID, libraryTitle, ignoreMode);
+    const addToDBResp = await IgnoreItemInDB(tmdbID, libraryTitle, ignoreMode, currentSetsAvailable);
     if (addToDBResp.status === "error") {
-      toast.error(`Failed to add ${title} to DB`);
+      toast.error(`Failed to add ${title} to DB: ${addToDBResp.error?.message || "Unknown error"}`);
       return;
     }
 
@@ -133,8 +135,10 @@ export function MediaItemDetails({
     let toastMessage = "";
     if (ignoreMode === "always") {
       toastMessage = `Will always ignore ${title}`;
-    } else if (ignoreMode === "temp") {
+    } else if (ignoreMode === "until-set-available") {
       toastMessage = `Will ignore ${title} until a set is available`;
+    } else if (ignoreMode === "until-new-set-available") {
+      toastMessage = `Will ignore ${title} until a new set is available`;
     }
     toast.success(toastMessage);
   };
@@ -288,10 +292,15 @@ export function MediaItemDetails({
             <Lead className="text-md text-red-500">
               <EyeOffIcon className="inline ml-1 mr-1" size={16} /> This item is set to be always ignored
             </Lead>
+          ) : ignoreModeLocal === "until-set-available" ? (
+            <Lead className="text-md text-orange-500">
+              <EyeClosedIcon className="inline ml-1 mr-1" size={16} /> This item is set to be temporarily ignored until
+              a set is available
+            </Lead>
           ) : (
             <Lead className="text-md text-yellow-500">
               <EyeClosedIcon className="inline ml-1 mr-1" size={16} /> This item is set to be temporarily ignored until
-              a set is available
+              a new set is available
             </Lead>
           )}
         </div>
@@ -364,15 +373,27 @@ export function MediaItemDetails({
                   Always Ignore
                 </DropdownMenuItem>
 
-                {!mediaItem?.has_mediux_sets && (
+                {!mediaItem?.has_mediux_sets && currentSetsAvailable.length === 0 && (
+                  <DropdownMenuItem
+                    className="cursor-pointer text-orange-500 focus:text-orange-800"
+                    onSelect={() => {
+                      void handleAddToIgnoredClick("until-set-available");
+                    }}
+                  >
+                    <EyeClosedIcon className="text-orange-500" size={20} />
+                    Ignore Until Set is Available
+                  </DropdownMenuItem>
+                )}
+
+                {currentSetsAvailable.length > 0 && (
                   <DropdownMenuItem
                     className="cursor-pointer text-yellow-500 focus:text-yellow-800"
                     onSelect={() => {
-                      void handleAddToIgnoredClick("temp");
+                      void handleAddToIgnoredClick("until-new-set-available");
                     }}
                   >
                     <EyeClosedIcon className="text-yellow-500" size={20} />
-                    Ignore Until Set is Available
+                    Ignore Until New Set is Available
                   </DropdownMenuItem>
                 )}
               </>
