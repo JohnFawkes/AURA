@@ -1,3 +1,19 @@
+## [0.9.99] - 2026-03-31
+
+### Added
+
+- Added option for users to ignore a Media Item until new sets are available for it. This is to help with items that have sets that you are not interested in downloading, but you still want to keep track of when new sets become available for it.
+- Added more logging for the Autodownload process to help diagnose issues with it not working properly for some sets.
+- Added support for multiple paths for library sections.
+
+### Fixed
+
+- Fixed issue where Shows with 0 sets would cause a panic error on the Media Item page.
+- Fixed issue where items with more than 1 set would not get correct information from MediUX, causing them to not show up in the UI properly.
+- Fixed issue where getting Library Section Options for the Settings page would fail after the onbaording process was completed.
+
+---
+
 ## [0.9.98] - 2026-03-28
 
 ### Added
