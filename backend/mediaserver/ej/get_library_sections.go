@@ -42,11 +42,13 @@ func (e *EJ) GetLibrarySections(ctx context.Context, msConfig config.Config_Medi
 		return sections, *logAction.Error
 	}
 
+	logAction.AppendResult("total_sections", len(ejResp.Items))
 	for _, item := range ejResp.Items {
 		if item.CollectionType == "" {
 			item.CollectionType = "mixed"
 		}
 		if item.CollectionType != "movies" && item.CollectionType != "tvshows" && item.CollectionType != "mixed" {
+			logAction.AppendWarning(fmt.Sprintf("skipped '%s'", item.Name), map[string]string{"collection_type": item.CollectionType})
 			continue
 		}
 		section := models.LibrarySection{}
