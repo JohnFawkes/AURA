@@ -11,14 +11,14 @@ permalink: /config
 aura uses a `config.yaml` file for configuration. You can setup the configuration file during the onboarding process. However, if you would like, below are the instructions for creating and modifying the `config.yaml` file.
 
 1. **Create the `config.yaml` File**:
-    - You can create a new file named `config.yaml` in the root directory of your aura installation.
+   - You can create a new file named `config.yaml` in the root directory of your aura installation.
 
 2. **Edit the `config.yaml` File**:
-    - Open `config.yaml` in your preferred text editor.
-    - Modify the configuration settings according to your needs. Be sure to replace all placeholder values (e.g., `YOUR_API_KEY_HERE`, `YOUR_SERVER_URL`) with your actual credentials and URLs.
+   - Open `config.yaml` in your preferred text editor.
+   - Modify the configuration settings according to your needs. Be sure to replace all placeholder values (e.g., `YOUR_API_KEY_HERE`, `YOUR_SERVER_URL`) with your actual credentials and URLs.
 
 3. **Place the `config.yaml` File**:
-    - Place your configuration file in the `/config` directory on your Docker container.
+   - Place your configuration file in the `/config` directory on your Docker container.
 
 > **Note:** Always keep your configuration file secure and do not share sensitive information publicly.
 
@@ -32,8 +32,8 @@ aura uses a `config.yaml` file for configuration. You can setup the configuratio
 
 ```yaml
 Auth:
-    Enable: true
-    Password: YOUR_ARGON2ID_HASH_HERE
+  Enable: true
+  Password: YOUR_ARGON2ID_HASH_HERE
 ```
 
 While this password authentication method is effective, it is important to keep your password secure and not share it with others. For enhanced security, consider using solutions like [Authentik](https://goauthentik.io/), [Authelia](https://www.authelia.com/) or [Tinyauth](https://tinyauth.app/).  
@@ -63,7 +63,7 @@ While this password authentication method is effective, it is important to keep 
 
 ```yaml
 Logging:
-    Level: DEBUG
+  Level: DEBUG
 ```
 
 ### Level
@@ -72,11 +72,11 @@ Logging:
 - **Options**: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`
 - **Description**: The logging level for aura.
 - **Details**:
-    - `TRACE`: Most detailed logging, useful for debugging.
-    - `DEBUG`: Less detailed than TRACE, but still provides useful information for debugging.
-    - `INFO`: General information about the application's operation.
-    - `WARN`: Indicates potential issues that are not necessarily errors.
-    - `ERROR`: Indicates errors that occur during the application's operation.
+  - `TRACE`: Most detailed logging, useful for debugging.
+  - `DEBUG`: Less detailed than TRACE, but still provides useful information for debugging.
+  - `INFO`: General information about the application's operation.
+  - `WARN`: Indicates potential issues that are not necessarily errors.
+  - `ERROR`: Indicates errors that occur during the application's operation.
 - **Note**: The logging level can be adjusted based on your needs. For production environments, it is recommended to use `INFO` or `WARN` to reduce log verbosity. If you run into issues, you can temporarily set it to `DEBUG` or `TRACE` for more detailed logs.
 
 ---
@@ -87,38 +87,40 @@ Logging:
 
 ```yaml
 MediaServer:
-    Type: Plex
-    URL: YOUR_PLEX_SERVER_URL_HERE
-    Token: YOUR_PLEX_API_TOKEN_HERE
-    Libraries:
-        - Name: 4K Movies
-        - Name: Movies
-        - Name: 4K Series
-        - Name: Series
+  Type: Plex
+  URL: YOUR_PLEX_SERVER_URL_HERE
+  ApiToken: YOUR_PLEX_API_TOKEN_HERE
+  Libraries:
+    - Title: 4K Movies
+    - Title: Movies
+    - Title: 4K Series
+    - Title: Series
 ```
 
 -- **Example for Emby**:
 
 ```yaml
 MediaServer:
-    Type: Emby
-    URL: YOUR_EMBY_SERVER_URL_HERE
-    Token: YOUR_EMBY_API_TOKEN_HERE
-    Libraries:
-        - Name: Movies
-        - Name: TV Shows
+  Type: Emby
+  URL: YOUR_EMBY_SERVER_URL_HERE
+  ApiToken: YOUR_EMBY_API_TOKEN_HERE
+  Libraries:
+    - Title: Movies
+    - Title: TV Shows
 ```
 
 -- **Example for Jellyfin**:
 
 ```yaml
 MediaServer:
-    Type: Jellyfin
-    URL: YOUR_JELLYFIN_SERVER_URL_HERE
-    Token: YOUR_JELLYFIN_API_TOKEN_HERE
-    Libraries:
-        - Name: Movies
-        - Name: TV Shows
+  Type: Jellyfin
+  URL: YOUR_JELLYFIN_SERVER_URL_HERE
+  ApiToken: YOUR_JELLYFIN_API_TOKEN_HERE
+  Libraries:
+    - Title: Movies
+    - Title: TV Shows
+  EnableSortByEpisodeAddedDate: false
+  EnablePlexEventListener: false
 ```
 
 ### Type
@@ -134,7 +136,7 @@ MediaServer:
 - **Note**: Replace `YOUR_PLEX_SERVER_URL_HERE`, `YOUR_EMBY_SERVER_URL_HERE`, or `YOUR_JELLYFIN_SERVER_URL_HERE` with the actual URL of your media server. Make sure to include the protocol (e.g., `http://` or `https://`) in the URL.
 - **Example**: `http://localhost:32400`, `https://my-emby-server.com`, or `http://jellyfin.example.com`.
 
-### Token
+### ApiToken
 
 - **Description**: The authentication token for the media server.
 - **Details**: This option specifies the authentication token required to access the media server's API. You can obtain this token from your media server's settings or API documentation.
@@ -142,9 +144,23 @@ MediaServer:
 
 ### Libraries
 
-- **Description**: The name of the media server library to use.
-- **Details**: This option specifies the name of the library on your media server that aura will interact with. aura will use this library to manage images and metadata.
-- **Note**: Ensure that the library name matches exactly with the name on your media server, including case sensitivity. Only show and movies libraries are supported.
+- **Description**: The title of the media server library to use.
+- **Details**: This option specifies the title of the library on your media server that aura will interact with. aura will use this library to manage images and metadata.
+- **Note**: Ensure that the library title matches exactly with the title on your media server, including case sensitivity. Only show and movies libraries are supported.
+
+## EnableSortByEpisodeAddedDate (Plex Only)
+
+- **Default**: `false`
+- **Options**: `true` or `false`
+- **Description**: Whether the option to Sort content by Episode Added Date should be enabled in the UI for Plex users.
+- **Details**: If set to `true`, users will have the option to sort their Plex library content by the date episodes were added. This can be useful for quickly identifying recently added content. If set to `false`, this sorting option will not be available in the UI. The recommended setting is `false` as it is very slow to sort by episode added date, especially for larger libraries.
+
+# EnablePlexEventListener (Plex Only)
+
+- **Default**: `false`
+- **Options**: `true` or `false`
+- **Description**: Whether to enable the Plex Event Listener for real-time updates for the "Refresh Metadata" action.
+- **Details**: If set to `true`, aura will listen for Plex events to trigger real-time updates when the "Refresh Metadata" action is performed. This allows for faster updates to your media library without waiting for the next scheduled update. If set to `false`, updates will only occur during the scheduled update process. Enabling this option may increase resource usage, so it is recommended to only enable it if you want real-time updates and have the resources to support it.
 
 ---
 
@@ -154,11 +170,11 @@ MediaServer:
 
 ```yaml
 Mediux:
-    Token: YOUR_MEDIUX_API_TOKEN_HERE
-    DownloadQuality: optimized
+  ApiToken: YOUR_MEDIUX_API_TOKEN_HERE
+  DownloadQuality: optimized
 ```
 
-### Token
+### ApiToken
 
 - **Description**: The API token for MediUX.
 - **Details**: This option specifies the API token required to access MediUX's API. This can be obtained by creating an account on [MediUX](https://mediux.io/) and generating an API token in your account settings.
@@ -171,8 +187,8 @@ Mediux:
 - **Options**: `optimized`, `original`
 - **Description**: The quality of images to download from MediUX.
 - **Details**: This option specifies the quality of images to download from MediUX.
-    - `optimized`: Downloads images that are optimized for space savings and performance.
-    - `original`: Downloads the original images without any optimization.
+  - `optimized`: Downloads images that are optimized for space savings and performance.
+  - `original`: Downloads the original images without any optimization.
 
 ---
 
@@ -182,8 +198,8 @@ Mediux:
 
 ```yaml
 AutoDownload:
-    Enabled: true
-    Cron: "0 0 * * *"
+  Enabled: true
+  Cron: "0 0 * * *"
 ```
 
 ### Enabled
@@ -210,12 +226,13 @@ AutoDownload:
 
 ```yaml
 Images:
-    CacheImages:
-        Enabled: false
-    SaveImagesLocally:
-        Enabled: false
-        Path: ""
-        EpisodeNamingConvention: "match"
+  CacheImages:
+    Enabled: false
+  SaveImagesLocally:
+    Enabled: false
+    Path: ""
+    EpisodeNamingConvention: "match"
+    RunningOnWindows: false
 ```
 
 ## CacheImages.Enabled
@@ -231,10 +248,10 @@ Images:
 - **Options:** `true` or `false`
 - **Description:** Whether to save images locally.
 - **Details:**
-    - If `true`, images are saved in the same directory as the Media Server content.
-    - If `false`, images are updated on the Media Server but not saved next to the content.
-    - For **Emby** or **Jellyfin**, this option is ignored (handled by the server).
-    - For **Plex**, this option determines if images are saved next to content.
+  - If `true`, images are saved in the same directory as the Media Server content.
+  - If `false`, images are updated on the Media Server but not saved next to the content.
+  - For **Emby** or **Jellyfin**, this option is ignored (handled by the server).
+  - For **Plex**, this option determines if images are saved next to content.
 
 ## SaveImagesLocally.Path
 
@@ -242,10 +259,10 @@ Images:
 - **Options:** Any valid file path
 - **Description:** The path where images should be saved if `SaveImagesLocally.Enabled` is `true`.
 - **Details:**
-    - If set to a valid path, images will be saved to that directory.
-    - If left empty, images will be saved next to the media content.
-    - Ensure the specified path is added to your docker volume mounts.
-    - Ensure the specified path is writable by the application.
+  - If set to a valid path, images will be saved to that directory.
+  - If left empty, images will be saved next to the media content.
+  - Ensure the specified path is added to your docker volume mounts.
+  - Ensure the specified path is writable by the application.
 
 ## SaveImagesLocally.EpisodeNamingConvention
 
@@ -253,9 +270,19 @@ Images:
 - **Options:** `"match"` or `"static"`
 - **Description:** The naming convention for episode images when saving locally.
 - **Details:**
-    - `"match"`: Episode images will match the episode file name.
-    - `"static"`: Episode images will use a static naming format like `S01E01.jpg` or `S1E1.jpg`.
+  - `"match"`: Episode images will match the episode file name.
+  - `"static"`: Episode images will use a static naming format like `S01E01.jpg` or `S1E1.jpg`.
 - **Note:** This option is only applicable when using Plex as the Media Server.
+
+## SaveImagesLocally.RunningOnWindows
+
+- **Default:** `false`
+- **Options:** `true` or `false`
+- **Description:** Whether the application is running on Windows when saving images locally.
+- **Details:**
+  - If `true`, file paths will use Windows-style backslashes (`\`) and handle file permissions accordingly.
+  - If `false`, file paths will use Unix-style forward slashes (`/`) and handle file permissions for Unix-based systems.
+- **Note:** This option is only applicable when using Plex as the Media Server and `SaveImagesLocally.Enabled` is `true`. It helps ensure that file paths and permissions are correctly handled based on the operating system you are running the application on.
 
 ---
 
@@ -267,15 +294,16 @@ Aura supports adding and removing labels (tags) on Plex items after processing. 
 
 ```yaml
 LabelsAndTags:
-    Applications:
-        - Application: Plex
-          Enabled: true
-          Add:
-              - "Overlay"
-              - "4K"
-          Remove:
-              - "OldLabel"
-          AddLabelTagForSelectedTypes: true
+  RemoveOverlayLabelOnlyOnPosterDownload: false
+  Applications:
+    - Application: Plex
+      Enabled: true
+      Add:
+        - "Overlay"
+        - "4K"
+      Remove:
+        - "OldLabel"
+      AddLabelTagForSelectedTypes: true
 ```
 
 ### Applications
@@ -283,11 +311,18 @@ LabelsAndTags:
 - **Description**:  
   An array of label/tag configuration blocks, one per supported application.
 - **Fields**:
-    - `Application`: The name of the application (e.g., `Plex`, `Sonarr` or `Radarr`).
-    - `Enabled`: Set to `true` to enable label/tag management for this application.
-    - `Add`: A list of labels/tags to add to items after processing.
-    - `Remove`: A list of labels/tags to remove from items after processing.
-    - `AddLabelTagForSelectedTypes`: A boolean to add labels in Plex and tags in Sonarr/Radarr for each selected type (e.g., aura-poster, aura-backdrop).
+  - `Application`: The name of the application (e.g., `Plex`, `Sonarr` or `Radarr`).
+  - `Enabled`: Set to `true` to enable label/tag management for this application.
+  - `Add`: A list of labels/tags to add to items after processing.
+  - `Remove`: A list of labels/tags to remove from items after processing.
+  - `AddLabelTagForSelectedTypes`: A boolean to add labels in Plex and tags in Sonarr/Radarr for each selected type (e.g., aura-poster, aura-backdrop).
+
+  ## RemoveOverlayLabelOnlyOnPosterDownload
+
+- **Default**: `false`
+- **Options**: `true` or `false`
+- **Description**: Whether to only remove the "Overlay" label when a poster is downloaded, and not when a season poster or titlecard is downloaded.
+- **Details**: If set to `true`, aura will only remove the "Overlay" label from Plex items when a poster is downloaded. If a season poster or titlecard is downloaded, the "Overlay" label will not be removed. This allows you to keep the "Overlay" label on items that have season posters or titlecards, while only removing it from items that have posters downloaded. If set to `false`, the "Overlay" label will be removed whenever any type of image (poster, season poster, or titlecard) is downloaded.
 
 #### Example Use Case
 
@@ -295,28 +330,28 @@ If you want Aura to add the labels `Overlay` and `aura` to your Plex items, and 
 
 ```yaml
 LabelsAndTags:
-    Applications:
-        - Application: Plex
-          Enabled: true
-          Add:
-              - "Overlay"
-              - "aura"
-          Remove:
-              - "OldLabel"
-          AddLabelTagForSelectedTypes: true
-        - Application: Sonarr
-          Enabled: true
-          Add:
-              - aura
-          Remove:
-              - "some-old-label"
-          AddLabelTagForSelectedTypes: true
-        - Application: Radarr
-          Enabled: true
-          Add:
-              - aura
-          Remove:
-              - "some-old-label"
+  Applications:
+    - Application: Plex
+      Enabled: true
+      Add:
+        - "Overlay"
+        - "aura"
+      Remove:
+        - "OldLabel"
+      AddLabelTagForSelectedTypes: true
+    - Application: Sonarr
+      Enabled: true
+      Add:
+        - aura
+      Remove:
+        - "some-old-label"
+      AddLabelTagForSelectedTypes: true
+    - Application: Radarr
+      Enabled: true
+      Add:
+        - aura
+      Remove:
+        - "some-old-label"
 ```
 
 #### Notes
@@ -336,29 +371,29 @@ Example:
 
 ```yaml
 Notifications:
-    Enabled: true # Master switch (false = ignore all providers)
-    Providers:
-        - Provider: "Discord"
-          Enabled: true
-          Discord:
-              Webhook: YOUR_DISCORD_WEBHOOK_URL
-        - Provider: "Pushover"
-          Enabled: true
-          Pushover:
-              Token: YOUR_PUSHOVER_APP_TOKEN
-              UserKey: YOUR_PUSHOVER_USER_KEY
-        - Provider: "Gotify"
-          Enabled: true
-          Gotify:
-              URL: YOUR_GOTIFY_SERVER_URL
-              Token: YOUR_GOTIFY_APP_TOKEN
-        - Provider: "Webhook"
-          Enabled: true
-          Webhook:
-              URL: YOUR_WEBHOOK_URL
-              Headers:
-                  Some-Header: "HeaderValue"
-                  Another-Header: "AnotherValue"
+  Enabled: true # Master switch (false = ignore all providers)
+  Providers:
+    - Provider: "Discord"
+      Enabled: true
+      Discord:
+        Webhook: YOUR_DISCORD_WEBHOOK_URL
+    - Provider: "Pushover"
+      Enabled: true
+      Pushover:
+        ApiToken: YOUR_PUSHOVER_APP_TOKEN
+        UserKey: YOUR_PUSHOVER_USER_KEY
+    - Provider: "Gotify"
+      Enabled: true
+      Gotify:
+        URL: YOUR_GOTIFY_SERVER_URL
+        ApiToken: YOUR_GOTIFY_APP_TOKEN
+    - Provider: "Webhook"
+      Enabled: true
+      Webhook:
+        URL: YOUR_WEBHOOK_URL
+        Headers:
+          Some-Header: "HeaderValue"
+          Another-Header: "AnotherValue"
 ```
 
 ### Structure
@@ -370,15 +405,15 @@ Notifications:
 
 ### Provider Entry Fields
 
-| Field            | Required                               | Notes                                        |
-| ---------------- | -------------------------------------- | -------------------------------------------- |
-| Provider         | yes                                    | Case-sensitive. Supported: Discord, Pushover |
-| Enabled          | yes                                    | If false, entry kept but skipped             |
-| Discord.Webhook  | yes (when Provider=Discord & Enabled)  | Full Discord webhook URL                     |
-| Pushover.Token   | yes (when Provider=Pushover & Enabled) | Your app token                               |
-| Pushover.UserKey | yes (when Provider=Pushover & Enabled) | Your user key                                |
-| Gotify.URL       | yes (when Provider=Gotify & Enabled)   | Base URL for your Gotify server              |
-| Gotify.Token     | yes (when Provider=Gotify & Enabled)   | Your Gotify app token                        |
+| Field             | Required                               | Notes                                        |
+| ----------------- | -------------------------------------- | -------------------------------------------- |
+| Provider          | yes                                    | Case-sensitive. Supported: Discord, Pushover |
+| Enabled           | yes                                    | If false, entry kept but skipped             |
+| Discord.Webhook   | yes (when Provider=Discord & Enabled)  | Full Discord webhook URL                     |
+| Pushover.ApiToken | yes (when Provider=Pushover & Enabled) | Your app token                               |
+| Pushover.UserKey  | yes (when Provider=Pushover & Enabled) | Your user key                                |
+| Gotify.URL        | yes (when Provider=Gotify & Enabled)   | Base URL for your Gotify server              |
+| Gotify.ApiToken   | yes (when Provider=Gotify & Enabled)   | Your Gotify app token                        |
 
 **Note**: Replace any `YOUR_...` placeholders with your actual configuration values. For URL fields, ensure you include the full URL with the appropriate protocol (e.g., `http://` or `https://`).
 
@@ -390,23 +425,23 @@ Notifications:
 
 ```yaml
 SonarrRadarr:
-    Applications:
-        - Type: Sonarr
-          Library: Series
-          URL: YOUR_SONARR_URL
-          ApiToken: YOUR_SONARR_API_TOKEN
-        - Type: Sonarr
-          Library: 4K Series
-          URL: YOUR_SONARR_URL
-          ApiToken: YOUR_SONARR_API_TOKEN
-        - Type: Radarr
-          Library: Movies
-          URL: YOUR_RADARR_URL
-          ApiToken: YOUR_RADARR_API_TOKEN
-        - Type: Radarr
-          Library: 4K Movies
-          URL: YOUR_RADARR_URL
-          ApiToken: YOUR_RADARR_API_TOKEN
+  Applications:
+    - Type: Sonarr
+      Library: Series
+      URL: YOUR_SONARR_URL
+      ApiToken: YOUR_SONARR_API_TOKEN
+    - Type: Sonarr
+      Library: 4K Series
+      URL: YOUR_SONARR_URL
+      ApiToken: YOUR_SONARR_API_TOKEN
+    - Type: Radarr
+      Library: Movies
+      URL: YOUR_RADARR_URL
+      ApiToken: YOUR_RADARR_API_TOKEN
+    - Type: Radarr
+      Library: 4K Movies
+      URL: YOUR_RADARR_URL
+      ApiToken: YOUR_RADARR_API_TOKEN
 ```
 
 Aura can interact with Sonarr and Radarr to add tags to your Sonarr/Radarr items after processing. This is useful for organizing your media library, marking items for automation, or integrating with other tools.
