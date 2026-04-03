@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"strings"
 )
 
 func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.LibrarySection) (found bool, Err logging.LogErrorInfo) {
@@ -44,14 +45,16 @@ func (e *EJ) GetLibrarySectionDetails(ctx context.Context, library *models.Libra
 		return found, *logAction.Error
 	}
 
+	logAction.AppendResult("total_sections", len(ejResp.Items))
 	for _, item := range ejResp.Items {
 		if item.CollectionType == "" {
 			item.CollectionType = "mixed"
 		}
 		if item.CollectionType != "movies" && item.CollectionType != "tvshows" && item.CollectionType != "mixed" {
+			logAction.AppendWarning(fmt.Sprintf("skipped '%s'", item.Name), map[string]string{"collection_type": item.CollectionType})
 			continue
 		}
-		if item.Name == library.Title {
+		if strings.EqualFold(item.Name, library.Title) {
 			library.ID = item.ID
 			library.Type = map[string]string{
 				"movies":  "movie",
