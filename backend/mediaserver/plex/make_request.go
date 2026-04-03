@@ -5,6 +5,7 @@ import (
 	"aura/logging"
 	"aura/utils/httpx"
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -22,7 +23,7 @@ func makeRequest(ctx context.Context, msConfig config.Config_MediaServer, url st
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, nil, logging.LogErrorInfo{
-			Message: "Plex Server returned a non-success status code",
+			Message: fmt.Sprintf("Plex Server returned a %d status code", resp.StatusCode),
 			Help:    "Check the response from the server for more details",
 			Detail:  map[string]any{"status_code": resp.StatusCode, "error_body": string(respBody)},
 		}
