@@ -37,7 +37,7 @@ func applyImageToMediaItemViaMediuxURL(ctx context.Context, item *models.MediaIt
 	// Set the Poster using the MediUX URL
 	Err = applyImageToMediaItem(ctx, item, itemRatingKey, imageURL, imageFile.Type)
 	if Err.Message != "" {
-		return *logAction.Error
+		return Err
 	}
 
 	return Err
