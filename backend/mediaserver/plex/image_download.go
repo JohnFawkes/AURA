@@ -167,7 +167,7 @@ func saveImageLocally(ctx context.Context, p *Plex, item *models.MediaItem, imag
 					newFileName = newFileName[:len(newFileName)-len(path.Ext(newFileName))] + "-thumb.jpg"
 				case "static":
 					filename := path.Base(episodePath)
-					re := regexp.MustCompile(`(?i)\bS?\d{1,2}[Ex]\d{1,2}\b`)
+					re := regexp.MustCompile(`(?i)\bS?\d{1,3}[Ex]\d{1,3}\b`)
 					trimmed := strings.TrimSuffix(filename, path.Ext(filename))
 					matchedString := re.FindString(trimmed)
 					if matchedString != "" {
