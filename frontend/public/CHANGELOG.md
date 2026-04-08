@@ -1,3 +1,11 @@
+## [0.9.100] - 2026-04-01
+
+### Fixed
+
+- Fixed issue where Save Image Locally option was not getting correct Season/Episode number when episode number was greater than 99.
+
+---
+
 ## [0.9.99] - 2026-03-31
 
 ### Added
