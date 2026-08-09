@@ -79,7 +79,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const previousCollectionItem = useCollectionsPageStore((state) => state.previousCollectionItem);
 
   // Onboarding Store
-  const { fetchStatus } = useOnboardingStore();
+  const { fetchStatus, clear: clearOnboardingStatus } = useOnboardingStore();
   const status = useOnboardingStore((state) => state.status);
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
@@ -92,10 +92,10 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   // App Version Hook
   const { latestVersion, isNewerVersion } = useAppVersion(version);
 
-  // Fetch onboarding/status once on mount
+  // Fetch onboarding/status on mount, and again whenever auth state changes
   useEffect(() => {
     void fetchStatus();
-  }, [fetchStatus]);
+  }, [fetchStatus, isAuthed]);
 
   // App Not Fully Loaded Redirect Logic
   useEffect(() => {
@@ -191,6 +191,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const handleLogout = () => {
     localStorage.removeItem("aura-auth-token");
     setIsAuthed(false);
+    clearOnboardingStatus();
     // Redirect to login page
     router.replace("/login");
   };
@@ -255,98 +256,104 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
             />
           </>
         )}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            asChild
-            className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
-          >
-            <MenuIcon
-              className={cn(
-                "w-8 h-8 ml-2",
-                isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
-              )}
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
-            {status && !status.needs_setup && (
-              <>
-                <DropdownMenuItem
-                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                  onClick={() => router.push("/saved-sets")}
-                >
-                  <BookmarkIcon className="w-6 h-6 mr-2" />
-                  Saved Sets
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                  onClick={() => router.push("/collections")}
-                >
-                  <LayoutGrid className="w-6 h-6 mr-2" />
-                  Collections
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                  onClick={() => router.push("/download-queue")}
-                >
-                  <ListOrdered className="w-6 h-6 mr-2" />
-                  Download Queue
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-                  onClick={() => router.push("/settings")}
-                >
-                  <FileCogIcon className="w-6 h-6 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-                {isWideScreen && (
-                  <DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
-                    <ViewDensitySlider />
-                  </DropdownMenuItem>
+        {(isAuthed || status?.needs_setup) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              asChild
+              className="cursor-pointer hover:brightness-120 active:scale-95 transition text-muted-foreground"
+            >
+              <MenuIcon
+                className={cn(
+                  "w-8 h-8 ml-2",
+                  isNewerVersion(latestVersion ?? "", version) && "text-yellow-500 animate-pulse"
                 )}
-              </>
-            )}
-            <DropdownMenuItem
-              className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-              onClick={() => router.push("/logs")}
-            >
-              <Logs className="w-6 h-6 mr-2" />
-              Logs
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
-              onClick={() => router.push("/jobs")}
-            >
-              <Clock className="w-6 h-6 mr-2" />
-              Jobs
-            </DropdownMenuItem>
-            {isNewerVersion(latestVersion ?? "", version) && (
-              <DropdownMenuItem
-                className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
-                onClick={() =>
-                  router.push(
-                    `/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion ?? "")}`
-                  )
-                }
-              >
-                <Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
-                New Version Available ({latestVersion})
-              </DropdownMenuItem>
-            )}
-            {isAuthed && status?.current_setup.auth.enabled && (
-              <>
-                <DropdownMenuSeparator />
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 md:w-64" side="bottom" align="end">
+              {status && !status.needs_setup && (
+                <>
+                  <DropdownMenuItem
+                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                    onClick={() => router.push("/saved-sets")}
+                  >
+                    <BookmarkIcon className="w-6 h-6 mr-2" />
+                    Saved Sets
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                    onClick={() => router.push("/collections")}
+                  >
+                    <LayoutGrid className="w-6 h-6 mr-2" />
+                    Collections
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                    onClick={() => router.push("/download-queue")}
+                  >
+                    <ListOrdered className="w-6 h-6 mr-2" />
+                    Download Queue
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                    onClick={() => router.push("/settings")}
+                  >
+                    <FileCogIcon className="w-6 h-6 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  {isWideScreen && (
+                    <DropdownMenuItem className="cursor-pointer flex items-center active:scale-95 hover:brightness-120">
+                      <ViewDensitySlider />
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              {(isAuthed || status?.needs_setup) && (
                 <DropdownMenuItem
-                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
-                  onClick={handleLogout}
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/logs")}
                 >
-                  <LogOutIcon className="w-6 h-6 mr-2" />
-                  Logout
+                  <Logs className="w-6 h-6 mr-2" />
+                  Logs
                 </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+              {isAuthed && (
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
+                  onClick={() => router.push("/jobs")}
+                >
+                  <Clock className="w-6 h-6 mr-2" />
+                  Jobs
+                </DropdownMenuItem>
+              )}
+              {isNewerVersion(latestVersion ?? "", version) && (
+                <DropdownMenuItem
+                  className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-yellow-500 animate-pulse"
+                  onClick={() =>
+                    router.push(
+                      `/change-log?currentVersion=${encodeURIComponent(version)}&updates=true&latestVersion=${encodeURIComponent(latestVersion ?? "")}`
+                    )
+                  }
+                >
+                  <Sparkles className="w-6 h-6 mr-2 text-yellow-500" />
+                  New Version Available ({latestVersion})
+                </DropdownMenuItem>
+              )}
+              {isAuthed && status?.current_setup.auth.enabled && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer flex items-center active:scale-95 hover:brightness-120 text-red-600 focus:text-red-700"
+                    onClick={handleLogout}
+                  >
+                    <LogOutIcon className="w-6 h-6 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </nav>
   );

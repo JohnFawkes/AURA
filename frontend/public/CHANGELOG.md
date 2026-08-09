@@ -3,6 +3,7 @@
 ### Fixed
 
 - [#142](https://github.com/mediux-team/AURA/issues/142) Fixed issue where user page sometimes crashes when viewing or filtering Movie Sets.
+- [#138](https://github.com/mediux-team/AURA/issues/138) Fixed issue where the navigation dropdown menu would sometimes only show "Logs" and "Jobs" after login or logout, hiding "Saved Sets", "Collections", "Download Queue", "Settings", and "View Density" until the page was refreshed multiple times.
 
 ---
 

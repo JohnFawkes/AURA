@@ -54,11 +54,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
     {
       name: "Onboarding",
       storage: GlobalStore,
-      partialize: (state) => ({
-        status: state.status,
-        loading: state.loading,
-        error: state.error,
-      }),
+      partialize: () => ({}),
       onRehydrateStorage: () => (state) => {
         state?.hydrate();
       },
