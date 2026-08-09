@@ -89,6 +89,7 @@ func (p *Plex) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) 
 		item.IgnoredInDB = false
 		item.IgnoredMode = ""
 	} else {
+		item.DBSavedSets = []models.DBSavedSet{}
 		item.IgnoredInDB = true
 		item.IgnoredMode = ignoredMode
 	}

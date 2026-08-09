@@ -151,6 +151,7 @@ func (e *EJ) GetMediaItemDetails(ctx context.Context, item *models.MediaItem) (f
 	if !ignored {
 		item.DBSavedSets = sets
 	} else {
+		item.DBSavedSets = []models.DBSavedSet{}
 		item.IgnoredInDB = true
 		item.IgnoredMode = ignoredMode
 	}

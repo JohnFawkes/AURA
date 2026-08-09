@@ -1,3 +1,11 @@
+## [0.9.101] - 2026-08-08
+
+### Fixed
+
+- [#142](https://github.com/mediux-team/AURA/issues/142) Fixed issue where user page sometimes crashes when viewing or filtering Movie Sets.
+
+---
+
 ## [0.9.100] - 2026-04-01
 
 ### Added

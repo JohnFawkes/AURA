@@ -78,7 +78,7 @@ func GetMovieCollectionSetByID(ctx context.Context, setID string, tmdbID string,
 	}
 	mediuxMovies := movieCollectionSetResponse.Data.Collection.CollectionID.Movies
 	var itemIDs []string
-	var images []models.ImageFile
+	images := []models.ImageFile{}
 
 	for _, movie := range mediuxMovies {
 		if itemOnly && movie.ID != tmdbID {

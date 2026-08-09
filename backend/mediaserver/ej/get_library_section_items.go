@@ -147,6 +147,7 @@ func (e *EJ) GetLibrarySectionItems(ctx context.Context, section models.LibraryS
 		if !ignored {
 			item.DBSavedSets = sets
 		} else {
+			item.DBSavedSets = []models.DBSavedSet{}
 			item.IgnoredInDB = true
 			item.IgnoredMode = ignoredMode
 		}
@@ -303,6 +304,7 @@ func splitCollectionIntoIndividualItems(ctx context.Context, collectionName, par
 		if !ignored {
 			itemInfo.DBSavedSets = sets
 		} else {
+			itemInfo.DBSavedSets = []models.DBSavedSet{}
 			itemInfo.IgnoredInDB = true
 			itemInfo.IgnoredMode = ignoredMode
 		}

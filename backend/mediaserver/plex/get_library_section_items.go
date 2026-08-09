@@ -149,6 +149,7 @@ func (p *Plex) GetLibrarySectionItems(ctx context.Context, section models.Librar
 		if !ignored {
 			item.DBSavedSets = sets
 		} else {
+			item.DBSavedSets = []models.DBSavedSet{}
 			item.IgnoredInDB = true
 			item.IgnoredMode = ignoredMode
 		}
