@@ -2,11 +2,7 @@ import { PopoverHelp } from "@/components/shared/popover-help";
 
 export interface DownloadModalPopoverProps {
   type:
-    | "autodownload"
-    | "add-to-db-only"
-    | "add-to-queue-only"
-    | "auto-add-new-collection-items"
-    | "possible-future-types";
+    "autodownload" | "add-to-db-only" | "add-to-queue-only" | "auto-add-new-collection-items" | "possible-future-types";
 }
 
 const downloadModalPopoverHelpText = {
