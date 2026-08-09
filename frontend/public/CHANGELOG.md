@@ -1,5 +1,9 @@
 ## [0.9.101] - 2026-08-08
 
+### Added
+
+- Added new Authorization header for Jellyfin media servers. This is to fix an issue where some Jellyfin servers were not accepting the X-Emby-Token header for authentication. Now, if the media server type is set to Jellyfin, it will use the new Authorization header as well. (Thanks to degradedcode for the PR!)
+
 ### Fixed
 
 - [#142](https://github.com/mediux-team/AURA/issues/142) Fixed issue where user page sometimes crashes when viewing or filtering Movie Sets.
@@ -8,10 +12,6 @@
 ---
 
 ## [0.9.100] - 2026-04-01
-
-### Added
-
-- Added new Authorization header for Jellyfin media servers. This is to fix an issue where some Jellyfin servers were not accepting the X-Emby-Token header for authentication. Now, if the media server type is set to Jellyfin, it will use the new Authorization header as well. (Thanks to degradedcode for the PR!)
 
 ### Fixed
 
@@ -757,7 +757,7 @@
 
 ---
 
-## [0.9.42] - 2025-10-31
+## [0.9.42b] - 2025-10-31
 
 ### Added
 
