@@ -3,6 +3,7 @@
 ### Added
 
 - Added new Authorization header for Jellyfin media servers. This is to fix an issue where some Jellyfin servers were not accepting the X-Emby-Token header for authentication. Now, if the media server type is set to Jellyfin, it will use the new Authorization header as well. (Thanks to degradedcode for the PR!)
+- Added new Accordion component to the Changelog page to allow for better organization of the changelog entries. This will allow users to expand/collapse each version's changes for better readability.
 
 ### Fixed
 
