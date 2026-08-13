@@ -1,4 +1,8 @@
-## [0.9.101] - 2026-08-08
+## [0.9.102] - 2026-08-08
+
+### Added
+
+- Added support for multiple Editions of the same Movie/Show in Plex (e.g. Color vs. Black & White) — each Edition is now tracked, saved, and displayed separately instead of overwriting the other.
 
 ### Fixed
 

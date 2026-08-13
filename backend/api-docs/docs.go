@@ -452,6 +452,12 @@ const docTemplate = `{
                         "name": "library_title",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition",
+                        "name": "edition",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -647,6 +653,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition",
+                        "name": "edition",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Ignore mode (e.g., 'always' for permanent ignore, 'until-set-available' for temporary ignore until a set is available, 'until-new-set-available' for temporary ignore until a new set is available)",
                         "name": "mode",
                         "in": "query",
@@ -714,6 +726,12 @@ const docTemplate = `{
                         "name": "library_title",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition",
+                        "name": "edition",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2268,6 +2286,12 @@ const docTemplate = `{
                         "name": "item_library_title",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Edition of the media item (e.g. Director's Cut), empty for the standard edition",
+                        "name": "edition",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2343,6 +2367,12 @@ const docTemplate = `{
                         "name": "item_library_title",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Edition of the media item (e.g. Director's Cut), empty for the standard edition",
+                        "name": "edition",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4188,6 +4218,10 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.DBSavedSet"
                     }
+                },
+                "edition": {
+                    "description": "Edition of the media item (e.g., \"Director's Cut\")",
+                    "type": "string"
                 },
                 "guids": {
                     "description": "Used in MediaItem Details Page - For ratings",

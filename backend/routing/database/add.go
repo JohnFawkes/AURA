@@ -98,21 +98,21 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 		// We also need a full PosterSet with ImageFiles
 		switch req.PosterSet.Type {
 		case "show":
-			showSet, _, Err := mediux.GetShowSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle)
+			showSet, _, Err := mediux.GetShowSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle, req.MediaItem.Edition)
 			if Err.Message != "" {
 				httpx.SendResponse(w, ld, response)
 				return
 			}
 			fullSet.PosterSet = showSet.PosterSet
 		case "movie":
-			movieSet, _, Err := mediux.GetMovieSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle)
+			movieSet, _, Err := mediux.GetMovieSetByID(ctx, req.PosterSet.ID, req.MediaItem.LibraryTitle, req.MediaItem.Edition)
 			if Err.Message != "" {
 				httpx.SendResponse(w, ld, response)
 				return
 			}
 			fullSet.PosterSet = movieSet.PosterSet
 		case "collection":
-			collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, req.PosterSet.ID, req.MediaItem.TMDB_ID, req.MediaItem.LibraryTitle, true)
+			collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, req.PosterSet.ID, req.MediaItem.TMDB_ID, req.MediaItem.LibraryTitle, req.MediaItem.Edition, true)
 			if Err.Message != "" {
 				httpx.SendResponse(w, ld, response)
 				return
@@ -142,7 +142,7 @@ func AddNewItemToDB(w http.ResponseWriter, r *http.Request) {
 	// If this is the first time adding the item, we need to update the cache
 	// Run this asynchronously
 	go func() {
-		_, _, dbSets, _ := database.CheckIfMediaItemExists(ctx, saveItem.MediaItem.TMDB_ID, saveItem.MediaItem.LibraryTitle)
+		_, _, dbSets, _ := database.CheckIfMediaItemExists(ctx, saveItem.MediaItem.TMDB_ID, saveItem.MediaItem.LibraryTitle, saveItem.MediaItem.Edition)
 		saveItem.MediaItem.DBSavedSets = dbSets
 		cache.LibraryStore.UpdateMediaItem(saveItem.MediaItem.LibraryTitle, &saveItem.MediaItem)
 	}()

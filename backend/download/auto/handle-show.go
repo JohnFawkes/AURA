@@ -173,7 +173,7 @@ func handleShow(ctx context.Context, mediaItem models.MediaItem, dbItem models.D
 		}
 
 		// Get the latest set details from MediUX
-		mediuxSet, _, Err := mediux.GetShowSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle)
+		mediuxSet, _, Err := mediux.GetShowSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle, mediaItem.Edition)
 		if Err.Message != "" {
 			setResult.Result = "error"
 			setResult.Reason = "Failed to get latest set details from MediUX"

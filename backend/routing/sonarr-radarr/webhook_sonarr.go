@@ -212,7 +212,7 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 
 	// Get the base Show Media Item from the cache
 	_, actionGetFromCache := logging.AddSubActionToContext(ctx, fmt.Sprintf("Getting %s Item from cache", utils.MediaItemInfo(dbItem.MediaItem)), logging.LevelTrace)
-	mediaItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBID(dbItem.MediaItem.LibraryTitle, dbItem.MediaItem.TMDB_ID)
+	mediaItem, found := cache.LibraryStore.GetMediaItemFromSectionByTMDBIDAndEdition(dbItem.MediaItem.LibraryTitle, dbItem.MediaItem.TMDB_ID, dbItem.MediaItem.Edition)
 	if !found || mediaItem == nil {
 		actionGetFromCache.SetError("Media Item not found in cache", "Try refreshing the cache if this issue persists", nil)
 		actionGetFromCache.Complete()
@@ -280,7 +280,7 @@ func processSonarrDownloadEvent(ctx context.Context, payload SonarrWebHookOnUpgr
 		}
 
 		// Get the latest set details from MediUX
-		mediuxSet, _, Err := mediux.GetShowSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle)
+		mediuxSet, _, Err := mediux.GetShowSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle, mediaItem.Edition)
 		if Err.Message != "" {
 			logging.LOGGER.Error().Timestamp().Msgf("Error fetching set details from MediUX for set ID %s: %s", dbSet.ID, Err.Message)
 			continue

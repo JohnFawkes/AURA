@@ -23,6 +23,7 @@ type ignoreItemResponse struct {
 // @Produce      json
 // @Param        tmdb_id       query     string  true  "TMDB ID of the Media Item"
 // @Param        library_title  query     string  true  "Library Title of the Media Item"
+// @Param        edition        query     string  false "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition"
 // @Param        mode           query     string  true  "Ignore mode (e.g., 'always' for permanent ignore, 'until-set-available' for temporary ignore until a set is available, 'until-new-set-available' for temporary ignore until a new set is available)"
 // @Security 	 BearerAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
@@ -38,6 +39,7 @@ func IgnoreItemInDB(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
 	tmdbID := r.URL.Query().Get("tmdb_id")
 	libraryTitle := r.URL.Query().Get("library_title")
+	edition := r.URL.Query().Get("edition")
 	mode := r.URL.Query().Get("mode")                // e.g., "always", "until-set-available", "until-new-set-available"
 	currentSets := r.URL.Query().Get("current_sets") // comma-separated list of current sets for the item, used for temporary ignore modes
 
@@ -66,7 +68,7 @@ func IgnoreItemInDB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Err := database.IgnoreMediaItem(ctx, tmdbID, libraryTitle, mode, currentSets)
+	Err := database.IgnoreMediaItem(ctx, tmdbID, libraryTitle, edition, mode, currentSets)
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return
@@ -88,6 +90,7 @@ func IgnoreItemInDB(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        tmdb_id       query     string  true  "TMDB ID of the Media Item"
 // @Param        library_title  query     string  true  "Library Title of the Media Item"
+// @Param        edition        query     string  false "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition"
 // @Success      200            {object}  httpx.JSONResponse{data=ignoreItemResponse}
 // @Failure      500            {object}  httpx.JSONResponse "Internal Server Error"
 // @Router       /api/db/ignore/stop [patch]
@@ -100,6 +103,7 @@ func StopIgnoringItemInDB(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters
 	tmdbID := r.URL.Query().Get("tmdb_id")
 	libraryTitle := r.URL.Query().Get("library_title")
+	edition := r.URL.Query().Get("edition")
 
 	if tmdbID == "" || libraryTitle == "" {
 		logAction.SetError("Missing required query parameters", "TMDB ID and Library Title are required",
@@ -111,7 +115,7 @@ func StopIgnoringItemInDB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Err := database.StopIgnoringMediaItem(ctx, tmdbID, libraryTitle)
+	Err := database.StopIgnoringMediaItem(ctx, tmdbID, libraryTitle, edition)
 	if Err.Message != "" {
 		httpx.SendResponse(w, ld, response)
 		return

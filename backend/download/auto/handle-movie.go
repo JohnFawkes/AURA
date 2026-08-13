@@ -110,7 +110,7 @@ func handleMovie(ctx context.Context, mediaItem models.MediaItem, dbItem models.
 		// Get the latest set details from MediUX
 		switch dbSet.Type {
 		case "movie":
-			mediuxSet, _, Err = mediux.GetMovieSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle)
+			mediuxSet, _, Err = mediux.GetMovieSetByID(ctx, dbSet.ID, mediaItem.LibraryTitle, mediaItem.Edition)
 			if Err.Message != "" {
 				setResult.Result = "error"
 				setResult.Reason = "Failed to get latest set details from MediUX"
@@ -118,7 +118,7 @@ func handleMovie(ctx context.Context, mediaItem models.MediaItem, dbItem models.
 				continue
 			}
 		case "collection":
-			mediuxSet, includedItems, Err = mediux.GetMovieCollectionSetByID(ctx, dbSet.ID, mediaItem.TMDB_ID, mediaItem.LibraryTitle, false)
+			mediuxSet, includedItems, Err = mediux.GetMovieCollectionSetByID(ctx, dbSet.ID, mediaItem.TMDB_ID, mediaItem.LibraryTitle, mediaItem.Edition, false)
 			if Err.Message != "" {
 				setResult.Result = "error"
 				setResult.Reason = "Failed to get latest set details from MediUX"

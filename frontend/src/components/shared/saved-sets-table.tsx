@@ -212,7 +212,7 @@ const SavedSetsTableRow: React.FC<{
                 setMediaItem(savedSet.media_item);
               }}
             >
-              {savedSet.media_item.title}
+              {savedSet.media_item.title} {savedSet.media_item.edition ? `(${savedSet.media_item.edition})` : ""}
             </Link>
           }
         </TableCell>

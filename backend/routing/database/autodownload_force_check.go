@@ -93,7 +93,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 		for _, posterSet := range req.Item.PosterSets {
 			switch posterSet.Type {
 			case "show":
-				showSet, _, Err := mediux.GetShowSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle)
+				showSet, _, Err := mediux.GetShowSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle, req.Item.MediaItem.Edition)
 				if Err.Message != "" {
 					httpx.SendResponse(w, ld, response)
 					return
@@ -101,7 +101,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				posterSet.PosterSet = showSet.PosterSet
 				fullSets = append(fullSets, posterSet)
 			case "movie":
-				movieSet, _, Err := mediux.GetMovieSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle)
+				movieSet, _, Err := mediux.GetMovieSetByID(ctx, posterSet.ID, req.Item.MediaItem.LibraryTitle, req.Item.MediaItem.Edition)
 				if Err.Message != "" {
 					httpx.SendResponse(w, ld, response)
 					return
@@ -109,7 +109,7 @@ func AutoDownloadForceCheck(w http.ResponseWriter, r *http.Request) {
 				posterSet.PosterSet = movieSet.PosterSet
 				fullSets = append(fullSets, posterSet)
 			case "collection":
-				collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, posterSet.ID, req.Item.MediaItem.TMDB_ID, req.Item.MediaItem.LibraryTitle, true)
+				collectionSet, _, Err := mediux.GetMovieCollectionSetByID(ctx, posterSet.ID, req.Item.MediaItem.TMDB_ID, req.Item.MediaItem.LibraryTitle, req.Item.MediaItem.Edition, true)
 				if Err.Message != "" {
 					httpx.SendResponse(w, ld, response)
 					return

@@ -809,6 +809,9 @@ definitions:
         items:
           $ref: '#/definitions/models.DBSavedSet'
         type: array
+      edition:
+        description: Edition of the media item (e.g., "Director's Cut")
+        type: string
       guids:
         description: Used in MediaItem Details Page - For ratings
         items:
@@ -1668,6 +1671,11 @@ paths:
         name: library_title
         required: true
         type: string
+      - description: Edition of the Media Item (e.g. Director's Cut), empty for the
+          standard edition
+        in: query
+        name: edition
+        type: string
       produces:
       - application/json
       responses:
@@ -1908,6 +1916,11 @@ paths:
         name: library_title
         required: true
         type: string
+      - description: Edition of the Media Item (e.g. Director's Cut), empty for the
+          standard edition
+        in: query
+        name: edition
+        type: string
       - description: Ignore mode (e.g., 'always' for permanent ignore, 'until-set-available'
           for temporary ignore until a set is available, 'until-new-set-available'
           for temporary ignore until a new set is available)
@@ -1956,6 +1969,11 @@ paths:
         in: query
         name: library_title
         required: true
+        type: string
+      - description: Edition of the Media Item (e.g. Director's Cut), empty for the
+          standard edition
+        in: query
+        name: edition
         type: string
       produces:
       - application/json
@@ -2957,6 +2975,11 @@ paths:
         name: item_library_title
         required: true
         type: string
+      - description: Edition of the media item (e.g. Director's Cut), empty for the
+          standard edition
+        in: query
+        name: edition
+        type: string
       produces:
       - application/json
       responses:
@@ -3006,6 +3029,11 @@ paths:
         in: query
         name: item_library_title
         required: true
+        type: string
+      - description: Edition of the media item (e.g. Director's Cut), empty for the
+          standard edition
+        in: query
+        name: edition
         type: string
       produces:
       - application/json

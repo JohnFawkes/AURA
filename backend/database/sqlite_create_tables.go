@@ -45,12 +45,13 @@ CREATE TABLE MediaItems (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	tmdb_id TEXT NOT NULL,
 	library_title TEXT NOT NULL,
+	edition TEXT NOT NULL DEFAULT '',
 	rating_key TEXT NOT NULL,
 	type TEXT NOT NULL CHECK (type IN ('movie','show')),
 	title TEXT NOT NULL,
 	year INTEGER NOT NULL,
 	on_server INTEGER NOT NULL DEFAULT 0 CHECK (on_server IN (0,1)),
-	UNIQUE (tmdb_id, library_title)
+	UNIQUE (tmdb_id, library_title, edition)
 );
 	`
 	_, err := conn.ExecContext(ctx, query)
@@ -262,6 +263,7 @@ func v2_CreateSavedItemsTable(ctx context.Context, conn *sql.DB) (Err logging.Lo
 CREATE TABLE SavedItems (
     tmdb_id TEXT NOT NULL,
     library_title TEXT NOT NULL,
+    edition TEXT NOT NULL DEFAULT '',
     poster_set_id INTEGER NOT NULL,
 
     -- Per MediaItem/Set toggles
@@ -275,13 +277,13 @@ CREATE TABLE SavedItems (
 	auto_add_new_collection_items INTEGER NOT NULL DEFAULT 0 CHECK (auto_add_new_collection_items IN (0,1)),
     last_downloaded DATETIME NOT NULL,
 
-    PRIMARY KEY (tmdb_id, library_title, poster_set_id),
+    PRIMARY KEY (tmdb_id, library_title, edition, poster_set_id),
 
     FOREIGN KEY (poster_set_id) REFERENCES PosterSets(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
 
-    FOREIGN KEY (tmdb_id, library_title) REFERENCES MediaItems(tmdb_id, library_title)
+    FOREIGN KEY (tmdb_id, library_title, edition) REFERENCES MediaItems(tmdb_id, library_title, edition)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) WITHOUT ROWID;
@@ -307,16 +309,17 @@ func v2_CreateIgnoredItemsTable(ctx context.Context, conn *sql.DB) (Err logging.
 CREATE TABLE IgnoredItems (
     tmdb_id TEXT NOT NULL,
     library_title TEXT NOT NULL,
+    edition TEXT NOT NULL DEFAULT '',
 
     -- 'always' = persist until user un-ignores
     -- 'until-set-available'   = cleared by cron job when a set becomes available
 	-- 'until-new-set-available' = never cleared by cron job, but user notified when a new set becomes available and given the option to clear the ignore manually
     mode TEXT NOT NULL CHECK (mode IN ('always','until-set-available','until-new-set-available')),
-	
+
 	-- Sets that currently available for this item (array stored as JSON string)
 	current_sets TEXT NOT NULL DEFAULT '[]',
 
-    PRIMARY KEY (tmdb_id, library_title)
+    PRIMARY KEY (tmdb_id, library_title, edition)
 ) WITHOUT ROWID;
 `
 	_, err := conn.ExecContext(ctx, query)
