@@ -41,16 +41,17 @@ func AddRoutes(r *chi.Mux) {
 	// Swagger Docs Route
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	// Base Routes
-	r.Get("/", routes_base.HealthCheck)
-	r.Get("/health", routes_base.HealthCheck)
-
 	r.Route("/api", func(r chi.Router) {
+
 		// Authenticator applies to every route below and is the single source of truth for what's
 		// actually public - see publicPathPrefixes in routing/middleware/authenticator.go. It also
 		// handles the Sonarr/Radarr webhook's Basic-Auth requirement and the X-Api-Key/session-cookie
 		// split, so routes don't need to be manually split into separate public/protected groups.
 		r.Use(middleware.Authenticator)
+
+		// Base Routes
+		r.Get("/", routes_base.HealthCheck)
+		r.Get("/health", routes_base.HealthCheck)
 
 		// Login - starts a browser session
 		r.Post("/login", routes_auth.AttemptLogin)
@@ -165,14 +166,14 @@ func AddRoutes(r *chi.Mux) {
 
 func addOnboardingRoutes(r *chi.Mux) {
 
-	// Base Routes
-	r.Get("/", routes_base.HealthCheck)
-	r.Get("/health", routes_base.HealthCheck)
-
 	r.Route("/api", func(r chi.Router) {
 		///////////////////
 		// Public Routes
 		//////////////////
+
+		// Base Routes
+		r.Get("/", routes_base.HealthCheck)
+		r.Get("/health", routes_base.HealthCheck)
 
 		// Config Routes
 		r.Route("/config", func(r chi.Router) {

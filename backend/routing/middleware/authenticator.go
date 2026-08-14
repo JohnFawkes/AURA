@@ -16,6 +16,8 @@ import (
 // true - this is the single source of truth for "public route" status (route registration in
 // routes.go does not need to duplicate this list).
 var publicPathPrefixes = []string{
+	"/api/",
+	"/api/health",
 	"/api/login",
 	"/api/logout",
 	"/api/auth/oidc/",
