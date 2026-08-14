@@ -7,27 +7,31 @@ import (
 	"encoding/json"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/go-chi/jwtauth/v5"
 )
 
-// publicPathPrefixes lists routes that never require authentication, even when Auth.Enabled is
-// true - this is the single source of truth for "public route" status (route registration in
-// routes.go does not need to duplicate this list).
-var publicPathPrefixes = []string{
+// publicExactPaths lists routes that never require authentication, matched by exact path only
+var publicExactPaths = []string{
+	"/api",
 	"/api/health",
 	"/api/login",
 	"/api/logout",
-	"/api/auth/oidc/",
 	"/api/config/auth-methods",
-	"/api/images/media/",
-	"/api/images/mediux/",
 	"/api/search",
 }
 
+// publicPathPrefixes lists route *prefixes* that never require authentication
+var publicPathPrefixes = []string{
+	"/api/auth/oidc/",
+	"/api/images/media/",
+	"/api/images/mediux/",
+}
+
 // Authenticator is a middleware that authenticates requests to protected routes using, in order:
-//  1. Nothing, if Auth is globally disabled or the path is in publicPathPrefixes.
+//  1. Nothing, if Auth is globally disabled or the path is public (see isPublicPath).
 //  2. HTTP Basic Auth (password checked as the API key) for the Sonarr/Radarr webhook route -
 //     Sonarr/Radarr's built-in Webhook connection type only supports URL/Method/Username/Password,
 //     not custom headers, so this is the only auth mechanism they can actually send.
@@ -104,6 +108,9 @@ func Authenticator(next http.Handler) http.Handler {
 }
 
 func isPublicPath(path string) bool {
+	if slices.Contains(publicExactPaths, path) {
+		return true
+	}
 	for _, prefix := range publicPathPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
