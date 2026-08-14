@@ -1,8 +1,14 @@
 ## [0.9.102] - 2026-08-08
 
+### Breaking
+
+- Since this is an overhaul of how authentication is handled, there are some breaking changes to the API routes. Please review the swagger docs for the new API routes and authentication methods. The new authentication methods include OIDC (Single Sign-On) and API Key authentication. Please update your configuration accordingly.
+
 ### Added
 
 - Added support for multiple Editions of the same Movie/Show in Plex (e.g. Color vs. Black & White) — each Edition is now tracked, saved, and displayed separately instead of overwriting the other.
+- Added support for logging in via OIDC (Single Sign-On) in addition to the existing password login, with optional email/domain allowlisting.
+- Added a global API key for programmatic access.
 
 ### Fixed
 
