@@ -4,7 +4,7 @@ import { GetAuthMethods } from "@/services/auth/auth-methods";
 import { AttemptLogin } from "@/services/auth/login";
 import { Eye, EyeOff, Loader2, Lock, ShieldCheck } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -22,7 +22,7 @@ const OIDC_ERROR_MESSAGES: Record<string, string> = {
   oidc_not_allowed: "Your identity provider account is not permitted to access this app.",
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
@@ -157,5 +157,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
