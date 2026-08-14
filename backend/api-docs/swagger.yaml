@@ -2150,10 +2150,17 @@ paths:
                 data:
                   $ref: '#/definitions/routes_db.ignoreItemResponse'
               type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Stop Ignoring Item In Database
       tags:
       - Database

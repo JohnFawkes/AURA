@@ -92,6 +92,9 @@ func IgnoreItemInDB(w http.ResponseWriter, r *http.Request) {
 // @Param        tmdb_id       query     string  true  "TMDB ID of the Media Item"
 // @Param        library_title  query     string  true  "Library Title of the Media Item"
 // @Param        edition        query     string  false "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition"
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200            {object}  httpx.JSONResponse{data=ignoreItemResponse}
 // @Failure      500            {object}  httpx.JSONResponse "Internal Server Error"
 // @Router       /api/db/ignore/stop [patch]

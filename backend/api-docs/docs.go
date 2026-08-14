@@ -843,6 +843,14 @@ const docTemplate = `{
         },
         "/api/db/ignore/stop": {
             "patch": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Remove the ignored status from a Media Item in the database, allowing it to be processed by other parts of the application again.",
                 "consumes": [
                     "application/json"
@@ -893,6 +901,12 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
                         }
                     },
                     "500": {
