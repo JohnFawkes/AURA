@@ -105,6 +105,7 @@ const SettingsPage: React.FC = () => {
   const [dirty, setDirty] = useState<DirtyState>({});
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
 
   const preferencesRef = useRef<HTMLDivElement>(null);
 
@@ -155,6 +156,7 @@ const SettingsPage: React.FC = () => {
       const cfg = response.data?.status.current_setup ?? defaultAppConfig();
       setInitialConfig(cfg);
       setNewConfig(cfg);
+      setApiKeyConfigured(response.data?.status.api_key_configured ?? false);
       setError(null);
     } catch (error) {
       setError(ReturnErrorMessage<AppConfig>(error));
@@ -539,6 +541,7 @@ const SettingsPage: React.FC = () => {
                   dirtyFields={dirty.auth}
                   onChange={(field, value) => updateConfigField("auth", field, value)}
                   errorsUpdate={(errs) => updateSectionErrors("auth", errs as Record<string, string>)}
+                  apiKeyConfigured={apiKeyConfigured}
                 />
                 <ConfigSectionLogging
                   value={newConfig.logging}

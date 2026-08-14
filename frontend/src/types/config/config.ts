@@ -14,6 +14,20 @@ export interface AppConfig {
 export interface AppConfigAuth {
   enabled: boolean; // Whether authentication is enabled
   password: string; // Hashed password for authentication
+  oidc: AppConfigAuthOIDC;
+  session_cookie_secure?: string; // "auto" | "always" | "never"
+  trust_proxy_for_cookie_secure?: boolean;
+  allowed_origins?: string[];
+}
+
+export interface AppConfigAuthOIDC {
+  enabled: boolean;
+  issuer_url?: string;
+  client_id?: string;
+  client_secret?: string; // Masked (e.g. "***ab12") once a value is set - only sent back if changed.
+  redirect_url?: string;
+  allowed_emails?: string[];
+  allowed_domains?: string[];
 }
 
 export interface AppConfigLogging {

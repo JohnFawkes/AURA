@@ -1,6 +1,6 @@
 "use client";
 
-import { getAuthToken } from "@/services/auth/login";
+import { Logout } from "@/services/auth/logout";
 import {
   ArrowLeftCircle,
   ArrowRightCircle,
@@ -92,10 +92,10 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   // App Version Hook
   const { latestVersion, isNewerVersion } = useAppVersion(version);
 
-  // Fetch onboarding/status on mount, and again whenever auth state changes
+  // Fetch onboarding/status on mount, and again whenever the route changes
   useEffect(() => {
     void fetchStatus();
-  }, [fetchStatus, isAuthed]);
+  }, [fetchStatus, pathName]);
 
   // App Not Fully Loaded Redirect Logic
   useEffect(() => {
@@ -163,11 +163,8 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
       setIsAuthed(true);
       return;
     }
-
-    // If auth is enabled, check for token
-    const token = getAuthToken();
-    setIsAuthed(!!token && token !== "null" && token !== "undefined");
-  }, [pathName, status?.current_setup?.auth?.enabled]);
+    setIsAuthed(status !== null);
+  }, [pathName, status]);
 
   // When clicking on the logo, navigate to home
   // If already on homepage, reset home page states
@@ -188,8 +185,8 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   };
 
   // Handle Logout
-  const handleLogout = () => {
-    localStorage.removeItem("aura-auth-token");
+  const handleLogout = async () => {
+    await Logout(); // clears the HttpOnly session cookie server-side
     setIsAuthed(false);
     clearOnboardingStatus();
     // Redirect to login page

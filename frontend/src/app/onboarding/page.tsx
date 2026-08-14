@@ -387,7 +387,6 @@ const OnboardingPage = () => {
           if (finalizeResp.status === "success") {
             toast.success("Configuration applied successfully, redirecting...");
             if (configState.auth.enabled) {
-              localStorage.removeItem("aura-auth-token");
               setTimeout(() => (window.location.href = "/login"), 3000);
               return;
             }
