@@ -105,11 +105,11 @@ func GetImage(ctx context.Context, assetID string, formatDate string, imageQuali
 					// Successfully read the image from disk
 					imageType = "image/jpeg" // Assuming JPEG by default
 					switch path.Ext(filePath) {
-					case ".png":
+					case ".png", ".PNG":
 						imageType = "image/png"
-					case ".gif":
+					case ".gif", ".GIF":
 						imageType = "image/gif"
-					case ".webp":
+					case ".webp", ".WEBP":
 						imageType = "image/webp"
 					}
 					logAction.AppendResult("filePath", filePath)
