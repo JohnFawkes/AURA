@@ -55,6 +55,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const isHomePage = pathName === "/";
   const isMediaPage = pathName.startsWith("/media-item") || pathName.startsWith("/media-item/");
   const isOnboardingPage = pathName === "/onboarding" || pathName === "/onboarding/";
+  const isLoginPage = pathName === "/login" || pathName === "/login/";
   const isLogsPage = pathName === "/logs" || pathName === "/logs/";
   const isChangeLogPage = pathName === "/change-log" || pathName === "/change-log/";
   const isCollectionItemPage = pathName.startsWith("/collection-item") || pathName.startsWith("/collection-item/");
@@ -188,10 +189,8 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   // Handle Logout
   const handleLogout = async () => {
     await Logout(); // clears the HttpOnly session cookie server-side
-    setIsAuthed(false);
     await DeepResetAllStores();
-    // Redirect to login page
-    router.replace("/login");
+    window.location.href = "/login";
   };
 
   return (
@@ -254,7 +253,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
             />
           </>
         )}
-        {(isAuthed || status?.needs_setup) && (
+        {isAuthed && !isLoginPage && (
           <DropdownMenu>
             <DropdownMenuTrigger
               asChild
@@ -306,7 +305,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
                   )}
                 </>
               )}
-              {(isAuthed || status?.needs_setup) && (
+              {status && !status.needs_setup && (
                 <DropdownMenuItem
                   className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
                   onClick={() => router.push("/logs")}
@@ -315,7 +314,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
                   Logs
                 </DropdownMenuItem>
               )}
-              {isAuthed && (
+              {status && !status.needs_setup && (
                 <DropdownMenuItem
                   className="cursor-pointer flex items-center active:scale-95 hover:brightness-120"
                   onClick={() => router.push("/jobs")}
