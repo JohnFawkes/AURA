@@ -186,9 +186,13 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
             <Label>API Key</Label>
             <PopoverHelp ariaLabel="help-auth-api-key">
               <p>
-                Used for programmatic/integration access (Sonarr/Radarr webhooks, scripts) instead of logging in.
-                Send it as the <code>X-Api-Key</code> header. There is only one key - regenerating it immediately
-                invalidates the previous one everywhere it&apos;s used.
+                Used for programmatic access to the API. This key is only shown once when generated, copy it
+                immediately. If you lose it, you can regenerate a new key which will invalidate the old one.
+              </p>
+              <p className="mt-2">
+                aura comes with built-in API docs at <code>/swagger/index.html</code> on your aura backend&apos;s host
+                and port (e.g. <code className="break-all">192.168.1.50:8888/swagger/index.html</code>), which you can
+                use to test the API with your key.
               </p>
             </PopoverHelp>
           </div>
@@ -316,8 +320,8 @@ export const ConfigSectionAuth: React.FC<ConfigSectionAuthProps> = ({
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>No email/domain restriction configured</AlertTitle>
                 <AlertDescription>
-                  Any user who can successfully authenticate with this identity provider will be granted full access
-                  to this app.
+                  Any user who can successfully authenticate with this identity provider will be granted full access to
+                  this app.
                 </AlertDescription>
               </Alert>
             )}
