@@ -49,6 +49,15 @@ type mediaItemFetchInfo struct {
 	CacheHit  bool
 }
 
+// SonarrWebhookHandler godoc
+// @Summary      Sonarr/Radarr Webhook
+// @Description  Receives Sonarr/Radarr "On Import"/"On Upgrade" webhook events. Requires HTTP Basic Auth since Sonarr/Radarr's built-in Webhook connection type has no custom-header support - set the Username field to anything, and the Password field to your AURA API key (Settings > Auth).
+// @Tags         Sonarr/Radarr
+// @Accept       json
+// @Security     BasicAuth
+// @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized - missing or invalid Basic Auth"
+// @Success      200  {object}  httpx.JSONResponse
+// @Router       /api/sonarr/webhook [post]
 func SonarrWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, ld := logging.CreateLoggingContext(r.Context(), r.URL.Path)
 	logAction := ld.AddAction("Handle Sonarr Webhook", logging.LevelInfo)

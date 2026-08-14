@@ -24,7 +24,8 @@ type GetSetByID_Response struct {
 // @Param        tmdb_id query string false "TMDB ID of the media item (required for collection sets)"
 // @Param        item_library_title query string true "Title of the library the set belongs to"
 // @Param        edition query string false "Edition of the media item (e.g. Director's Cut), empty for the standard edition"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true"
 // @Success	  200  {object}  httpx.JSONResponse{data=GetSetByID_Response}
 // @Failure	  500  {object}  httpx.JSONResponse "Internal Server Error"

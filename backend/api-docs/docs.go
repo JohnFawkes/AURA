@@ -35,11 +35,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/auth/oidc/callback": {
+            "get": {
+                "description": "Handles the redirect back from the OIDC identity provider, exchanges the authorization code, verifies the ID token, and - if the authenticated identity is allowed - starts a browser session the same way password login does.",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "OIDC Callback",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
+        "/api/auth/oidc/login": {
+            "get": {
+                "description": "Redirects to the configured OIDC identity provider to start a browser login. Not usable programmatically - this is a browser redirect flow.",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Start OIDC Login",
+                "responses": {
+                    "302": {
+                        "description": "Found"
+                    }
+                }
+            }
+        },
         "/api/config": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Get the current status of the app configuration and onboarding process",
@@ -80,7 +111,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Update the application configuration",
@@ -141,7 +175,10 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Reload the configuration file and return the current config status",
@@ -186,11 +223,98 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/config/auth-methods": {
+            "get": {
+                "description": "Public, minimal endpoint the login page uses to know which login methods to show (password / OIDC SSO) before the user is authenticated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get Available Auth Methods",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_auth.authMethodsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/config/auth/api-key": {
+            "post": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Generates a new global API key for programmatic access (e.g. Sonarr/Radarr webhooks, scripts). The plaintext key is returned exactly once in this response and is never stored or retrievable again - copy it immediately. Regenerating replaces (revokes) any previous key immediately.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Generate/Regenerate API Key",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_auth.generateAPIKeyResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/config/template-variables": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Get all available notification template variables grouped by category and by template type.",
@@ -233,7 +357,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve all media items and their associated poster sets from the database, with optional filtering and pagination.",
@@ -363,7 +490,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Add a Media Item and Poster Set to the database. If the item already exists, it will be updated with the new Media Item and Poster Set information.",
@@ -424,7 +554,10 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Delete a Media Item and all associated Poster Sets from the database based on TMDB ID and Library Title.",
@@ -496,7 +629,10 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Update a Media Item and its associated Poster Sets in the database. Poster Sets marked with \"to_delete\" will be removed, while others will be upserted.",
@@ -559,7 +695,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Force a check to see if any of the images need to be re-downloaded for a given Media Item and its associated Poster Sets.",
@@ -622,7 +761,10 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Mark a Media Item as ignored in the database, preventing it from being processed by other parts of the application. The ignore can be temporary or permanent based on the mode parameter.",
@@ -766,7 +908,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Download and apply an image for a Collection Item in the media server.",
@@ -829,7 +974,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Download and apply an image for a Media Item in the media server.",
@@ -892,7 +1040,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve the current status of the download queue, including the latest status message, any warnings or errors, and the timestamp of the last update. This endpoint provides insight into the overall health and activity of the download queue.",
@@ -944,7 +1095,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve the current items in the download queue, categorized by their status (in-progress, warning, error). This endpoint allows clients to monitor the progress of queued download tasks and identify any issues that may have occurred during processing.",
@@ -994,7 +1148,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Add a Media Item and its associated Poster Sets to the download queue. The item will be processed by the download worker and removed from the queue once completed.",
@@ -1055,7 +1212,10 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Remove a specific Media Item from the download queue. This can be used to cancel pending download tasks or clean up items that are no longer needed in the queue.",
@@ -1316,7 +1476,10 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Clear all temporary images from the server's temp-images directory. This endpoint is useful for maintenance and cleanup of temporary files that are no longer needed.",
@@ -1365,7 +1528,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a list of all scheduled jobs in the system, including their name, description, schedule, and next run time. This endpoint provides insight into the background tasks that are set up to run at specific intervals or times.",
@@ -1412,7 +1578,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Trigger a specific job to run immediately by providing the job name and ID as query parameters. This endpoint allows for manual execution of scheduled jobs outside of their regular schedule, which can be useful for testing or urgent tasks.",
@@ -1480,7 +1649,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Apply labels and tags to a Media Item in the media server and Sonarr/Radarr.",
@@ -1541,7 +1713,7 @@ const docTemplate = `{
         },
         "/api/login": {
             "post": {
-                "description": "Authenticate user and return a JWT token",
+                "description": "Authenticate with the admin password and start a browser session. On success, an HttpOnly session cookie is set - the response body does not contain a token. Intended for browser/UI use only; for programmatic access use an API key (see the X-Api-Key header on other endpoints).",
                 "consumes": [
                     "application/json"
                 ],
@@ -1591,11 +1763,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/logout": {
+            "post": {
+                "description": "Clear the browser session cookie. Safe to call even if no session exists.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Auth Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_auth.logoutResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/logs": {
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve log entries from the server's log file with optional filtering by log level, status, and route/action. This endpoint allows clients to access and analyze logs for monitoring and debugging purposes.",
@@ -1674,7 +1881,10 @@ const docTemplate = `{
             "delete": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Clear log files from the server. You can choose to clear the current log file or all old log files while keeping the current one. This endpoint is useful for maintenance and managing disk space used by logs.",
@@ -1732,7 +1942,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a list of movie collections from the media server. This endpoint fetches all movie collections available in the media server's movie libraries, allowing clients to display and interact with the collections of movies configured on the media server.",
@@ -1784,7 +1997,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve all child items of a movie collection from the media server, along with their associated posters. This endpoint accepts a query parameter to identify the collection and returns the child items contained within that collection, as well as any relevant poster sets for those items. This allows clients to display the contents of a movie collection along with visual representations (posters) for each item.",
@@ -1845,7 +2061,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve detailed information about a specific media item from the media server, including its metadata, associated poster sets, and user follow/hide status. This endpoint accepts a rating key as a query parameter to identify the media item and returns comprehensive details that can be used to display the media item information and related sets in the client application.",
@@ -1912,7 +2131,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a list of library sections from the configured media server. This endpoint fetches the available library sections, including their ID, title, type, and path, allowing clients to display and interact with the media libraries configured on the media server.",
@@ -1964,7 +2186,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a list of library sections from a specified media server configuration. This endpoint accepts a media server configuration in the request body and returns the available library sections for that media server, allowing clients to display options for users to select which library section they want to interact with.",
@@ -2027,7 +2252,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve items from a specific library section in the media server. This endpoint accepts query parameters to identify the library section and pagination options, and returns the items contained within that library section, allowing clients to display the media items available in the selected library section.",
@@ -2109,7 +2337,10 @@ const docTemplate = `{
             "patch": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Rate a media item on the media server. This endpoint allows clients to submit a user rating for a specific media item, which will be sent to the media server (currently only supported for Plex). The rating should be a number between 0 and 5, and it will be converted to the appropriate scale for the media server before being submitted.",
@@ -2177,7 +2408,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Refresh the metadata of a media item on the media server. This endpoint accepts a rating_key for the media item to be refreshed and an optional refresh_rating_key to specify which metadata entry to refresh. It triggers a metadata refresh on the media server for the specified media item, allowing clients to update the displayed information for that item after changes have been made on the media server or to fix any metadata issues.",
@@ -2245,7 +2479,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a specific item set (such as a show set for TV shows or a movie set/collection for movies) by its unique identifier. This endpoint accepts query parameters to identify the set, including the set ID, set type (show, movie, or collection), and the library section it belongs to. The response includes details about the set and any related media items that are part of the set, allowing clients to display comprehensive information about the set and its contents in the UI.",
@@ -2332,7 +2569,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve item sets for a specific media item in the library. This endpoint accepts query parameters to identify the media item and its library, and returns any related item sets (such as show sets for TV shows or movie sets/collections for movies) that the media item belongs to, allowing clients to display related items and collections in the UI.",
@@ -2413,7 +2653,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve all item sets created by the specified user in Mediux. This endpoint returns an array of item sets, including details such as the set name, type (show, movie, or collection), and the items contained within each set. This allows clients to display the user's custom collections and preferences within the Mediux ecosystem in the UI.",
@@ -2474,7 +2717,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve the list of users that the current user is following or hiding in Mediux. This endpoint returns an array of user information, including their username, display name, and whether they are being followed or hidden by the current user. This allows clients to display the user's social connections and preferences within the Mediux ecosystem in the UI.",
@@ -2526,7 +2772,10 @@ const docTemplate = `{
             "get": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Retrieve a new Plex Pin and the associated Plex ID for authentication. This endpoint is used to initiate the Plex authentication process by providing the necessary credentials for the user to authenticate their Plex account.",
@@ -2576,7 +2825,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Check if the provided Plex ID has authenticated with Plex and retrieve available server connections if authenticated. This endpoint is used during the Plex authentication process to verify the user's Plex account and gather necessary information for integration.",
@@ -2707,11 +2959,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/sonarr/webhook": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "description": "Receives Sonarr/Radarr \"On Import\"/\"On Upgrade\" webhook events. Requires HTTP Basic Auth since Sonarr/Radarr's built-in Webhook connection type has no custom-header support - set the Username field to anything, and the Password field to your AURA API key (Settings \u003e Auth).",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sonarr/Radarr"
+                ],
+                "summary": "Sonarr/Radarr Webhook",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid Basic Auth",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/validate/mediaserver": {
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Validate the provided media server information by attempting to connect to the media server. This endpoint is used during the onboarding process to ensure that the media server settings entered by the user are correct and that a connection can be established. The response will indicate whether the connection was successful and provide details about the media server if it was validated successfully.",
@@ -2774,7 +3060,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Validate the provided Mediux API token by attempting to connect to the Mediux site. This endpoint is used during the onboarding process to ensure that the Mediux settings entered by the user are correct and that a connection can be established. The response will indicate whether the connection was successful.",
@@ -2837,7 +3126,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Send a test notification using the specified notification provider. This endpoint is used to verify that the notification settings are correct and that notifications can be sent successfully. The request should include the notification provider information, and the response will indicate whether the test notification was sent successfully or if there were any errors.",
@@ -2900,7 +3192,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Validate the provided Sonarr/Radarr information by attempting to connect to the application. This endpoint is used during the onboarding process to ensure that the Sonarr/Radarr settings entered by the user are correct and that a connection can be established. The response will indicate whether the connection was successful and provide details about the application if it was validated successfully.",
@@ -2963,7 +3258,10 @@ const docTemplate = `{
             "post": {
                 "security": [
                     {
-                        "BearerAuth": []
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
                     }
                 ],
                 "description": "Validate the provided Sonarr/Radarr information by attempting to connect to the application. This endpoint is used during the onboarding process to ensure that the Sonarr/Radarr settings entered by the user are correct and that a connection can be established. The response will indicate whether the connection was successful and provide details about the application if it was validated successfully.",
@@ -3160,12 +3458,74 @@ const docTemplate = `{
         "config.Config_Auth": {
             "type": "object",
             "properties": {
+                "allowed_origins": {
+                    "description": "AllowedOrigins is an optional list of extra origins allowed to make credentialed\ncross-origin requests (cookies/API key headers). The standard deployment (Next.js server\nproxying /api/* to the Go backend) never needs this - the browser only ever talks to one\norigin. Only set this if you're calling the API directly from a different origin.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "enabled": {
                     "description": "Whether to enable authentication.",
                     "type": "boolean"
                 },
+                "oidc": {
+                    "description": "OIDC (Single Sign-On) login settings.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_Auth_OIDC"
+                        }
+                    ]
+                },
                 "password": {
                     "description": "Password for authentication.",
+                    "type": "string"
+                },
+                "session_cookie_secure": {
+                    "description": "SessionCookieSecure controls the Secure attribute of the browser session cookie.",
+                    "type": "string"
+                },
+                "trust_proxy_for_cookie_secure": {
+                    "description": "TrustProxyForCookieSecure, when true, also treats X-Forwarded-Proto: https as a secure transport\nsignal (for reverse-proxy TLS termination setups). Defaults to false since that header is\nattacker-controllable unless the proxy is guaranteed to strip/overwrite it.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "config.Config_Auth_OIDC": {
+            "type": "object",
+            "properties": {
+                "allowed_domains": {
+                    "description": "Optional allowlist of email domains (e.g. \"example.com\") permitted to log in via OIDC. Empty = any domain allowed.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowed_emails": {
+                    "description": "Optional allowlist of exact emails permitted to log in via OIDC. Empty = any authenticated IdP user is allowed.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "client_id": {
+                    "description": "OIDC client ID.",
+                    "type": "string"
+                },
+                "client_secret": {
+                    "description": "OIDC client secret.",
+                    "type": "string"
+                },
+                "enabled": {
+                    "description": "Whether OIDC (Single Sign-On) login is enabled.",
+                    "type": "boolean"
+                },
+                "issuer_url": {
+                    "description": "OIDC issuer URL (used for discovery).",
+                    "type": "string"
+                },
+                "redirect_url": {
+                    "description": "Full callback URL registered with the IdP, e.g. https://aura.example.com/api/auth/oidc/callback.",
                     "type": "string"
                 }
             }
@@ -4560,6 +4920,26 @@ const docTemplate = `{
                 }
             }
         },
+        "routes_auth.authMethodsResponse": {
+            "type": "object",
+            "properties": {
+                "oidc_enabled": {
+                    "type": "boolean"
+                },
+                "password_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "routes_auth.generateAPIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "description": "APIKey is the plaintext key. It is only ever returned here, once - it is not stored and\ncannot be retrieved again. Only its Argon2id hash is persisted.",
+                    "type": "string"
+                }
+            }
+        },
         "routes_auth.loginRequest": {
             "type": "object",
             "properties": {
@@ -4571,8 +4951,16 @@ const docTemplate = `{
         "routes_auth.loginResponse": {
             "type": "object",
             "properties": {
-                "token": {
-                    "type": "string"
+                "authenticated": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "routes_auth.logoutResponse": {
+            "type": "object",
+            "properties": {
+                "logged_out": {
+                    "type": "boolean"
                 }
             }
         },
@@ -4590,6 +4978,10 @@ const docTemplate = `{
         "routes_config.AppConfigStatus": {
             "type": "object",
             "properties": {
+                "api_key_configured": {
+                    "description": "Whether a global API key has been generated (the key itself is never exposed)",
+                    "type": "boolean"
+                },
                 "app_fully_loaded": {
                     "description": "Whether the app is fully loaded and ready to use",
                     "type": "boolean"
@@ -5308,10 +5700,20 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "BearerAuth": {
+        "ApiKeyAuth": {
+            "description": "API key for programmatic/integration access. Generate one under Settings \u003e Authentication, then send it as this header on every request. This is the intended auth method for scripts and integrations - the session cookie above is for browser use only.",
             "type": "apiKey",
-            "name": "Authorization",
+            "name": "X-Api-Key",
             "in": "header"
+        },
+        "BasicAuth": {
+            "type": "basic"
+        },
+        "SessionCookie": {
+            "description": "Browser session cookie, set by POST /api/login or the OIDC callback. Not usable directly via Swagger \"Authorize\" - log in through the app UI in the same browser tab.",
+            "type": "apiKey",
+            "name": "aura_session",
+            "in": "cookie"
         }
     }
 }`
@@ -5323,7 +5725,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Aura API",
-	Description:      "",
+	Description:      "Used only by /api/sonarr/webhook, since Sonarr/Radarr's built-in Webhook connection type has no custom-header support. Any username works; the password must be the API key.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

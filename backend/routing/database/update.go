@@ -24,7 +24,8 @@ type updateItemResponse struct {
 // @Accept       json
 // @Produce      json
 // @Param        req  body      updateItemRequest  true  "Update Item Request"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200           {object}  httpx.JSONResponse{data=updateItemResponse}
 // @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"

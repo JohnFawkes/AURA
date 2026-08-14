@@ -9,7 +9,7 @@ import (
 // migrate_5_to_6 adds an "edition" column to MediaItems, SavedItems, and
 // IgnoredItems, and folds it into each table's uniqueness constraint so that
 // multiple editions of the same TMDB item (e.g. Theatrical vs Director's Cut)
-// no longer collide with each other. Existing rows get edition = ''.
+// no longer collide with each other. Existing rows get edition = ”.
 func migrate_5_to_6(ctx context.Context) (Err logging.LogErrorInfo) {
 	ctx, logAction := logging.AddSubActionToContext(ctx, "Migrating Database from v5 to v6", logging.LevelInfo)
 	defer logAction.Complete()

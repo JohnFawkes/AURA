@@ -45,6 +45,36 @@ type Config_Dev struct {
 type Config_Auth struct {
 	Enabled  bool   `json:"enabled" yaml:"Enabled"`             // Whether to enable authentication.
 	Password string `json:"password" yaml:"Password,omitempty"` // Password for authentication.
+
+	// APIKeyHash is the Argon2id hash of the single global API key used for programmatic/integration
+	// access (e.g. Sonarr/Radarr webhooks, scripts, other apps).
+	APIKeyHash string `json:"-" yaml:"APIKeyHash,omitempty"`
+
+	OIDC Config_Auth_OIDC `json:"oidc" yaml:"OIDC,omitempty"` // OIDC (Single Sign-On) login settings.
+
+	// SessionCookieSecure controls the Secure attribute of the browser session cookie.
+	SessionCookieSecure string `json:"session_cookie_secure,omitempty" yaml:"SessionCookieSecure,omitempty"`
+
+	// TrustProxyForCookieSecure, when true, also treats X-Forwarded-Proto: https as a secure transport
+	// signal (for reverse-proxy TLS termination setups). Defaults to false since that header is
+	// attacker-controllable unless the proxy is guaranteed to strip/overwrite it.
+	TrustProxyForCookieSecure bool `json:"trust_proxy_for_cookie_secure,omitempty" yaml:"TrustProxyForCookieSecure,omitempty"`
+
+	// AllowedOrigins is an optional list of extra origins allowed to make credentialed
+	// cross-origin requests (cookies/API key headers). The standard deployment (Next.js server
+	// proxying /api/* to the Go backend) never needs this - the browser only ever talks to one
+	// origin. Only set this if you're calling the API directly from a different origin.
+	AllowedOrigins []string `json:"allowed_origins,omitempty" yaml:"AllowedOrigins,omitempty"`
+}
+
+type Config_Auth_OIDC struct {
+	Enabled        bool     `json:"enabled" yaml:"Enabled"`                                    // Whether OIDC (Single Sign-On) login is enabled.
+	IssuerURL      string   `json:"issuer_url,omitempty" yaml:"IssuerURL,omitempty"`           // OIDC issuer URL (used for discovery).
+	ClientID       string   `json:"client_id,omitempty" yaml:"ClientID,omitempty"`             // OIDC client ID.
+	ClientSecret   string   `json:"client_secret,omitempty" yaml:"ClientSecret,omitempty"`     // OIDC client secret.
+	RedirectURL    string   `json:"redirect_url,omitempty" yaml:"RedirectURL,omitempty"`       // Full callback URL registered with the IdP, e.g. https://aura.example.com/api/auth/oidc/callback.
+	AllowedEmails  []string `json:"allowed_emails,omitempty" yaml:"AllowedEmails,omitempty"`   // Optional allowlist of exact emails permitted to log in via OIDC. Empty = any authenticated IdP user is allowed.
+	AllowedDomains []string `json:"allowed_domains,omitempty" yaml:"AllowedDomains,omitempty"` // Optional allowlist of email domains (e.g. "example.com") permitted to log in via OIDC. Empty = any domain allowed.
 }
 
 type Config_Logging struct {

@@ -4,6 +4,7 @@ import (
 	"aura/logging"
 	"context"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -79,6 +80,30 @@ func ValidateAuth(ctx context.Context, Auth *Config_Auth) bool {
 				isValid = false
 			}
 		}
+	}
+
+	if Auth.OIDC.Enabled {
+		if Auth.OIDC.IssuerURL == "" || Auth.OIDC.ClientID == "" || Auth.OIDC.ClientSecret == "" || Auth.OIDC.RedirectURL == "" {
+			logAction.SetError("Auth.OIDC is missing required fields", "IssuerURL, ClientID, ClientSecret, and RedirectURL are all required when OIDC is enabled", nil)
+			isValid = false
+		} else {
+			if _, err := url.ParseRequestURI(Auth.OIDC.IssuerURL); err != nil {
+				logAction.SetError("Auth.OIDC.IssuerURL is not a valid URL", err.Error(), nil)
+				isValid = false
+			}
+			if _, err := url.ParseRequestURI(Auth.OIDC.RedirectURL); err != nil {
+				logAction.SetError("Auth.OIDC.RedirectURL is not a valid URL", err.Error(), nil)
+				isValid = false
+			}
+		}
+	}
+
+	switch Auth.SessionCookieSecure {
+	case "", "auto", "always", "never":
+		// valid
+	default:
+		logAction.SetError("Auth.SessionCookieSecure is invalid", "Must be one of: auto, always, never", nil)
+		isValid = false
 	}
 
 	return isValid

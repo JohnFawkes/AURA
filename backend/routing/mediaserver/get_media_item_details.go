@@ -26,7 +26,8 @@ type GetMediaItemDetails_Response struct {
 // @Produce      json
 // @Param        rating_key query string true "Rating Key of the Media Item"
 // @Param        return_type query string false "Return Type (full or item, default is full)"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200  {object}  httpx.JSONResponse{data=GetMediaItemDetails_Response}
 // @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"

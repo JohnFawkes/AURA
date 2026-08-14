@@ -75,11 +75,64 @@ definitions:
     type: object
   config.Config_Auth:
     properties:
+      allowed_origins:
+        description: |-
+          AllowedOrigins is an optional list of extra origins allowed to make credentialed
+          cross-origin requests (cookies/API key headers). The standard deployment (Next.js server
+          proxying /api/* to the Go backend) never needs this - the browser only ever talks to one
+          origin. Only set this if you're calling the API directly from a different origin.
+        items:
+          type: string
+        type: array
       enabled:
         description: Whether to enable authentication.
         type: boolean
+      oidc:
+        allOf:
+        - $ref: '#/definitions/config.Config_Auth_OIDC'
+        description: OIDC (Single Sign-On) login settings.
       password:
         description: Password for authentication.
+        type: string
+      session_cookie_secure:
+        description: SessionCookieSecure controls the Secure attribute of the browser
+          session cookie.
+        type: string
+      trust_proxy_for_cookie_secure:
+        description: |-
+          TrustProxyForCookieSecure, when true, also treats X-Forwarded-Proto: https as a secure transport
+          signal (for reverse-proxy TLS termination setups). Defaults to false since that header is
+          attacker-controllable unless the proxy is guaranteed to strip/overwrite it.
+        type: boolean
+    type: object
+  config.Config_Auth_OIDC:
+    properties:
+      allowed_domains:
+        description: Optional allowlist of email domains (e.g. "example.com") permitted
+          to log in via OIDC. Empty = any domain allowed.
+        items:
+          type: string
+        type: array
+      allowed_emails:
+        description: Optional allowlist of exact emails permitted to log in via OIDC.
+          Empty = any authenticated IdP user is allowed.
+        items:
+          type: string
+        type: array
+      client_id:
+        description: OIDC client ID.
+        type: string
+      client_secret:
+        description: OIDC client secret.
+        type: string
+      enabled:
+        description: Whether OIDC (Single Sign-On) login is enabled.
+        type: boolean
+      issuer_url:
+        description: OIDC issuer URL (used for discovery).
+        type: string
+      redirect_url:
+        description: Full callback URL registered with the IdP, e.g. https://aura.example.com/api/auth/oidc/callback.
         type: string
     type: object
   config.Config_AutoDownload:
@@ -1039,6 +1092,21 @@ definitions:
       owned:
         type: boolean
     type: object
+  routes_auth.authMethodsResponse:
+    properties:
+      oidc_enabled:
+        type: boolean
+      password_enabled:
+        type: boolean
+    type: object
+  routes_auth.generateAPIKeyResponse:
+    properties:
+      api_key:
+        description: |-
+          APIKey is the plaintext key. It is only ever returned here, once - it is not stored and
+          cannot be retrieved again. Only its Argon2id hash is persisted.
+        type: string
+    type: object
   routes_auth.loginRequest:
     properties:
       password:
@@ -1046,8 +1114,13 @@ definitions:
     type: object
   routes_auth.loginResponse:
     properties:
-      token:
-        type: string
+      authenticated:
+        type: boolean
+    type: object
+  routes_auth.logoutResponse:
+    properties:
+      logged_out:
+        type: boolean
     type: object
   routes_base.healthCheckResponse:
     properties:
@@ -1058,6 +1131,10 @@ definitions:
     type: object
   routes_config.AppConfigStatus:
     properties:
+      api_key_configured:
+        description: Whether a global API key has been generated (the key itself is
+          never exposed)
+        type: boolean
       app_fully_loaded:
         description: Whether the app is fully loaded and ready to use
         type: boolean
@@ -1525,6 +1602,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: Used only by /api/sonarr/webhook, since Sonarr/Radarr's built-in Webhook
+    connection type has no custom-header support. Any username works; the password
+    must be the API key.
   title: Aura API
   version: "1.0"
 paths:
@@ -1541,6 +1621,28 @@ paths:
       summary: Health Check
       tags:
       - Health
+  /api/auth/oidc/callback:
+    get:
+      description: Handles the redirect back from the OIDC identity provider, exchanges
+        the authorization code, verifies the ID token, and - if the authenticated
+        identity is allowed - starts a browser session the same way password login
+        does.
+      responses:
+        "302":
+          description: Found
+      summary: OIDC Callback
+      tags:
+      - Auth
+  /api/auth/oidc/login:
+    get:
+      description: Redirects to the configured OIDC identity provider to start a browser
+        login. Not usable programmatically - this is a browser redirect flow.
+      responses:
+        "302":
+          description: Found
+      summary: Start OIDC Login
+      tags:
+      - Auth
   /api/config:
     get:
       description: Get the current status of the app configuration and onboarding
@@ -1562,7 +1664,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.UnauthorizedResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Config Status
       tags:
       - Config
@@ -1589,7 +1692,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Reload Config
       tags:
       - Config
@@ -1625,10 +1729,62 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Update Config
       tags:
       - Config
+  /api/config/auth-methods:
+    get:
+      description: Public, minimal endpoint the login page uses to know which login
+        methods to show (password / OIDC SSO) before the user is authenticated.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_auth.authMethodsResponse'
+              type: object
+      summary: Get Available Auth Methods
+      tags:
+      - Auth
+  /api/config/auth/api-key:
+    post:
+      description: Generates a new global API key for programmatic access (e.g. Sonarr/Radarr
+        webhooks, scripts). The plaintext key is returned exactly once in this response
+        and is never stored or retrievable again - copy it immediately. Regenerating
+        replaces (revokes) any previous key immediately.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_auth.generateAPIKeyResponse'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
+      summary: Generate/Regenerate API Key
+      tags:
+      - Auth
   /api/config/template-variables:
     get:
       description: Get all available notification template variables grouped by category
@@ -1650,7 +1806,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.UnauthorizedResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Notification Template Variables
       tags:
       - Config
@@ -1697,7 +1854,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Delete Item From Database
       tags:
       - Database
@@ -1781,7 +1939,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get All Database Items
       tags:
       - Database
@@ -1819,7 +1978,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Update Item In Database
       tags:
       - Database
@@ -1856,7 +2016,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Add Item To Database
       tags:
       - Database
@@ -1894,7 +2055,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Auto Download - Force Check
       tags:
       - Database
@@ -1949,7 +2111,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Ignore Item In Database
       tags:
       - Database
@@ -2028,7 +2191,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Collection Image
       tags:
       - Download
@@ -2065,7 +2229,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Image
       tags:
       - Download
@@ -2098,7 +2263,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Queue - Get Status
       tags:
       - Download
@@ -2137,7 +2303,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Queue - Remove Item
       tags:
       - Download
@@ -2169,7 +2336,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Queue - Get Items
       tags:
       - Download
@@ -2207,7 +2375,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Download Queue - Add Item
       tags:
       - Download
@@ -2373,7 +2542,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Delete Temporary Images
       tags:
       - Images
@@ -2404,7 +2574,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get All Scheduled Jobs
       tags:
       - Jobs
@@ -2447,7 +2618,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Run Job
       tags:
       - Jobs
@@ -2484,7 +2656,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Apply Labels/Tags
       tags:
       - Labels/Tags
@@ -2492,7 +2665,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate user and return a JWT token
+      description: Authenticate with the admin password and start a browser session.
+        On success, an HttpOnly session cookie is set - the response body does not
+        contain a token. Intended for browser/UI use only; for programmatic access
+        use an API key (see the X-Api-Key header on other endpoints).
       parameters:
       - description: Login Request
         in: body
@@ -2517,6 +2693,25 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       summary: Auth Login
+      tags:
+      - Auth
+  /api/logout:
+    post:
+      description: Clear the browser session cookie. Safe to call even if no session
+        exists.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_auth.logoutResponse'
+              type: object
+      summary: Auth Logout
       tags:
       - Auth
   /api/logs:
@@ -2551,7 +2746,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Clear Logs
       tags:
       - Logging
@@ -2602,7 +2798,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Log Entries
       tags:
       - Logging
@@ -2635,7 +2832,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Movie Collections
       tags:
       - MediaServer
@@ -2676,7 +2874,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get All Movie Collection Children Items And Posters
       tags:
       - MediaServer
@@ -2720,7 +2919,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Media Item Details
       tags:
       - MediaServer
@@ -2753,7 +2953,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Library Sections
       tags:
       - MediaServer
@@ -2794,7 +2995,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Library Section Options
       tags:
       - MediaServer
@@ -2849,7 +3051,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Library Section Items
       tags:
       - MediaServer
@@ -2894,7 +3097,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Rate Media Item
       tags:
       - MediaServer
@@ -2940,7 +3144,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Refresh Media Item Metadata
       tags:
       - MediaServer
@@ -3001,7 +3206,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Mediux Set By ID
       tags:
       - Mediux
@@ -3056,7 +3262,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Mediux Item Sets
       tags:
       - Mediux
@@ -3096,7 +3303,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Mediux User Sets
       tags:
       - Mediux
@@ -3130,7 +3338,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Mediux User Following and Hiding
       tags:
       - Mediux
@@ -3162,7 +3371,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Get Plex Pin and ID
       tags:
       - Plex
@@ -3200,7 +3410,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Check Plex Pin for Authentication
       tags:
       - Plex
@@ -3257,6 +3468,28 @@ paths:
       summary: Search
       tags:
       - Search
+  /api/sonarr/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Receives Sonarr/Radarr "On Import"/"On Upgrade" webhook events.
+        Requires HTTP Basic Auth since Sonarr/Radarr's built-in Webhook connection
+        type has no custom-header support - set the Username field to anything, and
+        the Password field to your AURA API key (Settings > Auth).
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+        "401":
+          description: Unauthorized - missing or invalid Basic Auth
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+      security:
+      - BasicAuth: []
+      summary: Sonarr/Radarr Webhook
+      tags:
+      - Sonarr/Radarr
   /api/validate/mediaserver:
     post:
       consumes:
@@ -3295,7 +3528,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Validate Media Server Info
       tags:
       - Validation
@@ -3336,7 +3570,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Validate Mediux Token
       tags:
       - Validation
@@ -3377,7 +3612,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Send Test Notification
       tags:
       - Validation
@@ -3419,7 +3655,8 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Validate Sonarr/Radarr Information
       tags:
       - Validation
@@ -3461,13 +3698,27 @@ paths:
           schema:
             $ref: '#/definitions/httpx.JSONResponse'
       security:
-      - BearerAuth: []
+      - SessionCookie: []
+      - ApiKeyAuth: []
       summary: Validate Sonarr/Radarr Information
       tags:
       - Validation
 securityDefinitions:
-  BearerAuth:
+  ApiKeyAuth:
+    description: API key for programmatic/integration access. Generate one under Settings
+      > Authentication, then send it as this header on every request. This is the
+      intended auth method for scripts and integrations - the session cookie above
+      is for browser use only.
     in: header
-    name: Authorization
+    name: X-Api-Key
+    type: apiKey
+  BasicAuth:
+    type: basic
+  SessionCookie:
+    description: Browser session cookie, set by POST /api/login or the OIDC callback.
+      Not usable directly via Swagger "Authorize" - log in through the app UI in the
+      same browser tab.
+    in: cookie
+    name: aura_session
     type: apiKey
 swagger: "2.0"

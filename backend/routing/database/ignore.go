@@ -25,7 +25,8 @@ type ignoreItemResponse struct {
 // @Param        library_title  query     string  true  "Library Title of the Media Item"
 // @Param        edition        query     string  false "Edition of the Media Item (e.g. Director's Cut), empty for the standard edition"
 // @Param        mode           query     string  true  "Ignore mode (e.g., 'always' for permanent ignore, 'until-set-available' for temporary ignore until a set is available, 'until-new-set-available' for temporary ignore until a new set is available)"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200            {object}  httpx.JSONResponse{data=ignoreItemResponse}
 // @Failure      500  {object}  httpx.JSONResponse "Internal Server Error"

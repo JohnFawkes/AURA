@@ -48,7 +48,8 @@ func DefaultNotificationTemplates() Config_NotificationTemplate {
 func DefaultConfig() Config {
 	return Config{
 		Auth: Config_Auth{
-			Enabled: false,
+			Enabled:             false,
+			SessionCookieSecure: "auto",
 		},
 		Logging: Config_Logging{
 			Level: "INFO",

@@ -20,7 +20,8 @@ type runJobResponse struct {
 // @Produce      json
 // @Param        job_name  query     string  true  "Name of the Job to Run"
 // @Param        job_id    query     string  true  "ID of the Job to Run"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200       {object}  httpx.JSONResponse{data=runJobResponse}
 // @Failure      500       {object}  httpx.JSONResponse "Internal Server Error"

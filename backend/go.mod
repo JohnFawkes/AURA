@@ -2,11 +2,16 @@ module aura
 
 go 1.25.5
 
-require github.com/rs/zerolog v1.35.1
+require (
+	github.com/coreos/go-oidc/v3 v3.20.0
+	github.com/rs/zerolog v1.35.1
+	golang.org/x/oauth2 v0.36.0
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
 	github.com/go-openapi/spec v0.22.9 // indirect

@@ -26,7 +26,8 @@ type autodownloadForceCheckResponse struct {
 // @Accept       json
 // @Produce      json
 // @Param        req  body      autodownloadForceCheckRequest  true  "Auto Download Force Check Request"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200           {object}  httpx.JSONResponse{data=autodownloadForceCheckResponse}
 // @Failure      500           {object}  httpx.JSONResponse "Internal Server Error"

@@ -35,7 +35,8 @@ type updateConfigResponse struct {
 // @Accept       json
 // @Produce      json
 // @Param        newConfig  body      updateConfigRequest  true  "New Configuration"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success      200        {object}  httpx.JSONResponse{data=routes_config.updateConfigResponse}
 // @Failure      500        {object}  httpx.JSONResponse "Internal Server Error"
@@ -141,11 +142,12 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Status = AppConfigStatus{
-		ConfigLoaded:    config.Loaded,
-		ConfigValid:     (config.Valid && config.MediuxValid && config.MediaServerValid),
-		NeedsSetup:      !(config.Loaded && config.Valid && config.MediuxValid && config.MediaServerValid),
-		CurrentSetup:    *newConfig.SanitizeConfig(ctx),
-		MediaServerName: config.MediaServerName,
+		ConfigLoaded:     config.Loaded,
+		ConfigValid:      (config.Valid && config.MediuxValid && config.MediaServerValid),
+		NeedsSetup:       !(config.Loaded && config.Valid && config.MediuxValid && config.MediaServerValid),
+		CurrentSetup:     *newConfig.SanitizeConfig(ctx),
+		MediaServerName:  config.MediaServerName,
+		APIKeyConfigured: config.Current.Auth.APIKeyHash != "",
 	}
 
 	httpx.SendResponse(w, ld, response)
@@ -157,6 +159,12 @@ func checkConfigDifferences_Auth(ctx context.Context, oldAuth config.Config_Auth
 	defer logAction.Complete()
 	changed = false
 	newValid = false
+
+	// APIKeyHash is never sent to the frontend (json:"-") and can only be changed via the
+	// dedicated generate/regenerate endpoint - force-preserve it here so a generic config save
+	// (which will always carry an empty APIKeyHash from the client) can never wipe it out.
+	newAuth.APIKeyHash = oldAuth.APIKeyHash
+
 	if !reflect.DeepEqual(oldAuth, newAuth) {
 		if oldAuth.Enabled != newAuth.Enabled {
 			logAction.AppendResult("Auth.Enabled changed", fmt.Sprintf("from '%v' to '%v'", oldAuth.Enabled, newAuth.Enabled))
@@ -176,6 +184,39 @@ func checkConfigDifferences_Auth(ctx context.Context, oldAuth config.Config_Auth
 				Str("new_password", fmt.Sprintf("%s", newAuth.Password)).
 				Msg("Auth.Password changed")
 			changed = true
+		}
+
+		if oldAuth.SessionCookieSecure != newAuth.SessionCookieSecure || oldAuth.TrustProxyForCookieSecure != newAuth.TrustProxyForCookieSecure {
+			changed = true
+		}
+
+		if !reflect.DeepEqual(oldAuth.AllowedOrigins, newAuth.AllowedOrigins) {
+			changed = true
+		}
+
+		if oldAuth.OIDC.Enabled != newAuth.OIDC.Enabled {
+			logAction.AppendResult("Auth.OIDC.Enabled changed", fmt.Sprintf("from '%v' to '%v'", oldAuth.OIDC.Enabled, newAuth.OIDC.Enabled))
+			changed = true
+		}
+
+		if oldAuth.OIDC.IssuerURL != newAuth.OIDC.IssuerURL ||
+			oldAuth.OIDC.ClientID != newAuth.OIDC.ClientID ||
+			oldAuth.OIDC.RedirectURL != newAuth.OIDC.RedirectURL ||
+			!reflect.DeepEqual(oldAuth.OIDC.AllowedEmails, newAuth.OIDC.AllowedEmails) ||
+			!reflect.DeepEqual(oldAuth.OIDC.AllowedDomains, newAuth.OIDC.AllowedDomains) {
+			changed = true
+		}
+
+		// ClientSecret is masked on the way out (MaskToken, "***" prefix) - preserve the old
+		// value unless the admin actually typed a new one, matching the pattern used for every
+		// other masked secret field in this file (see checkConfigDifferences_TMDB etc).
+		if oldAuth.OIDC.ClientSecret != newAuth.OIDC.ClientSecret {
+			if !strings.HasPrefix(newAuth.OIDC.ClientSecret, "***") {
+				logAction.AppendResult("Auth.OIDC.ClientSecret changed", "value redacted")
+				changed = true
+			} else {
+				newAuth.OIDC.ClientSecret = oldAuth.OIDC.ClientSecret
+			}
 		}
 	}
 

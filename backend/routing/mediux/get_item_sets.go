@@ -24,7 +24,8 @@ type getItemSetsResponse struct {
 // @Param        item_type query string true "Type of the media item (movie or show)"
 // @Param        item_library_title query string true "Title of the library the media item belongs to"
 // @Param        edition query string false "Edition of the media item (e.g. Director's Cut), empty for the standard edition"
-// @Security 	 BearerAuth
+// @Security     SessionCookie
+// @Security     ApiKeyAuth
 // @Failure      401  {object}  httpx.UnauthorizedResponse "Unauthorized (only when Auth.Enabled=true)"
 // @Success	  200  {object}  httpx.JSONResponse{data=getItemSetsResponse}
 // @Failure	  500  {object}  httpx.JSONResponse "Internal Server Error"
