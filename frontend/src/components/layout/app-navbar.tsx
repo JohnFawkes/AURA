@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { cn } from "@/lib/cn";
+import { DeepResetAllStores } from "@/lib/stores/clear-all-stores";
 import { useCollectionStore } from "@/lib/stores/global-store-collection-store";
 import { useMediaStore } from "@/lib/stores/global-store-media-store";
 import { useOnboardingStore } from "@/lib/stores/global-store-onboarding";
@@ -79,7 +80,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const previousCollectionItem = useCollectionsPageStore((state) => state.previousCollectionItem);
 
   // Onboarding Store
-  const { fetchStatus, clear: clearOnboardingStatus } = useOnboardingStore();
+  const { fetchStatus } = useOnboardingStore();
   const status = useOnboardingStore((state) => state.status);
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
@@ -188,7 +189,7 @@ export function Navbar({ version = "dev" }: AppNavbarProps) {
   const handleLogout = async () => {
     await Logout(); // clears the HttpOnly session cookie server-side
     setIsAuthed(false);
-    clearOnboardingStatus();
+    await DeepResetAllStores();
     // Redirect to login page
     router.replace("/login");
   };
