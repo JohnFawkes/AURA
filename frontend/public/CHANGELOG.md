@@ -1,4 +1,12 @@
-## [0.9.102] - 2026-08-08
+## [0.9.103] - 2026-08-14
+
+### Fixed
+
+- Fixed issue where MediUX downloads for image types other than jpeg were not being saved correctly. This was due to a bug in the backend where the file extension was not being set correctly for non-jpeg image types. This has been fixed by ensuring that the correct file extension is used when saving images from MediUX.
+
+---
+
+## [0.9.102] - 2026-08-13
 
 ### Breaking
 
