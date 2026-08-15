@@ -341,9 +341,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
     const setHasPoster = item.Set.images.some((img) => img.type === "poster");
     const setHasBackdrop = item.Set.images.some((img) => img.type === "backdrop");
     const setHasSeasonPosters = item.Set.images.some((img) => img.type === "season_poster" && img.season_number !== 0);
-    const setHasSpecialSeasonPosters = item.Set.images.some(
-      (img) => img.type === "season_poster" && img.season_number === 0
-    );
+    const mediaItemHasSpecialSeason =
+      item.MediaItem.series?.seasons?.some((season) => season.season_number === 0) ?? false;
+    const setHasSpecialSeasonPosters =
+      mediaItemHasSpecialSeason &&
+      item.Set.images.some((img) => img.type === "season_poster" && img.season_number === 0);
     const setHasTitleCards = item.Set.images.some((img) => img.type === "titlecard");
     const types: (TYPE_DOWNLOAD_IMAGE_TYPE_OPTIONS | null)[] = [
       setHasPoster ? "poster" : null,
