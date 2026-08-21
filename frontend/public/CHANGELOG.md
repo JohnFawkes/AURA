@@ -10,6 +10,7 @@
 
 - Fixed padding with Table View on Saved Sets page.
 - Fixed styling with Table View on Saved Sets page.
+- Fixed issue where Media Items with a Edition tag would keep throwing "Check For Media Item Changes Job" notifications.
 
 ---
 
