@@ -764,8 +764,8 @@ const SavedSetsPage: React.FC = () => {
 
       {/* Table View (only available for larger screens) */}
       {viewOption === "table" && savedSets && savedSets.length > 0 && (
-        <Table>
-          <TableHeader>
+        <Table className="border-separate border-spacing-x-0 border-spacing-y-2">
+          <TableHeader className="[&_th]:border-b">
             <TableRow>
               <TableHead className="w-[20px]">
                 {bulkEditMode && (
