@@ -6,6 +6,7 @@ import type { AutodownloadResult } from "@/services/database/autodownload-force-
 import { AutoDownloadForceCheck } from "@/services/database/autodownload-force-check";
 import { DeleteItemFromDB } from "@/services/database/delete";
 import { getAllItemsFromDB } from "@/services/database/get-all";
+import { UpdateItemInDB } from "@/services/database/update";
 import { AddItemToDownloadQueue } from "@/services/downloads/queue-add";
 import { ApplyLabelsAndTagsToItem } from "@/services/labels-tags/apply";
 import {
@@ -13,7 +14,9 @@ import {
   ArrowDownZA,
   ClockArrowDown,
   ClockArrowUp,
+  CloudCheck,
   CloudDownload,
+  CloudOff,
   RefreshCcw as RefreshIcon,
   Tag,
   Trash2,
@@ -63,6 +66,8 @@ const SavedSetsPage: React.FC = () => {
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [bulkEditActionsList] = useState<{ value: string; label: string }[]>([
     { value: "force-recheck", label: "Force Autodownload Recheck" },
+    { value: "enable-autodownload", label: "Enable Autodownload" },
+    { value: "disable-autodownload", label: "Disable Autodownload" },
     { value: "apply-label-tag", label: "Apply Labels/Tags" },
     { value: "delete-selected", label: "Delete Selected Sets" },
     { value: "force-redownload", label: "Force Redownload" },
@@ -359,6 +364,50 @@ const SavedSetsPage: React.FC = () => {
     fetchSavedSets();
   };
 
+  const actionBulkSetAutodownload = async (setsToUpdate: DBSavedItem[], autoDownload: boolean) => {
+    const actionLabel = autoDownload ? "Enable Autodownload" : "Disable Autodownload";
+    log(
+      "INFO",
+      "Saved Sets Page",
+      actionLabel,
+      `Setting autodownload to ${autoDownload} for ${setsToUpdate.length} sets`,
+      { setsToUpdate }
+    );
+
+    toast.loading(`Updating autodownload for ${setsToUpdate.length} sets...`, {
+      id: "bulk-set-autodownload",
+      duration: 0, // Keep it open until we manually close it
+    });
+
+    for (const [index, set] of setsToUpdate.entries()) {
+      toast.loading(`Updating ${index + 1} of ${setsToUpdate.length} - ${set.media_item.title}`, {
+        id: "bulk-set-autodownload",
+        duration: 0, // Keep it open until we manually close it
+      });
+
+      const updatedSet: DBSavedItem = {
+        ...set,
+        poster_sets: set.poster_sets.map((posterSet) => ({
+          ...posterSet,
+          auto_download: autoDownload,
+        })),
+      };
+
+      const response = await UpdateItemInDB(updatedSet);
+      if (response.status === "error") {
+        toast.error(response.error?.message || `Failed to update ${set.media_item.title}`);
+      }
+    }
+
+    toast.success(`Autodownload ${autoDownload ? "enabled" : "disabled"} successfully`, {
+      id: "bulk-set-autodownload",
+      duration: 2000,
+    });
+
+    setBulkEditSelectedItems(new Set());
+    fetchSavedSets();
+  };
+
   const actionApplyLabelsTags = async (setsToApply: DBSavedItem[]) => {
     log("INFO", "Saved Sets Page", "Apply Labels/Tags", `Applying labels/tags to ${setsToApply.length} sets`, {
       setsToApply,
@@ -447,6 +496,10 @@ const SavedSetsPage: React.FC = () => {
 
     if (bulkEditSelectedAction === "force-recheck") {
       actionForceAutoDownloadRecheck(selectedSavedItems as DBSavedItem[]);
+    } else if (bulkEditSelectedAction === "enable-autodownload") {
+      actionBulkSetAutodownload(selectedSavedItems as DBSavedItem[], true);
+    } else if (bulkEditSelectedAction === "disable-autodownload") {
+      actionBulkSetAutodownload(selectedSavedItems as DBSavedItem[], false);
     } else if (bulkEditSelectedAction === "apply-label-tag") {
       actionApplyLabelsTags(selectedSavedItems as DBSavedItem[]);
     } else if (bulkEditSelectedAction === "delete-selected") {
@@ -920,6 +973,8 @@ const SavedSetsPage: React.FC = () => {
                     {bulkEditSelectedAction === "apply-label-tag" && <Tag className="h-4 w-4" />}
                     {bulkEditSelectedAction === "force-recheck" && <RefreshIcon className="h-4 w-4" />}
                     {bulkEditSelectedAction === "force-redownload" && <CloudDownload className="h-4 w-4" />}
+                    {bulkEditSelectedAction === "enable-autodownload" && <CloudCheck className="h-4 w-4" />}
+                    {bulkEditSelectedAction === "disable-autodownload" && <CloudOff className="h-4 w-4" />}
                   </Button>
                 )}
               {bulkEditSelectedItems.size > 0 && bulkEditSelectedAction === "delete-selected" && (
