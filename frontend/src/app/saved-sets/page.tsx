@@ -40,7 +40,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -64,13 +73,27 @@ const SavedSetsPage: React.FC = () => {
   const [recheckStatus, setRecheckStatus] = useState<Record<string, AutodownloadResult>>({});
 
   const [bulkEditMode, setBulkEditMode] = useState(false);
-  const [bulkEditActionsList] = useState<{ value: string; label: string }[]>([
-    { value: "force-recheck", label: "Force Autodownload Recheck" },
-    { value: "enable-autodownload", label: "Enable Autodownload" },
-    { value: "disable-autodownload", label: "Disable Autodownload" },
-    { value: "apply-label-tag", label: "Apply Labels/Tags" },
-    { value: "delete-selected", label: "Delete Selected Sets" },
-    { value: "force-redownload", label: "Force Redownload" },
+  const [bulkEditActionGroups] = useState<{ group: string; actions: { value: string; label: string }[] }[]>([
+    {
+      group: "Autodownload",
+      actions: [
+        { value: "force-recheck", label: "Force Autodownload Recheck" },
+        { value: "enable-autodownload", label: "Enable Autodownload" },
+        { value: "disable-autodownload", label: "Disable Autodownload" },
+      ],
+    },
+    {
+      group: "Downloads",
+      actions: [{ value: "force-redownload", label: "Force Redownload" }],
+    },
+    {
+      group: "Metadata",
+      actions: [{ value: "apply-label-tag", label: "Apply Labels/Tags" }],
+    },
+    {
+      group: "Danger Zone",
+      actions: [{ value: "delete-selected", label: "Delete Selected Sets" }],
+    },
   ]);
   const [bulkEditSelectedAction, setBulkEditSelectedAction] = useState<string>("");
   const [bulkEditSelectedItems, setBulkEditSelectedItems] = useState<Set<string>>(new Set());
@@ -946,59 +969,66 @@ const SavedSetsPage: React.FC = () => {
 
       {/* Bulk Edit Mode Options */}
       {bulkEditMode && (
-        <div className="sticky bottom-0 mt-10 z-101 flex justify-center w-full">
-          <div className="mx-auto w-fit bg-background/90 backdrop-blur border rounded-md shadow px-4 py-3 flex flex-col items-center gap-2">
-            <div className="flex flex-row items-center gap-2 w-full">
-              <Select value={bulkEditSelectedAction} onValueChange={(value) => setBulkEditSelectedAction(value)}>
-                <SelectTrigger className="w-full min-w-[180px]">
-                  <SelectValue placeholder="Select Bulk Action" />
-                </SelectTrigger>
-                <SelectContent className="z-102">
-                  {bulkEditActionsList.map((action) => (
-                    <SelectItem key={action.value} value={action.value}>
-                      {action.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {bulkEditSelectedItems.size >= 0 &&
-                bulkEditSelectedAction &&
-                bulkEditSelectedAction !== "delete-selected" && (
-                  <Button
-                    size="icon"
-                    variant={bulkEditSelectedAction === "delete-selected" ? "destructive" : "default"}
-                    disabled={bulkEditSelectedItems.size === 0 || !bulkEditSelectedAction}
-                    onClick={handleBulkEditButtonRunClick}
-                  >
-                    {bulkEditSelectedAction === "apply-label-tag" && <Tag className="h-4 w-4" />}
-                    {bulkEditSelectedAction === "force-recheck" && <RefreshIcon className="h-4 w-4" />}
-                    {bulkEditSelectedAction === "force-redownload" && <CloudDownload className="h-4 w-4" />}
-                    {bulkEditSelectedAction === "enable-autodownload" && <CloudCheck className="h-4 w-4" />}
-                    {bulkEditSelectedAction === "disable-autodownload" && <CloudOff className="h-4 w-4" />}
-                  </Button>
-                )}
-              {bulkEditSelectedItems.size > 0 && bulkEditSelectedAction === "delete-selected" && (
-                <ConfirmDestructiveDialogActionButton
-                  onConfirm={async () => {
-                    // Your delete logic here
-                    handleBulkEditButtonRunClick();
-                  }}
-                  title="Confirm Bulk Delete"
-                  description={`You are about to delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"} from the database. This action cannot be undone.`}
-                  confirmText={`Yes, delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"}`}
-                  cancelText="Cancel"
-                  variant="destructive"
-                  disabled={bulkEditSelectedItems.size === 0}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </ConfirmDestructiveDialogActionButton>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {bulkEditSelectedItems.size > 0
-                ? `${bulkEditSelectedItems.size} selected`
-                : "Select items to enable action"}
-            </span>
+        <div className="sticky bottom-4 z-101 flex justify-center w-full pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border bg-background/95 backdrop-blur-md shadow-lg px-2 py-1.5">
+            <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums shrink-0">
+              {bulkEditSelectedItems.size} selected
+            </Badge>
+
+            <Separator orientation="vertical" className="h-5" />
+
+            <Select value={bulkEditSelectedAction} onValueChange={(value) => setBulkEditSelectedAction(value)}>
+              <SelectTrigger className="h-8 w-[190px] rounded-full border-0 bg-muted/60 text-xs shadow-none focus-visible:ring-1">
+                <SelectValue placeholder="Choose an action" />
+              </SelectTrigger>
+              <SelectContent className="z-102">
+                {bulkEditActionGroups.map((group, index) => (
+                  <React.Fragment key={group.group}>
+                    {index > 0 && <SelectSeparator />}
+                    <SelectGroup>
+                      <SelectLabel>{group.group}</SelectLabel>
+                      {group.actions.map((action) => (
+                        <SelectItem key={action.value} value={action.value}>
+                          {action.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </React.Fragment>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {bulkEditSelectedAction && bulkEditSelectedAction !== "delete-selected" && (
+              <Button
+                size="icon"
+                className="h-8 w-8 rounded-full shrink-0"
+                disabled={bulkEditSelectedItems.size === 0 || !bulkEditSelectedAction}
+                onClick={handleBulkEditButtonRunClick}
+              >
+                {bulkEditSelectedAction === "apply-label-tag" && <Tag className="h-4 w-4" />}
+                {bulkEditSelectedAction === "force-recheck" && <RefreshIcon className="h-4 w-4" />}
+                {bulkEditSelectedAction === "force-redownload" && <CloudDownload className="h-4 w-4" />}
+                {bulkEditSelectedAction === "enable-autodownload" && <CloudCheck className="h-4 w-4" />}
+                {bulkEditSelectedAction === "disable-autodownload" && <CloudOff className="h-4 w-4" />}
+              </Button>
+            )}
+
+            {bulkEditSelectedAction === "delete-selected" && (
+              <ConfirmDestructiveDialogActionButton
+                onConfirm={async () => {
+                  handleBulkEditButtonRunClick();
+                }}
+                title="Confirm Bulk Delete"
+                description={`You are about to delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"} from the database. This action cannot be undone.`}
+                confirmText={`Yes, delete ${bulkEditSelectedItems.size} ${bulkEditSelectedItems.size === 1 ? "set" : "sets"}`}
+                cancelText="Cancel"
+                variant="destructive"
+                disabled={bulkEditSelectedItems.size === 0}
+                className="h-8 w-8 rounded-full shrink-0 p-0 inline-flex items-center justify-center bg-destructive text-white hover:bg-destructive/90"
+              >
+                <Trash2 className="h-4 w-4" />
+              </ConfirmDestructiveDialogActionButton>
+            )}
           </div>
         </div>
       )}
