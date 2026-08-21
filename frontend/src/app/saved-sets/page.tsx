@@ -969,7 +969,7 @@ const SavedSetsPage: React.FC = () => {
 
       {/* Bulk Edit Mode Options */}
       {bulkEditMode && (
-        <div className="sticky bottom-4 z-101 flex justify-center w-full pointer-events-none">
+        <div className="sticky bottom-4 z-101 flex justify-center w-full pointer-events-none mt-2">
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border bg-background/95 backdrop-blur-md shadow-lg px-2 py-1.5">
             <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-xs font-medium tabular-nums shrink-0">
               {bulkEditSelectedItems.size} selected
