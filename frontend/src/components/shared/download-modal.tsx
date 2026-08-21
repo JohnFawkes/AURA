@@ -1262,7 +1262,6 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
         items: {},
       });
 
-      // Your download logic here
       log("INFO", "Download Modal", "Debug Info", "Form submitted with data:", data);
       log("INFO", "Download Modal", "Debug Info", "Progress:", progress);
       log("INFO", "Download Modal", "Debug Info", "Selected Types:", { watchSelectedOptions });
