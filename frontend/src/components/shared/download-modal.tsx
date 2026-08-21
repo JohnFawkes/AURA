@@ -259,6 +259,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
 
+  // True when formItems spans more than one library (e.g. the same title also downloading
+  // to another library), so each item's card can be labeled with which library it belongs to.
+  const showLibraryNames = new Set(formItems.map((item) => item.MediaItem.library_title)).size > 1;
+
   // Download Progress
   const [progress, setProgress] = useState<DownloadProgress>({
     currentText: "",
@@ -1051,6 +1055,10 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                   )}
               </span>
             </FormLabel>
+
+            {showLibraryNames && (
+              <p className="text-xs text-muted-foreground -mt-3 mb-3">{item.MediaItem.library_title}</p>
+            )}
 
             <div className="space-y-2">
               {existingAssetTypes.map((assetType) => (
@@ -1909,7 +1917,11 @@ const DownloadModal: React.FC<DownloadModalProps> = ({
                       {(() => {
                         const titles = formItems
                           .filter((item) => watchSelectedOptions?.[item.MediaItem.rating_key]?.addToDBOnly)
-                          .map((item) => item.MediaItem.title);
+                          .map((item) =>
+                            showLibraryNames
+                              ? `${item.MediaItem.title} (${item.MediaItem.library_title})`
+                              : item.MediaItem.title
+                          );
 
                         if (titles.length === 0) return "";
                         if (titles.length === 1)
