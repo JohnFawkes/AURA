@@ -16,7 +16,6 @@ var (
 	jobSpecs = map[cron.EntryID]string{}
 
 	// Runs Always
-	downloadQueueJobID                   cron.EntryID = 0
 	refreshMediaItemsAndCollectionsJobID cron.EntryID = 0
 	refreshMediuxUsersJobID              cron.EntryID = 0
 	checkMediuxSiteLinkJobID             cron.EntryID = 0
@@ -82,8 +81,6 @@ func GetListOfJobs() []JobInfo {
 			}
 
 			switch entry.ID {
-			case downloadQueueJobID:
-				jobInfo.JobName = "Download Queue Processing Job"
 			case autodownloadJobID:
 				jobInfo.JobName = "AutoDownload Job"
 			case refreshMediaItemsAndCollectionsJobID:
@@ -111,8 +108,6 @@ func TriggerJob(jobName string, jobID string) error {
 
 	var entryID cron.EntryID
 	switch jobName {
-	case "Download Queue Processing Job":
-		entryID = downloadQueueJobID
 	case "AutoDownload Job":
 		entryID = autodownloadJobID
 	case "Refresh Media Items and Collections Job":
