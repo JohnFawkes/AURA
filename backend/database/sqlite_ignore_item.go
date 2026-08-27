@@ -54,6 +54,12 @@ func (s *SQliteDB) GetTempIgnoredItems(ctx context.Context) (items []models.Medi
 		cachedItem.IgnoredSets = strings.Split(currentSets, ",")
 		items = append(items, *cachedItem)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, logging.LogErrorInfo{
+			Message: "Failed while iterating over temp ignored items",
+			Detail:  map[string]any{"error": err.Error()},
+		}
+	}
 
 	return items, Err
 }

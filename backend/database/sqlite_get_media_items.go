@@ -41,6 +41,10 @@ func (s *SQliteDB) GetAllMediaItems(ctx context.Context) (items []models.MediaIt
 		}
 		items = append(items, item)
 	}
+	if err := rows.Err(); err != nil {
+		logAction.SetError("Failed while iterating over MediaItems rows", "", map[string]any{"error": err.Error()})
+		return items, *logAction.Error
+	}
 
 	return items, logErr
 }
@@ -109,6 +113,10 @@ func (s *SQliteDB) GetAllMediaItemsWithFlags(ctx context.Context) ([]MediaItemWi
 		item.HasSavedSet = hasSavedSet == 1
 		item.IsIgnored = isIgnored == 1
 		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		logAction.SetError("Failed while iterating over MediaItems rows", "", map[string]any{"error": err.Error()})
+		return items, *logAction.Error
 	}
 
 	return items, logErr
