@@ -190,3 +190,9 @@ func (w *responseWriterWithBytes) Write(b []byte) (int, error) {
 	w.bytesWritten += int64(n)
 	return n, err
 }
+
+func (w *responseWriterWithBytes) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}

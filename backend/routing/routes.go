@@ -99,9 +99,18 @@ func AddRoutes(r *chi.Mux) {
 			// Download Queue Routes
 			r.Route("/queue", func(r chi.Router) {
 				r.Get("/", routes_download.GetDownloadQueueStatus)
+				r.Delete("/", routes_download.RemoveAllFromDownloadQueue)
+				r.Get("/stream", routes_download.StreamDownloadQueueEvents)
 				r.Get("/item", routes_download.GetAllDownloadQueueItems)
 				r.Post("/item", routes_download.AddItemToDownloadQueue)
 				r.Delete("/item", routes_download.RemoveItemFromDownloadQueue)
+			})
+
+			// Download History Routes
+			r.Route("/history", func(r chi.Router) {
+				r.Get("/", routes_download.GetDownloadHistory)
+				r.Delete("/", routes_download.RemoveAllDownloadHistory)
+				r.Delete("/item", routes_download.RemoveDownloadHistoryEntry)
 			})
 		})
 
