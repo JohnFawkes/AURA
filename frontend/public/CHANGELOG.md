@@ -1,3 +1,15 @@
+## [0.9.105] - 2026-08-26
+
+### Breaking
+
+- The new Download Queue system will no longer look into the download-queue folder for items. If you have any items in the download-queue folder, please delete them and re-add them to the new Download Queue system.
+
+### Added
+
+- Updated Download Queue page to work with new queueing system. This includes history for downloads with warnings or errors. As a part of this update, the download queue is now won't rerun items in the queue if they take longer than 1 minute to complete as its not cron based.
+
+---
+
 ## [0.9.104] - 2026-08-21
 
 ### Added
