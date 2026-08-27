@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-const LATEST_DB_VERSION = 6
+const LATEST_DB_VERSION = 7
 
 var Client DB
 
@@ -99,6 +99,36 @@ type DB interface {
 
 	// Reconcile a Media Item whose Edition changed
 	ReconcileMediaItemEdition(ctx context.Context, tmdbID, libraryTitle, oldEdition string, updatedItem models.MediaItem) (Err logging.LogErrorInfo)
+
+	// Enqueue a new Download Queue Job
+	EnqueueDownloadQueueJob(ctx context.Context, item models.DBSavedItem) (jobID int64, Err logging.LogErrorInfo)
+
+	// Atomically claim the next pending Download Queue Job, if any
+	ClaimNextDownloadQueueJob(ctx context.Context, workerID string) (job DownloadQueueJob, found bool, Err logging.LogErrorInfo)
+
+	// Mark a Download Queue Job as finished with its result
+	FinishDownloadQueueJob(ctx context.Context, jobID int64, status string, message string, errs, warnings []string) (Err logging.LogErrorInfo)
+
+	// Get All Download Queue Jobs
+	GetAllDownloadQueueJobs(ctx context.Context) (jobs []DownloadQueueJob, Err logging.LogErrorInfo)
+
+	// Delete a single Download Queue Job by ID
+	DeleteDownloadQueueJob(ctx context.Context, jobID int64) (Err logging.LogErrorInfo)
+
+	// Delete all Download Queue Jobs (except those currently processing)
+	DeleteAllDownloadQueueJobs(ctx context.Context) (Err logging.LogErrorInfo)
+
+	// Insert a Download History entry, applying retention cleanup
+	InsertDownloadHistoryEntry(ctx context.Context, entry DownloadHistoryEntry) (Err logging.LogErrorInfo)
+
+	// Get Download History entries
+	GetDownloadHistory(ctx context.Context, limit, offset int) (entries []DownloadHistoryEntry, total int, Err logging.LogErrorInfo)
+
+	// Delete a single Download History entry by ID
+	DeleteDownloadHistoryEntry(ctx context.Context, id int64) (Err logging.LogErrorInfo)
+
+	// Delete all Download History entries
+	DeleteAllDownloadHistory(ctx context.Context) (Err logging.LogErrorInfo)
 }
 
 func NewDatabaseClient() (DB, logging.LogErrorInfo) {
@@ -320,4 +350,74 @@ func ReconcileMediaItemEdition(ctx context.Context, tmdbID, libraryTitle, oldEdi
 		return logging.Error_DBClientNotInitialized()
 	}
 	return Client.ReconcileMediaItemEdition(ctx, tmdbID, libraryTitle, oldEdition, updatedItem)
+}
+
+func EnqueueDownloadQueueJob(ctx context.Context, item models.DBSavedItem) (jobID int64, Err logging.LogErrorInfo) {
+	if Client == nil {
+		return 0, logging.Error_DBClientNotInitialized()
+	}
+	return Client.EnqueueDownloadQueueJob(ctx, item)
+}
+
+func ClaimNextDownloadQueueJob(ctx context.Context, workerID string) (job DownloadQueueJob, found bool, Err logging.LogErrorInfo) {
+	if Client == nil {
+		return DownloadQueueJob{}, false, logging.Error_DBClientNotInitialized()
+	}
+	return Client.ClaimNextDownloadQueueJob(ctx, workerID)
+}
+
+func FinishDownloadQueueJob(ctx context.Context, jobID int64, status string, message string, errs, warnings []string) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.FinishDownloadQueueJob(ctx, jobID, status, message, errs, warnings)
+}
+
+func GetAllDownloadQueueJobs(ctx context.Context) (jobs []DownloadQueueJob, Err logging.LogErrorInfo) {
+	if Client == nil {
+		return []DownloadQueueJob{}, logging.Error_DBClientNotInitialized()
+	}
+	return Client.GetAllDownloadQueueJobs(ctx)
+}
+
+func DeleteDownloadQueueJob(ctx context.Context, jobID int64) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.DeleteDownloadQueueJob(ctx, jobID)
+}
+
+func DeleteAllDownloadQueueJobs(ctx context.Context) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.DeleteAllDownloadQueueJobs(ctx)
+}
+
+func InsertDownloadHistoryEntry(ctx context.Context, entry DownloadHistoryEntry) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.InsertDownloadHistoryEntry(ctx, entry)
+}
+
+func GetDownloadHistory(ctx context.Context, limit, offset int) (entries []DownloadHistoryEntry, total int, Err logging.LogErrorInfo) {
+	if Client == nil {
+		return []DownloadHistoryEntry{}, 0, logging.Error_DBClientNotInitialized()
+	}
+	return Client.GetDownloadHistory(ctx, limit, offset)
+}
+
+func DeleteDownloadHistoryEntry(ctx context.Context, id int64) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.DeleteDownloadHistoryEntry(ctx, id)
+}
+
+func DeleteAllDownloadHistory(ctx context.Context) (Err logging.LogErrorInfo) {
+	if Client == nil {
+		return logging.Error_DBClientNotInitialized()
+	}
+	return Client.DeleteAllDownloadHistory(ctx)
 }

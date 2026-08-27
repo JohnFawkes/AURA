@@ -443,6 +443,72 @@ definitions:
           type: array
         type: object
     type: object
+  database.DownloadHistoryEntry:
+    properties:
+      created_at:
+        type: string
+      edition:
+        type: string
+      failed_images:
+        items:
+          $ref: '#/definitions/models.ImageDownloadResult'
+        type: array
+      id:
+        type: integer
+      images_failed:
+        type: integer
+      images_succeeded:
+        type: integer
+      library_title:
+        type: string
+      media_item_title:
+        type: string
+      media_item_year:
+        type: integer
+      rating_key:
+        type: string
+      set_id:
+        type: string
+      set_title:
+        type: string
+      status:
+        type: string
+      tmdb_id:
+        type: string
+    type: object
+  database.DownloadQueueJob:
+    properties:
+      created_at:
+        type: string
+      edition:
+        type: string
+      finished_at:
+        type: string
+      id:
+        type: integer
+      item:
+        $ref: '#/definitions/models.DBSavedItem'
+      library_title:
+        type: string
+      media_item_title:
+        type: string
+      result_errors:
+        items:
+          type: string
+        type: array
+      result_message:
+        type: string
+      result_warnings:
+        items:
+          type: string
+        type: array
+      started_at:
+        type: string
+      status:
+        type: string
+      tmdb_id:
+        type: string
+    type: object
   downloadqueue.Status:
     enum:
     - Success
@@ -777,6 +843,19 @@ definitions:
         $ref: '#/definitions/models.SelectedTypes'
       user_created:
         type: string
+    type: object
+  models.ImageDownloadResult:
+    properties:
+      episode_number:
+        type: integer
+      failure_reason:
+        type: string
+      image_type:
+        type: string
+      season_number:
+        type: integer
+      success:
+        type: boolean
     type: object
   models.ImageFile:
     properties:
@@ -1308,18 +1387,19 @@ definitions:
     type: object
   routes_download.GetAllDownloadQueueItems_Response:
     properties:
-      error_entries:
+      jobs:
         items:
-          $ref: '#/definitions/models.DBSavedItem'
+          $ref: '#/definitions/database.DownloadQueueJob'
         type: array
-      in_progress_entries:
+    type: object
+  routes_download.GetDownloadHistory_Response:
+    properties:
+      entries:
         items:
-          $ref: '#/definitions/models.DBSavedItem'
+          $ref: '#/definitions/database.DownloadHistoryEntry'
         type: array
-      warning_entries:
-        items:
-          $ref: '#/definitions/models.DBSavedItem'
-        type: array
+      total:
+        type: integer
     type: object
   routes_download.GetDownloadQueueStatus_Response:
     properties:
@@ -1338,10 +1418,30 @@ definitions:
           type: string
         type: array
     type: object
+  routes_download.RemoveAllDownloadHistory_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.RemoveAllFromDownloadQueue_Response:
+    properties:
+      result:
+        type: string
+    type: object
+  routes_download.RemoveDownloadHistoryEntry_Request:
+    properties:
+      id:
+        type: integer
+    type: object
+  routes_download.RemoveDownloadHistoryEntry_Response:
+    properties:
+      result:
+        type: string
+    type: object
   routes_download.RemoveItemFromDownloadQueue_Request:
     properties:
-      item:
-        $ref: '#/definitions/models.DBSavedItem'
+      job_id:
+        type: integer
     type: object
   routes_download.RemoveItemFromDownloadQueue_Response:
     properties:
@@ -2164,6 +2264,115 @@ paths:
       summary: Stop Ignoring Item In Database
       tags:
       - Database
+  /api/download/history:
+    delete:
+      consumes:
+      - application/json
+      description: Remove all Download History entries.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.RemoveAllDownloadHistory_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
+      summary: Download History - Clear All
+      tags:
+      - Download
+    get:
+      consumes:
+      - application/json
+      description: Retrieve past download history entries (one per poster set per
+        run), including success/warning/error status and per-image failure details.
+      parameters:
+      - description: Max entries to return (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.GetDownloadHistory_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
+      summary: Download History - Get Entries
+      tags:
+      - Download
+  /api/download/history/item:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a single Download History entry by ID.
+      parameters:
+      - description: History Remove Item Request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/routes_download.RemoveDownloadHistoryEntry_Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.RemoveDownloadHistoryEntry_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
+      summary: Download History - Remove Entry
+      tags:
+      - Download
   /api/download/image/collection:
     post:
       consumes:
@@ -2242,6 +2451,37 @@ paths:
       tags:
       - Download
   /api/download/queue:
+    delete:
+      consumes:
+      - application/json
+      description: Remove all items from the download queue (jobs currently processing
+        are left untouched to avoid orphaning in-flight work).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/httpx.JSONResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/routes_download.RemoveAllFromDownloadQueue_Response'
+              type: object
+        "401":
+          description: Unauthorized (only when Auth.Enabled=true)
+          schema:
+            $ref: '#/definitions/httpx.UnauthorizedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpx.JSONResponse'
+      security:
+      - SessionCookie: []
+      - ApiKeyAuth: []
+      summary: Download Queue - Clear All
+      tags:
+      - Download
     get:
       consumes:
       - application/json
@@ -2279,8 +2519,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove a specific Media Item from the download queue. This can
-        be used to cancel pending download tasks or clean up items that are no longer
+      description: Remove a specific Job from the download queue by ID. This can be
+        used to cancel pending download tasks or clean up items that are no longer
         needed in the queue.
       parameters:
       - description: Queue Remove Item Request
@@ -2318,10 +2558,10 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve the current items in the download queue, categorized by
-        their status (in-progress, warning, error). This endpoint allows clients to
-        monitor the progress of queued download tasks and identify any issues that
-        may have occurred during processing.
+      description: Retrieve the current items in the download queue, each with its
+        status (pending, processing, success, warning, error). This endpoint allows
+        clients to monitor the progress of queued download tasks and identify any
+        issues that may have occurred during processing.
       produces:
       - application/json
       responses:
@@ -2385,6 +2625,18 @@ paths:
       - SessionCookie: []
       - ApiKeyAuth: []
       summary: Download Queue - Add Item
+      tags:
+      - Download
+  /api/download/queue/stream:
+    get:
+      description: Server-Sent Events stream of live download queue updates (job added/started/finished/removed).
+        Sends a full snapshot immediately on connect.
+      produces:
+      - text/event-stream
+      responses: {}
+      security:
+      - SessionCookie: []
+      summary: Download Queue - Stream Events
       tags:
       - Download
   /api/health:

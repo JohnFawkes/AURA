@@ -23,6 +23,8 @@ func (s *SQliteDB) CreateTables(ctx context.Context) (Err logging.LogErrorInfo) 
 		v2_CreateSavedItemsTable,
 		v2_CreateIgnoredItemsTable,
 		v2_AddIndexesToNewTables,
+		v7_CreateDownloadQueueJobsTable,
+		v7_CreateDownloadHistoryTable,
 	}
 
 	for _, step := range steps {
@@ -325,6 +327,79 @@ CREATE TABLE IgnoredItems (
 	_, err := conn.ExecContext(ctx, query)
 	if err != nil {
 		logAction.SetError("Failed to create IgnoredItems table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v7_CreateDownloadQueueJobsTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating DownloadQueueJobs Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE DownloadQueueJobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tmdb_id TEXT NOT NULL,
+    library_title TEXT NOT NULL,
+    edition TEXT NOT NULL DEFAULT '',
+    media_item_title TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending','processing','success','warning','error')),
+    result_message TEXT NOT NULL DEFAULT '',
+    result_errors TEXT NOT NULL DEFAULT '[]',
+    result_warnings TEXT NOT NULL DEFAULT '[]',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    started_at DATETIME,
+    finished_at DATETIME,
+    worker_id TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX idx_downloadqueuejobs_status ON DownloadQueueJobs(status, created_at);
+CREATE INDEX idx_downloadqueuejobs_item ON DownloadQueueJobs(tmdb_id, library_title, edition);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create DownloadQueueJobs table", err.Error(), map[string]any{
+			"error": err.Error(),
+			"query": query,
+		})
+		return *logAction.Error
+	}
+
+	return Err
+}
+
+func v7_CreateDownloadHistoryTable(ctx context.Context, conn *sql.DB) (Err logging.LogErrorInfo) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Creating DownloadHistory Table", logging.LevelTrace)
+	defer logAction.Complete()
+	Err = logging.LogErrorInfo{}
+
+	query := `
+CREATE TABLE DownloadHistory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tmdb_id TEXT NOT NULL,
+    library_title TEXT NOT NULL,
+    edition TEXT NOT NULL DEFAULT '',
+    media_item_title TEXT NOT NULL,
+    media_item_year INTEGER NOT NULL,
+    set_id TEXT NOT NULL,
+    set_title TEXT NOT NULL,
+    images_succeeded INTEGER NOT NULL DEFAULT 0,
+    images_failed INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL CHECK (status IN ('success','warning','error')),
+    failed_images TEXT NOT NULL DEFAULT '[]',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_downloadhistory_status_created ON DownloadHistory(status, created_at);
+	`
+	_, err := conn.ExecContext(ctx, query)
+	if err != nil {
+		logAction.SetError("Failed to create DownloadHistory table", err.Error(), map[string]any{
 			"error": err.Error(),
 			"query": query,
 		})

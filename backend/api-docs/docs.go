@@ -918,6 +918,194 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/download/history": {
+            "get": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieve past download history entries (one per poster set per run), including success/warning/error status and per-image failure details.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download History - Get Entries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Max entries to return (default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_download.GetDownloadHistory_Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Remove all Download History entries.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download History - Clear All",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_download.RemoveAllDownloadHistory_Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/download/history/item": {
+            "delete": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Remove a single Download History entry by ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download History - Remove Entry",
+                "parameters": [
+                    {
+                        "description": "History Remove Item Request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes_download.RemoveDownloadHistoryEntry_Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_download.RemoveDownloadHistoryEntry_Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/download/image/collection": {
             "post": {
                 "security": [
@@ -1103,6 +1291,59 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    },
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Remove all items from the download queue (jobs currently processing are left untouched to avoid orphaning in-flight work).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download Queue - Clear All",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/httpx.JSONResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/routes_download.RemoveAllFromDownloadQueue_Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (only when Auth.Enabled=true)",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.UnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.JSONResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/download/queue/item": {
@@ -1115,7 +1356,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Retrieve the current items in the download queue, categorized by their status (in-progress, warning, error). This endpoint allows clients to monitor the progress of queued download tasks and identify any issues that may have occurred during processing.",
+                "description": "Retrieve the current items in the download queue, each with its status (pending, processing, success, warning, error). This endpoint allows clients to monitor the progress of queued download tasks and identify any issues that may have occurred during processing.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1232,7 +1473,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Remove a specific Media Item from the download queue. This can be used to cancel pending download tasks or clean up items that are no longer needed in the queue.",
+                "description": "Remove a specific Job from the download queue by ID. This can be used to cancel pending download tasks or clean up items that are no longer needed in the queue.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1286,6 +1527,24 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/api/download/queue/stream": {
+            "get": {
+                "security": [
+                    {
+                        "SessionCookie": []
+                    }
+                ],
+                "description": "Server-Sent Events stream of live download queue updates (job added/started/finished/removed). Sends a full snapshot immediately on connect.",
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "Download"
+                ],
+                "summary": "Download Queue - Stream Events",
+                "responses": {}
             }
         },
         "/api/health": {
@@ -4000,6 +4259,106 @@ const docTemplate = `{
                 }
             }
         },
+        "database.DownloadHistoryEntry": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "edition": {
+                    "type": "string"
+                },
+                "failed_images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ImageDownloadResult"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "images_failed": {
+                    "type": "integer"
+                },
+                "images_succeeded": {
+                    "type": "integer"
+                },
+                "library_title": {
+                    "type": "string"
+                },
+                "media_item_title": {
+                    "type": "string"
+                },
+                "media_item_year": {
+                    "type": "integer"
+                },
+                "rating_key": {
+                    "type": "string"
+                },
+                "set_id": {
+                    "type": "string"
+                },
+                "set_title": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tmdb_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "database.DownloadQueueJob": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "edition": {
+                    "type": "string"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "item": {
+                    "$ref": "#/definitions/models.DBSavedItem"
+                },
+                "library_title": {
+                    "type": "string"
+                },
+                "media_item_title": {
+                    "type": "string"
+                },
+                "result_errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "result_message": {
+                    "type": "string"
+                },
+                "result_warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tmdb_id": {
+                    "type": "string"
+                }
+            }
+        },
         "downloadqueue.Status": {
             "type": "string",
             "enum": [
@@ -4469,6 +4828,26 @@ const docTemplate = `{
                 },
                 "user_created": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ImageDownloadResult": {
+            "type": "object",
+            "properties": {
+                "episode_number": {
+                    "type": "integer"
+                },
+                "failure_reason": {
+                    "type": "string"
+                },
+                "image_type": {
+                    "type": "string"
+                },
+                "season_number": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -5256,23 +5635,25 @@ const docTemplate = `{
         "routes_download.GetAllDownloadQueueItems_Response": {
             "type": "object",
             "properties": {
-                "error_entries": {
+                "jobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.DBSavedItem"
+                        "$ref": "#/definitions/database.DownloadQueueJob"
+                    }
+                }
+            }
+        },
+        "routes_download.GetDownloadHistory_Response": {
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/database.DownloadHistoryEntry"
                     }
                 },
-                "in_progress_entries": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.DBSavedItem"
-                    }
-                },
-                "warning_entries": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.DBSavedItem"
-                    }
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -5302,11 +5683,43 @@ const docTemplate = `{
                 }
             }
         },
+        "routes_download.RemoveAllDownloadHistory_Response": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes_download.RemoveAllFromDownloadQueue_Response": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes_download.RemoveDownloadHistoryEntry_Request": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "routes_download.RemoveDownloadHistoryEntry_Response": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string"
+                }
+            }
+        },
         "routes_download.RemoveItemFromDownloadQueue_Request": {
             "type": "object",
             "properties": {
-                "item": {
-                    "$ref": "#/definitions/models.DBSavedItem"
+                "job_id": {
+                    "type": "integer"
                 }
             }
         },
