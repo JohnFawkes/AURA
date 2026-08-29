@@ -1,3 +1,11 @@
+## [0.9.106] - 2026-08-28
+
+### Fixed
+
+- [#147](https://github.com/mediux-team/AURA/issues/147) Fixed issue where MediUX avatar images that did not exist for a user would return a 200 response with no image data. Now, if the avatar image does not exist, it will return a 404 response with an error message in the response body.
+
+---
+
 ## [0.9.105] - 2026-08-26
 
 ### Breaking
