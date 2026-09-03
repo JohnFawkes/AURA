@@ -231,7 +231,7 @@ Mediux:
 - **Description**: The API token for MediUX.
 - **Details**: This option specifies the API token required to access MediUX's API. This can be obtained by creating an account on [MediUX](https://mediux.io/) and generating an API token in your account settings.
 - **Note**: This is not yet available to the public, but will be in the future.
-  If you would like to test out aura, please contact us on [Discord](https://discord.gg/YAKzwKPwyw) to get access to the API token.
+  If you would like to test out aura, please join us on [Discord](https://discord.gg/YAKzwKPwyw) and make your way over to repo-chats > mediux-team/aura. Here you will find a pinned message that contains a shared token you can use for testing. Once the new MediUX site is live, you will be able to create your own tokens.
 
 ### DownloadQuality
 
