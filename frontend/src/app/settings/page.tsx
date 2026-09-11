@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
-import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
 import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
 import { ConfigSectionLabelsAndTags } from "@/components/settings-onboarding/ConfigSectionLabelsAndTags";
 import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
@@ -573,14 +572,6 @@ const SettingsPage: React.FC = () => {
                   errorsUpdate={(errs) => updateSectionErrors("images", errs as Record<string, string>)}
                   mediaServerType={newConfig.media_server.type}
                 />
-                <ConfigSectionAutoDownload
-                  value={newConfig.auto_download}
-                  editing={editing}
-                  dirtyFields={dirty.auto_download}
-                  onChange={(f, v) => updateConfigField("auto_download", f, v)}
-                  errorsUpdate={(errs) => updateSectionErrors("auto_download", errs as Record<string, string>)}
-                />
-
                 {/* <ConfigSectionTMDB
 									value={newConfig.TMDB}
 									editing={editing}

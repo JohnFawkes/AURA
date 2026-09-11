@@ -31,8 +31,8 @@ func (config *Config) Validate(ctx context.Context) {
 	// Sub-action: MediUX Config
 	isMediuxValid := ValidateMediux(ctx, &config.Mediux)
 
-	// Sub-action: AutoDownload Config
-	isAutoDownloadValid := ValidateAutoDownload(ctx, &config.AutoDownload)
+	// Sub-action: Jobs Config
+	isJobsValid := ValidateJobs(ctx, &config.Jobs)
 
 	// Sub-action: Images Config
 	isImagesValid := ValidateImages(ctx, &config.Images, config.MediaServer)
@@ -51,7 +51,7 @@ func (config *Config) Validate(ctx context.Context) {
 
 	// If any validation failed, set status to error
 	if !isAuthValid || !isLoggingValid || !isMediaServerValid ||
-		!isMediuxValid || !isAutoDownloadValid ||
+		!isMediuxValid || !isJobsValid ||
 		!isImagesValid || !isNotificationsValid || !isSonarrRadarrValid || !isDatabaseValid || !isLabelsAndTagsValid {
 		logAction.SetError("Config validation failed", "One or more config sections are invalid", nil)
 		Valid = false
@@ -210,27 +210,58 @@ func ValidateMediux(ctx context.Context, Mediux *Config_Mediux) bool {
 	return isValid
 }
 
-func ValidateAutoDownload(ctx context.Context, AutoDownload *Config_AutoDownload) bool {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating AutoDownload Config", logging.LevelTrace)
+func ValidateJobs(ctx context.Context, Jobs *Config_Jobs) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Jobs Config", logging.LevelTrace)
 	defer logAction.Complete()
 
 	isValid := true
 
-	// Check if AutoDownload is enabled
-	if !AutoDownload.Enabled {
+	// Check each job setting
+	if !ValidateJobSetting(ctx, &Jobs.AutoDownload, JobDefaults.AutoDownload) {
+		isValid = false
+	}
+	if !ValidateJobSetting(ctx, &Jobs.RefreshMediaItemsAndCollections, JobDefaults.RefreshMediaItemsAndCollections) {
+		isValid = false
+	}
+	if !ValidateJobSetting(ctx, &Jobs.CheckForMediaItemChanges, JobDefaults.CheckForMediaItemChanges) {
+		isValid = false
+	}
+	if !ValidateJobSetting(ctx, &Jobs.HandleTempIgnoredItems, JobDefaults.HandleTempIgnoredItems) {
+		isValid = false
+	}
+	if !ValidateJobSetting(ctx, &Jobs.RefreshMediuxUsers, JobDefaults.RefreshMediuxUsers) {
+		isValid = false
+	}
+	if !ValidateJobSetting(ctx, &Jobs.CheckMediuxSiteLink, JobDefaults.CheckMediuxSiteLink) {
+		isValid = false
+	}
+
+	return isValid
+}
+
+func ValidateJobSetting(ctx context.Context, job *Config_JobSetting, def JobSettingDefault) bool {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Validating Job Setting", logging.LevelTrace)
+	defer logAction.Complete()
+
+	isValid := true
+
+	enabled, _ := job.Resolve(def)
+
+	// Check if the job is enabled
+	if !enabled {
 		return isValid
 	}
 
-	// Check if AutoDownload.Cron is set
-	if AutoDownload.Cron == "" {
-		AutoDownload.Cron = "0 0 * * *"
-		logging.LOGGER.Warn().Timestamp().Msg("AutoDownload.Cron not set, defaulting to '0 0 * * *' (every day at midnight)")
-		logAction.AppendWarning("message", "AutoDownload.Cron not set, defaulting to '0 0 * * *' (every day at midnight)")
+	// Check if the job's cron expression is set
+	if job.Cron == "" {
+		job.Cron = def.Cron
+		logging.LOGGER.Warn().Timestamp().Str("cron", def.Cron).Msg("Job Cron not set, defaulting to its built-in schedule")
+		logAction.AppendWarning("message", fmt.Sprintf("Job Cron not set, defaulting to '%s'", def.Cron))
 	}
 
 	// Validate the cron expression
-	if !ValidateCron(AutoDownload.Cron) {
-		logAction.SetError(fmt.Sprintf("AutoDownload.Cron: '%s' is not a valid cron expression", AutoDownload.Cron), "Please provide a valid cron expression", nil)
+	if !ValidateCron(job.Cron) {
+		logAction.SetError(fmt.Sprintf("Job.Cron: '%s' is not a valid cron expression", job.Cron), "Please provide a valid cron expression", nil)
 		isValid = false
 	}
 

@@ -13,7 +13,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 import { ConfigSectionAuth } from "@/components/settings-onboarding/ConfigSectionAuth";
-import { ConfigSectionAutoDownload } from "@/components/settings-onboarding/ConfigSectionAutoDownload";
 import { ConfigSectionImages } from "@/components/settings-onboarding/ConfigSectionImages";
 import { ConfigSectionLabelsAndTags } from "@/components/settings-onboarding/ConfigSectionLabelsAndTags";
 import { ConfigSectionLogging } from "@/components/settings-onboarding/ConfigSectionLogging";
@@ -258,20 +257,6 @@ const OnboardingPage = () => {
         ),
       },
       {
-        key: "autodownload",
-        title: "Auto Download",
-        optional: true,
-        render: () => (
-          <ConfigSectionAutoDownload
-            value={configState.auto_download}
-            editing
-            dirtyFields={{}}
-            onChange={(f, v) => updateSectionField("auto_download", f, v)}
-            errorsUpdate={(errs) => updateSectionErrors("auto_download", errs as Record<string, string>)}
-          />
-        ),
-      },
-      {
         key: "sonarr_and_radarr",
         title: "Sonarr/Radarr",
         optional: true,
@@ -346,7 +331,6 @@ const OnboardingPage = () => {
     ],
     [
       configState.auth,
-      configState.auto_download,
       configState.images,
       configState.labels_and_tags,
       configState.logging,

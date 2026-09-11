@@ -61,7 +61,7 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	loggingChanged, loggingValid := checkConfigDifferences_Logging(ctx, config.Current.Logging, &newConfig.Logging)
 	mediaServerChanged, mediaServerValid, newMediaServerName := checkConfigDifferences_MediaServer(ctx, config.Current.MediaServer, &newConfig.MediaServer)
 	mediuxChanged, mediuxValid := checkConfigDifferences_Mediux(ctx, config.Current.Mediux, &newConfig.Mediux)
-	autoDownloadChanged, autoDownloadValid := checkConfigDifferences_Autodownload(ctx, config.Current.AutoDownload, &newConfig.AutoDownload)
+	jobsChanged, jobsChangedKeys, jobsValid := checkConfigDifferences_Jobs(ctx, config.Current.Jobs, &newConfig.Jobs)
 	imagesChanged, imagesValid := checkConfigDifferences_Images(ctx, config.Current.Images, &newConfig.Images, newConfig.MediaServer)
 	tmdbChanged, tmdbValid := checkConfigDifferences_TMDB(ctx, config.Current.TMDB, &newConfig.TMDB)
 	labelsAndTagsChanged, labelsAndTagsValid := checkConfigDifferences_LabelsAndTags(ctx, config.Current.LabelsAndTags, &newConfig.LabelsAndTags)
@@ -69,14 +69,14 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	sonarrRadarrChanged, sonarrRadarrValid := checkConfigDifferences_SonarrRadarr(ctx, config.Current.SonarrRadarr, &newConfig.SonarrRadarr, newConfig.MediaServer)
 	databaseChanged, databaseValid := checkConfigDifferences_Database(ctx, config.Current.Database, &newConfig.Database)
 
-	if !authValid || !loggingValid || !mediaServerValid || !mediuxValid || !autoDownloadValid || !imagesValid || !tmdbValid || !labelsAndTagsValid || !notificationsValid || !sonarrRadarrValid || !databaseValid {
+	if !authValid || !loggingValid || !mediaServerValid || !mediuxValid || !jobsValid || !imagesValid || !tmdbValid || !labelsAndTagsValid || !notificationsValid || !sonarrRadarrValid || !databaseValid {
 		ld.Status = logging.StatusError
 		logAction.SetError("Invalid configuration", "The provided configuration is invalid. Check the results for details.", map[string]any{
 			"auth_valid":            authValid,
 			"logging_valid":         loggingValid,
 			"media_server_valid":    mediaServerValid,
 			"mediux_valid":          mediuxValid,
-			"auto_download_valid":   autoDownloadValid,
+			"jobs_valid":            jobsValid,
 			"images_valid":          imagesValid,
 			"tmdb_valid":            tmdbValid,
 			"labels_and_tags_valid": labelsAndTagsValid,
@@ -90,7 +90,7 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !authChanged && !loggingChanged && !mediaServerChanged && !mediuxChanged &&
-		!autoDownloadChanged && !imagesChanged && !tmdbChanged && !labelsAndTagsChanged &&
+		!jobsChanged && !imagesChanged && !tmdbChanged && !labelsAndTagsChanged &&
 		!notificationsChanged && !sonarrRadarrChanged && !databaseChanged {
 		// If nothing has changed AND the config is valid, log a warning
 		if config.Valid {
@@ -133,8 +133,12 @@ func UpdateAppConfig(w http.ResponseWriter, r *http.Request) {
 	config.MediaServerName = newMediaServerName
 	config.MediuxValid = true
 
-	if autoDownloadChanged {
-		jobs.StartAutoDownloadJob()
+	if jobsChanged {
+		for _, key := range jobsChangedKeys {
+			if err := jobs.StartJob(key); err != nil {
+				logging.LOGGER.Error().Timestamp().Err(err).Str("job", string(key)).Msg("Failed to restart job after config update")
+			}
+		}
 	}
 
 	if mediaServerChanged {
@@ -381,35 +385,50 @@ func checkConfigDifferences_Mediux(ctx context.Context, oldMediux config.Config_
 	return changed, newValid
 }
 
-// checkConfigDifferences_Autodownload compares old and new AutoDownload configurations.
-func checkConfigDifferences_Autodownload(ctx context.Context, oldAutoDownload config.Config_AutoDownload, newAutoDownload *config.Config_AutoDownload) (changed, newValid bool) {
-	ctx, logAction := logging.AddSubActionToContext(ctx, "Check Config Differences: Autodownload", logging.LevelTrace)
+// checkConfigDifferences_Jobs compares old and new Jobs configurations on a
+// per-job basis, so that only the jobs whose settings actually changed get restarted.
+func checkConfigDifferences_Jobs(ctx context.Context, oldJobs config.Config_Jobs, newJobs *config.Config_Jobs) (changed bool, changedKeys []jobs.JobKey, newValid bool) {
+	ctx, logAction := logging.AddSubActionToContext(ctx, "Check Config Differences: Jobs", logging.LevelTrace)
 	defer logAction.Complete()
-	changed = false
-	newValid = false
-	if !reflect.DeepEqual(oldAutoDownload, newAutoDownload) {
-		if oldAutoDownload.Enabled != newAutoDownload.Enabled {
-			logAction.AppendResult("Autodownload.Enabled changed", fmt.Sprintf("from '%v' to '%v'", oldAutoDownload.Enabled, newAutoDownload.Enabled))
-			logging.LOGGER.Info().
-				Timestamp().
-				Bool("old_enabled", oldAutoDownload.Enabled).
-				Bool("new_enabled", newAutoDownload.Enabled).
-				Msg("Autodownload.Enabled changed")
-			changed = true
-		}
 
-		if oldAutoDownload.Cron != newAutoDownload.Cron {
-			logAction.AppendResult("Autodownload.Cron changed", fmt.Sprintf("from '%s' to '%s'", oldAutoDownload.Cron, newAutoDownload.Cron))
-			logging.LOGGER.Info().
-				Timestamp().
-				Str("old_cron", oldAutoDownload.Cron).
-				Str("new_cron", newAutoDownload.Cron).
-				Msg("Autodownload.Cron changed")
-			changed = true
-		}
+	type jobField struct {
+		key   jobs.JobKey
+		label string
+		old   config.Config_JobSetting
+		new   *config.Config_JobSetting
+		def   config.JobSettingDefault
 	}
-	newValid = config.ValidateAutoDownload(ctx, newAutoDownload)
-	return changed, newValid
+
+	fields := []jobField{
+		{jobs.JobKeyAutoDownload, "AutoDownload", oldJobs.AutoDownload, &newJobs.AutoDownload, config.JobDefaults.AutoDownload},
+		{jobs.JobKeyRefreshMediaItemsAndCollections, "RefreshMediaItemsAndCollections", oldJobs.RefreshMediaItemsAndCollections, &newJobs.RefreshMediaItemsAndCollections, config.JobDefaults.RefreshMediaItemsAndCollections},
+		{jobs.JobKeyCheckForMediaItemChanges, "CheckForMediaItemChanges", oldJobs.CheckForMediaItemChanges, &newJobs.CheckForMediaItemChanges, config.JobDefaults.CheckForMediaItemChanges},
+		{jobs.JobKeyHandleTempIgnoredItems, "HandleTempIgnoredItems", oldJobs.HandleTempIgnoredItems, &newJobs.HandleTempIgnoredItems, config.JobDefaults.HandleTempIgnoredItems},
+		{jobs.JobKeyRefreshMediuxUsers, "RefreshMediuxUsers", oldJobs.RefreshMediuxUsers, &newJobs.RefreshMediuxUsers, config.JobDefaults.RefreshMediuxUsers},
+		{jobs.JobKeyCheckMediuxSiteLink, "CheckMediuxSiteLink", oldJobs.CheckMediuxSiteLink, &newJobs.CheckMediuxSiteLink, config.JobDefaults.CheckMediuxSiteLink},
+	}
+
+	for _, f := range fields {
+		if reflect.DeepEqual(f.old, *f.new) {
+			continue
+		}
+		oldEnabled, oldCron := f.old.Resolve(f.def)
+		newEnabled, newCron := f.new.Resolve(f.def)
+		logAction.AppendResult(fmt.Sprintf("Jobs.%s changed", f.label), fmt.Sprintf("from %+v to %+v", f.old, *f.new))
+		logging.LOGGER.Info().
+			Timestamp().
+			Str("job", f.label).
+			Bool("old_enabled", oldEnabled).
+			Bool("new_enabled", newEnabled).
+			Str("old_cron", oldCron).
+			Str("new_cron", newCron).
+			Msg("Job config changed")
+		changed = true
+		changedKeys = append(changedKeys, f.key)
+	}
+
+	newValid = config.ValidateJobs(ctx, newJobs)
+	return changed, changedKeys, newValid
 }
 
 // checkConfigDifferences_Images compares old and new Images configurations.

@@ -29,7 +29,7 @@ type Config struct {
 	Logging       Config_Logging           `json:"logging" yaml:"Logging,omitempty"`               // Logging configuration settings.
 	MediaServer   Config_MediaServer       `json:"media_server" yaml:"MediaServer,omitempty"`      // Media server integration settings.
 	Mediux        Config_Mediux            `json:"mediux" yaml:"Mediux,omitempty"`                 // MediUX integration settings.
-	AutoDownload  Config_AutoDownload      `json:"auto_download" yaml:"AutoDownload,omitempty"`    // Auto-download settings.
+	Jobs          Config_Jobs              `json:"jobs" yaml:"Jobs,omitempty"`                     // Background jobs scheduling configuration.
 	Images        Config_Images            `json:"images" yaml:"Images,omitempty"`                 // Image settings.
 	TMDB          Config_TMDB              `json:"tmdb" yaml:"TMDB,omitempty"`                     // TMDB (The Movie Database) integration settings.
 	LabelsAndTags Config_LabelsAndTags     `json:"labels_and_tags" yaml:"LabelsAndTags,omitempty"` // Labels and tags settings.
@@ -97,9 +97,37 @@ type Config_Mediux struct {
 	DownloadQuality string `json:"download_quality" yaml:"DownloadQuality"` // Quality of the media to download from MediUX (Options: "original", "optimized") Defaults to "optimized".
 }
 
-type Config_AutoDownload struct {
-	Enabled bool   `json:"enabled" yaml:"Enabled"`               // Whether auto-download is enabled.
-	Cron    string `json:"cron,omitempty" yaml:"Cron,omitempty"` // Cron expression for scheduling auto-downloads.
+type Config_Jobs struct {
+	AutoDownload                    Config_JobSetting `json:"auto_download" yaml:"AutoDownload,omitempty"`                                          // Schedule for auto-downloads.
+	RefreshMediaItemsAndCollections Config_JobSetting `json:"refresh_media_items_and_collections" yaml:"RefreshMediaItemsAndCollections,omitempty"` // Schedule for refreshing media items and collections from media server.
+	CheckForMediaItemChanges        Config_JobSetting `json:"check_for_media_item_changes" yaml:"CheckForMediaItemChanges,omitempty"`               // Schedule for checking rating keys and metadata changes.
+	HandleTempIgnoredItems          Config_JobSetting `json:"handle_temp_ignored_items" yaml:"HandleTempIgnoredItems,omitempty"`                    // Schedule for checking if temporarily ignored items now have sets on MediUX.
+	RefreshMediuxUsers              Config_JobSetting `json:"refresh_mediux_users" yaml:"RefreshMediuxUsers,omitempty"`                             // Schedule for refreshing tracked MediUX users/creators.
+	CheckMediuxSiteLink             Config_JobSetting `json:"check_mediux_site_link" yaml:"CheckMediuxSiteLink,omitempty"`                          // Schedule for checking MediUX site link availability.
+}
+
+type Config_JobSetting struct {
+	Enabled *bool  `json:"enabled,omitempty" yaml:"Enabled,omitempty"`
+	Cron    string `json:"cron,omitempty" yaml:"Cron,omitempty"` // Cron expression for the job schedule.
+}
+
+type JobSettingDefault struct {
+	Enabled bool
+	Cron    string
+}
+
+// Resolve returns the effective enabled-state and cron for a job setting,
+// falling back to def for any field the user hasn't explicitly set.
+func (j Config_JobSetting) Resolve(def JobSettingDefault) (enabled bool, cron string) {
+	enabled = def.Enabled
+	if j.Enabled != nil {
+		enabled = *j.Enabled
+	}
+	cron = j.Cron
+	if cron == "" {
+		cron = def.Cron
+	}
+	return enabled, cron
 }
 
 type Config_Images struct {

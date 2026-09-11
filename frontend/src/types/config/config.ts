@@ -3,7 +3,7 @@ export interface AppConfig {
   logging: AppConfigLogging; // Logging configuration settings
   media_server: AppConfigMediaServer; // Media server integration settings
   mediux: AppConfigMediux; // MediUX integration settings
-  auto_download: AppConfigAutoDownload; // Auto-download settings
+  jobs: AppConfigJobs; // Background jobs scheduling configuration
   images: AppConfigImages;
   tmdb: AppConfigTMDB; // TMDB (The Movie Database) integration settings
   labels_and_tags: AppConfigLabelsAndTags; // Labels and tags management settings
@@ -57,9 +57,18 @@ export interface AppConfigMediux {
   download_quality: string; // Preferred download quality (e.g., "original", "optimized")
 }
 
-export interface AppConfigAutoDownload {
-  enabled: boolean; // Whether auto-download is enabled
-  cron: string; // Cron expression for scheduling auto-downloads
+export interface AppConfigJobs {
+  auto_download: AppConfigJobSetting; // Schedule for auto-downloads
+  refresh_media_items_and_collections: AppConfigJobSetting; // Schedule for refreshing media items and collections from media server
+  check_for_media_item_changes: AppConfigJobSetting; // Schedule for checking rating keys and metadata changes
+  handle_temp_ignored_items: AppConfigJobSetting; // Schedule for checking if temporarily ignored items now have sets on MediUX
+  refresh_mediux_users: AppConfigJobSetting; // Schedule for refreshing tracked MediUX users/creators
+  check_mediux_site_link: AppConfigJobSetting; // Schedule for checking MediUX site link availability
+}
+
+export interface AppConfigJobSetting {
+  enabled?: boolean; // Whether the job is enabled for automatic scheduling.
+  cron: string; // Cron expression for the job schedule.
 }
 
 export interface AppConfigImages {

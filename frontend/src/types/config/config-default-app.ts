@@ -34,9 +34,13 @@ export const defaultAppConfig = (): AppConfig =>
       api_token: "",
       download_quality: "",
     },
-    auto_download: {
-      enabled: false,
-      cron: "",
+    jobs: {
+      auto_download: { enabled: false, cron: "0 0 * * *" },
+      refresh_media_items_and_collections: { enabled: true, cron: "0 4 * * *" },
+      check_for_media_item_changes: { enabled: true, cron: "0 */6 * * *" },
+      handle_temp_ignored_items: { enabled: true, cron: "0 */6 * * *" },
+      refresh_mediux_users: { enabled: true, cron: "0 */12 * * *" },
+      check_mediux_site_link: { enabled: true, cron: "0 */1 * * *" },
     },
     images: {
       cache_images: { enabled: false },

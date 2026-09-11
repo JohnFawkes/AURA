@@ -1857,7 +1857,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Trigger a specific job to run immediately by providing the job name and ID as query parameters. This endpoint allows for manual execution of scheduled jobs outside of their regular schedule, which can be useful for testing or urgent tasks.",
+                "description": "Trigger a specific job to run immediately by providing the job's ID (key) as a query parameter. This endpoint allows for manual execution of a job outside of its regular schedule - including jobs currently disabled from automatic scheduling - which can be useful for testing or urgent tasks.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1869,13 +1869,6 @@ const docTemplate = `{
                 ],
                 "summary": "Run Job",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Name of the Job to Run",
-                        "name": "job_name",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "ID of the Job to Run",
@@ -3646,14 +3639,6 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "auto_download": {
-                    "description": "Auto-download settings.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/config.Config_AutoDownload"
-                        }
-                    ]
-                },
                 "database": {
                     "description": "Database configuration settings.",
                     "allOf": [
@@ -3667,6 +3652,14 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/config.Config_Images"
+                        }
+                    ]
+                },
+                "jobs": {
+                    "description": "Background jobs scheduling configuration.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_Jobs"
                         }
                     ]
                 },
@@ -3803,19 +3796,6 @@ const docTemplate = `{
                 }
             }
         },
-        "config.Config_AutoDownload": {
-            "type": "object",
-            "properties": {
-                "cron": {
-                    "description": "Cron expression for scheduling auto-downloads.",
-                    "type": "string"
-                },
-                "enabled": {
-                    "description": "Whether auto-download is enabled.",
-                    "type": "boolean"
-                }
-            }
-        },
         "config.Config_CacheImages": {
             "type": "object",
             "properties": {
@@ -3899,6 +3879,71 @@ const docTemplate = `{
                     "allOf": [
                         {
                             "$ref": "#/definitions/config.Config_SaveImagesLocally"
+                        }
+                    ]
+                }
+            }
+        },
+        "config.Config_JobSetting": {
+            "type": "object",
+            "properties": {
+                "cron": {
+                    "description": "Cron expression for the job schedule.",
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "config.Config_Jobs": {
+            "type": "object",
+            "properties": {
+                "auto_download": {
+                    "description": "Schedule for auto-downloads.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
+                        }
+                    ]
+                },
+                "check_for_media_item_changes": {
+                    "description": "Schedule for checking rating keys and metadata changes.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
+                        }
+                    ]
+                },
+                "check_mediux_site_link": {
+                    "description": "Schedule for checking MediUX site link availability.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
+                        }
+                    ]
+                },
+                "handle_temp_ignored_items": {
+                    "description": "Schedule for checking if temporarily ignored items now have sets on MediUX.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
+                        }
+                    ]
+                },
+                "refresh_media_items_and_collections": {
+                    "description": "Schedule for refreshing media items and collections from media server.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
+                        }
+                    ]
+                },
+                "refresh_mediux_users": {
+                    "description": "Schedule for refreshing tracked MediUX users/creators.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/config.Config_JobSetting"
                         }
                     ]
                 }
@@ -4401,8 +4446,14 @@ const docTemplate = `{
         "jobs.JobInfo": {
             "type": "object",
             "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "job_name": {
                     "type": "string"
