@@ -244,31 +244,71 @@ Mediux:
 
 ---
 
-## AutoDownload
+## Jobs
+
+Aura runs several background jobs on a schedule to keep your library, saved sets, and MediUX data in sync. Each job can be independently enabled/disabled and given its own cron schedule.
+
+> **Tip**: You don't need to edit `config.yaml` for this. The **Jobs** page in the UI lets you toggle each job on/off, edit its cron schedule, and trigger a manual "Run Now" - changes are saved automatically. The reference below is for anyone who prefers to manage `config.yaml` directly (or is scripting a deployment).
 
 - **Example**:
 
 ```yaml
-AutoDownload:
-    Enabled: true
-    Cron: "0 0 * * *"
+Jobs:
+    AutoDownload:
+        Enabled: true
+        Cron: "0 0 * * *"
+    RefreshMediaItemsAndCollections:
+        Enabled: true
+        Cron: "0 4 * * *"
+    CheckForMediaItemChanges:
+        Enabled: true
+        Cron: "0 */6 * * *"
+    HandleTempIgnoredItems:
+        Enabled: true
+        Cron: "0 */6 * * *"
+    RefreshMediuxUsers:
+        Enabled: true
+        Cron: "0 */12 * * *"
+    CheckMediuxSiteLink:
+        Enabled: true
+        Cron: "0 */1 * * *"
 ```
 
-### Enabled
+Every job entry has the same two fields:
 
-- **Default**: `false`
-- **Options**: `true` or `false`
-- **Description**: Whether to automatically download images from updated sets.
-- **Details**: When downloading images, you have the option to saved sets for "Automatic Downloads". If this option is enabled, aura will automatically download images from sets that have been updated. This is useful for keeping your media library up-to-date with the latest images without manual intervention.
-- **Note**: Enabling this option may result in increased network usage as aura will periodically check for updates and download new images.
+- **Enabled**: `true` or `false`. When `false`, the job will not run automatically on its schedule, but can still be triggered manually via "Run Now" on the Jobs page. If omitted entirely, the job falls back to its own built-in default below rather than being treated as disabled - so it's safe to only list the jobs you actually want to customize.
+- **Cron**: A standard 5-field cron expression controlling how often the job runs. If omitted, the job's built-in default schedule (below) is used. Use a site like [crontab.guru](https://crontab.guru/) to help you build and validate cron expressions.
 
-### Cron
+### AutoDownload
 
-- **Default**: `0 0 * * *`
-- **Options**: Cron expression
-- **Description**: The cron expression for scheduling automatic downloads.
-- **Details**: This cron expression determines how often aura checks for updates and downloads images. The default value `0 0 * * *` means that aura will check for updates every day at midnight. You can modify this expression to change the frequency of automatic downloads according to your needs.
-  **Note**: Make sure to use a valid cron expression. You can use online tools like [crontab.guru](https://crontab.guru/) to help you create and validate cron expressions.
+- **Default**: `Enabled: true`, `Cron: "0 0 * * *"` (daily at midnight)
+- **Description**: Automatically checks your saved sets for new or updated images and downloads them.
+- **Note**: Enabling this job may result in increased network usage, as aura will periodically check for updates and download new images.
+
+### RefreshMediaItemsAndCollections
+
+- **Default**: `Enabled: true`, `Cron: "0 4 * * *"` (daily at 4:00 AM)
+- **Description**: Re-scans your Media Server libraries, pulling in new and updated movies, shows, and collections to update the backend cache.
+
+### CheckForMediaItemChanges
+
+- **Default**: `Enabled: true`, `Cron: "0 */6 * * *"` (every 6 hours)
+- **Description**: Compares Media Items from the database with the Media Server cache to see if any items have been removed or changed. If a Media Item is no longer in the cache, it will be removed from the database unless it has Saved Sets or is Temp Ignored.
+
+### HandleTempIgnoredItems
+
+- **Default**: `Enabled: true`, `Cron: "0 */6 * * *"` (every 6 hours)
+- **Description**: Rechecks temporarily ignored media items to see if a matching set has since become available on MediUX.
+
+### RefreshMediuxUsers
+
+- **Default**: `Enabled: true`, `Cron: "0 */12 * * *"` (every 12 hours)
+- **Description**: Updates the list of MediUX users in the backend cache, so that search results reflect the current set of users within MediUX.
+
+### CheckMediuxSiteLink
+
+- **Default**: `Enabled: true`, `Cron: "0 */1 * * *"` (hourly)
+- **Description**: MediUX currently has 2 sites: one for live and one for testing. This job checks the availability of the testing site, and falls back to the live site if the testing site is unavailable.
 
 ---
 

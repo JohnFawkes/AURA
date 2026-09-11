@@ -1,3 +1,11 @@
+## [0.9.107] - 2026-09-11
+
+### Added
+
+- Added new functionality to allow users to schedule Jobs at any interval they want using cron expressions. (Thanks to [mattsigil](https://github.com/mattsigal) for the PR!)
+
+---
+
 ## [0.9.106] - 2026-08-28
 
 ### Fixed
@@ -64,7 +72,7 @@
 
 ### Added
 
-- Added new Authorization header for Jellyfin media servers. This is to fix an issue where some Jellyfin servers were not accepting the X-Emby-Token header for authentication. Now, if the media server type is set to Jellyfin, it will use the new Authorization header as well. (Thanks to degradedcode for the PR!)
+- Added new Authorization header for Jellyfin media servers. This is to fix an issue where some Jellyfin servers were not accepting the X-Emby-Token header for authentication. Now, if the media server type is set to Jellyfin, it will use the new Authorization header as well. (Thanks to [degradedcode](https://github.com/degradedcode) for the PR!)
 - Added new Accordion component to the Changelog page to allow for better organization of the changelog entries. This will allow users to expand/collapse each version's changes for better readability.
 
 ### Fixed
