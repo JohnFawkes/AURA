@@ -1,3 +1,11 @@
+## [0.9.108] - 2026-09-17
+
+### Fixed
+
+- Fixed the frontend server only listening on the IP address of one attached Docker network instead of all interfaces.
+
+---
+
 ## [0.9.107] - 2026-09-11
 
 ### Added
